@@ -1,0 +1,165 @@
+
+
+JXTA-C Tutorials: The PlatformConfig file
+
+PlatformConfig is an xml file specifying the configurations for various
+services and attributes which are part of the group (usually the NetPeerGroup).
+
+The format of the PlatformConfig is the same for J2SE peers as for C
+peers, however the J2SE Platform implementation supports more features,
+so examples from J2SE projects will have much larger PlatformConfig files.
+For example, J2SE supports auto mode for IP address config, and
+certificates.
+
+Because it is xml, it requires an xml declaration tag, a document type tag,
+and a root tag identifying the name of the root element and the namespace in
+which the root and other elements are declared.
+
+Between the root element start tag and the various service elements are a
+sequence of elements designed to configure the peer's identity, and perhaps
+elements to control behaviour at runtime.
+
+Typical elements (see the sample) are PID, GID, Name, and Dbg. You might also
+find a Desc element.
+
+The PID is essential, and the Name is important. (I'm not sure about the GID --
+I recommend using the same one: "urn:jxta:jxta-Null" -- it will be ignored
+and the peer will be placed in the NetPeerGroup when it is instantiated.
+
+A typical jxta-c peer needs four services to be configured: TCP transport,
+HTTP Transport, Rendezvous (as client), and Relay (as client). In a default
+PlatformConfig generated at startup, the services appear in the order:
+
+Service   MCID
+-------   ----
+RDV       urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000605
+TCP       urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000905
+HTTP      urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000A05
+Relay     urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000F05
+
+These IDs are all defined in the JXTA Protocol v2.0 Specification document at
+http://jxta.org. They can also be found hard coded into the source code for
+jxta-c, in jxta_peergroup.c (along with other reserved known IDs).
+
+
+TCP Transport configuration
+
+You want TCP if you have direct access to other peers over TCP/IP, meaning
+either on your LAN (Ethernet or WiFi or Token Ring or what-have-you, as long
+as it has TCP/IP support, aka, not old-school AppleTalk ;-), or if you have
+a direct connection to the Internet. If you use a consumer router with NAT,
+or your office connection uses either NAT or puts you behind a firewall, you
+are not directly connected to the Internet.
+
+More about NATs and firewalls in the HTTP and Relay sections.
+
+If you are unfamiliar with TCP/IP, first I recommend you learn all you can,
+and second, configure TCP transport anyway, just in case. It won't hurt.
+
+The only elements you want to touch are InterfaceAddress, Port, and maybe
+MulticastAddr and MulticastPort.
+
+InterfaceAddress should be the IP address of the computer on which the peer
+is running. The port can be anything in the unassigned port numbers, generally,
+though you should ensure you don't accidentally choose a port bein used by
+another program.
+
+The recommended ports for jxta start at 9700. Keep in mind that if you run
+multiple peers on the same computer, they all need different ports. Also, if
+you activate both TCP and HTTP, each transport needs a different port. Every
+network connection on your machine is called a socket, and is made up of the
+IP address plus the port number. No two connections can be on the same socket.
+Since the IP address is (usually) fixed, you have to make sure that every
+socket has a unique port.
+
+If you run multiple peers, it's probably a good idea to keep track of which
+ports you have assigned to which transport on which peer, so you don't get
+confused and cause problems.
+
+I really don't know anything about the multicast support, other than the
+default ports seem to start at 1234, and the same rule for unique port/socket
+configuration applies.
+
+If you want to suppress multicast support, add the self-terminating element
+<MulticastOff/> just before MulticastAddr start element.
+
+
+HTTP Transport Configuration
+
+Similar to TCP but simpler for lack of Multicast elements.
+
+HTTP is necessary if your computer is invisible to computers on the Internet.
+This happens, as mentioned, when you are obscured by a NAT setup (NAT means
+"Network Address Translation") or a firewall. Many consumers and small
+businesses currently use consumer router/gateway appliances which configure
+NAT automatically. You know you are using NAT if your computer's IP address
+is in a private address space, basically either 192.168.x.x or 10.x.x.x. (The
+most common are 192.168.0.x and 10.0.1.x)
+
+Those familiar with such things as port mapping and virtual service features
+of their router can overcome the limitations of NAT by instructing the router
+to forward traffic to a client computer if it is addressed to a specific port.
+So it is possible to forward the default jxta ports (HTTP on 9700, TCP on
+9701) to ports on a computer on your private network. This is useful if you
+want to run an RDV super-peer (J2SE Shell, say) as a full RDV without the
+need for relay.
+
+If that was all gibberish to you, but you have a router and are probably using
+NAT and/or are behind a firewall that you cannot control, you need to make
+sure that the HTTP Transport service is present and not turned off.
+
+Configure the InterfaceAddress and Port just like with TCP.
+
+(I'm not sure about the Proxy and ProxyOff elements. I've left those, and the
+ServerOff element, as set by the default configuration.)
+
+
+RDV Service configuration
+
+You need an RDV connection for JXTA to work on the Internet (and the RDV
+must be connected to a peer view, as well). In PlatformConfig, the only thing
+you are doing is providing some bootstrap addresses, or "seed" RDV peers.
+
+Within the Parm element you can enter as many Addr elements as you wish, each
+with the full protocol address of a seed RDV. By "full protocol address" I
+mean that it must be prefixed with the protocol type, "tcp://" or "http://",
+and suffixed with the correct port (usually the default port for the protocol).
+
+That's all. If you have no seeds, or cannot reach them (either they are not
+there are you do not have a working connection or you are behind NAT/firewall
+and configured HTTP incorrectly, see above), then you will not connect to the
+JXTA network.
+
+The seeds you enter determine the network to which you connect. JXTA.org has
+a public network you can use, or you might need to connect to a dedicated or
+private network for specific applications (not that I know of any). You will
+have to be careful which seeds you put in. Order them in the priority you want
+your peer to attempt to contact them.
+
+If it can't find a peer, it might cause delays in starting the platform, so
+only include seeds which you need and are reliable.
+
+
+Relay Service configuration
+
+Relay usually works hand in hand with HTTP, in general, at least when boot-
+strapping a typical peer. One might use HTTP without a relay if you already
+know the addresses of any and all peers you will talk to or have an alternate
+way to connect to them and don't need the services of a Relay.
+
+The primary purpose of the Relay service configuration is to specify seeds. It
+also sets whether client or server facilities are active at all. Server is
+not currently supported, so just leave it set to false. Disable client relay
+support by setting client to false; enable it by setting it to true.
+
+Unlike RDV peer configuration, the element for specifying the address makes
+the protocol explicit. The element is called "httpaddress" and the protocol
+prefix is _not_ used (the port suffix is still required).
+
+
+Conclusion
+
+That should be enough to get you started. It's almost everything that I know.
+
+Remember that PlatformConfig files are XML, and so the usual XML rules apply.
+For example, use "<!--" and "-->" to start and end comment blocks.

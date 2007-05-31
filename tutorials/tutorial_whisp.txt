@@ -1,0 +1,179 @@
+
+JXTA-C Tutorials: whisp
+
+Introduction
+
+This is supposed to be the first of two post-tutorial demonstration applications
+(perhaps there will be others, if all goes well). In fact, whisp -- a simple
+command line message app -- was written before all but one of the tutorials
+proper. It's where they lead up to.
+
+In order to make the most use of whisp you ought to have two computers to try
+it out on (hey, this is peer-to-peer). Although two different running instances
+should be fine. If you use multicast, you might be able to get away with not
+having an RDV for basic message passing, but if you want to try subgroups, you
+will need an RDV, I believe.
+
+The RDV in the case of subgroups is used to act as RDV for the subgroup. When a
+new group is created with the "group" command (either read from a file or made
+from scratch, if required), that new group's advertisement is published to the
+RDV. The RDV can then join the group. In the case of the J2SE Shell (currently
+only version 2.3 works -- 2.3.1+ has problems), use "join -d <shell_var> -r"
+where <shell_var> is the shell variable (group#) of the whisp group you want
+to test.
+
+The way to test groups, then, is to create a new group on one peer, join the
+group with the RDV, join the group on two or more peers, do a search on each
+peer, and then try to send messages to peers found in the group.
+
+Technically the search is for _pipes_ not peers, but the program creates a
+single pipe for the current peer using a clever naming strategy, based on the
+nickname of the user.
+
+The default nickname is your login name (on UNIX).
+
+Instructions for various commands are below.
+
+This code was originally written on Mac OS X 10.3.5. Test results on other
+platforms are desired.
+
+
+Code Layout 
+
+Process Arguments - set a nickname which overrides the default nickname (the
+user's login name).
+
+Initialization - initialize variables and start up most of the listeners.
+Create a pipe advertisement, publish it, and listen for incoming messages on a
+pipe created in its name (if creation succeeds).
+
+Program Body - runs a loop, reading and parsing commands and arguments,
+including "search", "list" (peer ads), and "send". Also "quit" (or "exit")
+to end the program.
+
+Cleanup - terminate the library and free the large number of objects.
+
+
+Processing User Input
+
+A fair bit of the complexity of whisp is tied up in user interaction. All good
+user programs face the obstacle of hiding the complexity of the underlying
+functionality, which adds still more complexity to the program and more
+aggravation to the developer, but such is life. jxta-c involves a fair bit of
+complexity, but here we try to hide it behind a set of seven simple commands.
+
+A dedicated function is used just to read in and parse user input on a simulated
+console. The console features a prompt showing the user's chosen nickname.
+
+The available commands:
+
+search: start a new search for other whisper peers on the jxta network. Uses a
+listener so that results can be displayed as they arrive in the background.
+
+peers: print the list of discovered peer advertisements. We cannot actually
+search for peers directly without either knowing their names/IDs. Even if we
+create a private group we cannot do general searches for all present peers
+unless we want to write a custom discovery service that allows propagation of
+unlimited searches. Anyway, given an advertisement it is possible to locate the
+peer which published it, assuming that peer is active and accepting connections.
+
+groups: print the list of discovered whisp groups.
+
+group <name>: create a grouped named "whisp.<name>" (if <name> is prefixed by
+"whisp." already it won't be duplicated).
+
+join <name>: join a grouped named "whisp.<name>" (if <name> is prefixed by
+"whisp." already it won't be duplicated). The group is created as a subgroup of
+the current group.
+
+leave: leave the subgroup and return to the parent group.
+
+send: given the (qualified or unqualified -- that is, with or without the
+"whisp." prefix) name of a peer (as contained in the pipe name), attempt to
+send it a message string. Bind to the output pipe, and if successful, create a
+message and put it into the pipe.
+
+The peer must (currently) be one of the peers recently discovered. They can be
+shown with "peers".
+
+NOTE:
+Because of problems with defining/joining groups, this is unreliable. I need
+help trying to determine the exact problems.
+
+Also, if you don't do a new search after joining a group, you can still send
+to peers in the parent group, which is not really sensible, but whatever.
+
+nick: change the user's nickname.
+
+status: print out basic information about the group, peer and rdv to which we
+are connected (if any). Uses convenience routines from the tutorial shared
+library.
+
+help: print a helpful message describing commands (and launch argument -n for
+setting the nickname).
+
+quit/exit: end the program.
+
+
+Many Listeners
+
+This program uses five listeners, each with their own callback function. The
+names of the listeners and the callbacks are made as explicit as possible.
+Callbacks follow a strict naming pattern, describing the exact type of object
+they are designed to process and, in the case of pipe-related listeners, the
+source of the event (to what library function call they are tied).
+
+rdvListener->rdv_event_received()
+
+The rdvListener responsds to rdv events on the current group's (netPeerGroup)
+rdv. Each event is forwarded to the callback, and a message is printed. If it's
+a connect message, the user knows that the rdv peer has been found, and so
+searches will now work. The program uses the successful connect to publish
+its pipe ad remotely.
+
+discoListener->discovery_response_received()
+
+The discoListener responds to discovery responses, which result from a search
+query being sent. The only search performed is for whisp pipe ads which have
+names of the form "whisp.<peername>". As responses come back, they are
+displayed. [There is currently a bug in that only the most recently received
+peers' ads are available. I was hoping I could just do a local search and let
+the library coalesce the ads (replacing old versions with updated versions),
+but it seems not to work, though it should.]
+
+pipeEventListener->pipe_accept_event_received()
+
+For responses to the opening of the pipe in preparation to accept incoming
+messages. (Messages come on a different listener, see below.) The pipe service
+"accept" methods actually create the pipe locally and register it (?) for
+receiving messages. And input pipe is still required to actually receive the
+messages.
+
+messageListener->message_received()
+
+The messageListener is attached to an input pipe as soon as the incoming pipe
+is available (when pipe_accept_event_received() is called by the listener). It
+receives message objects, which are read and printed. This is case of one
+listener's activation leading directly to another listener's creation.
+
+connectionListener->pipe_connect_event_received()
+
+Finally, a successful connection to a remote peer's receive pipe triggers the
+connectionListener. Then the program can create an output pipe and place the
+message into it.
+
+
+Pipes and Messages
+
+whisp opens and closes an output pipe each time it sends a message. This makes
+the program simpler for the sake of demonstration. When the send command is
+used properly, the advertisement of the recipient is discovered using the
+(modified) peername specified, by searching through all the ad names to find a
+match.
+
+For lack of two peers, a peer can happily send messages to itself.
+
+
+
+
+

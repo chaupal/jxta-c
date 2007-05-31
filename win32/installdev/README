@@ -1,0 +1,13 @@
+This directory will eventually contain NSIS scripts
+for installing a jxta development env for Win32.   
+This will contain all the apr header files and libs
+so that a developer can just install this and start
+programming jxta directly.  
+
+
+The goal is to have the NSIS script find out where 
+MS DEv is installed, then install the jxta libraries
+and header files in the MS Dev include and lib trees.
+This normalizes the locations of these files so 
+that developers don't have to continually fiddle with
+project settings.

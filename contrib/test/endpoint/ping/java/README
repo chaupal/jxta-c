@@ -1,0 +1,59 @@
+
+	J2SE Testing relay & rendezvous platform
+	========================================
+
+
+This package is destinated to the people who want to test jxta-c
+against the J2SE platform. The package includes:
+
+	- J2SE platform
+	- J2SE shell
+	- added commands (ping)
+	- pre-cooked configuration
+
+
+Fast track
+----------
+
+If what you want to do is to quickly install a J2SE peer that will run
+on the local IP address 127.0.0.1, with TCP enabled on port 9701 and
+the HTTP relay enabled on port 9700, all you have to do is to:
+
+	- create a directory & go in it
+	- unzip in that directory the file bin/j2sepeer.zip
+	- if you run a UNIX box, you can use the shell script run.sh, otherwise
+	  run 	java -classpath j2sepeer.jar  net.jxta.impl.peergroup.Boot.
+	- the peer is pre-configured, just update the user name and password
+          (security panel), and the peer will be ready to go.
+
+	- the shell should come up.
+
+
+
+Configuring
+-----------
+
+	- if the default setting are not appropriate, you can
+          change them into the configuration panel (refer to the platform
+          documentation). The shell command "peerconfig" can be used to force
+          a re-configuration.
+
+	- the default configuration comes with debug logs turned of. Use the
+          configurator if you want to change the level of debug log (debug is
+          usually what you want).
+
+	
+Building
+--------
+
+If you want to add debug code into the J2SE, or if you want to add your own
+shell debug commands, you can build the add-on java files by:
+
+$ make cmds
+
+In order to make the proper package:
+
+$ make zip
+
+
+
