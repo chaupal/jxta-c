@@ -1,0 +1,152 @@
+dnl Process this file with autoconf to produce a configure script.
+
+AC_INIT(jxta, 2.1)
+AC_CONFIG_SRCDIR(configure.in)
+AC_CONFIG_AUX_DIR(conftools)
+AC_CANONICAL_TARGET
+AM_INIT_AUTOMAKE(dist-bzip2 dist-zip)
+
+AC_CONFIG_HEADERS(config.h)
+
+AC_ISC_POSIX
+AC_PROG_CC
+AM_PROG_CC_STDC
+AC_HEADER_STDC
+
+# Here is an example test for a certain header
+# foo.h that is not in the path that we might want in the 
+# path.  Various other things can be done such as testing
+# for environment variables, etc. 
+#
+# Note that the following example does not really work, since it
+# only searches within the system includes.
+#
+# AC_CHECK_HEADER(apr/include/os.h,[
+#echo "GOT IT" 
+#],[
+#echo "The APR package has not been installed. Please refer to BUILD in"
+#echo "order to properly install it."
+#exit 0
+#])
+
+AC_ARG_ENABLE([debug],
+  AC_HELP_STRING([--enable-debug], [enable debug log]),
+  [ac_enable_debug=$enableval], [ac_enable_debug=no])
+
+if test "x$ac_enable_debug" != "xno" ; then
+  CPPFLAGS="-DJXTA_LOG_ENABLE=1 $CPPFLAGS"
+fi
+  
+AC_ARG_WITH(dbm, 
+  AC_HELP_STRING([--with-dbm], [dbm type to use with apr]),
+  [
+    case "$withval" in
+    db)
+      dbtype='"DB"'
+      ;;
+    sdbm)
+      dbtype='"SDBM"'
+      ;;
+    *)
+      echo "invalid dbm, only db, sdbm are supported currently."
+      exit 0
+      ;;
+    esac
+  ], [
+    dbtype='"SDBM"'
+  ])
+
+AC_ARG_WITH(apr, 
+  AC_HELP_STRING([--with-apr],
+    [to use jxta-c distributed libapr or specify your own.]),
+  [with_apr=$withval], [with_apr=yes])
+
+case "$with_apr" in
+  yes)
+    apr_prefix="`pwd`/lib/apr"
+    dbtype='"SDBM"'
+    ;;
+  no | apr-config)
+    apr_prefix=""
+    ;;
+  *)
+    apr_prefix=$with_apr
+    ;;
+esac
+
+if test -z $apr_prefix ; then
+  AC_PATH_PROG(apr_config, apr-config, "")
+
+  if test -z "$apr_config" ; then
+    echo "Cannot find apr-config, apr must be installed to build jxta"
+    exit 0
+  fi 
+
+  apr_includedir=`$apr_config --includedir`
+  apr_libs=`$apr_config --link-ld --libs`
+
+  AC_PATH_PROG(apu_config, apu-config, "")
+
+  if test -z "$apu_config" ; then
+    echo "Cannot find apu-config, apr must be installed to build jxta"
+    exit 0
+  fi 
+
+  apu_libs=`$apu_config --link-ld --libs`
+else
+  apr_includedir="$apr_prefix/include/apr-0"
+  apr_libs=" -L$apr_prefix/lib -lapr-0"
+  apu_libs=""
+fi
+
+AC_DEFINE_UNQUOTED(DBTYPE, $dbtype, [DBM type to use with libapr])
+APR_CPPFLAGS=" -I$apr_includedir"
+APR_LIBS="$apr_libs $apu_libs"
+AC_SUBST(APR_CPPFLAGS)
+AC_SUBST(APR_LIBS)
+
+AC_CHECK_LIB(expat,XML_ParserCreate,[],[
+ echo "The expat library for XML processing is required by jxta" 
+ exit 0
+])
+
+AC_CHECK_LIB(dl,dlopen,[],[
+ echo "The dl library for dynamic linking is required by jxta" 
+ exit 0
+])
+
+case $host_os in
+  solaris*)
+    AC_CHECK_LIB(socket,getaddrinfo,[],[
+     echo "The socket library for emulation of BSD Sockets is required by jxta"
+     exit 0
+    ])
+    ;;
+  darwin*)
+    ;;
+  *)
+#    AC_CHECK_LIB(crypt,crypt_r,[],[
+#     echo "The crypt library for basic cryptographic functions is required by jxta" 
+#     exit 0
+#    ])
+    ;;
+esac
+
+#if test $APR ; then
+#    echo "APR is set to $APR"
+#else
+#    AC_CHECK_LIB(apr, main, [echo "APR found"],
+#    [echo "APR not found"
+#     exit 0])
+#fi
+
+
+AC_LIBTOOL_DLOPEN
+AM_PROG_LIBTOOL
+
+dnl libjxta.4 has definitions for supporting automatic "jxta-config"
+dnl shell scripts.  When that file is read in (how?), the following
+dnl macro should automatically create it.
+dnl AC_CREATE_GENERIC_CONFIG
+
+AC_OUTPUT([Makefile src/Makefile src/jpr/Makefile src/unicode/Makefile test/Makefile shell/Makefile tutorials/Makefile])

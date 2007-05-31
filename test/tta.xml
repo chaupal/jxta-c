@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+
+<jxta:TCPTransportAdvertisement xmlns:jxta="http://jxta.org">
+<Protocol>
+TCP
+</Protocol>
+<Port>
+9701
+</Port>
+<MulticastAddr>
+224.0.1.85
+</MulticastAddr>
+<MulticastPort>
+1234
+</MulticastPort>
+<MulticastSize >
+16384
+</MulticastSize>
+<Server >
+</Server>
+<InterfaceAddress>
+127.0.0.1
+</InterfaceAddress>
+<ConfigMode>
+auto
+</ConfigMode>
+</jxta:TCPTransportAdvertisement>

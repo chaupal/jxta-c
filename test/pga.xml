@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE jxta:PGA>
+
+<jxta:PGA xmlns:jxta="http://jxta.org">
+	<GID>
+		urn:jxta:jxta-NetGroup
+	</GID>
+	<MSID>
+		urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE000000010206
+	</MSID>
+	<Name>
+		NetPeerGroup
+	</Name>
+	<Desc>
+		NetPeerGroup by default
+	</Desc>
+</jxta:PGA>
