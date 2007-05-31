@@ -3,10 +3,10 @@
 #include "jxta_srdi.h"
 #include "jxta_id.h"
 
-boolean
+Jxta_boolean
 srdi_ttl_test(Jxta_SRDIMessage * ad) {
 
-    boolean passed = FALSE;
+    Jxta_boolean passed = FALSE;
 
     int ttl = jxta_srdi_message_get_ttl(ad);
     if (ttl == 10) {
@@ -17,20 +17,20 @@ srdi_ttl_test(Jxta_SRDIMessage * ad) {
     }
     return passed;
 }
-boolean
+Jxta_boolean
 srdi_get_primaryKey_test(Jxta_SRDIMessage * ad) {
 
-    boolean passed = TRUE;
+    Jxta_boolean passed = TRUE;
     JString * pkey = jstring_new_0();
     jxta_srdi_message_get_primaryKey(ad, &pkey);
     fprintf(stdout,"Primary Key = %s\n",jstring_get_string(pkey));
     return passed;
 }
 
-boolean
+Jxta_boolean
 srdi_get_peerid_test(Jxta_SRDIMessage * ad) {
 
-    boolean passed = TRUE;
+    Jxta_boolean passed = TRUE;
     JString * tmps = NULL;
     Jxta_id     * peerid = jxta_id_nullID;
 
@@ -40,7 +40,7 @@ srdi_get_peerid_test(Jxta_SRDIMessage * ad) {
     return passed;
 }
 
-boolean
+Jxta_boolean
 srdi_entry_test(Jxta_SRDIMessage * ad) {
     Jxta_vector* entries;
     int i;

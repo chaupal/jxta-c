@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dr.c,v 1.47 2005/02/02 02:58:27 exocetrick Exp $
+ * $Id: jxta_dr.c,v 1.48 2005/04/02 23:50:44 bondolo Exp $
  */
 
 #include <stdio.h>
@@ -152,7 +152,6 @@ static void handlePeerAdv(void *userdata, const XML_Char * cd, int len)
 
 static void handleAttr(void *userdata, const XML_Char * cd, int len)
 {
-
     Jxta_DiscoveryResponse *ad = (Jxta_DiscoveryResponse *) userdata;
 
     if (len == 0)
@@ -211,7 +210,7 @@ static void handleResponse(void *userdata, const XML_Char * cd, int len)
 
     r->expiration = 0;
     if (atts != NULL) {
-        if (!strncmp("Expiration", atts[0], strlen("Expiration"))) {
+        if (!strncmp("Expiration", atts[0], sizeof("Expiration") - 1) ) {
             r->expiration = atol(atts[1]);
         }
     }

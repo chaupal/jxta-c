@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rdvstatus.c,v 1.24 2004/10/16 03:06:14 tra Exp $
+ * $Id: rdvstatus.c,v 1.26 2005/04/07 22:58:55 slowhog Exp $
  */
 
 
@@ -76,14 +76,14 @@
 #define WAIT_TIME (15 * 1000 * 1000) /* 15 seconds */
 
 
-boolean display_peers (Jxta_rdv_service* rdv) {
+Jxta_boolean display_peers (Jxta_rdv_service* rdv) {
 
   Jxta_peer* peer = NULL;
   Jxta_id* pid = NULL;
   Jxta_PA*      adv = NULL;
   JString*  string = NULL;
   Jxta_time expires = 0;
-  boolean connected = FALSE;
+  Jxta_boolean connected = FALSE;
   Jxta_status err;
   Jxta_vector* peers = NULL;
   Jxta_time currentTime;
@@ -160,7 +160,7 @@ boolean display_peers (Jxta_rdv_service* rdv) {
   return TRUE;
 }
 
-boolean 
+Jxta_boolean 
 rdvstatus_run (int argc, char** argv) {
 
   Jxta_rdv_service* rdv;
@@ -208,7 +208,7 @@ rdvstatus_run (int argc, char** argv) {
 #ifdef STANDALONE
 int
 main (int argc, char **argv) {
-
+    int rv;
 
   /**
    * Here's the story: apr_initialize and apr_thread_yield would not link.
@@ -226,12 +226,10 @@ main (int argc, char **argv) {
    * links without a prototype.
    */
  
-#ifdef WIN32 
-  apr_app_initialize(&argc, &argv, NULL);
-#else
-  apr_initialize();
-#endif
-  return (int)rdvstatus_run(argc, argv);
+  jxta_initialize();
+  rv = (int)rdvstatus_run(argc, argv);
+  jxta_terminate();
+  return rv;
 }
 #endif
 

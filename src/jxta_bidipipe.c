@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bidipipe.c,v 1.5 2005/02/08 00:15:18 slowhog Exp $
+ * $Id: jxta_bidipipe.c,v 1.6 2005/03/26 00:17:10 bondolo Exp $
  */
 
 #include <stdlib.h>
@@ -617,7 +617,7 @@ Jxta_status jxta_bidipipe_delete(Jxta_bidipipe * self)
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_bidipipe_connect(Jxta_bidipipe * self, Jxta_pipe_adv * remote_adv, Jxta_listener * listener, Jxta_time timeout)
+Jxta_status jxta_bidipipe_connect(Jxta_bidipipe * self, Jxta_pipe_adv * remote_adv, Jxta_listener * listener, Jxta_time_diff timeout)
 {
     Jxta_status rv;
     Jxta_pipe_service *ps;

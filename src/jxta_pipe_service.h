@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_service.h,v 1.3 2005/01/12 20:20:51 brent Exp $
+ * $Id: jxta_pipe_service.h,v 1.4 2005/03/26 00:32:03 bondolo Exp $
  */
 
    
@@ -161,7 +161,7 @@ extern "C" {
    **/
   Jxta_status jxta_pipe_service_timed_connect (Jxta_pipe_service* service,
 					       Jxta_pipe_adv*     adv,
-					       Jxta_time          timeout,
+					       Jxta_time_diff     timeout,
 					       Jxta_vector*       peers,
 					       Jxta_pipe**        pipe);
 
@@ -195,7 +195,7 @@ extern "C" {
    **/
   Jxta_status jxta_pipe_service_connect (Jxta_pipe_service* service,
 					 Jxta_pipe_adv*     adv,
-					 Jxta_time          timeout,
+					 Jxta_time_diff     timeout,
 					 Jxta_vector*       peers,
 					 Jxta_listener*     listener);
 
@@ -222,7 +222,7 @@ extern "C" {
    **/
   Jxta_status jxta_pipe_service_timed_accept (Jxta_pipe_service* service,
 					      Jxta_pipe_adv*     adv,
-					      Jxta_time          timeout,
+					      Jxta_time_diff     timeout,
 					      Jxta_pipe**        pipe);
 
 
@@ -288,7 +288,7 @@ extern "C" {
    ** desire finer control on the behavior of the pipe, and for the implementation
    ** of the pipes themselves.
    **
-   ** Regular application do not need to use it.
+   ** Regular applications do not need to use it.
    **/
 
   /**
@@ -304,7 +304,7 @@ extern "C" {
    **                          JXTA_NOTIMP when the type_name is not a supported type of pipe.
    **/
   Jxta_status jxta_pipe_service_lookup_impl (Jxta_pipe_service* service,
-					     char* type_name,
+					     const char* type_name,
 					     Jxta_pipe_service_impl** impl);
 
   /**
@@ -323,7 +323,7 @@ extern "C" {
    **                          JXTA_VIOLATION when adding an implementation is not authorized
    **/
   Jxta_status jxta_pipe_service_add_impl (Jxta_pipe_service* service,
-					  char* name,
+					  const char* name,
 					  Jxta_pipe_service_impl* impl);
 
 
@@ -342,7 +342,7 @@ extern "C" {
    **                          JXTA_VIOLATION when removing an implementation is not authorized
    **/
   Jxta_status jxta_pipe_service_remove_impl (Jxta_pipe_service* service,
-					     char* name,
+					     const char* name,
 					     Jxta_pipe_service_impl* impl);
 
 
@@ -484,7 +484,7 @@ extern "C" {
    **                                       message was received
    **/
   Jxta_status jxta_inputpipe_timed_receive (Jxta_inputpipe* ip,
-					    Jxta_time timeout,
+					    Jxta_time_diff timeout,
 					    Jxta_message** msg);
 
   /**

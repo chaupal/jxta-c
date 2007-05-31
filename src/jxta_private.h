@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_private.h,v 1.17 2005/01/13 02:47:20 bondolo Exp $
+ * $Id: jxta_private.h,v 1.18 2005/03/24 19:43:43 slowhog Exp $
  **/
 #ifndef __JXTA_PRIVATE_H__
 #define __JXTA_PRIVATE_H__
@@ -58,6 +58,13 @@
 #include <apr_uuid.h>
 #include "jxtaapr.h"
 #include "jxta_message.h"
+
+#ifdef __cplusplus
+extern "C" {
+#if 0
+}
+#endif
+#endif
 
 typedef struct _JxtaRelayService JxtaRelayService;
 
@@ -71,4 +78,16 @@ Jxta_message*         jxta_relay_service_dequeue (JxtaRelayService *service,
 						 apr_uuid_t        *destination,
 						 Jxta_time         max_wait);
 
+Jxta_status jxta_PG_module_initialize(void);
+void jxta_PG_module_terminate(void);
+
+#ifdef __cplusplus
+#if 0
+{
 #endif
+}
+#endif
+
+#endif
+
+/* vim: set ts=4 sw=4 tw=130 et: */

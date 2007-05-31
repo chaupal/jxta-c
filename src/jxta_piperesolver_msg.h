@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_piperesolver_msg.h,v 1.3 2005/01/12 21:46:59 bondolo Exp $
+ * $Id: jxta_piperesolver_msg.h,v 1.4 2005/03/22 04:08:03 bondolo Exp $
  */
 
 #ifndef __Jxta_piperesolver_msg_H__
@@ -87,13 +87,13 @@ char * jxta_piperesolver_msg_get_PipeId(Jxta_piperesolver_msg * ad);
 
 Jxta_status jxta_piperesolver_msg_set_PipeId(Jxta_piperesolver_msg * ad, char* val);
 
-boolean jxta_piperesolver_msg_get_Found(Jxta_piperesolver_msg * ad);
+Jxta_boolean jxta_piperesolver_msg_get_Found(Jxta_piperesolver_msg * ad);
 
-Jxta_status jxta_piperesolver_msg_set_Found(Jxta_piperesolver_msg * ad, boolean val);
+Jxta_status jxta_piperesolver_msg_set_Found(Jxta_piperesolver_msg * ad, Jxta_boolean val);
 
-boolean jxta_piperesolver_msg_get_Cached(Jxta_piperesolver_msg * ad);
+Jxta_boolean jxta_piperesolver_msg_get_Cached(Jxta_piperesolver_msg * ad);
 
-Jxta_status jxta_piperesolver_msg_set_Cached(Jxta_piperesolver_msg * ad, boolean val);
+Jxta_status jxta_piperesolver_msg_set_Cached(Jxta_piperesolver_msg * ad, Jxta_boolean val);
 
 char * jxta_piperesolver_msg_get_Peer(Jxta_piperesolver_msg * ad);
 

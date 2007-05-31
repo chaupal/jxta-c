@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_objecthash_test.c,v 1.3 2003/12/18 19:37:50 wiarda Exp $
+ * $Id: jxta_objecthash_test.c,v 1.6 2005/04/07 22:58:54 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -59,6 +59,9 @@
 #include <time.h>
 #include <string.h>
 
+#include <apr_general.h>
+
+#include "jxta_types.h"
 #include "jxta_objecthashtable.h"
 #include "jxta_errno.h"
 #include "jxta_object.h"
@@ -119,7 +122,7 @@ static Jxta_boolean test_num(void) {
 	Num_val* old_val = 0;
 	Num_val* new_val = num_val_new_object(k);
         
-        jxta_bytevector_add_bytes_at( key, (unsigned char*) &k, 0, sizeof(k) );
+    jxta_bytevector_add_bytes_at( key, (unsigned char*) &k, 0, sizeof(k) );
         
 	jxta_objecthashtable_replace(hash_num, 
             (Jxta_object*) key, (Jxta_object*) new_val, (Jxta_object**) &old_val);
@@ -128,7 +131,7 @@ static Jxta_boolean test_num(void) {
 		JXTA_LOG("Ooops replaced the wrong value at iteration #%d (%d != %d)\n", i, old_val->n, k);
 		return FALSE;
 	    }
-	    ++(new_val->occur);
+		new_val->occur = old_val->occur + 1;
 	    ++duplicates;
 	    JXTA_OBJECT_RELEASE(old_val);
 	}
@@ -156,7 +159,7 @@ static Jxta_boolean test_num(void) {
 		JXTA_LOG("trying to lookup key\n");
 		res = jxta_objecthashtable_get(hash_num, (Jxta_object*) key, (Jxta_object**) &rmd);
 		if (res == JXTA_SUCCESS) {
-		    JXTA_OBJECT_RELEASE((Jxta_object*) rmd);
+		    JXTA_OBJECT_RELEASE(rmd);
 		    JXTA_LOG("Key found: problem specific to removal\n");
 		} else {
 		    JXTA_LOG("Key not found\n");
@@ -186,7 +189,7 @@ static Jxta_boolean test_num(void) {
 				   (Jxta_object*) rmd);
 	    }
 	    /* Del in both cases. We don't keep a ref, the tbl does. */
-	    JXTA_OBJECT_RELEASE((Jxta_object*) rmd);
+	    JXTA_OBJECT_RELEASE(rmd);
 	}
         
  	JXTA_OBJECT_RELEASE(key);
@@ -210,7 +213,7 @@ static Jxta_boolean test_num(void) {
 		JXTA_LOG("Ooops replaced the wrong value\n");
 		return FALSE;
 	    }
-	    ++(new_val->occur);
+		new_val->occur = old_val->occur + 1;
 	    ++duplicates;
 	    JXTA_OBJECT_RELEASE(old_val);
 	}
@@ -256,7 +259,7 @@ static Jxta_boolean test_num(void) {
 		return FALSE;
 	    }
 
-	    JXTA_OBJECT_RELEASE((Jxta_object*) found);
+	    JXTA_OBJECT_RELEASE(found);
 	}
         
 	JXTA_OBJECT_RELEASE(key);
@@ -291,7 +294,7 @@ static Jxta_boolean test_num(void) {
 	    JXTA_LOG("Ooops found the wrong object\n");
 	    return FALSE;
 	}
-	JXTA_OBJECT_RELEASE((Jxta_object*) found);
+	JXTA_OBJECT_RELEASE(found);
 	JXTA_OBJECT_RELEASE(key);
     }
 
@@ -312,7 +315,7 @@ static Jxta_boolean test_num(void) {
 
     /* now delete the whole table and its 1.5 Million entries. */
     start = time(NULL);
-    JXTA_OBJECT_RELEASE((Jxta_object*) hash_num);
+    JXTA_OBJECT_RELEASE(hash_num);
     release = time(NULL) - start;
 
 
@@ -355,8 +358,10 @@ static int test_id(void) {
 Jxta_boolean run_jxta_objecthash_tests( int * tests_run,
 				        int * tests_passed,
 				        int * tests_failed){
+  Jxta_boolean result;
+  
   *tests_run += 1;
-  Jxta_boolean result = test_num();
+  result = test_num();
  
   if( result == TRUE){
     *tests_passed += 1;
@@ -371,16 +376,18 @@ Jxta_boolean run_jxta_objecthash_tests( int * tests_run,
 
 #ifdef STANDALONE
 int main(int argc, char* argv[]) {
-#ifdef WIN32 
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize();
-#endif
-
-    Jxta_boolean result = test_num();
+    Jxta_boolean result;
     int i = 0;
 
-    if( result == FALSE)  i = -1;
+    jxta_initialize();
+
+    result = test_num();
+    if (result == FALSE)  
+	    i = -1;
+
+    jxta_terminate();
     return i;
 }
 #endif
+
+/* vim: set ts=4 sw=4 tw=130 et: */

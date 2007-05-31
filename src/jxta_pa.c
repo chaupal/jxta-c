@@ -50,19 +50,8 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pa.c,v 1.69 2005/02/14 19:50:16 bondolo Exp $
+ * $Id: jxta_pa.c,v 1.70 2005/04/03 01:47:58 bondolo Exp $
  */
-
-
-/* 
-* The following command will compile the output from the script 
-* given the apr is installed correctly.
-*/
-/*
-* gcc -DSTANDALONE jxta_advertisement.c jxta_pa.c  -o jxta_PA \
-  `/usr/local/apache2/bin/apr-config --cflags --includes --libs` \
-  -lexpat -L/usr/local/apache2/lib/ -lapr
-*/
 
 #include <stdio.h>
 #include <string.h>
@@ -461,7 +450,7 @@ void jxta_PA_set_Svc(Jxta_PA * ad, Jxta_vector * svclist)
     ad->svclist = svclist;
 }
 
-/* This is an internal function so we can assume what best fist us
+/* This is an internal function so we can assume what best fits us
  * as for the allocation of the returned jstring. We assume it
  * already exists, is passed by invoking code, and we append to it.
  */
@@ -573,11 +562,7 @@ Jxta_status jxta_PA_get_xml(Jxta_PA * ad, JString ** xml)
 Jxta_PA *jxta_PA_new()
 {
     Jxta_PA *ad;
-    ad = (Jxta_PA *) malloc(sizeof(Jxta_PA));
-
-    /* #ifdef JXTA_DEBUG */
-    memset(ad, 0x0, sizeof(Jxta_PA));
-    /* #endif */
+    ad = (Jxta_PA *) calloc(1, sizeof(Jxta_PA));
 
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
                                   "jxta:PA",
@@ -651,39 +636,11 @@ void jxta_PA_parse_charbuffer(Jxta_PA * ad, const char *buf, int len)
     jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
 
-
-
 void jxta_PA_parse_file(Jxta_PA * ad, FILE * stream)
 {
 
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
-
-#ifdef STANDALONE
-int main(int argc, char **argv)
-{
-    Jxta_PA *ad;
-    FILE *testfile;
-
-    if (argc != 2) {
-        printf("usage: ad <filename>\n");
-        return -1;
-    }
-
-    ad = jxta_PA_new();
-
-    testfile = fopen(argv[1], "r");
-    jxta_PA_parse_file(ad, testfile);
-    fclose(testfile);
-
-    /* jxta_PA_print_xml(ad,fprintf,stdout); */
-    jxta_PA_delete(ad);
-
-    return 0;
-}
-#endif
-
-
 
 #ifdef __cplusplus
 }

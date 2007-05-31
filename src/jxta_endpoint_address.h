@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_address.h,v 1.6 2005/02/08 01:04:46 bondolo Exp $
+ * $Id: jxta_endpoint_address.h,v 1.9 2005/04/07 05:05:30 bondolo Exp $
  */
 
 
@@ -59,28 +59,24 @@
 #define JXTA_ENDPOINT_ADDRESS_H
 
 #include "jxta_object.h"
+#include "jstring.h"
 
 /* #include "jxta_types.h" */
 
 
 #ifdef __cplusplus
 extern "C" {
-
-    /* avoid confusing indenters */
 #if 0
 }
 #endif
 #endif
-
 /**
  ** Jxta_endpoint_address is the incomplete type refering to an object
  ** containing a JXTA Endpoint Address.
  **
  ** This is a Jxta_object: JXTA_OBJECT_SHARE and JXTA_OBJECT_RELEASE
  ** must be used when necessary.
- **/
-
-typedef struct _jxta_endpoint_address   Jxta_endpoint_address;
+ **/ typedef struct _jxta_endpoint_address Jxta_endpoint_address;
 
 
 /**
@@ -93,7 +89,19 @@ typedef struct _jxta_endpoint_address   Jxta_endpoint_address;
  ** @return an Jxta_endpoint_address* pointing to the new Jxta_endpoint_addres.
  ** NULL is returned when the URI was incorrect.
  **/
-Jxta_endpoint_address* jxta_endpoint_address_new (const char *s);
+Jxta_endpoint_address *jxta_endpoint_address_new(const char *s);
+
+/**
+ ** Creates a new Jxta_endpoint_address of a URI.
+ ** Note that the string which is passed as argument is copied by this
+ ** function. The newly created Jxta_endpoint_address is created already
+ ** shared.
+ **
+ ** @param s a pointer to a JString taht contains the URI
+ ** @return an Jxta_endpoint_address* pointing to the new Jxta_endpoint_addres.
+ ** NULL is returned when the URI was incorrect.
+ **/
+Jxta_endpoint_address *jxta_endpoint_address_new1(JString * s);
 
 /**
  ** Creates a new Jxta_endpoint_address.
@@ -105,13 +113,12 @@ Jxta_endpoint_address* jxta_endpoint_address_new (const char *s);
  ** @param protocol_address address.
  ** @param service_name name of the service
  ** @param service_param parameter of the service
- ** @return an Jxta_endpoint_address* pointing to the new Jxta_endpoint_addres.
+ ** @return an Jxta_endpoint_address* pointing to the new Jxta_endpoint_address.
  ** NULL is returned when the URI was incorrect.
  **/
-Jxta_endpoint_address* jxta_endpoint_address_new2 (const char *protocol_name,
-						   const char *protocol_address,
-						   const char *service_name,
-						   const char *service_params);
+Jxta_endpoint_address *jxta_endpoint_address_new2(const char *protocol_name,
+                                                  const char *protocol_address,
+                                                  const char *service_name, const char *service_params);
 
 /**
  ** Get the protocol name.
@@ -123,7 +130,7 @@ Jxta_endpoint_address* jxta_endpoint_address_new2 (const char *protocol_name,
  ** @param addr pointer to a Jxta_endpoint_address.
  ** @returns a pointer to a string containing the protocol name.
  **/
-const char* jxta_endpoint_address_get_protocol_name    (const  Jxta_endpoint_address *addr);
+const char *jxta_endpoint_address_get_protocol_name(const Jxta_endpoint_address * addr);
 
 /**
  ** Get the address.
@@ -135,7 +142,7 @@ const char* jxta_endpoint_address_get_protocol_name    (const  Jxta_endpoint_add
  ** @param addr pointer to a Jxta_endpoint_address.
  ** @returns a pointer to a string containing the protocol address.
  **/
-const char* jxta_endpoint_address_get_protocol_address (const Jxta_endpoint_address *addr);
+const char *jxta_endpoint_address_get_protocol_address(const Jxta_endpoint_address * addr);
 
 /**
  ** Get the service name
@@ -145,9 +152,9 @@ const char* jxta_endpoint_address_get_protocol_address (const Jxta_endpoint_addr
  ** is valid.
  **
  ** @param addr pointer to a Jxta_endpoint_address.
- ** @returns a pointer to a string containing the name of the service.
+ ** @returns a pointer to a string containing the name of the service or NULL
  **/
-const char* jxta_endpoint_address_get_service_name     (const  Jxta_endpoint_address *addr);
+const char *jxta_endpoint_address_get_service_name(const Jxta_endpoint_address * addr);
 
 /**
  ** Get the service parameter
@@ -157,17 +164,17 @@ const char* jxta_endpoint_address_get_service_name     (const  Jxta_endpoint_add
  ** is valid.
  **
  ** @param addr pointer to a Jxta_endpoint_address.
- ** @returns a pointer to a string containing the service parameter
+ ** @returns a pointer to a string containing the service parameter or NULL
  **/
-const char* jxta_endpoint_address_get_service_params   (const  Jxta_endpoint_address *addr);
+const char *jxta_endpoint_address_get_service_params(const Jxta_endpoint_address * addr);
 
 /**
- ** Returns the size of the endpoint address
+ ** Returns the length of the endpoint address expressed as a UTF-8 URI string
  ** 
  ** @param addr pointer to a Jxta_endpoint_address.
- ** @returns the size of the Jxta_endpoint_address.
+ ** @returns the length of the Jxta_endpoint_address.
  **/
-int jxta_endpoint_address_size (const  Jxta_endpoint_address *addr);
+size_t jxta_endpoint_address_size(const Jxta_endpoint_address * addr);
 
 /**
  ** Returns a newly created null terminated string that contains the URI
@@ -177,21 +184,22 @@ int jxta_endpoint_address_size (const  Jxta_endpoint_address *addr);
  ** @param addr pointer to a Jxta_endpoint_address.
  ** @returns a pointer to a string containing the URI.
  **/
-char *jxta_endpoint_address_to_string            (const Jxta_endpoint_address *addr);
-
+char *jxta_endpoint_address_to_string(const Jxta_endpoint_address * addr);
 
 /**
  ** Checks of two Jxta_endpoint_address refers to the same Endpoint Address.
  **
  ** @param addr1 pointer to a Jxta_endpoint_address
  ** @param addr2 pointer to a Jxta_endpoint_address
- ** @return a boolean. TRUE if the two Jxta_endpoint_address are equal, FALSE otherwise.
+ ** @return TRUE if the two Jxta_endpoint_address are equal, FALSE otherwise.
  **/
-Jxta_boolean jxta_endpoint_address_equals        (const Jxta_endpoint_address* addr1,
-						  const Jxta_endpoint_address* addr2);
+Jxta_boolean jxta_endpoint_address_equals(const Jxta_endpoint_address * addr1, const Jxta_endpoint_address * addr2);
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 

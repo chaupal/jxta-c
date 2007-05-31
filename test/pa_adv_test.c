@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: pa_adv_test.c,v 1.17 2004/05/16 06:37:03 tra Exp $
+ * $Id: pa_adv_test.c,v 1.19 2005/04/07 22:58:55 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -66,7 +66,7 @@
 #include <jxta_id.h>
 #include <jxta_routea.h>
 
-boolean
+Jxta_boolean
 pa_test(int argc, char **argv)
 {
    Jxta_vector* services;
@@ -195,10 +195,10 @@ pa_test(int argc, char **argv)
 
 int
 main (int argc, char **argv) {
-#ifdef WIN32 
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize();
-#endif
-    return pa_test(argc,argv);
+    int rv;
+
+    jxta_initialize();
+    rv = pa_test(argc,argv);
+    jxta_terminate();
+    return rv;
 }

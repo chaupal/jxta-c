@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bytevector_test.c,v 1.6 2004/01/19 22:33:40 wiarda Exp $
+ * $Id: jxta_bytevector_test.c,v 1.7 2005/03/22 16:23:46 bondolo Exp $
  */
 
 #include <stdlib.h>
@@ -69,7 +69,7 @@
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_bytevector_new_0(void) {
   Jxta_bytevector *jbv = jxta_bytevector_new_0();
   JString *js;
@@ -101,7 +101,7 @@ test_bytevector_new_0(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_bytevector_new_1(void) {
   Jxta_bytevector *jbv = jxta_bytevector_new_1(100);
   JString *js;
@@ -134,7 +134,7 @@ test_bytevector_new_1(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_bytevector_new_2(void) {
   unsigned char * source;
   size_t size = 3;
@@ -213,7 +213,7 @@ Jxta_bytevector * get_jxta_bytevector_object(const char * buffer){
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_bytevector_clear(void) {
   Jxta_bytevector *jbv;
   JString *js;
@@ -248,7 +248,7 @@ test_bytevector_clear(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_bytevector_add_byte_at(void) {
   Jxta_bytevector *jbv;
   JString *js;
@@ -305,7 +305,7 @@ test_bytevector_add_byte_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_bytevector_add_byte_first(void) {
   Jxta_bytevector *jbv;
   JString *js;
@@ -343,7 +343,7 @@ test_bytevector_add_byte_first(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_bytevector_add_byte_last(void) {
   Jxta_bytevector *jbv;
   JString *js;
@@ -381,7 +381,7 @@ test_bytevector_add_byte_last(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_bytevector_add_bytes_at(void) {
   Jxta_bytevector *jbv;
   JString *js;
@@ -444,7 +444,7 @@ test_bytevector_add_bytes_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_bytevector_add_bytevector_at(void) {
   Jxta_bytevector *jbv,*inset;
   JString *js;
@@ -517,7 +517,7 @@ test_bytevector_add_bytevector_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_bytevector_add_partial_bytevector_at(void) {
   Jxta_bytevector *jbv,*inset;
   JString *js;
@@ -590,7 +590,7 @@ test_bytevector_add_partial_bytevector_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_bytevector_add_from_stream_at(void) {
   static const unsigned char * source = "abcd";
   Jxta_bytevector *jbv;
@@ -657,7 +657,7 @@ test_bytevector_add_from_stream_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_bytevector_get_byte_at(void) {
   Jxta_bytevector *jbv;
   Jxta_status status;
@@ -698,7 +698,7 @@ test_bytevector_get_byte_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_bytevector_get_bytes_at(void) {
   Jxta_bytevector *jbv;
   Jxta_status status;
@@ -752,7 +752,7 @@ test_bytevector_get_bytes_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_bytevector_get_bytevector_at(void) {
   Jxta_bytevector *jbv;
   Jxta_bytevector *dest;
@@ -839,7 +839,7 @@ test_bytevector_get_bytevector_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_bytevector_write(void) {
   Jxta_bytevector *jbv;
   char buffer[100];
@@ -903,7 +903,7 @@ test_bytevector_write(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_bytevector_remove_byte_at(void) {
   Jxta_bytevector *jbv;
   JString *js;
@@ -965,7 +965,7 @@ test_bytevector_remove_byte_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_bytevector_remove_bytes_at(void) {
   Jxta_bytevector *jbv;
   JString *js;
@@ -1026,7 +1026,7 @@ test_bytevector_remove_bytes_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_bytevector_size(void) {
   Jxta_bytevector *jbv;
   
@@ -1060,7 +1060,7 @@ test_bytevector_size(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_bytevector_equals(void) {
   Jxta_bytevector *jb1;
   Jxta_bytevector *jb2;

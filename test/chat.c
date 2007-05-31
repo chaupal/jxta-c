@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: chat.c,v 1.26 2002/04/11 22:38:52 bondolo Exp $
+ * $Id: chat.c,v 1.28 2005/04/07 22:58:52 slowhog Exp $
  */
 
 
@@ -261,7 +261,7 @@ process_user_input (Jxta_outputpipe* pipe, char* userName) {
 }
 
 
-boolean 
+Jxta_boolean 
 chat_run (int argc, char **argv) {
 
   Jxta_pipe_service * pipe_service = NULL;
@@ -392,9 +392,12 @@ chat_run (int argc, char **argv) {
 #ifdef STANDALONE
 int
 main (int argc, char **argv) {
+    int r;
 
-  apr_initialize();
-  return (int)chat_run(argc, argv);
+    jxta_initialize();
+    r = (int)chat_run(argc, argv);
+    jxta_terminate();
+    return r;
 }
 #endif
 

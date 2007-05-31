@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_module_private.h,v 1.18 2005/02/02 00:30:10 bondolo Exp $
+ * $Id: jxta_module_private.h,v 1.19 2005/03/25 23:39:44 bondolo Exp $
  */
 
 #ifndef JXTA_MODULE_PRIVATE_H
@@ -96,7 +96,7 @@ extern "C" {
     void (*init_e) (Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv, Throws);
 
     /* An implementation of Jxta_module_start */
-     Jxta_status(*start) (Jxta_module * self, char *args[]);
+     Jxta_status(*start) (Jxta_module * self, const char *args[]);
 
     /* An implementation of Jxta_module_stop */
     void (*stop) (Jxta_module * self);
@@ -128,7 +128,7 @@ typedef struct _jxta_module _jxta_module;
  * @param methods The module's set of methods.
  * @return the constructed object or NULL if the construction failed.
  */
-extern _jxta_module *jxta_module_construct(_jxta_module * self, Jxta_module_methods * methods);
+extern _jxta_module *jxta_module_construct(_jxta_module * self, Jxta_module_methods const * methods);
 
 /**
  * The base class dtor (Not public, not virtual. Only called by subclassers).

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdvclient_test.c,v 1.18 2004/06/10 00:56:38 tra Exp $
+ * $Id: jxta_rdvclient_test.c,v 1.20 2005/04/07 22:58:54 slowhog Exp $
  */
 
 
@@ -69,14 +69,14 @@
 #define WAIT_TIME (15 * 60 * 1000 * 1000) /* 15 minutes */
 
 
-boolean display_peers (Jxta_rdv_service* rdv) {
+Jxta_boolean display_peers (Jxta_rdv_service* rdv) {
 
   Jxta_peer* peer = NULL;
   Jxta_id* pid = NULL;
   Jxta_PA*      adv = NULL;
   JString*  string = NULL;
   Jxta_time expires = 0;
-  boolean connected = FALSE;
+  Jxta_boolean connected = FALSE;
   Jxta_status err;
   Jxta_vector* peers = NULL;
   Jxta_time currentTime;
@@ -162,7 +162,7 @@ boolean display_peers (Jxta_rdv_service* rdv) {
   return TRUE;
 }
 
-boolean 
+Jxta_boolean 
 jxta_rdv_service_client_test(int argc, char** argv) {
 
   Jxta_rdv_service* rdv;
@@ -211,10 +211,13 @@ jxta_rdv_service_client_test(int argc, char** argv) {
 #ifdef STANDALONE
 int
 main (int argc, char **argv) {
+    int rv;
 
   printf("STARTING TEST\n");
-  apr_initialize();
-  return (int)jxta_rdv_service_client_test(argc, argv);
+  jxta_initialize();
+  rv = (int)jxta_rdv_service_client_test(argc, argv);
+  jxta_terminate();
+  return rv;
 }
 #endif
 

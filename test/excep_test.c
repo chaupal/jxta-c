@@ -218,11 +218,7 @@ int main(int argc, char*argv[]) {
   int i;
   Jxta_boolean result;
 
-#ifdef WIN32 
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize();
-#endif
+    jxta_initialize();
 
     run = failed = passed = 0;
     result = run_excep_tests(&run, &passed, & failed);
@@ -235,6 +231,7 @@ int main(int argc, char*argv[]) {
 
     if( result == TRUE) run = 0;
     else                run = -1;
+    jxta_terminate();
     return run;
 }
 #endif

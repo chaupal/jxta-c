@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: groups.c,v 1.5 2005/01/28 23:43:14 bondolo Exp $
+ * $Id: groups.c,v 1.6 2005/03/22 03:49:58 bondolo Exp $
  */
 
 #include <stdio.h>
@@ -100,9 +100,9 @@ void jxta_groups_start(Jxta_object * appl, int argv, char **arg)
     JString *pid = jstring_new_0();
     JString *attr = jstring_new_0();
     JString *value = jstring_new_0();
-    boolean rf = FALSE;
-    boolean pf = FALSE;
-    boolean ff = FALSE;
+    Jxta_boolean rf = FALSE;
+    Jxta_boolean pf = FALSE;
+    Jxta_boolean ff = FALSE;
     Jxta_discovery_service *discovery;
     long qid = -1;
     long responses = 10;

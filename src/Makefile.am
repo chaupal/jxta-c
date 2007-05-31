@@ -82,7 +82,8 @@ include_HEADERS = EndpointRouter.h          \
                   trailing_average.h		\
 		  jxta_log.h			\
 		  jxta_bidipipe.h		\
-		  jxta_socket_tunnel.h
+		  jxta_socket_tunnel.h \
+		  jxta_rdv_config_adv.h
 
 
 libjxta_la_SOURCES = jstring.c                      \
@@ -192,4 +193,5 @@ libjxta_la_SOURCES = jstring.c                      \
 		     jxta_log_priv.h			  \
 		     jxta_log.c				\
 		     jxta_bidipipe.c			\
-		     jxta_socket_tunnel.c
+		     jxta_socket_tunnel.c		\
+		     jxta_rdv_config_adv.c

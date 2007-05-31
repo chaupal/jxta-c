@@ -50,17 +50,17 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: dr_adv_test.c,v 1.15 2005/01/12 20:52:37 bondolo Exp $
+ * $Id: dr_adv_test.c,v 1.16 2005/03/22 16:23:45 bondolo Exp $
  */
  
 #include <stdio.h>
 #include "jxta_dr.h"
 #include "jxta_pa.h"
 
-boolean
+Jxta_boolean
 dr_type_test(Jxta_DiscoveryResponse * ad, short truetype) {
 
-    boolean passed = TRUE;
+    Jxta_boolean passed = TRUE;
 
     short type = jxta_discovery_response_get_type(ad);
     if (type == truetype) {
@@ -73,10 +73,10 @@ dr_type_test(Jxta_DiscoveryResponse * ad, short truetype) {
     return passed;
 }
 
-boolean
+Jxta_boolean
 dr_count_test(Jxta_DiscoveryResponse * ad, int truecount) {
 
-    boolean passed = TRUE;
+    Jxta_boolean passed = TRUE;
 
     int count = jxta_discovery_response_get_count(ad);
     if (count == truecount) {
@@ -89,11 +89,11 @@ dr_count_test(Jxta_DiscoveryResponse * ad, int truecount) {
     return passed;
 }
 
-boolean
+Jxta_boolean
 dr_response_test(Jxta_DiscoveryResponse * ad) {
     int count = jxta_discovery_response_get_count(ad);
     int i = 0;
-    boolean passed = FALSE;
+    Jxta_boolean passed = FALSE;
     Jxta_vector * responses = NULL;
     Jxta_vector * advertisements = NULL;
     Jxta_advertisement * adv = NULL;
@@ -123,10 +123,10 @@ dr_response_test(Jxta_DiscoveryResponse * ad) {
 }
 
 
-boolean
+Jxta_boolean
 dr_pa_test(Jxta_DiscoveryResponse * ad) {
 
-    boolean passed = TRUE;
+    Jxta_boolean passed = TRUE;
     Jxta_PA * pa = jxta_PA_new();
     Jxta_advertisement *padv = jxta_advertisement_new();
     JString * js = jstring_new_0();
@@ -142,7 +142,7 @@ dr_pa_test(Jxta_DiscoveryResponse * ad) {
 
 
 
-boolean
+Jxta_boolean
 dr_adv_test(int argc, char ** argv) {
 
     Jxta_DiscoveryResponse * ad = jxta_discovery_response_new();

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: unit_test_runner.c,v 1.3 2004/01/21 13:48:13 wiarda Exp $
+ * $Id: unit_test_runner.c,v 1.4 2005/04/07 22:58:57 slowhog Exp $
  */
 
 
@@ -205,11 +205,7 @@ main(int argc, char ** argv) {
   
   run = failed = passed = 0;
 
-#ifdef WIN32 
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize();
-#endif
+    jxta_initialize();
  
     while (testfunc[i].test != NULL) {
       fprintf(stdout,"=========== %s ============\n",testfunc[i].states);
@@ -229,5 +225,7 @@ main(int argc, char ** argv) {
 
   if( result == TRUE)  i = 0;
   else                 i = -1;
+
+  jxta_terminate();
   return i;
 }

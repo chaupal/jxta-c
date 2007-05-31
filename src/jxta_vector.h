@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_vector.h,v 1.3 2005/02/07 17:36:41 bondolo Exp $
+ * $Id: jxta_vector.h,v 1.4 2005/04/07 01:32:52 bondolo Exp $
  */
 
 
@@ -73,8 +73,6 @@
 
 #ifdef __cplusplus
 extern "C" {
-
-    /* avoid confusing indenters */
 #if 0
 }
 #endif
@@ -98,7 +96,7 @@ extern "C" {
  ** @return a new vector, or NULL if allocation failed.
  *************************************************************************/
 
-Jxta_vector *jxta_vector_new(int initialSize);
+Jxta_vector *jxta_vector_new(unsigned int initialSize);
 
 
 /************************************************************************
@@ -114,7 +112,7 @@ Jxta_vector *jxta_vector_new(int initialSize);
  ** otherwise.
  *************************************************************************/
 
-Jxta_status jxta_vector_add_object_at(Jxta_vector * vector, Jxta_object * object, int index);
+Jxta_status jxta_vector_add_object_at(Jxta_vector * vector, Jxta_object * object, unsigned int index);
 
 
 
@@ -160,7 +158,7 @@ Jxta_status jxta_vector_add_object_last(Jxta_vector * vector, Jxta_object * obje
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status jxta_vector_get_object_at(Jxta_vector * vector, Jxta_object ** objectPt, int index);
+Jxta_status jxta_vector_get_object_at(Jxta_vector * vector, Jxta_object ** objectPt, unsigned int index);
 
 
 /************************************************************************
@@ -180,7 +178,7 @@ Jxta_status jxta_vector_get_object_at(Jxta_vector * vector, Jxta_object ** objec
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status jxta_vector_remove_object_at(Jxta_vector * vector, Jxta_object ** objectPt, int index);
+Jxta_status jxta_vector_remove_object_at(Jxta_vector * vector, Jxta_object ** objectPt, unsigned int index);
 
 
 /************************************************************************
@@ -189,7 +187,7 @@ Jxta_status jxta_vector_remove_object_at(Jxta_vector * vector, Jxta_object ** ob
  ** @param vector a pointer to the vector to use.
  ** @return the number of objects in the vector.
  *************************************************************************/
-int jxta_vector_size(Jxta_vector * vector);
+unsigned int jxta_vector_size(Jxta_vector * vector);
 
 
 /************************************************************************
@@ -210,7 +208,7 @@ int jxta_vector_size(Jxta_vector * vector);
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status jxta_vector_clone(Jxta_vector * source, Jxta_vector ** dest, int index, int length);
+Jxta_status jxta_vector_clone(Jxta_vector * source, Jxta_vector ** dest, unsigned int index, unsigned int length);
 
 
 /*************************************************************************
@@ -236,7 +234,11 @@ Jxta_status jxta_vector_clear(Jxta_vector * vector);
  ************************************************************************/
 Jxta_status jxta_vector_qsort(Jxta_vector * vector, Jxta_object_compare_func * func);
 
+
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 

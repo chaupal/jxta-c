@@ -50,31 +50,27 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rq_adv_test.c,v 1.10 2003/12/18 19:37:50 wiarda Exp $
+ * $Id: rq_adv_test.c,v 1.12 2005/04/07 22:58:56 slowhog Exp $
  */
 
 #include <stdio.h>
 #include "jxta_rq.h"
 #include "jstring.h"
 
-boolean
+Jxta_boolean
 rq_test(int argc, char ** argv) {
 
    ResolverQuery * ad;
    FILE *testfile;
    JString * doc;
 
-#ifdef WIN32 
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize();
-#endif
-
    if(argc != 2)
      {
        printf("usage: ad <filename>\n");
        return -1;
      }
+
+    jxta_initialize();
 
    ad = jxta_resolver_query_new();
 
@@ -87,6 +83,7 @@ rq_test(int argc, char ** argv) {
    jxta_resolver_query_free(ad);
    JXTA_OBJECT_RELEASE(doc);
 
+   jxta_terminate();
    return 0;
 }
 

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peerinfo_service_ref.c,v 1.8 2005/01/29 19:13:42 bondolo Exp $
+ * $Id: jxta_peerinfo_service_ref.c,v 1.10 2005/03/25 02:32:02 hamada Exp $
  */
 
 
@@ -73,7 +73,7 @@ typedef struct {
 
     Extends(Jxta_peerinfo_service);
     JString *instanceName;
-    boolean running;
+    Jxta_boolean running;
     Jxta_PG *group;
     Jxta_resolver_service *resolver;
     Jxta_hashtable *listeners;
@@ -114,16 +114,16 @@ jxta_peerinfo_service_ref_init(Jxta_module * peerinfo, Jxta_PG * group, Jxta_id 
     apr_pool_create(&self->pool, NULL);
 
     /* store a copy of our assigned id */
-    if (assigned_id != 0) {
+    if (assigned_id != NULL) {
         JXTA_OBJECT_SHARE(assigned_id);
         self->assigned_id = assigned_id;
     }
 
-    /* keep a reference to our group and impl adv */
-    if (group != 0)
-        JXTA_OBJECT_SHARE(group);
-    if (impl_adv != 0)
+    /* keep a reference to our impl adv */
+
+    if (impl_adv != NULL) {
         JXTA_OBJECT_SHARE(impl_adv);
+    }
     self->group = group;
     self->impl_adv = impl_adv;
 
@@ -288,20 +288,27 @@ void jxta_peerinfo_service_ref_destruct(Jxta_peerinfo_service_ref * self)
 
     /* release/free/destroy our own stuff */
 
-    if (self->resolver != 0)
+    if (self->resolver != NULL) {
         JXTA_OBJECT_RELEASE(self->resolver);
-    if (self->localPeerId != 0)
+    }
+    if (self->localPeerId != NULL) {
         JXTA_OBJECT_RELEASE(self->localPeerId);
-    if (self->instanceName != 0)
+    }
+    if (self->instanceName != NULL) {
         JXTA_OBJECT_RELEASE(self->instanceName);
-    if (self->group != 0)
-        JXTA_OBJECT_RELEASE(self->group);
-    if (self->impl_adv != 0)
+    }
+
+    self->group = NULL;
+
+    if (self->impl_adv != NULL) {
         JXTA_OBJECT_RELEASE(self->impl_adv);
-    if (self->assigned_id != 0)
+    }
+    if (self->assigned_id != NULL) {
         JXTA_OBJECT_RELEASE(self->assigned_id);
-    if (self->pool != 0)
+    }
+    if (self->pool != NULL) {
         apr_pool_destroy(self->pool);
+    }
 
     /* call the base classe's dtor. */
     jxta_peerinfo_service_destruct((Jxta_peerinfo_service *) self);

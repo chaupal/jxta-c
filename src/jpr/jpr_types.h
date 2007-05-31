@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_types.h,v 1.4 2005/01/31 19:48:47 slowhog Exp $
+ * $Id: jpr_types.h,v 1.6 2005/03/30 20:00:05 bondolo Exp $
  */
 
 #ifndef JPR_TYPES_H
@@ -70,6 +70,8 @@ extern "C" {
 }
 #endif
 #endif
+
+
 #if !defined(FALSE) && !defined(TRUE)
 enum Jxta_booleans { FALSE = 0, TRUE = !FALSE };
 typedef enum Jxta_booleans Jpr_boolean;
@@ -83,7 +85,15 @@ typedef unsigned int Jpr_boolean;
  * since we can't include apr.
  */
 typedef unsigned long Jpr_status;
+
+/**
+    @deprecated Unused
+**/
 typedef int Jpr_ssize;
+
+/**
+    @deprecated Unused
+**/
 typedef unsigned int Jpr_uint;
 typedef unsigned short Jpr_port;
 typedef unsigned long Jpr_in_addr;
@@ -100,6 +110,11 @@ typedef unsigned long long Jpr_absolute_time;
 #endif
 
 typedef Jpr_interval_time Jpr_expiration_time;  /* duration expressed in milliseconds */
+
+extern const Jpr_interval_time JPR_INTERVAL_ONE_SECOND;
+extern const Jpr_interval_time JPR_INTERVAL_TIME_MAX;
+extern const Jpr_interval_time JPR_INTERVAL_TIME_MIN1;
+extern const Jpr_absolute_time JPR_ABSOLUTE_TIME_MAX;
 
 /*
  * Some opaque types that stand for the corresponding apr

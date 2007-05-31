@@ -1,5 +1,6 @@
-/* 
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights reserved.
+/*
+ * Copyright (c) 2005 Sun Microsystems, Inc.  All rights
+ * reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,7 +30,7 @@
  *    nor may "JXTA" appear in their name, without prior written
  *    permission of Sun.
  *
- * THIS SOFTWARE IS PROVIDED AS IS'' AND ANY EXPRESSED OR IMPLIED
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
  * DISCLAIMED.  IN NO EVENT SHALL SUN MICROSYSTEMS OR
@@ -50,54 +51,63 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta.c,v 1.6 2005/04/07 22:35:05 slowhog Exp $
+ * $Id: jpr.c,v 1.1 2005/03/24 19:40:21 slowhog Exp $
  */
 
 #include <apr_general.h>
-#include "jpr/jpr_core.h"
-#include "jxta_log.h"
+#include <apr_pools.h>
 
-/**
- * Briefly, touching jxta jxta touches apr, which requires a call
- * to apr_initialize() and apr_terminate().  
- */
+#include "jpr_core.h"
+#include "jpr_priv.h"
 
-static unsigned int _jxta_initialized = 0;
+apr_pool_t *_jpr_global_pool = NULL;
+static unsigned int _jpr_initialized = 0;
 
-/**
- * @todo Add initialization code.
- */
-void jxta_initialize(void)
+Jpr_status jpr_initialize(void)
 {
-    if (_jxta_initialized) {
-        _jxta_initialized++;
-        return;
+    apr_status_t rv;
+
+    if (_jpr_initialized) {
+        _jpr_initialized++;
+        return APR_SUCCESS;
     }
 
-    apr_initialize();
-    jpr_initialize();
-    jxta_log_initialize();
-    jxta_PG_module_initialize();
+    rv = apr_initialize();
+    if (APR_SUCCESS == rv) {
+        rv = apr_pool_create(&_jpr_global_pool, NULL);
+    }
+
+    if (APR_SUCCESS == rv) {
+        rv = jpr_excep_initialize();
+    }
+
+    if (APR_SUCCESS == rv) {
+        rv = jpr_thread_delay_initialize();
+    }
+
+    if (APR_SUCCESS != rv) {
+        _jpr_initialized = 0;
+    }
+
+    return rv;
 }
 
-
-/**
- * @todo Add termination code.
- */
-void jxta_terminate(void)
+void jpr_terminate(void)
 {
-    if (!_jxta_initialized) {
+    if (!_jpr_initialized) {
         return;
     }
 
-    _jxta_initialized--;
-    if (_jxta_initialized) {
+    _jpr_initialized--;
+    if (_jpr_initialized) {
         return;
     }
 
-    jxta_PG_module_terminate();
-    jxta_log_terminate();
-    jpr_terminate();
+    jpr_thread_delay_terminate();
+    jpr_excep_terminate();
+
+    apr_pool_destroy(_jpr_global_pool);
+    _jpr_global_pool = NULL;
     apr_terminate();
 }
 

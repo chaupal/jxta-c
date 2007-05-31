@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: peers.c,v 1.9 2002/03/21 19:10:10 hamada Exp $
+ * $Id: peers.c,v 1.11 2005/04/07 22:58:55 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -86,8 +86,8 @@ int main(int argc, char *argv[])
 	Jxta_status status;
 	Jxta_endpoint_address* addr = NULL;
 	int c;
-	boolean rf=FALSE;
-	boolean pf=FALSE;
+	Jxta_boolean rf=FALSE;
+	Jxta_boolean pf=FALSE;
 	JString * pid = jstring_new_0();
 	JString * attr= jstring_new_0();
 	JString * value= jstring_new_0();
@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
 	}
 
 
-	apr_initialize();
+	jxta_initialize();
 	status = jxta_PG_new_netpg(&pg);
 	if (status != JXTA_SUCCESS) {
 		fprintf(stderr,"peers: jxta_PG_netpg_new failed with error: %ld\n", status);
@@ -157,5 +157,7 @@ int main(int argc, char *argv[])
 	if (pid)   JXTA_OBJECT_RELEASE(pid);
 	if (attr)  JXTA_OBJECT_RELEASE(attr);
 	if (value) JXTA_OBJECT_RELEASE(value);
+
+	jxta_terminate();
 	return 0;
 }

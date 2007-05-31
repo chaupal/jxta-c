@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jstring.c,v 1.56 2005/02/10 00:05:39 bondolo Exp $
+ * $Id: jstring.c,v 1.58 2005/03/29 20:10:44 bondolo Exp $
  */
 
 
@@ -169,7 +169,6 @@ static void deleteCharBuf(char *buf, size_t size)
 
 JString *jstring_new_0()
 {
-
     return jstring_new_1(DEFAULTBUFSIZE);
 }
 
@@ -182,17 +181,10 @@ JString *jstring_new_1(size_t bufsize)
     if (bufsize <= 0)
         bufsize = DEFAULTBUFSIZE;
 
-    js = (JString *) malloc(sizeof(JString));
+    js = (JString *) calloc(1, sizeof(JString));
 
     if (NULL == js)
         return NULL;
-    /*
-       memset(js,0xda,sizeof(JString));
-     */
-    /* Proposed change: */
-
-    memset(js, 0x0, sizeof(JString));
-
 
     JXTA_OBJECT_INIT(js, jstring_delete, 0);
 
@@ -277,7 +269,7 @@ JString *jstring_clone(JString const *origstring)
 void jstring_trim(JString * js)
 {
 
-    Jpr_uint len = js->length;
+    size_t len = js->length;
     int st = 0;
     char *val = js->string;
     /* strip out leading white-space */

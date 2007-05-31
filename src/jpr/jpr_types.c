@@ -1,5 +1,5 @@
-/* 
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights reserved.
+/*
+ * Copyright (c) 2005 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,7 +29,7 @@
  *    nor may "JXTA" appear in their name, without prior written
  *    permission of Sun.
  *
- * THIS SOFTWARE IS PROVIDED AS IS'' AND ANY EXPRESSED OR IMPLIED
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
  * DISCLAIMED.  IN NO EVENT SHALL SUN MICROSYSTEMS OR
@@ -50,55 +50,21 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta.c,v 1.6 2005/04/07 22:35:05 slowhog Exp $
+ * $Id: jpr_types.c,v 1.2 2005/03/30 20:00:05 bondolo Exp $
  */
 
-#include <apr_general.h>
-#include "jpr/jpr_core.h"
-#include "jxta_log.h"
+#include "jpr_types.h"
 
-/**
- * Briefly, touching jxta jxta touches apr, which requires a call
- * to apr_initialize() and apr_terminate().  
- */
+#include <limits.h>
 
-static unsigned int _jxta_initialized = 0;
+const Jpr_interval_time JPR_INTERVAL_ONE_SECOND = (Jpr_interval_time) 1000;
 
-/**
- * @todo Add initialization code.
- */
-void jxta_initialize(void)
-{
-    if (_jxta_initialized) {
-        _jxta_initialized++;
-        return;
-    }
-
-    apr_initialize();
-    jpr_initialize();
-    jxta_log_initialize();
-    jxta_PG_module_initialize();
-}
-
-
-/**
- * @todo Add termination code.
- */
-void jxta_terminate(void)
-{
-    if (!_jxta_initialized) {
-        return;
-    }
-
-    _jxta_initialized--;
-    if (_jxta_initialized) {
-        return;
-    }
-
-    jxta_PG_module_terminate();
-    jxta_log_terminate();
-    jpr_terminate();
-    apr_terminate();
-}
-
-/* vim: set ts=4 sw=4 tw=130 et: */
+#ifdef WIN32
+    const Jpr_interval_time JPR_INTERVAL_TIME_MAX = ((__int64) 1) << 63;
+    const Jpr_interval_time JPR_INTERVAL_TIME_MIN = -(((__int64) 1) << 63) - 1;
+    const Jpr_absolute_time JPR_ABSOLUTE_TIME_MAX = ((__int64) 0) - 1; /* intentional underflow */
+#else
+    const Jpr_interval_time JPR_INTERVAL_TIME_MAX = ((Jpr_interval_time) 1) << (sizeof(Jpr_interval_time) * CHAR_BIT - ((Jpr_interval_time) 1));
+    const Jpr_interval_time JPR_INTERVAL_TIME_MIN = -(((Jpr_interval_time) 1) << (sizeof(Jpr_interval_time) * CHAR_BIT - 1)) - ((Jpr_interval_time) 1);
+    const Jpr_absolute_time JPR_ABSOLUTE_TIME_MAX = ((Jpr_absolute_time) 0) - 1; /* intentional underflow */
+#endif

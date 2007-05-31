@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_piperesolver_impl.c,v 1.17 2005/02/16 19:37:33 slowhog Exp $
+ * $Id: jxta_piperesolver_impl.c,v 1.19 2005/03/26 00:32:03 bondolo Exp $
  */
 
 #include <limits.h>
@@ -114,7 +114,7 @@ struct _jxta_pipe_resolver_event {
 #define CLOSE_PIPE 0
 static Jxta_status pending_request_add(Pipe_resolver *, Pending_request *);
 static Jxta_status pending_request_remove(Pipe_resolver *, Pending_request *);
-static Pending_request *pending_request_new(Jxta_pipe_adv *, Jxta_time, Jxta_peer *, Jxta_listener *);
+static Pending_request *pending_request_new(Jxta_pipe_adv *, Jxta_time_diff, Jxta_peer *, Jxta_listener *);
 static void query_listener(Jxta_object * obj, void *arg);
 static void response_listener(Jxta_object * obj, void *arg);
 static Jxta_status send_query(Pipe_resolver * self, Jxta_pipe_adv * adv, Jxta_peer * peer);
@@ -129,7 +129,7 @@ static Jxta_status local_resolve(Jxta_pipe_resolver * self, Jxta_pipe_adv * adv,
 
 
 static Jxta_status
-remote_resolve(Jxta_pipe_resolver * obj, Jxta_pipe_adv * adv, Jxta_time timeout, Jxta_peer * dest, Jxta_listener * listener)
+remote_resolve(Jxta_pipe_resolver * obj, Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_peer * dest, Jxta_listener * listener)
 {
 
     Pipe_resolver *self = (Pipe_resolver *) obj;
@@ -156,7 +156,7 @@ remote_resolve(Jxta_pipe_resolver * obj, Jxta_pipe_adv * adv, Jxta_time timeout,
 }
 
 static Jxta_status
-timed_remote_resolve(Jxta_pipe_resolver * obj, Jxta_pipe_adv * adv, Jxta_time timeout, Jxta_peer * dest, Jxta_vector ** peers)
+timed_remote_resolve(Jxta_pipe_resolver * obj, Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_peer * dest, Jxta_vector ** peers)
 {
 
     Pipe_resolver *self = (Pipe_resolver *) obj;
@@ -340,10 +340,7 @@ static void piperesolver_free(Jxta_object * obj)
         self->local_peerid = NULL;
     }
 
-    if (self->group != NULL) {
-        JXTA_OBJECT_RELEASE(self->group);
-        self->group = NULL;
-    }
+    self->group = NULL;
 
     if (self->pool != NULL) {
         apr_pool_destroy(self->pool);
@@ -390,7 +387,6 @@ Jxta_pipe_resolver *jxta_piperesolver_impl_new(Jxta_PG * group)
         return NULL;
     }
 
-    JXTA_OBJECT_SHARE(group);
     self->group = group;
 
     jxta_PG_get_resolver_service(self->group, &self->resolver);
@@ -564,7 +560,7 @@ static void pending_request_free(Jxta_object * obj)
     return;
 }
 
-static Pending_request *pending_request_new(Jxta_pipe_adv * adv, Jxta_time timeout, Jxta_peer * dest, Jxta_listener * listener)
+static Pending_request *pending_request_new(Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_peer * dest, Jxta_listener * listener)
 {
 
 

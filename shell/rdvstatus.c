@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rdvstatus.c,v 1.8 2004/12/05 02:16:44 slowhog Exp $
+ * $Id: rdvstatus.c,v 1.12 2005/04/07 02:38:27 bondolo Exp $
  */
 
 
@@ -59,19 +59,16 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "jxta.h"
-
 #include <apr_time.h>
 #include <apr_general.h>
 #include <apr_thread_proc.h>
 
 #include "jpr/jpr_thread.h"
-#include "jxta_peergroup.h"
 
 #include "jxta.h"
-#include "jxta_shell_application.h"
 #include "jxta_peergroup.h"
 
+#include "jxta_shell_application.h"
 #include "jxta_shell_getopt.h"
 #include "rdvstatus.h"
 
@@ -89,8 +86,8 @@ JxtaShellApplication * jxta_rdvstatus_new(Jxta_PG * pg,
 
     JxtaShellApplication *app  =
         JxtaShellApplication_new(pg,standout,env,parent,terminate);
-    if (app == 0) {
-        return 0;
+    if (app == NULL) {
+        return NULL;
     }
     JxtaShellApplication_setFunctions(app,
                                       (Jxta_object*)app,
@@ -108,14 +105,14 @@ void  jxta_rdvstatus_process_input(Jxta_object * appl,
     JxtaShellApplication_terminate(app);
 }
 
-boolean display_peers(Jxta_object * appl, Jxta_rdv_service* rdv) {
+Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service* rdv) {
     Jxta_boolean res = TRUE;
     Jxta_peer* peer = NULL;
     Jxta_id* pid = NULL;
     Jxta_PA*      adv = NULL;
     JString*  string = NULL;
     Jxta_time expires = 0;
-    boolean connected = FALSE;
+    Jxta_boolean connected = FALSE;
     Jxta_status err;
     Jxta_vector* peers = NULL;
     Jxta_time currentTime;
@@ -131,8 +128,8 @@ boolean display_peers(Jxta_object * appl, Jxta_rdv_service* rdv) {
         res = FALSE;
         goto Common_Exit;
     }
+    
     for (i = 0; i < jxta_vector_size(peers); ++i) {
-
         err = jxta_vector_get_object_at(peers,(Jxta_object**) &peer, i);
         if (err != JXTA_SUCCESS) {
             jstring_append_2(outputLine, "Failed getting a peer.\n");
@@ -143,14 +140,14 @@ boolean display_peers(Jxta_object * appl, Jxta_rdv_service* rdv) {
         connected = jxta_rdv_service_peer_is_connected(rdv, peer);
         if (connected) {
             err = jxta_peer_get_adv(peer, &adv);
-            if (err == JXTA_SUCCESS) {
+            if ( (NULL != adv) && (err == JXTA_SUCCESS)) {
                 string = jxta_PA_get_Name(adv);
                 sprintf(linebuff, "Name: [%s]\n", jstring_get_string(string));
                 jstring_append_2(outputLine, linebuff);
                 JXTA_OBJECT_RELEASE(adv);
             }
             err = jxta_peer_get_peerid(peer, &pid);
-            if (err == JXTA_SUCCESS) {
+            if ( (NULL != pid) && (err == JXTA_SUCCESS)) {
                 jxta_id_to_jstring(pid, &string);
                 sprintf(linebuff, "PeerId: [%s]\n", jstring_get_string(string));
                 jstring_append_2(outputLine, linebuff);
@@ -161,10 +158,10 @@ boolean display_peers(Jxta_object * appl, Jxta_rdv_service* rdv) {
             jstring_append_2(outputLine, linebuff);
             expires = jxta_rdv_service_peer_get_expires(rdv, peer);
 
-            if (connected && (expires >= 0)) {
-                Jxta_time hours = 0;
-                Jxta_time minutes = 0;
-                Jxta_time seconds = 0;
+            if (connected && (expires > 0)) {
+                Jxta_time_diff hours = 0;
+                Jxta_time_diff minutes = 0;
+                Jxta_time_diff seconds = 0;
 
                 currentTime = jpr_time_now();
                 if (expires < currentTime) {
@@ -173,15 +170,13 @@ boolean display_peers(Jxta_object * appl, Jxta_rdv_service* rdv) {
                     expires -= currentTime;
                 }
 
-                expires = expires / (1000);
+                seconds = expires / (1000);
 
-                hours = (Jxta_time) (expires / (Jxta_time) (60 * 60));
-                expires -= hours * 60 * 60 * 1000;
+                hours = (Jxta_time_diff) (seconds / (Jxta_time_diff) (60 * 60));
+                seconds -= hours * 60 * 60;
 
-                minutes = expires / 60;
-                expires -= minutes * 60;
-
-                seconds = expires;
+                minutes = seconds / 60;
+                seconds -= minutes * 60;
 
 
                 /* This produces a compiler warning about L not being ansi.
@@ -190,9 +185,9 @@ boolean display_peers(Jxta_object * appl, Jxta_rdv_service* rdv) {
 #ifndef WIN32
 
                 sprintf(linebuff, "\nLease expires in %lld hour(s) %lld minute(s) %lld second(s)\n",
-                         (Jxta_time) hours,
-                         (Jxta_time) minutes,
-                         (Jxta_time) seconds);
+                         (Jxta_time_diff) hours,
+                         (Jxta_time_diff) minutes,
+                         (Jxta_time_diff) seconds);
 #else
 
                 sprintf(linebuff, "\nLease expires in %I64d hour(s) %I64d minute(s) %I64d second(s)\n",
@@ -202,11 +197,15 @@ boolean display_peers(Jxta_object * appl, Jxta_rdv_service* rdv) {
 #endif
 
                 jstring_append_2(outputLine, linebuff);
+            } else {
+                sprintf(linebuff, "\nLease expired\n" );
+                jstring_append_2(outputLine, linebuff);
             }
             jstring_append_2(outputLine, "-----------------------------------------------------------------------------\n");
         }
         JXTA_OBJECT_RELEASE(peer);
     }
+    JXTA_OBJECT_RELEASE(peers);
 
 Common_Exit:
     if(jstring_length(outputLine) > 0) {
@@ -244,10 +243,7 @@ void jxta_rdvstatus_start(Jxta_object * appl,
                           char **argv) {
 
     Jxta_rdv_service* rdv = NULL;
-    Jxta_status err;
-    Jxta_PG* pg;
     JString * outputLine = jstring_new_0();
-    char*    rdvAddr = NULL;
 
     jxta_PG_get_rendezvous_service(group, &rdv);
     display_peers(appl, rdv);

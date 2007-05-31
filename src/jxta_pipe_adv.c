@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_adv.c,v 1.16 2005/02/02 02:58:30 exocetrick Exp $
+ * $Id: jxta_pipe_adv.c,v 1.17 2005/04/02 23:50:01 bondolo Exp $
  */
 
 
@@ -146,8 +146,7 @@ extern "C" {
 
         Jxta_pipe_adv *ad = (Jxta_pipe_adv *) userdata;
 
-        char *tok = malloc(len + 1);
-        memset(tok, 0, len + 1);
+        char *tok = calloc(len + 1, sizeof(char) );
 
         extract_char_data(cd, len, tok);
 

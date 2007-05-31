@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bidipipe_test.c,v 1.2 2005/01/31 20:21:09 slowhog Exp $
+ * $Id: jxta_bidipipe_test.c,v 1.3 2005/04/07 22:58:53 slowhog Exp $
  */
 
 #include <apr_thread_proc.h>
@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
     }
 
     jxta_initialize();
-    jxta_log_initialize();
+
     log_s = jxta_log_selector_new_and_set("*.*", &res);
     if (NULL == log_s) {
         printf("failed to init log selector.\n");
@@ -293,7 +293,6 @@ int main(int argc, char *argv[])
     apr_pool_destroy(pool);
 
     jxta_log_file_close(log_f);
-    jxta_log_terminate();
     jxta_terminate();
 
     return 0;

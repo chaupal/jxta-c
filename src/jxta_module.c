@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_module.c,v 1.18 2005/02/02 00:30:10 bondolo Exp $
+ * $Id: jxta_module.c,v 1.19 2005/03/25 23:39:44 bondolo Exp $
  */
 
 #include <stdio.h>
@@ -74,7 +74,7 @@
      * NB : jxta_object_init, not called from here; called directly
      * by the allocator, where the most derived type of the obj is known.
  */
-_jxta_module *jxta_module_construct(_jxta_module * module, Jxta_module_methods * methods)
+_jxta_module *jxta_module_construct(_jxta_module * module, Jxta_module_methods const * methods)
 {
     _jxta_module *self = (_jxta_module *) module;
 

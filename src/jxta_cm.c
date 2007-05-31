@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cm.c,v 1.60 2005/02/22 00:32:43 bondolo Exp $
+ * $Id: jxta_cm.c,v 1.62 2005/03/29 21:12:12 bondolo Exp $
  */
 
 #include <stdlib.h>
@@ -100,7 +100,8 @@ static void dummy_object_free(Jxta_object * o)
 
 static Dummy_object *dummy_object_new(void)
 {
-    Dummy_object *res = (Dummy_object *) malloc(sizeof(Dummy_object));
+    Dummy_object *res = (Dummy_object *) calloc(1, sizeof(Dummy_object));
+
     JXTA_OBJECT_INIT(res, dummy_object_free, 0);
     return res;
 }
@@ -858,7 +859,7 @@ Jxta_status jxta_cm_create_adv_indexes(Jxta_cm * self, char *folder_name, Jxta_v
                 free(full_index_name);
             }
         }
-        JXTA_OBJECT_RELEASE((Jxta_object *) ji);
+        JXTA_OBJECT_RELEASE(ji);
     }
     return JXTA_SUCCESS;
 }

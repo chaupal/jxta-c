@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup.c,v 1.29 2005/01/12 22:37:41 bondolo Exp $
+ * $Id: jxta_peergroup.c,v 1.30 2005/03/24 19:43:42 slowhog Exp $
  */
 
 #include "apr_thread_proc.h"
@@ -81,7 +81,6 @@ static Jxta_objecthashtable* groups_global_registry;
 /*
  * Thread private data initializer control.
  */
-static apr_thread_once_t registry_init_control = JPR_THREAD_ONCE_INIT;
 
 static void
 registry_init(void) {
@@ -99,8 +98,6 @@ registry_init(void) {
  * abort initialization and return JXTA_ITEM_EXISTS.
  */
 Jxta_status jxta_register_group_instance(Jxta_id* gid, Jxta_PG* pg) {
-    apr_thread_once(&registry_init_control, registry_init);
-
     return jxta_objecthashtable_putnoreplace(groups_global_registry,
             (Jxta_object*) gid,
             (Jxta_object*) pg);
@@ -115,8 +112,6 @@ Jxta_status jxta_register_group_instance(Jxta_id* gid, Jxta_PG* pg) {
  * applications from removing groups from the registry.
  */
 Jxta_status jxta_unregister_group_instance(Jxta_id* gid, Jxta_PG* pg) {
-    apr_thread_once(&registry_init_control, registry_init);
-
     return jxta_objecthashtable_delcheck(groups_global_registry,
                                          (Jxta_object*) gid,
                                          (Jxta_object*) pg);
@@ -128,8 +123,6 @@ Jxta_status jxta_unregister_group_instance(Jxta_id* gid, Jxta_PG* pg) {
 Jxta_status jxta_lookup_group_instance(Jxta_id* gid, Jxta_PG** pg) {
     Jxta_service* tmp;
     Jxta_status res;
-
-    apr_thread_once(&registry_init_control, registry_init);
 
     res = jxta_objecthashtable_get(groups_global_registry,
                                    (Jxta_object*) gid,
@@ -589,135 +582,101 @@ static void static_id_init(void) {
     }
 }
 
-static apr_thread_once_t id_once_control = JPR_THREAD_ONCE_INIT;
-
-
 
 /**
  * get each well known ID.
  */
 Jxta_MCID* jxta_peergroup_classid_get           (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _peergroup_classid;
 }
 Jxta_MCID* jxta_resolver_classid_get            (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _resolver_classid;
 }
 Jxta_MCID* jxta_discovery_classid_get           (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _discovery_classid;
 }
 Jxta_MCID* jxta_pipe_classid_get                (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _pipe_classid;
 }
 Jxta_MCID* jxta_membership_classid_get          (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _membership_classid;
 }
 Jxta_MCID* jxta_rendezvous_classid_get          (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _rendezvous_classid;
 }
 Jxta_MCID* jxta_peerinfo_classid_get            (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _peerinfo_classid;
 }
 Jxta_MCID* jxta_endpoint_classid_get            (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _endpoint_classid;
 }
 Jxta_MCID* jxta_tcpproto_classid_get            (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _tcpproto_classid;
 }
 Jxta_MCID* jxta_httpproto_classid_get           (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _httpproto_classid;
 }
 Jxta_MCID* jxta_relayproto_classid_get          (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _relayproto_classid;
 }
 Jxta_MCID* jxta_routerproto_classid_get         (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _routerproto_classid;
 }
 Jxta_MCID* jxta_application_classid_get         (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _application_classid;
 }
 Jxta_MCID* jxta_tlsproto_classid_get            (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _tlsproto_classid;
 }
 Jxta_MSID* jxta_ref_platform_specid_get         (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _ref_platform_specid;
 }
 Jxta_MSID* jxta_ref_netpeergroup_specid_get     (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _ref_netpeergroup_specid;
 }
 Jxta_MSID* jxta_ref_resolver_specid_get         (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _ref_resolver_specid;
 }
 Jxta_MSID* jxta_ref_discovery_specid_get        (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _ref_discovery_specid;
 }
 Jxta_MSID* jxta_ref_pipe_specid_get             (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _ref_pipe_specid;
 }
 Jxta_MSID* jxta_ref_membership_specid_get       (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _ref_membership_specid;
 }
 Jxta_MSID* jxta_ref_rendezvous_specid_get       (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _ref_rendezvous_specid;
 }
 Jxta_MSID* jxta_ref_peerinfo_specid_get         (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _ref_peerinfo_specid;
 }
 Jxta_MSID* jxta_ref_endpoint_specid_get         (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _ref_endpoint_specid;
 }
 Jxta_MSID* jxta_ref_tcpproto_specid_get         (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _ref_tcpproto_specid;
 }
 Jxta_MSID* jxta_ref_httpproto_specid_get        (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _ref_httpproto_specid;
 }
 Jxta_MSID* jxta_ref_relayproto_specid_get       (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _ref_relayproto_specid;
 }
 Jxta_MSID* jxta_ref_routerproto_specid_get      (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _ref_routerproto_specid;
 }
 Jxta_MSID* jxta_ref_tlsproto_specid_get         (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _ref_tlsproto_specid;
 }
 Jxta_MSID* jxta_ref_startnetpeergroup_specid_get(void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _ref_startnetpeergroup_specid;
 }
 Jxta_MSID* jxta_ref_shell_specid_get            (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _ref_shell_specid;
 }
 Jxta_MSID* jxta_genericpeergroup_specid_get     (void) {
-    apr_thread_once(&id_once_control, static_id_init);
     return _genericpeergroup_specid;
 }
 
@@ -998,4 +957,51 @@ Jxta_status jxta_PG_remove_relay_address(Jxta_PG* self, Jxta_id* relayid) {
     PTValid(self, Jxta_PG);
     return (VTBL->remove_relay_address)(self, relayid);
 }
+
+Jxta_status jxta_PG_module_initialize(void)
+{
+    registry_init();
+    static_id_init();
+
+    return JXTA_SUCCESS;
+}
+
+void jxta_PG_module_terminate(void)
+{
+    JXTA_OBJECT_RELEASE(groups_global_registry);
+    groups_global_registry = NULL;
+
+    JXTA_OBJECT_RELEASE(_peergroup_classid);
+    JXTA_OBJECT_RELEASE(_resolver_classid);
+    JXTA_OBJECT_RELEASE(_discovery_classid);
+    JXTA_OBJECT_RELEASE(_pipe_classid);
+    JXTA_OBJECT_RELEASE(_membership_classid);
+    JXTA_OBJECT_RELEASE(_rendezvous_classid);
+    JXTA_OBJECT_RELEASE(_peerinfo_classid);
+    JXTA_OBJECT_RELEASE(_endpoint_classid);
+    JXTA_OBJECT_RELEASE(_tcpproto_classid);
+    JXTA_OBJECT_RELEASE(_httpproto_classid);
+    JXTA_OBJECT_RELEASE(_relayproto_classid);
+    JXTA_OBJECT_RELEASE(_routerproto_classid);
+    JXTA_OBJECT_RELEASE(_application_classid);
+    JXTA_OBJECT_RELEASE(_tlsproto_classid);
+    JXTA_OBJECT_RELEASE(_ref_platform_specid);
+    JXTA_OBJECT_RELEASE(_ref_netpeergroup_specid);
+    JXTA_OBJECT_RELEASE(_ref_resolver_specid);
+    JXTA_OBJECT_RELEASE(_ref_discovery_specid);
+    JXTA_OBJECT_RELEASE(_ref_pipe_specid);
+    JXTA_OBJECT_RELEASE(_ref_membership_specid);
+    JXTA_OBJECT_RELEASE(_ref_rendezvous_specid);
+    JXTA_OBJECT_RELEASE(_ref_peerinfo_specid);
+    JXTA_OBJECT_RELEASE(_ref_endpoint_specid);
+    JXTA_OBJECT_RELEASE(_ref_tcpproto_specid);
+    JXTA_OBJECT_RELEASE(_ref_httpproto_specid);
+    JXTA_OBJECT_RELEASE(_ref_routerproto_specid);
+    JXTA_OBJECT_RELEASE(_ref_tlsproto_specid);
+    JXTA_OBJECT_RELEASE(_ref_startnetpeergroup_specid);
+    JXTA_OBJECT_RELEASE(_ref_shell_specid);
+    JXTA_OBJECT_RELEASE(_genericpeergroup_specid);
+}
+
+/* vim: set ts=4 sw=4 tw=130 et: */
 

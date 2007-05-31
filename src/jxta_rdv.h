@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv.h,v 1.6 2005/02/17 04:50:33 bondolo Exp $
+ * $Id: jxta_rdv.h,v 1.7 2005/03/24 01:48:12 bondolo Exp $
  */
 
 
@@ -104,7 +104,7 @@ Jxta_status jxta_RdvAdvertisement_get_xml(Jxta_RdvAdvertisement * adv, JString *
  **                   JXTA_NOMEM when the system has ran out of memeory
  **                   JXTA_INVALID_PARAMETER when an argument was invalid.
  **/
-Jxta_status jxta_RdvAdvertisement_parse_charbuffer(Jxta_RdvAdvertisement * adv, const char *buffer, int len);
+Jxta_status jxta_RdvAdvertisement_parse_charbuffer(Jxta_RdvAdvertisement * adv, const char *buffer, size_t len);
 
 /**
  ** Parse an XML (wire format) document containing a JXTA advertisement from

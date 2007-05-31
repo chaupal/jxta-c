@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_application.c,v 1.3 2004/07/14 01:07:41 tra Exp $
+ * $Id: jxta_shell_application.c,v 1.4 2005/03/29 21:12:11 bondolo Exp $
  */
 
 #include <stdio.h>
@@ -61,17 +61,17 @@
 #include "jxta_shell_application.h"
 #include "jxta_shell_environment.h"
 
-struct _jxta_shell_application{
+struct _jxta_shell_application {
     JXTA_OBJECT_HANDLE;
     Jxta_listener *listener;         /** The input pipe to this appliction */
     Jxta_listener *standout;          /** The output pipe of this application */
     shell_application_stdin standin;  /** The function to process input */
     shell_application_start start;   /** The start function */
     shell_application_printHelp help;  /** The function that prints help */
-    Jxta_PG * peergroup;              /** The peer group of this application */
+    Jxta_PG *peergroup;               /** The peer group of this application */
     shell_application_terminate terminate; /** function to call to terminate */
-    Jxta_object  * parent;                 /** The parent */
-    Jxta_object  * child;                   /** The child */
+    Jxta_object *parent;                   /** The parent */
+    Jxta_object *child;                     /** The child */
     JxtaShellEnvironment *env;            /** The shell environment to use */
 };
 
@@ -79,204 +79,199 @@ struct _jxta_shell_application{
 * Deletes the indicated application object
 * @param app the application for which to add  the data
 */
-void JxtaShellApplication_delete( Jxta_object * application);
+void JxtaShellApplication_delete(Jxta_object * application);
 
 
-JxtaShellApplication * JxtaShellApplication_new(Jxta_PG * pg,
-						Jxta_listener* standout, 
-						JxtaShellEnvironment *env,
-						Jxta_object * parent,
-						shell_application_terminate terminate){
+JxtaShellApplication *JxtaShellApplication_new(Jxta_PG * pg,
+                                               Jxta_listener * standout,
+                                               JxtaShellEnvironment * env,
+                                               Jxta_object * parent, shell_application_terminate terminate)
+{
 
-     JxtaShellApplication * app = 
-                 (JxtaShellApplication*)malloc(sizeof(JxtaShellApplication));  
-     if( app == 0) return app;
-     memset (app, 0, sizeof (*app));
-     JXTA_OBJECT_INIT (app,JxtaShellApplication_delete,0);
+    JxtaShellApplication *app = (JxtaShellApplication *) calloc(1, sizeof(JxtaShellApplication));
+    if (app == NULL) {
+        return app;
+    }
 
-     app->listener = jxta_listener_new((Jxta_listener_func)JxtaShellApplication_listenerFunction,
-				       app,
-				       1,
-				       200);
+    JXTA_OBJECT_INIT(app, JxtaShellApplication_delete, 0);
 
-     if( app->listener == 0){
-       JXTA_OBJECT_RELEASE (app);
+    app->listener = jxta_listener_new((Jxta_listener_func) JxtaShellApplication_listenerFunction, app, 1, 200);
+
+    if (app->listener == NULL) {
+        JXTA_OBJECT_RELEASE(app);
         app = 0;
         return app;
-     }
-
-     if (standout != NULL) JXTA_OBJECT_SHARE (standout);
-     if (parent != NULL) JXTA_OBJECT_SHARE (parent);
-     if (env != NULL) JXTA_OBJECT_SHARE (env);
-
-     app->standout = standout; 
-     app->parent = parent;
-     app->terminate = terminate;
-     app->standin = 0;
-     app->start = 0;
-     app->help = 0; 
-     app->env = env;
-
-     if( app->env == 0){    /** Create a new environment */
-        app->env = JxtaShellEnvironment_new(0);
-     }
-     
-     JxtaShellEnvironment_set_current_group( app->env, pg );
-     
-     jxta_listener_start(app->listener); 
-
-     return app;
-}  
-
-void JxtaShellApplication_delete(Jxta_object * appl){
-  JxtaShellApplication * app = (JxtaShellApplication*)appl;
-
-  
-  if(  app != 0){
-    if( app->listener != 0){
-    jxta_listener_stop(app->listener);
-      /*D.Wiarda If uncommented, program crashes - I am still looking into why 
-       JXTA_OBJECT_RELEASE(app->listener);*/  
-     app->listener=0;
-    }
-    if( app->env != 0){
-      JXTA_OBJECT_RELEASE(app->env);
-      app->env = 0;
     }
 
-    if (app->standout) {
-      JXTA_OBJECT_RELEASE (app->standout);
-      app->standout = NULL;
-    }
+    app->standout = standout ? JXTA_OBJECT_SHARE(standout) : NULL;
+    app->parent = parent ? JXTA_OBJECT_SHARE(parent) : NULL;
+    app->terminate = terminate;
+    app->standin = NULL;
+    app->start = NULL;
+    app->help = NULL;
+    app->env = env ? JXTA_OBJECT_SHARE(env) : JxtaShellEnvironment_new(0);
 
-    if (app->parent) {
-      JXTA_OBJECT_RELEASE (app->parent);
-      app->parent = NULL;
-    }
+    JxtaShellEnvironment_set_current_group(app->env, pg);
 
-    free(app);
-  }  
+    jxta_listener_start(app->listener);
+
+    return app;
 }
 
+void JxtaShellApplication_delete(Jxta_object * appl)
+{
+    JxtaShellApplication *app = (JxtaShellApplication *) appl;
 
-void JxtaShellApplication_start(JxtaShellApplication * app,
-                                int argv, 
-                                char **arg){
-  if(app != 0 && app->start != 0){
-     app->start(app->child,argv,arg);
-  }
-}
 
-void JxtaShellApplication_printHelp(JxtaShellApplication *app){
-  if(app != 0 && app->start != 0){
-     app->help(app->child);
-     JxtaShellApplication_terminate(app);  
-  }
-}
-
-Jxta_listener * JxtaShellApplication_getSTDIN(JxtaShellApplication *app){
-   Jxta_listener *listener = 0;
- 
-   if( app != 0) {
-      listener = app->listener;
-   }
-   if( listener != 0) {
-      JXTA_OBJECT_SHARE(listener);
-   }
-   return listener;
-}
-
-JxtaShellEnvironment * JxtaShellApplication_getEnv(JxtaShellApplication *app){
-   JxtaShellEnvironment* env = 0;
- 
-   if( app != NULL) {
-      env = app->env;
-   }
-   if( env != NULL) {
-      JXTA_OBJECT_SHARE(env);
-   }
-   return env;
-}
-
-Jxta_PG * JxtaShellApplication_peergroup(JxtaShellApplication *app){
-   Jxta_PG * pg = NULL;
-   JString * name = jstring_new_2( "currGroup" );
- 
-   if( app != NULL) {
-        JxtaShellObject * object = JxtaShellEnvironment_get ( app->env, name );
-
-        if( NULL != object  ) {
-            pg = (Jxta_PG*) JxtaShellObject_object(object);
-            JXTA_OBJECT_RELEASE(object); object = NULL;
-            }
+    if (app != NULL) {
+        if (app->listener != NULL) {
+            jxta_listener_stop(app->listener);
+            JXTA_OBJECT_RELEASE(app->listener);
+            app->listener = NULL;
         }
 
-   JXTA_OBJECT_RELEASE(name); name = NULL;
-   return pg;
-}
+        if (app->env != NULL) {
+            JXTA_OBJECT_RELEASE(app->env);
+            app->env = NULL;
+        }
 
-void JxtaShellApplication_terminate(JxtaShellApplication *app){
-  if( app != 0){
-    JString * prompt = jstring_new_2("JXTA>");
-    JxtaShellApplication_print(app,prompt); 
-    app->terminate(app->parent,app->child);
-    if( app->parent != 0){
-       JXTA_OBJECT_RELEASE(app->parent); 
-       app->parent = 0;  
+        if (app->standout) {
+            JXTA_OBJECT_RELEASE(app->standout);
+            app->standout = NULL;
+        }
+
+        if (app->parent) {
+            JXTA_OBJECT_RELEASE(app->parent);
+            app->parent = NULL;
+        }
+
+        free(app);
     }
-  }
 }
 
-void JxtaShellApplication_setFunctions(JxtaShellApplication *app,
+
+void JxtaShellApplication_start(JxtaShellApplication * app, int argv, char **arg)
+{
+    if (app != NULL && app->start != NULL) {
+        app->start(app->child, argv, arg);
+    }
+}
+
+void JxtaShellApplication_printHelp(JxtaShellApplication * app)
+{
+    if (app != NULL && app->start != NULL) {
+        app->help(app->child);
+        JxtaShellApplication_terminate(app);
+    }
+}
+
+Jxta_listener *JxtaShellApplication_getSTDIN(JxtaShellApplication * app)
+{
+    Jxta_listener *listener = NULL;
+
+    if (app != NULL) {
+        listener = app->listener;
+    }
+    if (listener != NULL) {
+        JXTA_OBJECT_SHARE(listener);
+    }
+    return listener;
+}
+
+JxtaShellEnvironment *JxtaShellApplication_getEnv(JxtaShellApplication * app)
+{
+    JxtaShellEnvironment *env = NULL;
+
+    if (app != NULL) {
+        env = app->env;
+    }
+    if (env != NULL) {
+        JXTA_OBJECT_SHARE(env);
+    }
+    return env;
+}
+
+Jxta_PG *JxtaShellApplication_peergroup(JxtaShellApplication * app)
+{
+    Jxta_PG *pg = NULL;
+    JString *name = jstring_new_2("currGroup");
+
+    if (app != NULL) {
+        JxtaShellObject *object = JxtaShellEnvironment_get(app->env, name);
+
+        if (NULL != object) {
+            pg = (Jxta_PG *) JxtaShellObject_object(object);
+            JXTA_OBJECT_RELEASE(object);
+            object = NULL;
+        }
+    }
+
+    JXTA_OBJECT_RELEASE(name);
+    name = NULL;
+    return pg;
+}
+
+void JxtaShellApplication_terminate(JxtaShellApplication * app)
+{
+    if (app != NULL) {
+        JString *prompt = jstring_new_2("JXTA>");
+        JxtaShellApplication_print(app, prompt);
+        app->terminate(app->parent, app->child);
+        if (app->parent != 0) {
+            JXTA_OBJECT_RELEASE(app->parent);
+            app->parent = 0;
+        }
+    }
+}
+
+void JxtaShellApplication_setFunctions(JxtaShellApplication * app,
                                        Jxta_object * child,
                                        shell_application_printHelp help,
-                                       shell_application_start start,
-                                       shell_application_stdin standin){
-  if( app != 0){ 
-      app->child = child;
-      app->help = help;
-      app->start = start;
-      app->standin = standin;
-  }
+                                       shell_application_start start, shell_application_stdin standin)
+{
+    if (app != NULL) {
+        app->child = child;
+        app->help = help;
+        app->start = start;
+        app->standin = standin;
+    }
 }
 
-Jxta_status JxtaShellApplication_print(JxtaShellApplication *app, 
-                                       JString * inputLine){  
-  int result = JXTA_INVALID_ARGUMENT;
+Jxta_status JxtaShellApplication_print(JxtaShellApplication * app, JString * inputLine)
+{
+    int result = JXTA_INVALID_ARGUMENT;
 
-  JXTA_OBJECT_CHECK_VALID (inputLine);
+    JXTA_OBJECT_CHECK_VALID(inputLine);
 
-  if( app != 0 && app->standout != 0 && inputLine != 0){
-    JXTA_OBJECT_CHECK_VALID (app->standout);
-    JXTA_OBJECT_SHARE(inputLine);    
-    result = jxta_listener_schedule_object(app->standout,
-                                          (Jxta_object*)inputLine); 
+    if (app != NULL && app->standout != NULL && inputLine != NULL) {
+        JXTA_OBJECT_CHECK_VALID(app->standout);
+        JXTA_OBJECT_SHARE(inputLine);
+        result = jxta_listener_schedule_object(app->standout, (Jxta_object *) inputLine);
+        JXTA_OBJECT_RELEASE(inputLine);
+    }
+    return result;
+}
+
+Jxta_status JxtaShellApplication_println(JxtaShellApplication * app, JString * inputLine)
+{
+    int result = JXTA_INVALID_ARGUMENT;
+    JString *line = jstring_new_0();
+
+    jstring_append_1(line, inputLine);
+    jstring_append_2(line, "\n");
+    JXTA_OBJECT_SHARE(line);
+    result = JxtaShellApplication_print(app, line);
+    JXTA_OBJECT_RELEASE(line);
     JXTA_OBJECT_RELEASE(inputLine);
-  }
-  return result;
+    return result;
 }
 
-Jxta_status JxtaShellApplication_println(JxtaShellApplication *app, 
-                                         JString * inputLine){  
-  int result = JXTA_INVALID_ARGUMENT;
-  JString  *  line =  jstring_new_0();  
+void JxtaShellApplication_listenerFunction(Jxta_object * obj, void *arg)
+{
+    JxtaShellApplication *app = (JxtaShellApplication *) arg;
+    JString *message = (JString *) obj;
 
-  jstring_append_1(line,inputLine);
-  jstring_append_2(line,"\n");
-  JXTA_OBJECT_SHARE(line);
-  result = JxtaShellApplication_print(app,line);
-  JXTA_OBJECT_RELEASE(line);
-  JXTA_OBJECT_RELEASE(inputLine);
-  return result;
+    if (app != NULL && app->standin != NULL) {
+        app->standin(app->child, message);
+    }
 }
-
-void JxtaShellApplication_listenerFunction(Jxta_object* obj, void* arg){
-   JxtaShellApplication * app = (JxtaShellApplication *)arg;
-   JString *message = (JString *)obj;
-
-   if( app != 0 && app->standin != 0){
-      app->standin(app->child,message);
-   }
-}
-
-

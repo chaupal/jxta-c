@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_test.c,v 1.16 2002/04/09 21:13:58 hamada Exp $
+ * $Id: jxta_resolver_test.c,v 1.17 2005/04/07 22:58:55 slowhog Exp $
  */
 
 #include "jxta.h"
@@ -101,13 +101,13 @@ int main(int argc, char *argv[])
 		}
 	}
 
-    apr_initialize();
-
    if(argc < 2)
      {
        fprintf(stderr,"jxta_resolver_test usage: jxta_resolver_test -q <query.xml> -r 127.0.0.1:9700\n");
        return -1;
      }
+
+    jxta_initialize();
 
     status = jxta_PG_new_netpg(&pg);
     if (status != JXTA_SUCCESS) {
@@ -148,5 +148,7 @@ int main(int argc, char *argv[])
     JXTA_OBJECT_RELEASE(resolver);
     jxta_module_stop((Jxta_module*) pg);
     JXTA_OBJECT_RELEASE(pg);
+
+    jxta_terminate();
     return 0;
 }

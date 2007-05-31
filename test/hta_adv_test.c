@@ -50,25 +50,19 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: hta_adv_test.c,v 1.8 2003/12/18 19:37:48 wiarda Exp $
+ * $Id: hta_adv_test.c,v 1.10 2005/04/07 22:58:53 slowhog Exp $
  */
 
 #include <stdio.h>
 #include "jxta_hta.h"
 
 
-boolean
+Jxta_boolean
 hta_test(int argc, char ** argv) {
 
    JString * js;
    Jxta_HTTPTransportAdvertisement * hta;
    FILE *testfile;
-
-#ifdef WIN32 
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize();
-#endif
 
    if(argc != 2)
      {
@@ -77,6 +71,8 @@ hta_test(int argc, char ** argv) {
      }
 
    printf("here\n");
+
+    jxta_initialize();
 
    hta = jxta_HTTPTransportAdvertisement_new();
 
@@ -93,6 +89,7 @@ hta_test(int argc, char ** argv) {
 
    JXTA_OBJECT_RELEASE(hta);
 
+   jxta_terminate();
    return 0;
 
 

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_thread.c,v 1.7 2005/02/08 22:48:35 bondolo Exp $
+ * $Id: jpr_thread.c,v 1.8 2005/03/24 19:35:31 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -65,11 +65,10 @@
 #include "jpr_types.h"
 #include "jpr_thread.h"
 #include "jpr_threadonce.h"
+#include "jpr_priv.h"
 
-static apr_thread_once_t _jpr_thread_delay_once = JPR_THREAD_ONCE_INIT;
 static apr_thread_cond_t *_jpr_thread_delay_cond = NULL;
 static apr_thread_mutex_t *_jpr_thread_delay_mutex = NULL;
-static apr_pool_t *_jpr_thread_delay_pool = NULL;
 
 #ifndef JPR_LOG
 #define JPR_LOG printf
@@ -82,34 +81,37 @@ static apr_pool_t *_jpr_thread_delay_pool = NULL;
  ** safe manner that it is called only once.
  **/
 
-static void jpr_thread_delay_init(void)
+apr_status_t jpr_thread_delay_initialize(void)
 {
     apr_status_t res;
 
-    res = apr_pool_create(&_jpr_thread_delay_pool, NULL);
-    if (res != APR_SUCCESS) {
-        JPR_LOG("FAILURE: %s:%d failed to create a pool\n", __FILE__, __LINE__);
-        return;
-    }
-    res = apr_thread_mutex_create(&_jpr_thread_delay_mutex, APR_THREAD_MUTEX_DEFAULT, _jpr_thread_delay_pool);
+    res = apr_thread_mutex_create(&_jpr_thread_delay_mutex, APR_THREAD_MUTEX_DEFAULT, _jpr_global_pool);
     if (res != APR_SUCCESS) {
         JPR_LOG("FAILURE: %s:%d failed to create a mutex\n", __FILE__, __LINE__);
-        return;
+        return res;
     }
 
-    res = apr_thread_cond_create(&_jpr_thread_delay_cond, _jpr_thread_delay_pool);
+    res = apr_thread_cond_create(&_jpr_thread_delay_cond, _jpr_global_pool);
     if (res != APR_SUCCESS) {
         JPR_LOG("FAILURE: %s:%d failed to create a cond\n", __FILE__, __LINE__);
-        return;
+        apr_thread_mutex_destroy(_jpr_thread_delay_mutex);
+        _jpr_thread_delay_mutex = NULL;
+        return res;
     }
+
+    return res;
 }
 
-/*
- * Use thread once to initialize the thread_delay library
- */
-#define INIT() apr_thread_once(&_jpr_thread_delay_once, jpr_thread_delay_init)
+void jpr_thread_delay_terminate(void)
+{
+    apr_thread_mutex_lock(_jpr_thread_delay_mutex);
 
+    apr_thread_cond_destroy(_jpr_thread_delay_cond);
+    _jpr_thread_delay_cond = NULL;
 
+    apr_thread_mutex_destroy(_jpr_thread_delay_mutex);
+    _jpr_thread_delay_mutex = NULL;
+}
 
 /**************************************************************************
  ** jpr_thread_delay:
@@ -123,10 +125,6 @@ static void jpr_thread_delay_init(void)
 
 Jpr_status jpr_thread_delay(Jpr_interval_time timeout)
 {
-
-    /* Makes sure jpr_thread_delay is initialized */
-    INIT();
-
     /* Get the mutex */
     apr_thread_mutex_lock(_jpr_thread_delay_mutex);
     /* Wait for the specified time */
@@ -135,3 +133,5 @@ Jpr_status jpr_thread_delay(Jpr_interval_time timeout)
     apr_thread_mutex_unlock(_jpr_thread_delay_mutex);
     return JPR_SUCCESS;
 }
+
+/* vim: set ts=4 sw=4 tw=130 et: */

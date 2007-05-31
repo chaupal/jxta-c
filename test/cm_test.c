@@ -26,7 +26,12 @@ int
 test_cm_create_folder() {
 
   Jxta_cm * cm = jxta_cm_new("CM", jxta_id_worldNetPeerGroupID);
-  char * keys[] = {"foo", "bar", "baz", NULL};
+  char * keys[][2] = { 
+                 { "foo", NULL },
+                 {  "bar", NULL },
+                 {  "baz", NULL },
+                 {  NULL, NULL}
+                 };
 
   jxta_cm_create_folder(cm,"MyFolder",keys);
 
@@ -54,19 +59,11 @@ test_cm() {
 
 int
 main(int argc, char ** argv) {
-
-#ifdef WIN32 
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize();
-#endif
-
-  test_cm();
-
-  //apr_terminate();
-
-  return 0;
+    jxta_initialize();
+    test_cm();
+    jxta_terminate();
+    return 0;
 }
 
-
+/* vim: set ts=4 sw=4 tw=130 et: */
 

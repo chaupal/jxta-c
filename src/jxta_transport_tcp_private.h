@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tcp_private.h,v 1.5 2005/01/12 21:47:00 bondolo Exp $
+ * $Id: jxta_transport_tcp_private.h,v 1.6 2005/04/06 21:59:25 bondolo Exp $
  */
 
 #ifndef __JXTA_TRANSPORT_TCP_PRIVATE_H__
@@ -83,7 +83,7 @@ typedef struct _tcp_messenger TcpMessenger;
 /********************************************************************************/
 /*                                                                              */
 /********************************************************************************/
-TcpMessenger *get_tcp_messenger(Jxta_transport_tcp *tp, Jxta_transport_tcp_connection *conn, Jxta_endpoint_address* addr, char *ipaddr, apr_port_t port);
+TcpMessenger *get_tcp_messenger(Jxta_transport_tcp *tp, Jxta_transport_tcp_connection *conn, Jxta_endpoint_address* addr, const char *ipaddr, apr_port_t port);
 
 
 
@@ -104,7 +104,7 @@ Jxta_transport_tcp *jxta_transport_tcp_new_instance(void);
 /********************************************************************************/
 /*                                                                              */
 /********************************************************************************/
-Jxta_status jxta_transport_tcp_remove_messenger(Jxta_transport_tcp *tp, char *ipaddr, apr_port_t port);
+Jxta_status jxta_transport_tcp_remove_messenger(Jxta_transport_tcp *tp, const char *ipaddr, apr_port_t port);
 
 
 

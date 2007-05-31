@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: mia_adv_test.c,v 1.1 2002/03/23 06:06:20 jice Exp $
+ * $Id: mia_adv_test.c,v 1.3 2005/04/07 22:58:55 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -63,7 +63,7 @@
 
 
 
-boolean
+Jxta_boolean
 mia_test(int argc, char **argv)
 {
    Jxta_MIA * ad;
@@ -142,10 +142,10 @@ mia_test(int argc, char **argv)
 
 int
 main (int argc, char **argv) {
-#ifdef WIN32 
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize();
-#endif
-    return mia_test(argc,argv);
+    int rv;
+
+    jxta_initialize();
+    rv = mia_test(argc,argv);
+    jxta_terminate();
+    return rv;
 }

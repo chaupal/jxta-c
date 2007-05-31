@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_piperesolver_msg.c,v 1.6 2005/02/02 02:58:30 exocetrick Exp $
+ * $Id: jxta_piperesolver_msg.c,v 1.7 2005/03/22 04:08:03 bondolo Exp $
  */
 
 
@@ -104,8 +104,8 @@ extern "C" {
         char        * PipeId;
         char        * Peer;
         JString     * PeerAdv;
-        boolean     Cached;
-        boolean     Found;
+        Jxta_boolean     Cached;
+        Jxta_boolean     Found;
     };
 
 
@@ -314,25 +314,25 @@ extern "C" {
 
 
 
-    boolean
+    Jxta_boolean
     jxta_piperesolver_msg_get_Found(Jxta_piperesolver_msg* ad) {
         return ad->Found;
     }
 
     Jxta_status
-    jxta_piperesolver_msg_set_Found(Jxta_piperesolver_msg* ad, boolean val) {
+    jxta_piperesolver_msg_set_Found(Jxta_piperesolver_msg* ad, Jxta_boolean val) {
 
         ad->Found = val;
         return JXTA_SUCCESS;
     }
 
-    boolean
+    Jxta_boolean
     jxta_piperesolver_msg_get_Cached(Jxta_piperesolver_msg* ad) {
         return ad->Cached;
     }
 
     Jxta_status
-    jxta_piperesolver_msg_set_Cached(Jxta_piperesolver_msg* ad, boolean val) {
+    jxta_piperesolver_msg_set_Cached(Jxta_piperesolver_msg* ad, Jxta_boolean val) {
 
         ad->Cached = val;
         return JXTA_SUCCESS;

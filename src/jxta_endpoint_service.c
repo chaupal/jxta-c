@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_service.c,v 1.68 2005/03/14 07:46:25 slowhog Exp $
+ * $Id: jxta_endpoint_service.c,v 1.73 2005/03/30 00:51:59 slowhog Exp $
  */
 
-#include <stdlib.h>     /* malloc, free */
+#include <stdlib.h>             /* malloc, free */
 
 #include <apr.h>
 #include <apr_hash.h>
@@ -122,6 +122,9 @@ static Jxta_status endpoint_init(Jxta_module * it, Jxta_PG * group, Jxta_id * as
     Jxta_id *gid;
 
     Jxta_endpoint_service *self = PTValid(it, Jxta_endpoint_service);
+    
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Initializing ...\n");
+
     /* store our assigned id */
     if (assigned_id != 0) {
         JXTA_OBJECT_SHARE(assigned_id);
@@ -129,10 +132,10 @@ static Jxta_status endpoint_init(Jxta_module * it, Jxta_PG * group, Jxta_id * as
     }
 
     /* advs and groups are jxta_objects that we share */
-    if (impl_adv != 0)
+    if (impl_adv != 0) {
         JXTA_OBJECT_SHARE(impl_adv);
-    if (group != 0)
-        JXTA_OBJECT_SHARE(group);
+    }
+
     self->my_impl_adv = impl_adv;
     self->my_group = group;
     jxta_PG_get_GID(group, &gid);
@@ -141,19 +144,36 @@ static Jxta_status endpoint_init(Jxta_module * it, Jxta_PG * group, Jxta_id * as
     self->relay_addr = NULL;
     self->relay_proto = NULL;
     self->myRoute = NULL;
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Initialized\n");
     return JXTA_SUCCESS;
 }
 
 static Jxta_status endpoint_start(Jxta_module * self, char *args[])
 {
     /* construct + init have done everything already */
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Starting ...\n");
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Started\n");
     return JXTA_SUCCESS;
 }
 
 static void endpoint_stop(Jxta_module * self)
 {
+    Jxta_endpoint_service *me;
+    apr_status_t status;
     PTValid(self, Jxta_endpoint_service);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Not implemented, don't know how to stop yet.\n");
+
+    me = (Jxta_endpoint_service *) self;
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Stopping outgoing message thread ...\n");
+    /* stop the thrad that processes outgoing messages */
+    me->is_running = 0;
+    queue_enqueue(me->outgoing_queue, NULL);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Waiting outgoing message thread shutdown completely ...\n");
+    apr_thread_join(&status, me->thread);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Endpoint service stopped.\n");
 }
 
 
@@ -219,29 +239,27 @@ void jxta_endpoint_service_destruct(Jxta_endpoint_service * service)
      */
     PTValid(service, Jxta_endpoint_service);
 
-    /* stop the thrad that processes outgoing messages */
-    service->is_running = 0;
-    apr_thread_join(&status, service->thread);
-
     /* delete tables and stuff */
     JXTA_OBJECT_RELEASE(service->unreachable_addresses);
     JXTA_OBJECT_RELEASE(service->transport_table);
     JXTA_OBJECT_RELEASE(service->listener_table);
     apr_pool_destroy(service->pool);
 
-    /* un-ref our impl_adv and group, delete assigned_id */
-    if (service->my_group)
-        JXTA_OBJECT_RELEASE(service->my_group);
-    if (service->my_groupid)
+    /* un-ref our impl_adv, and delete assigned_id */
+    service->my_group = NULL;
+    if (service->my_groupid) {
         JXTA_OBJECT_RELEASE(service->my_groupid);
-    if (service->my_impl_adv)
+    }
+    if (service->my_impl_adv) {
         JXTA_OBJECT_RELEASE(service->my_impl_adv);
+    }
     if (service->my_assigned_id != 0) {
         JXTA_OBJECT_RELEASE(service->my_assigned_id);
     }
 
-    if (service->myRoute != NULL)
+    if (service->myRoute != NULL) {
         JXTA_OBJECT_RELEASE(service->myRoute);
+    }
 
     /* proceed to base classe's destruction */
     jxta_service_destruct((Jxta_service *) service);
@@ -644,9 +662,9 @@ void jxta_endpoint_service_remove_filter(Jxta_endpoint_service * service, JxtaEn
     apr_thread_mutex_unlock(service->filter_list_mutex);
 }
 
-static boolean is_listener_for(Jxta_endpoint_service * service, char *str)
+static Jxta_boolean is_listener_for(Jxta_endpoint_service * service, char *str)
 {
-    boolean res = FALSE;
+    Jxta_boolean res = FALSE;
     Jxta_listener *listener = NULL;
 
     PTValid(service, Jxta_endpoint_service);
@@ -704,8 +722,8 @@ jxta_endpoint_service_remove_listener(Jxta_endpoint_service * service, char cons
     listener = (Jxta_listener *) apr_hash_get(service->listener_table, str, APR_HASH_KEY_STRING);
     if (listener != NULL) {
         apr_hash_set(service->listener_table, str, APR_HASH_KEY_STRING, NULL);
+        JXTA_OBJECT_RELEASE(listener);
     }
-    JXTA_OBJECT_RELEASE(listener);
     apr_thread_mutex_unlock(service->listener_table_mutex);
     return JXTA_SUCCESS;
 }
@@ -767,7 +785,7 @@ static Jxta_listener *jxta_endpoint_service_lookup_listener(Jxta_endpoint_servic
              */
             if (*(str1 + j) == '/') {
                 index++;
-                pt = i; /* save location of end of first parameter */
+                pt = i;         /* save location of end of first parameter */
             } else {
                 index++;
                 j++;
@@ -823,8 +841,8 @@ jxta_endpoint_service_propagate(Jxta_endpoint_service * service,
      */
 
     transport = jxta_endpoint_service_lookup_transport(service, "tcp");
-    if (transport) {    /* ok we can try to propagate, so the transport propagation
-                           may still be disabled MulticastOff */
+    if (transport) {            /* ok we can try to propagate, so the transport propagation
+                                   may still be disabled MulticastOff */
 
         /*
          * Correctly set the endpoint address for cross-group

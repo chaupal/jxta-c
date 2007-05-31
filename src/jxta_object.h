@@ -50,14 +50,16 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object.h,v 1.4 2005/01/21 00:36:43 bondolo Exp $
+ * $Id: jxta_object.h,v 1.6 2005/03/29 19:01:53 bondolo Exp $
  */
 
 
 #ifndef __JXTA_OBJECT_H__
 #define  __JXTA_OBJECT_H__
 
+#include <limits.h>
 #include <stddef.h>
+
 #include "jxta_types.h"
 
 #ifdef __cplusplus
@@ -66,7 +68,7 @@ extern "C" {
 }
 #endif
 #endif
-/*******************************************************************************
+/**
  **     OBJECT MANAGEMENT
  **
  ** This include file defines a set of macros that are to be used when
@@ -188,7 +190,7 @@ extern "C" {
  **     // When the object is no longer in use by B, do:
  **     JXTA_OBJECT_RELEASE (obj);
  ** }
-             **//**
+  **//**
  * This is the begining of the public API of the object
  **/ typedef struct _jxta_object Jxta_object;
 
@@ -230,8 +232,35 @@ typedef void (*JXTA_OBJECT_FREE_FUNC) (Jxta_object * data);
  * a bug in the calling code if a same object is being used before being
  * initialized.
  **/
-void *JXTA_OBJECT_INIT(void *x, JXTA_OBJECT_FREE_FUNC free, void *cookie);
+void *JXTA_OBJECT_INIT(void *obj, JXTA_OBJECT_FREE_FUNC free, void *cookie);
 
+/**
+ * Initialize an object.
+ * All objects must be initialized before being used and shared.
+ * All initialized objects are considered as being shared once. In other
+ * words, JXTA_OBJECT_RELEASE must be invoked in order to actually free an
+ * initialized object.
+ *
+ * For static initialization of JXTA objects, you can instead use the macro
+ * JXTA_OBJECT_STATIC_INIT as follows:
+ *
+ * static Jxta_object_derivate my_obj = {
+ *   JXTA_OBJECT_STATIC_INIT,
+ *   "other fields initializers"
+ * };
+ *
+ * @param obj pointer to the object to initialize.
+ * @param flags Flags that will be set for the object.
+ * @param free pointer to the free function of the object.
+ * @param cookie is void* that is not intepreted by the object management,
+ *        but can be used within the free function. That can be a pointer to 
+ *        a pool, or whatever, or even be null.
+ * @return the created object. (same value as x)
+ * @note this macros does not need to be thread safe, because it would be
+ * a bug in the calling code if a same object is being used before being
+ * initialized.
+ **/
+void *JXTA_OBJECT_INIT_FLAGS(void *obj, unsigned int flags, JXTA_OBJECT_FREE_FUNC free, void *cookie);
 
 /**
  * Share an object. 
@@ -241,15 +270,18 @@ void *JXTA_OBJECT_INIT(void *x, JXTA_OBJECT_FREE_FUNC free, void *cookie);
  * @return the shared object. Same value as obj if OBJ is a valid object
  *  otherwise NULL)
  **/
-void *JXTA_OBJECT_SHARE(void *obj);
+Jxta_object *JXTA_OBJECT_SHARE(Jxta_object * obj);
 
 /**
  * Release an object
+ *
  * When an object has been initialized, and/or, shared, it must be released.
  *
  * @param obj pointer to the object to release.
+ * @return The current refcount. A signed number to allow for easier
+ * detection of underflow.
  **/
-void JXTA_OBJECT_RELEASE(void *obj);
+int JXTA_OBJECT_RELEASE(void *obj);
 
 /**
  * Check an object
@@ -258,54 +290,63 @@ void JXTA_OBJECT_RELEASE(void *obj);
  * @param obj object to check
  * @return  TRUE if the object is valid, otherwise FALSE.
  **/
-Jxta_boolean JXTA_OBJECT_CHECK_VALID(void *obj);
+Jxta_boolean JXTA_OBJECT_CHECK_VALID(Jxta_object * obj);
 
+/**
+ * Get the current refcount for an object. A signed number to allow for easier
+ * detection of underflow.
+ * 
+ * @param obj object to check
+ * @return  The reference count
+ **/
+int JXTA_OBJECT_GET_REFCOUNT(Jxta_object * obj);
 
 /*
  * Jxta_object standard functions. Modules dealing with objects should
  * use these prototypes.
  */
 
-/************************************************************************
- ** Compares two objects of the same type for equality and returns
- ** TRUE if they are equal or false if they are not. Definition of
- ** equality for any particular object type is up to the function doing
- ** the evaluation, it may not be the same as binary equivalent.
- **
- ** @param obj1 first object to compare.
- ** @param obj2 second object to compare.
- ** @return TRUE if equivalent or FALSE if not.
- *************************************************************************/
+/**
+ * Compares two objects of the same type for equality and returns
+ * TRUE if they are equal or false if they are not. Definition of
+ * equality for any particular object type is up to the function doing
+ * the evaluation, it may not be the same as binary equivalent.
+ *
+ * @param obj1 first object to compare.
+ * @param obj2 second object to compare.
+ * @return TRUE if equivalent or FALSE if not.
+ **/
 typedef Jxta_boolean(*Jxta_object_equals_func) (Jxta_object const *obj1, Jxta_object const *obj2);
 
-/************************************************************************
- ** Compares two objects of the same type and returns an int which
- ** describes their natural ordering relationship. Not all object types 
- ** have an ordering relationship.
- **
- ** -1 for obj1 < obj2
- **  0 for obj1 == obj2
- **  1 for obj1 > obj2
- ** 
- ** @param obj1 first object to compare.
- ** @param obj2 second object to compare.
- ** @return -1 if obj1 < obj2, 0 for obj1 == obj2, 1 for obj1 > obj2
- *************************************************************************/
+/**
+ * Compares two objects of the same type and returns an int which
+ * describes their natural ordering relationship. Not all object types 
+ * have an ordering relationship.
+ *
+ * -1 for obj1 < obj2
+ *  0 for obj1 == obj2
+ *  1 for obj1 > obj2
+ * 
+ * @param obj1 first object to compare.
+ * @param obj2 second object to compare.
+ * @return -1 if obj1 < obj2, 0 for obj1 == obj2, 1 for obj1 > obj2
+ **/
 typedef int (*Jxta_object_compare_func) (Jxta_object const *obj1, Jxta_object const *obj2);
 
-/************************************************************************
- ** Calculates a hash value for the provided object. The value should be
- ** reasonably non-colliding over the range of unsigned int and have the
- ** property that if obj1 and obj2 are equivalent via an equals function
- ** then they should have the same hash value.
- ** 
- ** @param obj1 the object who's hash value is desired.
- ** @return a hash value.
- *************************************************************************/
+/**
+ * Calculates a hash value for the provided object. The value should be
+ * reasonably non-colliding over the range of unsigned int and have the
+ * property that if obj1 and obj2 are equivalent via an equals function
+ * then they should have the same hash value.
+ * 
+ * @param obj1 the object who's hash value is desired.
+ * @return a hash value.
+ **/
 typedef unsigned int (*Jxta_object_hash_func) (Jxta_object * obj);
 
 /**
- 
+*   Private implementation of Jxta_object is found in this file. Applications
+*   should not need to use depend upon the declarations found in this file.
 **/
 #include "jxta_object_priv.h"
 
@@ -314,6 +355,5 @@ typedef unsigned int (*Jxta_object_hash_func) (Jxta_object * obj);
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif /* __JXTA_OBJECT_H__ */

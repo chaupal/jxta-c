@@ -51,11 +51,11 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: http_client_test.c,v 1.8 2003/12/18 19:37:48 wiarda Exp $
+ * $Id: http_client_test.c,v 1.9 2005/04/07 01:08:38 slowhog Exp $
  */
 
 
-
+#include "jxta.h"
 #include "../src/jxta_transport_http_client.h"
 
 int main (int argc, char** argv) {
@@ -66,11 +66,7 @@ int main (int argc, char** argv) {
   HttpRequest    *req;
   HttpResponse   *res;
 
-#ifdef WIN32 
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize();
-#endif
+    jxta_initialize();
   
   /* char *content_length_header; */
   /* apr_ssize_t content_length; */
@@ -143,5 +139,6 @@ int main (int argc, char** argv) {
     
   }
 
+    jxta_terminate();
   return 0;
 }

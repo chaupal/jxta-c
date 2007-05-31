@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_listener.c,v 1.20 2005/02/22 23:49:12 slowhog Exp $
+ * $Id: jxta_listener.c,v 1.25 2005/04/02 05:49:05 slowhog Exp $
  */
 
 #include <stdlib.h>
@@ -78,7 +78,7 @@ struct _jxta_listener {
     void *arg;
     int maxNbOfInvoke;
     int maxQueueSize;
-    boolean started;
+    Jxta_boolean started;
     int nbOfThreads;
     int nbOfBusyThreads;
     Queue *queue;
@@ -88,6 +88,24 @@ struct _jxta_listener {
 
 
 static const Jxta_time_diff WAITING_DELAY = 5 * 60 * 1000 * 1000;
+
+static void _listener_stop(Jxta_listener *self)
+{
+    int i;
+
+    self->started = FALSE;
+
+    /* To awake all waiting threads */
+    for (i = self->nbOfThreads; i > 0; i--) {
+        queue_enqueue(self->queue, NULL);
+    }
+
+    apr_thread_mutex_unlock(self->mutex);
+	while (self->nbOfThreads > 0) {
+		apr_sleep(20 * 1000); /* 20 ms */
+	}
+    apr_thread_mutex_lock(self->mutex);
+}
 
 /**
  ** Free the shared dlist (invoked when the shared dlist is no longer used by anyone.
@@ -113,6 +131,10 @@ static void jxta_listener_free(Jxta_object * listener)
      * has a reference on this listener. So things should be safe.
      */
     apr_thread_mutex_lock(self->mutex);
+
+    if (self->started) {
+        _listener_stop(self);
+    }
 
     /* Release all the object contained in the listener */
     if (self->queue != NULL) {
@@ -226,7 +248,6 @@ void jxta_listener_start(Jxta_listener * self)
 
 void jxta_listener_stop(Jxta_listener * self)
 {
-
     JXTA_OBJECT_CHECK_VALID(self);
 
   /**
@@ -235,7 +256,7 @@ void jxta_listener_stop(Jxta_listener * self)
    ** an event, and it should do that.
    **/
     apr_thread_mutex_lock(self->mutex);
-    self->started = FALSE;
+    _listener_stop(self);
     apr_thread_mutex_unlock(self->mutex);
 }
 
@@ -246,9 +267,8 @@ static void * APR_THREAD_FUNC listener_thread_main(apr_thread_t * thread, void *
     Jxta_status rv;
 
     JXTA_OBJECT_CHECK_VALID(self);
-    JXTA_OBJECT_SHARE(self);
 
-    while (1) {
+    while (self->started) {
 
         Jxta_object *obj = NULL;
 
@@ -303,6 +323,8 @@ static void create_listener_thread(Jxta_listener * self)
 
     apr_thread_mutex_lock(self->mutex);
 
+    JXTA_OBJECT_SHARE(self);
+    self->nbOfThreads++;
     apr_thread_create(&thread, NULL,    /* no attr */
                       listener_thread_main, (void *) self, (apr_pool_t *) self->pool);
 
@@ -347,7 +369,6 @@ Jxta_status jxta_listener_schedule_object(Jxta_listener * self, Jxta_object * ob
                 /* We can create a new listener thread */
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Create additional listener thread to existing %d ones\n",
                                 self->nbOfThreads);
-                self->nbOfThreads++;
                 create_listener_thread(self);
             }
         }

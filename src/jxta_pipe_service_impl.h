@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_service_impl.h,v 1.4 2005/01/12 21:46:58 bondolo Exp $
+ * $Id: jxta_pipe_service_impl.h,v 1.5 2005/03/26 00:32:03 bondolo Exp $
  */
 
    
@@ -117,19 +117,19 @@ extern "C" {
 
     Jxta_status (*timed_connect) (Jxta_pipe_service_impl* service,
 				  Jxta_pipe_adv*     adv,
-				  Jxta_time          timeout,
+				  Jxta_time_diff          timeout,
 				  Jxta_vector*       peers,
 				  Jxta_pipe**        pipe);
 
     Jxta_status (*connect) (Jxta_pipe_service_impl* service,
 			    Jxta_pipe_adv*     adv,
-			    Jxta_time          timeout,
+			    Jxta_time_diff          timeout,
 			    Jxta_vector*       peers,
 			    Jxta_listener*     listener);
 
     Jxta_status (*timed_accept) (Jxta_pipe_service_impl* service,
 				 Jxta_pipe_adv*     adv,
-				 Jxta_time          timeout,
+				 Jxta_time_diff          timeout,
 				 Jxta_pipe**        pipe);
 
 
@@ -164,13 +164,13 @@ extern "C" {
 
     Jxta_status (*timed_remote_resolve) (Jxta_pipe_resolver* resolver,
 					 Jxta_pipe_adv* adv,
-					 Jxta_time timeout,
+					 Jxta_time_diff timeout,
 					 Jxta_peer* dest,
 					 Jxta_vector** peers);
 
     Jxta_status (*remote_resolve) (Jxta_pipe_resolver* resolver,
 				   Jxta_pipe_adv* adv,
-				   Jxta_time timeout,
+				   Jxta_time_diff timeout,
 				   Jxta_peer* dest,
 				   Jxta_listener* listener);
 
@@ -202,7 +202,7 @@ extern "C" {
     JXTA_OBJECT_HANDLE;
 
     Jxta_status (*timed_receive) (Jxta_inputpipe* ip,
-				  Jxta_time timeout,
+				  Jxta_time_diff timeout,
 				  Jxta_message** msg);
 
     Jxta_status (*add_listener) (Jxta_inputpipe* ip,
@@ -326,7 +326,7 @@ extern "C" {
    **/
   Jxta_status jxta_pipe_resolver_timed_remote_resolve(Jxta_pipe_resolver* resolver,
 						       Jxta_pipe_adv* adv,
-						       Jxta_time timeout,
+						       Jxta_time_diff timeout,
 						       Jxta_peer* dest,
 						       Jxta_vector** peers);
 
@@ -351,7 +351,7 @@ extern "C" {
    **/
   Jxta_status jxta_pipe_resolver_remote_resolve(Jxta_pipe_resolver* resolver,
 						 Jxta_pipe_adv* adv,
-						 Jxta_time timeout,
+						 Jxta_time_diff timeout,
 						 Jxta_peer* dest,
 						 Jxta_listener* listener);
 
@@ -404,7 +404,7 @@ extern "C" {
    **/
   Jxta_status jxta_pipe_service_impl_timed_connect (Jxta_pipe_service_impl* service,
 						    Jxta_pipe_adv*     adv,
-						    Jxta_time          timeout,
+						    Jxta_time_diff          timeout,
 						    Jxta_vector*       peers,
 						    Jxta_pipe**        pipe);
 
@@ -452,7 +452,7 @@ extern "C" {
    **/
   Jxta_status jxta_pipe_service_impl_connect (Jxta_pipe_service_impl* service,
 					      Jxta_pipe_adv*     adv,
-					      Jxta_time          timeout,
+					      Jxta_time_diff          timeout,
 					      Jxta_vector*       peers,
 					      Jxta_listener*     listener);
 
@@ -479,7 +479,7 @@ extern "C" {
    **/
   Jxta_status jxta_pipe_service_impl_timed_accept (Jxta_pipe_service_impl* service,
 						   Jxta_pipe_adv*     adv,
-						   Jxta_time          timeout,
+						   Jxta_time_diff          timeout,
 						   Jxta_pipe**        pipe);
 
 

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxtaobject_test.c,v 1.15 2004/05/25 04:12:09 tra Exp $
+ * $Id: jxtaobject_test.c,v 1.18 2005/04/07 22:58:54 slowhog Exp $
  */
 
 #include "jxta.h"
@@ -67,18 +67,18 @@
  **/
 
 typedef struct {
-  JXTA_OBJECT_HANDLE;
-  int field1;
-  int field2;
+    JXTA_OBJECT_HANDLE;
+    int field1;
+    int field2;
 } TestObject;
 
 
-boolean moduleA(void);
-void moduleB(TestObject* obj);
+Jxta_boolean moduleA(void);
+void moduleB(TestObject * obj);
 
-void* allocatedObject;
-void* allocatedCookie;
-boolean freePassed = FALSE;
+void *allocatedObject;
+void *allocatedCookie;
+Jxta_boolean freePassed = FALSE;
 
 #define VALUE1 0x12345678
 #define VALUE2 0x87654321
@@ -89,206 +89,199 @@ boolean freePassed = FALSE;
  * The cookie is only used here for testing purpose.
  **/
 
-void
-testFree (void* obj) {
-  void* cookie = JXTA_OBJECT_GET_FREECOOKIE(obj);
-  if (obj != allocatedObject) {
-    printf ("free: invalid object address\n");
-    return;
-  }
-  if (cookie != allocatedCookie) {
-    printf ("free: invalid cookie address\n");
-    return;
-  }
-  free (obj);
-  freePassed = TRUE;
+void testFree(void *obj)
+{
+    void *cookie = JXTA_OBJECT_GET_FREECOOKIE(obj);
+    if (obj != allocatedObject) {
+        printf("free: invalid object address\n");
+        return;
+    }
+    if (cookie != allocatedCookie) {
+        printf("free: invalid cookie address\n");
+        return;
+    }
+    free(obj);
+    freePassed = TRUE;
 }
 
 /**
  * This function emulates module A:
  * Creates an object, give it to module B.
  **/
-boolean
-moduleA() {
-  /* First create an instance of the object */
-  TestObject* obj;
-  obj = (TestObject*) malloc (sizeof(TestObject));
-  allocatedObject = (void*) obj;
-  allocatedCookie = (void*) "This is a test cookie";
-  
-  /* Initialize it */
-  JXTA_OBJECT_INIT (obj, testFree, allocatedCookie);
+Jxta_boolean moduleA()
+{
+    /* First create an instance of the object */
+    TestObject *obj;
+    obj = (TestObject *) malloc(sizeof(TestObject));
+    allocatedObject = (void *) obj;
+    allocatedCookie = (void *) "This is a test cookie";
 
-  /* Set values in the object */
-  obj->field1 = VALUE1;
-  obj->field2 = VALUE2;
-  /* Sharing it, and give it to B */
-  JXTA_OBJECT_SHARE (obj);
-  moduleB (obj);
-  /* Release the object. Since moduleB is going to release the object
-   * before coming back from the call, this release should trigger the
-   * actual free. */
-  JXTA_OBJECT_RELEASE (obj);
-  if (freePassed) {
-    return TRUE;
-  } else {
-    return FALSE;
-  }
+    /* Initialize it */
+    JXTA_OBJECT_INIT(obj, testFree, allocatedCookie);
+
+    /* Set values in the object */
+    obj->field1 = VALUE1;
+    obj->field2 = VALUE2;
+    /* Sharing it, and give it to B */
+    JXTA_OBJECT_SHARE(obj);
+    moduleB(obj);
+    /* Release the object. Since moduleB is going to release the object
+     * before coming back from the call, this release should trigger the
+     * actual free. */
+    JXTA_OBJECT_RELEASE(obj);
+    if (freePassed) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
 }
 
 /*
  * Module B function. Just get the object and release it.
  */
-void
-moduleB (TestObject* obj) {
+void moduleB(TestObject * obj)
+{
 
-  /*
-   * First test if the object is corrupted.
-   */
-  if ((obj->field1 != VALUE1) || (obj->field2 != VALUE2)) {
-    /* Data has been corrupted */
-    printf ("Object data section has been corrupted.\n");
-  }
+    /*
+     * First test if the object is corrupted.
+     */
+    if ((obj->field1 != VALUE1) || (obj->field2 != VALUE2)) {
+        /* Data has been corrupted */
+        printf("Object data section has been corrupted.\n");
+    }
 
-  /* Release the object. Since we know that the object is shared
-   * by module A, and since we know that module A has not yet released
-   * it, this release should not actually free the object. */
-  JXTA_OBJECT_RELEASE (obj);
+    /* Release the object. Since we know that the object is shared
+     * by module A, and since we know that module A has not yet released
+     * it, this release should not actually free the object. */
+    JXTA_OBJECT_RELEASE(obj);
 }
 
-boolean
-checkHandle (TestObject* obj,
-	     int targetRefCount,
-	     void* freeCookie) {
-	     
-  Jxta_object* pt = (Jxta_object*) obj;
-  if (pt->_refCount != targetRefCount) {
-    printf("bad reference count\n");
-    return FALSE;
-  }
-  if (pt->_free != (JXTA_OBJECT_FREE_FUNC) testFree) {
-    printf("bad free function\n");
-    return FALSE;
-  }
-  if (pt->_freeCookie != (void*) freeCookie) {
-    printf("bad free cookie\n");
-    return FALSE;
-  }
-  return TRUE;
+Jxta_boolean checkHandle(TestObject * obj, int targetRefCount, void *freeCookie)
+{
+
+    Jxta_object *pt = (Jxta_object *) obj;
+    if (pt->_refCount != targetRefCount) {
+        printf("bad reference count (%d != %d) \n", pt->_refCount, targetRefCount);
+        return FALSE;
+    }
+    if (pt->_free != (JXTA_OBJECT_FREE_FUNC) testFree) {
+        printf("bad free function\n");
+        return FALSE;
+    }
+    if (pt->_freeCookie != (void *) freeCookie) {
+        printf("bad free cookie\n");
+        return FALSE;
+    }
+    return TRUE;
 }
 
-Jxta_boolean 
-jxtaobject_test( int * tests_run,
-		 int * tests_passed,
-		 int * tests_failed) {
+Jxta_boolean jxtaobject_test(int *tests_run, int *tests_passed, int *tests_failed)
+{
 
-  TestObject* obj = (TestObject*) malloc (sizeof(TestObject));
-  Jxta_object* pt = (Jxta_object*) obj;
-  void* ptr;
-  Jxta_boolean passed = TRUE;
-  char* myCookie = (char*) "ThisIsASampleCookie";
+    TestObject *obj = (TestObject *) malloc(sizeof(TestObject));
+    Jxta_object *pt = (Jxta_object *) obj;
+    void *ptr;
+    Jxta_boolean passed = TRUE;
+    char *myCookie = (char *) "ThisIsASampleCookie";
 
-  obj->field1 = VALUE1;
-  obj->field2 = VALUE2;
+    obj->field1 = VALUE1;
+    obj->field2 = VALUE2;
 
 
-  if (pt != JXTA_OBJECT(obj)) {
-    printf("JXTA_OBJECT failed\n");
-    return FALSE;
-  }
+    if (pt != JXTA_OBJECT(obj)) {
+        printf("JXTA_OBJECT failed\n");
+        return FALSE;
+    }
 
 
   /**
    * First test jxtaobject individual functions.
    **/
-  printf("JXTA_OBJECT_INIT: ");
-  *tests_run += 1;
-  JXTA_OBJECT_INIT (obj, testFree, (void*) myCookie);
-  if (checkHandle(obj, 1, (void*) myCookie)) {
-    printf ("passed\n");
-    *tests_passed += 1;
-  } else {
-    printf ("failed\n");
-    *tests_failed += 1;
-    passed = FALSE;
-  }
+    printf("JXTA_OBJECT_INIT: ");
+    *tests_run += 1;
+    JXTA_OBJECT_INIT(obj, testFree, (void *) myCookie);
+    if (checkHandle(obj, 1, (void *) myCookie)) {
+        printf("passed\n");
+        *tests_passed += 1;
+    } else {
+        printf("failed\n");
+        *tests_failed += 1;
+        passed = FALSE;
+    }
 
 
-  printf("JXTA_OBJECT_SHARE: ");
-  *tests_run += 1;
-  JXTA_OBJECT_SHARE (obj);
-  if (checkHandle(obj, 2, (void*) myCookie)) {
-    *tests_passed += 1;
-    printf ("passed\n");
-  } else {
-    printf ("failed\n");
-    passed = FALSE;
-    *tests_failed += 1;
+    printf("JXTA_OBJECT_SHARE: ");
+    *tests_run += 1;
+    JXTA_OBJECT_SHARE(obj);
+    if (checkHandle(obj, 2, (void *) myCookie)) {
+        *tests_passed += 1;
+        printf("passed\n");
+    } else {
+        printf("failed\n");
+        passed = FALSE;
+        *tests_failed += 1;
 
-  }
-
-
-  printf("JXTA_OBJECT_RELEASE: ");
-  *tests_run += 1;
-  JXTA_OBJECT_RELEASE (obj);
-  if (checkHandle(obj, 1, (void*) myCookie)) {
-    *tests_passed += 1;
-    printf ("passed\n");
-  } else {
-    printf ("failed\n");
-    passed = FALSE;
-    *tests_failed += 1;
-  }
+    }
 
 
-  printf("Data corruption: ");
-  *tests_run += 1;
-  if ((obj->field1 == VALUE1) && (obj->field2 == VALUE2)) {
-    printf ("passed\n");
-    *tests_passed += 1;
-  } else {
-    printf ("failed\n");
-    passed = FALSE;
-    *tests_failed += 1;
-  }
+    printf("JXTA_OBJECT_RELEASE: ");
+    *tests_run += 1;
+    JXTA_OBJECT_RELEASE(obj);
+    if (checkHandle(obj, 1, (void *) myCookie)) {
+        *tests_passed += 1;
+        printf("passed\n");
+    } else {
+        printf("failed\n");
+        passed = FALSE;
+        *tests_failed += 1;
+    }
 
 
- /* Individual test are completed. Now test a typical scenario */
-  printf ("Sample test program: ");
-  *tests_run += 1;
-  if (moduleA()) {
-    printf ("passed\n");
-    *tests_passed += 1;
-  } else {
-    printf ("failed\n");
-    passed = FALSE;
-    *tests_failed += 1;
-  }
-  return passed;
+    printf("Data corruption: ");
+    *tests_run += 1;
+    if ((obj->field1 == VALUE1) && (obj->field2 == VALUE2)) {
+        printf("passed\n");
+        *tests_passed += 1;
+    } else {
+        printf("failed\n");
+        passed = FALSE;
+        *tests_failed += 1;
+    }
+
+
+    /* Individual test are completed. Now test a typical scenario */
+    printf("Sample test program: ");
+    *tests_run += 1;
+    if (moduleA()) {
+        printf("passed\n");
+        *tests_passed += 1;
+    } else {
+        printf("failed\n");
+        passed = FALSE;
+        *tests_failed += 1;
+    }
+    return passed;
 }
 
 
 #ifdef STANDALONE
-int
-main (int argc, char **argv) {
-    int run,failed,passed;
+int main(int argc, char **argv)
+{
+    int run, failed, passed;
     Jxta_boolean result;
-    
+
     run = failed = passed = 0;
-#ifdef WIN32 
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize();
-#endif
-     result = jxtaobject_test(&run, & passed, &failed);
+    jxta_initialize();
+    result = jxtaobject_test(&run, &passed, &failed);
 
-     fprintf(stdout,"Tests run:    %d\n",run);  
-     fprintf(stdout,"Tests passed: %d\n",passed);  
-     fprintf(stdout,"Tests failed: %d\n",failed);  
-     if( result == FALSE){
-        fprintf(stdout,"Some tests failed\n");
-     }
+    fprintf(stdout, "Tests run:    %d\n", run);
+    fprintf(stdout, "Tests passed: %d\n", passed);
+    fprintf(stdout, "Tests failed: %d\n", failed);
+    if (result == FALSE) {
+        fprintf(stdout, "Some tests failed\n");
+    }
 
-     return (int) failed;
+    jxta_terminate();
+    return (int) failed;
 }
 #endif

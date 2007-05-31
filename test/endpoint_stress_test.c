@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: endpoint_stress_test.c,v 1.18 2005/01/31 20:21:09 slowhog Exp $
+ * $Id: endpoint_stress_test.c,v 1.19 2005/04/07 22:58:53 slowhog Exp $
  */
 
 #include "jxta.h"
@@ -254,12 +254,13 @@ main (int argc, char **argv)
   sigaction(SIGPIPE, &sa, NULL);
 #endif
 
-  apr_initialize();
 
   if(argc != 5) {
     printf("usage: endpoint_test ip:port message_dir thread_count loop_count\n");
     return -1;
   }
+
+  jxta_initialize();
 
   host         = argv[1];
   msg_dir      = argv[2];
@@ -308,5 +309,6 @@ main (int argc, char **argv)
   apr_thread_cond_destroy (cond);
   apr_pool_destroy(pool);
 
+  jxta_terminate();
   return 0;
 }

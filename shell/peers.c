@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: peers.c,v 1.5 2004/12/05 02:16:44 slowhog Exp $
+ * $Id: peers.c,v 1.6 2005/03/22 03:49:58 bondolo Exp $
  */
 
 #include <stdio.h>
@@ -103,9 +103,9 @@ void jxta_peers_start(Jxta_object * appl,
 	JString * pid = jstring_new_0();
 	JString * attr= jstring_new_0();
 	JString * value= jstring_new_0();
-	boolean rf=FALSE;
-	boolean pf=FALSE;
-	boolean ff=FALSE;
+	Jxta_boolean rf=FALSE;
+	Jxta_boolean pf=FALSE;
+	Jxta_boolean ff=FALSE;
 	Jxta_discovery_service* discovery;
 	long qid=-1;
 	long responses = 10;

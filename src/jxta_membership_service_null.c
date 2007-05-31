@@ -50,13 +50,13 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_membership_service_null.c,v 1.9 2005/03/02 23:56:36 slowhog Exp $
+ * $Id: jxta_membership_service_null.c,v 1.10 2005/03/25 02:32:01 hamada Exp $
  */
 
 
 #include "jxtaapr.h"
 
-#include "jpr/jpr_excep.h"
+#include "jpr/jpr_excep_proto.h"
 
 #include "jxta_errno.h"
 #include "jxta_debug.h"
@@ -102,7 +102,7 @@ static Jxta_status resign( Jxta_membership_service* svc );
  */
 
 Jxta_status
-jxta_membership_service_null_init (Jxta_module* membership, Jxta_PG* group,
+jxta_membership_service_null_init(Jxta_module* membership, Jxta_PG* group,
                                    Jxta_id* assigned_id, Jxta_advertisement* impl_adv) {
 
     Jxta_membership_service_null* self = (Jxta_membership_service_null*) membership;
@@ -115,40 +115,22 @@ jxta_membership_service_null_init (Jxta_module* membership, Jxta_PG* group,
 
 
     /* store a copy of our assigned id */
-    if (assigned_id != 0) {
+    if (assigned_id != NULL) {
         JXTA_OBJECT_SHARE(assigned_id);
         self->assigned_id = assigned_id;
     }
 
     /* keep a reference to our group and impl adv */
-    if (group != 0)
-        JXTA_OBJECT_SHARE(group);
-    if (impl_adv != 0)
+    
+    if (impl_adv != NULL) {
         JXTA_OBJECT_SHARE(impl_adv);
+    }
     self->group = group;
     self->impl_adv = impl_adv;
 
     self->creds = jxta_vector_new( 5 );
 
     return JXTA_SUCCESS;
-}
-
-/**
- * Initializes an instance of the Membership Service. (exception variant).
- * 
- * @param service a pointer to the instance of the Membership Service.
- * @param group a pointer to the PeerGroup the Membership Service is 
- * initialized for.
- *
- */
-
-static void
-init_e (Jxta_module* membership, Jxta_PG* group, Jxta_id* assigned_id,
-        Jxta_advertisement* impl_adv, Throws) {
-    Jxta_status s =
-        jxta_membership_service_null_init(membership, group, assigned_id, impl_adv);
-    if (s != JXTA_SUCCESS)
-        Throw(s);
 }
 
 /**
@@ -308,7 +290,7 @@ Jxta_membership_service_null_methods jxta_membership_service_null_methods = {
                 {
                     "Jxta_module_methods",
                     jxta_membership_service_null_init,
-                    init_e,
+                    jxta_module_init_e_impl,
                     start,
                     stop
                 },
@@ -345,17 +327,19 @@ void jxta_membership_service_null_destruct(Jxta_membership_service_null* self) {
 
     /* release/free/destroy our own stuff */
 
-    if (NULL != self->creds)
+    if (NULL != self->creds) {
         JXTA_OBJECT_RELEASE (self->creds);
+    }
 
-    if (self->group) 
-        JXTA_OBJECT_RELEASE(self->group);
+    self->group = NULL; 
 
-    if (self->impl_adv) 
+    if (self->impl_adv) {
         JXTA_OBJECT_RELEASE(self->impl_adv);
+    }
 
-    if (self->assigned_id) 
+    if (self->assigned_id) {
         JXTA_OBJECT_RELEASE(self->assigned_id);
+    }
 
     /* call the base classe's dtor. */
     jxta_membership_service_destruct((Jxta_membership_service*) self);

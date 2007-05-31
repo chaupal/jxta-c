@@ -35,8 +35,8 @@
  * DISCLAIMED.  IN NO EVENT SHALL SUN MICROSYSTEMS OR
  * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
  * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-                                                 * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-                                                 * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: whisp.c,v 1.7 2005/01/15 03:32:06 brent Exp $
+ * $Id: whisp.c,v 1.8 2005/04/04 17:17:55 bondolo Exp $
  */
 
 /*
@@ -62,12 +62,13 @@
  */
 
 
-#include <jxta_dr.h>
-#include <jxta_pipe_service.h>
-
 #include <unistd.h>             /* usleep() */
 #include <assert.h>             /* assert() */
 #include <time.h>               /* ctime(), time() */
+#include <string.h>
+
+#include <jxta_dr.h>
+#include <jxta_pipe_service.h>
 
 #include "jxta_tutorial_shared.h"
 #include "jxta_tutorial_args.h"
@@ -434,7 +435,9 @@ void listen_on_message_pipe(void)
     /* publish the pipe ad */
     status =
         discovery_service_remote_publish(discoSvc, NULL, (Jxta_advertisement *) messagePipeAd, DISC_ADV, MESSAGE_PIPE_LIFETIME);
-//    status = discovery_service_publish(discoSvc, (Jxta_advertisement *)messagePipeAd, DISC_ADV, MESSAGE_PIPE_LIFETIME, MESSAGE_PIPE_LIFETIME);
+#if 0
+    status = discovery_service_publish(discoSvc, (Jxta_advertisement *)messagePipeAd, DISC_ADV, MESSAGE_PIPE_LIFETIME, MESSAGE_PIPE_LIFETIME);
+#endif    
     assert(status == JXTA_SUCCESS);
 
     /* prepare the listener to respond to messages sent to us */
@@ -444,9 +447,11 @@ void listen_on_message_pipe(void)
 
 void shut_down_message_pipe(void)
 {
-    /* this is not implemented yet */
-    // Jxta_status status = jxta_pipe_service_remove_accept_listener(pipeSvc, messagePipeAd, pipeEventListener);
-    // assert(status == JXTA_SUCCESS);
+    /* FIXME this is not implemented yet */
+#if 0
+    Jxta_status status = jxta_pipe_service_remove_accept_listener(pipeSvc, messagePipeAd, pipeEventListener);
+    assert(status == JXTA_SUCCESS);
+#endif
 
     /* just free the pipe and input pipe objects */
     if (inPipe) {
@@ -871,7 +876,7 @@ JString *new_subgroup_description(void)
     jstring_append_2(groupDesc, " on ");
     timeVal = time(NULL);
     date = ctime(&timeVal);
-    *(date + strlen(date) - 1) = '\0';  // remove trailing newline
+    *(date + strlen(date) - 1) = '\0';  /* remove trailing newline */
     jstring_append_2(groupDesc, date);
     jstring_append_2(groupDesc, ".");
 
@@ -1088,7 +1093,7 @@ void rdv_event_received(Jxta_object * obj, void *arg)
     switch (event->event) {
     case JXTA_RDV_FAILED:
         printf("JXTA_RDV_FAILED");
-        // user_leave_subgroup();
+        /* user_leave_subgroup(); */
         break;
     case JXTA_RDV_CONNECTED:
         printf("JXTA_RDV_CONNECTED");
@@ -1158,7 +1163,9 @@ void discovery_response_received(Jxta_object * obj, void *arg)
 
             status = jxta_vector_get_object_at(newAds, (Jxta_object **) & ad, i);
             assert(JXTA_SUCCESS == status);
-//      discovery_service_publish(discoSvc, (Jxta_advertisement *)ad, DISC_ADV, MESSAGE_PIPE_LIFETIME, MESSAGE_PIPE_LIFETIME);
+#if 0
+      discovery_service_publish(discoSvc, (Jxta_advertisement *)ad, DISC_ADV, MESSAGE_PIPE_LIFETIME, MESSAGE_PIPE_LIFETIME);
+#endif      
             printf("\n");
             pipe_advertisement_print_description(stdout, ad);
 
@@ -1176,8 +1183,10 @@ void discovery_response_received(Jxta_object * obj, void *arg)
          * instead of manually merging existing and new pipeAds, let the library do it -- doesn't work ??
          * The hash table doesn't seem to have any values stored for the Name element in DISC_ADV
          */
-//    status = discovery_service_get_local_advertisements(discoSvc, DISC_ADV, "Name", "whisp.*", &pipeAds);
-//    assert(JXTA_SUCCESS == status);
+#if 0
+    status = discovery_service_get_local_advertisements(discoSvc, DISC_ADV, "Name", "whisp.*", &pipeAds);
+    assert(JXTA_SUCCESS == status);
+#endif
     } else if (DISC_GROUP == type) {
         /* Group advertisements */
 

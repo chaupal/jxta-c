@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_server_tunnel.c,v 1.3 2005/02/11 03:02:36 slowhog Exp $
+ * $Id: jxta_server_tunnel.c,v 1.4 2005/04/07 22:58:55 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -82,7 +82,6 @@ int main(int argc, char *argv[])
     }
 
     jxta_initialize();
-    jxta_log_initialize();
     if (argc >= 4) {
         log_s = jxta_log_selector_new_and_set(argv[3], &rv);
     } else {
@@ -150,7 +149,6 @@ int main(int argc, char *argv[])
     JXTA_OBJECT_RELEASE(pg);
 
     jxta_log_file_close(log_f);
-    jxta_log_terminate();
     jxta_terminate();
 
     return 0;

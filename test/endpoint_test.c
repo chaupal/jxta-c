@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: endpoint_test.c,v 1.22 2004/05/20 01:27:36 tra Exp $
+ * $Id: endpoint_test.c,v 1.23 2005/04/07 22:58:53 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -155,8 +155,6 @@ main (int argc, char **argv)
    sigaction(SIGPIPE, &sa, NULL);
 #endif
 
-   apr_initialize();
-
    if(argc > 2) {
        printf("usage: endpoint_test ip:port>\n");
        return -1;
@@ -167,6 +165,8 @@ main (int argc, char **argv)
    } else {
      host = argv[1];
    }
+
+   jxta_initialize();
 
    /* Initialise the endpoint and http service, set the endpoint listener */
    init();
@@ -192,6 +192,7 @@ main (int argc, char **argv)
     jpr_thread_delay (1 * 60 * 1000 * 1000);
 
    apr_pool_destroy(pool);
+   jxta_terminate();
 
    return 0;
    

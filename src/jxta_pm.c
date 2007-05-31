@@ -50,22 +50,12 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pm.c,v 1.18 2005/03/01 19:37:25 bondolo Exp $
+ * $Id: jxta_pm.c,v 1.19 2005/04/06 00:38:52 bondolo Exp $
  */
-
-
-/*
-* The following command will compile the output from the script 
-* given the apr is installed correctly.
-*/
-/*
-* gcc -DSTANDALONE jxta_advertisement.c DiscoveryResponse.c  -o PA \
-  `/usr/local/apache2/bin/apr-config --cflags --includes --libs` \
-  -lexpat -L/usr/local/apache2/lib/ -lapr
-*/
 
 #include <stdio.h>
 #include <string.h>
+
 #include "jxta_errno.h"
 #include "jxta_debug.h"
 #include "jxta_pm.h"
@@ -211,7 +201,7 @@ extern "C" {
     /** The get/set functions represent the public
      * interface to the ad class, that is, the API.
      */
-    char *
+    const char *
     RendezVousPropagateMessage_get_RendezVousPropagateMessage(RendezVousPropagateMessage * ad) {
         return NULL;
     }
@@ -219,7 +209,7 @@ extern "C" {
     void
     RendezVousPropagateMessage_set_RendezVousPropagateMessage(RendezVousPropagateMessage * ad, const char * name) {}
 
-    char *
+    const char *
     RendezVousPropagateMessage_get_DestSName(RendezVousPropagateMessage * ad) {
         return ad->DestSName;
     }
@@ -239,7 +229,7 @@ extern "C" {
         }
     }
 
-    char *
+    const char *
     RendezVousPropagateMessage_get_DestSParam(RendezVousPropagateMessage * ad) {
         return ad->DestSParam;
     }
@@ -256,7 +246,7 @@ extern "C" {
         }
     }
 
-    char *
+    const char *
     RendezVousPropagateMessage_get_MessageId(RendezVousPropagateMessage * ad) {
         return ad->MessageId;
     }
@@ -439,7 +429,7 @@ extern "C" {
         }
 
         jxta_advertisement_delete((Jxta_advertisement*)ad);
-        memset (ad, 0x00, sizeof (RendezVousPropagateMessage));
+        memset (ad, 0xdd, sizeof (RendezVousPropagateMessage));
         free (ad);
     }
 
@@ -457,29 +447,6 @@ extern "C" {
         jxta_advertisement_parse_file((Jxta_advertisement*)ad, stream);
     }
 
-#ifdef STANDALONE
-    int
-    main (int argc, char **argv) {
-        RendezVousPropagateMessage * ad;
-        FILE *testfile;
-
-        if(argc != 2) {
-            printf("usage: ad <filename>\n");
-            return -1;
-        }
-
-        ad = RendezVousPropagateMessage_new();
-
-        testfile = fopen (argv[1], "r");
-        RendezVousPropagateMessage_parse_file(ad, testfile);
-        fclose(testfile);
-
-        /* RendezVousPropagateMessage_print_xml(ad,fprintf,stdout); */
-        RendezVousPropagateMessage_delete(ad);
-
-        return 0;
-    }
-#endif
 #ifdef __cplusplus
 }
 #endif

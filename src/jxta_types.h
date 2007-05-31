@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_types.h,v 1.3 2005/01/13 21:36:59 bondolo Exp $
+ * $Id: jxta_types.h,v 1.4 2005/03/23 19:31:38 bondolo Exp $
  */
 
 #ifndef JXTA_TYPES_H
@@ -59,42 +59,68 @@
 #include <stddef.h>
 #include "jpr/jpr_types.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 #if 0
 }
 #endif
+
 /**
  * JXTA public types from the Portable Runtime (JPR)
- * They are renamed here do reflect that they are part of the
- * JXTA API, although their true definition belongs in the jpr
- * layer. May-be we'll eventually get rid of one or the other of the names.
- */ typedef Jpr_boolean Jxta_boolean;
+ *
+ * They are renamed here do reflect that they are part of the JXTA API, 
+ * although their true definition belongs in the jpr layer. Maybe we'll
+ * eventually get rid of one or the other of the names.
+ **/
+ 
+typedef Jpr_boolean Jxta_boolean;
 typedef Jpr_status Jxta_status;
 
+/**
+    @deprecated Unused
+**/
 typedef Jpr_ssize Jxta_ssize;
+
 typedef Jpr_pool Jxta_pool;
 typedef Jpr_hash Jxta_hash;
-typedef Jpr_uint Jxta_uint;
-typedef Jpr_interval_time Jxta_time_diff;
-typedef Jpr_absolute_time Jxta_time;
-typedef Jpr_port Jxta_port;
-typedef Jpr_in_addr Jxta_in_addr;
-typedef Jpr_expiration_time Jxta_expiration_time;
 
 /**
+    @deprecated Unused
+**/
+typedef Jpr_uint Jxta_uint;
+
+typedef Jpr_interval_time Jxta_time_diff;
+typedef Jpr_absolute_time Jxta_time;
+
+/**
+    XXX should be redefined as an interval time.
+**/
+typedef Jpr_expiration_time Jxta_expiration_time;
+
+typedef Jpr_port Jxta_port;
+typedef Jpr_in_addr Jxta_in_addr;
+
+ /**
  * A definition of boolean that looks like a fundamental type.
  * Hopefully all boolean definitions are the same.
+ *
+ * XXX bondolo Defining "boolean" this way is an incredibly bad idea.
+ * not only will it cause any OS typedef of boolean to be replaced by
+ * Jxta_boolean. There's of course no garauntee that they are AT ALL
+ * compatible. I'm only guessing, but I assume it's a #define because 
+ * if boolean is typedefed then typedef boolean Jxta_boolean would produce
+ * an error. This should have been a clue....
+ *
+ * @deprecated Will be removed. Soon. DO NOT USE!
  */
 #ifndef boolean
 #define boolean Jxta_boolean
 #endif
 
-/*******
- ** JXTA Standard callbacks
- ******/
+/**
+  JXTA Standard callbacks
+ **/
 
 typedef Jxta_status(*ReadFunc) (void *stream, char *buf, size_t len);
 

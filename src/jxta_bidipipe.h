@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bidipipe.h,v 1.2 2005/01/28 02:16:33 slowhog Exp $
+ * $Id: jxta_bidipipe.h,v 1.3 2005/03/26 00:17:10 bondolo Exp $
  */
 
 #ifndef __JXTA_BIDIPIPE_H__
@@ -83,7 +83,7 @@ typedef enum Jxta_bidipipe_states Jxta_bidipipe_state;
 Jxta_bidipipe *jxta_bidipipe_new(Jxta_PG * pg);
 Jxta_status jxta_bidipipe_delete(Jxta_bidipipe * self);
 
-Jxta_status jxta_bidipipe_connect(Jxta_bidipipe * self, Jxta_pipe_adv * remote_adv, Jxta_listener * listener, Jxta_time timeout);
+Jxta_status jxta_bidipipe_connect(Jxta_bidipipe * self, Jxta_pipe_adv * remote_adv, Jxta_listener * listener, Jxta_time_diff timeout);
 Jxta_status jxta_bidipipe_close(Jxta_bidipipe * self);
 
 Jxta_status jxta_bidipipe_accept(Jxta_bidipipe * self, Jxta_pipe_adv * local_adv, Jxta_listener * listener);

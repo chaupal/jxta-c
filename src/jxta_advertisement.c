@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_advertisement.c,v 1.68 2005/03/02 23:47:26 bondolo Exp $
+ * $Id: jxta_advertisement.c,v 1.70 2005/03/24 01:48:12 bondolo Exp $
  */
 
 static const char *__log_cat = "ADV";
@@ -247,7 +247,7 @@ void log_error(XML_Parser parser, const char *document_name)
 /** FIXME: Find a way to merge these two parse functions, or 
  * have them wrap a third function that handles common code.
  */
-Jxta_status jxta_advertisement_parse_charbuffer(Jxta_advertisement * ad, const char *buf, int len)
+Jxta_status jxta_advertisement_parse_charbuffer(Jxta_advertisement * ad, const char *buf, size_t len)
 {
 
     XML_Parser parser = XML_ParserCreate(NULL);
@@ -373,8 +373,7 @@ void jxta_advertisement_register_global_handler(const char *key, const JxtaAdver
     JXTA_OBJECT_RELEASE(new_func_struct);
 
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "From jxta_advertisement_global_register, \n");
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "key being registered: %s\n", key);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "jxta_advertisement_global_register : key being registered: %s\n", key);
 }
 
 
@@ -728,7 +727,7 @@ Jxta_vector *jxta_advertisement_return_indexes(const char *idx[])
         jIndex->element = element;
         jIndex->attribute = attribute;
         jxta_vector_add_object_last(ireturn, (Jxta_object *) jIndex);
-        JXTA_OBJECT_RELEASE((Jxta_object *) jIndex);
+        JXTA_OBJECT_RELEASE(jIndex);
     }
     return ireturn;
 }

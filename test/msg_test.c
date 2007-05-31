@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: msg_test.c,v 1.17 2004/09/24 16:01:53 Mathieu Exp $
+ * $Id: msg_test.c,v 1.18 2005/03/22 16:23:47 bondolo Exp $
  */
 
 #define JXTA_LOG_ENABLE
@@ -113,10 +113,10 @@ Jxta_message_element * createSignatureElement(){
  *
  * @return TRUE if it was returned correctly, FALSE otherwise
  */
-boolean checkSignatureObject(Jxta_message_element *sig){
+Jxta_boolean checkSignatureObject(Jxta_message_element *sig){
    const char* comparer;
    Jxta_bytevector*  content;
-   boolean result = TRUE;
+   Jxta_boolean result = TRUE;
    unsigned char byte;
 
    if( sig == NULL) return FALSE;
@@ -170,13 +170,13 @@ boolean checkSignatureObject(Jxta_message_element *sig){
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean
+Jxta_boolean
 test_jxta_message_element_new_1(void) {
   unsigned char  *content = NULL;
   Jxta_message_element *el = NULL, *sig = NULL;
   const char* comparer;
   Jxta_bytevector*  retContent = NULL, *compContent = NULL;
-  boolean result = TRUE;
+  Jxta_boolean result = TRUE;
 
   /* First initialize the content */
   content = (unsigned char*)malloc( sizeof(unsigned char) * 8);
@@ -282,13 +282,13 @@ Common_Exit:
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean
+Jxta_boolean
 test_jxta_message_element_new_2(void) {
   unsigned char  *content = NULL;
   Jxta_message_element *el = NULL, *sig = NULL;
   const char* comparer;
   Jxta_bytevector*  retContent = NULL, *compContent = NULL;
-  boolean result = TRUE;
+  Jxta_boolean result = TRUE;
 
   /* First initialize the content */
   content = (unsigned char*)malloc( sizeof(unsigned char) * 8);
@@ -396,13 +396,13 @@ Common_Exit:
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean
+Jxta_boolean
 test_jxta_message_element_new_3(void) {
   unsigned char  *content = NULL;
   Jxta_message_element *el = NULL, *sig = NULL;
   const char* comparer;
   Jxta_bytevector*  retContent = NULL, *compContent = NULL;
-  boolean result = TRUE;
+  Jxta_boolean result = TRUE;
 
   /* First initialize the content */
   content = (unsigned char*)malloc( sizeof(unsigned char) * 8);
@@ -645,12 +645,12 @@ Common_Exit:
 * @param message the message to test
 * @return TRUE if the messge is identical, FALSE otherwise
 */
-boolean checkMessageCorrect(Jxta_message* message){
+Jxta_boolean checkMessageCorrect(Jxta_message* message){
   Jxta_message_element *el = NULL;
   Jxta_endpoint_address *endpoint = NULL;
   char *buffer = NULL;
   int i;
-  boolean result = TRUE;
+  Jxta_boolean result = TRUE;
   Jxta_vector *elList = NULL;
   Jxta_bytevector *valueVector = NULL,*compVector = NULL;
 
@@ -838,10 +838,10 @@ Common_Exit:
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean
+Jxta_boolean
 test_jxta_message_read_write(void) {
   Jxta_message* message = getTestMessage();
-  boolean result = TRUE;
+  Jxta_boolean result = TRUE;
   JString *wire = NULL;
   char * stream = NULL;
   int max;
@@ -929,10 +929,10 @@ Common_Exit:
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean
+Jxta_boolean
 test_jxta_message_clone(void) {
   Jxta_message* message = getTestMessage(), *cloned  = NULL;
-  boolean result = TRUE;
+  Jxta_boolean result = TRUE;
 
   if( message == NULL) return FALSE;
 
@@ -968,10 +968,10 @@ Common_Exit:
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean
+Jxta_boolean
 test_jxta_message_remove(void) {
   Jxta_message* message = getTestMessage();
-  boolean result = TRUE;
+  Jxta_boolean result = TRUE;
   Jxta_message_element *el = NULL;
   char value[100],name[100];
   int i;

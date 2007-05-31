@@ -50,55 +50,67 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta.c,v 1.6 2005/04/07 22:35:05 slowhog Exp $
+ * $Id: jxta_rdv_config_adv.h,v 1.4 2005/04/06 00:38:51 bondolo Exp $
  */
 
-#include <apr_general.h>
-#include "jpr/jpr_core.h"
-#include "jxta_log.h"
 
-/**
- * Briefly, touching jxta jxta touches apr, which requires a call
- * to apr_initialize() and apr_terminate().  
- */
+#ifndef JXTA_RDVCONFIGADVERTISEMENT_H__
+#define JXTA_RDVCONFIGADVERTISEMENT_H__
 
-static unsigned int _jxta_initialized = 0;
+#include "jxta_advertisement.h"
+#include "jxta_endpoint_address.h"
+#include "jxta_vector.h"
 
-/**
- * @todo Add initialization code.
- */
-void jxta_initialize(void)
-{
-    if (_jxta_initialized) {
-        _jxta_initialized++;
-        return;
-    }
-
-    apr_initialize();
-    jpr_initialize();
-    jxta_log_initialize();
-    jxta_PG_module_initialize();
+#ifdef __cplusplus
+extern "C" {
+#if 0
 }
+#endif
+#endif
+typedef struct _jxta_RdvConfigAdvertisement Jxta_RdvConfigAdvertisement;
+
+    enum RdvConfig_configurations {
+        adhoc,
+        edge,
+        rendezvous
+    };
+    
+typedef enum RdvConfig_configurations RdvConfig_configuration;  
+
+Jxta_RdvConfigAdvertisement *jxta_RdvConfigAdvertisement_new(void);
+void jxta_RdvConfigAdvertisement_set_handlers(Jxta_RdvConfigAdvertisement *, XML_Parser, void *);
+Jxta_status jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdvertisement *, JString **);
+void jxta_RdvConfigAdvertisement_parse_charbuffer(Jxta_RdvConfigAdvertisement *, const char *, int len);
+void jxta_RdvConfigAdvertisement_parse_file(Jxta_RdvConfigAdvertisement *, FILE * stream);
+
+RdvConfig_configuration jxta_RdvConfig_get_config(Jxta_RdvConfigAdvertisement *);
+void jxta_RdvConfig_set_config(Jxta_RdvConfigAdvertisement*, RdvConfig_configuration );
+
+int jxta_RdvConfig_get_max_clients(Jxta_RdvConfigAdvertisement *);
+void jxta_RdvConfig_set_max_clients(Jxta_RdvConfigAdvertisement*, int );
+
+int jxta_RdvConfig_get_max_ttl(Jxta_RdvConfigAdvertisement *);
+void jxta_RdvConfig_set_max_ttl(Jxta_RdvConfigAdvertisement*, int );
+
+Jxta_time_diff jxta_RdvConfig_get_lease_duration(Jxta_RdvConfigAdvertisement *);
+void jxta_RdvConfig_set_lease_duration(Jxta_RdvConfigAdvertisement*, Jxta_time_diff );
+
+Jxta_time_diff jxta_RdvConfig_get_lease_margin(Jxta_RdvConfigAdvertisement *);
+void jxta_RdvConfig_set_lease_margin(Jxta_RdvConfigAdvertisement*, Jxta_time_diff );
+
+Jxta_vector * jxta_RdvConfig_get_seeds(Jxta_RdvConfigAdvertisement *);
+void jxta_RdvConfig_add_seed(Jxta_RdvConfigAdvertisement*, Jxta_endpoint_address* );
+
+Jxta_vector * jxta_RdvConfig_get_seeding(Jxta_RdvConfigAdvertisement *);
+void jxta_RdvConfig_add_seeding(Jxta_RdvConfigAdvertisement*, Jxta_endpoint_address* );
 
 
-/**
- * @todo Add termination code.
- */
-void jxta_terminate(void)
-{
-    if (!_jxta_initialized) {
-        return;
-    }
+char *jxta_RdvConfigAdvertisement_get_Jxta_RdvConfigAdvertisement(Jxta_RdvConfigAdvertisement *);
+void jxta_RdvConfigAdvertisement_set_Jxta_RdvConfigAdvertisement(Jxta_RdvConfigAdvertisement *, char *);
 
-    _jxta_initialized--;
-    if (_jxta_initialized) {
-        return;
-    }
-
-    jxta_PG_module_terminate();
-    jxta_log_terminate();
-    jpr_terminate();
-    apr_terminate();
+Jxta_vector *jxta_RdvConfigAdvertisement_get_indexes(void);
+#ifdef __cplusplus
 }
+#endif
 
-/* vim: set ts=4 sw=4 tw=130 et: */
+#endif /* JXTA_RDVCONFIGADVERTISEMENT_H__  */

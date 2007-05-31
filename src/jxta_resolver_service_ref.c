@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_service_ref.c,v 1.62 2005/03/14 07:46:26 slowhog Exp $
+ * $Id: jxta_resolver_service_ref.c,v 1.65 2005/04/02 00:26:10 slowhog Exp $
  */
 
 
@@ -78,7 +78,7 @@ typedef struct {
 
     Extends(Jxta_resolver_service);
     JString*                instanceName;
-    boolean                 running;
+    Jxta_boolean            running;
     Jxta_PG*                group;
     Jxta_rdv_service*       rendezvous;
     Jxta_endpoint_service*  endpoint;
@@ -94,6 +94,10 @@ typedef struct {
     apr_thread_mutex_t*     mutex;
     long                    query_id;
     apr_pool_t*             pool;
+
+    /* hold listener to stop, no API to retrieve the listener */
+    Jxta_listener *o_listener;
+    Jxta_listener *i_listener;
 }
 Jxta_resolver_service_ref;
 
@@ -146,16 +150,14 @@ jxta_resolver_service_ref_init(Jxta_module* resolver, Jxta_PG* group,
         self->assigned_id = assigned_id;
     }
 
-    /* keep a reference to our group and impl adv */
-    if (group != 0)
-        JXTA_OBJECT_SHARE(group);
-    if (impl_adv != 0)
+    /* keep a reference to our impl adv */
+    if (impl_adv != 0) {
         JXTA_OBJECT_SHARE(impl_adv);
+    }
     self->group = group;
     self->impl_adv = impl_adv;
 
     jxta_PG_get_endpoint_service (group, &(self->endpoint));
-    jxta_PG_get_discovery_service (group, &(self->discovery));
     jxta_PG_get_rendezvous_service (group, &(self->rendezvous));
     jxta_PG_get_PID (group, &(self->localPeerId));
     /* Create the mutex */
@@ -187,48 +189,6 @@ jxta_resolver_service_ref_init(Jxta_module* resolver, Jxta_PG* group,
         jstring_append_2(self->srdique,SRDIQUENAMESHORT);
     }
 
-
-    /*  begin start code to be moved into start function */
-
-    listener = jxta_listener_new ((Jxta_listener_func) resolver_service_query_listener,
-                                  self,
-                                  1,
-                                  200);
-
-    status = jxta_rdv_service_add_propagate_listener (self->rendezvous,
-             (char*) jstring_get_string(self->instanceName),
-             (char*) jstring_get_string(self->outque),
-             listener);
-
-    if (status == JXTA_SUCCESS ) {
-        jxta_listener_start (listener);
-        JXTA_OBJECT_RELEASE(listener);
-
-        listener = jxta_listener_new ((Jxta_listener_func) resolver_service_response_listener,
-                                      self,
-                                      1,
-                                      200);
-        status = jxta_rdv_service_add_propagate_listener (self->rendezvous,
-                 (char*) jstring_get_string(self->instanceName),
-                 (char*) jstring_get_string(self->inque),
-                 listener);
-        /*  
-        //Srdi handler registeration, since this provides edge functionality 
-        //it is not required to register the srdi handler, this should uncommented
-        // when support beyond edge is implemented
-        status = jxta_rdv_service_add_propagate_listener (self->rendezvous,
-                 (char*) jstring_get_string(self->instanceName),
-                 (char*) jstring_get_string(self->srdique),
-                 srdiListener);
-        */
-                 
-        if (status == JXTA_SUCCESS) {
-            jxta_listener_start (listener);
-        }
-    }
-
-    JXTA_OBJECT_RELEASE(listener);
-    /*  end start code */
     return status;
 }
 
@@ -261,37 +221,37 @@ init_e (Jxta_module* resolver, Jxta_PG* group, Jxta_id* assigned_id,
  */
 static Jxta_status
 start(Jxta_module* resolver, char* argv[]) {
-    /* XXXX uncomment once start is verified in netpg
-    Jxta_listener* listener = NULL;
     Jxta_status status = JXTA_SUCCESS;
     Jxta_resolver_service_ref* self = (Jxta_resolver_service_ref*) resolver;
 
-    self->rendezvous  = jxta_PG_rendezvous_service_get (group);
+    jxta_PG_get_discovery_service (self->group, &(self->discovery));
 
-    listener = jxta_listener_new ((Jxta_listener_func) resolver_service_query_listener,
+    self->o_listener = jxta_listener_new ((Jxta_listener_func) resolver_service_query_listener,
                                   self,
                                   1,
                                   200);
     status = jxta_rdv_service_add_propagate_listener (self->rendezvous,
                     (char*) jstring_get_string(self->instanceName),
-                    (char*) jstring_get_string(self->inque),
-                    listener);
-    if (status == JXTA_SUCCESS ) {
-     listener = jxta_listener_new ((Jxta_listener_func) resolver_service_response_listener,
+                    (char*) jstring_get_string(self->outque),
+                    self->o_listener);
+    if (status != JXTA_SUCCESS ) {
+        return status;
+    }
+
+    jxta_listener_start(self->o_listener);
+
+    self->i_listener = jxta_listener_new ((Jxta_listener_func) resolver_service_response_listener,
                                    self,
                                    1,
                                    200);
-     status = jxta_rdv_service_add_propagate_listener (self->rendezvous,
+    status = jxta_rdv_service_add_propagate_listener (self->rendezvous,
                      (char*) jstring_get_string(self->instanceName),
-                     (char*) jstring_get_string(self->outque),
-                     listener);
-}
+                     (char*) jstring_get_string(self->inque),
+                     self->i_listener);
+    jxta_listener_start(self->i_listener);
            
     return status;
-    */
-    return JXTA_SUCCESS;
 }
-
 
 /**
  * Stops an instance of the Resolver Service.
@@ -301,6 +261,34 @@ start(Jxta_module* resolver, char* argv[]) {
  */
 static void
 stop(Jxta_module* resolver) {
+    Jxta_status status = JXTA_SUCCESS;
+    Jxta_resolver_service_ref* self = (Jxta_resolver_service_ref*) resolver;
+
+    if (NULL != self->i_listener) {
+        status = jxta_rdv_service_remove_propagate_listener(self->rendezvous,
+                     (char*) jstring_get_string(self->instanceName),
+                     (char*) jstring_get_string(self->inque),
+                     self->i_listener);
+        jxta_listener_stop(self->i_listener);
+        JXTA_OBJECT_RELEASE(self->i_listener);
+        self->i_listener = NULL;
+    }
+
+    if (NULL != self->o_listener) {
+        status = jxta_rdv_service_remove_propagate_listener(self->rendezvous,
+                     (char*) jstring_get_string(self->instanceName),
+                     (char*) jstring_get_string(self->outque),
+                     self->o_listener);
+        jxta_listener_stop(self->o_listener);
+        JXTA_OBJECT_RELEASE(self->o_listener);
+        self->o_listener = NULL;
+    }
+
+    if (NULL != self->discovery) {
+        JXTA_OBJECT_RELEASE(self->discovery);
+        self->discovery = NULL;
+    }
+
     JXTA_LOG("Stopped.\n");
     /* nothing special to stop */
 }
@@ -760,26 +748,36 @@ void jxta_resolver_service_ref_destruct(Jxta_resolver_service_ref* self) {
 
     /* release/free/destroy our own stuff */
 
-    if (self->endpoint != 0)
+    if (self->endpoint != 0) {
         JXTA_OBJECT_RELEASE (self->endpoint);
-    if (self->discovery != 0)
+    }
+    if (self->discovery != 0) {
         JXTA_OBJECT_RELEASE (self->discovery);
-    if (self->localPeerId != 0)
+    }
+    if (self->localPeerId != 0) {
         JXTA_OBJECT_RELEASE (self->localPeerId);
-    if (self->queryhandlers != 0)
+    }
+    if (self->queryhandlers != 0) {
         JXTA_OBJECT_RELEASE (self->queryhandlers);
-    if (self->responsehandlers != 0)
+    }
+    if (self->responsehandlers != 0) {
         JXTA_OBJECT_RELEASE (self->responsehandlers);
-    if (self->instanceName != 0)
+    }
+    if (self->instanceName != 0) {
         JXTA_OBJECT_RELEASE(self->instanceName);
-    if (self->group != 0)
-        JXTA_OBJECT_RELEASE (self->group);
-    if (self->impl_adv != 0)
+    }
+
+    self->group = NULL;
+
+    if (self->impl_adv != 0) {
         JXTA_OBJECT_RELEASE (self->impl_adv);
-    if (self->assigned_id != 0)
+    }
+    if (self->assigned_id != 0) {
         JXTA_OBJECT_RELEASE(self->assigned_id);
-    if (self->pool != 0)
+    }
+    if (self->pool != 0) {
         apr_pool_destroy (self->pool);
+    }
 
     /* call the base classe's dtor. */
     jxta_resolver_service_destruct((Jxta_resolver_service*) self);
@@ -825,7 +823,7 @@ jxta_resolver_service_ref_new_instance (void) {
 
     /* Initialize the object */
     memset (self, 0, sizeof (Jxta_resolver_service_ref));
-    JXTA_OBJECT_INIT (self, (JXTA_OBJECT_FREE_FUNC) resol_free, 0);
+    JXTA_OBJECT_INIT(self, (JXTA_OBJECT_FREE_FUNC) resol_free, 0);
 
     /* call the hierarchy of ctors */
     jxta_resolver_service_ref_construct(self,

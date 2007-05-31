@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_objecthashtable.c,v 1.8 2005/01/12 22:37:41 bondolo Exp $
+ * $Id: jxta_objecthashtable.c,v 1.9 2005/03/29 21:12:12 bondolo Exp $
  */
 
 
@@ -82,38 +82,35 @@
 /*************************************************************************
  **
  *************************************************************************/
-typedef struct
-{
-    unsigned int hashk;   /* if zero then this entry is usable or reusable */
-    Jxta_object* key;     /* pointer at the object or a pointer to the hashtable itself.
-        			     iff hashk == 0 then if key == &hashtable this entry is
-        			     being reused and must be retained until rehash */
-    Jxta_object* value;   /* pointer at the value object*/
-}
-Entry;
+typedef struct {
+    unsigned int hashk; /* if zero then this entry is usable or reusable */
+    Jxta_object *key;   /* pointer at the object or a pointer to the hashtable itself.
+                           iff hashk == 0 then if key == &hashtable this entry is
+                           being reused and must be retained until rehash */
+    Jxta_object *value; /* pointer at the value object */
+} Entry;
 
-struct _Jxta_objecthashtable
-{
+struct _Jxta_objecthashtable {
     JXTA_OBJECT_HANDLE;
 
-    Jxta_object_hash_func   hash;
+    Jxta_object_hash_func hash;
     Jxta_object_equals_func equals;
 
-    Entry*                  tbl;
+    Entry *tbl;
 
-    unsigned int            modmask;
-    size_t                  max_occupancy;
-    size_t                  occupancy;
-    size_t                  usage;
+    unsigned int modmask;
+    size_t max_occupancy;
+    size_t occupancy;
+    size_t usage;
 
 #ifndef NDEBUG
 
-    size_t                  nb_hops;
-    size_t                  nb_lookups;
+    size_t nb_hops;
+    size_t nb_lookups;
 #endif
 
-    apr_pool_t*             pool; /* for the mutex */
-    apr_thread_mutex_t*     mutex;
+    apr_pool_t *pool;   /* for the mutex */
+    apr_thread_mutex_t *mutex;
 };
 
 typedef struct _Jxta_objecthashtable Jxta_objecthashtable_mutable;
@@ -121,12 +118,11 @@ typedef struct _Jxta_objecthashtable Jxta_objecthashtable_mutable;
 /*************************************************************************
  **
  *************************************************************************/
-static void
-Jxta_objecthashtable_free (Jxta_object* the_table)
+static void Jxta_objecthashtable_free(Jxta_object * the_table)
 {
-    Jxta_objecthashtable_mutable* self = (Jxta_objecthashtable_mutable*) the_table;
+    Jxta_objecthashtable_mutable *self = (Jxta_objecthashtable_mutable *) the_table;
     size_t i;
-    Entry* e;
+    Entry *e;
 
     /*
      * We need to take the lock in order to make sure that nobody
@@ -136,12 +132,12 @@ Jxta_objecthashtable_free (Jxta_object* the_table)
      * properly shared, there should not be any external code that still
      * has a reference on this object. So things should be safe.
      */
-    apr_thread_mutex_lock (self->mutex);
+    apr_thread_mutex_lock(self->mutex);
 
     /* Release all the objects contained in the table */
-    for (i = self->modmask + 1, e = self->tbl; i>0; --i, ++e) {
+    for (i = self->modmask + 1, e = self->tbl; i > 0; --i, ++e) {
         if (e->hashk == 0)
-            continue; /* entry not in use */
+            continue;   /* entry not in use */
         JXTA_OBJECT_RELEASE(e->key);
         e->key = NULL;
         JXTA_OBJECT_RELEASE(e->value);
@@ -150,13 +146,13 @@ Jxta_objecthashtable_free (Jxta_object* the_table)
     }
 
     /* Free the entries */
-    free (self->tbl);
+    free(self->tbl);
 
     /* Free the pool containing the mutex */
-    apr_pool_destroy (self->pool);
+    apr_pool_destroy(self->pool);
 
     /* Free the object itself */
-    free (self);
+    free(self);
 }
 
 /*************************************************************************
@@ -187,11 +183,9 @@ Jxta_objecthashtable_free (Jxta_object* the_table)
  */
 #define SMART_PROBING
 
-static Entry*
-findspot( Jxta_objecthashtable* hashtbl, unsigned int hashk,
-          Jxta_object* key, Jxta_boolean adding )
+static Entry *findspot(Jxta_objecthashtable * hashtbl, unsigned int hashk, Jxta_object * key, Jxta_boolean adding)
 {
-    Jxta_objecthashtable_mutable* self = (Jxta_objecthashtable_mutable*) hashtbl;
+    Jxta_objecthashtable_mutable *self = (Jxta_objecthashtable_mutable *) hashtbl;
 
 #ifdef SMART_PROBING
 
@@ -202,10 +196,10 @@ findspot( Jxta_objecthashtable* hashtbl, unsigned int hashk,
 
     size_t modmask = self->modmask;
 
-    Entry* tbl = self->tbl;
-    size_t slot =  hashk & modmask;
-    Entry* curr = &(tbl[slot]);
-    Entry* reuse = NULL;
+    Entry *tbl = self->tbl;
+    size_t slot = hashk & modmask;
+    Entry *curr = &(tbl[slot]);
+    Entry *reuse = NULL;
 
 #ifndef NDEBUG
 
@@ -233,7 +227,7 @@ findspot( Jxta_objecthashtable* hashtbl, unsigned int hashk,
     while (1) {
         if (curr->hashk == hashk) {
             /* maybe we found it */
-            if ( self->equals(curr->key, key ) ) {
+            if (self->equals(curr->key, key)) {
 
                 /*
                  * So we found the spot. If we're adding, we prefer
@@ -264,7 +258,7 @@ findspot( Jxta_objecthashtable* hashtbl, unsigned int hashk,
                      */
                     curr->hashk = 0;
                     curr->value = NULL;
-                    curr->key = (Jxta_object*) hashtbl;
+                    curr->key = (Jxta_object *) hashtbl;
 
                     return reuse;
                 }
@@ -274,7 +268,7 @@ findspot( Jxta_objecthashtable* hashtbl, unsigned int hashk,
             /* else this is an uninterresting entry after all; keep looking */
         } else if (curr->hashk == 0) {
             /* so this is either a resuable entry, or a blank one */
-            if (curr->key == NULL ) {
+            if (curr->key == NULL) {
                 /*
                  * This is blank entry.
                  * This concludes a lookup.
@@ -290,7 +284,7 @@ findspot( Jxta_objecthashtable* hashtbl, unsigned int hashk,
                     self->nb_lookups = 100;
                 }
 #endif
-                if (! adding)
+                if (!adding)
                     return NULL;
 
                 /*
@@ -337,8 +331,7 @@ findspot( Jxta_objecthashtable* hashtbl, unsigned int hashk,
              * Either we missed something or that table is full.
              * Neither is supposed to happen.
              */
-            JXTA_LOG("Ooops: hash table does not work? Could not find a slot"
-                     "for an item.\nRevise your assumptions.\n");
+            JXTA_LOG("Ooops: hash table does not work? Could not find a slot" "for an item.\nRevise your assumptions.\n");
             JXTA_LOG("In the meantime, we'll just grow that table.\n");
 
             return NULL;
@@ -360,17 +353,16 @@ findspot( Jxta_objecthashtable* hashtbl, unsigned int hashk,
  * the current one, and re-hashing everything into it. Then the old table
  * is freed.
  */
-static Jxta_status
-grow(Jxta_objecthashtable_mutable* self)
+static Jxta_status grow(Jxta_objecthashtable_mutable * self)
 {
     size_t tmp;
     size_t i;
-    Entry* e;
+    Entry *e;
 
-    Entry* old_tbl;
+    Entry *old_tbl;
     size_t old_capacity;
 
-    Entry* new_tbl = NULL;
+    Entry *new_tbl = NULL;
     size_t new_modmask;
 
     /*
@@ -388,9 +380,9 @@ grow(Jxta_objecthashtable_mutable* self)
      */
     tmp = self->max_occupancy;
     if (tmp > (UINT_MAX / 3)) {
-	tmp = (tmp / 4) * 3;
+        tmp = (tmp / 4) * 3;
     } else {
-	tmp = (tmp * 3) / 4;
+        tmp = (tmp * 3) / 4;
     }
 
     if (self->usage > tmp)
@@ -398,14 +390,12 @@ grow(Jxta_objecthashtable_mutable* self)
     else
         new_modmask = self->modmask;
 
-    new_tbl = (Entry*) malloc(sizeof(Entry) * (new_modmask + 1));
+    new_tbl = (Entry *) calloc((new_modmask + 1), sizeof(Entry));
 
     if (new_tbl == NULL) {
         JXTA_LOG("Out of memory while growing a hash table. Bailing out.\n");
         return JXTA_NOMEM;
     }
-
-    memset( new_tbl, 0, sizeof(Entry) * (new_modmask + 1) );
 
     old_tbl = self->tbl;
     old_capacity = self->modmask + 1;
@@ -414,9 +404,9 @@ grow(Jxta_objecthashtable_mutable* self)
     self->modmask = new_modmask;
     tmp = new_modmask + 1;
     if (tmp > (UINT_MAX / 7)) {
-	self->max_occupancy = tmp / 10 * 7;
+        self->max_occupancy = tmp / 10 * 7;
     } else {
-	self->max_occupancy = tmp * 7 / 10;
+        self->max_occupancy = tmp * 7 / 10;
     }
 
     self->usage = 0;
@@ -425,12 +415,12 @@ grow(Jxta_objecthashtable_mutable* self)
     /*
      * Re-hash in the new tbl :-(
      */
-    for (i = old_capacity, e = old_tbl; i>0; --i, ++e) {
+    for (i = old_capacity, e = old_tbl; i > 0; --i, ++e) {
 
-        Entry* ne;
+        Entry *ne;
 
         if (e->hashk == 0)
-            continue; /* entry not in use */
+            continue;   /* entry not in use */
 
         ne = findspot(self, e->hashk, e->key, TRUE);
 
@@ -460,12 +450,11 @@ grow(Jxta_objecthashtable_mutable* self)
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_objecthashtable*
-jxta_objecthashtable_new(size_t initial_usage, Jxta_object_hash_func hash, Jxta_object_equals_func equals )
+Jxta_objecthashtable *jxta_objecthashtable_new(size_t initial_usage, Jxta_object_hash_func hash, Jxta_object_equals_func equals)
 {
     size_t real_size = 1;
     apr_status_t res;
-    Jxta_objecthashtable_mutable* self;
+    Jxta_objecthashtable_mutable *self;
 
     if (initial_usage == 0)
         initial_usage = 32;
@@ -474,22 +463,18 @@ jxta_objecthashtable_new(size_t initial_usage, Jxta_object_hash_func hash, Jxta_
     while (real_size < initial_usage)
         real_size <<= 1;
 
-    self = (Jxta_objecthashtable_mutable*) malloc(sizeof(Jxta_objecthashtable_mutable));
+    self = (Jxta_objecthashtable_mutable *) calloc(1, sizeof(Jxta_objecthashtable_mutable));
     if (self == NULL)
         return NULL;
 
-    JXTA_OBJECT_INIT (self,
-                      Jxta_objecthashtable_free,
-                      0);
+    JXTA_OBJECT_INIT(self, Jxta_objecthashtable_free, 0);
 
-    self->tbl = (Entry*) malloc(sizeof(Entry) * real_size);
+    self->tbl = (Entry *) calloc(real_size, sizeof(Entry));
 
     if (self->tbl == NULL) {
         free(self);
         return NULL;
     }
-
-    memset( self->tbl, 0, sizeof(Entry) * real_size );
 
     self->hash = hash;
     self->equals = equals;
@@ -501,31 +486,30 @@ jxta_objecthashtable_new(size_t initial_usage, Jxta_object_hash_func hash, Jxta_
      * is bad for small numbers, however. So...
      */
     if (real_size > (UINT_MAX / 7)) {
-	self->max_occupancy = (real_size / 10) * 7;
-    } else {	
-	self->max_occupancy = (real_size * 7) / 10;
+        self->max_occupancy = (real_size / 10) * 7;
+    } else {
+        self->max_occupancy = (real_size * 7) / 10;
     }
     self->occupancy = 0;
     self->usage = 0;
 
     /* Create the mutex's pool. */
-    res = apr_pool_create (&self->pool, NULL);
+    res = apr_pool_create(&self->pool, NULL);
     if (res != APR_SUCCESS) {
         /* Free the memory that has been already allocated */
-        free (self->tbl);
-        free (self);
+        free(self->tbl);
+        free(self);
         return NULL;
     }
 
     /* Create the mutex */
-    res = apr_thread_mutex_create (&self->mutex,
-                                   APR_THREAD_MUTEX_NESTED, /* nested */
-                                   self->pool);
+    res = apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED,        /* nested */
+                                  self->pool);
     if (res != APR_SUCCESS) {
         /* Free the memory that has been already allocated */
-        apr_pool_destroy (self->pool);
-        free (self->tbl);
-        free (self);
+        apr_pool_destroy(self->pool);
+        free(self->tbl);
+        free(self);
         return NULL;
     }
 
@@ -536,28 +520,27 @@ jxta_objecthashtable_new(size_t initial_usage, Jxta_object_hash_func hash, Jxta_
  **
  *************************************************************************/
 static Jxta_status
-jxta_objecthashtable_comboput(Jxta_objecthashtable* hashtbl,
-                              Jxta_object* key, Jxta_object* value,
-                              Jxta_object** old_value, Jxta_boolean replace_ok)
+jxta_objecthashtable_comboput(Jxta_objecthashtable * hashtbl,
+                              Jxta_object * key, Jxta_object * value, Jxta_object ** old_value, Jxta_boolean replace_ok)
 {
-    Jxta_objecthashtable_mutable* self = (Jxta_objecthashtable_mutable*) hashtbl;
-    Entry* e;
+    Jxta_objecthashtable_mutable *self = (Jxta_objecthashtable_mutable *) hashtbl;
+    Entry *e;
     unsigned int hashk;
     Jxta_status res;
 
-    if( !JXTA_OBJECT_CHECK_VALID(hashtbl) )
+    if (!JXTA_OBJECT_CHECK_VALID(hashtbl))
         return JXTA_INVALID_ARGUMENT;
 
-    if( !JXTA_OBJECT_CHECK_VALID(key) )
+    if (!JXTA_OBJECT_CHECK_VALID(key))
         return JXTA_INVALID_ARGUMENT;
 
-    if( !JXTA_OBJECT_CHECK_VALID(value) )
+    if (!JXTA_OBJECT_CHECK_VALID(value))
         return JXTA_INVALID_ARGUMENT;
 
-    apr_thread_mutex_lock (self->mutex);
+    apr_thread_mutex_lock(self->mutex);
 
     hashk = self->hash(key);
-    if ( 0 == hashk )
+    if (0 == hashk)
         return JXTA_INVALID_ARGUMENT;
 
     /*
@@ -566,23 +549,23 @@ jxta_objecthashtable_comboput(Jxta_objecthashtable* hashtbl,
      */
     if (self->occupancy > self->max_occupancy) {
         res = grow(self);
-        if( res != JXTA_SUCCESS )
+        if (res != JXTA_SUCCESS)
             goto Common_Exit;
     }
 
     e = findspot(self, hashk, key, TRUE);
 
-    if (e == NULL ) {
+    if (e == NULL) {
         /*
          * That's *not* supposed to happen and a big warning gets displayed.
          * We should still be able to survive the event by growing the table.
          */
         res = grow(self);
-        if( JXTA_SUCCESS != res )
+        if (JXTA_SUCCESS != res)
             goto Common_Exit;
 
         e = findspot(self, hashk, key, TRUE);
-        if ( e == NULL ) {
+        if (e == NULL) {
             JXTA_LOG("Hash table badly broken. Bailing out\n");
             res = JXTA_NOMEM;
             goto Common_Exit;
@@ -598,7 +581,7 @@ jxta_objecthashtable_comboput(Jxta_objecthashtable* hashtbl,
 
     if (e->hashk != 0) {
         /* we're replacing */
-        if (! replace_ok) {
+        if (!replace_ok) {
             res = JXTA_ITEM_EXISTS;
             goto Common_Exit;
         }
@@ -619,7 +602,7 @@ jxta_objecthashtable_comboput(Jxta_objecthashtable* hashtbl,
 
         ++(self->usage);
 
-        if (e->key == NULL ) {
+        if (e->key == NULL) {
             /* this is a completely new entry (not recycled) */
             ++(self->occupancy);
         }
@@ -634,8 +617,8 @@ jxta_objecthashtable_comboput(Jxta_objecthashtable* hashtbl,
 
     res = JXTA_SUCCESS;
 
-Common_Exit:
-    apr_thread_mutex_unlock (self->mutex);
+  Common_Exit:
+    apr_thread_mutex_unlock(self->mutex);
 
     return res;
 }
@@ -645,23 +628,17 @@ Common_Exit:
  **
  *************************************************************************/
 Jxta_status
-jxta_objecthashtable_replace(Jxta_objecthashtable* hashtbl,
-                             Jxta_object* key, Jxta_object* value,
-                             Jxta_object** old_value)
+jxta_objecthashtable_replace(Jxta_objecthashtable * hashtbl, Jxta_object * key, Jxta_object * value, Jxta_object ** old_value)
 {
-    return jxta_objecthashtable_comboput(hashtbl,
-                                         key, value,
-                                         old_value, TRUE);
+    return jxta_objecthashtable_comboput(hashtbl, key, value, old_value, TRUE);
 }
 
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_status
-jxta_objecthashtable_put( Jxta_objecthashtable* self,
-                          Jxta_object* key, Jxta_object* value)
+Jxta_status jxta_objecthashtable_put(Jxta_objecthashtable * self, Jxta_object * key, Jxta_object * value)
 {
-    if( !JXTA_OBJECT_CHECK_VALID(self) )
+    if (!JXTA_OBJECT_CHECK_VALID(self))
         return JXTA_INVALID_ARGUMENT;
 
     return jxta_objecthashtable_comboput(self, key, value, NULL, TRUE);
@@ -670,11 +647,9 @@ jxta_objecthashtable_put( Jxta_objecthashtable* self,
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_status
-jxta_objecthashtable_putnoreplace( Jxta_objecthashtable* self,
-                                   Jxta_object* key, Jxta_object* value)
+Jxta_status jxta_objecthashtable_putnoreplace(Jxta_objecthashtable * self, Jxta_object * key, Jxta_object * value)
 {
-    if( !JXTA_OBJECT_CHECK_VALID(self) )
+    if (!JXTA_OBJECT_CHECK_VALID(self))
         return JXTA_INVALID_ARGUMENT;
 
     return jxta_objecthashtable_comboput(self, key, value, NULL, FALSE);
@@ -683,69 +658,65 @@ jxta_objecthashtable_putnoreplace( Jxta_objecthashtable* self,
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_status
-jxta_objecthashtable_get(Jxta_objecthashtable* self,
-                         Jxta_object* key, Jxta_object** found_value)
+Jxta_status jxta_objecthashtable_get(Jxta_objecthashtable * self, Jxta_object * key, Jxta_object ** found_value)
 {
-    Entry* e;
+    Entry *e;
     unsigned int hashk;
 
-    if( !JXTA_OBJECT_CHECK_VALID(self) )
+    if (!JXTA_OBJECT_CHECK_VALID(self))
         return JXTA_INVALID_ARGUMENT;
 
-    apr_thread_mutex_lock (self->mutex);
+    apr_thread_mutex_lock(self->mutex);
 
-    hashk = self->hash( key );
-    if ( 0 == hashk )
+    hashk = self->hash(key);
+    if (0 == hashk)
         return JXTA_INVALID_ARGUMENT;
 
     e = findspot(self, hashk, key, FALSE);
 
     if (e == NULL) {
-        apr_thread_mutex_unlock (self->mutex);
+        apr_thread_mutex_unlock(self->mutex);
         return JXTA_ITEM_NOTFOUND;
     }
 
-    if( NULL != found_value ) {
+    if (NULL != found_value) {
         *found_value = e->value;
         JXTA_OBJECT_SHARE(*found_value);
     }
 
-    apr_thread_mutex_unlock (self->mutex);
+    apr_thread_mutex_unlock(self->mutex);
     return JXTA_SUCCESS;
 }
 
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_status
-jxta_objecthashtable_del(Jxta_objecthashtable* hashtbl,
-                         Jxta_object* key, Jxta_object** found_value)
+Jxta_status jxta_objecthashtable_del(Jxta_objecthashtable * hashtbl, Jxta_object * key, Jxta_object ** found_value)
 {
-    Jxta_objecthashtable_mutable* self = (Jxta_objecthashtable_mutable*) hashtbl;
-    Entry* e;
+    Jxta_objecthashtable_mutable *self = (Jxta_objecthashtable_mutable *) hashtbl;
+    Entry *e;
     unsigned int hashk;
 
-    if( !JXTA_OBJECT_CHECK_VALID(hashtbl) )
+    if (!JXTA_OBJECT_CHECK_VALID(hashtbl))
         return JXTA_INVALID_ARGUMENT;
 
-    if( !JXTA_OBJECT_CHECK_VALID(key) )
+    if (!JXTA_OBJECT_CHECK_VALID(key))
         return JXTA_INVALID_ARGUMENT;
 
-    apr_thread_mutex_lock (self->mutex);
+    apr_thread_mutex_lock(self->mutex);
 
-    hashk = self->hash( key );
-    if ( 0 == hashk )
+    hashk = self->hash(key);
+    if (0 == hashk)
         return JXTA_INVALID_ARGUMENT;
 
     e = findspot(self, hashk, key, FALSE);
 
     if (e == NULL) {
-        apr_thread_mutex_unlock (self->mutex);
+        apr_thread_mutex_unlock(self->mutex);
         return JXTA_ITEM_NOTFOUND;
     }
 
-    if( NULL != found_value )
+    if (NULL != found_value)
         *found_value = e->value;
     else
         JXTA_OBJECT_RELEASE(e->value);
@@ -761,12 +732,12 @@ jxta_objecthashtable_del(Jxta_objecthashtable* hashtbl,
      */
     e->hashk = 0;
     JXTA_OBJECT_RELEASE(e->key);
-    e->key = (Jxta_object*) self;    /* we use the hashtable's address as a
-        				      * non-null valid ptr to differentiate
-        				      * reusable entries from blank ones.
-        				      * The address will not be dereferenced
-        				      * or freed.
-        				      */
+    e->key = (Jxta_object *) self;      /* we use the hashtable's address as a
+                                         * non-null valid ptr to differentiate
+                                         * reusable entries from blank ones.
+                                         * The address will not be dereferenced
+                                         * or freed.
+                                         */
     --(self->usage);
 
     /*
@@ -774,7 +745,7 @@ jxta_objecthashtable_del(Jxta_objecthashtable* hashtbl,
      * (which re-increments it)
      */
 
-    apr_thread_mutex_unlock (self->mutex);
+    apr_thread_mutex_unlock(self->mutex);
 
     return JXTA_SUCCESS;
 }
@@ -782,37 +753,34 @@ jxta_objecthashtable_del(Jxta_objecthashtable* hashtbl,
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_status
-jxta_objecthashtable_delcheck(Jxta_objecthashtable* hashtbl,
-			      Jxta_object* key, Jxta_object* value)
+Jxta_status jxta_objecthashtable_delcheck(Jxta_objecthashtable * hashtbl, Jxta_object * key, Jxta_object * value)
 {
-    Jxta_objecthashtable_mutable* self =
-	(Jxta_objecthashtable_mutable*) hashtbl;
-    Entry* e;
+    Jxta_objecthashtable_mutable *self = (Jxta_objecthashtable_mutable *) hashtbl;
+    Entry *e;
     unsigned int hashk;
 
-    if( !JXTA_OBJECT_CHECK_VALID(hashtbl) )
+    if (!JXTA_OBJECT_CHECK_VALID(hashtbl))
         return JXTA_INVALID_ARGUMENT;
 
-    if( !JXTA_OBJECT_CHECK_VALID(key) )
+    if (!JXTA_OBJECT_CHECK_VALID(key))
         return JXTA_INVALID_ARGUMENT;
 
-    apr_thread_mutex_lock (self->mutex);
+    apr_thread_mutex_lock(self->mutex);
 
-    hashk = self->hash( key );
-    if ( 0 == hashk )
+    hashk = self->hash(key);
+    if (0 == hashk)
         return JXTA_INVALID_ARGUMENT;
 
     e = findspot(self, hashk, key, FALSE);
 
     if (e == NULL) {
-        apr_thread_mutex_unlock (self->mutex);
+        apr_thread_mutex_unlock(self->mutex);
         return JXTA_ITEM_NOTFOUND;
     }
 
-    if( value != e->value ) {
-        apr_thread_mutex_unlock (self->mutex);
-	return JXTA_VIOLATION;
+    if (value != e->value) {
+        apr_thread_mutex_unlock(self->mutex);
+        return JXTA_VIOLATION;
     }
 
     JXTA_OBJECT_RELEASE(e->value);
@@ -823,12 +791,12 @@ jxta_objecthashtable_delcheck(Jxta_objecthashtable* hashtbl,
      */
     e->hashk = 0;
     JXTA_OBJECT_RELEASE(e->key);
-    e->key = (Jxta_object*) self;    /* we use the hashtable's address as a
-				      * non-null valid ptr to differentiate
-				      * reusable entries from blank ones.
-				      * The address will not be dereferenced
-				      * or freed.
-				      */
+    e->key = (Jxta_object *) self;      /* we use the hashtable's address as a
+                                         * non-null valid ptr to differentiate
+                                         * reusable entries from blank ones.
+                                         * The address will not be dereferenced
+                                         * or freed.
+                                         */
     --(self->usage);
 
     /*
@@ -836,7 +804,7 @@ jxta_objecthashtable_delcheck(Jxta_objecthashtable* hashtbl,
      * (which re-increments it)
      */
 
-    apr_thread_mutex_unlock (self->mutex);
+    apr_thread_mutex_unlock(self->mutex);
 
     return JXTA_SUCCESS;
 }
@@ -844,91 +812,87 @@ jxta_objecthashtable_delcheck(Jxta_objecthashtable* hashtbl,
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_vector*
-jxta_objecthashtable_keys_get(Jxta_objecthashtable* self)
+Jxta_vector *jxta_objecthashtable_keys_get(Jxta_objecthashtable * self)
 {
-    Entry* e;
-    Jxta_vector* keys;
+    Entry *e;
+    Jxta_vector *keys;
     size_t i;
 
-    if( !JXTA_OBJECT_CHECK_VALID(self) )
+    if (!JXTA_OBJECT_CHECK_VALID(self))
         return NULL;
 
     keys = jxta_vector_new(self->usage);
     if (keys == NULL)
         return NULL;
 
-    apr_thread_mutex_lock (self->mutex);
+    apr_thread_mutex_lock(self->mutex);
 
-    for (i = self->modmask + 1, e = self->tbl; i>0; --i, ++e) {
-        Jxta_object* obj = e->key;
-        if( 0 == e->hashk )
+    for (i = self->modmask + 1, e = self->tbl; i > 0; --i, ++e) {
+        Jxta_object *obj = e->key;
+        if (0 == e->hashk)
             continue;
 
-        (void) jxta_vector_add_object_last(keys, obj); /* shares automatically */
+        (void) jxta_vector_add_object_last(keys, obj);  /* shares automatically */
     }
 
-    apr_thread_mutex_unlock (self->mutex);
+    apr_thread_mutex_unlock(self->mutex);
     return keys;
 }
 
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_vector*
-jxta_objecthashtable_values_get(Jxta_objecthashtable* self)
+Jxta_vector *jxta_objecthashtable_values_get(Jxta_objecthashtable * self)
 {
-    Entry* e;
-    Jxta_vector* vals;
+    Entry *e;
+    Jxta_vector *vals;
     size_t i;
 
-    if( !JXTA_OBJECT_CHECK_VALID(self) )
+    if (!JXTA_OBJECT_CHECK_VALID(self))
         return NULL;
 
     vals = jxta_vector_new(self->usage);
     if (vals == NULL)
         return NULL;
 
-    apr_thread_mutex_lock (self->mutex);
+    apr_thread_mutex_lock(self->mutex);
 
-    for (i = self->modmask + 1, e = self->tbl; i>0; --i, ++e) {
-        Jxta_object* obj;
+    for (i = self->modmask + 1, e = self->tbl; i > 0; --i, ++e) {
+        Jxta_object *obj;
         if (e->hashk == 0)
             continue;
         obj = e->value;
-        (void) jxta_vector_add_object_last(vals, obj); /* shares automatically */
+        (void) jxta_vector_add_object_last(vals, obj);  /* shares automatically */
     }
 
-    apr_thread_mutex_unlock (self->mutex);
+    apr_thread_mutex_unlock(self->mutex);
     return vals;
 }
 
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_status
-jxta_objecthashtable_stupid_lookup(Jxta_objecthashtable* self,
-                                   Jxta_object* key, Jxta_object** found_value)
+Jxta_status jxta_objecthashtable_stupid_lookup(Jxta_objecthashtable * self, Jxta_object * key, Jxta_object ** found_value)
 {
     /*
      * This is a diagnostic tool; it does not share the obj and
      * has the worst possible performance.
      */
-    Entry* e;
+    Entry *e;
     size_t i;
     unsigned int hashk;
 
-    if( !JXTA_OBJECT_CHECK_VALID(self) )
+    if (!JXTA_OBJECT_CHECK_VALID(self))
         return JXTA_INVALID_ARGUMENT;
 
-    hashk = self->hash( key );
-    if ( 0 == hashk )
+    hashk = self->hash(key);
+    if (0 == hashk)
         return JXTA_INVALID_ARGUMENT;
 
-    apr_thread_mutex_lock (self->mutex);
+    apr_thread_mutex_lock(self->mutex);
 
-    for (i = self->modmask + 1, e = self->tbl; i>0; --i, ++e) {
-        if (e->key != NULL && ! self->equals(e->key, key )) {
+    for (i = self->modmask + 1, e = self->tbl; i > 0; --i, ++e) {
+        if (e->key != NULL && !self->equals(e->key, key)) {
             /* If this routine is called it means some item wasn't found */
             /* with the fast lookup. See if we have an idea why... */
             if (e->hashk == 0) {
@@ -942,12 +906,12 @@ jxta_objecthashtable_stupid_lookup(Jxta_objecthashtable* self,
 
             *found_value = e->value;
 
-            apr_thread_mutex_unlock (self->mutex);
+            apr_thread_mutex_unlock(self->mutex);
             return JXTA_SUCCESS;
         }
     }
 
-    apr_thread_mutex_unlock (self->mutex);
+    apr_thread_mutex_unlock(self->mutex);
     return JXTA_ITEM_NOTFOUND;
 }
 
@@ -955,14 +919,13 @@ jxta_objecthashtable_stupid_lookup(Jxta_objecthashtable* self,
  **
  *************************************************************************/
 Jxta_status
-jxta_objecthashtable_stats(Jxta_objecthashtable* self, size_t* size, size_t* usage,
-                           size_t* occupancy, size_t* max_occupancy,
-                           double* avg_hops)
+jxta_objecthashtable_stats(Jxta_objecthashtable * self, size_t * size, size_t * usage,
+                           size_t * occupancy, size_t * max_occupancy, double *avg_hops)
 {
-    if( !JXTA_OBJECT_CHECK_VALID(self) )
+    if (!JXTA_OBJECT_CHECK_VALID(self))
         return JXTA_INVALID_ARGUMENT;
 
-    apr_thread_mutex_lock (self->mutex);
+    apr_thread_mutex_lock(self->mutex);
 
     *size = self->modmask + 1;
     *usage = self->usage;
@@ -971,13 +934,13 @@ jxta_objecthashtable_stats(Jxta_objecthashtable* self, size_t* size, size_t* usa
 #ifndef NDEBUG
 
     *avg_hops = (self->nb_lookups != 0)
-                ? ((1.0 * self->nb_hops) / self->nb_lookups) : 0.0;
+        ? ((1.0 * self->nb_hops) / self->nb_lookups) : 0.0;
 #else
 
-    *avg_hops = 1.0; /* make something up! */
+    *avg_hops = 1.0;    /* make something up! */
 #endif
 
-    apr_thread_mutex_unlock (self->mutex);
+    apr_thread_mutex_unlock(self->mutex);
 
     return JXTA_SUCCESS;
 }
@@ -985,11 +948,10 @@ jxta_objecthashtable_stats(Jxta_objecthashtable* self, size_t* size, size_t* usa
 /*************************************************************************
  **
  *************************************************************************/
-unsigned int
-jxta_objecthashtable_simplehash(const void* key, size_t ksz)
+unsigned int jxta_objecthashtable_simplehash(const void *key, size_t ksz)
 {
-    const unsigned char* s = (const unsigned char*) key;
-    unsigned int hash = UINT_MAX; /* produces better hashes for keys beginging with zero bytes */
+    const unsigned char *s = (const unsigned char *) key;
+    unsigned int hash = UINT_MAX;       /* produces better hashes for keys beginging with zero bytes */
     while (ksz--) {
         hash += *s++;
         hash += (hash << 10);

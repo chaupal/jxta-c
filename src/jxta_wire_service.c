@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_wire_service.c,v 1.19 2005/03/12 00:51:22 slowhog Exp $
+ * $Id: jxta_wire_service.c,v 1.22 2005/03/26 00:32:04 bondolo Exp $
  */
 
 #include "jxtaapr.h"
@@ -126,10 +126,10 @@ typedef struct {
 } Jxta_wire_session;
 
 static char *wire_get_name(Jxta_pipe_service_impl *);
-static Jxta_status wire_timed_connect(Jxta_pipe_service_impl *, Jxta_pipe_adv *, Jxta_time, Jxta_vector *, Jxta_pipe **);
+static Jxta_status wire_timed_connect(Jxta_pipe_service_impl *, Jxta_pipe_adv *, Jxta_time_diff, Jxta_vector *, Jxta_pipe **);
 static Jxta_status wire_deny(Jxta_pipe_service_impl *, Jxta_pipe_adv *);
-static Jxta_status wire_connect(Jxta_pipe_service_impl *, Jxta_pipe_adv *, Jxta_time, Jxta_vector *, Jxta_listener *);
-static Jxta_status wire_timed_accept(Jxta_pipe_service_impl *, Jxta_pipe_adv *, Jxta_time, Jxta_pipe **);
+static Jxta_status wire_connect(Jxta_pipe_service_impl *, Jxta_pipe_adv *, Jxta_time_diff, Jxta_vector *, Jxta_listener *);
+static Jxta_status wire_timed_accept(Jxta_pipe_service_impl *, Jxta_pipe_adv *, Jxta_time_diff, Jxta_pipe **);
 static Jxta_status wire_add_accept_listener(Jxta_pipe_service_impl *, Jxta_pipe_adv *, Jxta_listener *);
 static Jxta_status wire_remove_accept_listener(Jxta_pipe_service_impl *, Jxta_pipe_adv *, Jxta_listener *);
 static Jxta_status wire_get_pipe_resolver(Jxta_pipe_service_impl *, Jxta_pipe_resolver **);
@@ -311,7 +311,7 @@ static char *wire_get_name(Jxta_pipe_service_impl * obj)
 }
 
 static Jxta_status
-wire_timed_connect(Jxta_pipe_service_impl * obj, Jxta_pipe_adv * adv, Jxta_time timeout, Jxta_vector * peers, Jxta_pipe ** pipe)
+wire_timed_connect(Jxta_pipe_service_impl * obj, Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_vector * peers, Jxta_pipe ** pipe)
 {
 
     Jxta_wire_service *self = (Jxta_wire_service *) obj;
@@ -346,7 +346,7 @@ static Jxta_status wire_deny(Jxta_pipe_service_impl * obj, Jxta_pipe_adv * adv)
 }
 
 static Jxta_status
-wire_connect(Jxta_pipe_service_impl * obj, Jxta_pipe_adv * adv, Jxta_time timeout, Jxta_vector * peers, Jxta_listener * listener)
+wire_connect(Jxta_pipe_service_impl * obj, Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_vector * peers, Jxta_listener * listener)
 {
 
     Jxta_wire_service *self = (Jxta_wire_service *) obj;
@@ -373,7 +373,7 @@ wire_connect(Jxta_pipe_service_impl * obj, Jxta_pipe_adv * adv, Jxta_time timeou
     return JXTA_SUCCESS;
 }
 
-static Jxta_status wire_timed_accept(Jxta_pipe_service_impl * obj, Jxta_pipe_adv * adv, Jxta_time timeout, Jxta_pipe ** pipe)
+static Jxta_status wire_timed_accept(Jxta_pipe_service_impl * obj, Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_pipe ** pipe)
 {
 
     Jxta_wire_service *self = (Jxta_wire_service *) obj;
@@ -487,7 +487,7 @@ static Jxta_boolean wire_msgid_new(Jxta_wire_service * self, char *msgId)
     return TRUE;
 }
 
-static boolean check_wire_header(Jxta_wire_service * self, Jxta_message * msg, JxtaWire ** wm)
+static Jxta_boolean check_wire_header(Jxta_wire_service * self, Jxta_message * msg, JxtaWire ** wm)
 {
 
     Jxta_message_element *el = NULL;
@@ -872,10 +872,9 @@ static void jxta_wire_pipe_free(Jxta_object * obj)
         JXTA_OBJECT_RELEASE(self->wire_service);
         self->wire_service = NULL;
     }
-    if (self->group != NULL) {
-        JXTA_OBJECT_RELEASE(self->group);
-        self->group = NULL;
-    }
+    
+    self->group = NULL;
+    
     if (self->adv != NULL) {
         JXTA_OBJECT_RELEASE(self->adv);
         self->adv = NULL;
@@ -896,8 +895,7 @@ static Jxta_pipe *jxta_wire_pipe_new_instance(Jxta_wire_service * pipe_service, 
     memset(self, 0, sizeof(Jxta_wire_pipe));
     JXTA_OBJECT_INIT(self, jxta_wire_pipe_free, 0);
 
-    JXTA_OBJECT_SHARE(group);
-    JXTA_OBJECT_SHARE(adv);
+     JXTA_OBJECT_SHARE(adv);
     JXTA_OBJECT_SHARE(pipe_service);
 
     self->group = group;
@@ -962,7 +960,7 @@ static Jxta_status wire_pipe_get_remote_peers(Jxta_pipe * self, Jxta_vector ** v
  ** Jxta_wire_inputpipe implementation
  ****************************************************************/
 
-static Jxta_status inputpipe_timed_receive(Jxta_inputpipe * obj, Jxta_time timeout, Jxta_message ** msg)
+static Jxta_status inputpipe_timed_receive(Jxta_inputpipe * obj, Jxta_time_diff timeout, Jxta_message ** msg)
 {
 
     Jxta_wire_inputpipe *self = (Jxta_wire_inputpipe *) obj;

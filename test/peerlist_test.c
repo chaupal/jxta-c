@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: peerlist_test.c,v 1.8 2002/02/28 01:47:27 lomax Exp $
+ * $Id: peerlist_test.c,v 1.9 2005/03/22 16:23:47 bondolo Exp $
  */
 
 
@@ -67,7 +67,7 @@
  * lomax@jxta.org FIXME this function should do something...
  */
 
-boolean
+Jxta_boolean
 get_Name(Jxta_peer * c) {
   return TRUE;
 }
@@ -75,10 +75,10 @@ get_Name(Jxta_peer * c) {
 
 
 
-boolean 
+Jxta_boolean 
 peer_test (void) {
 
-  boolean passed = FALSE;
+  Jxta_boolean passed = FALSE;
   Jxta_peer* c1;
   Jxta_peer* c2;
   Jxta_peer* c3;

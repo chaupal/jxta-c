@@ -1,13 +1,9 @@
 
-AM_CFLAGS = -DSTANDALONE -Wall -W -pedantic -Wno-long-long -Wstrict-prototypes -Wwrite-strings -Wpointer-arith -g
+AM_CFLAGS = -DSTANDALONE -Wall -W -pedantic -Wno-long-long -Wstrict-prototypes -Wwrite-strings -Wpointer-arith
 
-AM_CPPFLAGS = -I$(PREFIX)/include   \
-              -I../src              \
-              @APR_CPPFLAGS@
+AM_CPPFLAGS = -I../src @APR_CPPFLAGS@
 
 bin_PROGRAMS = jxtaShell
-
-
 
 LDADD = @APR_LIBS@                  \
 	-L../src/                   \

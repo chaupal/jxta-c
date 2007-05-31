@@ -50,20 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_svc.c,v 1.37 2005/02/02 02:58:33 exocetrick Exp $
+ * $Id: jxta_svc.c,v 1.38 2005/04/03 01:47:57 bondolo Exp $
  */
 
-   
-/* 
-* The following command will compile the output from the script 
-* given the apr is installed correctly.
-*/
-/*
-* gcc -DSTANDALONE jxta_advertisement.c Jxta_svc.c  -o PA \
-  `/usr/local/apache2/bin/apr-config --cflags --includes --libs` \
-  -lexpat -L/usr/local/apache2/lib/ -lapr
-*/
- 
+
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -72,6 +62,7 @@
 #include "jxta_svc.h"
 #include "jxta_tta.h"
 #include "jxta_hta.h"
+#include "jxta_rdv_config_adv.h"
 #include "jxta_relaya.h"
 #include  "jxta_routea.h"
 #include "jxta_xml_util.h"
@@ -108,6 +99,7 @@ enum tokentype {
                 HTTPTransportAdvertisement_,
 		RelayAdvertisement_,
 		RouteAdvertisement_,
+                RdvConfigAdvertisement_,
 		isClient_,
 		isServer_,
 		httpaddress_,
@@ -131,6 +123,7 @@ struct _jxta_svc {
   Jxta_HTTPTransportAdvertisement * hta;
   Jxta_RelayAdvertisement * relaya;
   Jxta_RouteAdvertisement *route;
+  Jxta_RdvConfigAdvertisement *rdvConfig;
 };
  
 /* forward decl for un-exported function */
@@ -328,10 +321,30 @@ handleTCPTransportAdvertisement(void * userdata, const XML_Char * cd, int len) {
    JXTA_LOG("Begin Svc handleTCPTransportAdvertisement"
 	    " (end tag may not show)\n");
 
+
    jxta_advertisement_set_handlers((Jxta_advertisement *)tta,
 		                   ((Jxta_advertisement *)ad)->parser,
 		                   (void*)ad);
 
+} 
+
+static void
+handleRdvConfigAdv(void * userdata, const XML_Char * cd, int len) {
+   Jxta_svc * ad = (Jxta_svc*)userdata; 
+   Jxta_RdvConfigAdvertisement * rdvConfig = jxta_RdvConfigAdvertisement_new();
+
+   jxta_svc_set_RdvConfig(ad, rdvConfig);
+   JXTA_OBJECT_RELEASE(rdvConfig);
+
+   JXTA_LOG("Begin Svc handleRdvConfig"
+	    " (end tag may not show)\n");
+
+   jxta_advertisement_set_handlers((Jxta_advertisement *)rdvConfig,
+		                   ((Jxta_advertisement *)ad)->parser,
+		                   (void*)ad);
+   
+   ((Jxta_advertisement *) rdvConfig)->atts = ((Jxta_advertisement *) ad)->atts;
+   handleJxta_RdvConfigAdvertisement( rdvConfig, cd, len );
 } 
 
 static void
@@ -663,6 +676,21 @@ jxta_svc_set_TCPTransportAdvertisement(Jxta_svc * ad,
     ad->tta = tta;
 }
 
+Jxta_RdvConfigAdvertisement * jxta_svc_get_RdvConfig(Jxta_svc * ad)
+{
+    if (ad->rdvConfig != NULL) JXTA_OBJECT_SHARE(ad->rdvConfig);
+    return ad->rdvConfig;
+}
+
+void
+jxta_svc_set_RdvConfig(Jxta_svc * ad,
+				   Jxta_RdvConfigAdvertisement * rdvConfig)
+{
+    if (rdvConfig != NULL) JXTA_OBJECT_SHARE(rdvConfig);
+    if (ad->rdvConfig != NULL) JXTA_OBJECT_RELEASE(ad->rdvConfig);
+    ad->rdvConfig = rdvConfig;
+}
+
 JString*
 jxta_svc_get_RootCert(Jxta_svc * ad)
 {
@@ -693,6 +721,7 @@ const static Kwdtab Svc_tags[] = {
 {"RootCert",                       RootCert_,                  *handleRootCert,                  NULL},
 {"Addr",                           Addr_,                      *handleAddr,                      NULL},
 {"Rdv",                            Rdv_,                       *handleRdv,                       NULL},
+{"jxta:RdvConfig",                 RdvConfigAdvertisement_,    *handleRdvConfigAdv,              NULL},
 {"jxta:TCPTransportAdvertisement", TCPTransportAdvertisement_, *handleTCPTransportAdvertisement, NULL},
 {"jxta:HTTPTransportAdvertisement",HTTPTransportAdvertisement_,*handleHTTPTransportAdvertisement,NULL},
 {"jxta:RA"                        ,RouteAdvertisement_,*handleRouteAdvertisement,NULL},
@@ -886,32 +915,6 @@ jxta_svc_parse_file(Jxta_svc * ad, FILE * stream) {
 
    jxta_advertisement_parse_file((Jxta_advertisement*)ad, stream);
 }
-
-
-#ifdef STANDALONE
-int
-main (int argc, char **argv) {
-   Jxta_svc * ad;
-   FILE *testfile;
-
-   if(argc != 2) {
-
-       printf("usage: ad <filename>\n");
-       return -1;
-   }
-
-   ad = jxta_svc_new();
-
-   testfile = fopen (argv[1], "r");
-   jxta_svc_parse_file(ad, testfile);
-   fclose(testfile);
-
-   /* jxta_svc_print_xml(ad,fprintf,stdout); */
-   jxta_svc_delete(ad);
-
-   return 0;
-}
-#endif
 
 
 #ifdef __cplusplus

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxtaapr.h,v 1.3 2005/02/04 00:22:07 bondolo Exp $
+ * $Id: jxtaapr.h,v 1.4 2005/03/23 19:08:48 bondolo Exp $
  */
 
 #ifndef __JXTAPR_H__
@@ -63,6 +63,7 @@
 #include <apr.h>
 #include <apr_strings.h>
 #include <apr_hash.h>
+#include <apr_portable.h>
 #include <apr_time.h>
 #include <apr_thread_mutex.h>
 #include <apr_network_io.h>

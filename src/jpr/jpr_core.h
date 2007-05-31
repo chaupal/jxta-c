@@ -1,5 +1,6 @@
-/* 
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights reserved.
+/*
+ * Copyright (c) 2005 Sun Microsystems, Inc.  All rights
+ * reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,7 +30,7 @@
  *    nor may "JXTA" appear in their name, without prior written
  *    permission of Sun.
  *
- * THIS SOFTWARE IS PROVIDED AS IS'' AND ANY EXPRESSED OR IMPLIED
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
  * DISCLAIMED.  IN NO EVENT SHALL SUN MICROSYSTEMS OR
@@ -50,55 +51,32 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta.c,v 1.6 2005/04/07 22:35:05 slowhog Exp $
+ * $Id: jpr_core.h,v 1.1 2005/03/24 19:40:22 slowhog Exp $
  */
 
-#include <apr_general.h>
-#include "jpr/jpr_core.h"
-#include "jxta_log.h"
 
-/**
- * Briefly, touching jxta jxta touches apr, which requires a call
- * to apr_initialize() and apr_terminate().  
- */
+#ifndef __JPR_CORE_H__
+#define __JPR_CORE_H__
 
-static unsigned int _jxta_initialized = 0;
+#include "jpr_types.h"
 
-/**
- * @todo Add initialization code.
- */
-void jxta_initialize(void)
-{
-    if (_jxta_initialized) {
-        _jxta_initialized++;
-        return;
-    }
-
-    apr_initialize();
-    jpr_initialize();
-    jxta_log_initialize();
-    jxta_PG_module_initialize();
+#ifdef __cplusplus
+extern "C" {
+#if 0
 }
+#endif
+#endif
 
+Jpr_status jpr_initialize(void);
+void jpr_terminate(void);
 
-/**
- * @todo Add termination code.
- */
-void jxta_terminate(void)
+#ifdef __cplusplus
+#if 0
 {
-    if (!_jxta_initialized) {
-        return;
-    }
-
-    _jxta_initialized--;
-    if (_jxta_initialized) {
-        return;
-    }
-
-    jxta_PG_module_terminate();
-    jxta_log_terminate();
-    jpr_terminate();
-    apr_terminate();
+#endif
 }
+#endif
+
+#endif /* __JPR_CORE_H__ */
 
 /* vim: set ts=4 sw=4 tw=130 et: */

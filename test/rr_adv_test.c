@@ -50,31 +50,27 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rr_adv_test.c,v 1.6 2005/01/12 20:52:37 bondolo Exp $
+ * $Id: rr_adv_test.c,v 1.8 2005/04/07 22:58:56 slowhog Exp $
  */
 
 #include <stdio.h>
 #include "jxta_object.h"
 #include "jxta_rr.h"
 
-boolean
+Jxta_boolean
 rr_test(int argc, char ** argv) {
 
    ResolverResponse * ad;
    FILE *testfile;
    JString * doc;
 
-#ifdef WIN32 
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize();
-#endif
-
    if(argc != 2)
      {
        printf("usage: ad <filename>\n");
        return -1;
      }
+
+    jxta_initialize();
 
    ad = jxta_resolver_response_new();
 
@@ -87,6 +83,7 @@ rr_test(int argc, char ** argv) {
    jxta_resolver_response_free(ad);
    JXTA_OBJECT_RELEASE(doc);
 
+   jxta_terminate();
    return 0;
 }
 

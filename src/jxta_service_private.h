@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_service_private.h,v 1.15 2005/02/04 00:22:07 bondolo Exp $
+ * $Id: jxta_service_private.h,v 1.16 2005/03/25 23:41:13 bondolo Exp $
  */
 
 #ifndef JXTA_SERVICE_PRIVATE_H
@@ -150,7 +150,7 @@ typedef struct _jxta_service _jxta_service;
  * @param methods Pointer to the relevant Jxta_service_methods object.
  * @return the constructed object or NULL if the construction failed.
  */
-extern _jxta_service *jxta_service_construct(_jxta_service * svc, Jxta_service_methods * methods);
+extern _jxta_service *jxta_service_construct(_jxta_service * svc, Jxta_service_methods const * methods);
 
 /**
  * The base service dtor (Not public, not virtual. Only called by subclassers).

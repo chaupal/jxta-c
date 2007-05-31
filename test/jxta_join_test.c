@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_join_test.c,v 1.2 2004/05/20 01:27:37 tra Exp $
+ * $Id: jxta_join_test.c,v 1.3 2005/04/07 22:58:54 slowhog Exp $
  */
 
 #include "jxta.h"
@@ -74,14 +74,14 @@ int main(int argc, char *argv[])
     Jxta_status res;
     FILE* pgadv_file;
 
-    apr_initialize();
-
     pgadv_file = fopen("join_test_pga.xml", "r");
     if (pgadv_file == NULL) {
 	printf("please dump the adv of the group you want to join in"
 	       " join_test_pga.xml\n");
 	exit(1);
     }
+
+    jxta_initialize();
 
     res = jxta_PG_new_netpg(&netpg);
     if (res != JXTA_SUCCESS) {
@@ -121,5 +121,7 @@ int main(int argc, char *argv[])
 
     jxta_module_stop((Jxta_module*) netpg);
     JXTA_OBJECT_RELEASE(netpg);
+
+    jxta_terminate();
     return 0;
 }

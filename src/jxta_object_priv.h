@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object_priv.h,v 1.4 2005/01/21 00:36:43 bondolo Exp $
+ * $Id: jxta_object_priv.h,v 1.6 2005/03/29 19:01:54 bondolo Exp $
  */
 
 
@@ -65,13 +65,24 @@ extern "C" {
 #endif
 #endif
 /**
- * Flag for rendering any object immutable.
+ * Flag for rendering any object immutable. Refcount and ojbect freeing
+ * is disabled for immutable objects. USE WITH CARE!
  **/
 #define JXTA_OBJECT_IMMUTABLE_FLAG (1 << 1)
 /**
  * Flag for indicating whether object is constructed.
  **/
 #define JXTA_OBJECT_CONSTRUCTED    (1 << 2)
+/**
+* Flag for indicating if share/release should be logged for this
+* object.
+**/
+#define JXTA_OBJECT_SHARE_TRACK    (1 << 3)
+/**
+* Flag for indicating that the object is initialized if we are not
+* using JXTA_OBJECT_CHECK_INITIALIZED_ENABLE.
+**/
+#define JXTA_OBJECT_INITED_BIT    (1 << (sizeof(unsigned int) * CHAR_BIT - 1))
 /**
  * This is the configuration of the object. Each of the following
  * can independantely be set or not set.
@@ -84,7 +95,7 @@ extern "C" {
  * of a corruption of the data that might look fine, a "random" but yet
  * readable by a human, value is used.
  **/
-#define JXTA_OBJECT_MAGIC_NUMBER   (0x600DF00DUL)
+#define JXTA_OBJECT_MAGIC_NUMBER   (0x600DF00DU)
 /**
  * When defined, macros like SHARE and RELEASE will check if the
  * object is properly initialized (or not initialized), currently
@@ -105,7 +116,7 @@ extern "C" {
 */
 #undef JXTA_OBJECT_TRACKER
 #ifdef JXTA_OBJECT_TRACKER
-#define JXTA_OBJECT_NAME_MAYBE (char*) NULL,
+#define JXTA_OBJECT_NAME_MAYBE (const char*) NULL,
 #else
 #define JXTA_OBJECT_NAME_MAYBE
 #endif
@@ -114,23 +125,19 @@ extern "C" {
  * if the object still has a positive reference count.
  **/
 #define JXTA_OBJECT_CHECK_VALID_ENABLE
-
 /**
  * This is the structure that is added to the begining of each object.
- **/ 
- 
- struct _jxta_object {
+ **/ struct _jxta_object {
     unsigned int _bitset;
-    int _refCount;              /* signed int to better detect over-release */
     JXTA_OBJECT_FREE_FUNC _free;
     void *_freeCookie;
 #ifdef JXTA_OBJECT_TRACKER
-
     char *_name;
 #endif
 #ifdef JXTA_OBJECT_CHECK_INITIALIZED_ENABLE
     unsigned int _initialized;
 #endif
+    int _refCount;      /* signed int to better detect over-release */
 };
 
 typedef struct _jxta_object _jxta_object;
@@ -160,13 +167,13 @@ extern void jxta_object_freemenot(Jxta_object * obj);
  */
 
 #define JXTA_OBJECT_STATIC_INIT { \
-        (unsigned int) 0, \
-        (unsigned int) 1, \
+        (unsigned int) JXTA_OBJECT_IMMUTABLE_FLAG | JXTA_OBJECT_INITED_BIT, \
         (JXTA_OBJECT_FREE_FUNC) jxta_object_freemenot, \
-        (void*) 0, \
+        (void*) NULL, \
         JXTA_OBJECT_NAME_MAYBE \
         JXTA_OBJECT_CHECKINIT_MAYBE \
-    }
+        (int) 1 \
+     }
 
 /**
  * Helper functions
@@ -188,7 +195,7 @@ Jxta_object *JXTA_OBJECT(void *x);
  * @param x the address of the object
  * @return a pointer to the free function.
 **/
-JXTA_OBJECT_FREE_FUNC JXTA_OBJECT_GET_FREE_FUNC(void *x);
+JXTA_OBJECT_FREE_FUNC JXTA_OBJECT_GET_FREE_FUNC(Jxta_object * x);
 
 /**
  * Returns a properly cast pointer to the object free function
@@ -197,7 +204,8 @@ JXTA_OBJECT_FREE_FUNC JXTA_OBJECT_GET_FREE_FUNC(void *x);
  * @param x the address of the object.
  * @return a pointer to the free function cookie.
 **/
-void *JXTA_OBJECT_GET_FREECOOKIE(void *x);
+void *JXTA_OBJECT_GET_FREECOOKIE(Jxta_object * x);
+
 
 /**
  * Helper macros
@@ -209,55 +217,26 @@ void *JXTA_OBJECT_GET_FREECOOKIE(void *x);
 #define JXTA_OBJECT_GET_FREECOOKIE(x)     (JXTA_OBJECT(x)->_freeCookie)
 
 #ifdef JXTA_OBJECT_CHECK_VALID_ENABLE
-
 Jxta_boolean _jxta_object_check_valid(Jxta_object * obj, const char *file, int line);
-#define JXTA_OBJECT_CHECK_VALID(obj) _jxta_object_check_valid( JXTA_OBJECT(obj), (char*) __FILE__, (int) __LINE__ )
+#define JXTA_OBJECT_CHECK_VALID(obj) _jxta_object_check_valid( JXTA_OBJECT(obj), __FILE__, __LINE__ )
 #else
 #define JXTA_OBJECT_CHECK_VALID(obj) (TRUE)
 #endif
 
-/**
- * This is not a public API.
- * Checks if the object has been initialized yet.
- **/
-Jxta_boolean JXTA_OBJECT_CHECK_INITIALIZED(void *x);
-Jxta_boolean JXTA_OBJECT_CHECK_NOT_INITIALIZED(void *x);
-void JXTA_OBJECT_SET_INITIALIZED(void *x);
-void JXTA_OBJECT_SET_UNINITIALIZED(void *x);
-
-#ifdef JXTA_OBJECT_CHECK_INITIALIZED_ENABLE
-extern Jxta_boolean _jxta_object_check_initialized(Jxta_object *, const char *, const int);
-#define JXTA_OBJECT_CHECK_INITIALIZED(obj) _jxta_object_check_initialized (JXTA_OBJECT(obj), __FILE__, __LINE__)
-#define JXTA_OBJECT_SET_INITIALIZED(obj) \
-    do { \
-        (JXTA_OBJECT(obj)->_initialized = JXTA_OBJECT_MAGIC_NUMBER); \
-    } while (0)
-#define JXTA_OBJECT_SET_UNINITIALIZED(obj) \
-    do { \
-        (JXTA_OBJECT(obj)->_initialized = 0); \
-    } while (0)
-#else
-#define JXTA_OBJECT_CHECK_INITIALIZED(obj) (TRUE)
-#define JXTA_OBJECT_SET_INITIALIZED(obj)
-#define JXTA_OBJECT_SET_UNINITIALIZED(obj)
-#endif
-
-#ifdef JXTA_OBJECT_CHECK_UNINITIALIZED_ENABLE
-extern Jxta_boolean _jxta_object_check_not_initialized(Jxta_object *, const char *, int);
-#define JXTA_OBJECT_CHECK_NOT_INITIALIZED(obj) _jxta_object_check_not_initialized (JXTA_OBJECT(obj), __FILE__, __LINE__)
-#else
-#define JXTA_OBJECT_CHECK_NOT_INITIALIZED(obj) (TRUE)
-#endif
-
-extern void *_jxta_object_init(Jxta_object *, JXTA_OBJECT_FREE_FUNC, void *, const char *, int);
+extern void *_jxta_object_init(Jxta_object *, unsigned int flags, JXTA_OBJECT_FREE_FUNC, void *, const char *, int);
 extern void *_jxta_object_share(Jxta_object *, const char *, int);
-extern void _jxta_object_release(Jxta_object *, const char *, int);
+extern int _jxta_object_release(Jxta_object *, const char *, int);
+extern int _jxta_object_get_refcount(Jxta_object * obj);
 
-#define JXTA_OBJECT_INIT(obj,free,cookie) _jxta_object_init (JXTA_OBJECT(obj), free, cookie, __FILE__, __LINE__)
+#define JXTA_OBJECT_INIT(obj,free,cookie) _jxta_object_init (JXTA_OBJECT(obj), 0, free, cookie, __FILE__, __LINE__)
+
+#define JXTA_OBJECT_INIT_FLAGS(obj,flags,free,cookie) _jxta_object_init (JXTA_OBJECT(obj), flags, free, cookie, __FILE__, __LINE__)
 
 #define JXTA_OBJECT_SHARE(obj)  _jxta_object_share (JXTA_OBJECT(obj), __FILE__, __LINE__)
 
 #define JXTA_OBJECT_RELEASE(obj) _jxta_object_release (JXTA_OBJECT(obj), __FILE__, __LINE__)
+
+#define JXTA_OBJECT_GET_REFCOUNT(obj) _jxta_object_get_refcount (JXTA_OBJECT(obj))
 
 #ifdef __cplusplus
 }

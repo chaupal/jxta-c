@@ -50,31 +50,27 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rdv_adv_test.c,v 1.3 2004/06/12 07:36:07 tra Exp $
+ * $Id: rdv_adv_test.c,v 1.5 2005/04/07 22:58:55 slowhog Exp $
  */
 
 #include <stdio.h>
 #include "jxta.h"
 #include "jxta_rdv.h"
 
-boolean
+Jxta_boolean
 rdv_test(int argc, char ** argv) {
 
    Jxta_RdvAdvertisement * ad;
    FILE *testfile;
    JString * js;
 
-#ifdef WIN32 
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize();
-#endif
-
    if(argc != 2)
      {
        printf("usage: ad <filename>\n");
        return -1;
      }
+
+    jxta_initialize();
 
    ad = jxta_RdvAdvertisement_new();
 
@@ -89,6 +85,7 @@ rdv_test(int argc, char ** argv) {
 
    JXTA_OBJECT_RELEASE(js);
 
+   jxta_terminate();
    return 0;
 
 }

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pm.h,v 1.4 2005/03/01 19:37:25 bondolo Exp $
+ * $Id: jxta_pm.h,v 1.5 2005/04/06 00:38:52 bondolo Exp $
  */
 
    
@@ -74,16 +74,16 @@ Jxta_status RendezVousPropagateMessage_get_xml(RendezVousPropagateMessage *, JSt
 void RendezVousPropagateMessage_parse_charbuffer(RendezVousPropagateMessage *, const char *, int len); 
 void RendezVousPropagateMessage_parse_file(RendezVousPropagateMessage *, FILE * stream);
  
-char * RendezVousPropagateMessage_get_RendezVousPropagateMessage(RendezVousPropagateMessage *);
+const char * RendezVousPropagateMessage_get_RendezVousPropagateMessage(RendezVousPropagateMessage *);
 void RendezVousPropagateMessage_set_RendezVousPropagateMessage(RendezVousPropagateMessage *, const char *);
  
-char* RendezVousPropagateMessage_get_DestSName(RendezVousPropagateMessage *);
+const char* RendezVousPropagateMessage_get_DestSName(RendezVousPropagateMessage *);
 void RendezVousPropagateMessage_set_DestSName(RendezVousPropagateMessage *, const char *);
  
-char * RendezVousPropagateMessage_get_DestSParam(RendezVousPropagateMessage *);
+const char * RendezVousPropagateMessage_get_DestSParam(RendezVousPropagateMessage *);
 void RendezVousPropagateMessage_set_DestSParam(RendezVousPropagateMessage *, const char *);
  
-char * RendezVousPropagateMessage_get_MessageId(RendezVousPropagateMessage *);
+const char * RendezVousPropagateMessage_get_MessageId(RendezVousPropagateMessage *);
 void RendezVousPropagateMessage_set_MessageId(RendezVousPropagateMessage *, const char *);
  
  

@@ -98,9 +98,9 @@ Jxta_DiscoveryQuery * createDiscoveryQuery_1(){
 * @param query the query to check
 * @return TRUE if the message is correct, FALSE otherwise
 */
-boolean checkDiscoveryQuery(Jxta_DiscoveryQuery * query){
+Jxta_boolean checkDiscoveryQuery(Jxta_DiscoveryQuery * query){
   JString * comp = NULL;
-  boolean result = TRUE;
+  Jxta_boolean result = TRUE;
    
   if(query == NULL ){
     result = FALSE;
@@ -167,10 +167,10 @@ Common_Exit:
 /**
  * Test the empty constructor for jxta_discovery_query
  */
-boolean
+Jxta_boolean
 test_jxta_discovery_query_new(void) {
   Jxta_DiscoveryQuery * query = createDiscoveryQuery();
-  boolean result = TRUE;
+  Jxta_boolean result = TRUE;
 
   if( query == NULL) return FALSE;
 
@@ -184,10 +184,10 @@ test_jxta_discovery_query_new(void) {
 /**
  * Test the _1 constructor for jxta_discovery_query
  */
-boolean
+Jxta_boolean
 test_jxta_discovery_query_new_1(void) {
   Jxta_DiscoveryQuery * query = createDiscoveryQuery_1();
-  boolean result = TRUE;
+  Jxta_boolean result = TRUE;
 
   if( query == NULL) return FALSE;
 
@@ -202,10 +202,10 @@ test_jxta_discovery_query_new_1(void) {
  * Test the read/write functionality of the  Jxta_DiscoveryQuery
  * object
  */
-boolean
+Jxta_boolean
 test_jxta_discovery_read_write(void) {
   Jxta_DiscoveryQuery * query = createDiscoveryQuery_1();
-  boolean result = TRUE;
+  Jxta_boolean result = TRUE;
   JString * doc = NULL;
 
   if( query == NULL ) return FALSE;

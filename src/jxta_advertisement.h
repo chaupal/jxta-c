@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_advertisement.h,v 1.14 2005/02/16 23:19:25 bondolo Exp $
+ * $Id: jxta_advertisement.h,v 1.15 2005/03/24 01:48:12 bondolo Exp $
  */
 
 /**
@@ -383,7 +383,7 @@ char *jxta_advertisement_get_string(Jxta_advertisement *, const char *key);
  *
  * @return JXTA_SUCCESS if the parse succeeded otherwise errors.
  */
-Jxta_status jxta_advertisement_parse_charbuffer(Jxta_advertisement * ad, const char *buf, int len);
+Jxta_status jxta_advertisement_parse_charbuffer(Jxta_advertisement * ad, const char *buf, size_t len);
 
 /**
  * 

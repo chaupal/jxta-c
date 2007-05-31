@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tcp_multicast.c,v 1.13 2005/02/10 00:56:49 slowhog Exp $
+ * $Id: jxta_tcp_multicast.c,v 1.14 2005/03/24 18:27:17 slowhog Exp $
  */
 
 #define BUFSIZE		8192
@@ -366,6 +366,8 @@ void tcp_multicast_stop(TcpMulticast * tm)
     TcpMulticast *self = tm;
     apr_status_t status;
 
+    self->run = FALSE;
+
     if (self->send_sock != NULL) {
         apr_socket_shutdown(self->send_sock, APR_SHUTDOWN_READWRITE);
         apr_socket_close(self->send_sock);
@@ -382,8 +384,6 @@ void tcp_multicast_stop(TcpMulticast * tm)
         apr_thread_join(&status, self->thread);
         self->thread = NULL;
     }
-
-    self->run = FALSE;
 }
 
 static Jxta_status read_from_tcp_multicast_stream(void *stream, char *buf, apr_size_t len)

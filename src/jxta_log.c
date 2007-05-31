@@ -47,7 +47,8 @@ static char const * const _jxta_log_level_labels[JXTA_LOG_LEVEL_MAX] = {
     "warning",
     "info",
     "debug",
-    "trace"
+    "trace",
+    "paranoid"
 };
 
 Jxta_status

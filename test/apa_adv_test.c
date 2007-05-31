@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: apa_adv_test.c,v 1.3 2004/05/20 01:27:36 tra Exp $
+ * $Id: apa_adv_test.c,v 1.5 2005/04/07 22:58:52 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -58,24 +58,20 @@
 #include "jxta_apa.h"
 
 
-boolean
+Jxta_boolean
 accessPointa_test(int argc, char ** argv) {
 
    Jxta_AccessPointAdvertisement * ad;
    FILE *testfile;
    JString * js;
 
-#ifdef WIN32 
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize();
-#endif
-
    if(argc != 2)
      {
        printf("usage: ad <filename>\n");
        return -1;
      }
+
+   jxta_initialize();
 
    ad = jxta_AccessPointAdvertisement_new();
 
@@ -91,8 +87,8 @@ accessPointa_test(int argc, char ** argv) {
 
    JXTA_OBJECT_RELEASE(js);
 
+   jxta_terminate();
    return 0;
-
 }
 
 
@@ -104,3 +100,5 @@ main (int argc, char **argv) {
   return accessPointa_test(argc,argv);
 }
 #endif
+
+/* vim: set ts=4 sw=4 tw=130 et: */

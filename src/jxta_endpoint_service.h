@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_service.h,v 1.5 2005/02/11 19:50:28 slowhog Exp $
+ * $Id: jxta_endpoint_service.h,v 1.6 2005/03/28 23:27:28 bondolo Exp $
  */
 
 
@@ -76,7 +76,7 @@ extern "C" {
 #endif
 #endif
 #define  JXTA_ENDPOINT_SERVICE_NAME "EndpointService"
-#define  JXTA_ENDPOINT_DEST_UNREACHABLE_TIMEOUT (Jxta_time) (10L * 60L * 1000L) /* 10 minutes */
+#define  JXTA_ENDPOINT_DEST_UNREACHABLE_TIMEOUT ((Jxta_time_diff) (10L * 60L * 1000L)) /* 10 minutes */
 typedef struct _jxta_endpoint_service Jxta_endpoint_service;
 
 typedef void (*JxtaEndpointListener) (Jxta_message * msg, void *arg);

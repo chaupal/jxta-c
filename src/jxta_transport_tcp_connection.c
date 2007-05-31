@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tcp_connection.c,v 1.16 2005/01/31 20:44:36 slowhog Exp $
+ * $Id: jxta_transport_tcp_connection.c,v 1.18 2005/03/30 07:08:05 slowhog Exp $
  */
 
 #include "apr.h"
@@ -72,6 +72,8 @@
 #define SPACE		" "
 #define CURRENTVERSION	"1.1"
 #define CRLF		"\r\n"
+
+static const char *__log_cat = "TCP_CONNECTION";
 
 typedef struct _welcome_message {
     JXTA_OBJECT_HANDLE;
@@ -134,7 +136,7 @@ static Jxta_status tcp_connection_read(Jxta_transport_tcp_connection * conn, cha
 static Jxta_status tcp_connection_read_n(Jxta_transport_tcp_connection * conn, char *buf, apr_size_t size);
 static Jxta_status tcp_connection_unread(Jxta_transport_tcp_connection * conn, char *buf, apr_size_t size);
 static Jxta_status tcp_connection_write(Jxta_transport_tcp_connection * conn, const char *buf, apr_size_t size,
-                                        boolean zero_copy);
+                                        Jxta_boolean zero_copy);
 static Jxta_status tcp_connection_flush(Jxta_transport_tcp_connection * conn);
 
 static void tcp_connection_get_intf_from_jxta_endpoint_address(Jxta_endpoint_address * ea, char *ipaddr, apr_port_t * port);
@@ -288,7 +290,7 @@ Jxta_transport_tcp_connection *jxta_transport_tcp_connection_new_1(Jxta_transpor
 
     self = tcp_connection_new();
     if (self == NULL) {
-        JXTA_LOG("Failed to create tcp connection\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to create tcp connection\n");
         return NULL;
     }
 
@@ -311,7 +313,7 @@ Jxta_transport_tcp_connection *jxta_transport_tcp_connection_new_1(Jxta_transpor
         if (!APR_STATUS_IS_SUCCESS(status)) {
             char msg[256];
             apr_strerror(status, msg, sizeof(msg));
-            JXTA_LOG("%s\n", msg);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed connect attemp: %s\n", msg);
             JXTA_OBJECT_RELEASE(self);
             return NULL;
         }
@@ -349,9 +351,6 @@ Jxta_transport_tcp_connection *jxta_transport_tcp_connection_new_2(Jxta_transpor
         sprintf(protocol_address, "%s:%d", self->ipaddr, self->port);
         self->dest_addr = jxta_endpoint_address_new2(protocol_name, protocol_address, NULL, NULL);
 
-        free(protocol_name);
-        free(protocol_address);
-
         tcp_connection_start_socket(self);
 
         if (self->its_welcome != NULL) {
@@ -363,15 +362,15 @@ Jxta_transport_tcp_connection *jxta_transport_tcp_connection_new_2(Jxta_transpor
              * That area is freed when apr_pool_destroy called.
              */
             tcp_connection_get_intf_from_jxta_endpoint_address(self->dest_addr, self->ipaddr, &self->port);
-            JXTA_LOG("conn new: ip=%s, port=%d\n", self->ipaddr, self->port);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "conn new: ip=%s, port=%d\n", self->ipaddr, self->port);
         } else {
             JXTA_OBJECT_RELEASE(self);
-            return NULL;
+            self = NULL;
         }
-    } else {
-        free(protocol_name);
-        free(protocol_address);
     }
+
+    free(protocol_name);
+    free(protocol_address);
 
     return self;
 }
@@ -395,11 +394,11 @@ static void tcp_connection_start_socket(Jxta_transport_tcp_connection * conn)
 
     /* send my welcome message */
     res = tcp_connection_write(self, (char *) self->my_welcome->welcome_bytes, strlen(self->my_welcome->welcome_bytes), TRUE);
-    JXTA_LOG("my welcome message sent ..%s\n", (caddress = jxta_endpoint_address_to_string(self->my_welcome->dest_addr)));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "my welcome message sent ..%s\n", (caddress = jxta_endpoint_address_to_string(self->my_welcome->dest_addr)));
     free(caddress);
 
     if (res != JXTA_SUCCESS) {
-        JXTA_LOG("Error socket write\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error socket write\n");
         return;
     }
 
@@ -408,11 +407,11 @@ static void tcp_connection_start_socket(Jxta_transport_tcp_connection * conn)
     self->its_welcome = welcome_message_new_2(self);
 
     if (self->its_welcome != NULL) {
-        JXTA_LOG("its welcome message received ..%s\n",
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "its welcome message received ..%s\n",
                  (caddress = jxta_endpoint_address_to_string(self->its_welcome->dest_addr)));
         free(caddress);
     } else {
-        JXTA_LOG("its welcome message is malformed.\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "its welcome message is malformed.\n");
     }
 }
 
@@ -427,7 +426,7 @@ Jxta_status jxta_transport_tcp_connection_start(Jxta_transport_tcp_connection * 
     status = apr_thread_create(&self->recv_thread, NULL, tcp_connection_body, (void *) self, self->pool);
 
     if (!APR_STATUS_IS_SUCCESS(status)) {
-        JXTA_LOG("Failed to start thread\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to start thread\n");
         /*
            self->connected = FALSE;
          */
@@ -464,17 +463,17 @@ static void * APR_THREAD_FUNC tcp_connection_body(apr_thread_t * t, void *arg)
             break;
 
         if (res == JXTA_FAILED) {
-            JXTA_LOG("Failed to read message packet header\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to read message packet header\n");
             break;
         }
 
         if (msg_size > 0) {
             msg = jxta_message_new();
-            JXTA_LOG("Received a new message\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Received a new message\n");
 
             res = jxta_message_read(msg, APP_MSG, read_from_tcp_connection, self);
             if (res != JXTA_SUCCESS) {
-                JXTA_LOG("Failed to read message\n");
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to read message\n");
                 continue;
             }
 
@@ -498,14 +497,14 @@ static void tcp_connection_close(Jxta_transport_tcp_connection * conn)
     JXTA_OBJECT_CHECK_VALID(self);
 
     if (is_connected(self) == FALSE) {
-        JXTA_LOG("Already closed\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Already closed\n");
         return;
     }
 
-    JXTA_LOG("remove messenger: ip=%s, port=%d\n", self->ipaddr, self->port);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "remove messenger: ip=%s, port=%d\n", self->ipaddr, self->port);
     res = jxta_transport_tcp_remove_messenger(self->tp, self->ipaddr, self->port);
     if (res != JXTA_SUCCESS)
-        JXTA_LOG("Failed to remove messenger\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to remove messenger\n");
     apr_socket_shutdown(self->shared_socket, APR_SHUTDOWN_READWRITE);
     apr_socket_close(self->shared_socket);
 
@@ -517,7 +516,7 @@ static void tcp_connection_close(Jxta_transport_tcp_connection * conn)
     self->recv_thread = NULL;
     if (!APR_STATUS_IS_SUCCESS(status)) {
         apr_strerror(status, msg, sizeof(msg));
-        JXTA_LOG("Failed to destroy thread %s\n", msg);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Thread finished with error: %s\n", msg);
     }
 
     if (self != NULL)
@@ -544,7 +543,7 @@ Jxta_status jxta_transport_tcp_connection_send_message(Jxta_transport_tcp_connec
 
     JXTA_OBJECT_CHECK_VALID(self);
     if (is_connected(self) == FALSE) {
-        JXTA_LOG("Not connected\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Try to send message while not connected\n");
         return JXTA_FAILED;
     }
 
@@ -557,9 +556,9 @@ Jxta_status jxta_transport_tcp_connection_send_message(Jxta_transport_tcp_connec
     jxta_message_write(msg, APP_MSG, msg_wireformat_size, &msg_size);
 
 #ifndef WIN32
-    JXTA_LOG("send_message: msg_size=%lld\n", msg_size);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "send_message: msg_size=%lld\n", msg_size);
 #else
-    JXTA_LOG("send_message: msg_size=%I64d\n", msg_size);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "send_message: msg_size=%I64d\n", msg_size);
 #endif
     /* write message packet header */
     message_packet_header_write(write_to_tcp_connection, (void *) self, msg_size, FALSE, NULL);
@@ -570,9 +569,9 @@ Jxta_status jxta_transport_tcp_connection_send_message(Jxta_transport_tcp_connec
         res = tcp_connection_flush(conn);
     }
     if (res != JXTA_SUCCESS) {
-        JXTA_LOG("Failed to send the message\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to send the message\n");
     } else {
-        JXTA_LOG("message sent\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "message sent\n");
     }
 
     apr_thread_mutex_unlock(self->mutex);
@@ -656,12 +655,12 @@ static WelcomeMessage *welcome_message_new_2(Jxta_transport_tcp_connection * con
 
     buf = (char *) malloc(BUFSIZE * sizeof(char));
     if (buf == NULL) {
-        JXTA_LOG("buf malloc error\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "buf malloc error\n");
         return NULL;
     }
     line = (char *) malloc(max_msg_size * sizeof(char));
     if (line == NULL) {
-        JXTA_LOG("line malloc error\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "line malloc error\n");
         return NULL;
     }
 
@@ -692,7 +691,7 @@ static WelcomeMessage *welcome_message_new_2(Jxta_transport_tcp_connection * con
             }
         }
         if (i >= (int) max_msg_size) {
-            JXTA_LOG("Too long message\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Too long message\n");
             free(buf);
             free(line);
             JXTA_OBJECT_RELEASE(welmsg);
@@ -889,7 +888,7 @@ static Jxta_status tcp_connection_unread(Jxta_transport_tcp_connection * conn, c
     return JXTA_SUCCESS;
 }
 
-static Jxta_status tcp_connection_write(Jxta_transport_tcp_connection * conn, const char *buf, apr_size_t size, boolean zero_copy)
+static Jxta_status tcp_connection_write(Jxta_transport_tcp_connection * conn, const char *buf, apr_size_t size, Jxta_boolean zero_copy)
 {
     Jxta_status jxta_status = JXTA_SUCCESS;
     apr_status_t status = APR_SUCCESS;
@@ -1019,3 +1018,5 @@ apr_port_t jxta_transport_tcp_connection_get_port(Jxta_transport_tcp_connection 
     JXTA_OBJECT_CHECK_VALID(self);
     return self->port;
 }
+
+/* vim: set ts=4 sw=4 tw=130 et: */

@@ -51,17 +51,17 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_service.c,v 1.14 2005/02/04 00:22:08 bondolo Exp $
+ * $Id: jxta_service.c,v 1.16 2005/03/25 23:41:13 bondolo Exp $
  */
 
 #include "jxta_service_private.h"
 
-_jxta_service *jxta_service_construct(_jxta_service * svc, Jxta_service_methods * methods)
+_jxta_service *jxta_service_construct(_jxta_service * svc, Jxta_service_methods const * methods)
 {
     _jxta_service *self = NULL;
 
     PTValid(methods, Jxta_service_methods);
-    self = (_jxta_service *) jxta_module_construct((_jxta_module *) svc, (Jxta_module_methods *) methods);
+    self = (_jxta_service *) jxta_module_construct((_jxta_module *) svc, (Jxta_module_methods const *) methods);
 
     if (NULL != self) {
         self->thisType = "_jxta_service";
@@ -77,9 +77,7 @@ void jxta_service_destruct(_jxta_service * svc)
 {
     _jxta_service *self = (_jxta_service *) svc;
 
-    if (NULL != self->group) {
-        JXTA_OBJECT_RELEASE(self->group);
-    }
+    self->group = NULL;
 
     if (NULL != self->assigned_id) {
         JXTA_OBJECT_RELEASE(self->assigned_id);
@@ -127,7 +125,6 @@ Jxta_status jxta_service_init(Jxta_service * svc, Jxta_PG * group, Jxta_id * ass
 {
     _jxta_service *self = PTValid(svc, _jxta_service);
 
-    JXTA_OBJECT_SHARE(group);
     self->group = group;
     JXTA_OBJECT_SHARE(assigned_id);
     self->assigned_id = assigned_id;

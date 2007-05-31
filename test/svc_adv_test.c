@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: svc_adv_test.c,v 1.6 2004/05/25 01:40:50 tra Exp $
+ * $Id: svc_adv_test.c,v 1.7 2005/04/07 22:58:56 slowhog Exp $
  */
 
    
@@ -76,17 +76,13 @@ main (int argc, char **argv) {
    FILE *testfile;
    JString* js;
 
-#ifdef WIN32 
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize();
-#endif
-
    if(argc != 2)
      {
        printf("usage: ad <filename>\n");
        return -1;
      }
+
+    jxta_initialize();
 
    ad = jxta_svc_new();
 
@@ -101,6 +97,7 @@ main (int argc, char **argv) {
    JXTA_OBJECT_RELEASE(js);
    JXTA_OBJECT_RELEASE(ad);
 
+   jxta_terminate();
    return 0;
 }
 #endif

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: unittest_jxta_func.c,v 1.5 2004/09/24 16:01:54 Mathieu Exp $
+ * $Id: unittest_jxta_func.c,v 1.6 2005/04/07 22:58:56 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -101,11 +101,7 @@ main_test_function(const struct _funcs testfunc[],int argc, char ** argv){
   
   run = failed = passed = 0;
 
-#ifdef WIN32 
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize();
-#endif
+    jxta_initialize();
  
   result = run_testfunctions(testfunc, &run, &passed, &failed);
   fprintf(stdout,"Tests run:    %d\n",run);  
@@ -116,6 +112,8 @@ main_test_function(const struct _funcs testfunc[],int argc, char ** argv){
 
   if( result == TRUE) run = 0;
   else                run = -1;
+
+  jxta_terminate();
   return run;
 }
 

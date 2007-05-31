@@ -51,13 +51,15 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_hash_test.c,v 1.8 2003/12/18 19:37:49 wiarda Exp $
+ * $Id: jxta_hash_test.c,v 1.11 2005/04/07 22:58:53 slowhog Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+
+#include <apr_general.h>
 
 #include "jxta_hashtable.h"
 #include "jxta_errno.h"
@@ -121,12 +123,12 @@ static Jxta_boolean test_num(void) {
 	jxta_hashtable_replace(hash_num, &k, sizeof(k),
 			       (Jxta_object*) new_val,
 			       (Jxta_object**) &old_val);
-	if (old_val != 0) {
+    if (old_val != 0) {
 	    if (old_val->n != k) {
 		printf("Ooops replaced the wrong value\n");
 		return FALSE;
 	    }
-	    ++(new_val->occur);
+		new_val->occur = old_val->occur + 1;
 	    ++duplicates;
 	    JXTA_OBJECT_RELEASE(old_val);
 	}
@@ -152,7 +154,7 @@ static Jxta_boolean test_num(void) {
 		res = jxta_hashtable_get(hash_num, &k, sizeof(k),
 					 (Jxta_object**) &rmd);
 		if (res == JXTA_SUCCESS) {
-		    JXTA_OBJECT_RELEASE((Jxta_object*) rmd);
+		    JXTA_OBJECT_RELEASE(rmd);
 		    printf("Key found: problem specific to removal\n");
 		} else {
 		    printf("Key not found\n");
@@ -183,7 +185,7 @@ static Jxta_boolean test_num(void) {
 				   (Jxta_object*) rmd);
 	    }
 	    /* Del in both cases. We don't keep a ref, the tbl does. */
-	    JXTA_OBJECT_RELEASE((Jxta_object*) rmd);
+	    JXTA_OBJECT_RELEASE(rmd);
 	}
     }
     deletion = time(NULL) - start;
@@ -202,7 +204,7 @@ static Jxta_boolean test_num(void) {
 		printf("Ooops replaced the wrong value\n");
 		return FALSE;
 	    }
-	    ++(new_val->occur);
+		new_val->occur = old_val->occur + 1;
 	    ++duplicates;
 	    JXTA_OBJECT_RELEASE(old_val);
 	}
@@ -244,7 +246,7 @@ static Jxta_boolean test_num(void) {
 		return FALSE;
 	    }
 
-	    JXTA_OBJECT_RELEASE((Jxta_object*) found);
+	    JXTA_OBJECT_RELEASE(found);
 	}
     }
     for (i = 500000; i--> 0; ) {
@@ -274,7 +276,7 @@ static Jxta_boolean test_num(void) {
 	    printf("Ooops found the wrong object\n");
 	    return FALSE;
 	}
-	JXTA_OBJECT_RELEASE((Jxta_object*) found);
+	JXTA_OBJECT_RELEASE(found);
     }
 
     lookup = time(NULL) - start;
@@ -294,7 +296,7 @@ static Jxta_boolean test_num(void) {
 
     /* now delete the whole table and its 1.5 Million entries. */
     start = time(NULL);
-    JXTA_OBJECT_RELEASE((Jxta_object*) hash_num);
+    JXTA_OBJECT_RELEASE(hash_num);
     release = time(NULL) - start;
 
 
@@ -337,8 +339,10 @@ static int test_id(void) {
 Jxta_boolean run_jxta_hash_tests( int * tests_run,
 				int * tests_passed,
 				int * tests_failed){
+  Jxta_boolean result;
+  
   *tests_run += 1;
-  Jxta_boolean result = test_num();
+  result = test_num();
  
   if( result == TRUE){
     *tests_passed += 1;
@@ -354,16 +358,18 @@ Jxta_boolean run_jxta_hash_tests( int * tests_run,
 
 #ifdef STANDALONE
 int main(int argc, char* argv[]) {
-#ifdef WIN32 
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize();
-#endif
-
-    Jxta_boolean result = test_num();
+    Jxta_boolean result;
     int i = 0;
 
-    if( result == FALSE)  i = -1;
+    jxta_initialize();
+
+	result = test_num();
+    if( result == FALSE)  
+         i = -1;
+
+    jxta_terminate();
     return i;
 }
 #endif
+
+/* vim: set ts=4 sw=4 tw=130 et: */

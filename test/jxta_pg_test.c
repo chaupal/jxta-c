@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pg_test.c,v 1.4 2004/05/20 01:27:37 tra Exp $
+ * $Id: jxta_pg_test.c,v 1.5 2005/04/07 22:58:54 slowhog Exp $
  */
 
 #include "jxta.h"
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
     Jxta_id* test_gid = NULL;
     Jxta_PG* same_pg = NULL;
 
-    apr_initialize();
+    jxta_initialize();
 
     res = jxta_PG_new_netpg(&netpg);
     if (res != JXTA_SUCCESS) {
@@ -154,5 +154,7 @@ int main(int argc, char *argv[])
 
     jxta_module_stop((Jxta_module*) netpg);
     JXTA_OBJECT_RELEASE(netpg);
+
+    jxta_terminate();
     return 0;
 }

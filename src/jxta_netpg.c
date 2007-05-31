@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_netpg.c,v 1.54 2005/01/13 01:34:23 bondolo Exp $
+ * $Id: jxta_netpg.c,v 1.60 2005/04/02 00:57:41 slowhog Exp $
  */
 
 /*
@@ -63,6 +63,8 @@
  * However, this implementation can be derived-from to implement other specs
  * by overloading some methods. (such as the init method)...can wait.
  */
+
+static const char *__log_cat = "NETPG";
 
 #ifdef __APPLE__
 #include <sys/types.h>
@@ -79,7 +81,7 @@
 #include "jpr/jpr_threadonce.h"
 
 #include "jxta_errno.h"
-#include "jxta_debug.h"
+#include "jxta_log.h"
 #include "jxta_defloader_private.h"
 #include "jxta_netpg_private.h"
 #include "jxta_id.h"
@@ -93,7 +95,7 @@
 #ifdef __GNUC__
 #define UNUSED__  __attribute__((__unused__))
 #else
-#define UNUSED__                /* UNSUSED */
+#define UNUSED__        /* UNSUSED */
 #endif
 #endif
 
@@ -116,8 +118,7 @@ static apr_thread_once_t methods_table_control = JPR_THREAD_ONCE_INIT;
  * initializes ok before returning it, otherwise, release it.
  * FIXME: we need to have stdpg do that for us.
  */
-static Jxta_module *
-ld_mod(Jxta_netpg * self, Jxta_id * class_id, const char *name, Throws)
+static Jxta_module *ld_mod(Jxta_netpg * self, Jxta_id * class_id, const char *name, Throws)
 {
     Jxta_module *m;
 
@@ -127,68 +128,76 @@ ld_mod(Jxta_netpg * self, Jxta_id * class_id, const char *name, Throws)
     Try {
         jxta_module_init_e(m, (Jxta_PG *) self, class_id, 0, MayThrow);
     } Catch {
-        Jxta_status s = jpr_lasterror_get();
-        JXTA_LOG("%s failed to initialize (%d)\n", name, s);
+        Jxta_status res = jpr_lasterror_get();
         JXTA_OBJECT_RELEASE(m);
-        if (s == JXTA_NOT_CONFIGURED) {
-            JXTA_LOG("%s skipped as not configured \n", name);
+        if (res == JXTA_NOT_CONFIGURED) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "%s skipped as not configured \n", name);
             return NULL;
-        } else {
         }
-        Throw(s);
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "%s failed to initialize (%d)\n", name, res);
+
+        Throw(res);
     }
 
-    JXTA_LOG("%s loaded and initialized\n", name);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "%s loaded and initialized\n", name);
     return m;
 }
 
-static Jxta_status
-netpg_start(Jxta_module * module, char *args[])
+static Jxta_status netpg_start(Jxta_module * module, const char *args[])
 {
     Jxta_netpg *self = (Jxta_netpg *) module;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before start :%d.\n",
+                    JXTA_OBJECT_GET_REFCOUNT(self));
 
     PTValid(self, Jxta_netpg);
 
     /* Think of this as "Super.start()" */
 
-    ((Jxta_module_methods *) & jxta_stdpg_methods)->
-        start((Jxta_module *) self, args);
+    ((Jxta_module_methods *) & jxta_stdpg_methods)->start((Jxta_module *) self, args);
 
     /* we dont do anything */
-
-    JXTA_LOG("started.\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count after start :%d.\n",
+                    JXTA_OBJECT_GET_REFCOUNT(self));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "started.\n");
 
     return JXTA_SUCCESS;
-
-
 }
 
-static void
-netpg_stop(Jxta_module * self)
+static void netpg_stop(Jxta_module * self)
 {
     Jxta_netpg *it = (Jxta_netpg *) self;
     PTValid(self, Jxta_netpg);
 
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before stop :%d.\n",
+                    JXTA_OBJECT_GET_REFCOUNT(self));
+
     /* We stop http and router ourselves (as well as endpoint) */
-    if (it->http != NULL)
+    if (it->http != NULL) {
         jxta_module_stop((Jxta_module *) (it->http));
-    if (it->tcp != NULL)
+    }
+    if (it->tcp != NULL) {
         jxta_module_stop((Jxta_module *) (it->tcp));
-    if (it->router != NULL)
+    }
+    if (it->router != NULL) {
         jxta_module_stop((Jxta_module *) (it->router));
-    if (it->relay != NULL)
+    }
+    if (it->relay != NULL) {
         jxta_module_stop((Jxta_module *) (it->relay));
-    if (((Jxta_stdpg *) it)->endpoint != NULL)
+    }
+    if (((Jxta_stdpg *) it)->endpoint != NULL) {
         jxta_module_stop((Jxta_module *) (((Jxta_stdpg *) it)->endpoint));
+    }
 
     /* Think of this as "Super.stop()" */
     ((Jxta_module_methods *) & jxta_stdpg_methods)->stop(self);
 
-    JXTA_LOG("Stopped.\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count after stop :%d.\n",
+                    JXTA_OBJECT_GET_REFCOUNT(self));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Stopped.\n");
 }
 
-static void
-get_netpg_mia(Jxta_PG * self, Jxta_MIA ** mia)
+static void get_netpg_mia(Jxta_PG * self, Jxta_MIA ** mia)
 {
     JString *code;
     JString *desc;
@@ -215,15 +224,16 @@ get_netpg_mia(Jxta_PG * self, Jxta_MIA ** mia)
  * derive other kind of groups from it, I will not assume it serves as the
  * root group in all cases.
  */
-static void
-netpg_init_e(Jxta_module * self, Jxta_PG * group,
-             Jxta_id * assigned_id, Jxta_advertisement * impl_adv, Throws)
+static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv, Throws)
 {
     Jxta_boolean release_mia = FALSE;
+    Jxta_status rv = JXTA_SUCCESS;
 
-    char *noargs[] = { NULL };
+    const char *noargs[] = { NULL };
     Jxta_netpg *it = (Jxta_netpg *) self;
     PTValid(self, Jxta_netpg);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before init :%d.\n",
+                    JXTA_OBJECT_GET_REFCOUNT(self));
 
     /*
      * If we're used as the root group (normaly always) and if
@@ -259,7 +269,11 @@ netpg_init_e(Jxta_module * self, Jxta_PG * group,
      * use the superclasse's split init routines, so that
      * we can init the transports before anything gets started.
      */
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before super group init :%d.\n",
+                    JXTA_OBJECT_GET_REFCOUNT(self));
     jxta_stdpg_init_group(self, group, assigned_id, impl_adv);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count after super group init :%d.\n",
+                    JXTA_OBJECT_GET_REFCOUNT(self));
 
     if (release_mia) {
         /*
@@ -281,25 +295,25 @@ netpg_init_e(Jxta_module * self, Jxta_PG * group,
          * when it is the root group.
          */
         ((Jxta_stdpg *) it)->endpoint = (Jxta_endpoint_service *)
-            ld_mod(it, jxta_endpoint_classid,
-                   "builtin:endpoint_service", MayThrow);
+            ld_mod(it, jxta_endpoint_classid, "builtin:endpoint_service", MayThrow);
 
         it->relay = (Jxta_transport *)
             ld_mod(it, jxta_relayproto_classid, "builtin:relay", MayThrow);
 
         it->http = (Jxta_transport *)
-            ld_mod(it, jxta_httpproto_classid,
-                   "builtin:transport_http", MayThrow);
+            ld_mod(it, jxta_httpproto_classid, "builtin:transport_http", MayThrow);
 
         it->tcp = (Jxta_transport *)
-            ld_mod(it, jxta_tcpproto_classid,
-                   "builtin:transport_tcp", MayThrow);
+            ld_mod(it, jxta_tcpproto_classid, "builtin:transport_tcp", MayThrow);
 
         it->router = (Jxta_transport *)
-            ld_mod(it, jxta_routerproto_classid,
-                   "builtin:router_client", MayThrow);
+            ld_mod(it, jxta_routerproto_classid, "builtin:router_client", MayThrow);
 
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before super modules init :%d.\n",
+                        JXTA_OBJECT_GET_REFCOUNT(self));
         jxta_stdpg_init_modules_e(self, MayThrow);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count after super modules init :%d.\n",
+                        JXTA_OBJECT_GET_REFCOUNT(self));
 
     }
     Catch {
@@ -324,23 +338,49 @@ netpg_init_e(Jxta_module * self, Jxta_PG * group,
 
     /* Now, start all services */
     jxta_stdpg_start_modules(self);
-    jxta_module_start((Jxta_module *) (((Jxta_stdpg *) it)->endpoint),
-                      noargs);
+
+    rv = jxta_module_start((Jxta_module *) (((Jxta_stdpg *) it)->endpoint), noargs);
+    if (JXTA_SUCCESS != rv) {
+        netpg_stop(self);
+        Throw(rv);
+    }
+
     if (it->relay) {
-        jxta_module_start((Jxta_module *) (it->relay), noargs);
+        rv = jxta_module_start((Jxta_module *) (it->relay), noargs);
+        if (JXTA_SUCCESS != rv) {
+            netpg_stop(self);
+            Throw(rv);
+        }
     }
+
     if (it->tcp) {
-        jxta_module_start((Jxta_module *) (it->tcp), noargs);
+        rv = jxta_module_start((Jxta_module *) (it->tcp), noargs);
+        if (JXTA_SUCCESS != rv) {
+            netpg_stop(self);
+            Throw(rv);
+        }
     }
+
     if (it->http) {
-        jxta_module_start((Jxta_module *) (it->http), noargs);
+        rv = jxta_module_start((Jxta_module *) (it->http), noargs);
+        if (JXTA_SUCCESS != rv) {
+            netpg_stop(self);
+            Throw(rv);
+        }
     }
-    jxta_module_start((Jxta_module *) (it->router), noargs);
+
+    rv = jxta_module_start((Jxta_module *) (it->router), noargs);
+    if (JXTA_SUCCESS != rv) {
+        netpg_stop(self);
+        Throw(rv);
+    }
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count after init :%d.\n",
+                    JXTA_OBJECT_GET_REFCOUNT(self));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Initialized\n");
 }
 
-static Jxta_status
-netpg_init(Jxta_module * self, Jxta_PG * group,
-           Jxta_id * assigned_id, Jxta_advertisement * implAdv)
+static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * implAdv)
 {
     Try {
         netpg_init_e(self, group, assigned_id, implAdv, MayThrow);
@@ -363,11 +403,9 @@ netpg_init(Jxta_module * self, Jxta_PG * group,
  */
 
 Jxta_netpg_methods jxta_netpg_methods;
-void
-netpg_init_methods(void)
+void netpg_init_methods(void)
 {
-    memcpy(&jxta_netpg_methods, &jxta_stdpg_methods,
-           sizeof(jxta_stdpg_methods));
+    memcpy(&jxta_netpg_methods, &jxta_stdpg_methods, sizeof(jxta_stdpg_methods));
     ((Jxta_module_methods *) & jxta_netpg_methods)->init = netpg_init;
     ((Jxta_module_methods *) & jxta_netpg_methods)->init_e = netpg_init_e;
     ((Jxta_module_methods *) & jxta_netpg_methods)->start = netpg_start;
@@ -377,8 +415,7 @@ netpg_init_methods(void)
 /*
  * Make sure we have a ctor that subclassers can call.
  */
-void
-jxta_netpg_construct(Jxta_netpg * self, Jxta_netpg_methods * methods)
+void jxta_netpg_construct(Jxta_netpg * self, Jxta_netpg_methods * methods)
 {
     /*
      * Our methods table type is just a typedefed, it is identical to
@@ -386,8 +423,7 @@ jxta_netpg_construct(Jxta_netpg * self, Jxta_netpg_methods * methods)
      * what we must check for.
      */
     PTValid(methods, Jxta_PG_methods);
-    jxta_stdpg_construct((Jxta_stdpg *) self,
-                         (Jxta_stdpg_methods *) methods);
+    jxta_stdpg_construct((Jxta_stdpg *) self, (Jxta_stdpg_methods *) methods);
 
     self->thisType = "Jxta_netpg";
     self->tcp = NULL;
@@ -403,8 +439,7 @@ jxta_netpg_construct(Jxta_netpg * self, Jxta_netpg_methods * methods)
  * Therefore, we not do need the destructor to be virtual.
  * The free function plays that role.
  */
-void
-jxta_netpg_destruct(Jxta_netpg * self)
+void jxta_netpg_destruct(Jxta_netpg * self)
 {
     PTValid(self, Jxta_netpg);
 
@@ -425,18 +460,22 @@ jxta_netpg_destruct(Jxta_netpg * self)
      */
 
     /* We are handling http and router directly for now. */
-    if (self->relay != NULL)
+    if (self->relay != NULL) {
         JXTA_OBJECT_RELEASE(self->relay);
-    if (self->tcp != NULL)
+    }
+    if (self->tcp != NULL) {
         JXTA_OBJECT_RELEASE(self->tcp);
-    if (self->http != NULL)
+    }
+    if (self->http != NULL) {
         JXTA_OBJECT_RELEASE(self->http);
-    if (self->router != NULL)
+    }
+    if (self->router != NULL) {
         JXTA_OBJECT_RELEASE(self->router);
+    }
 
     jxta_stdpg_destruct((Jxta_stdpg *) self);
 
-    JXTA_LOG("Destruction finished\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Destruction finished\n");
 }
 
 /*
@@ -464,18 +503,17 @@ jxta_netpg_destruct(Jxta_netpg * self)
  * table.
  */
 
-static void
-myFree(Jxta_object * obj)
+static void myFree(Jxta_object * obj)
 {
     jxta_netpg_destruct((Jxta_netpg *) obj);
     free((void *) obj);
 }
 
-Jxta_netpg *
-jxta_netpg_new_instance(void)
+Jxta_netpg *jxta_netpg_new_instance(void)
 {
-    Jxta_netpg *self = (Jxta_netpg *) malloc(sizeof(Jxta_netpg));
-    JXTA_OBJECT_INIT(self, myFree, 0);
+    Jxta_netpg *self = (Jxta_netpg *) calloc(1, sizeof(Jxta_netpg));
+
+    JXTA_OBJECT_INIT_FLAGS(self, JXTA_OBJECT_SHARE_TRACK, myFree, 0);
 
     /*
      * Initialize the methods table if needed.

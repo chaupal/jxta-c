@@ -50,31 +50,19 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_apa.c,v 1.7 2005/02/02 02:58:26 exocetrick Exp $
+ * $Id: jxta_apa.c,v 1.8 2005/04/06 21:49:11 bondolo Exp $
  */
 
-
-/* 
- * The following command will compile the output from the script 
- * given the apr is installed correctly.
- */
-/*
- * gcc -DSTANDALONE jxta_advertisement.c jxta_AccessPointAdvertisement.c  -o PA \
-     `/usr/local/apache2/bin/apr-config --cflags --includes --libs` \
-     -lexpat -L/usr/local/apache2/lib/ -lapr
- */
+static const char *__log_cat = "APA";
 
 #include <stdio.h>
 #include <string.h>
 
-#include "jxta_debug.h"
+#include "jxta_log.h"
 #include "jxta_errno.h"
 #include "jdlist.h"
 #include "jxta_apa.h"
 #include "jxta_xml_util.h"
-
-#define DEBUG 1
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -113,6 +101,7 @@ static void jxta_AccessPointAdvertisement_delete(Jxta_AccessPointAdvertisement *
  */
 static void handleJxta_AccessPointAdvertisement(void *userdata, const XML_Char * cd, int len)
 {
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "AccessPointAdvertisement Parse\n");
 }
 
 
@@ -150,7 +139,7 @@ static void handleEndpoint(void *userdata, const XML_Char * cd, int len)
     if (len == 0)
         return;
 
-    JXTA_LOG("EndpointPoint element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "EndpointPoint element\n");
 
     endpoint = jstring_new_1(len);
     jstring_append_0(endpoint, cd, len);
@@ -297,9 +286,7 @@ Jxta_AccessPointAdvertisement *jxta_AccessPointAdvertisement_new(void)
 
     Jxta_AccessPointAdvertisement *ad;
 
-    ad = (Jxta_AccessPointAdvertisement *) malloc(sizeof(Jxta_AccessPointAdvertisement));
-
-    memset(ad, 0, sizeof(Jxta_AccessPointAdvertisement));
+    ad = (Jxta_AccessPointAdvertisement *) calloc(1, sizeof(Jxta_AccessPointAdvertisement));
 
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
                                   "jxta:APA",
@@ -356,31 +343,6 @@ Jxta_vector *jxta_AccessPointAdvertisement_get_indexes(void)
     };
     return jxta_advertisement_return_indexes(idx);
 }
-
-#ifdef STANDALONE
-int main(int argc, char **argv)
-{
-    Jxta_AccessPointAdvertisement *ad;
-    FILE *testfile;
-
-    if (argc != 2) {
-        printf("usage: ad <filename>\n");
-        return -1;
-    }
-
-    ad = jxta_AccessPointAdvertisement_new();
-
-    testfile = fopen(argv[1], "r");
-    jxta_AccessPointAdvertisement_parse_file(ad, testfile);
-    fclose(testfile);
-
-    jxta_AccessPointAdvertisement_print_xml(ad, fprintf, stdout);
-    jxta_AccessPointAdvertisement_delete(ad);
-
-    return 0;
-}
-#endif
-
 
 #ifdef __cplusplus
 }

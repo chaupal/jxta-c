@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_router_client.c,v 1.55 2005/03/02 23:39:30 bondolo Exp $
+ * $Id: jxta_router_client.c,v 1.59 2005/04/06 21:30:49 bondolo Exp $
  */
 #include <stdlib.h>     /* for atoi */
 #include <apr.h>
@@ -71,6 +71,9 @@
 #include "jxta_vector.h"
 #include "jxta_apa.h"
 #include "jxta_routea.h"
+#include "jxta_log.h"
+
+static const char *__log_cat = "ROUTER_CLIENT";
 
 struct _jxta_router_client {
     Extends(Jxta_transport);
@@ -85,6 +88,8 @@ struct _jxta_router_client {
     Jxta_listener *listener;
     apr_thread_mutex_t *mutex;
     apr_pool_t *pool;
+
+    Jxta_boolean started;
 };
 
 
@@ -160,7 +165,6 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
         strcpy(self->localPeerIdString, jstring_get_string(tmp));
         JXTA_OBJECT_RELEASE(tmp);
         jxta_PG_get_endpoint_service(group, &(self->endpoint));
-        jxta_PG_get_discovery_service(group, &(self->discovery));
     }
 
     self->localPeerAddr = get_endpoint_address_from_peerid(self->localPeerId);
@@ -192,14 +196,31 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
 
 static Jxta_status start(Jxta_module * module, char *argv[])
 {
+    Jxta_router_client *self = (Jxta_router_client *) module;
     PTValid(module, Jxta_router_client);
+
+    apr_thread_mutex_lock(self->mutex);
+    jxta_PG_get_discovery_service(self->group, &(self->discovery));
+    self->started = TRUE;
+    apr_thread_mutex_unlock(self->mutex);
+
     return JXTA_SUCCESS;
 }
 
 static void stop(Jxta_module * module)
 {
+    Jxta_router_client *self = (Jxta_router_client *) module;
     PTValid(module, Jxta_router_client);
-    JXTA_LOG("don't know how to stop yet.\n");
+
+    apr_thread_mutex_lock(self->mutex);
+    if (NULL != self->discovery) {
+        JXTA_OBJECT_RELEASE(self->discovery);
+        self->discovery = NULL;
+    }
+    self->started = FALSE;
+    apr_thread_mutex_unlock(self->mutex);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Stopped.\n");
 }
 
 
@@ -245,7 +266,7 @@ get_peer_forward_gateways(Jxta_router_client * self,
 
     if (peer == NULL) {
         /* No route */
-        JXTA_LOG("No existing route\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "No existing route\n");
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -253,7 +274,7 @@ get_peer_forward_gateways(Jxta_router_client * self,
 
     if (*vector == NULL) {
         /* We do not have a valid route */
-        JXTA_LOG("Route is empty\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Route is empty\n");
         JXTA_OBJECT_RELEASE(peer);
         return JXTA_INVALID_ARGUMENT;
     }
@@ -264,11 +285,11 @@ get_peer_forward_gateways(Jxta_router_client * self,
      * the next hop, and get its endpoint address */
     res = jxta_vector_get_object_at(*vector, (Jxta_object **) & addr, 0);
 
-    JXTA_LOG("found a route %s\n", (caddress = jxta_endpoint_address_to_string(addr)));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "found a route %s\n", (caddress = jxta_endpoint_address_to_string(addr)));
     free(caddress);
 
     if ((res != JXTA_SUCCESS) || (addr == NULL)) {
-        JXTA_LOG("Cannot get the next hop from vector.\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot get the next hop from vector.\n");
         JXTA_OBJECT_RELEASE(*vector);
         JXTA_OBJECT_RELEASE(peer);
         return JXTA_INVALID_ARGUMENT;
@@ -295,7 +316,7 @@ get_peer_forward_gateways(Jxta_router_client * self,
     JXTA_OBJECT_RELEASE(addr);
 
     if (id == NULL) {
-        JXTA_LOG("Cannot build Peer ID of the next hop.\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot build Peer ID of the next hop.\n");
 
         JXTA_OBJECT_RELEASE(*vector);
         JXTA_OBJECT_RELEASE(peer);
@@ -309,7 +330,7 @@ get_peer_forward_gateways(Jxta_router_client * self,
 
     if (peer == NULL) {
         /* No route */
-        JXTA_LOG("No existing route for next hop\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "No existing route for next hop\n");
         JXTA_OBJECT_RELEASE(*vector);
         return JXTA_INVALID_ARGUMENT;
     }
@@ -320,7 +341,7 @@ get_peer_forward_gateways(Jxta_router_client * self,
 
     if ((tmpVector == NULL) || (jxta_vector_size(tmpVector) == 0)) {
         /* We do not have a valid route */
-        JXTA_LOG("Route is empty for next hop\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Route is empty for next hop\n");
         JXTA_OBJECT_RELEASE(peer);
         JXTA_OBJECT_RELEASE(*vector);
         JXTA_OBJECT_RELEASE(peer);
@@ -336,7 +357,7 @@ get_peer_forward_gateways(Jxta_router_client * self,
     res = jxta_vector_get_object_at(tmpVector, (Jxta_object **) & addr, 0);
 
     if ((res != JXTA_SUCCESS) || (addr == NULL)) {
-        JXTA_LOG("Cannot get the next hop address from vector.\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot get the next hop address from vector.\n");
         JXTA_OBJECT_RELEASE(*vector);
         JXTA_OBJECT_RELEASE(peer);
         JXTA_OBJECT_RELEASE(tmpVector);
@@ -347,7 +368,7 @@ get_peer_forward_gateways(Jxta_router_client * self,
 
     *nextHopAddr = addr;
 
-    JXTA_LOG("next hop gateway addr %s://%s/%s/%s\n",
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "next hop gateway addr %s://%s/%s/%s\n",
              jxta_endpoint_address_get_protocol_name(addr),
              jxta_endpoint_address_get_protocol_address(addr),
              jxta_endpoint_address_get_service_name(addr), jxta_endpoint_address_get_service_params(addr));
@@ -384,7 +405,12 @@ static void messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
 
     JXTA_OBJECT_CHECK_VALID(msg);
 
-    JXTA_LOG("Router_messenger.send()\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Router_messenger.send()\n");
+    
+    if (FALSE == messenger->router->started) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Trying to send a message after router was stopped.\n");
+        return JXTA_VIOLATION;
+    }
 
   /**
    ** Check if destination is local
@@ -399,7 +425,7 @@ static void messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
      * and send the message to the corresponding transport
      */
     if (messenger->peerid == NULL) {
-        JXTA_LOG("Direct pre-resolved route\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Direct pre-resolved route\n");
         routed = 0;
 
         dest_addr = jxta_message_get_destination(msg);
@@ -407,10 +433,10 @@ static void messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
     } else {
         jxta_id_get_uniqueportion(messenger->peerid, &dest);
 
-        JXTA_LOG("Routing destination '%s'\n", jstring_get_string(dest));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Routing destination '%s'\n", jstring_get_string(dest));
 
         if (strcmp(messenger->router->localPeerIdString, jstring_get_string(dest)) == 0) {
-            JXTA_LOG("Local destination\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Local destination\n");
 
             /* Local destination, directely call endpoint service's demux */
             JXTA_OBJECT_SHARE(msg);
@@ -423,7 +449,7 @@ static void messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
 
         JXTA_OBJECT_RELEASE(dest);
 
-        JXTA_LOG("Remote destination\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Remote destination\n");
 
     /**
      ** Get the Peer_entry for the destination
@@ -442,7 +468,7 @@ static void messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
              * discovery at some point from the edge peer to reduce load
              * on our relay.
              */
-            JXTA_LOG("No route known, try to look in CM\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No route known, try to look in CM\n");
 
             /*
              * Check first in our CM if we can find a route for
@@ -454,7 +480,7 @@ static void messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
 
                 JString * routeadv;
                 jxta_RouteAdvertisement_get_xml( route, &routeadv );
-                JXTA_LOG("Route adv : \n%s\n", jstring_get_string(routeadv) );
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Route adv : \n%s\n", jstring_get_string(routeadv) );
                 JXTA_OBJECT_RELEASE(routeadv);
                 
                 /*
@@ -476,7 +502,7 @@ static void messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
                      */
                     res = jxta_vector_get_object_at(hops, (Jxta_object **) & hop, sz - 1);
                     if (res != JXTA_SUCCESS) {
-                        JXTA_LOG("Could not extract last hop in route - \n");
+                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Could not extract last hop in route - \n");
                     }
                 }
 
@@ -507,7 +533,7 @@ static void messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
                                                            JXTA_ENDPOINT_ROUTER_NAME,
                                                            JXTA_ENDPOINT_ROUTER_SVC_PAR);
 
-                    JXTA_LOG("Send msg to address %s://%s\n", jxta_endpoint_address_get_protocol_name(new_addr),
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Send msg to address %s://%s\n", jxta_endpoint_address_get_protocol_name(new_addr),
                              jxta_endpoint_address_get_protocol_address(new_addr));
 
                     /*
@@ -523,7 +549,7 @@ static void messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
                 JXTA_OBJECT_RELEASE(hops);
                 JXTA_OBJECT_RELEASE(route);
             } else {
-                JXTA_LOG("Could not find route\n" );
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Could not find route\n" );
             }
 
             if (dest_addr == NULL) {
@@ -536,11 +562,11 @@ static void messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
                  * FIXME 20040225 tra need to implement route discovery
                  *
                  */
-                JXTA_LOG("No route found - try to send message to our relay\n");
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No route found - try to send message to our relay\n");
                 relay_addr = jxta_endpoint_service_get_relay_addr(messenger->router->endpoint);
 
                 if (relay_addr == NULL) {
-                    JXTA_LOG("No relay connection, discard message\n");
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "No relay connection, discard message\n");
                     m->status = JXTA_FAILED;
                     return;
                 }
@@ -553,7 +579,7 @@ static void messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
                 dest_addr = jxta_endpoint_address_new2(relay_proto,
                                                        relay_addr,
                                                        (char *) JXTA_ENDPOINT_ROUTER_NAME, (char *) JXTA_ENDPOINT_ROUTER_SVC_PAR);
-                JXTA_LOG("Forward msg to relay %s://%s\n", relay_proto, relay_addr);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Forward msg to relay %s://%s\n", relay_proto, relay_addr);
 
                 /*
                  * need to add routing information. Tell the router that 
@@ -575,7 +601,7 @@ static void messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
 
     rmsg = EndpointRouterMessage_new();
     if (rmsg == NULL) {
-        JXTA_LOG("Cannot allocate an EndpointRouterMessage\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot allocate an EndpointRouterMessage\n");
         JXTA_OBJECT_RELEASE(forwardGateways);
         JXTA_OBJECT_RELEASE(dest_addr);
         return;
@@ -640,7 +666,7 @@ static void messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
 
     }
 
-    JXTA_LOG("send destination %s\n", (caddress = jxta_endpoint_address_to_string(dest_addr)));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Send destination %s\n", (caddress = jxta_endpoint_address_to_string(dest_addr)));
     free(caddress);
 
     transport_name = jxta_endpoint_address_get_protocol_name(dest_addr);
@@ -661,7 +687,8 @@ static void messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
             JXTA_OBJECT_RELEASE(endpoint_messenger);
             JXTA_OBJECT_RELEASE(addr);
         } else {
-            JXTA_LOG("Could not obtain a messenger for this address\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Could not obtain a messenger for : %s\n", (caddress = jxta_endpoint_address_to_string(dest_addr)));
+        free( caddress );
             m->status = JXTA_FAILED;
             JXTA_OBJECT_RELEASE(transport);
             return;
@@ -669,7 +696,8 @@ static void messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
 
         JXTA_OBJECT_RELEASE(transport);
     } else {
-        JXTA_LOG("Could not obtain a transport for this address\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Could not obtain a transport for : %s\n", (caddress = jxta_endpoint_address_to_string(dest_addr)));
+        free( caddress );
         m->status = JXTA_FAILED;
         return;
     }
@@ -789,7 +817,7 @@ static Jxta_endpoint_address *jxta_router_select_best_address(Jxta_router_client
     }
 
     if (best_addr != NULL) {
-        JXTA_LOG("Best address selected %s\n", (caddress = jxta_endpoint_address_to_string(best_addr)));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Best address selected %s\n", (caddress = jxta_endpoint_address_to_string(best_addr)));
         free(caddress);
     }
 
@@ -876,7 +904,7 @@ static Jxta_RouteAdvertisement *search_in_local_cm(Jxta_router_client * self, Jx
             JXTA_OBJECT_RELEASE(padv);
         }
     } else {
-        JXTA_LOG("Discovery service is not available\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Discovery service is not available\n");
     }
     return route;
 }
@@ -920,11 +948,11 @@ static JxtaEndpointMessenger *messenger_get(Jxta_transport * t, Jxta_endpoint_ad
 }
 
 static
-boolean ping(Jxta_transport * t, Jxta_endpoint_address * addr)
+Jxta_boolean ping(Jxta_transport * t, Jxta_endpoint_address * addr)
 {
     PTValid(t, Jxta_router_client);
 
-    JXTA_LOG("NOT YET IMPLEMENTED\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "NOT YET IMPLEMENTED\n");
     return FALSE;
 }
 
@@ -1062,12 +1090,12 @@ static Jxta_id *get_peerid_from_endpoint_address(Jxta_endpoint_address * addr)
     JXTA_OBJECT_CHECK_VALID(addr);
 
     if (addr == NULL) {
-        JXTA_LOG("addr is NULL\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "addr is NULL\n");
         return NULL;
     }
     pt = jxta_endpoint_address_get_protocol_address(addr);
     if (pt == NULL) {
-        JXTA_LOG("Cannot retrieve string from endpoint address.\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot retrieve string from endpoint address.\n");
         return NULL;
     }
 
@@ -1096,7 +1124,7 @@ static Jxta_endpoint_address *get_endpoint_address_from_peerid(Jxta_id * peerid)
     JXTA_OBJECT_CHECK_VALID(tmp);
 
     if (tmp == NULL) {
-        JXTA_LOG("Cannot get the unique portion of the peer id\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot get the unique portion of the peer id\n");
         return NULL;
     }
 
@@ -1113,7 +1141,6 @@ static void
 updateRouteTable(Jxta_router_client * self,
                  Jxta_endpoint_address * src, Jxta_endpoint_address * last, Jxta_vector * reverseGateways)
 {
-
     Jxta_vector *vector = NULL;
     Peer_entry *peer = NULL;
     Jxta_id *peerid = NULL;
@@ -1124,23 +1151,18 @@ updateRouteTable(Jxta_router_client * self,
     JXTA_OBJECT_CHECK_VALID(src);
     JXTA_OBJECT_CHECK_VALID(last);
 
-    JXTA_LOG("UPDATE ROUTE TABLE\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "UPDATE ROUTE TABLE\n");
 
     if ((src == NULL) || (last == NULL)) {
         /* Invalid */
-        JXTA_LOG("Invalid parameters. Bail out.\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid parameters. Bail out.\n");
         return;
     }
-#ifdef JXTA_LOG_ENABLE
-  /** FIXME 3/07/2002 lomax@jxta.org
-   ** The following 2 lines are generating a memory leak, because the string
-   ** returned by jxta_endpoint_address_to_string needs to be freed.
-   **/
-    JXTA_LOG("src   = [%s]\n", (caddress = jxta_endpoint_address_to_string(src)));
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "src   = [%s]\n", (caddress = jxta_endpoint_address_to_string(src)));
     free(caddress);
-    JXTA_LOG("last  = [%s]\n", (caddress = jxta_endpoint_address_to_string(last)));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "last  = [%s]\n", (caddress = jxta_endpoint_address_to_string(last)));
     free(caddress);
-#endif
 
     /*
      * If both the src and last address are the same
@@ -1150,12 +1172,12 @@ updateRouteTable(Jxta_router_client * self,
      * forward the message to our relay
      */
     if (jxta_endpoint_address_equals(src, last)) {
-        JXTA_LOG("No route update, direct connection\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No route update, direct connection\n");
         return;
     }
 
     if (reverseGateways == NULL) {
-        JXTA_LOG("No reverse gateways\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "No reverse gateways\n");
         vector = jxta_vector_new(1);
 
         JXTA_OBJECT_CHECK_VALID(vector);
@@ -1179,7 +1201,7 @@ updateRouteTable(Jxta_router_client * self,
         /**
 	 ** Something is wrong. Display a warning and bail out.
 	 **/
-                JXTA_LOG("Cannot add the last hop into the reverse gateays. Route is ignored.\n");
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot add the last hop into the reverse gateays. Route is ignored.\n");
                 JXTA_OBJECT_RELEASE(addr);
                 JXTA_OBJECT_RELEASE(vector);
                 return;
@@ -1197,7 +1219,7 @@ updateRouteTable(Jxta_router_client * self,
     JXTA_OBJECT_CHECK_VALID(peerid);
 
     if (peerid == NULL) {
-        JXTA_LOG("Cannot build peerid\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot build peerid\n");
     } else {
         peer = get_peer_entry(self, peerid);
 
@@ -1206,7 +1228,7 @@ updateRouteTable(Jxta_router_client * self,
         JXTA_OBJECT_RELEASE(peerid);
 
         if (peer == NULL) {
-            JXTA_LOG("Cannot get a Peer_entry\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot get a Peer_entry\n");
         } else {
             peer_entry_set_forward_gateways(peer, vector);
             JXTA_OBJECT_RELEASE(peer);
@@ -1231,7 +1253,7 @@ static void router_client_listener(Jxta_object * obj, void *arg)
     JXTA_OBJECT_CHECK_VALID(msg);
     JXTA_OBJECT_CHECK_VALID(arg);
 
-    JXTA_LOG("Router received a message\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Router received a message\n");
 
     jxta_message_get_element_1(msg, JXTA_ENDPOINT_ROUTER_ELEMENT_NAME, &el);
 
@@ -1289,13 +1311,13 @@ static void router_client_listener(Jxta_object * obj, void *arg)
 
         if (realDest == NULL) {
             /* No destination drop message */
-            JXTA_LOG("No router message element. Incoming message is dropped.\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "No router message element. Incoming message is dropped.\n");
         } else {
 
             if (strcmp(jxta_endpoint_address_get_protocol_address(realDest), self->localPeerIdString) == 0) {
 
                 /* This is a message for the local peer */
-                JXTA_LOG("Received a routed message for the local peer\n");
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Received a routed message for the local peer\n");
 
         /**
 	 ** Invoke the endpoint service demux again with the new addresses
@@ -1440,7 +1462,7 @@ static Peer_entry *get_peer_entry(Jxta_router_client * self, Jxta_id * peerid)
     Peer_entry *peer = NULL;
     Jxta_status res = 0;
     int i;
-    boolean found = FALSE;
+    Jxta_boolean found = FALSE;
 
     JXTA_OBJECT_CHECK_VALID(self);
     JXTA_OBJECT_CHECK_VALID(peerid);
@@ -1454,7 +1476,7 @@ static Peer_entry *get_peer_entry(Jxta_router_client * self, Jxta_id * peerid)
         JXTA_OBJECT_CHECK_VALID(peer);
 
         if (res != JXTA_SUCCESS) {
-            JXTA_LOG("Cannot get Peer_entry\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Cannot get Peer_entry\n");
             continue;
         }
 
@@ -1471,13 +1493,13 @@ static Peer_entry *get_peer_entry(Jxta_router_client * self, Jxta_id * peerid)
         /* We need to create a new Peer_entry */
         peer = peer_entry_new(self, peerid);
         if (peer == NULL) {
-            JXTA_LOG("Cannot create a Peer_entry\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot create a Peer_entry\n");
         } else {
             /* Add it into the vector */
             peer->loc = jxta_vector_size(self->peers);
             res = jxta_vector_add_object_last(self->peers, (Jxta_object *) peer);
             if (res != JXTA_SUCCESS) {
-                JXTA_LOG("Cannot insert Peer_entry into vector peers\n");
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot insert Peer_entry into vector peers\n");
             }
         }
     }
@@ -1485,3 +1507,5 @@ static Peer_entry *get_peer_entry(Jxta_router_client * self, Jxta_id * peerid)
 
     return peer;
 }
+
+/* vim: set ts=4 sw=4 tw=130 et: */

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_client.c,v 1.118 2005/03/03 02:53:53 slowhog Exp $
+ * $Id: jxta_rdv_service_client.c,v 1.121 2005/04/04 20:58:09 slowhog Exp $
  **/
 
 
@@ -185,8 +185,14 @@ typedef Jxta_rdv_service_provider Jxta_rdv_service_client;
 struct _jxta_rdv_service_client {
     Extends(_jxta_rdv_service_provider);
 
-    volatile boolean running;
+    apr_thread_mutex_t *mutex;
+    apr_pool_t *pool;
 
+    volatile Jxta_boolean running;
+    apr_thread_cond_t *periodicCond;
+    apr_thread_mutex_t *periodicMutex;
+    volatile apr_thread_t *periodicThread;
+ 
     char *instanceName;
     char *messageElementName;
     char *groupid;
@@ -198,7 +204,6 @@ struct _jxta_rdv_service_client {
     Jxta_PA *localPeerAdv;
     Jxta_PID *localPeerId;
     JString *localPeerIdJString;
-    apr_thread_t *thread;
     Jxta_listener *listener_service;
     Jxta_listener *listener_propagate;
     Jxta_listener *listener_peerview;
@@ -553,8 +558,12 @@ static Jxta_status start(Jxta_rdv_service_provider * provider)
      **/
     JXTA_OBJECT_SHARE(self);
 
-    apr_thread_create(&self->thread, NULL,      /* no attr */
+    apr_thread_mutex_lock(self->periodicMutex);
+
+    apr_thread_create(&self->periodicThread, NULL,      /* no attr */
                       connect_thread_main, (void *) self, jxta_rdv_service_provider_get_pool_priv(provider));
+
+    apr_thread_mutex_unlock(self->periodicMutex);
 
     jxta_rdv_service_provider_unlock_priv(provider);
 
@@ -577,6 +586,13 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
     JString *tmp;
     JString *tmp1;
 
+    /* We need to tell the background thread that it has to die. */
+    self->running = FALSE;
+
+    apr_thread_mutex_lock(self->periodicMutex);
+    apr_thread_cond_signal(self->periodicCond);
+    apr_thread_mutex_unlock(self->periodicMutex);
+
     tmp = jstring_new_2(JXTA_ENDPOINT_SERVICE_NAME);
     jstring_append_2(tmp, ":");
     jstring_append_2(tmp, self->instanceName);
@@ -586,10 +602,6 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
     jstring_append_2(tmp1, self->instanceName);
 
     jxta_rdv_service_provider_lock_priv(provider);
-
-    /* We need to tell the background thread that it has to die. */
-
-    self->running = FALSE;
 
     jxta_endpoint_service_remove_listener(jxta_rdv_service_provider_get_service_priv(provider)->endpoint,
                                           (char *) JXTA_RDV_SERVICE_NAME, self->instanceName);
@@ -603,6 +615,25 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
 
     JXTA_OBJECT_RELEASE(tmp);
     JXTA_OBJECT_RELEASE(tmp1);
+
+	if (self->listener_service) {
+        JXTA_OBJECT_RELEASE(self->listener_service);
+        self->listener_service = NULL;
+    }
+
+    if (self->listener_propagate) {
+        JXTA_OBJECT_RELEASE(self->listener_propagate);
+        self->listener_propagate = NULL;
+    }
+
+    if (self->listener_peerview) {
+        JXTA_OBJECT_RELEASE(self->listener_peerview);
+        self->listener_peerview = NULL;
+    }
+
+    /* Release the services object this instance was using */
+    if (self->discovery != NULL)
+        JXTA_OBJECT_RELEASE(self->discovery);
 
     /* kick our thread out of its loop and join it. */
     /*
@@ -935,11 +966,27 @@ Jxta_rdv_service_client *jxta_rdv_service_client_new(void)
 static _jxta_rdv_service_client *jxta_rdv_service_client_construct(_jxta_rdv_service_client * self,
                                                                    const _jxta_rdv_service_provider_methods * methods)
 {
+    Jxta_status res;
     self = (_jxta_rdv_service_client *) jxta_rdv_service_provider_construct((_jxta_rdv_service_provider *) self, methods);
 
     if (NULL != self) {
         /* Set our rt type checking string */
         self->thisType = "_jxta_rdv_service_client";
+
+        apr_pool_create(&self->pool, NULL);
+
+        res = apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED, self->pool);
+
+        if (res != APR_SUCCESS) {
+            return NULL;
+        }
+        res = apr_thread_cond_create(&self->periodicCond, self->pool);
+
+        if (res != APR_SUCCESS) {
+            return NULL;
+        }
+
+        res = apr_thread_mutex_create(&self->periodicMutex, APR_THREAD_MUTEX_DEFAULT, self->pool);
 
         /** The following will be updated with initialized **/
         self->discovery = NULL;
@@ -980,24 +1027,11 @@ static void rdv_client_delete(Jxta_object * service)
  */
 static void jxta_rdv_service_client_destruct(_jxta_rdv_service_client * self)
 {
-	if ( self->listener_service )
-        JXTA_OBJECT_RELEASE(self->listener_service);
-
-    if ( self->listener_propagate )
-        JXTA_OBJECT_RELEASE(self->listener_propagate);
-
-    if ( self->listener_peerview )
-        JXTA_OBJECT_RELEASE(self->listener_peerview);
-
     /* First, free the vector of peers */
     JXTA_OBJECT_RELEASE(self->peers);
 
     /* First, free the vector of peers */
     JXTA_OBJECT_RELEASE(self->seeds);
-
-    /* Release the services object this instance was using */
-    if (self->discovery != NULL)
-        JXTA_OBJECT_RELEASE(self->discovery);
 
     /* Release the local peer adv and local peer id */
     JXTA_OBJECT_RELEASE(self->localPeerAdv);
@@ -1027,6 +1061,12 @@ static void jxta_rdv_service_client_destruct(_jxta_rdv_service_client * self)
     if (self->instanceName) {
         free(self->instanceName);
     }
+    
+    apr_thread_mutex_destroy(self->mutex);
+    apr_thread_mutex_destroy(self->periodicMutex);
+    apr_thread_cond_destroy(self->periodicCond);
+
+    apr_pool_destroy(self->pool);   
 
     /* call the base classe's dtor. */
     jxta_rdv_service_provider_destruct((_jxta_rdv_service_provider *) self);
@@ -1706,8 +1746,11 @@ static void *APR_THREAD_FUNC connect_thread_main(apr_thread_t * thread, void *ar
     Jxta_transport *transport = NULL;
     int delay_count = 0;
 
+    
     /* Mark the service as running now. */
     self->running = TRUE;
+    
+    apr_thread_mutex_lock(self->periodicMutex);
 
     /* initial connect to seed rendezvous */
     seeds = get_potential_rdvs(self);
@@ -1812,16 +1855,16 @@ static void *APR_THREAD_FUNC connect_thread_main(apr_thread_t * thread, void *ar
 
         if (nbOfConnectedRdvs < MIN_NB_OF_CONNECTED_RDVS) {
             if (connect_seed) {
-                jpr_thread_delay(CONNECT_THREAD_NAP_TIME_FAST * delay_count++);
+                res = apr_thread_cond_timedwait(self->periodicCond, self->periodicMutex, CONNECT_THREAD_NAP_TIME_FAST * delay_count++);
             } else {
-                jpr_thread_delay(CONNECT_THREAD_NAP_TIME_FAST * delay_count++);
+                res = apr_thread_cond_timedwait(self->periodicCond, self->periodicMutex, CONNECT_THREAD_NAP_TIME_FAST * delay_count++);
             }
         } else {
             /*
              * reset delay count if we got a connection
              */
             delay_count = 1;
-            jpr_thread_delay(CONNECT_THREAD_NAP_TIME_NORMAL);
+            res = apr_thread_cond_timedwait(self->periodicCond, self->periodicMutex, CONNECT_THREAD_NAP_TIME_NORMAL);
         }
 
         /*
@@ -1873,8 +1916,10 @@ static void *APR_THREAD_FUNC connect_thread_main(apr_thread_t * thread, void *ar
     JXTA_OBJECT_RELEASE(arg);
 
     JXTA_LOG("Rendezvous Client worker thread exiting.\n");
+    
+    apr_thread_mutex_unlock(self->periodicMutex);
 
-    self->thread = NULL;
+    self->periodicThread = NULL;
 
     apr_thread_exit(thread, JXTA_SUCCESS);
 }
@@ -2010,3 +2055,5 @@ Jxta_status jxta_search_rdv_peergroup(_jxta_rdv_service * rdv)
 
     return JXTA_SUCCESS;
 }
+
+/* vim: set ts=4 sw=4 tw=130 et: */

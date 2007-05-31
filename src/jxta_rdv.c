@@ -50,19 +50,8 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv.c,v 1.31 2005/02/17 04:50:33 bondolo Exp $
+ * $Id: jxta_rdv.c,v 1.33 2005/04/06 00:38:52 bondolo Exp $
  */
-
-
-/*
-* The following command will compile the output from the script 
-* given the apr is installed correctly.
-*/
-/*
-* gcc -DSTANDALONE jxta_advertisement.c RdvAdvertisement.c  -o PA \
-  `/usr/local/apache2/bin/apr-config --cflags --includes --libs` \
-  -lexpat -L/usr/local/apache2/lib/ -lapr
-*/
 
 #include <stdio.h>
 #include <string.h>
@@ -122,6 +111,7 @@ static void handleName(void *userdata, const XML_Char * cd, int len)
         return;
 
     jstring_append_0(ad->Name, (char *) cd, len);
+    jstring_trim(ad->Name);
 }
 
 static void handleRdvGroupId(void *userdata, const XML_Char * cd, int len)
@@ -490,8 +480,7 @@ Jxta_RdvAdvertisement *jxta_RdvAdvertisement_new(void)
 {
 
     Jxta_RdvAdvertisement *ad;
-    ad = (Jxta_RdvAdvertisement *) malloc(sizeof(Jxta_RdvAdvertisement));
-    memset(ad, 0xda, sizeof(Jxta_RdvAdvertisement));
+    ad = (Jxta_RdvAdvertisement *) calloc(1, sizeof(Jxta_RdvAdvertisement));
 
     ad->Name = jstring_new_0();
     ad->Service = jstring_new_0();
@@ -556,7 +545,7 @@ Jxta_vector *jxta_RendezvousAdvertisement_get_indexes(void)
     return jxta_advertisement_return_indexes(idx);
 }
 
-Jxta_status jxta_RdvAdvertisement_parse_charbuffer(Jxta_RdvAdvertisement * ad, const char *buf, int len)
+Jxta_status jxta_RdvAdvertisement_parse_charbuffer(Jxta_RdvAdvertisement * ad, const char *buf, size_t len)
 {
 
     return jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
@@ -568,27 +557,3 @@ Jxta_status jxta_RdvAdvertisement_parse_file(Jxta_RdvAdvertisement * ad, FILE * 
 
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
-
-#ifdef STANDALONE
-int main(int argc, char **argv)
-{
-    Jxta_RdvAdvertisement *ad;
-    FILE *testfile;
-
-    if (argc != 2) {
-        printf("usage: ad <filename>\n");
-        return -1;
-    }
-
-    ad = jxta_RdvAdvertisement_new();
-
-    testfile = fopen(argv[1], "r");
-    jxta_RdvAdvertisement_parse_file(ad, testfile);
-    fclose(testfile);
-
-    /* jxta_RdvAdvertisement_print_xml(ad,fprintf,stdout); */
-    jxta_RdvAdvertisement_delete(ad);
-
-    return 0;
-}
-#endif

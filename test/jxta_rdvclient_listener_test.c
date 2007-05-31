@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdvclient_listener_test.c,v 1.2 2004/10/07 05:54:58 tra Exp $
+ * $Id: jxta_rdvclient_listener_test.c,v 1.3 2005/04/07 22:58:54 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -140,8 +140,11 @@ int jxta_rdvclient_listener_run (int argc, char **argv) {
 
 #ifdef STANDALONE
 int main (int argc, char **argv) {
+    int rv;
 
-  apr_initialize();
-  return jxta_rdvclient_listener_run(argc, argv);
+  jxta_initialize();
+  rv = jxta_rdvclient_listener_run(argc, argv);
+  jxta_terminate();
+  return rv;
 }
 #endif

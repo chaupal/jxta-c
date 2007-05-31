@@ -50,31 +50,27 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: relay_adv_test.c,v 1.1 2004/01/22 22:13:25 tra Exp $
+ * $Id: relay_adv_test.c,v 1.3 2005/04/07 22:58:56 slowhog Exp $
  */
 
 #include <stdio.h>
 #include "jxta_relaya.h"
 
 
-boolean
+Jxta_boolean
 relaya_test(int argc, char ** argv) {
 
    Jxta_RelayAdvertisement * ad;
    FILE *testfile;
    JString * js;
 
-#ifdef WIN32 
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize();
-#endif
-
    if(argc != 2)
      {
        printf("usage: ad <filename>\n");
        return -1;
      }
+
+    jxta_initialize();
 
    ad = jxta_RelayAdvertisement_new();
 
@@ -90,6 +86,7 @@ relaya_test(int argc, char ** argv) {
 
    JXTA_OBJECT_RELEASE(js);
 
+   jxta_terminate();
    return 0;
 
 }

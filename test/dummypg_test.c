@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: dummypg_test.c,v 1.17 2004/05/20 01:27:36 tra Exp $
+ * $Id: dummypg_test.c,v 1.18 2005/04/07 22:58:52 slowhog Exp $
  */
 
 /*
@@ -603,11 +603,7 @@ int main(int argc, char* argv[]) {
   int i;
   Jxta_boolean result;
 
-#ifdef WIN32 
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize();
-#endif
+    jxta_initialize();
 
     run = failed = passed = 0;
     result = run_dummypg_tests(&run, &passed, & failed);
@@ -620,6 +616,7 @@ int main(int argc, char* argv[]) {
 
     if( result == TRUE) run = 0;
     else                run = -1;
+    jxta_terminate();
     return run;
 }
 #endif

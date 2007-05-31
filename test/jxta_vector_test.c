@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_vector_test.c,v 1.6 2003/12/18 19:37:50 wiarda Exp $
+ * $Id: jxta_vector_test.c,v 1.7 2005/03/22 16:23:46 bondolo Exp $
  */
 
 #include "jxta.h"
@@ -80,7 +80,7 @@ typedef struct {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_jxta_vector_new(void) {
   Jxta_vector *vec  = jxta_vector_new(0);
   
@@ -111,14 +111,14 @@ test_jxta_vector_new(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_jxta_vector_add_object_at(void) {
   Jxta_vector *vec  = jxta_vector_new(3);
   int i;
   TestType **pt;
   Jxta_object *holder;
   Jxta_status status;
-  boolean result = TRUE;
+  Jxta_boolean result = TRUE;
 
   if( NULL == vec )
     return FALSE;
@@ -249,14 +249,14 @@ Common_Exit:
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_jxta_vector_add_object_first(void) {
   Jxta_vector *vec  = jxta_vector_new(3);
   int i,j;
   TestType **pt;
   Jxta_object *holder;
   Jxta_status status;
-  boolean result = TRUE;
+  Jxta_boolean result = TRUE;
   size_t size = 10;
 
   if( NULL == vec )
@@ -324,14 +324,14 @@ Common_Exit:
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_jxta_vector_add_object_last(void) {
   Jxta_vector *vec  = jxta_vector_new(3);
   int i;
   TestType **pt;
   Jxta_object *holder;
   Jxta_status status;
-  boolean result = TRUE;
+  Jxta_boolean result = TRUE;
   size_t size = 100;
 
   if( NULL == vec )
@@ -397,14 +397,14 @@ Common_Exit:
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_jxta_vector_remove_object_at(void) {
   Jxta_vector *vec  = jxta_vector_new(0);
   int i;
   TestType **pt;
   Jxta_object *holder;
   Jxta_status status;
-  boolean result = TRUE;
+  Jxta_boolean result = TRUE;
   size_t size = 5;
 
   if( NULL == vec )
@@ -494,7 +494,7 @@ Common_Exit:
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_jxta_vector_clone(void) {
   Jxta_vector *vec  = jxta_vector_new(3);
   Jxta_vector *cloned;
@@ -502,7 +502,7 @@ test_jxta_vector_clone(void) {
   int i;
   TestType **pt;
   Jxta_status status;
-  boolean result = TRUE;
+  Jxta_boolean result = TRUE;
   size_t size = 100;
 
   if( NULL == vec )
@@ -589,14 +589,14 @@ Common_Exit:
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_jxta_vector_clear(void) {
   Jxta_vector *vec  = jxta_vector_new(3);
   int i;
   TestType **pt;
   Jxta_object *holder;
   Jxta_status status;
-  boolean result = TRUE;
+  Jxta_boolean result = TRUE;
   size_t size = 100;
 
   if( NULL == vec )
@@ -694,7 +694,7 @@ main(int argc, char ** argv) {
 
 
 
-/*boolean 
+/*Jxta_boolean 
 jxta_vector_test(void) {
 
   int i;

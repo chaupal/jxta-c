@@ -50,13 +50,13 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_discovery_service_ref.c,v 1.76 2005/03/02 22:37:57 slowhog Exp $
+ * $Id: jxta_discovery_service_ref.c,v 1.83 2005/04/07 04:10:16 bondolo Exp $
  */
 
 #include <limits.h>
 #include <stdlib.h>
 
-#include "jpr/jpr_excep.h"
+#include "jpr/jpr_excep_proto.h"
 #include "jpr/jpr_thread.h"
 #include "jxta_errno.h"
 #include "jxta_debug.h"
@@ -86,7 +86,7 @@ typedef struct {
 
     Extends(Jxta_discovery_service);
     JString *instanceName;
-    volatile boolean running;
+    volatile Jxta_boolean running;
     apr_thread_t *thread;
     apr_thread_mutex_t *mutex;
     Jxta_PG *group;
@@ -102,8 +102,12 @@ typedef struct {
     Jxta_id *assigned_id;
     Jxta_advertisement *impl_adv;
     Jxta_cm *cm;
-    boolean cm_on;
+    Jxta_boolean cm_on;
     apr_pool_t *pool;
+    apr_thread_cond_t *stop_cond;
+    apr_thread_mutex_t *stop_mutex;
+
+    Jxta_listener *my_listeners[3];
 } Jxta_discovery_service_ref;
 
 static void discovery_service_query_listener(Jxta_object * obj, void *arg);
@@ -131,8 +135,8 @@ static const char *cm_home = ".cm";
  *
  */
 
-Jxta_status
-jxta_discovery_service_ref_init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
+static Jxta_status
+init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
 {
     Jxta_listener *listener = NULL;
     Jxta_status status = JXTA_SUCCESS;
@@ -173,19 +177,19 @@ jxta_discovery_service_ref_init(Jxta_module * module, Jxta_PG * group, Jxta_id *
     apr_thread_mutex_create(&discovery->mutex, APR_THREAD_MUTEX_NESTED, /* nested */
                             discovery->pool);
 
+    apr_thread_mutex_create(&discovery->stop_mutex, APR_THREAD_MUTEX_DEFAULT, discovery->pool);
+    apr_thread_cond_create(&discovery->stop_cond, discovery->pool);
+
     /* store a copy of our assigned id */
-    if (assigned_id != 0) {
+    if (assigned_id != NULL) {
         JXTA_OBJECT_SHARE(assigned_id);
         discovery->assigned_id = assigned_id;
     }
 
     /* keep a reference to our group and impl adv */
-    if (group != 0)
-        JXTA_OBJECT_SHARE(group);
-    if (impl_adv != 0)
-        JXTA_OBJECT_SHARE(impl_adv);
-    discovery->group = group;
-    discovery->impl_adv = impl_adv;
+    discovery->group = group; /* not shared because that would create a circular dependence */
+    discovery->impl_adv = impl_adv ? JXTA_OBJECT_SHARE(impl_adv) : NULL;
+    
     /**
      ** Build the local name of the instance
      **/
@@ -272,13 +276,13 @@ jxta_discovery_service_ref_init(Jxta_module * module, Jxta_PG * group, Jxta_id *
     jxta_listener_start(listener);
 
     status = jxta_resolver_service_registerQueryHandler(discovery->resolver, discovery->instanceName, listener);
-    JXTA_OBJECT_RELEASE(listener);
+    discovery->my_listeners[0] = listener;
 
     if (status == JXTA_SUCCESS) {
         listener = jxta_listener_new((Jxta_listener_func) discovery_service_response_listener, discovery, 1, 200);
         jxta_listener_start(listener);
         status = jxta_resolver_service_registerResHandler(discovery->resolver, discovery->instanceName, listener);
-        JXTA_OBJECT_RELEASE(listener);
+        discovery->my_listeners[1] = listener;
     }
 
     /*
@@ -291,7 +295,7 @@ jxta_discovery_service_ref_init(Jxta_module * module, Jxta_PG * group, Jxta_id *
     status = jxta_rdv_service_add_event_listener(discovery->rdv,
                                                  (char *) jstring_get_string(discovery->instanceName),
                                                  (char *) jstring_get_string(discovery->gid_str), listener);
-    JXTA_OBJECT_RELEASE(listener);
+    discovery->my_listeners[2] = listener;
 
     /* Create vector and hashtable for the listeners */
     discovery->listener_vec = jxta_vector_new(1);
@@ -305,27 +309,6 @@ jxta_discovery_service_ref_init(Jxta_module * module, Jxta_PG * group, Jxta_id *
                       NULL, advertisement_handling_thread, (void *) discovery, (apr_pool_t *) discovery->pool);
 
     return status;
-}
-
-/**
- * Initializes an instance of the Discovery Service. (exception variant).
- * 
- * @param service a pointer to the instance of the Discovery Service.
- * @param group a pointer to the PeerGroup the Discovery Service is 
- * initialized for.
- *
- */
-
-static void init_e(Jxta_module * discovery, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv, Throws)
-{
-
-    Jxta_status s = jxta_discovery_service_ref_init(discovery,
-                                                    group,
-                                                    assigned_id,
-                                                    impl_adv);
-    if (s != JXTA_SUCCESS) {
-        Throw(s);
-    }
 }
 
 /**
@@ -353,6 +336,7 @@ static Jxta_status start(Jxta_module * discovery, char *argv[])
 static void stop(Jxta_module * module)
 {
     apr_status_t status;
+    int i;
     Jxta_discovery_service_ref *discovery = (Jxta_discovery_service_ref *) module;
     PTValid(discovery, Jxta_discovery_service_ref);
 
@@ -365,14 +349,24 @@ static void stop(Jxta_module * module)
     apr_thread_mutex_lock(discovery->mutex);
     discovery->running = FALSE;
 
-    /*apr_thread_join(&status, discovery->thread); */
+    apr_thread_mutex_lock(discovery->stop_mutex);
+    apr_thread_cond_signal(discovery->stop_cond);
+    apr_thread_mutex_unlock(discovery->stop_mutex);
 
+    apr_thread_join(&status, discovery->thread); 
+
+    for (i = 0; i < 3; i++) {
+        jxta_listener_stop(discovery->my_listeners[i]);
+    }
     status = jxta_resolver_service_unregisterQueryHandler(discovery->resolver, discovery->instanceName);
     status = jxta_resolver_service_unregisterResHandler(discovery->resolver, discovery->instanceName);
 
     jxta_rdv_service_remove_event_listener(discovery->rdv,
                                            (char *) jstring_get_string(discovery->instanceName),
                                            (char *) jstring_get_string(discovery->gid_str));
+    for (i = 0; i < 3; i++) {
+        JXTA_OBJECT_RELEASE(discovery->my_listeners[i]);
+    }
 
     /* XXX FIXME to be removed when group stop is fully functional */
     jxta_cm_close(discovery->cm);
@@ -750,8 +744,8 @@ Jxta_discovery_service_ref_methods jxta_discovery_service_ref_methods = {
     {
      {
       "Jxta_module_methods",
-      jxta_discovery_service_ref_init,
-      init_e,
+      init,
+      jxta_module_init_e_impl,
       start,
       stop},
      "Jxta_service_methods",
@@ -787,32 +781,49 @@ void jxta_discovery_service_ref_destruct(Jxta_discovery_service_ref * discovery)
 
     /* release/free/destroy our own stuff */
 
-    if (discovery->resolver != 0)
+    if (discovery->resolver != NULL) {
         JXTA_OBJECT_RELEASE(discovery->resolver);
-    if (discovery->endpoint != 0)
+    }
+    if (discovery->endpoint != NULL) {
         JXTA_OBJECT_RELEASE(discovery->endpoint);
-    if (discovery->localPeerId != 0)
+    }
+    if (discovery->localPeerId != NULL) {
         JXTA_OBJECT_RELEASE(discovery->localPeerId);
-    if (discovery->instanceName != 0)
+    }
+    if (discovery->instanceName != NULL) {
         JXTA_OBJECT_RELEASE(discovery->instanceName);
-    if (discovery->group != 0)
-        JXTA_OBJECT_RELEASE(discovery->group);
-    if (discovery->listener_vec != 0)
+    }
+    
+    discovery->group = NULL;
+    
+    if (discovery->listener_vec != NULL) {
         JXTA_OBJECT_RELEASE(discovery->listener_vec);
-    if (discovery->listeners != 0)
+    }
+    if (discovery->listeners != NULL) {
         JXTA_OBJECT_RELEASE(discovery->listeners);
-    if (discovery->impl_adv != 0)
+    }
+    if (discovery->impl_adv != NULL) {
         JXTA_OBJECT_RELEASE(discovery->impl_adv);
-    if (discovery->assigned_id != 0)
+    }
+    if (discovery->assigned_id != NULL) {
         JXTA_OBJECT_RELEASE(discovery->assigned_id);
-    if (discovery->cm != 0)
+    }
+    if (discovery->cm != NULL) {
         JXTA_OBJECT_RELEASE(discovery->cm);
-    if (NULL != discovery->rdv)
+    }
+    if (NULL != discovery->rdv) {
         JXTA_OBJECT_RELEASE(discovery->rdv);
-    if (discovery->pool != 0)
-        apr_pool_destroy(discovery->pool);
+    }
 
-    /* call the base classe's dtor. */
+    apr_thread_mutex_destroy(discovery->mutex);
+    apr_thread_mutex_destroy(discovery->stop_mutex);
+    apr_thread_cond_destroy(discovery->stop_cond);
+
+    if (discovery->pool != NULL) {
+        apr_pool_destroy(discovery->pool);
+    }
+
+    /* call the base classe's destructor. */
     jxta_discovery_service_destruct((Jxta_discovery_service *) discovery);
 
     JXTA_LOG("Destruction finished\n");
@@ -1148,8 +1159,13 @@ static void *APR_THREAD_FUNC advertisement_handling_thread(apr_thread_t * thread
     discovery->running = TRUE;
 
     /* Main loop */
-    for (;;) {
-        jpr_thread_delay(CM_ADV_RUN_CYCLE);
+    while (discovery->running) {
+        apr_thread_mutex_lock(discovery->stop_mutex);
+        res = apr_thread_cond_timedwait(discovery->stop_cond, discovery->stop_mutex, CM_ADV_RUN_CYCLE);
+        apr_thread_mutex_unlock(discovery->stop_mutex);
+        if (APR_TIMEUP != res || FALSE == discovery->running) {
+            break;
+        }
         jxta_cm_remove_expired_records(discovery->cm);
 
         /*
@@ -1161,11 +1177,7 @@ static void *APR_THREAD_FUNC advertisement_handling_thread(apr_thread_t * thread
         }
     }
 
-    /*
-     * Check if we have been awakened for the purpose of stopping
-     */
-    if (!discovery->running)
-        apr_thread_exit(thread, JXTA_SUCCESS);
+    apr_thread_exit(thread, JXTA_SUCCESS);
 
     return NULL;
 }

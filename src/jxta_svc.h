@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_svc.h,v 1.2 2005/01/10 17:22:19 brent Exp $
+ * $Id: jxta_svc.h,v 1.3 2005/04/03 01:47:58 bondolo Exp $
  */
 
    
@@ -60,6 +60,7 @@
 #include "jxta_advertisement.h"
 #include "jxta_hta.h"
 #include "jxta_tta.h"
+#include "jxta_rdv_config_adv.h"
 #include "jxta_relaya.h"
 #include "jxta_routea.h"
 
@@ -182,6 +183,18 @@ Jxta_TCPTransportAdvertisement * jxta_svc_get_TCPTransportAdvertisement(Jxta_svc
  */
 void jxta_svc_set_TCPTransportAdvertisement(Jxta_svc *,
 				       Jxta_TCPTransportAdvertisement *);
+
+/*
+ * Unlike similar accessors in other advs, this one may return NULL if
+ * there is no such element.
+ */
+Jxta_RdvConfigAdvertisement * jxta_svc_get_RdvConfig(Jxta_svc *);
+
+/*
+ * Unlike similar mutators in other advs, it is valid to pass NULL as a means
+ * to remove the element.
+ */
+void jxta_svc_set_RdvConfig(Jxta_svc *, Jxta_RdvConfigAdvertisement *);
 
 /*
  * Unlike similar accessors in other advs, this one may return NULL if

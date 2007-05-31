@@ -35,6 +35,7 @@ enum Jxta_log_levels {
     JXTA_LOG_LEVEL_INFO,
     JXTA_LOG_LEVEL_DEBUG,
     JXTA_LOG_LEVEL_TRACE,
+    JXTA_LOG_LEVEL_PARANOID,
     JXTA_LOG_LEVEL_MAX
 };
 
@@ -46,6 +47,7 @@ typedef enum Jxta_log_levels Jxta_log_level;
 #define JXTA_LOG_LEVEL_FLAG_INFO 8
 #define JXTA_LOG_LEVEL_FLAG_DEBUG 16
 #define JXTA_LOG_LEVEL_FLAG_TRACE 32
+#define JXTA_LOG_LEVEL_FLAG_PARANOID 64
 
 /* Mask for all level less then specified */
 #define JXTA_LOG_LEVEL_MASK_NONE 0
@@ -55,7 +57,8 @@ typedef enum Jxta_log_levels Jxta_log_level;
 #define JXTA_LOG_LEVEL_MASK_INFO 15
 #define JXTA_LOG_LEVEL_MASK_DEBUG 31
 #define JXTA_LOG_LEVEL_MASK_TRACE 63
-#define JXTA_LOG_LEVEL_MASK_ALL 63
+#define JXTA_LOG_LEVEL_MASK_PARANOID 127
+#define JXTA_LOG_LEVEL_MASK_ALL 127
 
 /**
  * Prototype of the logger function

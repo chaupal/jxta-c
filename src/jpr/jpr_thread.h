@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_thread.h,v 1.3 2005/02/08 22:48:35 bondolo Exp $
+ * $Id: jpr_thread.h,v 1.4 2005/03/23 19:07:39 bondolo Exp $
  */
 
 #ifndef JPR_THREAD_H
@@ -65,16 +65,16 @@ extern "C" {
 #endif
 #include "jpr_types.h"
 #include "jpr_errno.h"
-/**************************************************************************
- ** jpr_thread_delay:
- **
- ** Puts the calling thread to sleep for the specified time.
- **
- ** @param timeout time in micro-seconds for which the calling thread must
- **                sleep.
- ** @returns JPR_SUCCESS.
- **************************************************************************/
-    Jpr_status jpr_thread_delay(Jpr_interval_time timeout);
+
+/**
+  Puts the calling thread to sleep for the specified interval of microseconds.
+ 
+  @param timeout time in micro-seconds for which the calling thread must
+                 sleep.
+  @returns JPR_SUCCESS.
+ **/
+ 
+ Jpr_status jpr_thread_delay(Jpr_interval_time timeout);
 
 #ifdef __cplusplus
 }

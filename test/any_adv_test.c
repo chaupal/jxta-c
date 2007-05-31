@@ -14,8 +14,6 @@ main (int argc, char **argv) {
    JString* dump;
    Jxta_vector* advs;
 
-   jxta_initialize();
-
    if(argc != 2)
      {
        printf("usage: any_adv_test <pa, pga, or mia file>\n");
@@ -23,6 +21,8 @@ main (int argc, char **argv) {
 	      " any name will work too (see many.xml)\n");
        return -1;
      }
+
+   jxta_initialize();
 
    /*
     * register a few common doc types.

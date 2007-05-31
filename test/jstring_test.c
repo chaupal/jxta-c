@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jstring_test.c,v 1.20 2004/01/19 22:33:39 wiarda Exp $
+ * $Id: jstring_test.c,v 1.21 2005/03/22 16:23:45 bondolo Exp $
  */
 
 
@@ -79,7 +79,7 @@
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_jstring_new_0(void) {
   JString *js = jstring_new_0();
   char const *testString;
@@ -109,7 +109,7 @@ test_jstring_new_0(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_jstring_new_1(void) {
   JString *js = jstring_new_1( 42 );
   char const *testString;
@@ -141,7 +141,7 @@ test_jstring_new_1(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_jstring_new_2(void) {
   static const char * source = "yahoo!";
   JString *js = jstring_new_2(source);
@@ -171,7 +171,7 @@ test_jstring_new_2(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_jstring_new_3(void) {
   Jxta_bytevector * vector = jxta_bytevector_new_1(6);
   Jxta_status status;
@@ -220,7 +220,7 @@ test_jstring_new_3(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean
+Jxta_boolean
 test_jstring_clone(void) {
   static const char * source = "yahoo!";
   JString *js = jstring_new_2(source);
@@ -259,7 +259,7 @@ test_jstring_clone(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean
+Jxta_boolean
 test_jstring_trim(void) {
   static const char * source = "\v \t\nTest String\twith tab\t\f\r\v\v";
   JString *js = jstring_new_2(source);
@@ -286,7 +286,7 @@ test_jstring_trim(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean
+Jxta_boolean
 test_jstring_length(void) {
   static const char * source = "\v \t\nTest String\twith tab\t\f\r\v\v";
   static const char *append = " Append value";
@@ -335,7 +335,7 @@ test_jstring_length(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean
+Jxta_boolean
 test_jstring_get_string(void) {
   static const char * source = "\v \t\nGetStringTest\t\f\r\v\v";
   JString *js = jstring_new_2(source);
@@ -368,7 +368,7 @@ test_jstring_get_string(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean
+Jxta_boolean
 test_jstring_reset(void) {
   static const char * source = "yahoo!";
   JString *js = jstring_new_2(source);
@@ -420,7 +420,7 @@ test_jstring_reset(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_jstring_print(void) {
   static const char * source = "yahoo!";
   JString *js = jstring_new_2(source);
@@ -447,7 +447,7 @@ test_jstring_print(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_jstring_send(void) {
   static const char * source = "yahoo!";
   JString *js = jstring_new_2(source);
@@ -486,7 +486,7 @@ test_jstring_send(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_jstring_write(void) {
   static const char * source = "yahoo!";
   JString *js = jstring_new_2(source);
@@ -515,7 +515,7 @@ test_jstring_write(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_jstring_append_0(void) {
   static const char * source = "yahoo!xxx ";
   JString *js = jstring_new_2(source);
@@ -542,7 +542,7 @@ test_jstring_append_0(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_jstring_append_1(void) {
   static const char * source = "yahoo!";
   JString *js1 = jstring_new_2(source);
@@ -570,7 +570,7 @@ test_jstring_append_1(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_jstring_append_2(void) {
   static const char * source = "yahoo!";
   JString *js = jstring_new_2(source);
@@ -594,7 +594,7 @@ test_jstring_append_2(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_jstring_concat(void) {
   static const char * source = "yahoo!";
   JString *js = jstring_new_2(source);
@@ -619,7 +619,7 @@ test_jstring_concat(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-boolean 
+Jxta_boolean 
 test_jstring_writefunc_appender(void) {
   static const char * source = "yahoo!xxx ";
   JString *js = jstring_new_2(source);
