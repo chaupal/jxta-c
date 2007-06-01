@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_welcome_message.c,v 1.5 2006/06/02 05:42:19 mmx2005 Exp $
+ * $Id: jxta_transport_welcome_message.c,v 1.6 2006/07/14 21:35:54 bondolo Exp $
  */
 
 static const char *__log_cat = "WELCOME_MSG";
@@ -65,9 +65,9 @@ static const char *__log_cat = "WELCOME_MSG";
 
 static const char* GREETING = "JXTAHELLO";
 static const char* SPACE = " ";
-static const char* CURRENTVERSION = "1.1";
+static const char* CURRENTVERSION = "3.0";
 static const char* CRLF = "\r\n";
-static const Jxta_welcome_message_version CURRENT_VERSION = JXTA_WELCOME_MESSAGE_VERSION_1_1;
+static const Jxta_welcome_message_version CURRENT_VERSION = JXTA_WELCOME_MESSAGE_VERSION_3_0;
 
 struct _welcome_message {
     JXTA_OBJECT_HANDLE;

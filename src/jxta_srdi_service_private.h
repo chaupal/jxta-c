@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi_service_private.h,v 1.10 2005/11/25 23:53:35 mmx2005 Exp $
+ * $Id: jxta_srdi_service_private.h,v 1.13 2006/08/10 21:35:33 exocetrick Exp $
  */
 
 
@@ -64,6 +64,8 @@
 #include "jxta_peerview_priv.h"
 #include "jxta_srdi_service.h"
 #include "jxta_service_private.h"
+#include "jxta_range.h"
+
 /****************************************************************
  **
  ** This is the discovery Service API for the implementations of
@@ -78,7 +80,7 @@ extern "C" {
 #endif
 #endif
 struct _jxta_srdi_service {
-    Extends(_jxta_service);
+    Extends(Jxta_service);
 };
 
 typedef struct _jxta_srdi_service_methods Jxta_srdi_service_methods;
@@ -90,7 +92,9 @@ struct _jxta_srdi_service_methods {
     Jxta_status(*replicateEntries) (Jxta_srdi_service * self,
                                     Jxta_resolver_service * resolver, Jxta_SRDIMessage * srdiMsg, JString * queueName);
 
-    Jxta_status(*pushSrdi) (Jxta_srdi_service * self, Jxta_resolver_service * res, ResolverSrdi * srdi, Jxta_id * peer);
+    Jxta_status(*pushSrdi) (Jxta_srdi_service * self, Jxta_resolver_service * res, JString * instance, ResolverSrdi * srdi, Jxta_id * peer);
+
+    Jxta_status(*pushSrdi_msg) (Jxta_srdi_service * self, Jxta_resolver_service * res, JString * instance, Jxta_SRDIMessage * srdi, Jxta_id * peer);
 
     Jxta_status(*forwardQuery_peer) (Jxta_srdi_service * self,
                                      Jxta_resolver_service * resolver, Jxta_id * peer, ResolverQuery * query);
@@ -106,7 +110,7 @@ struct _jxta_srdi_service_methods {
                                   const char *expression);
 
     Jxta_peer *(*getNumericReplica) (Jxta_srdi_service * self, Jxta_resolver_service * resolver, Jxta_peerview * peerview,
-				     Jxta_object *rge, const char * value);
+				     Jxta_range *rge, const char * value);
     
     Jxta_status(*forwardSrdiMessage) (Jxta_srdi_service * self, Jxta_resolver_service * resolver, Jxta_peer * peer,
 				      Jxta_id * srcPid, const char *primaryKey, const char *secondarykey, const char *value,

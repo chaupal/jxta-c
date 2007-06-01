@@ -51,14 +51,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jdlist.c,v 1.12 2005/09/03 02:02:36 slowhog Exp $
+ * $Id: jdlist.c,v 1.13 2006/08/16 04:56:35 mmx2005 Exp $
  */
 
 /* 
  * $Source: /cvs/jxta-c/src/jdlist.c,v $
- * $Revision: 1.12 $
- * $Date: 2005/09/03 02:02:36 $
- * $Author: slowhog $
+ * $Revision: 1.13 $
+ * $Date: 2006/08/16 04:56:35 $
+ * $Author: mmx2005 $
  */
 
 #include <stdio.h>  /* Basic includes and definitions */
@@ -72,7 +72,6 @@
  * the first item in list l is l->flink.  If l is  
  * empty, then l->flink = l->blink = l.            
  *---------------------------------------------------------------------*/
-
 
 Dlist *dl_make()
 {
@@ -101,7 +100,6 @@ void dl_insert_b(Dlist * node, void *val)
     new_node->flink = node;
 }
 
-
 void dl_insert_list_b(Dlist * node, Dlist * list_to_insert)
 {
     Dlist *last_node, *f, *l;
@@ -129,15 +127,10 @@ void dl_delete_node(Dlist * item)
     free(item);
 }
 
-
-
-
-
 void *dl_val(Dlist * l)
 {
     return l->val;
 }
-
 
 int dl_size(Dlist * l)
 {
@@ -149,9 +142,6 @@ int dl_size(Dlist * l)
 
     return i;
 }
-
-
-
 
 void dl_delete_list(Dlist * l)
 {
@@ -166,8 +156,6 @@ void dl_delete_list(Dlist * l)
     }
     free(d);
 }
-
-
 
 void dl_free(Dlist * l, DlFreeFunc free_val)
 {
@@ -188,7 +176,6 @@ void dl_free(Dlist * l, DlFreeFunc free_val)
     }
     free(d);
 }
-
 
 void dl_print(Dlist * l, DLPRINTFUNC printer, void *user_data)
 {

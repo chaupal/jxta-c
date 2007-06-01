@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_query.c,v 1.17 2006/02/15 01:09:43 slowhog Exp $
+ * $Id: jxta_query.c,v 1.23 2006/10/04 23:45:05 exocetrick Exp $
   *
   */
 #include <stdlib.h>
@@ -67,6 +67,7 @@
 #include "jxta_log.h"
 #include "jxta_sql.h"
 #include "jxta_cm.h"
+#include "jxta_cm_private.h"
 
 #define __log_cat "QUERY"
 static void query_reset_context(Jxta_query_context * jctx);
@@ -136,6 +137,7 @@ JXTA_DECLARE(Jxta_query_context *) jxta_query_new(const char *q)
 {
     Jxta_status status;
     Jxta_query_context *jctx = (Jxta_query_context *) calloc(1, sizeof(Jxta_query_context));
+
     JXTA_OBJECT_INIT(jctx, (JXTA_OBJECT_FREE_FUNC) jxta_query_ctx_delete, 0);
     jctx->queries = jxta_vector_new(1);
     jctx->documentName = jstring_new_0();
@@ -174,6 +176,7 @@ static Jxta_query_element *query_entry_new(JString * jSQL, JString * jBoolean, J
 {
     const char *val;
     Jxta_query_element *qel = (Jxta_query_element *) calloc(1, sizeof(Jxta_query_element));
+
     JXTA_OBJECT_INIT(qel, (JXTA_OBJECT_FREE_FUNC) jxta_query_entry_delete, 0);
     qel->jSQL = jstring_clone(jSQL);
     qel->jBoolean = jstring_clone(jBoolean);
@@ -203,6 +206,7 @@ static xmlGenericErrorFunc query_err_func(void *userData, const char *msg)
     char *temp;
     char *carrot;
     JString *errString = jstring_new_0();
+
     err = xmlGetLastError();
     if (NULL != err->str1) {
         jstring_append_2(errString, err->str1);
@@ -228,7 +232,6 @@ static xmlGenericErrorFunc query_err_func(void *userData, const char *msg)
 JXTA_DECLARE(Jxta_status)
     jxta_query_XPath(Jxta_query_context * jctx, const char *advXML, Jxta_boolean bResults)
 {
-
     const char *newQuery;
     xmlDocPtr doc;
     xmlXPathObjectPtr res = NULL;
@@ -332,6 +335,7 @@ static Jxta_status query_xform_query(Jxta_query_context * jctx, const char *quer
     const char *prefix;
     int plength;
     int nlength;
+
     if (*query != '/') {
         status = JXTA_INVALID_ARGUMENT;
         return status;
@@ -382,6 +386,7 @@ static Jxta_status query_find_Ns(Jxta_query_context * jctx, const char *q, Jxta_
     char prefix[64];
     char name[64];
     int i = 0;
+
     memset(prefix, 0, 64);
     memset(name, 0, 64);
     for (; *q; q++) {
@@ -420,10 +425,12 @@ static Jxta_status query_find_Ns(Jxta_query_context * jctx, const char *q, Jxta_
 /*    jxta_query_find_level2(jctx, q); */
     return JXTA_SUCCESS;
 }
+
 static void query_split_Ns(Jxta_query_context * jctx, const char *q, Jxta_boolean bPrefix, Jxta_boolean bName)
 {
     char work[64];
     int i = 0;
+
     memset(work, 0, 64);
     for (; *q; q++) {
         if (*q == ':') {
@@ -450,16 +457,43 @@ static void query_split_Ns(Jxta_query_context * jctx, const char *q, Jxta_boolea
     }
 }
 
-
 static Jxta_status query_SQL(Jxta_query_context * jctx)
 {
-
     int i;
     xmlXPathCompExprPtr comp;
+    JString * copy = NULL;
+    JString * nameSpace = NULL;
+
     comp = jctx->xpathcomp;
     i = comp->last;
     jstring_reset(jctx->sqlcmd, NULL);
     query_create_SQL(jctx, comp, &comp->steps[i], 1);
+    if (!jctx->first) {
+        copy = jstring_new_0();
+        jstring_append_1(copy, jctx->sqlcmd);
+        jstring_reset(jctx->sqlcmd, NULL);
+    }
+    jstring_append_2(jctx->sqlcmd, CM_COL_SRC);
+    jstring_append_2(jctx->sqlcmd, SQL_DOT);
+    jstring_append_2(jctx->sqlcmd, CM_COL_NameSpace);
+    nameSpace = jstring_new_0();
+    jstring_append_1(nameSpace, jctx->queryNameSpace);
+    if (cm_sql_escape_and_wc_value(nameSpace, TRUE)) {
+        jstring_append_2(jctx->sqlcmd, SQL_LIKE);
+    } else {
+        jstring_append_2(jctx->sqlcmd, SQL_EQUAL);
+    }
+    SQL_VALUE(jctx->sqlcmd, nameSpace);
+    if (NULL != copy) {
+        jstring_append_2(jctx->sqlcmd, SQL_AND);
+        jstring_append_2(jctx->sqlcmd, SQL_LEFT_PAREN);
+        jstring_append_1(jctx->sqlcmd, copy);
+        jstring_append_2(jctx->sqlcmd, SQL_RIGHT_PAREN);
+        JXTA_OBJECT_RELEASE(copy);
+    }
+    if (NULL != nameSpace) {
+        JXTA_OBJECT_RELEASE(nameSpace);
+    }
     jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%s\n", jstring_get_string(jctx->sqlcmd));
     return JXTA_SUCCESS;
 }
@@ -469,6 +503,7 @@ JXTA_DECLARE(void)
 {
     const char *val;
     Jxta_boolean isNumeric = FALSE;
+
     /* for attributes the name waits */
     jstring_append_2(result, SQL_LEFT_PAREN);
     jstring_append_2(result, CM_COL_SRC);
@@ -480,13 +515,13 @@ JXTA_DECLARE(void)
     jstring_append_2(result, CM_COL_SRC);
     jstring_append_2(result, SQL_DOT);
     val = jstring_get_string(value);
-    if ('#' == *val) {
+    if (val && '#' == *val) {
         isNumeric = TRUE;
         jstring_append_2(result, CM_COL_NumValue);
     } else {
         jstring_append_2(result, CM_COL_Value);
     }
-    if (jxta_sql_escape_and_wc_value(value, TRUE)) {
+    if (cm_sql_escape_and_wc_value(value, TRUE)) {
         if (!strcmp(jstring_get_string(sqloper), SQL_EQUAL)) {
             jstring_reset(sqloper, NULL);
             jstring_append_2(sqloper, SQL_LIKE);
@@ -522,11 +557,13 @@ static void query_reset_context(Jxta_query_context * jctx)
     jctx->endOfCollection = 0;
     jctx->currLevel = 0;
 }
+
 static Jxta_status query_create_SQL(Jxta_query_context * jctx, xmlXPathCompExprPtr comp, xmlXPathStepOpPtr op, int depth)
 {
     int i, j;
     JString *elem;
     char shift[100];
+    
     for (i = 0; ((i < depth) && (i < 25)); i++)
         shift[2 * i] = shift[2 * i + 1] = ' ';
     shift[2 * i] = shift[2 * i + 1] = 0;
@@ -710,7 +747,7 @@ static Jxta_status query_create_SQL(Jxta_query_context * jctx, xmlXPathCompExprP
                         jstring_append_2(jctx->attribName, (const char *) name);
 
                     }
-                    if (jstring_length(jctx->value) == 0)
+                    if (0 == jstring_length(jctx->sqloper))
                         break;
                     if (jctx->first) {
                         jctx->first = FALSE;
@@ -734,6 +771,7 @@ static Jxta_status query_create_SQL(Jxta_query_context * jctx, xmlXPathCompExprP
                     JXTA_OBJECT_RELEASE(jSQL);
                     JXTA_OBJECT_RELEASE(jEntry);
                     jstring_reset(jctx->value, NULL);
+                    jstring_reset(jctx->sqloper, NULL);
                     JXTA_OBJECT_RELEASE(elem);
                     elem = NULL;
                     break;
@@ -799,21 +837,9 @@ static Jxta_status query_create_SQL(Jxta_query_context * jctx, xmlXPathCompExprP
                 if (jstring_length(jctx->value) == 0) {
                     break;
                 }
-                if (!jctx->first) {
-                    jstring_append_2(jctx->sqlcmd, SQL_AND);
-                }
-                jstring_append_2(jctx->sqlcmd, CM_COL_SRC);
-                jstring_append_2(jctx->sqlcmd, SQL_DOT);
-                jstring_append_2(jctx->sqlcmd, CM_COL_NameSpace);
                 jstring_reset(jctx->queryNameSpace, NULL);
                 jstring_append_1(jctx->queryNameSpace, jctx->value);
 
-                if (jxta_sql_escape_and_wc_value(jctx->value, TRUE)) {
-                    jstring_append_2(jctx->sqlcmd, SQL_LIKE);
-                } else {
-                    jstring_append_2(jctx->sqlcmd, SQL_EQUAL);
-                }
-                SQL_VALUE(jctx->sqlcmd, jctx->value);
                 break;
             }
         case XPATH_OP_ARG:
@@ -835,11 +861,13 @@ static Jxta_status query_create_SQL(Jxta_query_context * jctx, xmlXPathCompExprP
     }
     return JXTA_SUCCESS;
 }
+
 static void query_examine_object(Jxta_query_context * jctx, xmlXPathObjectPtr cur, int depth)
 {
     int i;
     char shift[100];
     FILE *output = stdout;
+
     if (output == NULL)
         return;
 

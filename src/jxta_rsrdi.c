@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rsrdi.c,v 1.16 2006/06/18 06:09:56 mmx2005 Exp $
+ * $Id: jxta_rsrdi.c,v 1.18 2006/09/29 01:28:45 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -86,6 +86,13 @@ struct _ResolverSrdi {
     JString *HandlerName;
     JString *Payload;
 };
+
+/**
+ * frees the ResolverSrdi object
+ * @param ResolverSrdi the resolver message object to free
+ */
+static void resolver_srdi_free(void *);
+
 
 /** Handler functions.  Each of these is responsible for
  * dealing with all of the character data associated with the 
@@ -275,7 +282,7 @@ JXTA_DECLARE(ResolverSrdi *) jxta_resolver_srdi_new(void)
                                   "jxta:ResolverSRDI",
                                   ResolverSrdi_tags,
                                   (JxtaAdvertisementGetXMLFunc) jxta_resolver_srdi_get_xml,
-                                  NULL, (JxtaAdvertisementGetIndexFunc) NULL, (FreeFunc) jxta_resolver_srdi_free);
+                                  NULL, (JxtaAdvertisementGetIndexFunc) NULL, resolver_srdi_free);
 
     /* Fill in the required initialization code here. */
     ad->Credential = jstring_new_0();
@@ -296,7 +303,7 @@ JXTA_DECLARE(ResolverSrdi *) jxta_resolver_srdi_new_1(JString * handlername, JSt
                                   "jxta:ResolverSRDI",
                                   ResolverSrdi_tags,
                                   (JxtaAdvertisementGetXMLFunc) jxta_resolver_srdi_get_xml,
-                                  NULL, NULL, (FreeFunc) jxta_resolver_srdi_free);
+                                  NULL, NULL, resolver_srdi_free);
 
     /* Fill in the required initialization code here. */
     ad->Credential = jstring_new_0();
@@ -310,8 +317,9 @@ JXTA_DECLARE(ResolverSrdi *) jxta_resolver_srdi_new_1(JString * handlername, JSt
 /** 
  * free all objects and memory occupied by this object
  */
-void jxta_resolver_srdi_free(ResolverSrdi * ad)
+static void resolver_srdi_free(void * me)
 {
+    ResolverSrdi * ad = (ResolverSrdi * )me;
 
     if (ad->Credential) {
         JXTA_OBJECT_RELEASE(ad->Credential);

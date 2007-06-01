@@ -51,12 +51,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tcp_connection.c,v 1.60 2006/06/14 17:48:15 slowhog Exp $
+ * $Id: jxta_transport_tcp_connection.c,v 1.71 2006/09/25 21:36:41 slowhog Exp $
  */
 
 static const char *__log_cat = "TCP_CONNECTION";
-
-#include <assert.h>
 
 #include "jxta_apr.h"
 
@@ -89,6 +87,7 @@ struct _jxta_transport_tcp_connection {
 
     Jxta_welcome_message *my_welcome;
     Jxta_welcome_message *its_welcome;
+    int use_msg_version;
     Jxta_boolean initiator;
 
     char *data_in_buf;          /* input stream */
@@ -412,7 +411,7 @@ static Jxta_status tcp_connection_start_socket(Jxta_transport_tcp_connection * _
     apr_socket_opt_set(_self->shared_socket, APR_SO_LINGER, LINGER_DELAY); /* Linger Delay */
     apr_socket_opt_set(_self->shared_socket, APR_TCP_NODELAY, 1);  /* disable nagel's */
 
-    _self->my_welcome = welcome_message_new_1(_self->dest_addr, public_addr, peerid, TRUE, 0);
+    _self->my_welcome = welcome_message_new_1(_self->dest_addr, public_addr, peerid, TRUE, 1);
     JXTA_OBJECT_RELEASE(peerid);
     if (_self->my_welcome == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Failed to create welcome message\n");
@@ -447,7 +446,12 @@ static Jxta_status tcp_connection_start_socket(Jxta_transport_tcp_connection * _
     if (_self->its_welcome == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Remote welcome message is malformed.\n");
         return JXTA_FAILED;
-    }
+    } else {
+        int its_msg_version = welcome_message_get_message_version(_self->its_welcome);
+        int my_msg_version = welcome_message_get_message_version(_self->my_welcome);
+    
+        _self->use_msg_version =  its_msg_version < my_msg_version ? its_msg_version : my_msg_version;
+        }
 
     return JXTA_SUCCESS;
 }
@@ -563,15 +567,15 @@ static void *APR_THREAD_FUNC tcp_connection_thread(apr_thread_t * thread, void *
 
     JXTA_OBJECT_CHECK_VALID(_self);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "TCP incoming message thread for [%pp] %s:%d started.\n", _self,
-                    _self->ipaddr, _self->port);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "TCP incoming message thread [%pp] for [%pp] %s:%d started.\n", 
+                    _self->recv_thread, _self, _self->ipaddr, _self->port);
 
     apr_thread_mutex_lock(_self->mutex);
     _self->connection_state = CONN_CONNECTED;
     apr_thread_mutex_unlock(_self->mutex);
 
     while (CONN_CONNECTED == _self->connection_state) {
-        JXTA_LONG_LONG msg_size;
+        apr_int64_t msg_size;
 
         res = message_packet_header_read(_self->header_buf, read_from_tcp_connection, (void *) _self, &msg_size, FALSE, NULL);
 
@@ -610,16 +614,15 @@ static void *APR_THREAD_FUNC tcp_connection_thread(apr_thread_t * thread, void *
         }
     }
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "TCP incoming message thread for [%pp] %s:%d stopping : %d \n", _self,
-                    _self->ipaddr, _self->port, res);
-
-    if (CONN_CONNECTED == _self->connection_state) {
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "TCP incoming message thread for [%pp] %s:%d stopping : %d \n", 
+                    _self, _self->ipaddr, _self->port, res);
+   
+    if(CONN_CONNECTED == _self->connection_state) {    
         apr_thread_mutex_lock(_self->mutex);
         _self->connection_state = CONN_DISCONNECTED;
         apr_thread_mutex_unlock(_self->mutex);
-    }
-
-    /* NOTREACHED */
+        }
+ 
     return NULL;
 }
 
@@ -659,7 +662,7 @@ JXTA_DECLARE(Jxta_status) jxta_transport_tcp_connection_close(Jxta_transport_tcp
         }
     }
 
-    /* don't remove messenger, transport will do that whithin get_messenger in case connection is closed */
+    /* don't remove messenger, transport will do that within get_messenger in case connection is closed */
     /*
        res = jxta_transport_tcp_remove_messenger(_self->tp, _self->dest_addr);
        if (res != JXTA_SUCCESS) {
@@ -671,7 +674,7 @@ JXTA_DECLARE(Jxta_status) jxta_transport_tcp_connection_close(Jxta_transport_tcp
 
 static Jxta_status JXTA_STDCALL msg_wireformat_size(void *arg, const char *buf, apr_size_t len)
 {
-    JXTA_LONG_LONG *size = (JXTA_LONG_LONG *) arg;  /* 8 bytes */
+    apr_int64_t *size = arg;  /* 8 bytes */
     *size += len;
     return JXTA_SUCCESS;
 }
@@ -685,7 +688,7 @@ JXTA_DECLARE(Jxta_status) jxta_transport_tcp_connection_send_message(Jxta_transp
 {
     Jxta_status res;
    _jxta_transport_tcp_connection *_self = (_jxta_transport_tcp_connection *) me;
-    JXTA_LONG_LONG msg_size;
+    apr_int64_t msg_size;
 
     JXTA_OBJECT_CHECK_VALID(_self);
 
@@ -698,23 +701,29 @@ JXTA_DECLARE(Jxta_status) jxta_transport_tcp_connection_send_message(Jxta_transp
     JXTA_OBJECT_CHECK_VALID(msg);
     JXTA_OBJECT_SHARE(msg);
 
-    msg_size = (JXTA_LONG_LONG) 0;
-    jxta_message_write(msg, APP_MSG, msg_wireformat_size, &msg_size);
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "send_message: msg_size=%" APR_INT64_T_FMT "\n", msg_size);
+    msg_size = 0;
+    res =jxta_message_write_1(msg, APP_MSG, _self->use_msg_version, msg_wireformat_size, &msg_size);
+    if ( JXTA_SUCCESS != res) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to determine message size.\n");
+        JXTA_OBJECT_RELEASE(msg);
+        return res;
+    }
 
     apr_thread_mutex_lock(_self->mutex);
 
     /* write message packet header */
-    if (message_packet_header_write(write_to_tcp_connection, (void *) _self, msg_size, FALSE, NULL) != JXTA_SUCCESS) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Failed to write packet header\n");
+    res = message_packet_header_write(write_to_tcp_connection, (void *) _self, msg_size, FALSE, NULL);
+    if ( JXTA_SUCCESS != res) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to write packet header.\n");
         apr_thread_mutex_unlock(_self->mutex);
         JXTA_OBJECT_RELEASE(msg);
-        return JXTA_NOMEM;
+        return res;
     }
 
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "send_message: msg_size=%" APR_INT64_T_FMT "\n", msg_size);
+
     /* write message body */
-    res = jxta_message_write(msg, APP_MSG, write_to_tcp_connection, _self);
+    res = jxta_message_write_1(msg, APP_MSG, _self->use_msg_version, write_to_tcp_connection, _self);
     if (_self->d_out_index != 0) {
         res = tcp_connection_flush(_self);
     }
@@ -920,6 +929,14 @@ JXTA_DECLARE(char *) jxta_transport_tcp_connection_get_ipaddr(Jxta_transport_tcp
     JXTA_OBJECT_CHECK_VALID(_self);
 
     return strdup(_self->ipaddr);
+}
+
+JXTA_DECLARE(const char *) jxta_transport_tcp_connection_ipaddr(Jxta_transport_tcp_connection * me)
+{
+   _jxta_transport_tcp_connection *_self = (_jxta_transport_tcp_connection *) me;
+    JXTA_OBJECT_CHECK_VALID(_self);
+
+    return _self->ipaddr;
 }
 
 JXTA_DECLARE(apr_port_t) jxta_transport_tcp_connection_get_port(Jxta_transport_tcp_connection * me)

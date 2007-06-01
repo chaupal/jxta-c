@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rr_adv_test.c,v 1.10 2005/09/23 20:07:16 slowhog Exp $
+ * $Id: rr_adv_test.c,v 1.11 2006/08/17 20:02:18 bondolo Exp $
  */
 
 #include <stdio.h>
@@ -80,7 +80,7 @@ Jxta_boolean rr_test(int argc, char **argv)
     /* printout the doc */
     jxta_resolver_response_get_xml(ad, &doc);
     fprintf(stdout, "%s\n", jstring_get_string(doc));
-    jxta_resolver_response_free(ad);
+    JXTA_OBJECT_RELEASE(ad);
     JXTA_OBJECT_RELEASE(doc);
 
     jxta_terminate();

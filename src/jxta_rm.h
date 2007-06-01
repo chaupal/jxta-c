@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rm.h,v 1.8 2005/09/29 22:01:01 bondolo Exp $
+ * $Id: jxta_rm.h,v 1.10 2006/09/20 00:54:29 bondolo Exp $
  */
 
 
@@ -71,14 +71,10 @@ extern "C" {
 typedef struct _EndpointRouterMessage EndpointRouterMessage;
 
 JXTA_DECLARE(EndpointRouterMessage *) EndpointRouterMessage_new(void);
-JXTA_DECLARE(void) EndpointRouterMessage_set_handlers(EndpointRouterMessage *, XML_Parser, void *);
-void EndpointRouterMessage_delete(EndpointRouterMessage *);
+
 JXTA_DECLARE(Jxta_status) EndpointRouterMessage_get_xml(EndpointRouterMessage *, JString ** xml);
 JXTA_DECLARE(Jxta_status) EndpointRouterMessage_parse_charbuffer(EndpointRouterMessage *, const char *, int len);
 JXTA_DECLARE(Jxta_status) EndpointRouterMessage_parse_file(EndpointRouterMessage *, FILE * stream);
-
-JXTA_DECLARE(char *) EndpointRouterMessage_get_EndpointRouterMessage(EndpointRouterMessage *);
-JXTA_DECLARE(void) EndpointRouterMessage_set_EndpointRouterMessage(EndpointRouterMessage *, char *);
 
 JXTA_DECLARE(Jxta_endpoint_address *) EndpointRouterMessage_get_Src(EndpointRouterMessage *);
 JXTA_DECLARE(void) EndpointRouterMessage_set_Src(EndpointRouterMessage *, Jxta_endpoint_address *);

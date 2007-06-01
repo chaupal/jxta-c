@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: Listener.cs,v 1.2 2006/01/27 18:28:24 lankes Exp $
+ * $Id: Listener.cs,v 1.3 2006/08/04 10:33:19 lankes Exp $
  */
 using System;
 using System.Collections.Generic;
@@ -59,63 +59,75 @@ using System.Runtime.InteropServices;
 
 namespace JxtaNET
 {
-    public class Listener : JxtaObject
+    internal class Listener<T> : JxtaObject
     {
-        public delegate void BaseListenerFunction(IntPtr obj, ListenerFunction func);
+        public delegate void ListenerFunction(T msg);
 
-        public delegate void ListenerFunction(Message msg);
-
-        [DllImport("jxta.dll")]
-        private static extern IntPtr jxta_listener_new(BaseListenerFunction func, ListenerFunction arg, Int32 maxNbOfInvoke, Int32 maxQueueSize);
-
-        [DllImport("jxta.dll")]
-        private static extern void jxta_listener_start(IntPtr listener);
-
-        [DllImport("jxta.dll")]
-        private static extern void jxta_listener_stop(IntPtr listener);
-
-        [DllImport("jxta.dll")]
-        private static extern UInt32 jxta_listener_wait_for_event(IntPtr listener, Int64 timeout, ref IntPtr dr);
-
-        //[DllImport("jxta.dll")]
-        //private static extern IntPtr jxta_get_base_pipe_listener();
-
-        public void start()
+        public void Start()
         {
-            jxta_listener_start(this.self);
+            jxtaDll.jxta_listener_start(this.self);
         }
 
-        public void stop()
+        public void Stop()
         {
-            jxta_listener_stop(this.self);
+            jxtaDll.jxta_listener_stop(this.self);
         }
 
-        // TODO this may be just an JxtaObject, not a DiscoveryResponse...
-        public DiscoveryResponse waitForEvent(long timeout)
+        /*public T WaitForEvent(long timeout)
         {
             IntPtr ret = new IntPtr();
-            Errors.check(jxta_listener_wait_for_event(this.self, timeout, ref ret));
-            return new DiscoveryResponse(ret);
+            Errors.check(jxtaDll.jxta_listener_wait_for_event(this.self, timeout, ref ret));
+
+            T retT = (T)System.Activator.CreateInstance(typeof(T), new object[] { ret });
+
+            return retT;
+        }*/
+
+        private ListenerFunction _listener = null;
+        public ListenerFunction listener
+        {
+            get
+            {
+                return _listener;
+            }
         }
 
-        void baseListenerFunction(IntPtr obj, ListenerFunction func)
+        private void BaseListenerFunction(IntPtr obj, IntPtr dummy)
         {
-            if (func == null)
+            if (_listener == null)
             {
                 Console.WriteLine("Error: no listener function defined");
                 return;
             }
 
-            func(new Message(obj));
+            _listener((T)System.Activator.CreateInstance(typeof(T), new object[] { obj }));
         }
+
+        private static jxtaDll.BaseListenerFunction _baseListenerCallback;
 
         public Listener(ListenerFunction func, int maxNbOfInvoke, int maxQueueSize) : base()
         {
-            this.self = jxta_listener_new(baseListenerFunction, func, maxNbOfInvoke, maxQueueSize);
+            _baseListenerCallback = new jxtaDll.BaseListenerFunction(BaseListenerFunction);
+
+            if (func != null)
+                this.self = jxtaDll.jxta_listener_new(_baseListenerCallback, IntPtr.Zero, maxNbOfInvoke, maxQueueSize);
+            else
+                this.self = jxtaDll.jxta_listener_new(null, IntPtr.Zero, maxNbOfInvoke, maxQueueSize);
+
+            _listener = func;
         }
 
-        internal Listener(IntPtr self) : base(self) { }
+        /*internal Listener(IntPtr self)
+            : base(self)
+        {
+        }
+        
+        internal Listener() : base() 
+        { 
+        }*/
 
-        internal Listener() : base() { }
+        ~Listener()
+        {
+        }
     }
 }

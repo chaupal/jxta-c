@@ -51,10 +51,11 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tcp_multicast.c,v 1.30 2006/05/26 02:15:55 bondolo Exp $
+ * $Id: jxta_tcp_multicast.c,v 1.32 2006/09/20 00:58:09 bondolo Exp $
  */
 
-#define BUFSIZE		8192
+
+static const char *__log_cat = "TCP_MULTICAST";
 
 #include "jxta_apr.h"
 
@@ -66,6 +67,8 @@
 #include "jxta_endpoint_address.h"
 #include "jxta_transport_tcp_private.h"
 #include "jxta_tcp_message_packet_header.h"
+
+#define BUFSIZE		8192
 
 typedef struct _stream {
     char *data_buf;
@@ -100,8 +103,6 @@ struct _tcp_multicast {
 
     Jxta_endpoint_service *endpoint;
 };
-
-static const char *__log_cat = "TCP_MULTICAST";
 
 static int apr_socketdes_get(apr_socket_t * sock);
 
@@ -421,7 +422,7 @@ static void JXTA_STDCALL tcp_multicast_process(TcpMulticast * tm, STREAM * strea
 {
     TcpMulticast *self = tm;
     Jxta_message *msg;
-    JXTA_LONG_LONG msg_size;
+    apr_int64_t msg_size;
     Jxta_status res;
 
 
@@ -471,7 +472,7 @@ static void JXTA_STDCALL tcp_multicast_process(TcpMulticast * tm, STREAM * strea
 
 static Jxta_status JXTA_STDCALL msg_wireformat_size(void *arg, const char *buf, apr_size_t len)
 {
-    JXTA_LONG_LONG *size = (JXTA_LONG_LONG *) arg;  /* 8 bytes */
+    apr_int64_t *size = arg;  /* 8 bytes */
     *size += len;
     return JXTA_SUCCESS;
 }
@@ -488,7 +489,7 @@ Jxta_status tcp_multicast_propagate(TcpMulticast * tm, Jxta_message * msg, const
     char *src_addr, *dest_addr;
     STREAM *stream = self->output_stream;
     apr_size_t packet_header_size = 0;
-    JXTA_LONG_LONG msg_size = (JXTA_LONG_LONG) 0;
+    apr_int64_t msg_size = 0;
     Jxta_status res;
     int len;
 
@@ -528,10 +529,7 @@ Jxta_status tcp_multicast_propagate(TcpMulticast * tm, Jxta_message * msg, const
 
     /* welcome header */
 
-    tcp_multicast_write_stream(stream, "J", 1);
-    tcp_multicast_write_stream(stream, "X", 1);
-    tcp_multicast_write_stream(stream, "T", 1);
-    tcp_multicast_write_stream(stream, "A", 1);
+    tcp_multicast_write_stream(stream, "JXTA", 4);
 
     /* message packet header */
     jxta_message_write(msg, APP_MSG, msg_wireformat_size, &msg_size);

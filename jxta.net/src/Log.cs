@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: Log.cs,v 1.4 2006/03/29 21:49:14 slowhog Exp $
+ * $Id: Log.cs,v 1.5 2006/08/04 10:33:19 lankes Exp $
  */
 
 using System;
@@ -80,6 +80,9 @@ namespace JxtaNET.Log
         ALL = FATAL | ERROR | WARNING | INFO | DEBUG | TRACE | PARANOID
     };
 
+    /// <summary>
+    /// Interface to initialize, start and stop the logger
+    /// </summary>
     public static class GlobalLogger
     {
         /// <summary>
@@ -95,18 +98,18 @@ namespace JxtaNET.Log
 
         public static void AppendLog(LogMessage msg)
         {
-            AppendLogEvent(msg);
+            if (AppendLogEvent != null)
+                AppendLogEvent(msg);
         }
 
         #region native_callback-interop
-
         // Callback-method for nativ-interop.
-        private static UInt32 log_callback(IntPtr userData, String cat, UInt32 level, String message)
+        private static UInt32 LogCallback(IntPtr user_data, String cat, Int32 level, String message)
         {
             try
             {
                 // call the global logger
-                LogMessage msg = new LogMessage(cat, LoggersLittleHelper.GetManagedLevel(level), message, DateTime.Now, Thread.CurrentThread.ManagedThreadId);
+                LogMessage msg = new LogMessage(cat, LoggersLittleHelper.GetManagedLevel((uint)level), message, DateTime.Now, (uint)Thread.CurrentThread.ManagedThreadId);
                 GlobalLogger.AppendLog(msg);
             }
             catch (JxtaException e)
@@ -117,19 +120,19 @@ namespace JxtaNET.Log
             return Errors.JXTA_SUCCESS;
         }
 
-        private delegate UInt32 native_log_callback(IntPtr userData, String cat, UInt32 level, String message);
+        private delegate UInt32 NativeLogCallback(IntPtr user_data, String cat, Int32 level, String msg);
 
         [DllImport("jxta.dll")]
-        private static extern void jxta_log_using(native_log_callback logCb, IntPtr userData);
+        private static extern void jxta_log_using(NativeLogCallback logCb, IntPtr user_data);
 
-        private static native_log_callback _delegate;
-        
+        private static NativeLogCallback _delegate;
+
         public static void StartLogging()
         {
             if (_delegate != null)
                 return;
 
-            _delegate = new native_log_callback(log_callback);
+            _delegate = new NativeLogCallback(LogCallback);
             jxta_log_using(_delegate, IntPtr.Zero);
         }
 
@@ -152,6 +155,7 @@ namespace JxtaNET.Log
     // Helper-class for nativ-interop; namely the LogLevel-constants.
     internal static class LoggersLittleHelper
     {
+        #region import of jxta-c functions
         [DllImport("jxta.dll")]
         private static extern UInt32 jxta_get_JXTA_LOG_LEVEL_INVALID();
         [DllImport("jxta.dll")]
@@ -172,7 +176,7 @@ namespace JxtaNET.Log
         private static extern UInt32 jxta_get_JXTA_LOG_LEVEL_PARANOID();
         [DllImport("jxta.dll")]
         private static extern UInt32 jxta_get_JXTA_LOG_LEVEL_MAX();
-
+        #endregion
 
         private static System.Collections.Generic.Dictionary<LogLevels, UInt32> _nativeLevels;
 
@@ -231,7 +235,7 @@ namespace JxtaNET.Log
         /// Thread-ID of the calling thread.
         /// -1 if not set.
         /// </summary>
-        public int ThreadID = -1;
+        public uint ThreadID = 0;
         /// <summary>
         /// FormatString for the ToString-method.
         /// c: Category;
@@ -292,7 +296,7 @@ namespace JxtaNET.Log
             return ToString(this.FormatString);
         }
 
-/*        public LogMessage(String category, LogLevels logLevel, String message)
+/*      public LogMessage(String category, LogLevels logLevel, String message)
         {
             Category = category;
             LogLevel = logLevel;
@@ -308,7 +312,7 @@ namespace JxtaNET.Log
             Time = time;
         }
 */
-        public LogMessage(String category, LogLevels logLevel, String message, DateTime time, int threadID)
+        public LogMessage(String category, LogLevels logLevel, String message, DateTime time, uint threadID)
         {
             Category = category;
             LogLevel = logLevel;
@@ -390,11 +394,23 @@ namespace JxtaNET.Log
             return (categoryCheck && levelCheck);
         }
     }
+    
+    /// <summary>
+    /// the logger interface
+    /// </summary>
+    interface LoggerBase
+    {
+        /// <summary>
+        /// the log-method; add this method to the GlobalLogger.AppendLogEvent
+        /// </summary>
+        /// <param name="logMessage"><see cref="LogMessage"/> to append. </param>
+        void AppendLogMessage(LogMessage logMessage);
+    }
 
     /// <summary>
     /// a logger to log to files or the console (assuming you specify System.Console.Out for the property LogWriter)
     /// </summary>
-    public class FileLogger
+    public class StandardLogger : LoggerBase
     {
         private TextWriter _logWriter;
 
@@ -423,13 +439,13 @@ namespace JxtaNET.Log
         /// the log-method; add this method to the GlobalLogger.AppendLogEvent
         /// </summary>
         /// <param name="logMessage"><see cref="LogMessage"/> to append. </param>
-        public void Append(LogMessage logMessage)
+        public void AppendLogMessage(LogMessage logMessage)
         {
             if ((_logSelector == null) || _logSelector.IsSelected(logMessage))
                 _logWriter.Write("[" + logMessage.Category + "]-" + logMessage.LogLevel + "-[" + logMessage.Time.ToString("MM'/'dd HH:mm:ss:ffffff") + "][TID: " + logMessage.ThreadID + "] - " + logMessage.Message);
         }
 
-        public FileLogger()
+        public StandardLogger()
         {
             this._logWriter = Console.Out;
         }

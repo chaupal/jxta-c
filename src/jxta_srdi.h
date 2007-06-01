@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi.h,v 1.10 2005/09/25 03:55:46 exocetrick Exp $
+ * $Id: jxta_srdi.h,v 1.14 2006/08/11 14:47:11 mmx2005 Exp $
  */
 
 
@@ -70,6 +70,14 @@ extern "C" {
 #endif
 #endif
 
+#ifdef WIN32
+#define JXTA_SEQUENCE_NUMBER_FMT "%I64u"
+typedef unsigned __int64 Jxta_sequence_number;
+#else
+#define JXTA_SEQUENCE_NUMBER_FMT "%llu"
+typedef unsigned long long Jxta_sequence_number;
+
+#endif
 typedef struct _Jxta_SRDIMessage Jxta_SRDIMessage;
 typedef struct _jxta_EntryElement Jxta_SRDIEntryElement;
 
@@ -85,6 +93,8 @@ struct _jxta_EntryElement {
     JString *nameSpace;
     JString *advId;
     JString *range;
+    Jxta_sequence_number seqNumber;
+    Jxta_boolean resend;
 };
 
 /**
@@ -97,15 +107,6 @@ struct _jxta_EntryElement {
 JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new(void);
 
 JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_1(int TTL, Jxta_id * peerid, char *primarykey, Jxta_vector * entries);
-/**
- * Delete a srdi message.
- *
- * @param pointer to srdi message to delete.
- *
- * @return void Doesn't return anything.
- */
-void jxta_srdi_message_free(Jxta_SRDIMessage *);
-
 
 /**
  * Constructs a representation of a srdi message in
@@ -131,9 +132,9 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_xml(Jxta_SRDIMessage *, JString 
  *        with xml syntax.
  * @param int len length of character buffer.
  *
- * @return void Doesn't return anything.
+ * @return Jxta_status JXTA_SUCCESS if message was parsed and valid.
  */
-JXTA_DECLARE(void) jxta_srdi_message_parse_charbuffer(Jxta_SRDIMessage *, const char *, int len);
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_parse_charbuffer(Jxta_SRDIMessage *, const char *, int len);
 
 
 
@@ -146,10 +147,10 @@ JXTA_DECLARE(void) jxta_srdi_message_parse_charbuffer(Jxta_SRDIMessage *, const 
  *        to contain the data in the xml.
  * @param FILE * an input stream.
  *
- * @return void Doesn't return anything.
+ * @return Jxta_status JXTA_SUCCESS if message was parsed and valid.
  */
 
-JXTA_DECLARE(void) jxta_srdi_message_parse_file(Jxta_SRDIMessage *, FILE * stream);
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_parse_file(Jxta_SRDIMessage *, FILE * stream);
 
 /**
  * Gets the ttl of the srdi message.
@@ -209,15 +210,18 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_peerID(Jxta_SRDIMessage *, Jxta_
 
 
 /**
- * Sets the Value of the srdi message.
+ * Sets the peerid of the srdi message.
  *
  * @param Jxta_SRDIMessage * a pointer to the srdi message
- * @param char * containing the peer id.
+ * @param Jxta_id * the peer id.
  *
  * @return void Doesn't return anything.
  */
 JXTA_DECLARE(Jxta_status) jxta_srdi_message_set_peerID(Jxta_SRDIMessage *, Jxta_id *);
 
+JXTA_DECLARE(Jxta_boolean) jxta_srdi_message_delta_supported(Jxta_SRDIMessage * ad);
+
+JXTA_DECLARE(void) jxta_srdi_message_set_support_delta(Jxta_SRDIMessage * ad, Jxta_boolean support);
 
 /**
  * Gets the Entries of the srdi message.
@@ -227,9 +231,7 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_set_peerID(Jxta_SRDIMessage *, Jxta_
  *
  * @return Jxta_status 
  */
-JXTA_DECLARE(Jxta_status)
-    jxta_srdi_message_get_entries(Jxta_SRDIMessage * ad, Jxta_vector ** entries);
-
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_entries(Jxta_SRDIMessage * ad, Jxta_vector ** entries);
 
 /**
  * Sets the entries vector of the srdi message.
@@ -242,10 +244,32 @@ JXTA_DECLARE(Jxta_status)
 JXTA_DECLARE(void) jxta_srdi_message_set_entries(Jxta_SRDIMessage *, Jxta_vector * entries);
 
 /**
+ * Gets the Resend Entries of the srdi message.
+ *
+ * @param Jxta_SRDIMessage * a pointer to the srdi message
+ * @param entries pointer to vector containing the entries
+ *
+ * @return Jxta_status 
+ */
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_resend_entries(Jxta_SRDIMessage * ad, Jxta_vector ** entries);
+
+/**
+ * Sets the resend entries vector of the srdi message.
+ *
+ * @param Jxta_SRDIMessage * a pointer to the srdi message
+ * @param Jxta_vector * containing the entries.
+ *
+ * @return void
+ */
+JXTA_DECLARE(void) jxta_srdi_message_set_resend_entries(Jxta_SRDIMessage * ad, Jxta_vector * entries);
+
+/**
  * Creates a new SRDI entry element
  * @return Jxta_SRDIEntryElement 
  */
 JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element(void);
+
+JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_element_clone(Jxta_SRDIEntryElement * entry);
 
 /**
  * Creates a new  entry element
@@ -265,6 +289,12 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_1(JString * key, JSt
  */
 JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_2(JString * key, JString * value, JString * nameSpace,
                                                               JString * advId, JString * range, Jxta_expiration_time expiration);
+
+JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_3(JString * key, JString * value, JString * nameSpace,
+                                                              JString * advId, JString * jrange, Jxta_expiration_time expiration,
+                                                              Jxta_sequence_number seqNumber);
+
+JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_resend(Jxta_sequence_number seqNumber);
 
 #ifdef __cplusplus
 #if 0

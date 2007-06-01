@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: dr_adv_test.c,v 1.20 2005/11/15 18:41:33 slowhog Exp $
+ * $Id: dr_adv_test.c,v 1.21 2006/08/17 20:02:18 bondolo Exp $
  */
 
 #include <stdio.h>
@@ -179,7 +179,7 @@ Jxta_boolean dr_adv_test(int argc, char **argv)
     if (NULL == js)
         return FALSE;
     fprintf(stdout, "%s\n", jstring_get_string(js));
-    jxta_discovery_response_free(ad);
+    JXTA_OBJECT_RELEASE(ad);
 
     return ret;
 }

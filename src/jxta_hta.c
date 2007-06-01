@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_hta.c,v 1.57 2006/02/15 01:09:41 slowhog Exp $
+ * $Id: jxta_hta.c,v 1.59 2006/09/29 06:09:00 mmx2005 Exp $
  */
 
 
@@ -63,7 +63,7 @@
 #include "jxta_advertisement.h"
 #include "jxta_hta.h"
 #include "jxta_xml_util.h"
-
+#include "jpr/jpr_apr_wrapper.h"
 
 /** Each of these corresponds to a tag in the 
  * xml ad.
@@ -484,7 +484,7 @@ JXTA_DECLARE(Jxta_status)
     jstring_append_2(string, "</ConfigMode>\n");
 
     jstring_append_2(string, "<Port>");
-    snprintf(port, sizeof(port), "%d", ad->Port);
+    apr_snprintf(port, sizeof(port), "%d", ad->Port);
     jstring_append_2(string, port);
     jstring_append_2(string, "</Port>\n");
 

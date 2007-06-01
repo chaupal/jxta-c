@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: msg_test.c,v 1.23 2005/09/23 20:09:02 slowhog Exp $
+ * $Id: msg_test.c,v 1.29 2006/09/29 06:52:06 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -67,212 +67,212 @@
  **
  ****************************************************************/
 
+static unsigned char const signature_content[] = { 255, 254, 1, 200, 12, 0, 13, 244 };
+static unsigned char const element_content[] = { 7, 65, 163, 85, 213, 174, 26, 98 };
+
+
+static char const * test_jxta_message_read_write(int version);
+
 /*
  * Test functions for Message elements
  */
 
 /** Create a signature element.
-* The name is sig:MySig, the mime type MySigMime and the 
-* content contains the bytes 255,254,1,200,12,0,13,244 
+* The name is sig:MySig, the mime type MySigMime
 * 
 * @return a Jxta_message_element that constitutes a signature
 */
 Jxta_message_element *createSignatureElement(void)
 {
-    unsigned char *content;
-    Jxta_message_element *sig = NULL;
+    Jxta_message_element *sig = jxta_message_element_new_2("sig", "MySig", "MySigMime", signature_content, sizeof(*signature_content), NULL);
 
-    /* First initialize the content */
-    content = (unsigned char *) malloc(sizeof(unsigned char) * 8);
-    if (content != NULL) {
-        content[0] = 255;
-        content[1] = 254;
-        content[2] = 1;
-        content[3] = 200;
-        content[4] = 12;
-        content[5] = 0;
-        content[6] = 13;
-        content[7] = 244;
-    } else
-        return sig;
-
-
-    /* No create the signature */
-    sig = jxta_message_element_new_2("sig", "MySig", "MySigMime", (char *) content, 8, NULL);
-
-    free(content);
     return sig;
 }
 
 /**
  * Check whether the signature element was returned correctly
  *
- * @return TRUE if it was returned correctly, FALSE otherwise
+ * @return NULL for success otherwise a message indicating failure.
  */
-Jxta_boolean checkSignatureObject(Jxta_message_element * sig)
+const char * checkSignatureObject(Jxta_message_element * sig)
 {
     const char *comparer;
     Jxta_bytevector *content;
-    Jxta_boolean result = TRUE;
-    unsigned char byte;
+    const char * result = NULL;
+    int each_sig_byte;
 
     if (sig == NULL)
-        return FALSE;
+        return FILEANDLINE "signature null";
 
     /* Check the namespace */
     comparer = jxta_message_element_get_namespace(sig);
     if (strcmp(comparer, "sig") != 0)
-        return FALSE;
+        return FILEANDLINE;
 
     /* Check the name */
     comparer = jxta_message_element_get_name(sig);
     if (strcmp(comparer, "MySig") != 0)
-        return FALSE;
+        return FILEANDLINE;
 
     /* Check the mime type */
     comparer = jxta_message_element_get_mime_type(sig);
     if (strcmp(comparer, "MySigMime") != 0)
-        return FALSE;
+        return FILEANDLINE;
 
    /** Check the content of the signature */
     content = jxta_message_element_get_value(sig);
     if (jxta_bytevector_size(content) != 8) {
         JXTA_OBJECT_RELEASE(content);
-        return FALSE;
+        return FILEANDLINE;
     }
-    result = TRUE;
-    jxta_bytevector_get_byte_at(content, &byte, 0);
-    if (byte != 255)
-        result = FALSE;
-    jxta_bytevector_get_byte_at(content, &byte, 1);
-    if (byte != 254)
-        result = FALSE;
-    jxta_bytevector_get_byte_at(content, &byte, 2);
-    if (byte != 1)
-        result = FALSE;
-    jxta_bytevector_get_byte_at(content, &byte, 3);
-    if (byte != 200)
-        result = FALSE;
-    jxta_bytevector_get_byte_at(content, &byte, 4);
-    if (byte != 12)
-        result = FALSE;
-    jxta_bytevector_get_byte_at(content, &byte, 5);
-    if (byte != 0)
-        result = FALSE;
-    jxta_bytevector_get_byte_at(content, &byte, 6);
-    if (byte != 13)
-        result = FALSE;
-    jxta_bytevector_get_byte_at(content, &byte, 7);
-    if (byte != 244)
-        result = FALSE;
+    result = NULL;
+    
+    for( each_sig_byte = 0; each_sig_byte < sizeof(*signature_content); each_sig_byte++ ) {
+        unsigned char byte;
+    
+        jxta_bytevector_get_byte_at(content, &byte, each_sig_byte );
+        
+        if( signature_content[each_sig_byte] != byte ) {
+            return FILEANDLINE;
+        }
+    }
+    
     JXTA_OBJECT_RELEASE(content);
-    if (!result)
-        return FALSE;
 
     if (jxta_message_element_get_signature(sig) != NULL)
-        return FALSE;
+        return FILEANDLINE;
 
-    return TRUE;
+    return NULL;
 }
 
 
 /**
 * Test the jxta_message_element_new_1 function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL for success otherwise a message indicating failure.
 */
-Jxta_boolean test_jxta_message_element_new_1(void)
+const char * test_jxta_message_element_new_1(void)
 {
-    unsigned char *content = NULL;
+    const char * result = NULL;
     Jxta_message_element *el = NULL, *sig = NULL;
+    Jxta_bytevector *retContent;
     const char *comparer;
-    Jxta_bytevector *retContent = NULL, *compContent = NULL;
-    Jxta_boolean result = TRUE;
+    unsigned char *comparer_2;
 
     /* First initialize the content */
-    content = (unsigned char *) malloc(sizeof(unsigned char) * 8);
-    if (content != NULL) {
-        content[0] = 0;
-        content[1] = 255;
-        content[2] = 8;
-        content[3] = 254;
-        content[4] = 12;
-        content[5] = 0;
-        content[6] = 9;
-        content[7] = 251;
-    } else
-        return FALSE;
-    compContent = jxta_bytevector_new_2(content, 8, 8);
-    if (compContent == NULL)
-        return FALSE;
 
     /* Create an element with no namespace, no mime type and no signature */
-    el = jxta_message_element_new_1("NewElement", NULL, (char *) content, 8, NULL);
+    el = jxta_message_element_new_1("NewElement", NULL, element_content, sizeof(*element_content), NULL);
     if (el == NULL) {
-        result = FALSE;
+        result = FILEANDLINE "could not create message element";
         goto Common_Exit;
     }
+    
     comparer = jxta_message_element_get_namespace(el);
     if (comparer == NULL || strcmp("", comparer) != 0) {
-        result = FALSE;
+        result = FILEANDLINE "namespace didn't match";
         goto Common_Exit;
     }
+    
     comparer = jxta_message_element_get_name(el);
     if (comparer == NULL || strcmp("NewElement", comparer) != 0) {
-        result = FALSE;
+        result = FILEANDLINE "name didn't match";
         goto Common_Exit;
     }
+    
     comparer = jxta_message_element_get_mime_type(el);
     if (comparer == NULL || strcmp("application/octet-stream", comparer) != 0) {
-        result = FALSE;
+        result = FILEANDLINE "mime didn't match";
         goto Common_Exit;
     }
+    
     if (jxta_message_element_get_signature(el) != NULL) {
-        result = FALSE;
+        result = "signature should be NULL";
         goto Common_Exit;
     }
+    
     retContent = jxta_message_element_get_value(el);
-    if (retContent == NULL || !jxta_bytevector_equals(compContent, retContent)) {
-        result = FALSE;
+    if (retContent == NULL ) {
+        result = FILEANDLINE;
+        goto Common_Exit;
+    }
+    
+    if( sizeof(*element_content) != jxta_bytevector_size(retContent) ) {
+        result = FILEANDLINE;
+        goto Common_Exit;
+    }
+    
+    comparer_2 = calloc( 1, sizeof(*element_content) );
+    jxta_bytevector_get_bytes_at( retContent, comparer_2, 0, sizeof(*element_content) );
+    
+    if( 0 != memcmp( element_content, comparer_2, sizeof(*element_content) ) ) {
+        free(comparer_2);
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
+    free(comparer_2);
+    
+    JXTA_OBJECT_RELEASE(el);
+    el = NULL;
 
     /* Create an element with a namespace, a mimetype and a signature */
     sig = createSignatureElement();
     if (sig == NULL) {
-        result = FALSE;
+        result = FILEANDLINE "could not create signature message element";
         goto Common_Exit;
     }
-    el = jxta_message_element_new_1("MySpace:NewElement", "MyMime", (char *) content, 8, sig);
+    el = jxta_message_element_new_1("MySpace:NewElement", "MyMime", element_content, sizeof(*element_content), sig);
     if (el == NULL) {
-        result = FALSE;
+        result = FILEANDLINE "could not create message element";
         goto Common_Exit;
     }
+    JXTA_OBJECT_RELEASE(sig);
+    sig = NULL;
+    
     comparer = jxta_message_element_get_namespace(el);
     if (comparer == NULL || strcmp("MySpace", comparer) != 0) {
-        result = FALSE;
+        result = FILEANDLINE "namespace didn't match";
         goto Common_Exit;
     }
     comparer = jxta_message_element_get_name(el);
     if (comparer == NULL || strcmp("NewElement", comparer) != 0) {
-        result = FALSE;
+        result = FILEANDLINE "name didn't match";
         goto Common_Exit;
     }
     comparer = jxta_message_element_get_mime_type(el);
     if (comparer == NULL || strcmp("MyMime", comparer) != 0) {
-        result = FALSE;
+        result = FILEANDLINE "mime didn't match";
         goto Common_Exit;
     }
     if (!checkSignatureObject(jxta_message_element_get_signature(el))) {
-        result = FALSE;
+        result = "signature didn't match";
         goto Common_Exit;
     }
     retContent = jxta_message_element_get_value(el);
-    if (retContent == NULL || !jxta_bytevector_equals(compContent, retContent)) {
-        result = FALSE;
+    if (retContent == NULL ) {
+        result = FILEANDLINE;
         goto Common_Exit;
     }
+    
+    if( sizeof(*element_content) != jxta_bytevector_size(retContent) ) {
+        result = FILEANDLINE;
+        goto Common_Exit;
+    }
+    
+    comparer_2 = calloc( 1, sizeof(*element_content) );
+    jxta_bytevector_get_bytes_at( retContent, comparer_2, 0, sizeof(*element_content) );
+    
+    if( 0 != memcmp( element_content, comparer_2, sizeof(*element_content) ) ) {
+        free(comparer_2);
+        result = FILEANDLINE;
+        goto Common_Exit;
+    }
+
+    free(comparer_2);
+
+    JXTA_OBJECT_RELEASE(el);
+    el = NULL;
 
   Common_Exit:
     if (el != NULL)
@@ -281,9 +281,6 @@ Jxta_boolean test_jxta_message_element_new_1(void)
         JXTA_OBJECT_RELEASE(sig);
     if (retContent != NULL)
         JXTA_OBJECT_RELEASE(retContent);
-    if (compContent != NULL)
-        JXTA_OBJECT_RELEASE(compContent);
-    /* Do not need to free  content, as compContent takes care of that */
 
     return result;
 }
@@ -292,101 +289,90 @@ Jxta_boolean test_jxta_message_element_new_1(void)
 /**
 * Test the jxta_message_element_new_2 function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL for success otherwise a message indicating failure.
 */
-Jxta_boolean test_jxta_message_element_new_2(void)
+char const * test_jxta_message_element_new_2(void)
 {
-    unsigned char *content = NULL;
     Jxta_message_element *el = NULL, *sig = NULL;
     const char *comparer;
     Jxta_bytevector *retContent = NULL, *compContent = NULL;
-    Jxta_boolean result = TRUE;
+    char const * result = NULL;
 
     /* First initialize the content */
-    content = (unsigned char *) calloc(8, sizeof(unsigned char));
-    if (content != NULL) {
-        content[0] = 0;
-        content[1] = 255;
-        content[2] = 8;
-        content[3] = 254;
-        content[4] = 12;
-        content[5] = 0;
-        content[6] = 9;
-        content[7] = 251;
-    } else
-        return FALSE;
-    compContent = jxta_bytevector_new_2(content, 8, 8);
+    compContent = jxta_bytevector_new_3(element_content, sizeof(*element_content), FALSE);
     if (compContent == NULL)
-        return FALSE;
+        return FILEANDLINE;
 
     /* Create an element with no namespace, no mime type and no signature */
-    el = jxta_message_element_new_2("", "NewElement", NULL, (char *) content, 8, NULL);
+    el = jxta_message_element_new_2("", "NewElement", NULL, element_content, sizeof(*element_content), NULL);
     if (el == NULL) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     comparer = jxta_message_element_get_namespace(el);
     if (comparer == NULL || strcmp("", comparer) != 0) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     comparer = jxta_message_element_get_name(el);
     if (comparer == NULL || strcmp("NewElement", comparer) != 0) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     comparer = jxta_message_element_get_mime_type(el);
     if (comparer == NULL || strcmp("application/octet-stream", comparer) != 0) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     if (jxta_message_element_get_signature(el) != NULL) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     retContent = jxta_message_element_get_value(el);
     if (retContent == NULL || !jxta_bytevector_equals(compContent, retContent)) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
-
+    JXTA_OBJECT_RELEASE(retContent);
+    retContent = NULL;
 
     /* Create an element with a namespace, a mimetype and a signature */
     sig = createSignatureElement();
     if (sig == NULL) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
-    el = jxta_message_element_new_2("MySpace", "NewElement", "MyMime", (char *) content, 8, sig);
+    el = jxta_message_element_new_2("MySpace", "NewElement", "MyMime", element_content, sizeof(*element_content), sig);
     if (el == NULL) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     comparer = jxta_message_element_get_namespace(el);
     if (comparer == NULL || strcmp("MySpace", comparer) != 0) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     comparer = jxta_message_element_get_name(el);
     if (comparer == NULL || strcmp("NewElement", comparer) != 0) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     comparer = jxta_message_element_get_mime_type(el);
     if (comparer == NULL || strcmp("MyMime", comparer) != 0) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     if (!checkSignatureObject(jxta_message_element_get_signature(el))) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     retContent = jxta_message_element_get_value(el);
     if (retContent == NULL || !jxta_bytevector_equals(compContent, retContent)) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
-
+    JXTA_OBJECT_RELEASE(retContent);
+    retContent = NULL;
 
   Common_Exit:
     if (el != NULL)
@@ -406,98 +392,88 @@ Jxta_boolean test_jxta_message_element_new_2(void)
 /**
 * Test the jxta_message_element_new_3 function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL for success otherwise a message indicating failure.
 */
-Jxta_boolean test_jxta_message_element_new_3(void)
+char const * test_jxta_message_element_new_3(void)
 {
     unsigned char *content = NULL;
     Jxta_message_element *el = NULL, *sig = NULL;
     const char *comparer;
     Jxta_bytevector *retContent = NULL, *compContent = NULL;
-    Jxta_boolean result = TRUE;
+    char const * result = NULL;
 
     /* First initialize the content */
-    content = (unsigned char *) malloc(sizeof(unsigned char) * 8);
-    if (content != NULL) {
-        content[0] = 0;
-        content[1] = 255;
-        content[2] = 8;
-        content[3] = 254;
-        content[4] = 12;
-        content[5] = 0;
-        content[6] = 9;
-        content[7] = 251;
-    } else
-        return FALSE;
-    compContent = jxta_bytevector_new_2(content, 8, 8);
+    compContent = jxta_bytevector_new_3(element_content, sizeof(*element_content), FALSE);
+    
     if (compContent == NULL)
-        return FALSE;
+        return FILEANDLINE;
 
     /* Create an element with no namespace, no mime type and no signature */
     el = jxta_message_element_new_3("", "NewElement", NULL, compContent, NULL);
     if (el == NULL) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     comparer = jxta_message_element_get_namespace(el);
     if (comparer == NULL || strcmp("", comparer) != 0) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     comparer = jxta_message_element_get_name(el);
     if (comparer == NULL || strcmp("NewElement", comparer) != 0) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     comparer = jxta_message_element_get_mime_type(el);
     if (comparer == NULL || strcmp("application/octet-stream", comparer) != 0) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     if (jxta_message_element_get_signature(el) != NULL) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     retContent = jxta_message_element_get_value(el);
     if (retContent == NULL || !jxta_bytevector_equals(compContent, retContent)) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
-
+    JXTA_OBJECT_RELEASE(el);
+    el = NULL;
 
     /* Create an element with a namespace, a mimetype and a signature */
     sig = createSignatureElement();
     if (sig == NULL) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     el = jxta_message_element_new_3("MySpace", "NewElement", "MyMime", compContent, sig);
     if (el == NULL) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     comparer = jxta_message_element_get_namespace(el);
     if (comparer == NULL || strcmp("MySpace", comparer) != 0) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     comparer = jxta_message_element_get_name(el);
     if (comparer == NULL || strcmp("NewElement", comparer) != 0) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     comparer = jxta_message_element_get_mime_type(el);
     if (comparer == NULL || strcmp("MyMime", comparer) != 0) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     if (!checkSignatureObject(jxta_message_element_get_signature(el))) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     retContent = jxta_message_element_get_value(el);
     if (retContent == NULL || !jxta_bytevector_equals(compContent, retContent)) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
@@ -523,16 +499,13 @@ Jxta_boolean test_jxta_message_element_new_3(void)
 /**
 * Write a test message
 */
-Jxta_message *getTestMessage(void)
+const char* populate_test_msg(Jxta_message *message)
 {
-    Jxta_message *message = jxta_message_new();
     Jxta_message_element *sig = NULL, *el = NULL;
     Jxta_endpoint_address *endpoint = NULL;
     char value[100], name[100];
     int i;
-
-    if (message == NULL)
-        return message;
+    const char *rv = NULL;
 
     sig = createSignatureElement();
 
@@ -545,14 +518,12 @@ Jxta_message *getTestMessage(void)
         sprintf(name, "EmptyElement_%d", i);
         el = jxta_message_element_new_1(name, NULL, value, strlen(value), sig);
         if (el == NULL) {
-            JXTA_OBJECT_RELEASE(message);
-            message = NULL;
+            rv = FILEANDLINE ": Failed to create an element\n";
             goto Common_Exit;
         }
         JXTA_OBJECT_SHARE(el);
         if (jxta_message_add_element(message, el) != JXTA_SUCCESS) {
-            JXTA_OBJECT_RELEASE(message);
-            message = NULL;
+            rv = FILEANDLINE ": Failed to add an element\n";
             goto Common_Exit;
         }
         JXTA_OBJECT_RELEASE(el);
@@ -565,14 +536,11 @@ Jxta_message *getTestMessage(void)
         sprintf(name, "JxtaElement_%d", i);
         el = jxta_message_element_new_2("jxta", name, NULL, value, strlen(value), sig);
         if (el == NULL) {
-            JXTA_OBJECT_RELEASE(message);
-            message = NULL;
+            rv = FILEANDLINE ": Failed to create an element\n";
             goto Common_Exit;
         }
-        JXTA_OBJECT_SHARE(el);
         if (jxta_message_add_element(message, el) != JXTA_SUCCESS) {
-            JXTA_OBJECT_RELEASE(message);
-            message = NULL;
+            rv = FILEANDLINE ": Failed to add an element\n";
             goto Common_Exit;
         }
         JXTA_OBJECT_RELEASE(el);
@@ -585,14 +553,12 @@ Jxta_message *getTestMessage(void)
         sprintf(name, "MyOwn:MyOwnElement_%d", i);
         el = jxta_message_element_new_1(name, NULL, value, strlen(value), sig);
         if (el == NULL) {
-            JXTA_OBJECT_RELEASE(message);
-            message = NULL;
+            rv = FILEANDLINE ": Failed to create an element\n";
             goto Common_Exit;
         }
         JXTA_OBJECT_SHARE(el);
         if (jxta_message_add_element(message, el) != JXTA_SUCCESS) {
-            JXTA_OBJECT_RELEASE(message);
-            message = NULL;
+            rv = FILEANDLINE ": Failed to add an element\n";
             goto Common_Exit;
         }
         JXTA_OBJECT_RELEASE(el);
@@ -602,14 +568,12 @@ Jxta_message *getTestMessage(void)
     /* Add a  source element */
     endpoint = jxta_endpoint_address_new_2("protNameSource", "protAddressSource", "serviceNameSource", "serviceParamsSource");
     if (endpoint == NULL) {
-        JXTA_OBJECT_RELEASE(message);
-        message = NULL;
+        rv = FILEANDLINE ": Failed to create endpoint address\n";
         goto Common_Exit;
     }
-    JXTA_OBJECT_SHARE(endpoint);
+
     if (jxta_message_set_source(message, endpoint) != JXTA_SUCCESS) {
-        JXTA_OBJECT_RELEASE(message);
-        message = NULL;
+        rv = FILEANDLINE ": Failed to set message source address\n";
         goto Common_Exit;
     }
 
@@ -619,16 +583,15 @@ Jxta_message *getTestMessage(void)
     /* Add a  destination element */
     endpoint = jxta_endpoint_address_new_2("protNameDest", "protAddressDest", "serviceNameDest", "serviceParamsDest");
     if (endpoint == NULL) {
-        JXTA_OBJECT_RELEASE(message);
-        message = NULL;
+        rv = FILEANDLINE ": Failed to create endpoint address\n";
         goto Common_Exit;
     }
-    JXTA_OBJECT_SHARE(endpoint);
+
     if (jxta_message_set_destination(message, endpoint) != JXTA_SUCCESS) {
-        JXTA_OBJECT_RELEASE(message);
-        message = NULL;
+        rv = FILEANDLINE ": Failed to set message destination address\n";
         goto Common_Exit;
     }
+    
   Common_Exit:
     if (sig != NULL)
         JXTA_OBJECT_RELEASE(sig);
@@ -636,8 +599,45 @@ Jxta_message *getTestMessage(void)
         JXTA_OBJECT_RELEASE(el);
     if (endpoint != NULL)
         JXTA_OBJECT_RELEASE(endpoint);
+    return rv;
+}
 
-    return message;
+const char * create_test_msg(Jxta_message ** msg, apr_pool_t *p)
+{
+    apr_status_t rv;
+    const char * result;
+
+    rv = jxta_message_create(msg, p);
+    if (rv != JXTA_SUCCESS) {
+        *msg = NULL;
+        return FILEANDLINE ": Failed to create message\n";
+    }
+
+    result = populate_test_msg(*msg);
+    if (result) {
+        jxta_message_destroy(*msg);
+        *msg = NULL;
+    }
+
+    return NULL;
+}
+
+const char * getTestMessage(Jxta_message ** msg)
+{
+    const char * result;
+
+    *msg = jxta_message_new();
+    if (*msg == NULL) {
+        return FILEANDLINE ": Failed to create message\n";
+    }
+
+    result = populate_test_msg(*msg);
+    if (result) {
+        jxta_message_destroy(*msg);
+        *msg = NULL;
+    }
+
+    return NULL;
 }
 
 
@@ -648,24 +648,24 @@ Jxta_message *getTestMessage(void)
 * @param message the message to test
 * @return TRUE if the messge is identical, FALSE otherwise
 */
-Jxta_boolean checkMessageCorrect(Jxta_message * message)
+char const * checkMessageCorrect(Jxta_message * message)
 {
     Jxta_message_element *el = NULL;
     Jxta_endpoint_address *endpoint = NULL;
     char *buffer = NULL;
     int i;
-    Jxta_boolean result = TRUE;
+    char const * result = NULL;
     Jxta_vector *elList = NULL;
     Jxta_bytevector *valueVector = NULL, *compVector = NULL;
 
     if (message == NULL)
-        return FALSE;
+        return FILEANDLINE;
 
 
     /* Check the number of elements with empty namespace */
     elList = jxta_message_get_elements_of_namespace(message, "");
     if (elList == NULL || jxta_vector_size(elList) != 10) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
@@ -675,7 +675,7 @@ Jxta_boolean checkMessageCorrect(Jxta_message * message)
         buffer[0] = '\0';
         sprintf(buffer, "EmptyElement_%d", i);
         if (JXTA_SUCCESS != jxta_message_get_element_1(message, buffer, &el) || el == NULL) {
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
         buffer[0] = '\0';
@@ -684,18 +684,18 @@ Jxta_boolean checkMessageCorrect(Jxta_message * message)
         if (compVector == NULL ||
             strcmp(jxta_message_element_get_namespace(el), "") != 0 ||
             strcmp(jxta_message_element_get_mime_type(el), "application/octet-stream") != 0) {
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
         valueVector = jxta_message_element_get_value(el);
         if (valueVector == NULL || !jxta_bytevector_equals(valueVector, compVector)) {
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
 
         /* Signature saveing does not work correctly */
         /*if( !checkSignatureObject( jxta_message_element_get_signature(el) ) ){
-           result = FALSE;
+           result = FILEANDLINE;
            goto Common_Exit;
            } */
 
@@ -704,11 +704,14 @@ Jxta_boolean checkMessageCorrect(Jxta_message * message)
     }
     JXTA_OBJECT_RELEASE(elList);
     elList = NULL;
+    
+    JXTA_OBJECT_RELEASE(compVector);
+    compVector = NULL;
 
     /* Check the number of elements with jxta namespace */
     elList = jxta_message_get_elements_of_namespace(message, "jxta");
     if (elList == NULL || jxta_vector_size(elList) < 10) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
@@ -718,7 +721,7 @@ Jxta_boolean checkMessageCorrect(Jxta_message * message)
         buffer[0] = '\0';
         sprintf(buffer, "jxta:JxtaElement_%d", i);
         if (JXTA_SUCCESS != jxta_message_get_element_1(message, buffer, &el) || el == NULL) {
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
         buffer[0] = '\0';
@@ -727,18 +730,18 @@ Jxta_boolean checkMessageCorrect(Jxta_message * message)
         if (compVector == NULL ||
             strcmp(jxta_message_element_get_namespace(el), "jxta") != 0 ||
             strcmp(jxta_message_element_get_mime_type(el), "application/octet-stream") != 0) {
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
         valueVector = jxta_message_element_get_value(el);
         if (valueVector == NULL || !jxta_bytevector_equals(valueVector, compVector)) {
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
 
         /* Signature saveing does not work correctly */
         /*if( !checkSignatureObject( jxta_message_element_get_signature(el) ) ){
-           result = FALSE;
+           result = FILEANDLINE;
            goto Common_Exit;
            } */
 
@@ -751,15 +754,15 @@ Jxta_boolean checkMessageCorrect(Jxta_message * message)
     /* Check the number of  elements with MyOwn namespace */
     elList = jxta_message_get_elements_of_namespace(message, "MyOwn");
     if (elList == NULL || jxta_vector_size(elList) != 10) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     for (i = 0; i < 10; i++) {
-        buffer = (char *) malloc(sizeof(char) * 100);
+        buffer = (char *) calloc(100, sizeof(char));
         buffer[0] = '\0';
         sprintf(buffer, "MyOwnElement_%d", i);
         if (JXTA_SUCCESS != jxta_message_get_element_2(message, "MyOwn", buffer, &el) || el == NULL) {
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
         buffer[0] = '\0';
@@ -768,18 +771,18 @@ Jxta_boolean checkMessageCorrect(Jxta_message * message)
         if (compVector == NULL ||
             strcmp(jxta_message_element_get_namespace(el), "MyOwn") != 0 ||
             strcmp(jxta_message_element_get_mime_type(el), "application/octet-stream") != 0) {
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
         valueVector = jxta_message_element_get_value(el);
         if (valueVector == NULL || !jxta_bytevector_equals(valueVector, compVector)) {
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
 
         /* Signature saveing does not work correctly */
         /*if( !checkSignatureObject( jxta_message_element_get_signature(el) ) ){
-           result = FALSE;
+           result = FILEANDLINE;
            goto Common_Exit;
            } */
 
@@ -792,14 +795,14 @@ Jxta_boolean checkMessageCorrect(Jxta_message * message)
     /* Check that the source element was retrieved correctly */
     endpoint = jxta_message_get_source(message);
     if (endpoint == NULL) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     if (strcmp(jxta_endpoint_address_get_protocol_name(endpoint), "protNameSource") != 0 ||
         strcmp(jxta_endpoint_address_get_protocol_address(endpoint), "protAddressSource") != 0 ||
         strcmp(jxta_endpoint_address_get_service_name(endpoint), "serviceNameSource") != 0 ||
         strcmp(jxta_endpoint_address_get_service_params(endpoint), "serviceParamsSource") != 0) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     JXTA_OBJECT_RELEASE(endpoint);
@@ -808,14 +811,14 @@ Jxta_boolean checkMessageCorrect(Jxta_message * message)
     /* Check that the destination element was retrieved correctly */
     endpoint = jxta_message_get_destination(message);
     if (endpoint == NULL) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     if (strcmp(jxta_endpoint_address_get_protocol_name(endpoint), "protNameDest") != 0 ||
         strcmp(jxta_endpoint_address_get_protocol_address(endpoint), "protAddressDest") != 0 ||
         strcmp(jxta_endpoint_address_get_service_name(endpoint), "serviceNameDest") != 0 ||
         strcmp(jxta_endpoint_address_get_service_params(endpoint), "serviceParamsDest") != 0) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     JXTA_OBJECT_RELEASE(endpoint);
@@ -838,48 +841,61 @@ Jxta_boolean checkMessageCorrect(Jxta_message * message)
 
 
 /**
+* Test the read/write functionality for jxta_message version 0
+* 
+* @return NULL for success otherwise a message indicating failure.
+*/
+char const * test_jxta_message_0_read_write(void){
+    return test_jxta_message_read_write(0);
+}
+
+/**
+* Test the read/write functionality for jxta_message verison 1
+* 
+* @return NULL for success otherwise a message indicating failure.
+*/
+char const * test_jxta_message_1_read_write(void){
+    return test_jxta_message_read_write(1);
+}
+
+static Jxta_status JXTA_STDCALL msg_wireformat_size(void *arg, const char *buf, apr_size_t len)
+{
+    apr_uint64_t *size = (apr_uint64_t *) arg;  /* 8 bytes */
+    *size += len;
+    return JXTA_SUCCESS;
+}
+
+/**
 * Test the read/write functionality for jxta_message
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jxta_message_read_write(void)
+static char const * msg_read_write(Jxta_message * write_message, Jxta_message * read_message, int version)
 {
-    Jxta_message *message = getTestMessage();
-    Jxta_boolean result = TRUE;
+    char const * result = NULL;
     JString *wire = NULL;
     char *stream = NULL;
-    int max;
     read_write_test_buffer stream_struct;
+    apr_uint64_t msg_size;
+    Jxta_status res;
 
-
-    if (message == NULL)
-        return FALSE;
-
-  /** Check that checkMessageCorrect says the message is good */
-    if (!checkMessageCorrect(message)) {
-        result = FALSE;
+    msg_size = APR_INT64_C(0);
+    res = jxta_message_write_1(write_message, NULL, version, msg_wireformat_size, &msg_size);
+    
+    if( res != JXTA_SUCCESS ) {
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
-    /* 
-     * Get the string representation of the current message 
-     * This is used to determine the length of the message
-     */
-    wire = jstring_new_0();
-    if (wire == NULL) {
-        result = FALSE;
+    if( 0 == msg_size ) {
+        result = FILEANDLINE;
         goto Common_Exit;
     }
-    if (jxta_message_to_jstring(message, NULL, wire) != JXTA_SUCCESS) {
-        result = FALSE;
-        goto Common_Exit;
-    }
-    max = jstring_length(wire);
 
     /* Create the two char buffers */
-    stream = (char *) malloc(max + 10);
+    stream = (char *) calloc(msg_size, sizeof(char));
     if (stream == NULL) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
@@ -887,38 +903,61 @@ Jxta_boolean test_jxta_message_read_write(void)
     stream_struct.buffer = stream;
     stream_struct.position = 0;
     stream[0] = '\0';
-    if (jxta_message_write(message, NULL, writeFunction, (void *) (&stream_struct)) != JXTA_SUCCESS) {
-        result = FALSE;
+    if (jxta_message_write_1(write_message, NULL, version, writeFunction, &stream_struct) != JXTA_SUCCESS) {
+        result = FILEANDLINE;
         goto Common_Exit;
     }
-    if (stream_struct.position != max) {
-        result = FALSE;
+    if (stream_struct.position != msg_size) {
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
     /* Read the message back in */
     stream_struct.position = 0;
-    if (jxta_message_read(message, NULL, readFromStreamFunction, (void *) (&stream_struct)) != JXTA_SUCCESS) {
-        result = FALSE;
+    if (jxta_message_read(read_message, NULL, readFromStreamFunction, &stream_struct) != JXTA_SUCCESS) {
+        result = FILEANDLINE;
         goto Common_Exit;
     }
-    if (stream_struct.position != max) {
-        result = FALSE;
+    if (stream_struct.position != msg_size) {
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
     /* Now test that the message elements where all read back in correctly */
-    if (!checkMessageCorrect(message)) {
-        result = FALSE;
-        goto Common_Exit;
-    }
+    result = checkMessageCorrect(read_message);
+
   Common_Exit:
-    if (message != NULL)
-        JXTA_OBJECT_RELEASE(message);
     if (wire != NULL)
         JXTA_OBJECT_RELEASE(wire);
     if (stream != NULL)
         free(stream);
+
+    return result;
+}
+
+static char const * test_jxta_message_read_write(int version)
+{
+    Jxta_message *write_message;
+    Jxta_message *read_message = jxta_message_new();
+    char const * result = NULL;
+
+    result = getTestMessage(&write_message);
+    if (result) 
+        return result;
+
+  /** Check that checkMessageCorrect says the message is good */
+    result = checkMessageCorrect(write_message);
+    if (result) {
+        goto FINAL_EXIT;
+    }
+
+    result = msg_read_write(write_message, read_message, version);
+
+FINAL_EXIT:
+    if (write_message != NULL)
+        JXTA_OBJECT_RELEASE(write_message);
+    if (read_message != NULL)
+        JXTA_OBJECT_RELEASE(read_message);
 
     return result;
 }
@@ -929,33 +968,31 @@ Jxta_boolean test_jxta_message_read_write(void)
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jxta_message_clone(void)
+char const * test_jxta_message_clone(void)
 {
-    Jxta_message *message = getTestMessage(), *cloned = NULL;
-    Jxta_boolean result = TRUE;
+    Jxta_message *message;
+    Jxta_message *cloned = NULL;
+    char const * result = NULL;
 
-    if (message == NULL)
-        return FALSE;
+    result = getTestMessage(&message);
+    if (result)
+        return result;
 
   /** Check that checkMessageCorrect says the message is good */
-    if (!checkMessageCorrect(message)) {
-        result = FALSE;
+    result = checkMessageCorrect(message);
+    if (result) {
         goto Common_Exit;
     }
 
   /** Clone the Message */
     cloned = jxta_message_clone(message);
     if (cloned == NULL) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
+    result = checkMessageCorrect(cloned);
 
-    /* Check that the message was cloned correctly */
-    if (!checkMessageCorrect(cloned)) {
-        result = FALSE;
-        goto Common_Exit;
-    }
   Common_Exit:
     if (message != NULL)
         JXTA_OBJECT_RELEASE(message);
@@ -971,16 +1008,17 @@ Jxta_boolean test_jxta_message_clone(void)
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jxta_message_remove(void)
+char const * test_jxta_message_remove(void)
 {
-    Jxta_message *message = getTestMessage();
-    Jxta_boolean result = TRUE;
+    Jxta_message *message;
+    char const * result = NULL;
     Jxta_message_element *el = NULL;
     char value[100], name[100];
     int i;
 
-    if (message == NULL)
-        return FALSE;
+    result = getTestMessage(&message);
+    if (result)
+        return result;
 
     /* add an element and then remove it again */
     value[0] = '\0';
@@ -989,22 +1027,22 @@ Jxta_boolean test_jxta_message_remove(void)
     sprintf(name, "JxtaElement");
     el = jxta_message_element_new_2("jxta", name, NULL, value, strlen(value), NULL);
     if (el == NULL) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     JXTA_OBJECT_SHARE(el);
     if (jxta_message_add_element(message, el) != JXTA_SUCCESS) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
     if (JXTA_SUCCESS != jxta_message_remove_element(message, el)) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
-    if (!checkMessageCorrect(message)) {
-        result = FALSE;
+    result = checkMessageCorrect(message);
+    if (result) {
         goto Common_Exit;
     }
 
@@ -1019,12 +1057,12 @@ Jxta_boolean test_jxta_message_remove(void)
         sprintf(name, "JxtaRemoveElement_%d", i);
         el = jxta_message_element_new_2("jxta", name, NULL, value, strlen(value), NULL);
         if (el == NULL) {
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
         JXTA_OBJECT_SHARE(el);
         if (jxta_message_add_element(message, el) != JXTA_SUCCESS) {
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
         JXTA_OBJECT_RELEASE(el);
@@ -1036,7 +1074,7 @@ Jxta_boolean test_jxta_message_remove(void)
         name[0] = '\0';
         sprintf(name, "jxta:JxtaRemoveElement_%d", i);
         if (JXTA_SUCCESS != jxta_message_remove_element_1(message, name)) {
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
     }
@@ -1044,14 +1082,14 @@ Jxta_boolean test_jxta_message_remove(void)
         name[0] = '\0';
         sprintf(name, "JxtaRemoveElement_%d", i);
         if (JXTA_SUCCESS != jxta_message_remove_element_2(message, "jxta", name)) {
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
     }
 
     /* And check that the message is correct */
-    if (!checkMessageCorrect(message)) {
-        result = FALSE;
+    result = checkMessageCorrect(message);
+    if (result) {
         goto Common_Exit;
     }
 
@@ -1064,17 +1102,168 @@ Jxta_boolean test_jxta_message_remove(void)
     return result;
 }
 
+char const * test_msg_create(void)
+{
+    apr_status_t rv;
+    apr_pool_t *p;
+    Jxta_message *msg;
+    char const * result = NULL;
 
-static struct _funcs testfunc[] = {
+    rv = apr_pool_create(&p, NULL);
+    if (APR_SUCCESS != rv) {
+        return FILEANDLINE ": Failed to create apr_pool_t\n";
+    }
+
+    result = create_test_msg(&msg, p);
+    if (result)
+        return result;
+
+    result = checkMessageCorrect(msg);
+    apr_pool_destroy(p);
+    return result;
+}
+
+char const * test_msg_with_qos(void)
+{
+    apr_status_t rv;
+    apr_pool_t *p;
+    Jxta_message *msg;
+    Jxta_qos * qos;
+    char const * result = NULL;
+    Jxta_message *rmsg;
+    Jxta_qos *rqos;
+    apr_uint16_t val;
+
+    rv = apr_pool_create(&p, NULL);
+    if (APR_SUCCESS != rv) {
+        return FILEANDLINE ": Failed to create apr_pool_t\n";
+    }
+
+    result = create_test_msg(&msg, p);
+    if (result)
+        goto FINAL_EXIT;
+
+    rv = jxta_qos_create(&qos, p);
+    if (JXTA_SUCCESS != rv) {
+        result = FILEANDLINE ": Failed to create Jxta_qos\n";
+        goto FINAL_EXIT;
+    }
+
+    jxta_qos_set_long(qos, "jxtaMsg:TTL", 5);
+    jxta_qos_set(qos, "jxtaMsg:priority", "40000");
+    jxta_message_attach_qos(msg, qos);
+
+    result = checkMessageCorrect(msg);
+    if (result)
+        goto FINAL_EXIT;
+
+    rv = jxta_message_create(&rmsg, p);
+    if (JXTA_SUCCESS != rv) {
+        result = FILEANDLINE ": Failed to create Jxta_message\n";
+        goto FINAL_EXIT;
+    }
+    result = msg_read_write(msg, rmsg, 1);
+    if (result)
+        goto FINAL_EXIT;
+
+    rv = jxta_message_get_ttl(rmsg, &val);
+    if (JXTA_SUCCESS != rv || val != 4) {
+        result = FILEANDLINE ": QoS was not read successfully\n";
+        goto FINAL_EXIT;
+    }
+
+    rv = jxta_message_get_priority(rmsg, &val);
+    if (JXTA_SUCCESS != rv || val != 40000) {
+        result = FILEANDLINE ": QoS was not read successfully\n";
+        goto FINAL_EXIT;
+    }
+
+FINAL_EXIT:
+    apr_pool_destroy(p);
+    return result;
+}
+
+char const * test_msg_qos_clone(void)
+{
+    apr_status_t rv;
+    apr_pool_t *p;
+    Jxta_message *msg;
+    Jxta_qos * qos;
+    char const * result = NULL;
+    Jxta_message *cloned;
+    Jxta_qos *rqos;
+    apr_uint16_t val;
+
+    rv = apr_pool_create(&p, NULL);
+    if (APR_SUCCESS != rv) {
+        return FILEANDLINE ": Failed to create apr_pool_t\n";
+    }
+
+    result = create_test_msg(&msg, p);
+    if (result)
+        goto FINAL_EXIT;
+
+    rv = jxta_qos_create(&qos, p);
+    if (JXTA_SUCCESS != rv) {
+        result = FILEANDLINE ": Failed to create Jxta_qos\n";
+        goto FINAL_EXIT;
+    }
+
+    jxta_qos_set_long(qos, "jxtaMsg:TTL", 5);
+    jxta_qos_set(qos, "jxtaMsg:priority", "40000");
+    jxta_message_attach_qos(msg, qos);
+
+    result = checkMessageCorrect(msg);
+    if (result)
+        goto FINAL_EXIT;
+
+    cloned = jxta_message_clone(msg);
+    if (cloned == NULL) {
+        result = FILEANDLINE;
+        goto FINAL_EXIT;
+    }
+
+    result = checkMessageCorrect(cloned);
+    if (result)
+        goto FINAL_EXIT;
+
+    rv = jxta_message_get_ttl(cloned, &val);
+    if (JXTA_SUCCESS != rv || val != 5) {
+        result = FILEANDLINE ": QoS was not read successfully\n";
+        goto FINAL_EXIT;
+    }
+
+    rv = jxta_message_get_priority(cloned, &val);
+    if (JXTA_SUCCESS != rv || val != 40000) {
+        result = FILEANDLINE ": QoS was not read successfully\n";
+        goto FINAL_EXIT;
+    }
+
+FINAL_EXIT:
+    if (cloned != NULL)
+        JXTA_OBJECT_RELEASE(cloned);
+    apr_pool_destroy(p);
+    return result;
+}
+
+static struct _funcs msg_test_funcs[] = {
     /* First run JXTA MESSAGE ELEMENT tests */
     {*test_jxta_message_element_new_1, "construction/retrieval for jxta_message_element_new_1"},
     {*test_jxta_message_element_new_2, "construction/retrieval for jxta_message_element_new_2"},
     {*test_jxta_message_element_new_3, "construction/retrieval for jxta_message_element_new_3"},
 
     /* jxta_message test functions */
-    {*test_jxta_message_read_write, "read/write test for jxta_message"},
     {*test_jxta_message_clone, "jxta_message_clone"},
     {*test_jxta_message_remove, "jxta_message_remove"},
+
+    /* Serialization/Deserialization */
+    {*test_jxta_message_0_read_write, "read/write test for jxta_message v1"},
+    {*test_jxta_message_1_read_write, "read/write test for jxta_message v2"},
+
+    /* Pool based msg test */
+    {*test_msg_create, "jxta_message_create"},
+    {*test_msg_with_qos, "read/write test with qos"},
+    {*test_msg_qos_clone, "jxta_message_clone with qos"},
 
     {NULL, "null"}
 };
@@ -1091,14 +1280,14 @@ static struct _funcs testfunc[] = {
 */
 Jxta_boolean run_jxta_msg_tests(int *tests_run, int *tests_passed, int *tests_failed)
 {
-    return run_testfunctions(testfunc, tests_run, tests_passed, tests_failed);
+    return run_testfunctions(msg_test_funcs, tests_run, tests_passed, tests_failed);
 }
 
 
 #ifdef STANDALONE
 int main(int argc, char **argv)
 {
-    return main_test_function(testfunc, argc, argv);
+    return main_test_function(msg_test_funcs, argc, argv);
 }
 #endif
 

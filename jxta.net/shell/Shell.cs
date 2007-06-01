@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: Shell.cs,v 1.8 2006/02/13 21:06:17 lankes Exp $
+ * $Id: Shell.cs,v 1.9 2006/08/04 10:33:18 lankes Exp $
  */
 using System;
 using JxtaNET;
@@ -65,43 +65,44 @@ using System.IO;
 namespace JxtaNETShell
 {
     /// <summary>
-    /// Summary of Class1.
+    /// Main class of the JxtaNETShell. Include the entry point of JxtaNETShell.
     /// </summary>
-    class Shell
+    public class Shell
     {
-        static PeerGroup netPeerGroup;
-
-        public static void printHelp()
-        {
-            Console.WriteLine("# shell - Interactive enviroment for using JXTA.");
-            Console.WriteLine("SYNOPSIS");
-            Console.WriteLine("\tshell [-v] [-v] [-v] [-l file] [-f file]\n");
-            Console.WriteLine("DESCRIPTION");
-            Console.WriteLine("\tInteractive enviroment for using JXTA.\n");
-            Console.WriteLine("OPTIONS\n");
-            Console.WriteLine("\t-v\tProduce more verbose logging output by default.\n\t\tEach additional -v causes more output to be produced.");
-            Console.WriteLine("\t-f file\tSpecify the file into which log output will go.");
-            
-            // not yet implemented
-            //Console.WriteLine("\t-l file\tFile from which to read log settings.");
-        }
+        /// <summary>
+        /// Represents a JXTA peer group
+        /// </summary>
+        private PeerGroup netPeerGroup;
 
         /// <summary>
-        /// Main entry point of the application.
+        /// textWriter is a represent, which write the output messages into a output stream or string.
+        /// </summary>
+        private TextWriter textWriter;
+
+        /// <summary>
+        /// textReader is a represent, which reads the output messages from a output stream or string.
+        /// </summary>
+        private TextReader textReader;
+
+        /// <summary>
+        /// Defines an Assembly, which is a reusable, versionable, 
+        /// and self-describing building block of a common language runtime application.
+        /// </summary>
+        private static Assembly assembly = Assembly.GetExecutingAssembly();
+
+        /// <summary>
+        /// Main entry point of the JxtaNETShell.
         /// </summary>
         [STAThread]
         static void Main(string[] args)
         {
-            string input = "";
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            bool ende = false;
-            bool man = false;
-
+            Shell shell = new Shell(PeerGroupFactory.NewNetPeerGroup());
+            
             LogSelector logSelector = new LogSelector();
             logSelector.InvertCategories = true;
 
-            FileLogger fileLogger = new FileLogger();
-            fileLogger.LogSelector = logSelector;
+            StandardLogger logger = new StandardLogger();
+            logger.LogSelector = logSelector;
 
             int logDepth = 2;
             for (int i = 0; i < args.Length; i++)
@@ -113,11 +114,11 @@ namespace JxtaNETShell
                         break;
                     case "-f":
                         if (args.Length > i)
-                            fileLogger.LogWriter = new StreamWriter(args[++i]);
+                            logger.LogWriter = new StreamWriter(args[++i]);
                         break;
                     default:
                         Console.WriteLine("# Error - Bad option");
-                        printHelp();
+                        shell.PrintHelp();
                         return;
                 }
             }
@@ -125,115 +126,194 @@ namespace JxtaNETShell
             if (logDepth > 0)
                 logSelector.AddLogLevel((LogLevels)((int)(Math.Pow(2, logDepth) - 1)));
 
-            GlobalLogger.AppendLogEvent += fileLogger.Append;
+            GlobalLogger.AppendLogEvent += logger.AppendLogMessage;
             GlobalLogger.StartLogging();
 
-            netPeerGroup = new PeerGroup();
-
-            Console.WriteLine("=========================================================");
-            Console.Write("======= Welcome to the JXTA.NET Shell Version ");
-            FileVersionInfo info = FileVersionInfo.GetVersionInfo(assembly.Location);
-            Console.Write(info.FileMajorPart.ToString());
-            Console.Write(".");
-            Console.Write(info.FileMinorPart.ToString());
-            Console.WriteLine(" =======");
-            Console.WriteLine("=========================================================");
-            Console.WriteLine(" ");
-            Console.WriteLine("The JXTA.NET Shell provides an interactive environment to the JXTA");
-            Console.WriteLine("platform. The Shell provides basic commands to discover peers, ");
-            Console.WriteLine("to create pipes between peers, and to send pipe messages.");
-            /*Console.WriteLine("peergroups, to join and resign from peergroups, to create pipes");
-            Console.WriteLine("between peers, and to send pipe messages. The Shell provides environment");
-            Console.WriteLine("variables that permit binding symbolic names to Jxta platform objects.");
-            Console.WriteLine("Environment variables allow Shell commands to exchange data between");
-            Console.WriteLine("themselves. The shell command 'env' displays all defined environment");
-            Console.WriteLine("variables in the current Shell session.");*/
-            Console.WriteLine(" ");
-            Console.WriteLine("A 'man' command is available to list the commands available.");
-            Console.WriteLine("To exit the Shell, use the 'exit' or 'quit' command.");
-            Console.WriteLine(" ");
-
-            while (!ende)
-            {
-                man = false;
-
-                Console.Write("JXTA.NET> ");
-                input = Console.ReadLine();
-                input = input.Trim();
-
-                if (input.Length < 3)
-                {
-                    if (input.Length > 0)
-                        Console.WriteLine("command not found");
-                    continue;
-                }
-
-                if (input.Substring(0, 3).Equals("man"))
-                {
-                    man = true;
-                    if (input.Length > 4)
-                    {
-                        input = input.Substring(4, input.Length - 4);
-                    }
-                    else
-                    {
-                        Console.WriteLine("For which command do you want help?");
-
-                        
-                        // get all types of the current assembly
-                        Type[] types = assembly.GetTypes();
-                        for (int i = 0; i < types.Length; i++)
-                        {
-                            string cmd = types[i].ToString();
-
-                            if (cmd.Contains("JxtaNETShell") == false)
-                                continue;
-
-                            cmd = cmd.Remove(0, 13);
-                            cmd = cmd.ToLower();
-
-                            // don't print types, which don't implement a command
-                            if ((cmd.Contains("operation") == true) || (cmd.Contains("shellapp") == true) || (cmd.Contains("shell") == true))
-                                continue;
-
-                            Console.Write("\t");
-                            Console.WriteLine(cmd);
-                        }
-                        continue;
-                    }
-                }
-
-                char[] sep = { ' ' };
-                string[] locargs = input.Split(sep);
-
-                if ((locargs[0].Equals("exit") || locargs[0].Equals("quit")))
-                {
-                    ende = true;
-                    break;
-                }
-
-                Type type = assembly.GetType("JxtaNETShell." + locargs[0], false, true);
-
-                if (type != null)
-                {
-                    object[] param = { netPeerGroup };
-                    ShellApp x = System.Activator.CreateInstance(type, param) as ShellApp;
-
-                    if (man)
-                        x.help();
-                    else
-                        x.run(locargs);
-                }
-                else
-                    Console.WriteLine("command not found");
-
-                //Console.WriteLine("");
-            }
+            shell.PrintWelcome();
+            shell.ControlLoop();
             
             Console.WriteLine("Exiting Jxta.NET Shell");
 
             GlobalLogger.StopLogging();
-            GlobalLogger.AppendLogEvent -= fileLogger.Append; 
+            GlobalLogger.AppendLogEvent -= logger.AppendLogMessage;
+        }
+
+        /// <summary>
+        /// Create a shell with a given peer group, input and output stream.
+        /// </summary>
+        /// <param name="netPG"></param>
+        /// <param name="writer"></param>
+        /// <param name="reader"></param>
+        public Shell(PeerGroup netPG, TextWriter writer, TextReader reader)
+        {
+            netPeerGroup = netPG;
+            textWriter = writer;
+            textReader = reader;
+        }
+
+        /// <summary>
+        /// Create a shell with a given peer group.
+        /// </summary>
+        /// <param name="netPG"></param>
+        public Shell(PeerGroup netPG)
+        {
+            netPeerGroup = netPG;
+            textWriter = Console.Out;
+            textReader = Console.In;
+        }
+
+        /// <summary>
+        /// Prints a short introduction
+        /// </summary>
+        public void PrintHelp()
+        {
+            textWriter.WriteLine("# shell - Interactive enviroment for using JXTA.");
+            textWriter.WriteLine("SYNOPSIS");
+            textWriter.WriteLine("\tshell [-v] [-v] [-v] [-l file] [-f file]\n");
+            textWriter.WriteLine("DESCRIPTION");
+            textWriter.WriteLine("\tInteractive enviroment for using JXTA.\n");
+            textWriter.WriteLine("OPTIONS\n");
+            textWriter.WriteLine("\t-v\tProduce more verbose logging output by default.\n\t\tEach additional -v causes more output to be produced.");
+            textWriter.WriteLine("\t-f file\tSpecify the file into which log output will go.");
+
+            // not yet implemented
+            //textWriter.WriteLine("\t-l file\tFile from which to read log settings.");
+        }
+
+        /// <summary>
+        /// Reads the next commad form the standard input stream and interpret this command.
+        /// </summary>
+        public void ControlLoop()
+        {
+            string      input = "";
+            bool        done = false;
+
+            while (!done)
+            {
+                textWriter.Write("JXTA.NET> ");
+                input = Console.ReadLine();
+
+                done = ProcessCommand(ref input);
+
+                //textWriter.WriteLine("");
+            }
+        }
+
+        /// <summary>
+        /// Prints a short welcome message
+        /// </summary>
+        public void PrintWelcome()
+        {
+            textWriter.WriteLine("=========================================================");
+            textWriter.Write("======= Welcome to the JXTA.NET Shell Version ");
+            FileVersionInfo info = FileVersionInfo.GetVersionInfo(assembly.Location);
+            textWriter.Write(info.FileMajorPart.ToString());
+            textWriter.Write(".");
+            textWriter.Write(info.FileMinorPart.ToString());
+            textWriter.WriteLine(" =======");
+            textWriter.WriteLine("=========================================================");
+            textWriter.WriteLine(" ");
+            textWriter.WriteLine("The JXTA.NET Shell provides an interactive environment to the JXTA");
+            textWriter.WriteLine("platform. The Shell provides basic commands to discover peers, ");
+            textWriter.WriteLine("to create pipes between peers, and to send pipe messages.");
+            /*textWriter.WriteLine("peergroups, to join and resign from peergroups, to create pipes");
+            textWriter.WriteLine("between peers, and to send pipe messages. The Shell provides environment");
+            textWriter.WriteLine("variables that permit binding symbolic names to Jxta platform objects.");
+            textWriter.WriteLine("Environment variables allow Shell commands to exchange data between");
+            textWriter.WriteLine("themselves. The shell command 'env' displays all defined environment");
+            textWriter.WriteLine("variables in the current Shell session.");*/
+            textWriter.WriteLine(" ");
+            textWriter.WriteLine("A 'man' command is available to list the commands available.");
+            textWriter.WriteLine("To exit the Shell, use the 'exit' or 'quit' command.");
+            textWriter.WriteLine(" ");
+        }
+
+        /// <summary>
+        /// Interprets the command which is given by an input string
+        /// </summary>
+        /// <param name="input">Command as string</param>
+        /// <returns></returns>
+        public bool ProcessCommand(ref string input)
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            bool man = false;
+
+            input = input.Trim();
+
+            if (input.Length < 3)
+            {
+                if (input.Length > 0)
+                    textWriter.WriteLine("command not found");
+                return false;
+            }
+
+            if (input.Substring(0, 3).Equals("man"))
+            {
+                man = true;
+                if (input.Length > 4)
+                {
+                    input = input.Substring(4, input.Length - 4);
+                }
+                else
+                {
+                    textWriter.WriteLine("For which command do you want help?");
+
+                    // get all types of the current assembly
+                    Type[] types = assembly.GetTypes();
+                    for (int i = 0; i < types.Length; i++)
+                    {
+                        string cmd = types[i].ToString();
+
+                        cmd = cmd.ToLower();
+
+                        if (cmd.StartsWith("jxtanetshell"))
+                        {
+                            cmd = cmd.Remove(0, 13);
+
+                            // don't print types, which don't implement a command
+                            if ((cmd.Contains("+") != true) && 
+                                (cmd.Contains("operation") != true) && 
+                                (cmd.Contains("shellapp") != true) && 
+                                (cmd.Contains("shell") != true))
+                            {
+                                textWriter.WriteLine("\t" + cmd);
+                            }
+                        }
+                    }
+                    return false;
+                }
+            }
+
+            char[] sep = { ' ' };
+            string[] locargs = input.Split(sep);
+
+            if ((locargs[0].Equals("exit") || locargs[0].Equals("quit")))
+            {
+                return true;
+            }
+
+            Type type = assembly.GetType("JxtaNETShell." + locargs[0], false, true);
+
+            if (type != null)
+            {
+                try
+                {
+                    ShellApp x = ShellAppFactory.BuildShellApp(type, netPeerGroup, textWriter, textReader);
+
+                    if (man)
+                        x.Help();
+                    else
+                        x.Run(locargs);
+                }
+                catch (Exception)
+                {
+                    textWriter.WriteLine("command not found");
+                }
+            }
+            else
+                textWriter.WriteLine("command not found");
+
+            return false;
         }
     }
 }

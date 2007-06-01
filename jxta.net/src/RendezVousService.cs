@@ -50,14 +50,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: RendezVousService.cs,v 1.2 2006/01/27 18:28:25 lankes Exp $
+ * $Id: RendezVousService.cs,v 1.3 2006/08/04 10:33:20 lankes Exp $
  */
 using System;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 namespace JxtaNET
 {
-
 	public enum RdvConfig
 	{
 		adhoc,
@@ -65,28 +65,81 @@ namespace JxtaNET
 		rendezvous
 	};
 
-	/// <summary>
+    /// <summary>
 	/// Summary of RendezVousService.
 	/// </summary>
-	public class RendezVousService : JxtaObject
-	{
+    public interface RendezVousService : Service
+    {
+        /// <summary>
+        /// Vector of peers used by the Rendezvous Service.
+        /// </summary>
+        List<Peer> ConnectedPeers
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Test if the given peer is connected
+        /// </summary>
+        /// <param name="peer">peer to test upon</param>
+        /// <returns></returns>
+        bool IsConnected(Peer peer);
+
+        /// <summary>
+        /// Return the time in absolute milliseconds time at which the provided peer will expire if not renewed.
+        /// </summary>
+        /// <param name="peer">peer to test upon</param>
+        /// <returns>time in absolute milliseconds</returns>
+        uint GetExpires(Peer peer);
+
+        /// <summary>
+        /// The current rendezvous configuration of this peer within the current peer group.
+        /// </summary>
+        RdvConfig Configuration
+        {
+            get;
+            set;
+        }
+
+         /// <summary>
+        /// Interval at which this peer dynamically reconsiders its'
+        /// rendezvous configuration within the current group.
+        /// </summary>
+        long AutoInterval
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Peer view of the current peer
+        /// </summary>
+        PeerView PeerView
+        {
+            get;
+        }
+    }
+
+	internal class RendezVousServiceImpl : JxtaObject, RendezVousService
+    {
+        #region import jxta-c functions
         [DllImport("jxta.dll")]
         private static extern UInt32 jxta_rdv_service_get_peers(IntPtr self, ref IntPtr peers);
 
         [DllImport("jxta.dll")]
-        private static extern bool jxta_rdv_service_peer_is_connected(IntPtr self, IntPtr peers);
+        private static extern UInt32 jxta_rdv_service_peer_is_connected(IntPtr self, IntPtr peers);
 
         [DllImport("jxta.dll")]
-        private static extern int jxta_rdv_service_config(IntPtr self);
+        private static extern Int32 jxta_rdv_service_config(IntPtr self);
 
         [DllImport("jxta.dll")]
         private static extern Int64 jxta_rdv_service_auto_interval(IntPtr self);
 
         [DllImport("jxta.dll")]
-        private static extern IntPtr jxta_rdv_service_get_peerview_priv(IntPtr self);
+        private static extern IntPtr jxta_rdv_service_get_peerview(IntPtr self);
 
         [DllImport("jxta.dll")]
-        private static extern uint jxta_rdv_service_peer_get_expires(IntPtr self, IntPtr peer);
+        private static extern UInt32 jxta_rdv_service_peer_get_expires(IntPtr self, IntPtr peer);
 
         [DllImport("jxta.dll")] 
         private static extern UInt32 jxta_get_config_adhoc();
@@ -97,47 +150,121 @@ namespace JxtaNET
         //[DllImport("jxta.dll")] 
         //private static extern UInt32 jxta_get_config_rendezvous();
 
-		public JxtaVector<Peer> getPeers()
+        [DllImport("jxta.dll")]
+        private static extern void jxta_service_get_MIA(IntPtr self, out IntPtr mia);
+
+        [DllImport("jxta.dll")]
+        private static extern void jxta_rdv_service_set_auto_interval(IntPtr self, Int64 interval);
+
+        [DllImport("jxta.dll")] 
+        private static extern UInt32 jxta_rdv_service_set_config(IntPtr self, RdvConfig config);
+
+        [DllImport("jxta.dll")] 
+        private static extern UInt32 jxta_module_start(IntPtr self, String[] args);
+
+        [DllImport("jxta.dll")] 
+        private static extern void jxta_module_stop(IntPtr self);
+
+        [DllImport("jxta.dll")]
+        private static extern UInt32 jxta_module_init(IntPtr self, IntPtr group, IntPtr assigned_id, IntPtr impl_adv);
+        #endregion
+
+        public void init(PeerGroup group, ID assignedID, Advertisement implAdv)
+        {
+            jxta_module_init(this.self, ((PeerGroupImpl) group).self, assignedID.self, implAdv.self);
+        }
+
+        public uint startApp(string[] args)
+        {
+            return jxta_module_start(this.self, args);
+        }
+
+        public void stopApp()
+        {
+            jxta_module_stop(this.self);
+        }
+
+        public List<Peer> ConnectedPeers
 		{
-            JxtaVector<Peer> peers = new JxtaVector<Peer>();
-            Errors.check(jxta_rdv_service_get_peers(self, ref peers.self));
-            return peers;
+            get
+            {
+                JxtaVector jVec = new JxtaVector();
+                Errors.check(jxta_rdv_service_get_peers(self, ref jVec.self));
+
+                List<Peer> peers = new List<Peer>();
+
+                foreach (IntPtr ptr in jVec)
+                    peers.Add(new Peer(ptr));
+
+                return peers;
+            }
 		}
 
-		public bool isConnected(Peer peer)
+		public bool IsConnected(Peer peer)
 		{
-			return jxta_rdv_service_peer_is_connected(self, peer.self);
+            if (jxta_rdv_service_peer_is_connected(self, peer.self) == 0)
+                return false;
+            else
+                return true;
 		}
 
-		public uint getExpires(Peer peer)
+		public uint GetExpires(Peer peer)
 		{
 			return jxta_rdv_service_peer_get_expires(this.self, peer.self);
 		}
 
-		public RdvConfig getConfiguration()
+		public RdvConfig Configuration
 		{
-			int conf = jxta_rdv_service_config(this.self);
+            get
+            {
+                int conf = jxta_rdv_service_config(this.self);
 
-            if (conf == jxta_get_config_adhoc())
-                return RdvConfig.adhoc; 
+                if (conf == jxta_get_config_adhoc())
+                    return RdvConfig.adhoc;
 
-            if (conf == jxta_get_config_edge())
-				return RdvConfig.edge;
+                if (conf == jxta_get_config_edge())
+                    return RdvConfig.edge;
 
-            return RdvConfig.rendezvous;
+                return RdvConfig.rendezvous;
+            }
+            set
+            {
+                jxta_rdv_service_set_config(this.self, value);
+
+            }
 		}
 
-		public long getAutoInterval()
+        public long AutoInterval
 		{
-			return jxta_rdv_service_auto_interval(this.self);
+            get
+            {
+			    return jxta_rdv_service_auto_interval(this.self);
+            }
+            set
+            {
+                jxta_rdv_service_set_auto_interval(this.self, value);
+            }
 		}
 
-		public PeerView getPeerView()
+		public PeerView PeerView
 		{
-			return new PeerView(jxta_rdv_service_get_peerview_priv(this.self));
+            get
+            {
+                return new PeerView(jxta_rdv_service_get_peerview(this.self));
+            }
 		}
 
-		internal RendezVousService(IntPtr self) : base(self) {}
-        internal RendezVousService() : base() { }
+        public Advertisement ImplAdvertisement
+        {
+            get
+            {
+                IntPtr adv = new IntPtr();
+                jxta_service_get_MIA(this.self, out adv);
+                return new ModuleAdvertisement(adv);
+            }
+        }
+
+		internal RendezVousServiceImpl(IntPtr self) : base(self) {}
+        //internal RendezVousServiceImpl() : base() { }
     }
 }

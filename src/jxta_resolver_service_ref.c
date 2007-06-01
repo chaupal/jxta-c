@@ -50,12 +50,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_service_ref.c,v 1.101 2006/06/18 06:21:59 mmx2005 Exp $
+ * $Id: jxta_resolver_service_ref.c,v 1.118 2006/10/02 21:33:51 slowhog Exp $
  */
 
 static const char *__log_cat = "RSLVR";
 
+#if defined(GZIP_ENABLED) || defined(GUNZIP_ENABLED)
 #include <zlib.h>
+#endif
 #include <assert.h>
 
 #include "jxta_apr.h"
@@ -78,8 +80,6 @@ static const char *__log_cat = "RSLVR";
 #include "jxta_callback.h"
 #include "jxta_endpoint_service_priv.h"
 
-#define HAVE_POOL
-
 typedef struct {
     Extends(Jxta_resolver_service);
     Jxta_boolean running;
@@ -100,6 +100,10 @@ typedef struct {
     apr_thread_mutex_t *mutex;
     long query_id;
     void *ep_cookies[3];
+    size_t mru_capacity;
+    size_t mru_size;
+    size_t mru_pos;
+    Jxta_PID **mru;
 } Jxta_resolver_service_ref;
 
 #ifdef GZIP_ENABLED
@@ -125,6 +129,30 @@ static const char *INQUENAMESHORT = "IRes";
 static const char *OUTQUENAMESHORT = "ORes";
 static const char *SRDIQUENAMESHORT = "Srdi";
 static const char *JXTA_NAMESPACE = "jxta:";
+
+/* Most recently used cache for peers we sent RouteAdv */
+static void mru_reset(Jxta_resolver_service_ref * me);
+static Jxta_status mru_capacity_set(Jxta_resolver_service_ref * me, size_t capacity);
+static void mru_check(Jxta_resolver_service_ref * me, ResolverQuery * query, Jxta_id * peerid);
+
+/* event handlers */
+static Jxta_status JXTA_STDCALL endpoint_event_handler(void *param, void *arg);
+
+static Jxta_status JXTA_STDCALL endpoint_event_handler(void *param, void *arg)
+{
+    Jxta_endpoint_event *event = param;
+    Jxta_resolver_service_ref *myself = arg;
+
+    switch (event->type) {
+    case JXTA_EP_LOCAL_ROUTE_CHANGE:
+        mru_reset(myself);
+        break;
+    default:
+        break;
+    }
+
+    return JXTA_SUCCESS;
+}
 
 /*
  * module methods
@@ -153,6 +181,7 @@ jxta_resolver_service_ref_init(Jxta_module * resolver, Jxta_PG * group, Jxta_id 
         return JXTA_INVALID_ARGUMENT;
     }
 
+    jxta_service_init((Jxta_service *) resolver, group, assigned_id, impl_adv);
     self->group = group;
     pool = jxta_PG_pool_get(group);
     jxta_PG_get_endpoint_service(group, &(self->endpoint));
@@ -205,6 +234,12 @@ jxta_resolver_service_ref_init(Jxta_module * resolver, Jxta_PG * group, Jxta_id 
         }
     }
 
+    self->mru_capacity = 20;
+    self->mru = calloc(self->mru_capacity, sizeof(*self->mru));
+    if (!self->mru) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failed to allocate memory for MRU, disable the feature\n");
+    }
+    self->mru_pos = self->mru_size = 0;
     return status;
 }
 
@@ -254,6 +289,7 @@ static Jxta_status start(Jxta_module * resolver, const char *argv[])
         return rv;
     }
 
+    rv = jxta_service_events_connect((Jxta_service *) self->endpoint, endpoint_event_handler, self);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Started\n");
     return rv;
 }
@@ -266,10 +302,11 @@ static Jxta_status start(Jxta_module * resolver, const char *argv[])
  */
 static void stop(Jxta_module * resolver)
 {
-    Jxta_status status = JXTA_SUCCESS;
+    Jxta_status rv = JXTA_SUCCESS;
     Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
     int i;
 
+    rv = jxta_service_events_disconnect((Jxta_service *) self->endpoint, endpoint_event_handler, self);
     for (i = 0; i < 3; i++) {
         endpoint_service_remove_recipient(self->endpoint, self->ep_cookies[i]);
     }
@@ -459,7 +496,8 @@ static Jxta_status unregisterResponseHandler(Jxta_resolver_service * resolver, J
     return status;
 }
 
-static Jxta_status do_send(Jxta_resolver_service_ref * me, Jxta_id * peerid, JString * doc, const char * queue)
+static Jxta_status do_send(Jxta_resolver_service_ref * me, Jxta_id * peerid, JString * doc, const char *queue, 
+                           const Jxta_qos * qos)
 {
     Jxta_message *msg = NULL;
     Jxta_message_element *msgElem;
@@ -481,6 +519,10 @@ static Jxta_status do_send(Jxta_resolver_service_ref * me, Jxta_id * peerid, JSt
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
         free(tmp);
         return JXTA_NOMEM;
+    }
+
+    if (qos) {
+        jxta_message_attach_qos(msg, qos);
     }
 
     el_name = jstring_new_2(JXTA_NAMESPACE);
@@ -535,30 +577,166 @@ static Jxta_status do_send(Jxta_resolver_service_ref * me, Jxta_id * peerid, JSt
     return status;
 }
 
+static void mru_reset(Jxta_resolver_service_ref * me)
+{
+    size_t i;
+
+    if (!me->mru) {
+        return;
+    }
+
+    apr_thread_mutex_lock(me->mutex);
+    for (i = 0; i < me->mru_size; i++) {
+        JXTA_OBJECT_RELEASE(me->mru[i]);
+    }
+    me->mru_size = me->mru_pos = 0;
+    apr_thread_mutex_unlock(me->mutex);
+}
+
+static Jxta_status mru_capacity_set(Jxta_resolver_service_ref * me, size_t capacity)
+{
+    Jxta_PID **new_mru = NULL;
+    size_t pos;
+    size_t i;
+    size_t cnt;
+    Jxta_status rv = JXTA_SUCCESS;
+
+    apr_thread_mutex_lock(me->mutex);
+
+    if (capacity == me->mru_capacity) {
+        goto FINAL_EXIT;
+    }
+
+    /* mru_capacity could be non-0 while mru is NULL when system is out of memory */
+    if (0 == capacity) {
+        if (me->mru) {
+            mru_reset(me);
+            free(me->mru);
+            me->mru = NULL;
+            me->mru_size = me->mru_pos = 0;
+        }
+        goto FINAL_EXIT;
+    }
+
+    new_mru = calloc(capacity, sizeof(*new_mru));
+    if (!new_mru) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failed to allocate memory for MRU, keep original MRU\n");
+        rv = JXTA_NOMEM;
+        goto FINAL_EXIT;
+    }
+
+    if (!me->mru) {
+        assert(0 == me->mru_size);
+        assert(0 == me->mru_pos);
+        me->mru_capacity = capacity;
+        me->mru = new_mru;
+        goto FINAL_EXIT;
+    }
+
+    pos = (me->mru_size < me->mru_capacity) ? 0 : me->mru_pos;
+    cnt = (me->mru_size < capacity) ? me->mru_size : capacity;
+    /* remove extra entries over the new capacity */
+    if (capacity < me->mru_size) {
+        for (i = capacity; i < me->mru_size; ++i) {
+            JXTA_OBJECT_RELEASE(me->mru[pos++]);
+            if (pos >= me->mru_capacity) {
+                pos = 0;
+            }
+        }
+    }
+
+    for (i = 0; i < cnt; i++) {
+        new_mru[i] = me->mru[pos++];
+        if (pos >= me->mru_capacity) {
+            pos = 0;
+        }
+    }
+
+    free(me->mru);
+    me->mru = new_mru;
+    me->mru_pos = (i == capacity) ? 0 : i;
+    me->mru_size = i;
+    me->mru_capacity = capacity;
+
+  FINAL_EXIT:
+    apr_thread_mutex_unlock(me->mutex);
+    return rv;
+}
+
+/*
+ * check if the peerid is in MRU cache, if it is not, add SrcPeerRoute tag to include RA
+ * if the query already has a SrcPeerRoute tag, this is a forwarded query, don't modify the tag
+ */
+static void mru_check(Jxta_resolver_service_ref * me, ResolverQuery * query, Jxta_id * peerid)
+{
+    size_t i;
+    Jxta_RouteAdvertisement *route;
+
+    if (!me->mru) {
+        return;
+    }
+
+    route = jxta_resolver_query_get_src_peer_route(query);
+    if (route) {
+        JXTA_OBJECT_RELEASE(route);
+        return;
+    }
+
+    apr_thread_mutex_lock(me->mutex);
+    for (i = 0; i < me->mru_size; i++) {
+        if (jxta_id_equals(me->mru[i], peerid)) {
+            apr_thread_mutex_unlock(me->mutex);
+            return;
+        }
+    }
+
+    JXTA_OBJECT_RELEASE(me->mru[me->mru_pos]);
+    me->mru[me->mru_pos++] = JXTA_OBJECT_SHARE(peerid);
+    if (me->mru_pos >= me->mru_capacity) {
+        me->mru_pos = 0;
+    }
+    apr_thread_mutex_unlock(me->mutex);
+
+    route = jxta_endpoint_service_get_local_route(me->endpoint);
+    jxta_resolver_query_set_src_peer_route(query, route);
+    JXTA_OBJECT_RELEASE(route);
+}
+
 static Jxta_status sendQuery(Jxta_resolver_service * resolver, ResolverQuery * query, Jxta_id * peerid)
 {
     JString *doc;
     Jxta_status status;
-    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
+    const Jxta_qos * qos;
+    Jxta_resolver_service_ref *myself = (Jxta_resolver_service_ref *) resolver;
 
-    PTValid(self, Jxta_resolver_service_ref);
+    PTValid(myself, Jxta_resolver_service_ref);
     /* Test arguments first */
-    if ((self == NULL) || (query == NULL)) {
+    if ((myself == NULL) || (query == NULL)) {
         /* Invalid args. */
         return JXTA_INVALID_ARGUMENT;
     }
 
     if (jxta_resolver_query_get_queryid(query) == JXTA_INVALID_QUERY_ID) {
       /** That's a new query, set a new locally unique query id */
-        jxta_resolver_query_set_queryid(query, getid(self));
+        jxta_resolver_query_set_queryid(query, getid(myself));
     }
+
+    mru_check(myself, query, peerid);
 
     status = jxta_resolver_query_get_xml(query, &doc);
     if (status != JXTA_SUCCESS) {
         return status;
     }
 
-    status = do_send(self, peerid, doc, self->outque);
+    qos = jxta_resolver_query_qos(query);
+    if (!qos) {
+        status = jxta_service_default_qos((Jxta_service*) myself, peerid ? peerid : jxta_id_nullID, &qos);
+    }
+    if (JXTA_ITEM_NOTFOUND == status) {
+        jxta_service_default_qos((Jxta_service*) myself, NULL, &qos);
+    }
+
+    status = do_send(myself, peerid, doc, myself->outque, qos);
     JXTA_OBJECT_RELEASE(doc);
     return status;
 }
@@ -585,7 +763,7 @@ static Jxta_status sendResponse(Jxta_resolver_service * resolver, ResolverRespon
         return status;
     }
 
-    status = do_send(self, peerid, doc, self->inque);
+    status = do_send(self, peerid, doc, self->inque, jxta_resolver_response_qos(response));
     JXTA_OBJECT_RELEASE(doc);
     return status;
 }
@@ -598,20 +776,26 @@ static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * mes
     Jxta_endpoint_address *address = NULL;
     unsigned char *tmp = NULL;
     unsigned char *zipped = NULL;
-    Byte *bytes = NULL;
+    unsigned char *bytes = NULL;
     size_t zipped_len = 0;
     int ret = 0;
     size_t byte_len = 0;
     JString *doc = NULL;
     Jxta_bytevector *jSend_buf = NULL;
     Jxta_status status;
+    JString *jpeerid = NULL;
     JString *el_name = NULL;
 
-    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Send SRDI resolver message \n");
-
-    PTValid(self, Jxta_resolver_service_ref);
+    Jxta_resolver_service_ref *self = PTValid(resolver, Jxta_resolver_service_ref);
+    if (NULL != peerid) {
+        jxta_id_to_jstring(peerid, &jpeerid);
+    }
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Send SRDI resolver message to %s\n",
+                         jpeerid == NULL? "all(through propagate)" : jstring_get_string(jpeerid));
+    if (jpeerid) {
+        JXTA_OBJECT_RELEASE(jpeerid);
+    }
+    
     /* Test arguments first */
     if ((self == NULL) || (message == NULL)) {
         /* Invalid args. */
@@ -651,7 +835,7 @@ static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * mes
     ret = zip_compress(&zipped, &zipped_len, (const char *) tmp, (size_t) strlen((char *) tmp));
 
     if (Z_OK == ret) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "length:%d zipped_len:%d \n", strlen((char *) tmp), zipped_len);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "length:%d zipped_len:%d \n", strlen((char *) tmp), zipped_len);
         jSend_buf = jxta_bytevector_new_2(zipped, zipped_len, zipped_len);
         if (jSend_buf == NULL) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
@@ -681,8 +865,7 @@ static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * mes
     jxta_message_add_element(msg, msgElem);
 
     if (peerid == NULL) {
-        jxta_rdv_service_walk(self->rendezvous,
-                              msg, self->instanceName, self->srdique);
+        jxta_rdv_service_walk(self->rendezvous, msg, self->instanceName, self->srdique);
     } else {
         address = jxta_endpoint_address_new_3(peerid, self->instanceName, self->srdique);
         if (address == NULL) {
@@ -716,6 +899,20 @@ static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * mes
     return status;
 }
 
+Jxta_status create_query(Jxta_resolver_service * me, JString * handlername, JString * query, Jxta_resolver_query ** rq)
+{
+    Jxta_status rv;
+    Jxta_resolver_service_ref *myself = (Jxta_resolver_service_ref *) me;
+
+    rv = resolver_query_create(handlername, query, myself->localPeerId, rq);
+    if (JXTA_SUCCESS != rv) {
+        return rv;
+    }
+
+    jxta_resolver_query_set_queryid(*rq, getid(myself));
+    return JXTA_SUCCESS;
+}
+
 /* BEGINING OF STANDARD SERVICE IMPLEMENTATION CODE */
 
 /**
@@ -734,12 +931,12 @@ Jxta_resolver_service_ref_methods jxta_resolver_service_ref_methods = {
      {
       "Jxta_module_methods",
       jxta_resolver_service_ref_init,   /* temp long name, for testing */
-      jxta_module_init_e_impl,
       start,
       stop},
      "Jxta_service_methods",
      get_mia,
-     get_interface},
+     get_interface,
+     service_on_option_set},
     "Jxta_resolver_service_methods",
     registerQueryHandler,
     unregisterQueryHandler,
@@ -749,7 +946,8 @@ Jxta_resolver_service_ref_methods jxta_resolver_service_ref_methods = {
     unregisterResponseHandler,
     sendQuery,
     sendResponse,
-    sendSrdi
+    sendSrdi,
+    create_query
 };
 
 void jxta_resolver_service_ref_construct(Jxta_resolver_service_ref * self, Jxta_resolver_service_ref_methods * methods)
@@ -771,7 +969,7 @@ void jxta_resolver_service_ref_destruct(Jxta_resolver_service_ref * self)
     PTValid(self, Jxta_resolver_service_ref);
 
     /* release/free/destroy our own stuff */
-
+    mru_capacity_set(self, 0);
     if (self->rendezvous != 0) {
         JXTA_OBJECT_RELEASE(self->rendezvous);
     }
@@ -866,15 +1064,14 @@ static Jxta_status learn_route_from_query(Jxta_resolver_service_ref * me, Resolv
     Jxta_PG *npg = NULL;
     Jxta_status rc;
 
-    route = jxta_resolver_query_get_src_peer_route(rq);
+    route = jxta_resolver_query_src_peer_route(rq);
     if (NULL == route) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Cannot extract route to source peer for resolver query[%pp]\n", rq);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Cannot extract route to source peer for resolver query[%pp]\n", rq);
         return JXTA_ITEM_NOTFOUND;
     }
 
     dest = jxta_RouteAdvertisement_get_Dest(route);
     if (NULL == dest) {
-        JXTA_OBJECT_RELEASE(route);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Cannot extract APA for RA destination from resolver query[%pp]\n", rq);
         return JXTA_INVALID_ARGUMENT;
     }
@@ -898,7 +1095,6 @@ static Jxta_status learn_route_from_query(Jxta_resolver_service_ref * me, Resolv
     rc = discovery_service_publish(discovery, (Jxta_advertisement *) route, DISC_ADV, ROUTEADV_DEFAULT_LIFETIME,
                                    ROUTEADV_DEFAULT_EXPIRATION);
     JXTA_OBJECT_RELEASE(discovery);
-    JXTA_OBJECT_RELEASE(route);
     if (JXTA_SUCCESS != rc) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,
                         "Failed to publish route to source peer for resolver query[%pp], error code %d\n", rq, rc);
@@ -920,6 +1116,7 @@ static Jxta_status JXTA_STDCALL resolver_service_query_cb(Jxta_object * obj, voi
     Jxta_object *handler = NULL;
     ResolverQuery *rq = NULL;
     JString *handlername = NULL;
+    Jxta_boolean drop_query = FALSE;
     Jxta_status status;
     Jxta_resolver_service_ref *_self = (Jxta_resolver_service_ref *) me;
     JString *pid = NULL;
@@ -970,31 +1167,37 @@ static Jxta_status JXTA_STDCALL resolver_service_query_cb(Jxta_object * obj, voi
     JXTA_OBJECT_RELEASE(string);
     string = NULL;
     JXTA_OBJECT_RELEASE(element);
+    jxta_resolver_query_attach_qos(rq, jxta_message_qos(msg));
+
     src_pid = jxta_resolver_query_get_src_peer_id(rq);
     jxta_id_to_jstring(src_pid, &pid);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Resolver query from peer %s\n", jstring_get_string(pid));
     JXTA_OBJECT_RELEASE(pid);
-    JXTA_OBJECT_RELEASE(src_pid);
-
-    /*
-     * check if we have a route info as part of the query to respond
-     */
-    learn_route_from_query(_self, rq);
-
-    jxta_resolver_query_get_handlername(rq, &handlername);
-
-    if (handlername != NULL) {
-        status = jxta_hashtable_get(_self->queryhandlers, jstring_get_string(handlername), jstring_length(handlername), &handler);
-        /* call the query handler with the query */
-        if (handler != NULL) {
-            status = jxta_callback_process_object((Jxta_callback *) handler, (Jxta_object *) rq);
-            JXTA_OBJECT_RELEASE(handler);
-        } else {
-            assert(JXTA_SUCCESS != status);
-        }
-        JXTA_OBJECT_RELEASE(handlername);
-    } else {
+    if (jxta_id_equals(src_pid, _self->localPeerId)) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Ignore query that originated at this peer\n");
         status = JXTA_ITEM_NOTFOUND;
+    } else {
+        /*
+         * check if we have a route info as part of the query to respond
+         */
+        learn_route_from_query(_self, rq);
+
+        jxta_resolver_query_get_handlername(rq, &handlername);
+
+        if (handlername != NULL) {
+            status = jxta_hashtable_get(_self->queryhandlers, jstring_get_string(handlername), jstring_length(handlername), 
+                                        &handler);
+            /* call the query handler with the query */
+            if (handler != NULL) {
+                status = jxta_callback_process_object((Jxta_callback *) handler, (Jxta_object *) rq);
+                JXTA_OBJECT_RELEASE(handler);
+            } else {
+                assert(JXTA_SUCCESS != status);
+            }
+            JXTA_OBJECT_RELEASE(handlername);
+        } else {
+            status = JXTA_ITEM_NOTFOUND;
+        }
     }
 
     if (JXTA_SUCCESS != status) {
@@ -1005,6 +1208,7 @@ static Jxta_status JXTA_STDCALL resolver_service_query_cb(Jxta_object * obj, voi
             status = jxta_rdv_service_walk(_self->rendezvous, msg, _self->instanceName, _self->outque);
         }
     }
+    JXTA_OBJECT_RELEASE(src_pid);
     JXTA_OBJECT_RELEASE(rq);
     return status;
 }
@@ -1048,6 +1252,7 @@ static Jxta_status JXTA_STDCALL resolver_service_response_cb(Jxta_object * obj, 
         JXTA_OBJECT_RELEASE(string);
         string = NULL;
         JXTA_OBJECT_RELEASE(element);
+        jxta_resolver_response_attach_qos(rr, jxta_message_qos(msg));
     } else {
         return JXTA_INVALID_ARGUMENT;
     }
@@ -1095,9 +1300,9 @@ static Jxta_status JXTA_STDCALL resolver_service_srdi_cb(Jxta_object * obj, void
     if (element) {
         const char *mime_type = jxta_message_element_get_mime_type(element);
         if (mime_type != NULL) {
-            Byte *bytes = NULL;
-            Byte *uncompr = NULL;
-            uLong uncomprLen = 0;
+            unsigned char *bytes = NULL;
+            unsigned char *uncompr = NULL;
+            unsigned long uncomprLen = 0;
             int size, err;
             Jxta_bytevector *jb = jxta_message_element_get_value(element);
             size = jxta_bytevector_size(jb);
@@ -1120,7 +1325,7 @@ static Jxta_status JXTA_STDCALL resolver_service_srdi_cb(Jxta_object * obj, void
                     JXTA_OBJECT_RELEASE(element);
                     return JXTA_NOMEM;
                 }
-                err = zip_uncompress(uncompr, &uncomprLen, bytes, size);
+                err = zip_uncompress((Byte *)uncompr, &uncomprLen, (Byte *)bytes, size);
                 free(bytes);
                 if (err != Z_OK) {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error %d from zlib\n", err);
@@ -1184,7 +1389,7 @@ static long getid(Jxta_resolver_service_ref * resolver)
     PTValid(resolver, Jxta_resolver_service_ref);
     apr_thread_mutex_lock(resolver->mutex);
     resolver->query_id++;
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "queryid :%ld\n", resolver->query_id);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "queryid: %ld\n", resolver->query_id);
     apr_thread_mutex_unlock(resolver->mutex);
     return resolver->query_id;
 }
@@ -1296,4 +1501,5 @@ static int zip_compress(unsigned char **out, size_t * out_len, const char *in, s
 }
 #endif /* GZIP_ENABLED */
 #endif /* GUNZIP_ENABLED */
+
 /* vim: set ts=4 sw=4 et tw=130: */

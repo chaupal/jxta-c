@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup.h,v 1.14 2006/05/16 00:58:13 slowhog Exp $
+ * $Id: jxta_peergroup.h,v 1.19 2006/09/25 16:33:35 slowhog Exp $
  */
 
 #ifndef JXTA_PEERGROUP_H
@@ -121,6 +121,7 @@ JXTA_DECLARE(Jxta_MCID *) jxta_peergroup_classid_get(void);
 JXTA_DECLARE(Jxta_MCID *) jxta_resolver_classid_get(void);
 JXTA_DECLARE(Jxta_MCID *) jxta_discovery_classid_get(void);
 JXTA_DECLARE(Jxta_MCID *) jxta_srdi_classid_get(void);
+JXTA_DECLARE(Jxta_MCID *) jxta_cache_classid_get(void);
 JXTA_DECLARE(Jxta_MCID *) jxta_pipe_classid_get(void);
 JXTA_DECLARE(Jxta_MCID *) jxta_membership_classid_get(void);
 JXTA_DECLARE(Jxta_MCID *) jxta_rendezvous_classid_get(void);
@@ -156,6 +157,7 @@ JXTA_DECLARE(Jxta_MSID *) jxta_genericpeergroup_specid_get(void);
 #define jxta_resolver_classid             jxta_resolver_classid_get            ()
 #define jxta_discovery_classid            jxta_discovery_classid_get           ()
 #define jxta_srdi_classid                 jxta_srdi_classid_get                ()
+#define jxta_cache_classid                jxta_cache_classid_get               ()
 #define jxta_pipe_classid                 jxta_pipe_classid_get                ()
 #define jxta_membership_classid           jxta_membership_classid_get          ()
 #define jxta_rendezvous_classid           jxta_rendezvous_classid_get          ()
@@ -236,7 +238,6 @@ JXTA_DECLARE(void) jxta_PG_get_PA(Jxta_PG * self, Jxta_PA ** pa);
  */
 JXTA_DECLARE(Jxta_status) jxta_PG_lookup_service(Jxta_PG * self, Jxta_id * name, Jxta_service ** result);
 
-
 /**
  * Lookup for a service by name.
  * Throws to report errors. The object returned is already shared
@@ -246,9 +247,9 @@ JXTA_DECLARE(Jxta_status) jxta_PG_lookup_service(Jxta_PG * self, Jxta_id * name,
  * @param name the service identifier.
  * @param service A location where to return (a ptr to) the service registered by
  * that name. *service is not affected if an error is thrown.
+ * @deprecated Please use jxta_PG_lookup_service() instead.
  */
 JXTA_DECLARE(void) jxta_PG_lookup_service_e(Jxta_PG * self, Jxta_id * name, Jxta_service ** service, Throws);
-
 
 /**
  * Evaluate if the given compatibility statement make the module
@@ -300,6 +301,7 @@ JXTA_DECLARE(Jxta_status) jxta_PG_loadfromimpl_module(Jxta_PG * self,
  * @param module A location where to return (a ptr to) the resulting, initialized
  * but not started, module. The object returned is already shared and thus must be
  * released after use. If an error is thrown, *module is not affected.
+ * @deprecated
  */
 JXTA_DECLARE(void) jxta_PG_loadfromimpl_module_e(Jxta_PG * self,
                                                  Jxta_id * assigned_id, Jxta_advertisement * impl, Jxta_module ** module, Throws);
@@ -360,6 +362,7 @@ JXTA_DECLARE(Jxta_status) jxta_PG_loadfromid_module(Jxta_PG * self,
  * @return Jxta_module* (a ptr to) the new module, or throws to report an
  * error. The object returned is already shared and thus must be released
  * after use.
+ * @deprecated
  */
 JXTA_DECLARE(void) jxta_PG_loadfromid_module_e(Jxta_PG * self,
                                                Jxta_id * assigned_id, Jxta_MSID * spec_id, int where, Jxta_module ** module,
@@ -447,6 +450,7 @@ JXTA_DECLARE(Jxta_status) jxta_PG_newfromadv(Jxta_PG * self, Jxta_advertisement 
  * object, initialized but not started. The object returned is already
  * shared and thus must be released after use. If an exception is thown,
  * *pg is not affected.
+ * @deprecated
  */
 JXTA_DECLARE(void) jxta_PG_newfromadv_e(Jxta_PG * self,
                                         Jxta_advertisement * pg_adv, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws);
@@ -501,6 +505,7 @@ JXTA_DECLARE(Jxta_status) jxta_PG_newfromimpl(Jxta_PG * self, Jxta_PGID * gid,
  * object, initialized but not started. The object returned is already
  * shared and thus must be released after use. If an exception is thown,
  * *pg is not affected.
+ * @deprecated
  */
 JXTA_DECLARE(void) jxta_PG_newfromimpl_e(Jxta_PG * self, Jxta_PGID * gid,
                                          Jxta_advertisement * impl, JString * name,
@@ -549,6 +554,7 @@ JXTA_DECLARE(Jxta_status) jxta_PG_newfromid(Jxta_PG * self, Jxta_PGID * gid, Jxt
  * object, initialized but not started. The object returned is already
  * shared and thus must be released after use. If an exception is thown,
  * *pg is not affected.
+ * @deprecated
  */
 JXTA_DECLARE(void) jxta_PG_newfromid_e(Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws);
 
@@ -563,6 +569,8 @@ JXTA_DECLARE(apr_thread_pool_t *) jxta_PG_thread_pool_get(Jxta_PG * me);
 JXTA_DECLARE(Jxta_PG *) jxta_PG_netpg(Jxta_PG * me);
 JXTA_DECLARE(Jxta_PG *) jxta_PG_parent(Jxta_PG * me);
 
+JXTA_DECLARE(Jxta_status) jxta_PG_get_recipient_addr(Jxta_PG * me, const char * proto_name, const char * proto_addr,
+                                                     const char *name, const char *param, Jxta_endpoint_address ** ea);
 JXTA_DECLARE(Jxta_status) jxta_PG_add_recipient(Jxta_PG * me, void **cookie, const char *name, const char *param,
                                                 Jxta_callback_func func, void *arg);
 JXTA_DECLARE(Jxta_status) jxta_PG_remove_recipient(Jxta_PG * me, void *cookie);
@@ -640,9 +648,24 @@ JXTA_DECLARE(void) jxta_PG_get_membership_service(Jxta_PG * self, Jxta_membershi
  */
 JXTA_DECLARE(void) jxta_PG_get_pipe_service(Jxta_PG * self, Jxta_pipe_service ** pipe);
 
+/**
+ * Get the cache manager object that is used for this group.
+ *
+ * @param self handle of the group object to which the operation is applied.
+ * @param cm location to store the cache manager object.
+ * @deprecated
+ */
 JXTA_DECLARE(void) jxta_PG_get_cache_manager(Jxta_PG * self, Jxta_cm ** cm);
 
+/**
+ * Set the cache manager to be used in this group.
+ *
+ * @param self handle of the group object to which the operation is applied.
+ * @param cm Cache manager to use for this group.
+ * @deprecated
+ */
 JXTA_DECLARE(void) jxta_PG_set_cache_manager(Jxta_PG * self, Jxta_cm * cm);
+
 /*
  * A few convenience methods. This information is available from
  * the peer and peergroup advertisements. These methods do not fail.
@@ -873,6 +896,12 @@ JXTA_DECLARE(Jxta_status) jxta_unregister_group_instance(Jxta_id * gid, Jxta_PG 
  * @return Jxta_status JXTA_SUCCESS if found, an error otherwise.
  */
 JXTA_DECLARE(Jxta_status) jxta_lookup_group_instance(Jxta_id * gid, Jxta_PG ** pg);
+
+/*
+ * Retrieve all groups that have been registered
+ *
+ */
+JXTA_DECLARE(Jxta_vector *) jxta_get_registered_groups();
 
 /*
  * Add a new relay address to the peergroup advertisement. This

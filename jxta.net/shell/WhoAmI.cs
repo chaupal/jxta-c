@@ -50,45 +50,45 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: WhoAmI.cs,v 1.2 2006/02/13 21:06:17 lankes Exp $
+ * $Id: WhoAmI.cs,v 1.3 2006/08/04 10:33:18 lankes Exp $
  */
 using System;
 using JxtaNET;
+using System.IO;
+using System.Collections.Generic;
 
 namespace JxtaNETShell
 {
 	/// <summary>
-	/// Summary of WhoAmI.
+	/// Class of the shell command "whoAmI".
 	/// </summary>
 	public class WhoAmI : ShellApp
 	{
-
 		/// <summary>
-		/// Standart help-method; it displays the help-text.
+		/// Standard help-method; it displays the help-text.
 		/// </summary>
-		public override void help()
+		public override void Help()
 		{
-			Console.WriteLine("\nwhoami  - Display information about the local peer.");
-			Console.WriteLine("SYNOPSIS");
-			Console.WriteLine("\twhoami [-h] [-p] [-g] [-c]\n");
-			Console.WriteLine("DESCRIPTION");
-			Console.WriteLine("'whoami' displays information about the local peer and optionally the group " + 
+			textWriter.WriteLine("\nwhoami  - Display information about the local peer.");
+			textWriter.WriteLine("SYNOPSIS");
+			textWriter.WriteLine("\twhoami [-h] [-p] [-g] [-c]\n");
+			textWriter.WriteLine("DESCRIPTION");
+			textWriter.WriteLine("'whoami' displays information about the local peer and optionally the group " + 
 				"the peer is a member of. The display can present either the raw XML advertisement or " + 
 				"a \"pretty printed\" summary.\n");
-			Console.WriteLine("OPTIONS");
-			Console.WriteLine("\t-c\tinclude credential information.");
-			Console.WriteLine("\t-g\tinclude group information.");
-			Console.WriteLine("\t-h\tprint this help information.");
-			Console.WriteLine("\t-p\t\"pretty print\" the output.");
+			textWriter.WriteLine("OPTIONS");
+			textWriter.WriteLine("\t-c\tinclude credential information.");
+			textWriter.WriteLine("\t-g\tinclude group information.");
+			textWriter.WriteLine("\t-h\tprint this help information.");
+			textWriter.WriteLine("\t-p\t\"pretty print\" the output.");
 		}
 
 		/// <summary>
-		/// Standart run-method. Call this for the 'whoami'-action.
+		/// Standard run-method. Call this for the 'whoami'-action.
 		/// </summary>
 		/// <param name="args">The commandline-parameters.</param>
-		public override void run(string[] args)
+		public override void Run(string[] args)
 		{
-
 			bool printpretty = false;
 			bool printgroup = false;
 			bool printcreds = false;
@@ -107,114 +107,111 @@ namespace JxtaNETShell
 						printpretty = true;
 						break;
 					case "-h": 
-						help();
+						Help();
                         return;
                     default:
-                        Console.WriteLine("Error: invalid parameter");
+                        textWriter.WriteLine("Error: invalid parameter");
                         return;
 				}
 			}
 
-			PeerGroupAdvertisement myGroupAdv = this.netPeerGroup.getPeerGroupAdvertisement();
+			PeerGroupAdvertisement myGroupAdv = this.netPeerGroup.PeerGroupAdvertisement;
 			if (myGroupAdv == null) 
 			{
-				Console.WriteLine("# ERROR - Invalid peer group advertisement\n");
+				textWriter.WriteLine("# ERROR - Invalid peer group advertisement\n");
 				return;
 			}
-			PeerAdvertisement myAdv = this.netPeerGroup.getPeerAdvertisement();
+
+			PeerAdvertisement myAdv = this.netPeerGroup.PeerAdvertisement;
 			if (myAdv == null) 
 			{
-				Console.WriteLine("# ERROR - Invalid peer advertisement\n");
+				textWriter.WriteLine("# ERROR - Invalid peer advertisement\n");
 				return;
 			}
 
 			if (printpretty && printgroup) 
 			{
 
-				ID gid = myGroupAdv.getID();
-				ID msid = myGroupAdv.getMSID();
-				string name = myGroupAdv.getName();
-				string desc = myGroupAdv.getDescription();
+				ID gid = myGroupAdv.ID;
+				ModuleSpecID msid = myGroupAdv.GetModuleSpecID();
+				string name = myGroupAdv.Name;
+				string desc = myGroupAdv.Description;
 
-				Console.WriteLine("\nGroup : \n");
-				Console.WriteLine("  Name : " + name);
-				Console.WriteLine("  Desc : " + desc);
-				Console.WriteLine("  GID  : " + gid);
-				Console.WriteLine("  MSID : " + msid + "\n");
+				textWriter.WriteLine("\nGroup : \n");
+				textWriter.WriteLine("  Name : " + name);
+				textWriter.WriteLine("  Desc : " + desc);
+				textWriter.WriteLine("  GID  : " + gid);
+				textWriter.WriteLine("  MSID : " + msid + "\n");
 			} 
 			else if (printgroup) 
 			{
-				Console.WriteLine(myGroupAdv.getXML());
+				textWriter.WriteLine(myGroupAdv.ToString());
 			}
 
 			/* peer adv part */
 			if (printpretty) 
 			{
-				ID pid = myAdv.getID();
-				ID gid = myAdv.getGID();
-				string name = myAdv.getName();
+				ID pid = myAdv.ID;
+				PeerGroupID gid = myAdv.PeerGroupID;
+				string name = myAdv.Name;
 
-				Console.WriteLine("\nPeer :");
-				Console.WriteLine("  Name : " + name);
-				Console.WriteLine("  PID : " + pid);
-				Console.WriteLine("  GID : " + gid + "\n");
+				textWriter.WriteLine("\nPeer :");
+				textWriter.WriteLine("  Name : " + name);
+				textWriter.WriteLine("  PID : " + pid);
+				textWriter.WriteLine("  GID : " + gid + "\n");
 			} 
 			else 
 			{
-				Console.WriteLine(myAdv.getXML());
+				textWriter.WriteLine(myAdv.ToString());
 			}
 
 			/* credentials part */
 			if (printcreds) 
 			{
 				if (printpretty)
-					Console.WriteLine("Credentials:\n");
+					textWriter.WriteLine("Credentials:\n");
 
-				MembershipService membership = this.netPeerGroup.getMembershipService();
+				MembershipService membership = this.netPeerGroup.MembershipService;
 
 				if (membership == null) 
 				{
-					Console.WriteLine("# invalid membership service\n");
+					textWriter.WriteLine("# invalid membership service\n");
 					return;
 				}
 
-				JxtaVector<Credential> creds = membership.getCurrentCredentials();
+				List<Credential> creds = membership.CurrentCredentials;
 
 				if (creds == null) 
 				{
-					Console.WriteLine("# could not get credentials.\n");
+					textWriter.WriteLine("# could not get credentials.\n");
 					return;
 				}
 
-				for (int i = 0; i < creds.Length; i++)
+				for (int i = 0; i < creds.Count; i++)
 				{
                     if (creds[i] == null) 
 					{
-						Console.WriteLine("# could not get credential\n");
+						textWriter.WriteLine("# could not get credential\n");
 						continue;
 					}
 
 					if (printpretty) 
 					{
-						Console.WriteLine("Credential #" + i + ": \n");
-                        Console.WriteLine("  PID : " + creds[i].getPeerID());
-                        Console.WriteLine("  GID : " + creds[i].getPeerGroupID());
+						textWriter.WriteLine("Credential #" + i + ": \n");
+                        textWriter.WriteLine("  PID : " + creds[i].PeerID);
+                        textWriter.WriteLine("  GID : " + creds[i].PeerGroupID);
 
 					} 
 					else 
 					{
-                        Console.WriteLine("Cred:\n" + creds[i].getXML());
+                        textWriter.WriteLine("Cred:\n" + creds[i].ToString());
 					}
 				}  
 			}	 
 		}
 
-
-		/// <summary>
-		/// Standart constructor.
-		/// </summary>
-		/// <param name="grp">the PeerGroup</param>
-		public WhoAmI(PeerGroup grp) : base(grp)	{}
-
+        protected override void Initialize()
+        {
+        }
 	}
 }

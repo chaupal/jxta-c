@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dq.h,v 1.9 2006/03/07 02:23:20 slowhog Exp $
+ * $Id: jxta_dq.h,v 1.11 2006/08/17 01:39:41 mmx2005 Exp $
  */
 
 #ifndef __Jxta_DiscoveryQuery_H__
@@ -58,6 +58,7 @@
 
 #include "jxta_advertisement.h"
 #include "jstring.h"
+#include "jxta_qos.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -66,7 +67,8 @@ extern "C" {
 #endif
 #endif
 
-typedef struct _Jxta_DiscoveryQuery Jxta_DiscoveryQuery;
+typedef struct jxta_DiscoveryQuery Jxta_DiscoveryQuery;
+typedef struct jxta_DiscoveryQuery Jxta_discovery_query;
 
 /**
  * Allocate a new discovery query advertisement.
@@ -81,15 +83,6 @@ JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new_1(short type, const
                                                                JString * peeradv);
 
 JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new_2(const char *query, int threshold, JString * peeradv);
-
-/**
- * Delete a discovery query advertisement.
- *
- * @param pointer to discovery query advertisement to delete.
- *
- * @return void Doesn't return anything.
- */
-void jxta_discovery_query_free(Jxta_DiscoveryQuery *);
 
 /**
  * Constructs a representation of a discovery query advertisement in
@@ -244,6 +237,9 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_value(Jxta_DiscoveryQuery *, 
 JXTA_DECLARE(Jxta_status) jxta_discovery_query_set_value(Jxta_DiscoveryQuery *, JString *);
 
 JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_extended_query(Jxta_DiscoveryQuery * ad, JString ** value);
+
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_attach_qos(Jxta_discovery_query * me, const Jxta_qos * qos);
+JXTA_DECLARE(const Jxta_qos *) jxta_discovery_query_qos(Jxta_discovery_query * me);
 
 #ifdef __cplusplus
 #if 0

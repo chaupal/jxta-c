@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_service.h,v 1.8 2005/11/23 16:07:01 slowhog Exp $
+ * $Id: jxta_resolver_service.h,v 1.10 2006/08/16 21:07:31 slowhog Exp $
  */
 
 #ifndef JXTA_RESOLVER_SERVICE_H
@@ -198,6 +198,17 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_registerResHandler(Jxta_resolver
 JXTA_DECLARE(Jxta_status) jxta_resolver_service_unregisterResHandler(Jxta_resolver_service * service, JString * name);
 
 /**
+ * create a Jxta_resolver_query object to prepare a resolver query
+ * @param me pointer to the Jxta_resolver_service
+ * @param handlername associated with the query
+ * @param query
+ * @param pointer to receive the resolver query object
+ * @return JXTA_SUCCESS if query is created successfully.
+ */
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_create_query(Jxta_resolver_service * me, JString * handlername, 
+                                                             JString * query, Jxta_resolver_query ** rq);
+
+/**
  * For Services that wish to implement a ResolverService Service they must
  * implement this interface Sends query to the specified address.
  * If address is null the query is propagated 
@@ -234,7 +245,6 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendResponse(Jxta_resolver_servi
  * @return Jxta_status
  * @see Jxta_status
  */
-
 JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendSrdi(Jxta_resolver_service * service, ResolverSrdi * message,
                                                          Jxta_id * peerid);
 

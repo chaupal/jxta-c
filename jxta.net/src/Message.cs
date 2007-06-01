@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: Message.cs,v 1.1 2006/01/18 20:31:05 lankes Exp $
+ * $Id: Message.cs,v 1.2 2006/08/04 10:33:19 lankes Exp $
  */
 using System;
 using System.Collections.Generic;
@@ -61,6 +61,7 @@ namespace JxtaNET
 {
     public class Message : JxtaObject
     {
+        #region import jxta-c functions
         [DllImport("jxta.dll")]
         private static extern UInt32 jxta_message_get_element_1(IntPtr msg, String element_qname, ref IntPtr el);
 
@@ -69,8 +70,9 @@ namespace JxtaNET
 
         [DllImport("jxta.dll")]
         private static extern UInt32 jxta_message_add_element(IntPtr msg, IntPtr el);
+        #endregion
 
-        public MessageElement getElement(String element_qname)
+        public MessageElement GetMessageElement(String element_qname)
         {
             IntPtr ret = new IntPtr();
             Errors.check(jxta_message_get_element_1(this.self, element_qname, ref ret));
@@ -78,17 +80,17 @@ namespace JxtaNET
         }
 
 
-        public void addElement(MessageElement el)
+        public void AddMessageElement(MessageElement el)
         {
             Errors.check(jxta_message_add_element(this.self, el.self));
         }
 
-        // this has to become internal! -> ListenerFunction...
-        public Message(IntPtr ptr) : base(ptr) {}
+        internal Message(IntPtr ptr) : base(ptr) { }
+        public Message() : base(jxta_message_new()) { }
+    }
 
-        public Message() : base()
-        {
-            this.self = jxta_message_new();
-        }
+    internal class MessageImpl : Message
+    {
+        public MessageImpl(IntPtr ptr) : base(ptr) {}
     }
 }

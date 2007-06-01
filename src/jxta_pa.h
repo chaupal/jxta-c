@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pa.h,v 1.12 2005/11/26 07:28:37 mmx2005 Exp $
+ * $Id: jxta_pa.h,v 1.15 2006/08/24 22:25:39 bondolo Exp $
  */
 
 #ifndef JXTA_PA_H
@@ -95,6 +95,21 @@ JXTA_DECLARE(Jxta_PA *) jxta_PA_new(void);
  */
 JXTA_DECLARE(Jxta_status) jxta_PA_get_xml(Jxta_PA *, JString **);
 
+    /**
+     * Constructs a representation of a peer advertisement in
+     * xml format.                                        
+     *
+     * <p/>This version begins output at the root node and is suitable for inclusion
+     * in other documents
+     *
+     * @param ad pointer to peer advertisement
+     * @param JString ** address of pointer to JString that 
+     *        accumulates xml representation of peer advertisement.
+     *
+     * @return Jxta_status 
+     */
+JXTA_DECLARE(Jxta_status) jxta_PA_get_xml_1(Jxta_PA * ad, JString ** xml, const char* element_name, const char **atts );
+
   /**
    ** Return a vector of indexes to be applied to advertisement tags and attributes. 
    **
@@ -134,7 +149,7 @@ JXTA_DECLARE(Jxta_status) jxta_PA_parse_charbuffer(Jxta_PA *, const char *, int 
  *
  * @return void Doesn't return anything.
  */
-JXTA_DECLARE(void) jxta_PA_parse_file(Jxta_PA *, FILE * stream);
+JXTA_DECLARE(Jxta_status) jxta_PA_parse_file(Jxta_PA *, FILE * stream);
 
 /**
  * Function gets the Jxta_id associated with the peer 
@@ -217,6 +232,8 @@ JXTA_DECLARE(void) jxta_PA_set_Desc(Jxta_PA * ad, JString * desc);
 /**
  * Gets the debugging status for the peer advertisement.
  *
+ * @deprecated This is an element of the PlatformConfig, not the peer advertisement.
+ *
  * @param Jxta_PA * peer advertisement.
  *
  * @return JString * containing peer debugging status.
@@ -225,6 +242,8 @@ JXTA_DECLARE(JString *) jxta_PA_get_Dbg(Jxta_PA *);
 
 /**
  * Sets the debugging status for the peer advertisement.
+ *
+ * @deprecated This is an element of the PlatformConfig, not the peer advertisement.
  *
  * @param Jxta_PA * peer advertisement.
  * @param JString * containing peer debugging status.
@@ -248,8 +267,9 @@ JXTA_DECLARE(Jxta_vector *) jxta_PA_get_Svc(Jxta_PA *);
  * @param Jxta_PA * peer advertisement.
  * @param Jxta_id * Id requested
  * @param Jxta_svc ** location to store the service
+ * @return JXTA_SUCCESS if found otherwise JXTA_ITEM_NOTFOUND.
  */
-JXTA_DECLARE(void) jxta_PA_get_Svc_with_id(Jxta_PA *, Jxta_id *, Jxta_svc **);
+JXTA_DECLARE(Jxta_status) jxta_PA_get_Svc_with_id(Jxta_PA *, Jxta_id *, Jxta_svc **);
 
 /**
  * Sets the services parameters.
@@ -282,6 +302,7 @@ JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_PA_add_relay_address(Jxta_PA *, Jxt
  * @return Jxta_status
  */
 JXTA_DECLARE(Jxta_status) jxta_PA_remove_relay_address(Jxta_PA *, Jxta_id *);
+
 
 #ifdef __cplusplus
 #if 0

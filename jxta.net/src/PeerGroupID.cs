@@ -1,5 +1,5 @@
-﻿/*
- * Copyright (c) 2005 Sun Microsystems, Inc.  All rights reserved.
+/*
+ * Copyright (c) 2006 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: DiscoveryResponse.cs,v 1.1 2006/01/18 20:31:02 lankes Exp $
+ * $Id: PeerGroupID.cs,v 1.1 2006/08/04 10:33:21 lankes Exp $
  */
 using System;
 using System.Collections.Generic;
@@ -59,22 +59,65 @@ using System.Runtime.InteropServices;
 
 namespace JxtaNET
 {
-    public class DiscoveryResponse : JxtaObject
+    public abstract class PeerGroupID : ID
     {
+        #region import of jxta-c functions
+        [DllImport("jxta.dll")]
+        private static extern IntPtr jxta_get_id_worldNetPeerGroupID();
 
         [DllImport("jxta.dll")]
-        private static extern UInt32 jxta_discovery_response_get_responses(IntPtr dr, ref IntPtr responses);
+        private static extern IntPtr jxta_get_id_defaultNetPeerGroupID();
+        #endregion
 
-        public JxtaVector<JxtaObject> getResponses()
+        internal PeerGroupID(IntPtr self) : base(self) { }
+
+        /// <summary>
+        /// The parent peer group id of this peer group id.
+        /// </summary>
+        public abstract PeerGroupID ParentPeerGroupID
         {
-            JxtaVector<JxtaObject> ret = new JxtaVector<JxtaObject>();
-
-            Errors.check(jxta_discovery_response_get_responses(this.self, ref ret.self));
-
-            return ret;
+            get;
         }
 
-        internal DiscoveryResponse(IntPtr ptr) : base(ptr) { }
-        internal DiscoveryResponse() : base() { }
+        /// <summary>
+        ///  The well known Unique Identifier of the net peergroup.
+        /// </summary>
+        public static readonly PeerGroupID defaultNetPeerGroupID;
+
+        /// <summary>
+        /// The well known Unique Identifier of the world peergroup. 
+        /// </summary>
+        public static readonly PeerGroupID worldPeerGroupID;
+
+        static PeerGroupID()
+        {
+            defaultNetPeerGroupID = new PeerGroupIDImpl(jxta_get_id_defaultNetPeerGroupID());
+            worldPeerGroupID = new PeerGroupIDImpl(jxta_get_id_worldNetPeerGroupID());
+        }
+    }
+
+    internal class PeerGroupIDImpl : PeerGroupID
+    {
+        #region import of jxta-c functions
+        [DllImport("jxta.dll")]
+        private static extern void jxta_PG_get_parentgroup(IntPtr self, ref IntPtr parent_group);
+        #endregion
+
+        internal PeerGroupIDImpl(IntPtr self) : base(self) { }
+
+        public override PeerGroupID ParentPeerGroupID
+        {
+            get
+            {
+                IntPtr ret = new IntPtr();
+
+                jxta_PG_get_parentgroup(this.self, ref ret);
+
+                if (ret == IntPtr.Zero)
+                    return null;
+
+                return new PeerGroupIDImpl(ret);
+            }
+        }
     }
 }

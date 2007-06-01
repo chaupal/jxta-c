@@ -51,12 +51,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_defloader.c,v 1.7 2005/06/16 23:11:40 slowhog Exp $
+ * $Id: jxta_defloader.c,v 1.9 2006/09/08 19:17:54 bondolo Exp $
  */
 
 #include <string.h>
-
-#include "jpr/jpr_excep.h"
 
 #include "jxta_errno.h"
 #include "jxta_builtinmodules_private.h"
@@ -70,20 +68,24 @@
  * This only knows how to load "builtin: modules".
  */
 
-Jxta_module *jxta_defloader_instantiate_e(const char *name, Throws)
+Jxta_status jxta_defloader_instantiate(const char *name, Jxta_module ** module)
 {
     Jxta_builtinmodule_record *r = &(jxta_builtinmodules_tbl[0]);
 
     if (strncmp(name, "builtin:", strlen("builtin:"))) {
-        Throw(JXTA_ITEM_NOTFOUND);
+        return JXTA_ITEM_NOTFOUND;
     }
 
     name += strlen("builtin:");
 
-    while (r->name != 0) {
-        if (!strcmp(name, r->name))
-            return (Jxta_module *) (r->instantiator) ();
-        ++r;
+    while (r->name != NULL ) {
+        if ( 0 == strcmp(name, r->name) ) {
+            *module = (Jxta_module *) (r->instantiator) ();
+            return JXTA_SUCCESS;
+        }
+        
+        r++;
     }
-    Throw(JXTA_ITEM_NOTFOUND);
+    
+    return JXTA_ITEM_NOTFOUND;
 }

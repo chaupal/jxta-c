@@ -153,11 +153,17 @@ copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(Configur
 			<File
 				RelativePath="..\..\..\test\excep_test.c">
 			</File>
+			<File
+				RelativePath="..\..\..\test\unittest_jxta_func.c">
+			</File>
 		</Filter>
 		<Filter
 			Name="Headerdateien"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
+			<File
+				RelativePath="..\..\..\test\unittest_jxta_func.h">
+			</File>
 		</Filter>
 		<Filter
 			Name="Ressourcendateien"

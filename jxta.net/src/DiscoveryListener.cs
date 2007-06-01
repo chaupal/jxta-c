@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights
- * reserved.
+ * Copyright (c) 2006 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,7 +29,7 @@
  *    nor may "JXTA" appear in their name, without prior written
  *    permission of Sun.
  *
- * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
+ * THIS SOFTWARE IS PROVIDED AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
  * DISCLAIMED.  IN NO EVENT SHALL SUN MICROSYSTEMS OR
@@ -51,69 +50,20 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_incoming_unicast_server.h,v 1.5 2005/09/21 21:16:47 slowhog Exp $
+ * $Id: DiscoveryListener.cs,v 1.1 2006/08/04 10:33:20 lankes Exp $
  */
+using System;
+using System.Collections.Generic;
+using System.Text;
 
-#ifndef __JXTA_INCOMING_UNICAST_SERVER_H__
-#define __JXTA_INCOMING_UNICAST_SERVER_H__
-
-#include "jxta_object.h"
-
-#include "jxta_transport_tcp_private.h"
-/* #include "jxta_types.h" */
-
-#ifdef __cplusplus
-extern "C" {
-#if 0
-};
-#endif
-#endif
-
-typedef struct _incoming_unicast_server IncomingUnicastServer;
-
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-IncomingUnicastServer *jxta_incoming_unicast_server_new(Jxta_transport_tcp * tp, char *addr, apr_port_t port);
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-Jxta_boolean jxta_incoming_unicast_server_start(IncomingUnicastServer * ius);
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-void jxta_incoming_unicast_server_stop(IncomingUnicastServer * ius);
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-apr_port_t jxta_incoming_unicast_server_get_local_port(IncomingUnicastServer * ius);
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-const char *jxta_incoming_unicast_server_get_local_interface(IncomingUnicastServer * ius);
-
-#ifdef __cplusplus
-#if 0
+namespace JxtaNET
 {
-#endif
+    public interface DiscoveryListener
+    {
+        /// <summary>
+        /// Called to handle an event from the Discovery Service.
+        /// </summary>
+        /// <param name="disEvent"></param>
+        void DiscoveryEvent(DiscoveryEvent disEvent);
+    }
 }
-#endif
-
-#endif /* __JXTA_INCOMING_UNICAST_SERVER_H__ */
-
-/* vi: set ts=4 sw=4 tw=130 et: */

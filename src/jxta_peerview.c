@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peerview.c,v 1.42 2006/05/20 05:29:59 slowhog Exp $
+ * $Id: jxta_peerview.c,v 1.45 2006/09/06 01:12:32 bondolo Exp $
  */
 
 /**
@@ -102,14 +102,6 @@ struct _jxta_peer_peerview_entry {
 };
 
 typedef struct _jxta_peer_peerview_entry _jxta_peer_peerview_entry;
-
-struct _jxta_peerview_entry_methods {
-    Extends(Jxta_Peer_entry_methods);
-
-    /* additional methods */
-};
-
-typedef struct _jxta_peerview_entry_methods _jxta_peerview_entry_methods;
 
 /**
 *   Our fields.
@@ -179,8 +171,7 @@ static void JXTA_STDCALL peerview_listener(Jxta_object * obj, void *arg);
 static Jxta_status process_peerview_message(_jxta_peerview_mutable * self, Jxta_RdvAdvertisement * rdva, Jxta_boolean edge,
                                             Jxta_boolean response, Jxta_boolean failure, Jxta_boolean cached);
 static _jxta_peer_peerview_entry *peerview_entry_new(void);
-static _jxta_peer_peerview_entry *peerview_entry_construct(_jxta_peer_peerview_entry * self,
-                                                           const _jxta_peerview_entry_methods * methods);
+static _jxta_peer_peerview_entry *peerview_entry_construct(_jxta_peer_peerview_entry * self);
 static void peerview_entry_delete(Jxta_object * addr);
 static void peerview_entry_destruct(_jxta_peer_peerview_entry * self);
 
@@ -199,22 +190,6 @@ static Jxta_RdvAdvertisement *jxta_peerview_build_rdva(Jxta_PG * group, JString 
 
 static void jxta_peerview_call_event_listeners(Jxta_peerview * pv, Jxta_Peerview_event_type event, Jxta_id * id);
 
-static const _jxta_peerview_entry_methods JXTA_PEERVIEW_ENTRY_METHODS = {
-    {
-     "Jxta_Peer_entry_methods",
-     jxta_peer_lock,
-     jxta_peer_unlock,
-     jxta_peer_get_peerid,
-     jxta_peer_set_peerid,
-     jxta_peer_get_address,
-     jxta_peer_set_address,
-     jxta_peer_get_adv,
-     jxta_peer_set_adv,
-     jxta_peer_get_expires,
-     jxta_peer_set_expires},
-    "_jxta_peerview_entry_methods"
-};
-
 static _jxta_peer_peerview_entry *peerview_entry_new(void)
 {
     _jxta_peer_peerview_entry *self;
@@ -230,13 +205,11 @@ static _jxta_peer_peerview_entry *peerview_entry_new(void)
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Creating PVE [%pp]\n", self);
 
-    return peerview_entry_construct(self, &JXTA_PEERVIEW_ENTRY_METHODS);
+    return peerview_entry_construct(self);
 }
 
-static _jxta_peer_peerview_entry *peerview_entry_construct(_jxta_peer_peerview_entry * self,
-                                                           const _jxta_peerview_entry_methods * methods)
+static _jxta_peer_peerview_entry *peerview_entry_construct(_jxta_peer_peerview_entry * self)
 {
-    PEER_ENTRY_VTBL(self) = (const Jxta_Peer_entry_methods *) PTValid(methods, _jxta_peerview_entry_methods);
     self = (_jxta_peer_peerview_entry *) peer_entry_construct((_jxta_peer_entry *) self);
 
     if (NULL != self) {
@@ -369,7 +342,7 @@ static void peerview_destruct(_jxta_peerview_mutable * self)
     }
 
     if (NULL != self->parentgid) {
-        JXTA_OBJECT_RELEASE(self->gid);
+        JXTA_OBJECT_RELEASE(self->parentgid);
     }
 
     if (NULL != self->pid) {
@@ -1095,7 +1068,7 @@ static Jxta_status process_peerview_message(_jxta_peerview_mutable * self, Jxta_
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Publishing Rendezvous Advertisement [%pp] for %s\n", rdva,
                             jstring_get_string(pid));
             discovery_service_publish(self->discovery, (Jxta_advertisement *) rdva, DISC_ADV,
-                                      (Jxta_expiration_time) DEFAULT_EXPIRATION, (Jxta_expiration_time) DEFAULT_EXPIRATION);
+                                      (Jxta_expiration_time) DEFAULT_EXPIRATION, LOCAL_ONLY_EXPIRATION);
         }
         if (route != NULL) {
             /*
@@ -1104,7 +1077,7 @@ static Jxta_status process_peerview_message(_jxta_peerview_mutable * self, Jxta_
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Publishing Route Advertisement [%pp] for %s\n", route,
                             jstring_get_string(pid));
             discovery_service_publish(self->discovery, (Jxta_advertisement *) route, DISC_ADV,
-                                      (Jxta_expiration_time) DEFAULT_EXPIRATION, (Jxta_expiration_time) DEFAULT_EXPIRATION);
+                                      (Jxta_expiration_time) DEFAULT_EXPIRATION, LOCAL_ONLY_EXPIRATION);
 
             JXTA_OBJECT_RELEASE(route);
         }

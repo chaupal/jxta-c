@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_callback.h,v 1.3 2006/05/13 10:34:01 slowhog Exp $
+ * $Id: jxta_callback.h,v 1.4 2006/06/28 17:42:14 slowhog Exp $
  */
 
 
@@ -84,6 +84,8 @@ typedef struct _jxta_callback Jxta_callback;
  * and the callback function
  */
 typedef Jxta_status(JXTA_STDCALL * Jxta_callback_func) (Jxta_object * obj, void *arg);
+
+typedef Jxta_status(JXTA_STDCALL * Jxta_callback_fn) (void * param, void *arg);
 
 /************************************************************************
  ** Allocates a new Jxta_callback. This is a Jxta_object and reference counting applies.

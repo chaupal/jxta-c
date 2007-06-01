@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_socket_tunnel.c,v 1.20 2006/02/15 01:09:47 slowhog Exp $
+ * $Id: jxta_socket_tunnel.c,v 1.22 2006/09/29 01:28:45 slowhog Exp $
  */
 
 #include <ctype.h>
@@ -490,14 +490,6 @@ static void *APR_THREAD_FUNC socket_dgram_func(apr_thread_t * thread, void *arg)
         jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_INFO, "establishing mode, not reading from UDP\n");
         apr_thread_mutex_unlock(self->mutex);
         break;
-
-        apr_thread_mutex_unlock(self->mutex);
-        pump_datagram_socket(self);
-        apr_thread_mutex_lock(self->mutex);
-
-        rv = jxta_bidipipe_close(self->pipe);
-        jxta_listener_stop(self->listener);
-        apr_thread_mutex_unlock(self->mutex);
     }
     apr_thread_exit(thread, rv);
     return NULL;
@@ -832,7 +824,7 @@ JXTA_DECLARE(char *) jxta_socket_tunnel_addr_get(Jxta_socket_tunnel * self)
     apr_sockaddr_ip_get(&ip, self->sockaddr);
     len = 36 + strlen(protocols[self->protocol]) + strlen(ip);  /* 4 'proto://addr:port' + 32 for port */
     buf = (char *) calloc(len + 1, sizeof(char));
-    snprintf(buf, len, "%s://%s:%u", protocols[self->protocol], ip, self->sockaddr->port);
+    apr_snprintf(buf, len, "%s://%s:%u", protocols[self->protocol], ip, self->sockaddr->port);
     return buf;
 }
 

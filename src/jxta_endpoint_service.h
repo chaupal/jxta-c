@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_service.h,v 1.15 2006/05/16 00:58:12 slowhog Exp $
+ * $Id: jxta_endpoint_service.h,v 1.17 2006/09/05 06:12:11 slowhog Exp $
  */
 
 
@@ -79,6 +79,25 @@ extern "C" {
 #define  JXTA_ENDPOINT_SERVICE_NAME "EndpointService"
 
 typedef struct jxta_endpoint_service Jxta_endpoint_service;
+
+/* events definitions and prototypes */
+typedef enum Jxta_endpoint_event_types {
+    JXTA_EP_LOCAL_ROUTE_CHANGE = 1,
+    JXTA_EP_UNREACHABLE,
+    JXTA_EP_NEW_INBOUND_CONNECTION,
+    JXTA_EP_NEW_OUTBOUND_CONNECTION,
+    JXTA_EP_CONNECTION_CLOSED
+} Jxta_endpoint_event_type;
+
+typedef struct jxta_endpoint_event {
+    JXTA_OBJECT_HANDLE;
+    Jxta_endpoint_service *ep_svc;
+    Jxta_endpoint_event_type type;
+    Jxta_PID *remote_pid;
+    Jxta_endpoint_address *remote_ea;
+    Jxta_endpoint_address *local_ea;
+    void *extra;
+} Jxta_endpoint_event;
 
 typedef void (*JxtaEndpointListener) (Jxta_message * msg, void *arg);
 typedef int (*JxtaEndpointFilter) (Jxta_message * msg, void *arg);
@@ -125,6 +144,30 @@ JXTA_DECLARE(void) jxta_endpoint_service_add_transport(Jxta_endpoint_service * s
  */
 JXTA_DECLARE(void) jxta_endpoint_service_remove_transport(Jxta_endpoint_service * service, Jxta_transport * transport);
 
+/**
+ * Registers an incoming socket call back with the endpoint service. The endpoint
+ * service will receive the incoming streams and call back the application with 
+ * the data stream.
+ *
+ * @param service Handle of the endpoint service object to which the
+ * operation is applied.
+ * @param transport (Ptr to) The transport object.
+ * @param sock Socket of the connection
+ * @param arg argument to be returned to the callback
+ * @param elt location to store the transport demux element for unregistering the socket
+ */
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_add_poll(Jxta_endpoint_service * me, apr_socket_t * s, Jxta_callback_fn fn,
+                                                         void * arg, void ** cookie);
+
+/**
+ * UnRegisters a socket call back from the endpoint service.
+ *
+ * @param service Handle of the endpoint service object to which the
+ * operation is applied.
+ * @param transport (Ptr to) The transport object.
+ * @param elt Transport demux element returned by the register function
+ */
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_remove_poll(Jxta_endpoint_service * me, void * cookie);
 
 /*
  * Registers a filter routine with this endpoint service.
@@ -307,7 +350,6 @@ JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_endpoint_service_get_local_route(Jx
  ** @return void
  **/
 JXTA_DECLARE(void) jxta_endpoint_service_set_local_route(Jxta_endpoint_service * service, Jxta_RouteAdvertisement * route);
-
 
 #ifdef __cplusplus
 #if 0

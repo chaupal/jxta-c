@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: unittest_jxta_func.h,v 1.3 2005/10/13 17:07:41 exocetrick Exp $
+ * $Id: unittest_jxta_func.h,v 1.5 2006/08/23 20:50:46 bondolo Exp $
  */
 
 
@@ -72,12 +72,16 @@ extern "C" {
 }
 #endif
 #endif
-                                                      /* Functions that can be used to run test functions *//**
+
+/** Functions that can be used to run test functions */
+
+/**
  * A structure that gives a char buffer to write or read from
  * and a position denoting the current read/write position
  */ struct _read_write_test_buffer {
     char *buffer;       /* The buffer to read or write */
     long position;      /* The current position */
+    unsigned int flags; /* flag set on last write */
 };
 
 typedef struct _read_write_test_buffer read_write_test_buffer;
@@ -88,9 +92,19 @@ typedef struct _read_write_test_buffer read_write_test_buffer;
  * and status information
  */
 struct _funcs {
-    Jxta_boolean(*test) (void);
-    const char *states;
+    const char* (*test_func) (void);
+    const char *test_desc;
 };
+
+/** 
+ * A structure that contains the test function to run
+ * and status information
+ */
+struct _suite {
+    Jxta_boolean(*suite_func) (int *, int *, int *);
+    const char *suite_desc;
+};
+
 
 
 /**
@@ -105,7 +119,6 @@ struct _funcs {
 * @return TRUE if all tests run successfully, FALSE otherwise
 */
 Jxta_boolean run_testfunctions(const struct _funcs testfunc[], int *tests_run, int *tests_passed, int *tests_failed);
-
 
 /** 
  * A helper function that can be called from the main function if the test programs 

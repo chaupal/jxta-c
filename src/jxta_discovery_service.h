@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_discovery_service.h,v 1.13 2006/06/16 02:52:29 mmx2005 Exp $
+ * $Id: jxta_discovery_service.h,v 1.16 2006/09/06 21:27:38 slowhog Exp $
  */
 
 /**
@@ -139,7 +139,7 @@
 #include "jxta_id.h"
 #include "jxta_advertisement.h"
 #include "jxta_vector.h"
-
+#include "jxta_dq.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -154,6 +154,7 @@ extern "C" {
 
 #define DEFAULT_LIFETIME ((Jxta_expiration_time) 1000 * 60 * 60 * 24 * 365)
 #define DEFAULT_EXPIRATION ((Jxta_expiration_time) 1000 * 60 * 60 * 2)
+#define LOCAL_ONLY_EXPIRATION ((Jxta_expiration_time) 0)
 
 typedef struct _jxta_discovery_service Jxta_discovery_service;
 typedef struct _DiscoveryEvent DiscoveryEvent;
@@ -190,6 +191,17 @@ JXTA_DECLARE(long) discovery_service_get_remote_advertisements(Jxta_discovery_se
 JXTA_DECLARE(long) discovery_service_remote_query(Jxta_discovery_service * service,
                                                   Jxta_id * peerid, const char *query, int threshold,
                                                   Jxta_discovery_listener * listener);
+
+/**
+ * Send a discovery query to remote peers for execution.
+ * @param  me the Jxta_discovery_service 
+ * @param  peerid peerid of the peer to send the query to. A NULL ID causes a propagation
+ * @param  query The query
+ * @param  listener the listener which will be called back when responses are received
+ * @return query id
+ */
+JXTA_DECLARE(long) discovery_service_remote_query_1(Jxta_discovery_service * me, Jxta_id * peerid, 
+                                                    Jxta_discovery_query * query, Jxta_discovery_listener * listener);
 
 /**
  * Stop process responses for remote queries issued earlier by calling either discovery_service_get_remote_advertisements or
@@ -261,6 +273,22 @@ JXTA_DECLARE(Jxta_status) discovery_service_publish(Jxta_discovery_service * ser
 JXTA_DECLARE(Jxta_status) discovery_service_remote_publish(Jxta_discovery_service * service,
                                                            Jxta_id * peerid, Jxta_advertisement * adv, short type,
                                                            Jxta_expiration_time expriation);
+
+/**
+ * Remote Publish an advertisement will attempt to remote publish adv on all
+ * configured transports, the Advertisement will carry a a expiration of <i>
+ * expirationtime</i>
+ * @param  Jxta_discovery_service the service 
+ * @param  Jxta_advertisement to publish
+ * @param  type  DISC_PEER, DISC_GROUP, or DISC_ADV
+ * @param  expriation  the amount of time this advertisement will expire on other peer's cache specified in milliseconds
+ * @param  qos The QoS setting to be used for this publish
+ * @return Jxta_status
+ * @see Jxta_status
+ */
+JXTA_DECLARE(Jxta_status) discovery_service_remote_publish_1(Jxta_discovery_service * service,
+                                                             Jxta_id * peerid, Jxta_advertisement * adv, short type,
+                                                             Jxta_expiration_time expriation, const Jxta_qos * qos);
 
 /**
  * flush s stored Advertisement

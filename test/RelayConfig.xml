@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE jxta:RelayConfig>
+
+<jxta:RelayConfig xmlns:jxta="http://jxta.org">
+    <isClient>true</isClient>
+    <isServer>true</isServer>
+    <httpaddress>http://64.81.53.91:9700</httpaddress>
+    <tcpaddress>http://64.81.53.91:9701</tcpaddress>
+</jxta:RelayConfig>

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport.c,v 1.20 2006/03/29 21:49:17 slowhog Exp $
+ * $Id: jxta_transport.c,v 1.21 2006/09/06 21:45:18 slowhog Exp $
  */
 
 static const char *__log_cat = "TRANSPORT";
@@ -75,7 +75,7 @@ static void jxta_transport_event_delete(Jxta_object * me)
     free(me2);
 }
 
-Jxta_transport_event* jxta_transport_event_new(Jxta_transport_event_type event_type)
+Jxta_transport_event *jxta_transport_event_new(Jxta_transport_event_type event_type)
 {
     Jxta_transport_event *me = NULL;
 
@@ -87,7 +87,7 @@ Jxta_transport_event* jxta_transport_event_new(Jxta_transport_event_type event_t
 
     JXTA_OBJECT_INIT(me, jxta_transport_event_delete, NULL);
     me->type = event_type;
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, FILEANDLINE "EVENT: Create a new transport event [%pp] with type %d\n", 
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, FILEANDLINE "EVENT: Create a new transport event [%pp] with type %d\n",
                     me, event_type);
     return me;
 }
@@ -107,6 +107,16 @@ Jxta_transport *jxta_transport_construct(Jxta_transport * self, Jxta_transport_m
     self->direction = JXTA_OUTBOUND;
 
     return self;
+}
+
+Jxta_status jxta_transport_init(Jxta_transport * me, apr_pool_t * p)
+{
+    me->p = p;
+    me->qos = apr_hash_make(me->p);
+    if (!me->qos) {
+        return JXTA_NOMEM;
+    }
+    return JXTA_SUCCESS;
 }
 
 /**
@@ -158,9 +168,9 @@ JXTA_DECLARE(JxtaEndpointMessenger *) jxta_transport_messenger_get(Jxta_transpor
         return VTBL->messenger_get(self, there);
     } else {
         ea_str = jxta_endpoint_address_to_string(there);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE 
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE
                         ": Calling abstract method jxta_transport_messenger_get for EA: %s\n", ea_str ? ea_str : "NULL");
-        if (ea_str) 
+        if (ea_str)
             free(ea_str);
 
         return NULL;
@@ -179,7 +189,8 @@ JXTA_DECLARE(Jxta_boolean) jxta_transport_ping(Jxta_transport * self, Jxta_endpo
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-JXTA_DECLARE(void) jxta_transport_propagate(Jxta_transport * self, Jxta_message * msg, const char *service_name, const char *service_params)
+JXTA_DECLARE(void) jxta_transport_propagate(Jxta_transport * self, Jxta_message * msg, const char *service_name,
+                                            const char *service_params)
 {
     PTValid(self, Jxta_transport);
     VTBL->propagate(self, msg, service_name, service_params);
@@ -228,5 +239,28 @@ JXTA_DECLARE(Jxta_boolean) jxta_transport_allow_outbound(Jxta_transport * me)
  * is no new_instance function either.
  * No one is supposed to create a object of this exact class.
  */
+
+JXTA_DECLARE(Jxta_status) jxta_transport_set_default_qos(Jxta_transport * me, Jxta_endpoint_address * ea, const Jxta_qos * qos)
+{
+    char *ea_pstr;
+
+    ea_pstr = jxta_endpoint_address_to_pstr(ea, me->p);
+    if (!ea_pstr) {
+        return JXTA_FAILED;
+    }
+
+    apr_hash_set(me->qos, ea_pstr, APR_HASH_KEY_STRING, qos);
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_transport_default_qos(Jxta_transport * me, Jxta_endpoint_address * ea, const Jxta_qos ** qos)
+{
+    char *ea_cstr;
+
+    ea_cstr = jxta_endpoint_address_to_string(ea);
+    *qos = apr_hash_get(me->qos, ea_cstr, APR_HASH_KEY_STRING);
+    free(ea_cstr);
+    return (*qos) ? JXTA_SUCCESS : JXTA_ITEM_NOTFOUND;
+}
 
 /* vim: set ts=4 sw=4 et tw=130: */

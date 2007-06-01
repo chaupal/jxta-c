@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxtaDll.cs,v 1.1 2006/01/18 20:31:09 lankes Exp $
+ * $Id: jxtaDll.cs,v 1.2 2006/08/04 10:33:20 lankes Exp $
  */
 using System;
 using System.Runtime.InteropServices;
@@ -63,11 +63,22 @@ namespace JxtaNET
 	/// </summary>
 	internal class jxtaDll
 	{
-        [DllImport("jxta.dll")]
-        public static extern uint jxta_vector_size(IntPtr ptr);
+        internal delegate void BaseListenerFunction(IntPtr obj, IntPtr func);
 
         [DllImport("jxta.dll")]
-        public static extern UInt32 jxta_vector_get_object_at(IntPtr _this, ref IntPtr obj, int i);
+        public static extern IntPtr jxta_listener_new(BaseListenerFunction func, IntPtr arg, Int32 maxNbOfInvoke, Int32 maxQueueSize);
+
+        [DllImport("jxta.dll")]
+        public static extern void jxta_listener_start(IntPtr listener);
+
+        [DllImport("jxta.dll")]
+        public static extern void jxta_listener_stop(IntPtr listener);
+
+        [DllImport("jxta.dll")]
+        public static extern UInt32 jxta_listener_wait_for_event(IntPtr listener, Int64 timeout, ref IntPtr dr);
+
+        //[DllImport("jxta.dll")]
+        //private static extern IntPtr jxta_get_base_pipe_listener();
 
 		public jxtaDll()
 		{

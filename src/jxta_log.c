@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * $Id: jxta_log.c,v 1.30 2006/05/27 00:12:07 slowhog Exp $
+ * $Id: jxta_log.c,v 1.31 2006/09/29 02:01:29 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -392,13 +392,13 @@ JXTA_DECLARE(Jxta_log_selector *)
     jxta_log_selector_new()
 {
     Jxta_log_selector *self;
-    Jpr_status rv;
+    apr_status_t rv;
 
     self = calloc(1, sizeof(Jxta_log_selector));
 
     if (NULL != self) {
-        rv = jpr_thread_mutex_create(&self->mutex, JPR_THREAD_MUTEX_NESTED, _jxta_log_pool);
-        if (JPR_SUCCESS != rv) {
+        rv = apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED, _jxta_log_pool);
+        if (APR_SUCCESS != rv) {
             free(self);
             self = NULL;
         }

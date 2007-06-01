@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_util_priv.c,v 1.7 2006/04/01 01:20:20 slowhog Exp $
+ * $Id: jxta_util_priv.c,v 1.16 2006/10/01 23:14:10 mmx2005 Exp $
  */
 
 static const char *__log_cat = "UTIL";
@@ -58,10 +58,15 @@ static const char *__log_cat = "UTIL";
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdlib.h>
+#include <assert.h>
 
 #include "jxta_util_priv.h"
 #include "jstring.h"
 #include "jxta_hashtable.h"
+#include "jxta_peergroup.h"
+#include "jxta_membership_service.h"
+#include "jxta_discovery_service_private.h"
 #include "jxta_log.h"
 #include "jxta_id.h"
 
@@ -127,6 +132,293 @@ char* get_service_key(const char * svc_name, const char * svc_param)
         strcpy(key + len + 1, svc_param);
     }
     return key;
+}
+
+Jxta_status qos_setting_to_xml(apr_hash_t * setting, char ** result, apr_pool_t * p)
+{
+    apr_hash_index_t *hi = NULL;
+    const void * key;
+    apr_ssize_t len;
+    void * val;
+    int cnt;
+    JString *buf = NULL;
+
+    cnt = 0;
+    for (hi = apr_hash_first(p, setting); hi; hi = apr_hash_next(hi)) {
+        if (!cnt++) {
+            assert(NULL == buf);
+            buf = jstring_new_1(128);
+            jstring_append_2(buf, "<QoS_Setting>");
+        }
+        apr_hash_this(hi, &key, &len, &val);
+        assert(NULL != key);
+        assert(NULL != val);
+        jstring_append_2(buf, "<QoS>");
+        jstring_append_2(buf, key);
+        jstring_append_2(buf, "<Value>");
+        jstring_append_2(buf, val);
+        jstring_append_2(buf, "</Value></QoS>");
+    }
+    if (cnt) {
+        jstring_append_2(buf, "</QoS_Setting>");
+        *result = apr_pstrdup(p, jstring_get_string(buf));
+    } else {
+        *result = "";
+    }
+
+    return JXTA_SUCCESS;
+}
+
+Jxta_status xml_to_qos_setting(const char * xml, apr_hash_t ** result, apr_pool_t * p)
+{
+    apr_status_t rv;
+    apr_xml_parser * psr;
+    apr_xml_doc * doc;
+    apr_xml_elem * elt;
+    apr_xml_elem * ve;
+    apr_hash_t * ht = NULL;
+   
+    psr  = apr_xml_parser_create(p);
+    if (!psr) {
+        *result = NULL;
+        return JXTA_FAILED;
+    }
+    rv = apr_xml_parser_feed(psr, xml, strlen(xml));
+    if (rv != JXTA_SUCCESS) {
+        *result = NULL;
+        return JXTA_INVALID_ARGUMENT;
+    }
+    apr_xml_parser_done(psr, &doc);
+    elt = doc->root;
+    if (strcmp(elt->name, "QoS_Setting")) {
+        *result = NULL;
+        return JXTA_INVALID_ARGUMENT;
+    }
+    for (elt = elt->first_child; elt; elt = elt->next) {
+        if (strcmp(elt->name, "QoS")) {
+            continue;
+        }
+        ve = elt->first_child;
+        if (strcmp(ve->name, "Value")) {
+            continue;
+        }
+        if (NULL == ht) {
+            ht = apr_hash_make(p);
+        }
+        apr_hash_set(ht, elt->first_cdata.first->text, APR_HASH_KEY_STRING, ve->first_cdata.first->text);
+    }
+    
+    *result = ht;
+    return JXTA_SUCCESS;
+}
+
+Jxta_status qos_support_to_xml(const char ** capability_list, char ** result, apr_pool_t * p)
+{
+    int cnt;
+    JString *buf = NULL;
+    const char *name;
+
+    cnt = 0;
+    for (name = capability_list[cnt]; *name; name = capability_list[cnt]) {
+        if (!cnt++) {
+            assert(NULL == buf);
+            buf = jstring_new_1(128);
+            jstring_append_2(buf, "<QoS_Support>");
+        }
+        jstring_append_2(buf, "<QoS>");
+        jstring_append_2(buf, name);
+        jstring_append_2(buf, "</QoS>");
+    }
+    if (cnt) {
+        jstring_append_2(buf, "</QoS_Support>");
+        *result = apr_pstrdup(p, jstring_get_string(buf));
+    } else {
+        *result = "";
+    }
+
+    return JXTA_SUCCESS;
+}
+
+Jxta_status xml_to_qos_support(const char * xml, char *** result, apr_pool_t * p)
+{
+    /* FIXME: implement it */
+    return JXTA_NOTIMP;
+}
+
+Jxta_status ep_tcp_socket_listen(apr_socket_t ** me, const char * addr, apr_port_t port, apr_int32_t backlog, apr_pool_t * p)
+{
+    apr_status_t rv;
+    apr_sockaddr_t * sa;
+    char msg[256];
+
+    rv = apr_sockaddr_info_get(&sa, addr, APR_UNSPEC, port, 0, p);
+    if (APR_SUCCESS != rv) {
+        apr_strerror(rv, msg, sizeof(msg));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Socket addr info failed : %s\n", msg);
+        *me = NULL;
+        return JXTA_FAILED;
+    }
+
+    rv = apr_socket_create(me, sa->family, SOCK_STREAM, APR_PROTO_TCP, p);
+    if (APR_SUCCESS != rv) {
+        apr_strerror(rv, msg, sizeof(msg));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed create server socket : %s\n", msg);
+        *me = NULL;
+        return JXTA_FAILED;
+    }
+
+    /* REUSEADDR: this may help in case of the port is in TIME_WAIT */
+    rv = apr_socket_opt_set(*me, APR_SO_REUSEADDR, 1);
+    if (APR_SUCCESS != rv) {
+        apr_strerror(rv, msg, sizeof(msg));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Failed setting options : %s\n", msg);
+    }
+
+    /* bind */
+    rv = apr_socket_bind(*me, sa);
+    if (APR_SUCCESS != rv) {
+        apr_socket_close(*me);
+        apr_strerror(rv, msg, sizeof(msg));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed to bind socket : %s\n", msg);
+        *me = NULL;
+        return JXTA_FAILED;
+    }
+
+    /* listen */
+    rv = apr_socket_listen(*me, backlog);
+    if (APR_SUCCESS != rv) {
+        apr_socket_close(*me);
+        apr_strerror(rv, msg, sizeof(msg));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed to listen on socket : %s\n", msg);
+        *me = NULL;
+        return JXTA_FAILED;
+    }
+
+    return JXTA_SUCCESS;
+}
+
+Jxta_status JXTA_STDCALL brigade_read(void *stream, char *buf, apr_size_t len)
+{
+    apr_bucket_brigade * b = stream;
+    apr_bucket * e;
+    apr_bucket * trash;
+    apr_status_t rv;
+    const char * data;
+    apr_size_t sz;
+    int done = 0;
+
+    assert(len > 0);
+
+    e = APR_BRIGADE_FIRST(b);
+    while (APR_BRIGADE_SENTINEL(b) != e && !done) {
+        rv = apr_bucket_read(e, &data, &sz, APR_BLOCK_READ);
+        if (APR_SUCCESS != rv) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Brigade[%pp] failed to read with status %d.\n", b, rv); 
+            return rv;
+        }
+
+        if (0 == sz) {
+            return APR_EOF;
+        }
+
+        if (sz >= len) {
+            memcpy(buf, data, len);
+            if (sz > len) {
+                apr_bucket_split(e, len);
+            }
+            done = 1;
+        } else {
+            memcpy(buf, data, sz);
+            len -= sz;
+            buf += sz;
+        }
+
+        trash = e;
+        e = APR_BUCKET_NEXT(e);
+        apr_bucket_delete(trash);
+    }
+    return JXTA_SUCCESS;
+}
+
+Jxta_status query_all_advs(const char *query, Jxta_credential *scope[], int threshold, Jxta_vector ** results)
+{
+    Jxta_status status = JXTA_SUCCESS;
+    unsigned int i;
+    Jxta_credential **passScope=NULL;
+    Jxta_vector * groups=NULL;
+    Jxta_PG *pg = NULL;
+    Jxta_PG *netPeerGroup=NULL;
+    Jxta_discovery_service * discovery=NULL;
+
+    groups =  jxta_get_registered_groups();
+    for (i=0; (groups != NULL) && i< jxta_vector_size(groups); i++) {
+        status = jxta_vector_get_object_at(groups, JXTA_OBJECT_PPTR(&pg), i);
+        if (NULL == jxta_PG_parent(pg)) {
+            netPeerGroup = pg;
+            break;
+       }
+        JXTA_OBJECT_RELEASE(pg);
+        pg = NULL;
+    }
+    if (NULL == netPeerGroup) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed to find NetPeerGroup in query_all_advs\n");
+        status = JXTA_FAILED;
+        goto FINAL_EXIT;
+    }
+    if (NULL == scope && jxta_vector_size(groups) > 0) {
+        int j=0;
+
+        passScope = calloc(1, sizeof(Jxta_credential *) * (jxta_vector_size(groups) + 1));
+        for (i=0; i<jxta_vector_size(groups); i++) {
+            Jxta_PG * ppg;
+            Jxta_vector *creds;
+            Jxta_membership_service * membership;
+
+            jxta_vector_get_object_at(groups, JXTA_OBJECT_PPTR(&ppg), i);
+            jxta_PG_get_membership_service(ppg, &membership);
+            if (NULL == membership) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "No membership service found query_all_advs\n");
+                JXTA_OBJECT_RELEASE(ppg);
+                continue;
+            }
+            jxta_membership_service_get_currentcreds(membership, &creds );
+            if (NULL != creds) {
+                if (jxta_vector_size(creds) > 0) {
+                    jxta_vector_get_object_at(creds, JXTA_OBJECT_PPTR(&passScope[j++]), 0);
+                }
+                JXTA_OBJECT_RELEASE(creds);
+            }
+            JXTA_OBJECT_RELEASE(membership);
+            JXTA_OBJECT_RELEASE(ppg);
+        }
+        passScope[j] =NULL;
+    }
+    jxta_PG_get_discovery_service(netPeerGroup, &discovery);
+    if (NULL == discovery) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "No discovery service found query_all_advs\n");
+        goto FINAL_EXIT;
+    }
+    if (NULL == passScope || NULL == *passScope) {
+        passScope = scope;
+    }
+    status = getLocalGroupsQuery (discovery, query, passScope, results, threshold, FALSE);
+
+  FINAL_EXIT:
+
+    if (NULL == scope && passScope != NULL) {
+        i = 0;
+        while (passScope[i]) {
+            JXTA_OBJECT_RELEASE(passScope[i++]);
+        }
+        free(passScope);
+    }
+    if (groups)
+        JXTA_OBJECT_RELEASE(groups);
+    if (pg)
+        JXTA_OBJECT_RELEASE(pg);
+    if (discovery)
+        JXTA_OBJECT_RELEASE(discovery);
+    return status;
 }
 
 /* vim: set ts=4 sw=4 et tw=130: */

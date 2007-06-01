@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi_service.h,v 1.9 2005/11/23 16:07:03 slowhog Exp $
+ * $Id: jxta_srdi_service.h,v 1.11 2006/08/10 21:35:33 exocetrick Exp $
  */
 
 #ifndef JXTA_SRDI_SERVICE_H
@@ -86,7 +86,20 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_replicateEntries(Jxta_srdi_service * service
                                                      Jxta_SRDIMessage * srdiMsg, JString * queueName);
 
 /**
- * Push an SRDI message to a peer
+ * Push an SRDI message to a peer using a resolver message
+ * ttl is 1, and therefore services receiving this message could
+ * choose to replicate this message
+ *
+ * @param  peer  peer to push message to, if peer is null it is
+ *               the message is propagated
+ * @param  srdi  Resolver message to send
+ */
+JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi(Jxta_srdi_service * service, Jxta_resolver_service * res, JString * instance, ResolverSrdi * srdi,
+                                             Jxta_id * peer);
+
+
+/**
+ * Push an SRDI message to a peer using SRDI message
  * ttl is 1, and therefore services receiving this message could
  * choose to replicate this message
  *
@@ -94,7 +107,7 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_replicateEntries(Jxta_srdi_service * service
  *               the message is propagated
  * @param  srdi  SRDI message to send
  */
-JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi(Jxta_srdi_service * service, Jxta_resolver_service * res, ResolverSrdi * msg,
+JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi_msg(Jxta_srdi_service * service, Jxta_resolver_service * res, JString * instance, Jxta_SRDIMessage * msg,
                                              Jxta_id * peer);
 
 /**
@@ -154,7 +167,7 @@ JXTA_DECLARE(Jxta_peer *) jxta_srdi_getReplicaPeer(Jxta_srdi_service * service, 
  * @return             The replicaPeer value
  */
 JXTA_DECLARE(Jxta_peer *) jxta_srdi_getNumericReplica(Jxta_srdi_service * service, Jxta_resolver_service * resolver,
-                                                      Jxta_peerview * pvw, Jxta_object * rge, const char *value);
+                                                      Jxta_peerview * pvw, Jxta_range * rge, const char *value);
 
 /**
  * forward srdi message to another peer

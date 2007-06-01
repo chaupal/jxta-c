@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_wm.c,v 1.24 2006/02/15 01:09:51 slowhog Exp $
+ * $Id: jxta_wm.c,v 1.25 2006/08/03 21:34:21 bondolo Exp $
  */
 
 static const char *const __log_cat = "WireMessage";
@@ -93,6 +93,8 @@ struct _JxtaWire {
     char *pipeId;
     char *msgId;
 };
+
+void JxtaWire_delete(Jxta_object * obj);
 
 /** Handler functions.  Each of these is responsible for
  * dealing with all of the character data associated with the 
@@ -386,8 +388,7 @@ JXTA_DECLARE(JxtaWire *) JxtaWire_new(void)
 {
 
     JxtaWire *ad;
-    ad = (JxtaWire *) malloc(sizeof(JxtaWire));
-    memset(ad, 0x0, sizeof(JxtaWire));
+    ad = (JxtaWire *) calloc(1, sizeof(JxtaWire));
 
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
                                   "JxtaWire",
@@ -408,8 +409,10 @@ JXTA_DECLARE(JxtaWire *) JxtaWire_new(void)
      * pop right out as a piece of memory accessed
      * after it was freed...
      */
-void JxtaWire_delete(JxtaWire * ad)
+void JxtaWire_delete(Jxta_object * obj)
 {
+    JxtaWire *ad = (JxtaWire *) obj;
+
     /* Fill in the required freeing functions here. */
     if (ad->SrcPeer) {
         free(ad->SrcPeer);
@@ -431,8 +434,8 @@ void JxtaWire_delete(JxtaWire * ad)
         ad->VisitedPeer = NULL;
     }
 
-    jxta_advertisement_delete(&ad->jxta_advertisement);
-    memset(ad, 0x00, sizeof(JxtaWire));
+    jxta_advertisement_destruct(&ad->jxta_advertisement);
+    memset(ad, 0xdd, sizeof(JxtaWire));
     free(ad);
 }
 

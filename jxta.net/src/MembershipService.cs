@@ -50,30 +50,93 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: MembershipService.cs,v 1.1 2006/01/18 20:31:05 lankes Exp $
+ * $Id: MembershipService.cs,v 1.2 2006/08/04 10:33:19 lankes Exp $
  */
 using System;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 namespace JxtaNET
 {
-	/// <summary>
-	/// Summary of MembershipService.
-	/// </summary>
-	public class MembershipService : JxtaObject
-	{
+    /// <summary>
+    /// Summary of MembershipService.
+    /// </summary>
+    public interface MembershipService : Service
+    {
+        /// <summary>
+        /// The current credentials for this peer.
+        /// </summary>
+        List<Credential> CurrentCredentials
+        {
+            get;
+        }
+    }
 
-		[DllImport("jxta.dll")]
+    internal class MembershipServiceImpl : JxtaObject, MembershipService
+    {
+        #region import jxta-c functions
+        [DllImport("jxta.dll")]
 		private static extern void jxta_membership_service_get_currentcreds(IntPtr self, ref IntPtr creds);
 
-		public JxtaVector<Credential> getCurrentCredentials()
+        [DllImport("jxta.dll")]
+        private static extern UInt32 jxta_membership_service_resign(IntPtr self);
+
+        [DllImport("jxta.dll")]
+        private static extern void jxta_service_get_MIA(IntPtr self, out IntPtr mia);
+        
+        [DllImport("jxta.dll")]
+        private static extern UInt32 jxta_module_start(IntPtr self, String[] args);
+
+        [DllImport("jxta.dll")]
+        private static extern void jxta_module_stop(IntPtr self);
+
+        [DllImport("jxta.dll")]
+        private static extern UInt32 jxta_module_init(IntPtr self, IntPtr group, IntPtr assigned_id, IntPtr impl_adv);
+        #endregion
+
+        public void init(PeerGroup group, ID assignedID, Advertisement implAdv)
+        {
+            jxta_module_init(this.self, ((PeerGroupImpl)group).self, assignedID.self, implAdv.self);
+        }
+
+        public uint startApp(string[] args)
+        {
+            return jxta_module_start(this.self, args);
+        }
+
+        public void stopApp()
+        {
+            jxta_module_stop(this.self);
+        }
+
+
+        public List<Credential> CurrentCredentials
 		{
-            JxtaVector<Credential> ret = new JxtaVector<Credential>();
-            jxta_membership_service_get_currentcreds(this.self, ref ret.self);
-            return ret;
+            get
+            {
+                JxtaVector jVec = new JxtaVector();
+                jxta_membership_service_get_currentcreds(this.self, ref jVec.self);
+
+                List<Credential> ret = new List<Credential>();
+
+                foreach (IntPtr ptr in jVec)
+                    ret.Add(new Credential(ptr));
+
+                return ret;
+            }
 		}
 
-		internal MembershipService(IntPtr self) : base(self) {}
-        internal MembershipService() : base() { }
+        public Advertisement ImplAdvertisement
+        {
+            get
+            {
+                IntPtr adv = new IntPtr();
+                jxta_service_get_MIA(this.self, out adv);
+                return new ModuleAdvertisement(adv);
+            }
+        }
+
+		internal MembershipServiceImpl(IntPtr self) : base(self) {}
+        internal MembershipServiceImpl() : base() { }
     }
 }

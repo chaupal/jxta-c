@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object.h,v 1.15 2005/11/26 07:52:44 mmx2005 Exp $
+ * $Id: jxta_object.h,v 1.17 2006/08/21 20:42:01 bondolo Exp $
  */
 
 
@@ -358,7 +358,16 @@ typedef unsigned int (JXTA_STDCALL * Jxta_object_hash_func) (Jxta_object * obj);
 #include "jxta_object_priv.h"
 
 #define JXTA_OBJECT_HANDLE const Jxta_object _jxta_obj
-#define JXTA_OBJECT_PPTR(x) (Jxta_object**)(void*)(x)
+
+/**
+*   Sanitize a pointer to a pointer to a JXTA object.
+*
+*   @param x A pointer to a pointer of any type.
+*   @return A pointer to a JXTA_OBJECT pointer
+**/
+Jxta_object** JXTA_OBJECT_PPTR(void ** x);
+
+#define JXTA_OBJECT_PPTR(x) ((Jxta_object**)(void*)(x))
 
 #ifdef __cplusplus
 #if 0

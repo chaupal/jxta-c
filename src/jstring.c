@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jstring.c,v 1.67 2006/04/04 18:19:46 slowhog Exp $
+ * $Id: jstring.c,v 1.73 2006/08/21 18:56:47 bondolo Exp $
  */
 
 
@@ -96,11 +96,8 @@
 const size_t DEFAULTBUFSIZE = 128;
 
 /**
- * @todo  Does the length include or not include the terminating
- * '\0'?  Is the following code consistent with whichever convention 
- * is being used?  Propose to define "length" as number of characters 
- * in charbuf, and ensure that the buffer size is always at least 
- * length + 1.
+ * length" is number of characters in charbuf, and ensure that the
+ * buffer size is always at least length + 1.
  *
  * @todo Rename "string" member to "charbuf". 
  */
@@ -124,7 +121,7 @@ static char *resizeBuf(char *p, size_t size)
 
 static char *newCharBuf(size_t size)
 {
-    char *buf = (char *) calloc(size + 1, sizeof(char));
+    char *buf = (char *) calloc(size, sizeof(char));
 
     return buf;
 }
@@ -154,17 +151,22 @@ JXTA_DECLARE(JString *) jstring_new_0()
 
 JXTA_DECLARE(JString *) jstring_new_1(size_t bufsize)
 {
-    JString *js;
-
-    if (bufsize <= 0)
-        bufsize = DEFAULTBUFSIZE;
-
-    js = (JString *) calloc(1, sizeof(JString));
+    JString *js = (JString *) calloc(1, sizeof(JString));
 
     if (NULL == js)
         return NULL;
 
     JXTA_OBJECT_INIT(js, jstring_delete, 0);
+
+    /*
+      use default buffer size for empty string otherwise use the length
+      of the string + 1 (for a null character for "jstring_get_string").
+    */
+    if (bufsize <= 0) {
+        bufsize = DEFAULTBUFSIZE;
+    } else {
+        bufsize += 1;
+    }
 
     js->bufsize = bufsize;
     js->length = 0;
@@ -184,13 +186,7 @@ JXTA_DECLARE(JString *) jstring_new_2(const char *string)
 
     length = strlen(string);
 
-    /* adjust the bufsize only if its zero. we want to use source strings own
-       size if its non-zero because we may never grow the string. */
-
-    if (length == 0)
-        js = jstring_new_1(DEFAULTBUFSIZE);
-    else
-        js = jstring_new_1(length);
+    js = jstring_new_1(length);
 
     if (NULL == js)
         return NULL;
@@ -270,6 +266,12 @@ JXTA_DECLARE(size_t) jstring_length(JString const *js)
     return js->length;
 }
 
+JXTA_DECLARE(int) jstring_equals(JString const *me, JString const *you)
+{
+    return strcmp( jstring_get_string(me), jstring_get_string(you) );
+}
+
+
 JXTA_DECLARE(size_t) jstring_capacity(JString const *js)
 {
     return js->bufsize;
@@ -299,8 +301,8 @@ JXTA_DECLARE(void) jstring_append_0(JString * js, char const *newstring, size_t 
     /* ensure capacity +1 (for terminal \0) */
     while (js->bufsize <= (js->length + length + 1)) {
         js->bufsize *= 2;
-        js->string = resizeBuf(js->string, js->bufsize);
     }
+    js->string = resizeBuf(js->string, js->bufsize);
 
     memmove(&js->string[js->length], newstring, length);
     js->length += length;
@@ -357,6 +359,10 @@ JXTA_DECLARE(char const *) jstring_get_string(JString const *js)
     /*  by const we mean that we wont change the contents. we wont. */
     JString *myjs = (JString *) js;
 
+    if (NULL == js) {
+        return NULL;
+    }
+
     JXTA_OBJECT_CHECK_VALID(myjs);
 
     /* Proposed change: ensuring null term for other ops simplifies this
@@ -369,7 +375,7 @@ JXTA_DECLARE(char const *) jstring_get_string(JString const *js)
         myjs->bufsize++;
     }
 
-    *(myjs->string + (ptrdiff_t) myjs->length) = 0;
+    myjs->string[myjs->length] = 0;
 
     return myjs->string;
 }

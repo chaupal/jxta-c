@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bidipipe.c,v 1.21 2006/05/20 06:20:07 slowhog Exp $
+ * $Id: jxta_bidipipe.c,v 1.22 2006/09/29 02:01:29 slowhog Exp $
  */
 
 #include <stdlib.h>
@@ -75,25 +75,6 @@
 #define MIME_TYPE_XMLUTF8                "text/xml;charset=\"UTF8\""
 #define MIME_TYPE_TEXT                   "text/plain"
 
-/* Helper macros to track mutext lock */
-#if 0
-#ifdef jpr_thread_mutex_lock
-#undef jpr_thread_mutex_lock
-#endif
-#define jpr_thread_mutex_lock(x) \
-    printf(">> Trying to lock mutex at %s %d, TID: %p, Mutex: %p\n", __FILE__, __LINE__, apr_os_thread_current(), x); \
-    apr_thread_mutex_lock(x); \
-    printf(">> Mutex locked at %s %d, TID: %p, Mutex: %p\n", __FILE__, __LINE__, apr_os_thread_current(), x)
-
-#ifdef jpr_thread_mutex_unlock
-#undef jpr_thread_mutex_unlock
-#endif
-#define jpr_thread_mutex_unlock(x) \
-    printf(">> Trying to unlock mutex at %s %d, TID: %p, Mutex: %p\n", __FILE__, __LINE__, apr_os_thread_current(), x); \
-    apr_thread_mutex_unlock(x) ;\
-    printf(">> Mutex unlocked at %s %d, TID: %p, Mutex: %p\n", __FILE__, __LINE__, apr_os_thread_current(), x)
-#endif
-
 struct Jxta_bidipipe {
     Jxta_PG *group;
     Jxta_endpoint_service *ep_svc;
@@ -105,8 +86,8 @@ struct Jxta_bidipipe {
 
     Jxta_endpoint_address *ep_addr;
 
-    jpr_thread_mutex_t *mutex;
-    jpr_thread_mutex_t *cond_mutex;
+    apr_thread_mutex_t *mutex;
+    apr_thread_mutex_t *cond_mutex;
     apr_thread_cond_t *cond;
     apr_pool_t *pool;
     int state;
@@ -389,7 +370,7 @@ static Jxta_status close_pipes(Jxta_bidipipe * self)
         return JXTA_VIOLATION;
     }
 
-    jpr_thread_mutex_lock(self->mutex);
+    apr_thread_mutex_lock(self->mutex);
 
     JXTA_OBJECT_RELEASE(self->listener);
     self->listener = NULL;
@@ -409,7 +390,7 @@ static Jxta_status close_pipes(Jxta_bidipipe * self)
 
     self->state = JXTA_BIDIPIPE_CLOSED;
 
-    jpr_thread_mutex_unlock(self->mutex);
+    apr_thread_mutex_unlock(self->mutex);
 
     return JXTA_SUCCESS;
 }
@@ -424,7 +405,7 @@ static void JXTA_STDCALL bidipipe_input_listener(Jxta_object * obj, void *arg)
 
     jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_TRACE, "Message received by BiDi pipe listener\n");
 
-    jpr_thread_mutex_lock(self->mutex);
+    apr_thread_mutex_lock(self->mutex);
     switch (self->state) {
     case JXTA_BIDIPIPE_CONNECTED:
         if (JXTA_SUCCESS == jxta_message_get_element_2(msg, JXTA_BIDIPIPE_NAMESPACE, JXTA_BIDIPIPE_CLOSE_TAG, &e)) {
@@ -432,11 +413,11 @@ static void JXTA_STDCALL bidipipe_input_listener(Jxta_object * obj, void *arg)
             self->state = JXTA_BIDIPIPE_CLOSING;
             jxta_listener_process_object(self->listener, NULL);
             rv = close_pipes(self);
-            jpr_thread_mutex_unlock(self->mutex);
+            apr_thread_mutex_unlock(self->mutex);
             JXTA_OBJECT_RELEASE(e);
             return;
         }
-        jpr_thread_mutex_unlock(self->mutex);
+        apr_thread_mutex_unlock(self->mutex);
 
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_TRACE, "Schedule regular message to pipe owner\n");
         assert(NULL != self->listener);
@@ -453,11 +434,11 @@ static void JXTA_STDCALL bidipipe_input_listener(Jxta_object * obj, void *arg)
             jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_TRACE,
                             "Response to open request received, connection established\n");
             self->state = JXTA_BIDIPIPE_CONNECTED;
-            jpr_thread_mutex_lock(self->cond_mutex);
+            apr_thread_mutex_lock(self->cond_mutex);
             apr_thread_cond_signal(self->cond);
-            jpr_thread_mutex_unlock(self->cond_mutex);
+            apr_thread_mutex_unlock(self->cond_mutex);
         }
-        jpr_thread_mutex_unlock(self->mutex);
+        apr_thread_mutex_unlock(self->mutex);
         break;
 
     case JXTA_BIDIPIPE_ACCEPTING:
@@ -472,24 +453,24 @@ static void JXTA_STDCALL bidipipe_input_listener(Jxta_object * obj, void *arg)
         if (JXTA_SUCCESS == rv) {
             self->state = JXTA_BIDIPIPE_CONNECTED;
             jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_TRACE, "Response to open request, connection established\n");
-            jpr_thread_mutex_lock(self->cond_mutex);
+            apr_thread_mutex_lock(self->cond_mutex);
             apr_thread_cond_signal(self->cond);
-            jpr_thread_mutex_unlock(self->cond_mutex);
+            apr_thread_mutex_unlock(self->cond_mutex);
         } else {
             jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_TRACE, "Failed to response open request, connection closed\n");
             JXTA_OBJECT_RELEASE(self->ep_addr);
             self->ep_addr = NULL;
         }
-        jpr_thread_mutex_unlock(self->mutex);
+        apr_thread_mutex_unlock(self->mutex);
         break;
 
     case JXTA_BIDIPIPE_CLOSING:
-        jpr_thread_mutex_unlock(self->mutex);
+        apr_thread_mutex_unlock(self->mutex);
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_INFO, "Message arrived when closing, discard\n");
         break;
 
     default:
-        jpr_thread_mutex_unlock(self->mutex);
+        apr_thread_mutex_unlock(self->mutex);
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_ERROR, "Invalid state, is this a bug?\n");
         break;
     }
@@ -520,14 +501,14 @@ static Jxta_status construct_input_pipe(Jxta_bidipipe * self, Jxta_pipe_adv * lo
         return rv;
     }
 
-    jpr_thread_mutex_lock(self->mutex);
+    apr_thread_mutex_lock(self->mutex);
 
     rv = jxta_pipe_get_inputpipe(pipe, &(self->i_pipe));
 
     jxta_listener_start(self->i_listener);
     jxta_inputpipe_add_listener(self->i_pipe, self->i_listener);
 
-    jpr_thread_mutex_unlock(self->mutex);
+    apr_thread_mutex_unlock(self->mutex);
 
     JXTA_OBJECT_RELEASE(pipe);
     JXTA_OBJECT_RELEASE(ps);
@@ -537,7 +518,7 @@ static Jxta_status construct_input_pipe(Jxta_bidipipe * self, Jxta_pipe_adv * lo
 
 JXTA_DECLARE(Jxta_bidipipe *) jxta_bidipipe_new(Jxta_PG * pg)
 {
-    Jpr_status rv;
+    apr_status_t rv;
     Jxta_bidipipe *self = NULL;
 
     self = (Jxta_bidipipe *) calloc(1, sizeof(Jxta_bidipipe));
@@ -559,16 +540,16 @@ JXTA_DECLARE(Jxta_bidipipe *) jxta_bidipipe_new(Jxta_PG * pg)
         return NULL;
     }
 
-    rv = jpr_thread_mutex_create(&self->mutex, JPR_THREAD_MUTEX_NESTED, self->pool);
-    if (JPR_SUCCESS != rv) {
+    rv = apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED, self->pool);
+    if (APR_SUCCESS != rv) {
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_WARNING, "Failed to create mutex\n");
         apr_pool_destroy(self->pool);
         free(self);
         self = NULL;
     }
 
-    rv = jpr_thread_mutex_create(&self->cond_mutex, JPR_THREAD_MUTEX_DEFAULT, self->pool);
-    if (JPR_SUCCESS != rv) {
+    rv = apr_thread_mutex_create(&self->cond_mutex, APR_THREAD_MUTEX_DEFAULT, self->pool);
+    if (APR_SUCCESS != rv) {
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_WARNING, "Failed to create cond_mutex\n");
         apr_pool_destroy(self->pool);
         free(self);
@@ -576,9 +557,9 @@ JXTA_DECLARE(Jxta_bidipipe *) jxta_bidipipe_new(Jxta_PG * pg)
     }
 
     rv = apr_thread_cond_create(&self->cond, self->pool);
-    if (JPR_SUCCESS != rv) {
+    if (APR_SUCCESS != rv) {
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_WARNING, "Failed to create connect event\n");
-        jpr_thread_mutex_destroy(self->mutex);
+        apr_thread_mutex_destroy(self->mutex);
         apr_pool_destroy(self->pool);
         free(self);
         self = NULL;
@@ -599,14 +580,14 @@ Jxta_status jxta_bidipipe_delete(Jxta_bidipipe * self)
     }
 
     jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_DEBUG, "freeing Bidipipe[%pp] ...\n", self);
-    jpr_thread_mutex_lock(self->mutex);
+    apr_thread_mutex_lock(self->mutex);
 
     if (JXTA_BIDIPIPE_CLOSED != self->state) {
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_INFO,
                         "Bidipipe is still connected when delete, close connection ...\n");
         rv = jxta_bidipipe_close(self);
         if (JXTA_SUCCESS != rv) {
-            jpr_thread_mutex_unlock(self->mutex);
+            apr_thread_mutex_unlock(self->mutex);
             return rv;
         }
     }
@@ -614,10 +595,10 @@ Jxta_status jxta_bidipipe_delete(Jxta_bidipipe * self)
     JXTA_OBJECT_RELEASE(self->i_listener);
     self->i_listener = NULL;
 
-    jpr_thread_mutex_unlock(self->mutex);
+    apr_thread_mutex_unlock(self->mutex);
     apr_thread_cond_destroy(self->cond);
-    jpr_thread_mutex_destroy(self->mutex);
-    jpr_thread_mutex_destroy(self->cond_mutex);
+    apr_thread_mutex_destroy(self->mutex);
+    apr_thread_mutex_destroy(self->cond_mutex);
     apr_pool_destroy(self->pool);
 
     JXTA_OBJECT_RELEASE(self->ep_svc);
@@ -638,13 +619,13 @@ JXTA_DECLARE(Jxta_status) jxta_bidipipe_connect(Jxta_bidipipe * self, Jxta_pipe_
     Jxta_time now;
 
     now = apr_time_now();   /* microsec, not millisec was used in pipe_timed_connect as queue_dequeue_1 */
-    jpr_thread_mutex_lock(self->mutex);
+    apr_thread_mutex_lock(self->mutex);
     if (JXTA_BIDIPIPE_CLOSED != self->state) {
-        jpr_thread_mutex_unlock(self->mutex);
+        apr_thread_mutex_unlock(self->mutex);
         return JXTA_VIOLATION;
     }
     self->state = JXTA_BIDIPIPE_CONNECTING;
-    jpr_thread_mutex_unlock(self->mutex);
+    apr_thread_mutex_unlock(self->mutex);
 
     jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_INFO, "Attempt connect to remote pipe ...\n");
     jxta_PG_get_pipe_service(self->group, &ps);
@@ -714,10 +695,10 @@ JXTA_DECLARE(Jxta_status) jxta_bidipipe_connect(Jxta_bidipipe * self, Jxta_pipe_
     timeout -= (apr_time_now() - now);
     if (timeout < 1000)
         timeout = 1000;
-    jpr_thread_mutex_lock(self->cond_mutex);
+    apr_thread_mutex_lock(self->cond_mutex);
     jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_DEBUG, "Waiting confirmation of bidipipe connection ...\n");
     rv = apr_thread_cond_timedwait(self->cond, self->cond_mutex, timeout);
-    jpr_thread_mutex_unlock(self->cond_mutex);
+    apr_thread_mutex_unlock(self->cond_mutex);
 
     if (APR_TIMEUP == rv)
         rv = JXTA_TIMEOUT;
@@ -732,19 +713,19 @@ JXTA_DECLARE(Jxta_status) jxta_bidipipe_close(Jxta_bidipipe * self)
     Jxta_message_element *e;
 
     jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_DEBUG, "jxta_bidipipe_close is called with %X\n", self);
-    jpr_thread_mutex_lock(self->mutex);
+    apr_thread_mutex_lock(self->mutex);
 
     switch (self->state) {
     case JXTA_BIDIPIPE_CLOSED:
-        jpr_thread_mutex_unlock(self->mutex);
+        apr_thread_mutex_unlock(self->mutex);
         return JXTA_SUCCESS;
 
     case JXTA_BIDIPIPE_ACCEPTING:
         self->state = JXTA_BIDIPIPE_CLOSING;
-        jpr_thread_mutex_lock(self->cond_mutex);
+        apr_thread_mutex_lock(self->cond_mutex);
         apr_thread_cond_signal(self->cond);
-        jpr_thread_mutex_unlock(self->cond_mutex);
-        jpr_thread_mutex_unlock(self->mutex);
+        apr_thread_mutex_unlock(self->cond_mutex);
+        apr_thread_mutex_unlock(self->mutex);
         rv = close_pipes(self);
         return rv;
 
@@ -753,12 +734,12 @@ JXTA_DECLARE(Jxta_status) jxta_bidipipe_close(Jxta_bidipipe * self)
 
     default:
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_WARNING, "Close pipe in a bad state: %d\n", self->state);
-        jpr_thread_mutex_unlock(self->mutex);
+        apr_thread_mutex_unlock(self->mutex);
         return JXTA_VIOLATION;
     }
 
     self->state = JXTA_BIDIPIPE_CLOSING;
-    jpr_thread_mutex_unlock(self->mutex);
+    apr_thread_mutex_unlock(self->mutex);
 
     msg = jxta_message_new();
     if (NULL == msg) {
@@ -794,13 +775,13 @@ JXTA_DECLARE(Jxta_status) jxta_bidipipe_accept(Jxta_bidipipe * self, Jxta_pipe_a
 {
     Jxta_status rv;
 
-    jpr_thread_mutex_lock(self->mutex);
+    apr_thread_mutex_lock(self->mutex);
     if (JXTA_BIDIPIPE_CLOSED != self->state) {
-        jpr_thread_mutex_unlock(self->mutex);
+        apr_thread_mutex_unlock(self->mutex);
         return JXTA_VIOLATION;
     }
     self->state = JXTA_BIDIPIPE_ACCEPTING;
-    jpr_thread_mutex_unlock(self->mutex);
+    apr_thread_mutex_unlock(self->mutex);
 
     assert(NULL == self->listener);
     JXTA_OBJECT_SHARE(listener);
@@ -814,9 +795,9 @@ JXTA_DECLARE(Jxta_status) jxta_bidipipe_accept(Jxta_bidipipe * self, Jxta_pipe_a
         return rv;
     }
 
-    jpr_thread_mutex_lock(self->cond_mutex);
+    apr_thread_mutex_lock(self->cond_mutex);
     apr_thread_cond_wait(self->cond, self->cond_mutex);
-    jpr_thread_mutex_unlock(self->cond_mutex);
+    apr_thread_mutex_unlock(self->cond_mutex);
 
     return JXTA_SUCCESS;
 }

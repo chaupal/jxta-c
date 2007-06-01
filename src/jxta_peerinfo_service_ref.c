@@ -50,13 +50,13 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peerinfo_service_ref.c,v 1.12 2006/06/01 05:01:35 mmx2005 Exp $
+ * $Id: jxta_peerinfo_service_ref.c,v 1.14 2006/09/08 19:57:28 bondolo Exp $
  */
 
 
 #include "jxta_apr.h"
 
-#include "jpr/jpr_excep.h"
+#include "jpr/jpr_excep_proto.h"
 
 #include "jxta_errno.h"
 #include "jxta_debug.h"
@@ -131,22 +131,6 @@ jxta_peerinfo_service_ref_init(Jxta_module * peerinfo, Jxta_PG * group, Jxta_id 
     jxta_PG_get_PID(group, &(self->localPeerId));
 
     return JXTA_SUCCESS;
-}
-
-/**
- * Initializes an instance of the Peerinfo Service. (exception variant).
- * 
- * @param service a pointer to the instance of the Peerinfo Service.
- * @param group a pointer to the PeerGroup the Peerinfo Service is 
- * initialized for.
- *
- */
-
-static void init_e(Jxta_module * peerinfo, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv, Throws)
-{
-    Jxta_status s = jxta_peerinfo_service_ref_init(peerinfo, group, assigned_id, impl_adv);
-    if (s != JXTA_SUCCESS)
-        Throw(s);
 }
 
 /**
@@ -255,12 +239,12 @@ Jxta_peerinfo_service_ref_methods jxta_peerinfo_service_ref_methods = {
      {
       "Jxta_module_methods",
       jxta_peerinfo_service_ref_init,
-      init_e,
       start,
       stop},
      "Jxta_service_methods",
      get_mia,
-     get_interface},
+     get_interface,
+     service_on_option_set},
     "Jxta_peerinfo_service_methods",
     getRemotePeerInfo,
     getLocalPeerInfo,
@@ -346,14 +330,13 @@ Jxta_peerinfo_service_ref *jxta_peerinfo_service_ref_new_instance(void)
 {
     /* Allocate an instance of this service */
     Jxta_peerinfo_service_ref *self = (Jxta_peerinfo_service_ref *)
-        malloc(sizeof(Jxta_peerinfo_service_ref));
+        calloc(1, sizeof(Jxta_peerinfo_service_ref));
 
     if (self == NULL) {
         return NULL;
     }
 
     /* Initialize the object */
-    memset(self, 0, sizeof(Jxta_peerinfo_service_ref));
     JXTA_OBJECT_INIT(self, peerinfo_free, 0);
 
     /* call the hierarchy of ctors */

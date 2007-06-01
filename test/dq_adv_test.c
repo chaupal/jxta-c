@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "jxta.h"
 #include "jxta_errno.h"
 #include "jxta_discovery_service.h"
 #include "jxta_dq.h"
@@ -104,37 +105,37 @@ Jxta_DiscoveryQuery *createDiscoveryQuery_1()
 * Check that the discovery message contains the correct data
 * 
 * @param query the query to check
-* @return TRUE if the message is correct, FALSE otherwise
+* @return NULL if the message is correct, FALSE otherwise
 */
-Jxta_boolean checkDiscoveryQuery(Jxta_DiscoveryQuery * query)
+const char * checkDiscoveryQuery(Jxta_DiscoveryQuery * query)
 {
     JString *comp = NULL;
-    Jxta_boolean result = TRUE;
+    const char * result = NULL;
 
     if (query == NULL) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
     /* Check the type of the query */
     if (jxta_discovery_query_get_type(query) != DISC_PEER) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
     /* Check  the threshold */
     if (jxta_discovery_query_get_threshold(query) != 20) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
     /* Check the peer advertisment */
     if (JXTA_SUCCESS != jxta_discovery_query_get_peeradv(query, &comp)) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     if (comp == NULL || strcmp("The Peer Advertisement content", jstring_get_string(comp)) != 0) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     JXTA_OBJECT_RELEASE(comp);
@@ -142,11 +143,11 @@ Jxta_boolean checkDiscoveryQuery(Jxta_DiscoveryQuery * query)
 
     /* Check the attribute */
     if (JXTA_SUCCESS != jxta_discovery_query_get_attr(query, &comp)) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     if (comp == NULL || strcmp("The Attribute", jstring_get_string(comp)) != 0) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     JXTA_OBJECT_RELEASE(comp);
@@ -154,11 +155,11 @@ Jxta_boolean checkDiscoveryQuery(Jxta_DiscoveryQuery * query)
 
     /* Check the value */
     if (JXTA_SUCCESS != jxta_discovery_query_get_value(query, &comp)) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     if (comp == NULL || strcmp("The Value", jstring_get_string(comp)) != 0) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     JXTA_OBJECT_RELEASE(comp);
@@ -174,18 +175,17 @@ Jxta_boolean checkDiscoveryQuery(Jxta_DiscoveryQuery * query)
 /**
  * Test the empty constructor for jxta_discovery_query
  */
-Jxta_boolean test_jxta_discovery_query_new(void)
+const char * test_jxta_discovery_query_new(void)
 {
     Jxta_DiscoveryQuery *query = createDiscoveryQuery();
-    Jxta_boolean result = TRUE;
+    const char * result = NULL;
 
     if (query == NULL)
-        return FALSE;
+        return FILEANDLINE;
 
-    if (!checkDiscoveryQuery(query))
-        result = FALSE;
+    result = checkDiscoveryQuery(query);
 
-    jxta_discovery_query_free(query);
+    JXTA_OBJECT_RELEASE(query);
 
     return result;
 }
@@ -193,18 +193,17 @@ Jxta_boolean test_jxta_discovery_query_new(void)
 /**
  * Test the _1 constructor for jxta_discovery_query
  */
-Jxta_boolean test_jxta_discovery_query_new_1(void)
+const char * test_jxta_discovery_query_new_1(void)
 {
     Jxta_DiscoveryQuery *query = createDiscoveryQuery_1();
-    Jxta_boolean result = TRUE;
+    const char * result = NULL;
 
     if (query == NULL)
-        return FALSE;
+        return FILEANDLINE;
 
-    if (!checkDiscoveryQuery(query))
-        result = FALSE;
+   result = checkDiscoveryQuery(query);
 
-    jxta_discovery_query_free(query);
+    JXTA_OBJECT_RELEASE(query);
 
     return result;
 }
@@ -213,43 +212,44 @@ Jxta_boolean test_jxta_discovery_query_new_1(void)
  * Test the read/write functionality of the  Jxta_DiscoveryQuery
  * object
  */
-Jxta_boolean test_jxta_discovery_read_write(void)
+const char * test_jxta_discovery_read_write(void)
 {
     Jxta_DiscoveryQuery *query = createDiscoveryQuery_1();
-    Jxta_boolean result = TRUE;
+    const char * result = NULL;
     JString *doc = NULL;
 
     if (query == NULL)
-        return FALSE;
+        return FILEANDLINE;
 
     /* Write the query to a string */
     if (JXTA_SUCCESS != jxta_discovery_query_get_xml(query, &doc)) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
     /* Read the message back in */
-    jxta_discovery_query_free(query);
+    JXTA_OBJECT_RELEASE(query);
     query = jxta_discovery_query_new();
     if (query == NULL) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     if (JXTA_SUCCESS != jxta_discovery_query_parse_charbuffer(query, jstring_get_string(doc), jstring_length(doc))) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
   /** Check that the message is correct */
-    if (!checkDiscoveryQuery(query)) {
-        result = FALSE;
+    result = checkDiscoveryQuery(query);
+     
+    if (result) {
         goto Common_Exit;
     }
   Common_Exit:
     if (doc != NULL)
         JXTA_OBJECT_RELEASE(doc);
     if (query != NULL)
-        jxta_discovery_query_free(query);
+        JXTA_OBJECT_RELEASE(query);
     return result;
 }
 
@@ -269,7 +269,7 @@ static struct _funcs testfunc[] = {
 * @param tests_passed the variable in which to accumulate the number of tests passed
 * @param tests_failed the variable in which to accumulate the number of tests failed
 *
-* @return TRUE if all tests were run successfully, FALSE otherwise
+* @return NULL if all tests were run successfully, FALSE otherwise
 */
 Jxta_boolean run_jxta_dq_tests(int *tests_run, int *tests_passed, int *tests_failed)
 {

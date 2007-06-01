@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup_private.h,v 1.23 2006/05/16 00:58:13 slowhog Exp $
+ * $Id: jxta_peergroup_private.h,v 1.26 2006/09/08 20:56:01 exocetrick Exp $
  */
 
 #ifndef JXTA_PEERGROUP_PRIVATE_H
@@ -88,9 +88,9 @@ struct jxta_PG {
     Extends(Jxta_service);
 
     /* Implementors put their stuff after that */
+    struct jxta_PG *parent;
     apr_pool_t *pool;
     apr_thread_pool_t *thd_pool;
-    struct jxta_PG *parent;
     char *ep_name;
     void *ep_cookie;
 };
@@ -136,25 +136,16 @@ struct _jxta_PG_methods {
     void (*get_PGA) (Jxta_PG * self, Jxta_PGA ** pga);
     void (*get_PA) (Jxta_PG * self, Jxta_PA ** pa);
      Jxta_status(*lookup_service) (Jxta_PG * self, Jxta_id * name, Jxta_service ** result);
-    void (*lookup_service_e) (Jxta_PG * self, Jxta_id * name, Jxta_service ** serv, Throws);
      Jxta_boolean(*is_compatible) (Jxta_PG * self, JString * compat);
      Jxta_status(*loadfromimpl_module) (Jxta_PG * self, Jxta_id * assigned_id, Jxta_advertisement * impl, Jxta_module ** result);
-    void (*loadfromimpl_module_e) (Jxta_PG * self, Jxta_id * assigned_id, Jxta_advertisement * impl, Jxta_module ** mod, Throws);
      Jxta_status(*loadfromid_module) (Jxta_PG * self,
                                       Jxta_id * assigned_id, Jxta_MSID * spec_id, int where, Jxta_module ** result);
-    void (*loadfromid_module_e) (Jxta_PG * self,
-                                 Jxta_id * assigned_id, Jxta_MSID * spec_id, int where, Jxta_module ** mod, Throws);
     void (*set_labels) (Jxta_PG * self, JString * name, JString * description);
      Jxta_status(*newfromadv) (Jxta_PG * self, Jxta_advertisement * pgAdv, Jxta_vector * resource_groups, Jxta_PG ** result);
-    void (*newfromadv_e) (Jxta_PG * self, Jxta_advertisement * pgAdv, Jxta_vector * resource_group, Jxta_PG ** pg, Throws);
      Jxta_status(*newfromimpl) (Jxta_PG * self, Jxta_PGID * gid,
                                 Jxta_advertisement * impl, JString * name,
                                 JString * description, Jxta_vector * resource_groups, Jxta_PG ** result);
-    void (*newfromimpl_e) (Jxta_PG * self, Jxta_PGID * gid,
-                           Jxta_advertisement * impl, JString * name,
-                           JString * description, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws);
      Jxta_status(*newfromid) (Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * resource_groups, Jxta_PG ** result);
-    void (*newfromid_e) (Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws);
     void (*get_rendezvous_service) (Jxta_PG * self, Jxta_rdv_service ** rdv);
     void (*get_endpoint_service) (Jxta_PG * self, Jxta_endpoint_service ** endp);
     void (*get_resolver_service) (Jxta_PG * self, Jxta_resolver_service ** resolver);
@@ -193,6 +184,23 @@ void jxta_PG_construct(Jxta_PG * self, Jxta_PG_methods * methods);
 Jxta_status peergroup_init(Jxta_PG * me, Jxta_PG * parent);
 Jxta_status peergroup_start(Jxta_PG * me);
 Jxta_status peergroup_stop(Jxta_PG * me);
+
+
+/**
+ * get the cache manager for this group
+ *
+ * @param self Peer group object
+ * @param cm Location to store the cache manager
+*/
+void peergroup_get_cache_manager(Jxta_PG * self, Jxta_cm ** cm);
+
+/**
+ * set the cache manager for this group
+ *
+ * @param self Peer group object
+ * @param cm Cache manager
+*/
+void peergroup_set_cache_manager(Jxta_PG * self, Jxta_cm * cm);
 
 /**
  * The base PG dtor (Not public, not virtual. Only called by subclassers).

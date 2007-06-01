@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_service_priv.h,v 1.4 2006/05/16 00:58:12 slowhog Exp $
+ * $Id: jxta_endpoint_service_priv.h,v 1.5 2006/09/05 06:12:11 slowhog Exp $
  */
 
 #ifndef JXTA_ENDPOINT_SERVICE_PRIV_H
@@ -95,6 +95,7 @@ Jxta_status endpoint_service_add_recipient(Jxta_endpoint_service * me, void **co
 Jxta_status endpoint_service_remove_recipient(Jxta_endpoint_service * me, void *cookie);
 Jxta_status endpoint_service_remove_recipient_by_addr(Jxta_endpoint_service * me, const char *name, const char *param);
 
+Jxta_status endpoint_service_poll(Jxta_endpoint_service * me, apr_interval_time_t timeout);
 Jxta_status endpoint_service_demux(Jxta_endpoint_service * me, const char *name, const char *param, Jxta_message * msg);
 
 #ifdef __cplusplus

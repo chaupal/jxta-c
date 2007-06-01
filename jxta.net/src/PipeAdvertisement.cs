@@ -50,10 +50,11 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: PipeAdvertisement.cs,v 1.1 2006/01/18 20:31:08 lankes Exp $
+ * $Id: PipeAdvertisement.cs,v 1.2 2006/08/04 10:33:20 lankes Exp $
  */
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace JxtaNET
 {
@@ -61,7 +62,8 @@ namespace JxtaNET
 	/// Summary of PipeAdvertisement.
 	/// </summary>
 	public class PipeAdvertisement : Advertisement
-	{
+    {
+        #region import jxta-c functions
         [DllImport("jxta.dll")]
         private static extern UInt32 jxta_pipe_adv_set_Id(IntPtr adv, String buffer);
 
@@ -71,29 +73,95 @@ namespace JxtaNET
         [DllImport("jxta.dll")]
         private static extern UInt32 jxta_pipe_adv_set_Type(IntPtr adv, String type);
 
+        [DllImportAttribute("jxta.dll")]
+        private static extern IntPtr jxta_pipe_adv_get_Type(IntPtr adv);
+
         [DllImport("jxta.dll")]
         private static extern UInt32 jxta_pipe_adv_set_Name(IntPtr adv, String name);
 
-        public void setID(ID id)
+        [DllImport("jxta.dll")]
+        private static extern IntPtr jxta_pipe_adv_get_Name(IntPtr adv);
+
+        [DllImport("jxta.dll")]
+        private static extern UInt32 jxta_pipe_adv_set_Desc(IntPtr adv, String desc);
+
+        [DllImport("jxta.dll")]
+        private static extern IntPtr jxta_pipe_adv_get_Desc(IntPtr adv);
+
+        [DllImport("jxta.dll")]
+        private static extern IntPtr jxta_advertisement_get_id(IntPtr ad);
+
+        [DllImport("jxta.dll")]
+        private static extern void jxta_pipe_adv_parse_charbuffer(IntPtr self, String buffer, Int32 len);
+        #endregion
+
+        public override void ParseXML(string xml)
+        {
+            jxta_pipe_adv_parse_charbuffer(this.self, xml, xml.Length);
+        }
+
+        /// <summary>
+        /// Sets the unique identifier of the Pipe Advertisement.
+        /// </summary>
+        /// <param name="id"></param>
+        public void SetPipeID(PipeID id)
         {
             Errors.check(jxta_pipe_adv_set_Id(this.self, id.ToString()));
         }
 
-        public void setType(String type)
+        public override ID ID
         {
-            Errors.check(jxta_pipe_adv_set_Type(this.self, type));
+            get
+            {
+                IntPtr ret = jxta_advertisement_get_id(self);
+                return new PipeIDImpl(ret);
+            }
         }
 
-        public void setName(String name)
+        /// <summary>
+        /// Pipe type for the pipe described by this advertisement.
+        /// </summary>
+        public String Type
         {
-            Errors.check(jxta_pipe_adv_set_Name(this.self, name));
+            get
+            {
+                return Marshal.PtrToStringAnsi(jxta_pipe_adv_get_Type(this.self));
+            }
+            set
+            {
+                Errors.check(jxta_pipe_adv_set_Type(this.self, value));
+            }
         }
 
-        internal PipeAdvertisement(IntPtr self) : base(self) {}
-
-        public PipeAdvertisement()
+        /// <summary>
+        /// Symbolic name for the pipe described by this advertisement.
+        /// </summary>
+        public String Name
         {
-            this.self = jxta_pipe_adv_new();
+            get
+            {
+                return Marshal.PtrToStringAnsi(jxta_pipe_adv_get_Name(this.self));
+            }
+            set
+            {
+                Errors.check(jxta_pipe_adv_set_Name(this.self, value));
+            }
+        }
+
+        /// <summary>
+        /// Description of the Pipe Advertisement.
+        /// </summary>
+        public String Desc
+        {
+            set
+            {
+            }
+        }
+
+        public PipeAdvertisement(IntPtr self) : base(self) {}
+
+        public PipeAdvertisement() : base(jxta_pipe_adv_new())
+        {
         }
 	}
 }

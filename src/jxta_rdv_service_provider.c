@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_provider.c,v 1.22 2006/03/29 21:49:17 slowhog Exp $
+ * $Id: jxta_rdv_service_provider.c,v 1.23 2006/06/24 08:02:28 slowhog Exp $
  */
 
 static const char *__log_cat = "RdvProvider";
@@ -109,7 +109,7 @@ void jxta_rdv_service_provider_destruct(_jxta_rdv_service_provider * self)
 Jxta_status jxta_rdv_service_provider_init(Jxta_rdv_service_provider * provider, _jxta_rdv_service * service)
 {
     _jxta_rdv_service_provider *self = PTValid(provider, _jxta_rdv_service_provider);
-    Jxta_PG *group = jxta_service_get_peergroup_priv((_jxta_service *) service);
+    Jxta_PG *group = jxta_service_get_peergroup_priv((Jxta_service *) service);
     JString *string;
     Jxta_PGID *gid;
     Jxta_PID *pid;
@@ -485,7 +485,7 @@ Jxta_status jxta_rdv_service_provider_prop_to_peers(Jxta_rdv_service_provider * 
                 /* Send the message */
                 res =
                     jxta_endpoint_service_send(jxta_service_get_peergroup_priv
-                                               ((_jxta_service *) provider->service), provider->service->endpoint, msg, destAddr);
+                                               ((Jxta_service *) provider->service), provider->service->endpoint, msg, destAddr);
                 if (res != JXTA_SUCCESS) {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to propagate message [%pp]. Expiring %s://%s\n",
                                     msg,

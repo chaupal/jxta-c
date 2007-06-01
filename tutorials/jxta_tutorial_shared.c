@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tutorial_shared.c,v 1.5 2005/11/15 18:41:35 slowhog Exp $
+ * $Id: jxta_tutorial_shared.c,v 1.6 2006/09/01 18:03:26 bondolo Exp $
  */
 
 /*
@@ -195,7 +195,7 @@ Jxta_peer *group_get_rendezvous_peer(Jxta_PG * group)
     size = jxta_vector_size(peers);
     for (i = 0; i < size; i++) {
         jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer), i);
-        if (TRUE == jxta_rdv_service_peer_is_connected(rdvSvc, peer)) {
+        if (jxta_peer_get_expires(peer) > jpr_time_now()) {
             rdvPeer = peer;
             break;
         }

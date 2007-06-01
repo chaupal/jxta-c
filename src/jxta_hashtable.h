@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_hashtable.h,v 1.10 2006/02/01 19:01:15 bondolo Exp $
+ * $Id: jxta_hashtable.h,v 1.12 2006/10/01 01:08:50 bondolo Exp $
  */
 
 
@@ -173,6 +173,18 @@ JXTA_DECLARE(Jxta_boolean) jxta_hashtable_putnoreplace(Jxta_hashtable * self, co
 JXTA_DECLARE(void)
 jxta_hashtable_replace(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object * value, Jxta_object ** old_value);
 
+/**
+ * Determines if there is a value associated with the specified key in the
+ * hash table. If no such item can be found, an error code is returned. The 
+ * found value is shared automatically.
+ *
+ * @param self The hashtable onto which to apply the operation.
+ * @param key Address of the data to be used as the key. May not be NULL.
+ * @param key_size the size of the data to be used as the key.
+ * @return JXTA_SUCCESS if a value matching the key was found. 
+ * JXTA_ITEM_NOTFOUND if no value matching the key could be found. Other errors per failure cause.
+ **/
+JXTA_DECLARE(Jxta_status) jxta_hashtable_contains(Jxta_hashtable * self, const void *key, size_t key_size);
 
 /**
  * Finds and return the value associated with the specified key in the hash table. If no such item can be found, an error code is
@@ -183,7 +195,8 @@ jxta_hashtable_replace(Jxta_hashtable * self, const void *key, size_t key_size, 
  * @param key_size the size of the data to be used as the key.
  * @param found_value address where the found value is returned. If no
  * item is found the data at this address is not affected.
- * @return JXTA_SUCCESS if an item was found. An error otherwise.
+ * @return JXTA_SUCCESS if a value matching the key was found. 
+ * JXTA_ITEM_NOTFOUND if no value matching the key could be found. Other errors per failure cause.
  **/
 JXTA_DECLARE(Jxta_status) jxta_hashtable_get(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object ** found_value);
 
@@ -198,8 +211,8 @@ JXTA_DECLARE(Jxta_status) jxta_hashtable_get(Jxta_hashtable * self, const void *
  * @param key_size the size of the data to be used as the key.
  * @param found_value address where the found value is returned. If no
  * item is found the data at this address is not affected.
- * @return JXTA_SUCCESS if an item was found and removed. An error
- * otherwise.
+ * @return JXTA_SUCCESS if a value matching the key was found. 
+ * JXTA_ITEM_NOTFOUND if no value matching the key could be found. Other errors per failure cause.
  **/
 JXTA_DECLARE(Jxta_status) jxta_hashtable_del(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object ** found_value);
 
@@ -214,9 +227,9 @@ JXTA_DECLARE(Jxta_status) jxta_hashtable_del(Jxta_hashtable * self, const void *
  * @param key Address of the data to be used as the key. May not be NULL.
  * @param key_size the size of the data to be used as the key.
  * @param value The value which was removed. If NULL then the object is released.
- * @return JXTA_SUCCESS if an item was found and removed. JXTA_ITEM_NOTFOUND
- * if the key was not found. JXTA_VIOLATION if the key was found associated to
- * a different value.
+ * @return JXTA_SUCCESS if a value matching the key was found. 
+ * JXTA_ITEM_NOTFOUND if no value matching the key could be found. Other errors per failure cause.
+ * JXTA_VIOLATION if the key was found associated to a different value.
  **/
 JXTA_DECLARE(Jxta_status) jxta_hashtable_delcheck(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object * value);
 

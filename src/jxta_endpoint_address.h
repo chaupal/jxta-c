@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_address.h,v 1.18 2006/05/25 21:50:16 bondolo Exp $
+ * $Id: jxta_endpoint_address.h,v 1.20 2006/08/20 20:21:07 bondolo Exp $
  */
 
 
@@ -131,6 +131,17 @@ JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new_2(const char *pr
 JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new_3(Jxta_id * peer_id,
                                                                   const char *service_name, const char *service_params);
 
+/** Creates a new Jxta_endpoint_address using the provided endpoint address as a base but with the provided service and params.
+ **
+ ** @param base A pointer to the base endpoint address
+ ** @param service_name name of the service
+ ** @param service_param parameter of the service
+ ** @return an Jxta_endpoint_address* pointing to the new Jxta_endpoint_address.
+ ** NULL is returned when the URI was incorrect.
+ **/
+JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new_4(Jxta_endpoint_address* base,
+                                                                  const char *service_name, const char *service_params);
+
 /**
  ** Get the protocol name.
  **
@@ -196,6 +207,8 @@ JXTA_DECLARE(size_t) jxta_endpoint_address_size(Jxta_endpoint_address * addr);
  ** @returns a pointer to a string containing the URI.
  **/
 JXTA_DECLARE(char *) jxta_endpoint_address_to_string(Jxta_endpoint_address * addr);
+
+JXTA_DECLARE(char *) jxta_endpoint_address_to_pstr(Jxta_endpoint_address * me, apr_pool_t * p);
 
 /**
  ** Returns a newly created null terminated string that contains the TCP:port

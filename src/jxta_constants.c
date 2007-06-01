@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_constants.c,v 1.3 2006/06/01 02:41:32 mmx2005 Exp $
+ * $Id: jxta_constants.c,v 1.5 2006/08/14 22:51:17 mmx2005 Exp $
  */
 #include "jxta_constants.h"
 #include "jxta_advertisement.h"
@@ -102,8 +102,11 @@ JXTA_DECLARE(Jxta_log_level) jxta_get_JXTA_LOG_LEVEL_TRACE(void) { return JXTA_L
 JXTA_DECLARE(Jxta_log_level) jxta_get_JXTA_LOG_LEVEL_PARANOID(void) { return JXTA_LOG_LEVEL_PARANOID;}
 JXTA_DECLARE(Jxta_log_level) jxta_get_JXTA_LOG_LEVEL_MAX(void) { return JXTA_LOG_LEVEL_MAX;}
 
+JXTA_DECLARE(Jxta_id *) jxta_get_id_worldNetPeerGroupID(void) { return jxta_id_worldNetPeerGroupID; } 
+JXTA_DECLARE(Jxta_id *) jxta_get_id_defaultNetPeerGroupID(void) { return jxta_id_defaultNetPeerGroupID; }
+
 JXTA_DECLARE(Jxta_write_func) jxta_get_addr_writefunc_appender()
 {
-	return jstring_writefunc_appender;
+	return (Jxta_write_func)jstring_writefunc_appender;
 }
 

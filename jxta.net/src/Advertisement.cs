@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: Advertisement.cs,v 1.1 2006/01/18 20:31:00 lankes Exp $
+ * $Id: Advertisement.cs,v 1.2 2006/08/04 10:33:18 lankes Exp $
  */
 using System;
 using System.Runtime.InteropServices;
@@ -60,55 +60,65 @@ namespace JxtaNET
 	/// <summary>
 	/// Summary of Advertisement.
 	/// </summary>
-	public class Advertisement : JxtaObject
-	{
-        [DllImport("jxta.dll")]
-        private static extern UInt32 jxta_advertisement_parse_charbuffer(IntPtr ad, String buf, int len);
+	public abstract class Advertisement : JxtaObject
+    {
+        #region import of jxta-c functions
+        //[DllImport("jxta.dll")]
+        //private static extern UInt32 jxta_advertisement_parse_charbuffer(IntPtr ad, String buf, int len);
 
-        [DllImport("jxta.dll")]
-        private static extern IntPtr jxta_advertisement_get_document_name(IntPtr ad);
+        //[DllImport("jxta.dll")]
+        //private static extern IntPtr jxta_advertisement_get_document_name(IntPtr ad);
 
         [DllImport("jxta.dll")]
         private static extern void jxta_advertisement_get_xml(IntPtr self, ref IntPtr jstring);
 
-        [DllImport("jxta.dll")]
-        private static extern IntPtr jxta_advertisement_get_id(IntPtr ad);
+        //[DllImport("jxta.dll")]
+        //private static extern IntPtr jxta_advertisement_get_id(IntPtr ad);
 
         [DllImport("jxta.dll")]
         private static extern IntPtr jxta_advertisement_new();
+        #endregion 
 
-        public void parse(String buf)
+        /*public void Parse(string buf)
         {
             Errors.check(jxta_advertisement_parse_charbuffer(this.self, buf, buf.Length));
+        }*/
+
+        //public string GetDocumentName()
+        //{
+        //    return Marshal.PtrToStringAnsi(jxta_advertisement_get_document_name(self));
+        //}
+
+        /// <summary>
+        /// Returns a unique ID suitable for indexing of this Advertisement.
+        /// </summary>
+        public abstract ID ID
+        {
+            get;
         }
 
-		public string getDocumentName()
-		{
-			return Marshal.PtrToStringAnsi(jxta_advertisement_get_document_name(self));
-		}
+        public abstract void ParseXML(string xml);
 
-		public string getXML()
+        /// <summary>
+        /// Return a string representaion of this advertisement. The string will contain 
+        /// the advertisement formated as a UTF-8 encoded XML Document.
+        /// </summary>
+        /// <returns>A String containing the advertisement.</returns>
+		public override string ToString()
 		{
             IntPtr ret = new IntPtr();
-			jxta_advertisement_get_xml(this.self, ref ret);
+            jxta_advertisement_get_xml(this.self, ref ret);
             return new JxtaString(ret);
 		}
 
-		public ID getID()
-		{
-            return new ID(jxta_advertisement_get_id(self));
-		}
-
-		public override string ToString()
-		{
-			return this.getXML();
-		}
-
-        internal Advertisement(IntPtr self) : base(self) { }
-
-        public Advertisement() : base() 
+        internal Advertisement(IntPtr self)
+            : base(self)
         {
-            this.self = jxta_advertisement_new();
+        }
+
+        internal Advertisement()
+            : base(jxta_advertisement_new())
+        {
         }
 	}
 }

@@ -50,12 +50,12 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_advertisement.c,v 1.97 2006/02/15 01:09:37 slowhog Exp $
+ * $Id: jxta_advertisement.c,v 1.101 2006/08/30 21:01:49 slowhog Exp $
  */
 static const char *__log_cat = "ADV";
 
 
-#include "jxta_debug.h"
+#include "jxta_log.h"
 #include "jxta_errno.h"
 #include "jxta_advertisement.h"
 #include "jxta_apr.h"
@@ -70,6 +70,15 @@ static const char *__log_cat = "ADV";
 #define ENHANCED_QUERY_LOG "QueryLog"
 
 #define MAX_ADV_DEPTH 16
+
+/* static apr_pool_t * global_ad_pool; */
+/**
+*   This is a "global" registry for advertisement handlers.
+*/
+static Jxta_hashtable *global_ad_table = NULL;
+
+static void advertisement_free(Jxta_object * me);
+static void advertisement_new_func_struct_delete(Jxta_advertisement_new_func_struct * new_func_struct);
 
 JXTA_DECLARE(void)
 jxta_advertisement_initialize(Jxta_advertisement * ad,
@@ -265,20 +274,20 @@ void log_error(XML_Parser parser, const char *document_name)
              XML_GetCurrentByteCount(parser));
 }
 
-/** FIXME: Find a way to merge these two parse functions, or 
+/** 
+ * FIXME: Find a way to merge these two parse functions, or 
  * have them wrap a third function that handles common code.
  */
 JXTA_DECLARE(Jxta_status) jxta_advertisement_parse_charbuffer(Jxta_advertisement * ad, const char *buf, size_t len)
 {
     size_t index = 0;
-    XML_Parser parser = NULL;
-
-    if (!len) {
+ 
+    if (!buf || !len) {
         return JXTA_INVALID_ARGUMENT;
     }
 
     while (index < len) {
-        parser = XML_ParserCreate(NULL);
+        XML_Parser parser = XML_ParserCreate(NULL);
         jxta_advertisement_set_handlers(ad, parser, (Jxta_advertisement *) NULL);
         if (XML_Parse(parser, buf + index, len - index, 1)) {
             XML_ParserFree(parser);
@@ -327,29 +336,7 @@ JXTA_DECLARE(Jxta_status) jxta_advertisement_parse_file(Jxta_advertisement * ad,
     return JXTA_SUCCESS;
 }
 
-/**
- * @todo probably don't want to use this, hash tables are 
- * too heavy, so get rid of it.
- */
-JXTA_DECLARE(void) jxta_advertisement_register_local_handler(Jxta_advertisement * ad, const char *name, const void *value)
-{
-    if (ad || name || value) {
-    }
-/*
-  apr_hash_set(ad->handlers, (const void*)name,
-	       APR_HASH_KEY_STRING, value);
-  
-  JXTA_LOG("From jxta_advertisement_register_module_handler, ");
-  JXTA_LOG("name being registered: %s\n", name);
-*/
-}
-
-/* This is a "global" registry for advertisement handlers. */
-/* static apr_pool_t * global_ad_pool; */
-
-static Jxta_hashtable *global_ad_table = NULL;
-
-void jxta_advertisement_new_func_struct_delete(Jxta_advertisement_new_func_struct * new_func_struct)
+void advertisement_new_func_struct_delete(Jxta_advertisement_new_func_struct * new_func_struct)
 {
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In jxta_ad_new_func_delete\n");
     free(new_func_struct);
@@ -359,18 +346,18 @@ Jxta_advertisement_new_func_struct *jxta_advertisement_new_func_struct_new(const
 {
     Jxta_advertisement_new_func_struct *new_func_struct ;
 
-    new_func_struct = (Jxta_advertisement_new_func_struct *) malloc(sizeof(Jxta_advertisement_new_func_struct));
-    memset(new_func_struct, 0x00, sizeof(Jxta_advertisement_new_func_struct));
-    JXTA_OBJECT_INIT(new_func_struct, (JXTA_OBJECT_FREE_FUNC) jxta_advertisement_new_func_struct_delete, 0);
+    new_func_struct = (Jxta_advertisement_new_func_struct *) calloc(1, sizeof(Jxta_advertisement_new_func_struct));
+
+    JXTA_OBJECT_INIT(new_func_struct, (JXTA_OBJECT_FREE_FUNC) advertisement_new_func_struct_delete, 0);
     new_func_struct->jxta_advertisement_new_func = new_func;
 
     return new_func_struct;
 }
 
 /** 
- * @param const char * for hash key
+ * @param key const char * for hash key
  *
- * @param Advertisement initialization function: instead of the 
+ * @param ad_new_function Advertisement initialization function: instead of the 
  *        hash value being an initialized jxta_advertisement, its better
  *        to have the value be a pointer to an initialization function
  *        that will return the advertisement.  That way every time 
@@ -391,7 +378,7 @@ JXTA_DECLARE(void) jxta_advertisement_register_global_handler(const char *key, c
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "jxta_advertisement_global_register : key being registered: %s\n", key);
 }
 
-int jxta_advertisement_global_handler(Jxta_advertisement * ad, const char *key)
+Jxta_boolean jxta_advertisement_global_handler(Jxta_advertisement * ad, const char *key)
 {
     Jxta_advertisement *new_ad;
     Jxta_advertisement_new_func_struct *new_func_struct = NULL;
@@ -421,13 +408,13 @@ int jxta_advertisement_global_handler(Jxta_advertisement * ad, const char *key)
          * then return to the back end engine
          * (let it know that we found a handler)
          */
-        return 1;
+        return TRUE;
     }
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Element name %s has no handler...\n", key);
 
     /* let the back end know that no handler was found */
-    return 0;
+    return FALSE;
 }
 
 /*
@@ -445,13 +432,11 @@ void jxta_advertisement_cleanup(void)
 
 void jxta_advertisement_start_element(void *userdata, const char *ename, const char **atts)
 {
-    int i, len;
-    const char **att;
-    const char **typeAttr = NULL;
     Jxta_advertisement *ad = (Jxta_advertisement *) userdata;
-    const Kwdtab *tags_table = ad->dispatch_table;
 
-    ad->atts = atts;
+    const char **att;
+    const char *typeAttr = NULL;
+    int each_kwd;
 
     if (ad->depth >= MAX_ADV_DEPTH) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Advertisement too deep.\n");
@@ -459,43 +444,54 @@ void jxta_advertisement_start_element(void *userdata, const char *ename, const c
         ++(ad->depth);
         return;
     }
+    
     ad->handler_stk[ad->depth++] = ad->curr_handler;
-    att = atts;
     ad->atts = atts;
     ad->currElement = ename;
-    while (*att != NULL) {
-        if (!strcmp(*att, "type")) {
-            typeAttr = att + 1;
+    jstring_reset(ad->accum, NULL);
+    
+    att = atts;
+    
+    /* Find the "type" attribute, if present */
+    while( *att ) {
+        if( 0 == strcmp( *att, "type" ) ) {
+            typeAttr = *(att + 1);
             break;
         }
-        /* search for this attribute */
-        if (tags_table != NULL) {
-            char *full_name;
+        
+        att += 2;
+    }
+    
+    if (ad->dispatch_table != NULL) {
+        att = atts;
+        
+        while (*att != NULL) {
+            /* search for this attribute */
+            int meta_tag_len = strlen(ename) + strlen(" ") + strlen(*att) + 4;
+            char *meta_tag = (char *) calloc(1, meta_tag_len);
+            
+            apr_snprintf(meta_tag, meta_tag_len, "%s %s", ename, *att);
 
-            len = strlen(ename) + strlen(" ") + strlen(*att) + 4;
-            full_name = (char *) calloc(1, len);
-            apr_snprintf(full_name, len, "%s %s", ename, *att++);
-            i = 0;
-            while (tags_table[i].kwd) {
-                if (!strcmp(tags_table[i].kwd, full_name)) {
-                    if (tags_table[i].nodeparse != NULL) {
-                        tags_table[i].nodeparse(userdata, *(att), strlen(*(att)));
+            for(each_kwd = 0; ad->dispatch_table[each_kwd].kwd; each_kwd++ ) {
+                if ( 0 == strcmp(ad->dispatch_table[each_kwd].kwd, meta_tag)) {
+                    if (ad->dispatch_table[each_kwd].nodeparse != NULL) {
+                        char const * attr_value = *(att + 1);
+                        
+                        ad->dispatch_table[each_kwd].nodeparse(userdata, attr_value, strlen(attr_value));
                     }
                     break;
                 }
-                i++;
             }
-            free(full_name);
-        }
-        att++;
-    }
+            
+            free(meta_tag);
 
-    /* IF, and only IF, we do not have a tags_table, THEN we're a base class
-     * adv handling an unknown batch of documents. Then, we look in the global
-     * hash table, for the handler; NOT the tags_table.
-     */
-    if (tags_table == NULL) {
-        /*
+            att += 2;
+        }
+    } else {
+        /* IF, and only IF, we do not have a tags_table, THEN we're a base class
+         * adv handling an unknown batch of documents. Then, we look in the global
+         * hash table, for the handler; NOT the tags_table.
+         *
          * If we do not have a tags table but we do not have an adv_list
          * either, then we cannot do anything with what we parse.
          */
@@ -507,7 +503,7 @@ void jxta_advertisement_start_element(void *userdata, const char *ename, const c
          */
         if (typeAttr != NULL) {
             /* If a handler is found, we're done. */
-            if (jxta_advertisement_global_handler(ad, *typeAttr))
+            if (jxta_advertisement_global_handler(ad, typeAttr))
                 return;
         }
 
@@ -526,10 +522,38 @@ void jxta_advertisement_start_element(void *userdata, const char *ename, const c
      * If we got a type attribute, try and match it first.
      */
     if (typeAttr != NULL) {
-        i = 0;
-        while (tags_table[i].kwd) {
-            if (!strcmp(tags_table[i].kwd, *typeAttr)) {
-                ad->curr_handler = tags_table[i].nodeparse;
+        for (each_kwd = 0; ad->dispatch_table[each_kwd].kwd; each_kwd++ ) {
+            if ( 0 == strcmp(ad->dispatch_table[each_kwd].kwd, typeAttr)) {
+                if (ad->dispatch_table[each_kwd].nodeparse != NULL) {
+                    ad->curr_handler = ad->dispatch_table[each_kwd].nodeparse;
+
+                    /** Call the handler exactly once at start, with a zero-length
+                    * string. Existing handlers are already designed to cope with
+                    * it. Handlers will ignore it except if the tag marks a complex
+                    * sub-element, in which case the handler *needs* to be called
+                    * at start to switch user-data. We could let the application
+                    * code supply a different handler for start and end, but all
+                    * advertisement is already written with a single handler
+                    * that's called any number of times. This change just makes the
+                    * number of calls predictable, thus allowing the reliable
+                    * processing of repeat tags without breaking existing
+                    * advertisement code.
+                    **/
+                   ad->curr_handler(userdata, "", 0);
+
+                   return;
+                }
+            }
+        }
+    }
+
+    /*
+     * If there is no type attr or it means nothing to us, try with the element name.
+     */
+    for (each_kwd = 0; ad->dispatch_table[each_kwd].kwd; each_kwd++ ) {
+        if ( 0 == strcmp(ad->dispatch_table[each_kwd].kwd, ename)) {
+            if (ad->dispatch_table[each_kwd].nodeparse != NULL) {
+                ad->curr_handler = ad->dispatch_table[each_kwd].nodeparse;
 
                  /** Call the handler exactly once at start, with a zero-length
                  * string. Existing handlers are already designed to cope with
@@ -547,43 +571,35 @@ void jxta_advertisement_start_element(void *userdata, const char *ename, const c
 
                 return;
             }
-            i++;
         }
     }
 
     /*
-     * If there is no type attr or it means nothing to us, try with the element
-     * name.
-     */
+    *   wildcard
+    */
+    for (each_kwd = 0; ad->dispatch_table[each_kwd].kwd; each_kwd++ ) {
+        if ( 0 == strcmp(ad->dispatch_table[each_kwd].kwd, "*")) {
+            if (ad->dispatch_table[each_kwd].nodeparse != NULL) {
+                ad->curr_handler = ad->dispatch_table[each_kwd].nodeparse;
 
-    i = 0;
-    while (tags_table[i].kwd) {
-        if ((!strcmp(tags_table[i].kwd, "*")) || (!strcmp(tags_table[i].kwd, ename))) {
-            ad->curr_handler = tags_table[i].nodeparse;
+                 /** Call the handler exactly once at start, with a zero-length
+                 * string. Existing handlers are already designed to cope with
+                 * it. Handlers will ignore it except if the tag marks a complex
+                 * sub-element, in which case the handler *needs* to be called
+                 * at start to switch user-data. We could let the application
+                 * code supply a different handler for start and end, but all
+                 * advertisement is already written with a single handler
+                 * that's called any number of times. This change just makes the
+                 * number of calls predictable, thus allowing the reliable
+                 * processing of repeat tags without breaking existing
+                 * advertisement code.
+                 **/
+                ad->curr_handler(userdata, "", 0);
 
-            /* Call the handler exactly once at start, with a zero-length
-             * string. Existing handlers are already designed to cope with
-             * it. Handlers will ignore it except if the tag marks a complex
-             * sub-element, in which case the handler *needs* to be called
-             * at start to switch user-data. We could let the application
-             * code supply a different handler for start and end, but all
-             * advertisement is already written with a single handler
-             * that's called any number of times. This change just makes the
-             * number of calls predictable, thus allowing the reliable
-             * processing of repeat tags without breaking existing advertisement
-             * code.
-             */
-            ad->curr_handler(userdata, "", 0);
-
-            return;
+                return;
+            }
         }
-        i++;
     }
-
-    /* Check if the element was
-     * registered at run time.
-     */
-    /* select_from_hash_table(ad,ename); */
 }
 
 /** All we get here is an element name.  So we have to 
@@ -592,7 +608,7 @@ void jxta_advertisement_start_element(void *userdata, const char *ename, const c
  * handler can use the curr_handler to dispatch the stream 
  * to the correct function.
  */
-void jxta_advertisement_end_element(void *userdata, const char *tagname)
+void jxta_advertisement_end_element(void *userdata, const char *ename)
 {
     Jxta_advertisement *ad = (Jxta_advertisement *) userdata;
 
@@ -656,10 +672,12 @@ void jxta_advertisement_end_element(void *userdata, const char *tagname)
     }
 }
 
-JXTA_DECLARE(void) jxta_advertisement_get_xml(Jxta_advertisement * ad, JString ** js)
+JXTA_DECLARE(Jxta_status) jxta_advertisement_get_xml(Jxta_advertisement * ad, JString ** js)
 {
     if (ad->get_xml != NULL) {
-        ad->get_xml(ad, js);
+        return ad->get_xml(ad, js);
+    } else {
+        return JXTA_NOTIMP;
     }
 }
 
@@ -691,17 +709,25 @@ JXTA_DECLARE(Jxta_vector *) jxta_advertisement_get_indexes(Jxta_advertisement * 
     return NULL;
 }
 
-static void jxta_advertisement_free(Jxta_advertisement * me)
+/**
+*   Used instead of "delete" because delete is unfortunately public.
+*/
+static void advertisement_free(Jxta_object * me)
 {
-    jxta_advertisement_delete(me);
-    free(me);
+    Jxta_advertisement* myself = (Jxta_advertisement*) me;
+    
+    jxta_advertisement_destruct(myself);
+    
+    memset( myself, 0xDD, sizeof(Jxta_advertisement) );
+    
+    free(myself);
 }
 
 JXTA_DECLARE(Jxta_advertisement *) jxta_advertisement_new(void)
 {
     Jxta_advertisement *ad = (Jxta_advertisement *) calloc(1, sizeof(Jxta_advertisement));
 
-    jxta_advertisement_initialize(ad, "jxta:any_many", NULL, NULL, NULL, NULL, (FreeFunc) jxta_advertisement_free);
+    jxta_advertisement_initialize(ad, "jxta:any_many", NULL, NULL, NULL, NULL, (FreeFunc) advertisement_free);
 
     /*
      * adv_list is only used for base class advs created by this routine.
@@ -771,7 +797,7 @@ JXTA_DECLARE(Jxta_vector *) jxta_advertisement_return_indexes(const char *idx[])
 void jxta_advertisement_register_global_handlers(void)
 {
     global_ad_table = jxta_hashtable_new(32);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Global ad hash table initialized\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Global ad hash table initialized\n");
 
     jxta_advertisement_register_global_handler("jxta:MCA", (JxtaAdvertisementNewFunc) jxta_MCA_new);
     jxta_advertisement_register_global_handler("jxta:MSA", (JxtaAdvertisementNewFunc) jxta_MSA_new);

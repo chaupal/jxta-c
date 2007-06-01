@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: OutputPipe.cs,v 1.1 2006/01/18 20:31:06 lankes Exp $
+ * $Id: OutputPipe.cs,v 1.2 2006/08/04 10:33:19 lankes Exp $
  */
 using System;
 using System.Collections.Generic;
@@ -59,17 +59,104 @@ using System.Runtime.InteropServices;
 
 namespace JxtaNET
 {
-    public class OutputPipe : JxtaObject
+    public interface OutputPipe
     {
-        [DllImport("jxta.dll")]
-        private static extern int jxta_outputpipe_send(IntPtr op, IntPtr msg);
+        /// <summary>
+        /// Send a message throught the pipe
+        /// </summary>
+        /// <param name="msg">is the message to be sent.</param>
+        /// <returns></returns>
+        bool Send(Message msg);
 
-        public void send(Message msg)
+        /// <summary>
+        /// Close the pipe.
+        /// </summary>
+        void Close();
+
+        /// <summary>
+        /// The pipe advertisement
+        /// </summary>
+        PipeAdvertisement Advertisement
         {
-            jxta_outputpipe_send(this.self, msg.self);
+            get;
         }
 
-        internal OutputPipe(IntPtr self) : base(self) { }
-        internal OutputPipe() : base() { }
+        /// <summary>
+        /// The pipe type
+        /// </summary>
+        String Type
+        {
+            get;
+        }
+
+        /// <summary>
+        /// The pipe name
+        /// </summary>
+        String Name
+        {
+            get;
+        }
     }
-}
+
+    internal class OutputPipeImpl : JxtaObject, OutputPipe
+    {
+        #region import jxta-c functions
+        [DllImport("jxta.dll")]
+        private static extern int jxta_outputpipe_send(IntPtr op, IntPtr msg);
+        #endregion
+
+        public bool Send(Message msg)
+        {
+            if (this.self == IntPtr.Zero)
+                return false;
+
+            if (jxta_outputpipe_send(this.self, msg.self) != Errors.JXTA_SUCCESS)
+                return false;
+
+            return true;
+        }
+
+        private PipeAdvertisement adv = null;
+        public PipeAdvertisement Advertisement
+        {
+            get
+            {
+                return adv;
+            }
+        }
+
+        public String Type
+        {
+            get
+            {
+                return adv.Type;
+            }
+        }
+
+        public String Name
+        {
+            get
+            {
+                return adv.Name;
+            }
+        }
+
+        public void Close()
+        {
+            this.self = IntPtr.Zero;
+        }
+
+        internal OutputPipeImpl(IntPtr self, PipeAdvertisement a)
+            : base(self)
+        {
+            adv = a;
+        }
+
+        internal OutputPipeImpl() : base() { }
+
+        ~OutputPipeImpl()
+        {
+            Close();
+        }
+    }
+ }

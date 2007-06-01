@@ -50,11 +50,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi.c,v 1.29 2006/06/15 08:20:41 mmx2005 Exp $
+ * $Id: jxta_srdi.c,v 1.34 2006/10/04 21:53:34 slowhog Exp $
  */
+ 
+static const char *__log_cat = "SRDI";
 
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include "jxta_errno.h"
 #include "jxta_debug.h"
 #include "jxta_srdi.h"
@@ -85,10 +88,13 @@ struct _Jxta_SRDIMessage {
     int TTL;
     Jxta_id *PeerID;
     JString *PrimaryKey;
+    Jxta_boolean deltaSupport;
     Jxta_vector *Entries;
+    Jxta_vector *resendEntries;
 };
 
-static const char *__log_cat = "SRDI";
+static void jxta_srdi_message_free(Jxta_SRDIMessage *);
+
 
 /** Handler functions.  Each of these is responsible for
  * dealing with all of the character data associated with the 
@@ -96,12 +102,42 @@ static const char *__log_cat = "SRDI";
  */
 static void handleJxta_SRDIMessage(void *userdata, const XML_Char * cd, int len)
 {
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Jxta_SRDIMessage element\n");
+    Jxta_SRDIMessage *myself = (Jxta_SRDIMessage *) userdata;
+    Jxta_SRDIEntryElement *entry;
+    unsigned int i;
+    Jxta_status rv;
+    const char *pk;
+
+    if (0 == len) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Begin Jxta_SRDIMessage element\n");
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "End Jxta_SRDIMessage element\n");
+
+        /* creat default mapping for namespace as JSE peer does not support namespace */
+        for (i = 0; i < jxta_vector_size(myself->Entries); i++) {
+            rv = jxta_vector_get_object_at(myself->Entries, JXTA_OBJECT_PPTR(&entry), i);
+            if (JXTA_SUCCESS != rv) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot go through SRDI entry at %d\n", i);
+                break;
+            }
+            if (entry->nameSpace) {
+                continue;
+            }
+            
+            pk = jstring_get_string(myself->PrimaryKey);
+            if (!strcmp(pk, "Peers")) {
+                entry->nameSpace = jstring_new_2("jxta:PA");
+            } else if (!strcmp(pk, "Groups")) {
+                entry->nameSpace = jstring_new_2("jxta:PGA");
+            } else {
+                entry->nameSpace = jstring_new_2("jxta:ADV");
+            }
+        }
+    }
 }
 
 static void handleTTL(void *userdata, const XML_Char * cd, int len)
 {
-
     Jxta_SRDIMessage *ad = (Jxta_SRDIMessage *) userdata;
     char *tok;
     if (len > 0) {
@@ -139,8 +175,14 @@ static void handlePrimaryKey(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_SRDIMessage *ad = (Jxta_SRDIMessage *) userdata;
     jstring_append_0((JString *) ad->PrimaryKey, cd, len);
+    jstring_trim(ad->PrimaryKey);
 }
 
+static void handleDelta(void *userdata, const XML_Char * cd, int len)
+{
+    Jxta_SRDIMessage *ad = (Jxta_SRDIMessage *) userdata;
+    ad->deltaSupport = TRUE;
+}
 static void DRE_Free(Jxta_object * o)
 {
     Jxta_SRDIEntryElement *dre = (Jxta_SRDIEntryElement *) o;
@@ -162,10 +204,24 @@ static void DRE_Free(Jxta_object * o)
     free((void *) o);
 }
 
+static void normalize_entry(Jxta_SRDIEntryElement *entry)
+{
+    if (!entry->seqNumber) {
+        if (!entry->value) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Received a SRDI entry without value\n");
+            entry->value = jstring_new_2("");
+        }
+        if (!entry->advId) {
+            JXTA_OBJECT_SHARE(entry->value);
+            entry->advId = entry->value;
+        }
+    }
+}
+
 static void handleEntry(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_SRDIMessage *ad = (Jxta_SRDIMessage *) userdata;
-    JString *value;
+    JString *value = NULL;
     Jxta_SRDIEntryElement *entry;
     const char **atts = ((Jxta_advertisement *) ad)->atts;
 
@@ -184,22 +240,26 @@ static void handleEntry(void *userdata, const XML_Char * cd, int len)
      */
     if (atts != NULL) {
         while (*atts) {
-            if (!strncmp("SKey", *atts, strlen("SKey"))) {
+            if (0 == strcmp("SKey", *atts)) {
                 entry->key = jstring_new_1(strlen(atts[1]));
                 jstring_append_0(entry->key, atts[1], strlen(atts[1]));
-            } else if (!strncmp("Expiration", *atts, strlen("Expiration"))) {
+            } else if (0 == strcmp("Expiration", *atts)) {
                 entry->expiration = apr_atoi64(atts[1]);
-            } else if (!strncmp("nSpace", *atts, strlen("nSpace"))) {
+            } else if (0 == strcmp("nSpace", *atts)) {
                 entry->nameSpace = jstring_new_1(strlen(atts[1]));
                 jstring_append_0(entry->nameSpace, atts[1], strlen(atts[1]));
-            } else if (!strncmp("AdvId", *atts, strlen("AdvId"))) {
+            } else if (0 == strcmp("sN", *atts)) {
+                entry->seqNumber = apr_atoi64(atts[1]);
+            } else if (0 == strcmp("resend", *atts)) {
+                entry->resend = TRUE;
+            } else if (0 == strcmp("AdvId", *atts)) {
                 if (NULL == entry->advId) {
                     entry->advId = jstring_new_1(strlen(atts[1]));
                 } else {
                     jstring_reset(entry->advId, NULL);
                 }
                 jstring_append_0(entry->advId, atts[1], strlen(atts[1]));
-            } else if (!strncmp("Range", *atts, strlen("Range"))) {
+            } else if (0 == strcmp("Range", *atts)) {
                 if (NULL == entry->range) {
                     entry->range = jstring_new_1(strlen(atts[1]));
                 } else {
@@ -210,23 +270,25 @@ static void handleEntry(void *userdata, const XML_Char * cd, int len)
             atts += 2;
         }
     }
+    if (len > 0) {
+        value = jstring_new_1(len);
+        jstring_append_0(value, cd, len);
+        jstring_trim(value);
 
-    value = jstring_new_1(len);
-    jstring_append_0(value, cd, len);
-    jstring_trim(value);
-
-    if (jstring_length(value) == 0) {
-        JXTA_OBJECT_RELEASE(value);
-        JXTA_OBJECT_RELEASE(entry);
-        return;
+        if (jstring_length(value) == 0) {
+            JXTA_OBJECT_RELEASE(value);
+            value = NULL;
+        }
     }
     entry->value = value;
-    jxta_vector_add_object_last(ad->Entries, (Jxta_object *) entry);
+    if (entry->resend) {
+        jxta_vector_add_object_last(ad->resendEntries, (Jxta_object *) entry);
+    } else {
+        normalize_entry(entry);
+        jxta_vector_add_object_last(ad->Entries, (Jxta_object *) entry);
+    }
     JXTA_OBJECT_RELEASE(entry);
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Srdi Entry element\n");
 }
-
 
 JXTA_DECLARE(int) jxta_srdi_message_get_ttl(Jxta_SRDIMessage * ad)
 {
@@ -262,14 +324,12 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_set_peerID(Jxta_SRDIMessage * ad, Jx
         JXTA_OBJECT_RELEASE(ad->PeerID);
         ad->PeerID = NULL;
     }
-    JXTA_OBJECT_SHARE(peerid);
-    ad->PeerID = peerid;
+    ad->PeerID = JXTA_OBJECT_SHARE(peerid);
     return JXTA_SUCCESS;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_primaryKey(Jxta_SRDIMessage * ad, JString ** primaryKey)
 {
-    jstring_trim(ad->PrimaryKey);
     JXTA_OBJECT_SHARE(ad->PrimaryKey);
     *primaryKey = ad->PrimaryKey;
     return JXTA_SUCCESS;
@@ -286,7 +346,18 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_set_primaryKey(Jxta_SRDIMessage * ad
     }
     JXTA_OBJECT_SHARE(primaryKey);
     ad->PrimaryKey = primaryKey;
+    jstring_trim(ad->PrimaryKey);
     return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_boolean) jxta_srdi_message_delta_supported(Jxta_SRDIMessage * ad)
+{
+    return ad->deltaSupport;
+}
+
+JXTA_DECLARE(void) jxta_srdi_message_set_support_delta(Jxta_SRDIMessage * ad, Jxta_boolean support)
+{
+    ad->deltaSupport = support;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_entries(Jxta_SRDIMessage * ad, Jxta_vector ** entries)
@@ -298,6 +369,29 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_entries(Jxta_SRDIMessage * ad, J
         *entries = NULL;
     }
     return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_resend_entries(Jxta_SRDIMessage * ad, Jxta_vector ** entries)
+{
+    if (ad->resendEntries) {
+        *entries = JXTA_OBJECT_SHARE(ad->resendEntries);
+    } else {
+        *entries = NULL;
+    }
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(void) jxta_srdi_message_set_resend_entries(Jxta_SRDIMessage * ad, Jxta_vector * entries)
+{
+    if (ad->resendEntries) {
+        JXTA_OBJECT_RELEASE(ad->resendEntries);
+        ad->resendEntries = NULL;
+    }
+    if (entries != NULL) {
+        JXTA_OBJECT_SHARE(entries);
+        ad->resendEntries = entries;
+    }
+    return;
 }
 
 JXTA_DECLARE(void) jxta_srdi_message_set_entries(Jxta_SRDIMessage * ad, Jxta_vector * entries)
@@ -326,53 +420,75 @@ static const Kwdtab Jxta_SRDIMessage_tags[] = {
     {"PID", PeerID_, *handlePeerID, NULL, NULL},
     {"ttl", TTL_, *handleTTL, NULL, NULL},
     {"PKey", PrimaryKey_, *handlePrimaryKey, NULL, NULL},
+    {"delta", PrimaryKey_, *handleDelta, NULL, NULL},
     {"Entry", Entry_, *handleEntry, NULL, NULL},
     {NULL, 0, 0, NULL, NULL}
 };
 
 Jxta_status srdi_message_print(Jxta_SRDIMessage * ad, JString * js)
 {
-    char *buf;
+    char *buf = calloc( sizeof(char), 512);
+    char tmpbuf[32];
     Jxta_vector *entries;
     unsigned int eachElement = 0;
     Jxta_SRDIEntryElement *anElement;
     jxta_srdi_message_get_entries(ad, &entries);
     for (eachElement = 0; entries != NULL && eachElement < jxta_vector_size(entries); eachElement++) {
-        buf = calloc(1, 512);
         anElement = NULL;
         jxta_vector_get_object_at(entries, JXTA_OBJECT_PPTR(&anElement), eachElement);
         if (NULL == anElement) {
             continue;
         }
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "srdi - key:%s AdvId:%s \n", jstring_get_string(anElement->key),
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "srdi - key:%s AdvId:%s \n", 
+                        anElement->key ? jstring_get_string(anElement->key) : "(null)",
                         anElement->advId ? jstring_get_string(anElement->advId) : "(null)");
-        apr_snprintf(buf, 512, "<Entry SKey=\"%s\" Expiration=\"%" APR_INT64_T_FMT "\"",
-                     jstring_get_string(anElement->key), anElement->expiration);
+
+        jstring_append_2(js, "<Entry ");
+        apr_snprintf(buf, 512, " Expiration=\"%" APR_INT64_T_FMT "\"",
+                      anElement->expiration);
         jstring_append_2(js, buf);
 
+        if (anElement->resend) {
+            jstring_append_2(js, " resend=\"yes\"");
+        }
+        if (NULL != anElement->key) {
+            jstring_append_2(js, " SKey=\"");
+            jstring_append_1(js, anElement->key);
+            jstring_append_2(js, "\"");
+        }
         if (NULL != anElement->nameSpace) {
             jstring_append_2(js, " nSpace=\"");
-            jstring_append_2(js, jstring_get_string(anElement->nameSpace));
+            jstring_append_1(js, anElement->nameSpace);
             jstring_append_2(js, "\"");
         }
 
         if (NULL != anElement->advId) {
             jstring_append_2(js, " AdvId=\"");
-            jstring_append_2(js, jstring_get_string(anElement->advId));
+            jstring_append_1(js, anElement->advId);
             jstring_append_2(js, "\"");
         }
 
         if (NULL != anElement->range) {
             jstring_append_2(js, " Range=\"");
-            jstring_append_2(js, jstring_get_string(anElement->range));
+            jstring_append_1(js, anElement->range);
+            jstring_append_2(js, "\"");
+        }
+        if (anElement->seqNumber > 0) {
+            jstring_append_2(js, " sN=\"");
+            apr_snprintf(tmpbuf, sizeof(tmpbuf), JXTA_SEQUENCE_NUMBER_FMT , anElement->seqNumber);
+            jstring_append_2(js, tmpbuf);
             jstring_append_2(js, "\"");
         }
         jstring_append_2(js, ">\n");
-        jstring_append_1(js, anElement->value);
+        if (NULL != anElement->value) {
+            jstring_append_1(js, anElement->value);
+        }
         jstring_append_2(js, "</Entry>\n");
         JXTA_OBJECT_RELEASE(anElement);
-        free(buf);
     }
+
+    free(buf);
+
     if (entries)
         JXTA_OBJECT_RELEASE(entries);
     return JXTA_SUCCESS;
@@ -380,17 +496,16 @@ Jxta_status srdi_message_print(Jxta_SRDIMessage * ad, JString * js)
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_xml(Jxta_SRDIMessage * ad, JString ** document)
 {
-
     JString *doc;
     JString *tmps = NULL;
-    char *buf = calloc(1, 256);
+    char buf[32];
 
     doc = jstring_new_2("<?xml version=\"1.0\"?>\n");
     jstring_append_2(doc, "<!DOCTYPE jxta:GenSRDI>\n");
     jstring_append_2(doc, "<jxta:GenSRDI>\n");
 
     jstring_append_2(doc, "<ttl>");
-    apr_snprintf(buf, 256, "%d", ad->TTL);
+    apr_snprintf(buf, sizeof(buf), "%d", ad->TTL);
     jstring_append_2(doc, buf);
     jstring_append_2(doc, "</ttl>\n");
 
@@ -404,10 +519,13 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_xml(Jxta_SRDIMessage * ad, JStri
     jstring_append_2(doc, jstring_get_string(ad->PrimaryKey));
     jstring_append_2(doc, "</PKey>\n");
 
+    if (ad->deltaSupport) {
+        jstring_append_2(doc, "<delta />\n");
+    }
     srdi_message_print(ad, doc);
 
     jstring_append_2(doc, "</jxta:GenSRDI>\n");
-    free(buf);
+
     *document = doc;
     return JXTA_SUCCESS;
 }
@@ -415,12 +533,12 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_xml(Jxta_SRDIMessage * ad, JStri
 JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new(void)
 {
 
-    Jxta_SRDIMessage *ad;
-    ad = (Jxta_SRDIMessage *) malloc(sizeof(Jxta_SRDIMessage));
-    memset(ad, 0x0, sizeof(Jxta_SRDIMessage));
+    Jxta_SRDIMessage *ad = (Jxta_SRDIMessage *) calloc(1, sizeof(Jxta_SRDIMessage));
+
     ad->PeerID = jxta_id_nullID;
     ad->TTL = 0;
     ad->Entries = jxta_vector_new(4);
+    ad->resendEntries = jxta_vector_new(0);
     ad->PrimaryKey = jstring_new_0();
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
                                   "jxta:GenSRDI",
@@ -450,10 +568,11 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_1(int ttl, Jxta_id * peer
     ad->Entries = entries;
     ad->TTL = ttl;
     ad->PrimaryKey = jstring_new_2(primarykey);
+    jstring_trim(ad->PrimaryKey);
     return ad;
 }
 
-void jxta_srdi_message_free(Jxta_SRDIMessage * ad)
+static void jxta_srdi_message_free(Jxta_SRDIMessage * ad)
 {
     if (ad->PeerID) {
         JXTA_OBJECT_RELEASE(ad->PeerID);
@@ -464,22 +583,24 @@ void jxta_srdi_message_free(Jxta_SRDIMessage * ad)
     if (ad->Entries) {
         JXTA_OBJECT_RELEASE(ad->Entries);
     }
+    if (ad->resendEntries) {
+        JXTA_OBJECT_RELEASE(ad->resendEntries);
+    }
     jxta_advertisement_delete((Jxta_advertisement *) ad);
 
-    memset(ad, 0x0, sizeof(Jxta_SRDIMessage));
     free(ad);
 }
 
-JXTA_DECLARE(void) jxta_srdi_message_parse_charbuffer(Jxta_SRDIMessage * ad, const char *buf, int len)
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_parse_charbuffer(Jxta_SRDIMessage * ad, const char *buf, int len)
 {
 
-    jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    return jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
 
-JXTA_DECLARE(void) jxta_srdi_message_parse_file(Jxta_SRDIMessage * ad, FILE * stream)
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_parse_file(Jxta_SRDIMessage * ad, FILE * stream)
 {
 
-    jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    return jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
 
 static void entry_element_free(Jxta_object * o)
@@ -500,6 +621,7 @@ static void entry_element_free(Jxta_object * o)
     if (dse->advId != NULL) {
         JXTA_OBJECT_RELEASE(dse->advId);
     }
+    
     free((void *) o);
 }
 
@@ -508,6 +630,32 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element(void)
     Jxta_SRDIEntryElement *dse = (Jxta_SRDIEntryElement *) calloc(1, sizeof(Jxta_SRDIEntryElement));
     JXTA_OBJECT_INIT(dse, entry_element_free, 0);
     return dse;
+}
+
+JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_element_clone(Jxta_SRDIEntryElement * entry)
+{
+    Jxta_SRDIEntryElement *newEntry=NULL;
+    newEntry = jxta_srdi_new_element();
+
+    assert(!entry->resend);
+    newEntry->resend = FALSE;
+    newEntry->seqNumber = entry->seqNumber;
+    newEntry->expiration = entry->expiration;
+
+    if (newEntry->seqNumber > 0) {
+        return newEntry;
+    }
+
+    /* those element should have appropriate value given it is not an update*/
+    newEntry->nameSpace = jstring_clone(entry->nameSpace);
+    newEntry->advId = jstring_clone(entry->advId);
+    newEntry->key = jstring_clone(entry->key);
+    newEntry->value = jstring_clone(entry->value);
+
+    if (entry->range) {
+        newEntry->range = jstring_clone(entry->range);
+    }
+    return newEntry;
 }
 
 JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_1(JString * key, JString * value, JString * nameSpace,
@@ -520,13 +668,14 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_1(JString * key, JSt
     dse->nameSpace = JXTA_OBJECT_SHARE(nameSpace);
     dse->advId = JXTA_OBJECT_SHARE(value);
     dse->expiration = expiration;
+    dse->seqNumber = 0;
+    dse->resend = FALSE;
     return dse;
 }
 
 JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_2(JString * key, JString * value, JString * nameSpace,
                                                               JString * advId, JString * jrange, Jxta_expiration_time expiration)
 {
-
     Jxta_SRDIEntryElement *dse = jxta_srdi_new_element();
 
     dse->key = JXTA_OBJECT_SHARE(key);
@@ -540,8 +689,48 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_2(JString * key, JSt
     if (jrange) {
         dse->range = JXTA_OBJECT_SHARE(jrange);
     }
+    dse->seqNumber = 0;
     dse->expiration = expiration;
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "This is the spot %s \n", jstring_get_string(dse->key));
+    dse->resend = FALSE;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "This is the spot in number 2 %s \n", jstring_get_string(dse->key));
+    return dse;
+}
+
+JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_3(JString * key, JString * value, JString * nameSpace,
+                                                              JString * advId, JString * jrange, Jxta_expiration_time expiration,
+                                                              Jxta_sequence_number seqNumber)
+{
+    Jxta_SRDIEntryElement *dse = jxta_srdi_new_element();
+
+    dse->key = JXTA_OBJECT_SHARE(key);
+    dse->value = JXTA_OBJECT_SHARE(value);
+    dse->nameSpace = JXTA_OBJECT_SHARE(nameSpace);
+    if (advId) {
+        dse->advId = JXTA_OBJECT_SHARE(advId);
+    } else {
+        dse->advId = JXTA_OBJECT_SHARE(value);
+    }
+    if (jrange) {
+        dse->range = JXTA_OBJECT_SHARE(jrange);
+    }
+    dse->seqNumber = seqNumber;
+    dse->expiration = expiration;
+    dse->resend = FALSE;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "This is the spot in number 3 %s \n", jstring_get_string(dse->key));
+    return dse;
+}
+
+JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_resend(Jxta_sequence_number seqNumber)
+{
+    Jxta_SRDIEntryElement *dse = jxta_srdi_new_element();
+
+    dse->key = NULL;
+    dse->value = NULL;
+    dse->nameSpace = NULL;
+    dse->seqNumber = seqNumber;
+    dse->expiration = 0;
+    dse->resend = TRUE;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "This is the spot in number 4\n");
     return dse;
 }
 

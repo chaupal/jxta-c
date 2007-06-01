@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_advertisement.h,v 1.28 2005/12/23 21:44:43 mmx2005 Exp $
+ * $Id: jxta_advertisement.h,v 1.31 2006/08/28 19:33:55 bondolo Exp $
  */
 
 /**
@@ -231,14 +231,16 @@ struct _jxta_advertisement_new_func_struct {
 
 typedef void (*Jxta_advertisement_node_handler) (void *, const XML_Char *, int);
 
-typedef struct _kwdtab {
+struct _kwdtab {
     const char *kwd;
     int tokentype;
     Jxta_advertisement_node_handler nodeparse;
 
     char *(JXTA_STDCALL * get) (Jxta_advertisement *);
     char *(JXTA_STDCALL * get_parm) (Jxta_advertisement *, const char *);
-} Kwdtab;
+};
+
+typedef struct _kwdtab Kwdtab;
 
 struct _jxta_advertisement {
     JXTA_OBJECT_HANDLE;
@@ -305,16 +307,20 @@ JXTA_DECLARE(Jxta_advertisement *) jxta_advertisement_construct(Jxta_advertiseme
                                                                 JxtaAdvertisementGetIDFunc get_id_func,
                                                                 JxtaAdvertisementGetIndexFunc get_index_func);
 
+/**
+*   to be called from inside delete functions for sub-classes
+*/
 JXTA_DECLARE(void) jxta_advertisement_destruct(Jxta_advertisement * ad);
 
 /**
 *   
 *
-*   @deprecated This should be private
+*   @deprecated This should be private. Sub-classes should use "jxta_advertisement_destruct"
 **/
 void jxta_advertisement_delete(Jxta_advertisement * ad);
+
+
 JXTA_DECLARE(void) jxta_advertisement_set_handlers(Jxta_advertisement * ad, XML_Parser parser, Jxta_advertisement * parent);
-JXTA_DECLARE(void) jxta_advertisement_register_local_handler(Jxta_advertisement * ad, const char *name, const void *value);
 
 /** 
  ** Convenience function to builds a vector of Jxta_index structs that return the
@@ -326,7 +332,8 @@ JXTA_DECLARE(Jxta_vector *) jxta_advertisement_return_indexes(const char *idx[])
 
 /** Public. */
 
-/** Wrapper function for accumulating the data in any advertisement
+/** 
+ * Wrapper function for accumulating the data in any advertisement
  *  into XML format for transmission.  This should just invoke a 
  *  preregistered callback.
  * 
@@ -334,9 +341,9 @@ JXTA_DECLARE(Jxta_vector *) jxta_advertisement_return_indexes(const char *idx[])
  * @param JString ** an object reference to accumulate tags and data
  *        for string representation of advertisements.
  *
- * @return nothing
+ * @return status
  */
-JXTA_DECLARE(void) jxta_advertisement_get_xml(Jxta_advertisement * ad, JString **);
+JXTA_DECLARE(Jxta_status) jxta_advertisement_get_xml(Jxta_advertisement * ad, JString **);
 
 /** 
 * Function to return the name space identification of this advertisement

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_module.h,v 1.9 2006/05/16 00:58:12 slowhog Exp $
+ * $Id: jxta_module.h,v 1.12 2006/09/13 17:56:50 bondolo Exp $
  */
 
 #ifndef JXTA_MODULE_H
@@ -80,6 +80,21 @@ typedef struct jxta_PG Jxta_PG;
 #endif
 
 typedef struct _jxta_module Jxta_module;
+
+enum _jxta_module_states {
+    JXTA_MODULE_UNKNOWN = -1,
+    JXTA_MODULE_CONSTRUCTED = 0,
+    JXTA_MODULE_INITING,
+    JXTA_MODULE_INITED,
+    JXTA_MODULE_STARTING,
+    JXTA_MODULE_STARTED,
+    JXTA_MODULE_STOPPING,
+    JXTA_MODULE_STOPPED,
+    JXTA_MODULE_UNLOADING,
+    JXTA_MODULE_UNLOADED
+}; 
+
+typedef enum _jxta_module_states Jxta_module_state;
 
 
 /**
@@ -123,6 +138,8 @@ JXTA_DECLARE(Jxta_status) jxta_module_init(Jxta_module * self, Jxta_PG * group, 
  * Initialize this module, supplying it its peer group assigned id and
  * impl advertisement.
  *
+ * @deprecated Please use the non-exception varient.
+ *
  * If the operation cannot be carried out, an exception is thrown.
  *
  * @param self handle of the Jxta_module object to which the operation is
@@ -134,8 +151,8 @@ JXTA_DECLARE(Jxta_status) jxta_module_init(Jxta_module * self, Jxta_PG * group, 
  *
  * If this module is a service, it is registered in the group's list of
  * services and its API made available to other modules. Therefore a
- * service must support its interface being invoked before its start
- * routine has been invoked and executed to completion. However the routine
+ * service must support its interface being invoked before its start()
+ * function has been invoked and executed to completion. However the functions
  * of a service are not required to carry out their task fully under these 
  * circumstances.
  *
@@ -156,16 +173,17 @@ JXTA_DECLARE(void) jxta_module_init_e(Jxta_module * self, Jxta_PG * group, Jxta_
 
 
 /**
- * Some Modules will wait for start() being called, before proceeding
- * beyond a certain point. That's also the opportunity to supply
- * harbitrary arguments (mostly to applications).
+ * Some Modules will wait for start() to be called, before begining full
+ * opperation. This is also an opportunity to supply arbitrary arguments 
+ * (mostly for applications).
+ *
  * When jxta_module_start is invoked on a module, all services of the
  * module's home group are available and can safely be used. However
  * some of the other services may not yet be fully functional and
  * therefore some operations that would otherwise succed may fail
  * during the group's bootstrap. This specialy true if this module
- * is a service of the group. If this module is an application, it may assume
- * that all services have completed their initialization.
+ * is a service of the group. If this module is an application, it may 
+ * assume that all services have completed their initialization.
  *
  * @param self handle of the Jxta_module object to which the operation is
  * applied.
@@ -193,6 +211,13 @@ JXTA_DECLARE(Jxta_status) jxta_module_start(Jxta_module * self, const char *args
  */
 JXTA_DECLARE(void) jxta_module_stop(Jxta_module * self);
 
+/**
+*   Returns the current execution state of the module.
+*
+*   @param module The module who's state is desired.
+*   @return The current state of the module.
+*/
+JXTA_DECLARE(Jxta_module_state) jxta_module_state(Jxta_module * module);
 
 #ifdef __cplusplus
 #if 0

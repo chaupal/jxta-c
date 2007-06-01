@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_msa.c,v 1.24 2006/04/08 06:44:16 mmx2005 Exp $
+ * $Id: jxta_msa.c,v 1.27 2006/09/29 01:28:44 slowhog Exp $
  */
 
 static const char *const __log_cat = "MSA";
@@ -100,7 +100,7 @@ struct _jxta_MSA {
     JString *Auth;
 };
 
-void MSA_delete(Jxta_MSA * ad);
+static void MSA_delete(void * me);
 
 /** Handler functions.  Each of these is responsible for
 * dealing with all of the character data associated with the 
@@ -165,7 +165,6 @@ static void handleCrtr(void *userdata, const XML_Char * cd, int len)
 
     jxta_MSA_set_Crtr(ad, Crtr);
     JXTA_OBJECT_RELEASE(Crtr);
-
 }
 
 static void handleSURI(void *userdata, const XML_Char * cd, int len)
@@ -292,7 +291,11 @@ JXTA_DECLARE(void) jxta_MSA_set_MSA(Jxta_MSA * ad, char *name)
 
 JXTA_DECLARE(Jxta_id *) jxta_MSA_get_MSID(Jxta_MSA * ad)
 {
-    return NULL;
+    if(ad->MSID){
+        JXTA_OBJECT_SHARE(ad->MSID);
+    }
+
+    return ad->MSID;
 }
 
 JXTA_DECLARE(void) jxta_MSA_set_MSID(Jxta_MSA * ad, Jxta_id * MSID)
@@ -306,7 +309,7 @@ JXTA_DECLARE(void) jxta_MSA_set_MSID(Jxta_MSA * ad, Jxta_id * MSID)
     ad->MSID = MSID;
 }
 
-char *JXTA_STDCALL jxta_MSA_get_MSID_string(Jxta_advertisement * ad)
+static char *JXTA_STDCALL jxta_MSA_get_MSID_string(Jxta_advertisement * ad)
 {
     char *res;
     JString *js = NULL;
@@ -327,7 +330,7 @@ JXTA_DECLARE(JString *) jxta_MSA_get_Name(Jxta_MSA * ad)
     return ad->Name;
 }
 
-char *JXTA_STDCALL jxta_MSA_get_Name_string(Jxta_advertisement * ad)
+static char *JXTA_STDCALL jxta_MSA_get_Name_string(Jxta_advertisement * ad)
 {
     return strdup(jstring_get_string(((Jxta_MSA *) ad)->Name));
 }
@@ -522,7 +525,6 @@ JXTA_DECLARE(Jxta_status) jxta_MSA_get_xml(Jxta_MSA * ad, JString ** string)
 {
     JString *msids;
     JString *pipeadv_str;
-    JString *pipeadv_des;
     Jxta_status status;
     JString *tmp = jstring_new_0();
 
@@ -563,13 +565,9 @@ JXTA_DECLARE(Jxta_status) jxta_MSA_get_xml(Jxta_MSA * ad, JString ** string)
     jstring_append_2(tmp, "</Proxy>\n");
 
     if (ad->PipeAdvertisement) {
-        jxta_pipe_adv_get_xml(ad->PipeAdvertisement, &pipeadv_str);
-        if (pipeadv_str) {
-            status = jxta_xml_util_encode_jstring(pipeadv_str, &pipeadv_des);
-            if (status == JXTA_SUCCESS) {
-                jstring_append_1(tmp, pipeadv_des);
-                JXTA_OBJECT_RELEASE(pipeadv_des);
-            }
+        status = jxta_pipe_adv_get_xml(ad->PipeAdvertisement, &pipeadv_str);
+        if (status == JXTA_SUCCESS) {
+            jstring_append_1(tmp, pipeadv_str);
             JXTA_OBJECT_RELEASE(pipeadv_str);
         }
     }
@@ -603,7 +601,7 @@ JXTA_DECLARE(Jxta_MSA *) jxta_MSA_new()
                                   MSA_tags,
                                   (JxtaAdvertisementGetXMLFunc) jxta_MSA_get_xml,
                                   (JxtaAdvertisementGetIDFunc) jxta_MSA_get_MSID,
-                                  (JxtaAdvertisementGetIndexFunc) jxta_MSA_get_indexes, (FreeFunc) MSA_delete);
+                                  jxta_MSA_get_indexes, MSA_delete);
 
     JXTA_OBJECT_SHARE(jxta_id_nullID);
     ad->MSID = jxta_id_nullID;
@@ -626,8 +624,10 @@ JXTA_DECLARE(Jxta_MSA *) jxta_MSA_new()
      * pop right out as a piece of memory accessed
      * after it was freed...
      */
-void MSA_delete(Jxta_MSA * ad)
+static void MSA_delete(void * me)
 {
+    Jxta_MSA * ad = (Jxta_MSA *) me;
+
     /* Fill in the required freeing functions here. */
 
     JXTA_OBJECT_RELEASE(ad->MSID);

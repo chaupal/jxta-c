@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxtaobject_test.c,v 1.18 2005/04/07 22:58:54 slowhog Exp $
+ * $Id: jxtaobject_test.c,v 1.19 2006/06/30 20:38:34 bondolo Exp $
  */
 
 #include "jxta.h"
@@ -112,7 +112,7 @@ Jxta_boolean moduleA()
 {
     /* First create an instance of the object */
     TestObject *obj;
-    obj = (TestObject *) malloc(sizeof(TestObject));
+    obj = (TestObject *) calloc(1, sizeof(TestObject));
     allocatedObject = (void *) obj;
     allocatedCookie = (void *) "This is a test cookie";
 
@@ -178,7 +178,7 @@ Jxta_boolean checkHandle(TestObject * obj, int targetRefCount, void *freeCookie)
 Jxta_boolean jxtaobject_test(int *tests_run, int *tests_passed, int *tests_failed)
 {
 
-    TestObject *obj = (TestObject *) malloc(sizeof(TestObject));
+    TestObject *obj = (TestObject *) calloc(1, sizeof(TestObject));
     Jxta_object *pt = (Jxta_object *) obj;
     void *ptr;
     Jxta_boolean passed = TRUE;

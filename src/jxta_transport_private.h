@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_private.h,v 1.17 2005/10/17 20:51:48 slowhog Exp $
+ * $Id: jxta_transport_private.h,v 1.18 2006/09/06 21:45:18 slowhog Exp $
  */
 
 #ifndef JXTA_TRANSPORT_PRIVATE_H
@@ -91,7 +91,7 @@ typedef struct _jxta_transport_event {
     Jxta_endpoint_address *dest_addr;
 } Jxta_transport_event;
 
-Jxta_transport_event* jxta_transport_event_new(Jxta_transport_event_type event_type);
+Jxta_transport_event *jxta_transport_event_new(Jxta_transport_event_type event_type);
 
 struct _jxta_transport_methods {
     Extends(Jxta_module_methods);
@@ -101,7 +101,7 @@ struct _jxta_transport_methods {
     Jxta_endpoint_address *(*publicaddr_get) (Jxta_transport * self);
     JxtaEndpointMessenger *(*messenger_get) (Jxta_transport * self, Jxta_endpoint_address * there);
 
-    Jxta_boolean(*ping) (Jxta_transport * self, Jxta_endpoint_address * there);
+     Jxta_boolean(*ping) (Jxta_transport * self, Jxta_endpoint_address * there);
 
     void (*propagate) (Jxta_transport * self, Jxta_message * msg, const char *service_name, const char *service_params);
 
@@ -116,6 +116,8 @@ struct _jxta_transport {
     /* Implementors put their stuff after self */
     int metric;
     Jxta_direction direction;
+    apr_pool_t *p;
+    apr_hash_t *qos;
 };
 
 typedef struct _jxta_transport _jxta_transport;
@@ -126,6 +128,8 @@ typedef struct _jxta_transport _jxta_transport;
  * to initialize the base part.
  */
 extern Jxta_transport *jxta_transport_construct(Jxta_transport * self, Jxta_transport_methods const *methods);
+
+Jxta_status jxta_transport_init(Jxta_transport * me, apr_pool_t * p);
 
 /**
  * The base transport dtor (Not public, not virtual. Only called by subclassers).

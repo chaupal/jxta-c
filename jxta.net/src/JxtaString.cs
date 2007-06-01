@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: JxtaString.cs,v 1.1 2006/01/18 20:31:04 lankes Exp $
+ * $Id: JxtaString.cs,v 1.2 2006/08/04 10:33:19 lankes Exp $
  */
 using System;
 using System.Collections.Generic;
@@ -59,8 +59,12 @@ using System.Runtime.InteropServices;
 
 namespace JxtaNET
 {
+    /// <summary>
+    /// Represents JStrings. JString provides an encapsulation of c-style character buffers.
+    /// </summary>
     public class JxtaString : JxtaObject
     {
+        #region import of jxta-c functions
         [DllImport("jxta.dll")]
         private static extern IntPtr jstring_get_string(IntPtr ptr);
 
@@ -72,12 +76,17 @@ namespace JxtaNET
 
         [DllImport("jxta.dll")]
         private static extern Int32 jstring_length(IntPtr js);
+        #endregion 
 
         public static implicit operator String(JxtaString js)
         {
             return js.ToString();
         }
 
+        /// <summary>
+        /// Each JString has a data length and buffer size.
+        /// This returns the length of the data in the char buffer.
+        /// </summary>
         public int Length
         {
             get
@@ -88,20 +97,29 @@ namespace JxtaNET
 
         public override String ToString()
         {
-            if (this.self != IntPtr.Zero) return Marshal.PtrToStringAnsi(jstring_get_string(this.self));
-            else return "";
+            if (this.self != IntPtr.Zero) 
+                return Marshal.PtrToStringAnsi(jstring_get_string(this.self));
+            else 
+                return "";
       }
 
         internal JxtaString(IntPtr self) : base(self) { }
 
-        public JxtaString() : base() 
+        /// <summary>
+        /// Create an empty JString
+        /// </summary>
+        public JxtaString()
+            : base(jstring_new_0())
         {
-            this.self = jstring_new_0();
         }
 
-        public JxtaString(String val) : base()
+        /// <summary>
+        /// Constructs a JString from a constant character array.
+        /// </summary>
+        /// <param name="val"></param>
+        public JxtaString(String val)
+            : base(jstring_new_2(val))
         {
-            this.self = jstring_new_2(val);
         }
     }
 }

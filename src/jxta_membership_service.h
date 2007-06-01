@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_membership_service.h,v 1.7 2005/09/21 21:16:47 slowhog Exp $
+ * $Id: jxta_membership_service.h,v 1.8 2006/09/15 18:31:33 bondolo Exp $
  */
 
 
@@ -70,20 +70,76 @@ extern "C" {
 #endif
 #endif
 
+/**
+*   The membership service is responsible for establishing and maintaining
+*   relations between identities and peers. Both authentication of local
+*   identity and validation of remote identity are provided.
+**/
 typedef struct _jxta_membership_service const Jxta_membership_service;
 
+/**
+*   An authenticator allows an application to provide authentication information
+*   for the purpose of establishing a claim of identity to the membership service.
+**/
 typedef struct _jxta_membership_authenticator const Jxta_membership_authenticator;
 
+/**
+*   Request creation of an authenticator object. The <tt>authCred</tt> is
+*   provided to allow selection of authenticator method and/or authentication
+*   parameters.
+*
+*   @param self The membership service.
+*   @param authCred A credential object which specifies any authentication 
+*   parameters and/or authentication pre-requisites.
+*   @param auth The authenticator object returned.
+*   @return JXTA_SUCCESS if the authentication credential was accepted and
+*   an authenticator is returned otherwise errors specific to membership 
+*   service implementation.
+**/
 JXTA_DECLARE(Jxta_status) jxta_membership_service_apply(Jxta_membership_service * self, Jxta_credential * authCred,
                                                         Jxta_membership_authenticator ** auth);
 
+/**
+*   Request creation of a credential using a completed authenticator object.
+*
+*   @param self The membership service.
+*   @param auth The authenticator which is being used to create the credential.
+*   @param newcred The resulting credential if the join request is successful.
+*   @return JXTA_SUCCESS if the join request is successful otherwise errors
+*   specific to membership service implementation.
+**/
 JXTA_DECLARE(Jxta_status) jxta_membership_service_join(Jxta_membership_service * self, Jxta_membership_authenticator * auth,
                                                        Jxta_credential ** newcred);
 
+/**
+*   Causes the membership service to invalidate and forget all currently active credentials it has generated.
+*
+*   @param self The membership service.
+*   @return JXTA_SUCCESS
+**/
 JXTA_DECLARE(Jxta_status) jxta_membership_service_resign(Jxta_membership_service * self);
 
+
+/**
+*   Returns the set of currently active credentials. The first element is the default credential.
+*
+*   @param self The membership service.
+*   @param creds The current active set of credentials.
+*   @return JXTA_SUCCESS
+**/
 JXTA_DECLARE(Jxta_status) jxta_membership_service_get_currentcreds(Jxta_membership_service * self, Jxta_vector ** creds);
 
+/**
+*   Processes and validates an XML serialized remote credential. The remote
+*   credential is validated according to the policies of the membership service.
+*   If JXTA_SUCCESS is returned then the resulting credential object is known to be
+*   a valid claim of the specified credential identity by the specified peer.
+*
+*   @param self The membership service.
+*   @param cred The remote credential.
+*   @return JXTA_SUCCESS if the credential was acceptable otherwise errors 
+*   specific to the membership service implementation.
+**/
 JXTA_DECLARE(Jxta_status) jxta_membership_service_makecred(Jxta_membership_service * self, JString * somecred,
                                                            Jxta_credential ** cred);
 

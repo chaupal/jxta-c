@@ -50,10 +50,12 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_util_priv.h,v 1.2 2006/04/01 01:20:20 slowhog Exp $
+ * $Id: jxta_util_priv.h,v 1.8 2006/09/27 23:09:15 exocetrick Exp $
  */
 
 #include "jxta_vector.h"
+#include "jxta_apr.h"
+#include "jxta_cred.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -73,6 +75,59 @@ extern "C" {
 Jxta_vector *getPeerids(Jxta_vector * peers);
 
 char* get_service_key(const char * svc_name, const char * svc_param);
+
+/**
+ * Convert the current setting into a jxta:QoS_Setting XML paragraph. A sample is like:
+ *  <QoS_Setting>
+ *    <QoS>lifespan
+ *      <Value>1152583254</Value>
+ *    </QoS>
+ *    <QoS>priority
+ *      <Value>128</Value>
+ *    </Qos>
+ *  </QoS_Setting>
+ * The string will be allocated from the pool assigned when create the QoS object
+ */
+Jxta_status qos_setting_to_xml(apr_hash_t * setting, char ** result, apr_pool_t * p);
+
+/**
+ * Parse a jxta:QoS_Setting XML paragraph into a hash table of QoS setting
+ */
+Jxta_status xml_to_qos_setting(const char * xml, apr_hash_t ** dest, apr_pool_t * p);
+
+/**
+ * Convert the current capability into a jxta:QoS_Support XML paragraph. A sample is like:
+ *  <QoS_Support>
+ *    <QoS>lifespan</QoS>
+ *    <QoS>priority</QoS>
+ *    <QoS>TTL</QoS>
+ *  </QoS_Support>
+ * The string will be allocated from the pool assigned when create the QoS object
+ */
+Jxta_status qos_support_to_xml(const char ** capability_list, char ** result, apr_pool_t * p);
+
+/**
+ * Parse a jxta:QoS_Support XML paragraph into a list of QoS capabilities
+ */
+Jxta_status xml_to_qos_support(const char * xml, char *** result, apr_pool_t * p);
+
+Jxta_status ep_tcp_socket_listen(apr_socket_t ** me, const char * addr, apr_port_t port, apr_int32_t backlog, apr_pool_t * p);
+
+/* ReadFunc with STREAM to be apr_brigade */
+Jxta_status JXTA_STDCALL brigade_read(void *b, char *buf, apr_size_t len);
+
+/**
+ * Query all advertisements within the local peer's cache
+ * @param query XPath type query
+ * @param scope Array of credentials for subgroups.
+ * @param threshold Maximum number of groups returning results
+ * @param results Location to store the results vector.
+ *
+ * @return Jxta_status
+ * @see Jxta_status
+ *
+**/
+Jxta_status query_all_advs(const char *query,Jxta_credential *scope[], int threshold, Jxta_vector ** advertisements);
 
 #ifdef __cplusplus
 #if 0

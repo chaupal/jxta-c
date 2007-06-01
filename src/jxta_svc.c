@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_svc.c,v 1.52 2006/02/15 01:09:48 slowhog Exp $
+ * $Id: jxta_svc.c,v 1.57 2006/09/01 03:08:10 bondolo Exp $
  */
 
 static const char *__log_cat = "SVCADV";
@@ -88,6 +88,7 @@ enum tokentype {
     HTTPTransportAdvertisement_,
     RelayAdvertisement_,
     RouteAdvertisement_,
+    CacheConfigAdvertisement_,
     DiscoveryConfigAdvertisement_,
     RdvConfigAdvertisement_,
     SrdiConfigAdvertisement_,
@@ -113,6 +114,7 @@ struct _jxta_svc {
     Jxta_HTTPTransportAdvertisement *hta;
     Jxta_RelayAdvertisement *relaya;
     Jxta_RouteAdvertisement *route;
+    Jxta_CacheConfigAdvertisement *cacheConfig;
     Jxta_DiscoveryConfigAdvertisement *discoveryConfig;
     Jxta_EndPointConfigAdvertisement *endpointConfig;
     Jxta_RdvConfigAdvertisement *rdvConfig;
@@ -121,6 +123,7 @@ struct _jxta_svc {
 
 /* forward decl for un-exported function */
 static void jxta_svc_delete(Jxta_svc *);
+static void handleCacheConfigAdv(void *userdata, const XML_Char *cd, int len);
 static void handleDiscoveryConfigAdv(void *userdata, const XML_Char * cd, int len);
 static void handleRdvConfigAdv(void *userdata, const XML_Char * cd, int len);
 static void handleSrdiConfigAdv(void *userdata, const XML_Char * cd, int len);
@@ -322,6 +325,24 @@ static void handleTCPTransportAdvertisement(void *userdata, const XML_Char * cd,
     jxta_advertisement_set_handlers((Jxta_advertisement *) tta, ((Jxta_advertisement *) ad)->parser, (void *) ad);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "END Svc handleTCPTransportAdvertisement\n");
+}
+ 
+static void handleCacheConfigAdv(void *userdata, const XML_Char * cd, int len)
+{
+    Jxta_svc *ad = (Jxta_svc *) userdata;
+    Jxta_CacheConfigAdvertisement *cacheConfig = jxta_CacheConfigAdvertisement_new();
+
+    jxta_svc_set_CacheConfig(ad, cacheConfig);
+    JXTA_OBJECT_RELEASE(cacheConfig);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Begin Svc handleCacheConfig\n");
+
+    jxta_advertisement_set_handlers((Jxta_advertisement *) cacheConfig, ((Jxta_advertisement *) ad)->parser, (void *) ad);
+
+    ((Jxta_advertisement *) cacheConfig)->atts = ((Jxta_advertisement *) ad)->atts;
+    handleJxta_CacheConfigAdvertisement(cacheConfig, cd, len);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "END Svc handleCacheConfig\n");
 }
 
 static void handleDiscoveryConfigAdv(void *userdata, const XML_Char * cd, int len)
@@ -709,6 +730,27 @@ JXTA_DECLARE(Jxta_RdvConfigAdvertisement *) jxta_svc_get_RdvConfig(Jxta_svc * ad
     return ad->rdvConfig;
 }
 
+JXTA_DECLARE(Jxta_CacheConfigAdvertisement *) jxta_svc_get_CacheConfig(Jxta_svc * ad)
+{
+    if (ad->cacheConfig != NULL) {
+        JXTA_OBJECT_SHARE(ad->cacheConfig);
+    }
+    return ad->cacheConfig;
+}
+
+JXTA_DECLARE(void) jxta_svc_set_CacheConfig(Jxta_svc * ad, Jxta_CacheConfigAdvertisement * cacheConfig)
+{
+    if (ad->cacheConfig != NULL) {
+        JXTA_OBJECT_RELEASE(ad->cacheConfig);
+        ad->cacheConfig = NULL;
+    }
+
+    if (cacheConfig != NULL) {
+        ad->cacheConfig = JXTA_OBJECT_SHARE(cacheConfig);
+    }
+}
+
+
 JXTA_DECLARE(void) jxta_svc_set_RdvConfig(Jxta_svc * ad, Jxta_RdvConfigAdvertisement * rdvConfig)
 {
     if (ad->rdvConfig != NULL) {
@@ -792,6 +834,7 @@ static const Kwdtab Svc_tags[] = {
     {"RootCert", RootCert_, *handleRootCert, NULL, NULL},
     {"Addr", Addr_, *handleAddr, NULL, NULL},
     {"Rdv", Rdv_, *handleRdv, NULL, NULL},
+    {"jxta:CacheConfig", CacheConfigAdvertisement_, *handleCacheConfigAdv, NULL, NULL},
     {"jxta:DiscoveryConfig", DiscoveryConfigAdvertisement_, *handleDiscoveryConfigAdv, NULL, NULL},
     {"jxta:EndPointConfig", EndPointConfigAdvertisement_, *handleEndPointConfigAdv, NULL, NULL},
     {"jxta:RdvConfig", RdvConfigAdvertisement_, *handleRdvConfigAdv, NULL, NULL},
@@ -887,6 +930,13 @@ JXTA_DECLARE(Jxta_status) jxta_svc_get_xml(Jxta_svc * ad, JString ** result)
         JXTA_OBJECT_RELEASE(tmp);
     }
 
+    if (ad->cacheConfig != NULL) {
+        JString *tmp;
+        jxta_advertisement_get_xml((Jxta_advertisement *) ad->cacheConfig, &tmp);
+        jstring_append_1(string, tmp);
+        JXTA_OBJECT_RELEASE(tmp);
+    }
+
     if (ad->discoveryConfig != NULL) {
         JString *tmp;
         jxta_DiscoveryConfigAdvertisement_get_xml(ad->discoveryConfig, &tmp);
@@ -948,6 +998,7 @@ static Jxta_svc *jxta_svc_construct(Jxta_svc * self)
         self->tta = NULL;
         self->relaya = NULL;
         self->route = NULL;
+        self->cacheConfig = NULL;
         self->discoveryConfig = NULL;
         self->endpointConfig = NULL;
         self->rdvConfig = NULL;
@@ -986,6 +1037,8 @@ static void jxta_svc_delete(Jxta_svc * ad)
         JXTA_OBJECT_RELEASE(ad->relaya);
     if (ad->route != NULL)
         JXTA_OBJECT_RELEASE(ad->route);
+    if (ad->cacheConfig != NULL)
+        JXTA_OBJECT_RELEASE(ad->cacheConfig);
     if (ad->discoveryConfig != NULL)
         JXTA_OBJECT_RELEASE(ad->discoveryConfig);
     if (ad->endpointConfig != NULL)

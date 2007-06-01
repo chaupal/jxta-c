@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_service.c,v 1.133 2006/06/15 23:09:12 slowhog Exp $
+ * $Id: jxta_endpoint_service.c,v 1.149 2006/10/09 22:45:03 bondolo Exp $
  */
 
 static const char *__log_cat = "ENDPOINT";
@@ -84,6 +84,7 @@ static const char *__log_cat = "ENDPOINT";
 #include "jxta_endpoint_service_priv.h"
 #include "jxta_util_priv.h"
 
+/* negative cache entry */
 typedef struct _nc_entry {
     char *addr;
     Jxta_time_diff timeout;
@@ -94,12 +95,14 @@ typedef struct _nc_entry {
     int rq_capacity;
 } Nc_entry;
 
+/* outgoing message task for thread pool */
 typedef struct _msg_task {
     Jxta_endpoint_service *ep_svc;
     Jxta_message *msg;
     struct _msg_task *recycle;
 } Msg_task;
 
+/* recipient callback */
 typedef struct _cb_elt {
     Jxta_endpoint_service *ep_svc;
     Jxta_callback_func func;
@@ -108,17 +111,23 @@ typedef struct _cb_elt {
     struct _cb_elt *recycle;
 } Cb_elt;
 
+/* transport connection */
+typedef struct tc_elt {
+    apr_pollfd_t fd;
+    Jxta_callback_fn fn;
+    void * arg;
+} Tc_elt;
+
 struct jxta_endpoint_service {
     Extends(Jxta_service);
 
     volatile Jxta_boolean running;
     apr_thread_mutex_t *mutex;
-    apr_thread_mutex_t *filter_list_mutex;
-    apr_thread_mutex_t *listener_table_mutex;
+    apr_thread_mutex_t *nc_wlock; /* write lock for nc, use mutex for read lock */
+    apr_thread_mutex_t *demux_mutex;
 
     Jxta_PG *my_group;
     JString *my_groupid;
-    Jxta_id *my_assigned_id;
     Jxta_advertisement *my_impl_adv;
     Jxta_EndPointConfigAdvertisement *config;
     Jxta_RouteAdvertisement *myRoute;
@@ -133,6 +142,8 @@ struct jxta_endpoint_service {
     Msg_task *recycled_tasks;
     Cb_elt *recycled_cbs;
     volatile apr_uint32_t msg_task_cnt;
+    volatile apr_size_t pollfd_cnt;
+    apr_pollset_t *pollset;
 };
 
 static Jxta_listener *lookup_listener(Jxta_endpoint_service * me, Jxta_endpoint_address * addr);
@@ -147,6 +158,66 @@ static void nc_destroy(Jxta_endpoint_service * me);
 static Jxta_status nc_peer_queue_msg(Jxta_endpoint_service * me, Nc_entry * ptr, Jxta_message * msg);
 static void nc_review_all(Jxta_endpoint_service * me);
 
+/* transport connection ops */
+static Jxta_status tc_new(Tc_elt ** me, Jxta_callback_fn fn, apr_socket_t * s, void * arg, apr_pool_t * pool);
+static Jxta_status tc_destroy(Tc_elt * me);
+
+/* event operations */
+static Jxta_status event_new(Jxta_endpoint_event ** me, Jxta_endpoint_service * ep, Jxta_endpoint_event_type type,
+                             size_t extra_size);
+static void event_free(Jxta_object * me);
+static Jxta_status emit_local_route_change_event(Jxta_endpoint_service * me);
+
+static void event_free(Jxta_object * me)
+{
+    Jxta_endpoint_event *myself = (Jxta_endpoint_event *) me;
+    if (myself->extra) {
+        free(myself->extra);
+    }
+    free(myself);
+}
+
+static Jxta_status event_new(Jxta_endpoint_event ** me, Jxta_endpoint_service * ep, Jxta_endpoint_event_type type,
+                             size_t extra_size)
+{
+    Jxta_endpoint_event *event;
+
+    event = calloc(1, sizeof(Jxta_endpoint_event));
+    if (!event) {
+        *me = NULL;
+        return JXTA_NOMEM;
+    }
+    if (extra_size) {
+        event->extra = calloc(1, extra_size);
+        if (!event->extra) {
+            free(event);
+            *me = NULL;
+            return JXTA_NOMEM;
+        }
+    }
+
+    event->ep_svc = ep;
+    event->type = type;
+    JXTA_OBJECT_INIT(event, event_free, NULL);
+    *me = event;
+    return JXTA_SUCCESS;
+}
+
+static Jxta_status emit_local_route_change_event(Jxta_endpoint_service * me)
+{
+    Jxta_status rv;
+    Jxta_endpoint_event *event;
+
+    rv = event_new(&event, me, JXTA_EP_LOCAL_ROUTE_CHANGE, 0);
+    if (!event) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Failed to allocate endpoint event.\n");
+        return rv;
+    }
+    jxta_service_event_emit((Jxta_service *) me, event);
+    JXTA_OBJECT_RELEASE(event);
+    return JXTA_SUCCESS;
+}
+
 static Nc_entry *nc_add_peer(Jxta_endpoint_service * me, const char *addr, Jxta_message * msg)
 {
     Nc_entry *ptr = NULL;
@@ -154,15 +225,18 @@ static Nc_entry *nc_add_peer(Jxta_endpoint_service * me, const char *addr, Jxta_
     assert(NULL != addr);
     assert(NULL != me);
 
+    apr_thread_mutex_lock(me->nc_wlock);
     ptr = calloc(1, sizeof(*ptr));
     if (NULL == ptr) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Fail to allocate negative cache entry, out of memory?\n");
+        apr_thread_mutex_unlock(me->nc_wlock);
         return NULL;
     }
     ptr->addr = strdup(addr);
     if (NULL == ptr->addr) {
         free(ptr);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Fail to duplicate address, out of memory?\n");
+        apr_thread_mutex_unlock(me->nc_wlock);
         return NULL;
     }
     ptr->timeout = jxta_epcfg_get_nc_timeout_init(me->config);
@@ -174,6 +248,7 @@ static Nc_entry *nc_add_peer(Jxta_endpoint_service * me, const char *addr, Jxta_
             free(ptr->addr);
             free(ptr);
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Fail to allocate retransmit queue, out of memory?\n");
+            apr_thread_mutex_unlock(me->nc_wlock);
             return NULL;
         }
         ptr->rq[0] = JXTA_OBJECT_SHARE(msg);
@@ -182,6 +257,7 @@ static Nc_entry *nc_add_peer(Jxta_endpoint_service * me, const char *addr, Jxta_
     apr_thread_mutex_lock(me->mutex);
     apr_hash_set(me->nc, ptr->addr, APR_HASH_KEY_STRING, ptr);
     apr_thread_mutex_unlock(me->mutex);
+    apr_thread_mutex_unlock(me->nc_wlock);
     return ptr;
 }
 
@@ -189,9 +265,11 @@ static void nc_remove_peer(Jxta_endpoint_service * me, Nc_entry * ptr)
 {
     assert(NULL == ptr->rq || -1 == ptr->rq_tail);
 
+    apr_thread_mutex_lock(me->nc_wlock);
     apr_thread_mutex_lock(me->mutex);
     apr_hash_set(me->nc, ptr->addr, APR_HASH_KEY_STRING, NULL);
     apr_thread_mutex_unlock(me->mutex);
+    apr_thread_mutex_unlock(me->nc_wlock);
     free(ptr->addr);
     free(ptr->rq);
     free(ptr);
@@ -276,7 +354,7 @@ static Jxta_status nc_peer_process_queue(Jxta_endpoint_service * me, Nc_entry * 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Peer at %s is now reachable after timeout %" APR_INT64_T_FMT
                         "ms, retransmit queue is flushed.\n", ptr->addr, ptr->timeout);
         ptr->rq_tail = -1;
-    } else if (!sent) {
+    } else if (!sent && JXTA_UNREACHABLE_DEST == res) {
         Jxta_time_diff timeout_max;
 
         timeout_max = jxta_epcfg_get_nc_timeout_max(me->config);
@@ -304,25 +382,28 @@ static Jxta_status nc_peer_queue_msg(Jxta_endpoint_service * me, Nc_entry * ptr,
 {
     Jxta_status res;
 
+    apr_thread_mutex_lock(me->nc_wlock);
     res = nc_peer_process_queue(me, ptr);
     if (JXTA_SUCCESS == res) {
-        if (JXTA_SUCCESS == send_message(me, msg, NULL)) {
+        if (JXTA_UNREACHABLE_DEST != send_message(me, msg, NULL)) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Peer at %s is back online.\n", ptr->addr);
             nc_remove_peer(me, ptr);
-            return JXTA_SUCCESS;
+            apr_thread_mutex_unlock(me->nc_wlock);
+            return res;
         }
     }
 
     if (NULL == ptr->rq) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Peer at %s is still unreachable with maximum timeout %" APR_INT64_T_FMT
                         "ms, drop message[%pp]\n", ptr->addr, ptr->timeout, msg);
+        apr_thread_mutex_unlock(me->nc_wlock);
         return JXTA_UNREACHABLE_DEST;
     }
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Queueing msg[%pp] for peer at %s for later retransmission.\n", msg,
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Queueing msg[%pp] for peer at %s for later retransmission.\n", msg,
                     ptr->addr);
     if (ptr->rq_head == ptr->rq_tail) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO,
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,
                         "Peer at %s has filled up(%d) retransmit queue, drop oldest message[%pp]\n", ptr->addr, ptr->rq_capacity,
                         ptr->rq[ptr->rq_head]);
         JXTA_OBJECT_RELEASE(ptr->rq[ptr->rq_head]);
@@ -339,6 +420,7 @@ static Jxta_status nc_peer_queue_msg(Jxta_endpoint_service * me, Nc_entry * ptr,
             ptr->rq_tail = 0;
         }
     }
+    apr_thread_mutex_unlock(me->nc_wlock);
     return JXTA_UNREACHABLE_DEST;
 }
 
@@ -348,12 +430,11 @@ static void nc_review_all(Jxta_endpoint_service * me)
     Nc_entry *ptr = NULL;
     Jxta_status res = JXTA_SUCCESS;
 
-    apr_thread_mutex_lock(me->mutex);
+    apr_thread_mutex_lock(me->nc_wlock);
     for (hi = apr_hash_first(NULL, me->nc); hi;) {
         apr_hash_this(hi, NULL, NULL, (void **) &ptr);
         /* move index before calling nc_remove_peer which removes entry from cache table and could screw the index */
         hi = apr_hash_next(hi);
-        apr_thread_mutex_unlock(me->mutex);
         assert(NULL != ptr);
 
         res = nc_peer_process_queue(me, ptr);
@@ -361,9 +442,41 @@ static void nc_review_all(Jxta_endpoint_service * me)
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Peer at %s is back online.\n", ptr->addr);
             nc_remove_peer(me, ptr);
         }
-        apr_thread_mutex_lock(me->mutex);
     }
-    apr_thread_mutex_unlock(me->mutex);
+    apr_thread_mutex_unlock(me->nc_wlock);
+}
+
+/* transport connection ops */
+static Jxta_status tc_new(Tc_elt ** me, Jxta_callback_fn fn, apr_socket_t * s, void * arg, apr_pool_t * pool)
+{
+    apr_pool_t * p;
+
+    *me = calloc(1, sizeof(**me));
+    if (! *me) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Out of memory\n");
+        return JXTA_NOMEM;
+    }
+    if (APR_SUCCESS != apr_pool_create(&p, pool)) {
+        free(*me);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Out of memory\n");
+        return JXTA_NOMEM;
+    }
+
+    (*me)->fn = fn;
+    (*me)->arg = arg;
+    (*me)->fd.p = p;
+    (*me)->fd.desc.s = s;
+    (*me)->fd.desc_type = APR_POLL_SOCKET;
+    (*me)->fd.client_data = *me;
+    (*me)->fd.reqevents = APR_POLLIN | APR_POLLPRI | APR_POLLERR | APR_POLLHUP | APR_POLLNVAL;
+    return JXTA_SUCCESS;
+}
+
+static Jxta_status tc_destroy(Tc_elt * me)
+{
+    apr_pool_destroy(me->fd.p);
+    free(me);
+    return JXTA_SUCCESS;
 }
 
 /*
@@ -381,11 +494,11 @@ static Jxta_status endpoint_init(Jxta_module * it, Jxta_PG * group, Jxta_id * as
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Initializing ...\n");
 
+    jxta_service_init((Jxta_service *) self, group, assigned_id, impl_adv);
     pool = jxta_PG_pool_get(group);
     self->listener_table = apr_hash_make(pool);
     self->nc = apr_hash_make(pool);
     self->cb_table = apr_hash_make(pool);
-
     self->filter_list = dl_make();
     self->transport_table = jxta_hashtable_new(2);
     if (self->transport_table == NULL || self->filter_list == NULL) {
@@ -393,16 +506,10 @@ static Jxta_status endpoint_init(Jxta_module * it, Jxta_PG * group, Jxta_id * as
     }
 
     apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED, pool);
-    apr_thread_mutex_create(&self->filter_list_mutex, APR_THREAD_MUTEX_NESTED, pool);
-    apr_thread_mutex_create(&self->listener_table_mutex, APR_THREAD_MUTEX_NESTED, pool);
+    apr_thread_mutex_create(&self->nc_wlock, APR_THREAD_MUTEX_NESTED, pool);
+    apr_thread_mutex_create(&self->demux_mutex, APR_THREAD_MUTEX_NESTED, pool);
 
     self->msg_task_cnt = 0;
-
-    /* store our assigned id */
-    if (assigned_id != NULL) {
-        JXTA_OBJECT_SHARE(assigned_id);
-        self->my_assigned_id = assigned_id;
-    }
 
     /* advs and groups are jxta_objects that we share */
     if (impl_adv != NULL) {
@@ -444,17 +551,41 @@ static Jxta_status endpoint_init(Jxta_module * it, Jxta_PG * group, Jxta_id * as
         }
     }
 
-    self->running = TRUE;
+    apr_pollset_create(&self->pollset, 100, pool, 0);
+    self->pollfd_cnt = 0;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Initialized\n");
     return JXTA_SUCCESS;
 }
 
-static Jxta_status endpoint_start(Jxta_module * self, const char *args[])
+static void* APR_THREAD_FUNC do_poll(apr_thread_t * thd, void * arg)
 {
-    /* construct + init have done everything already */
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Starting ...\n");
+    Jxta_endpoint_service * me = arg;
+    Jxta_status rv;
 
+    /* Use 1 second timeout instead of blocking because:
+     * a. poll won't return when close local listening socket as 9/1/2006
+     * b. give this thread a chance to serve other tasks in thread pool
+     */
+    rv = endpoint_service_poll(me, 1000000L);
+    if (me->running && me->pollfd_cnt) {
+        apr_thread_pool_push(jxta_PG_thread_pool_get(me->my_group), do_poll, me, APR_THREAD_TASK_PRIORITY_NORMAL, me);
+    }
+    return JXTA_SUCCESS;
+}
+
+static Jxta_status endpoint_start(Jxta_module * me, const char *args[])
+{
+    Jxta_endpoint_service * myself = (Jxta_endpoint_service *) me;
+
+    /* construct + init have done everything already */
+    PTValid(myself, Jxta_endpoint_service);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Starting ...\n");
+    myself->running = TRUE;
+    if (myself->pollfd_cnt) {
+        apr_thread_pool_push(jxta_PG_thread_pool_get(myself->my_group), do_poll, myself, APR_THREAD_TASK_PRIORITY_NORMAL, myself);
+    }
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Started\n");
     return JXTA_SUCCESS;
 }
@@ -466,11 +597,11 @@ static void endpoint_stop(Jxta_module * self)
     /* stop the thread that processes outgoing messages */
     me->running = FALSE;
 
+    apr_thread_pool_tasks_cancel(jxta_PG_thread_pool_get(me->my_group), me);
     if (NULL != me->router_transport) {
         JXTA_OBJECT_RELEASE(me->router_transport);
         me->router_transport = NULL;
     }
-
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Stopped.\n");
 }
 
@@ -503,12 +634,12 @@ static const Jxta_endpoint_service_methods jxta_endpoint_service_methods = {
     {
      "Jxta_module_methods",
      endpoint_init,
-     jxta_module_init_e_impl,
      endpoint_start,
      endpoint_stop},
     "Jxta_service_methods",
     endpoint_get_MIA,
-    endpoint_get_interface
+    endpoint_get_interface,
+    service_on_option_set
 };
 
 typedef struct _Filter Filter;
@@ -533,8 +664,8 @@ void jxta_endpoint_service_destruct(Jxta_endpoint_service * service)
         free(service->relay_proto);
     dl_free(service->filter_list, free);
 
-    apr_thread_mutex_destroy(service->filter_list_mutex);
-    apr_thread_mutex_destroy(service->listener_table_mutex);
+    apr_thread_mutex_destroy(service->nc_wlock);
+    apr_thread_mutex_destroy(service->demux_mutex);
     apr_thread_mutex_destroy(service->mutex);
 
     /* un-ref our impl_adv, and delete assigned_id */
@@ -547,10 +678,6 @@ void jxta_endpoint_service_destruct(Jxta_endpoint_service * service)
     if (service->my_impl_adv) {
         JXTA_OBJECT_RELEASE(service->my_impl_adv);
         service->my_impl_adv = NULL;
-    }
-    if (service->my_assigned_id != 0) {
-        JXTA_OBJECT_RELEASE(service->my_assigned_id);
-        service->my_assigned_id = NULL;
     }
 
     if (service->myRoute != NULL) {
@@ -578,7 +705,6 @@ Jxta_endpoint_service *jxta_endpoint_service_construct(Jxta_endpoint_service * s
     jxta_service_construct((Jxta_service *) service, (const Jxta_service_methods *) methods);
     service->thisType = "Jxta_endpoint_service";
 
-    service->my_assigned_id = NULL;
     service->my_impl_adv = NULL;
     service->my_group = NULL;
     service->my_groupid = NULL;
@@ -620,19 +746,19 @@ Jxta_status endpoint_service_demux(Jxta_endpoint_service * me, const char *name,
     Cb_elt *cb;
 
     key = get_service_key(name, param);
-    apr_thread_mutex_lock(me->listener_table_mutex);
+    apr_thread_mutex_lock(me->demux_mutex);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Demux: Looking up callback for %s\n", key);
     cb = apr_hash_get(me->cb_table, key, APR_HASH_KEY_STRING);
     if (!cb && param) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Demux: Looking up callback for fallback %s\n", name);
         cb = apr_hash_get(me->cb_table, name, APR_HASH_KEY_STRING);
     }
-    apr_thread_mutex_unlock(me->listener_table_mutex);
+    apr_thread_mutex_unlock(me->demux_mutex);
     if (cb) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Demux: Calling found callback.\n");
         rv = cb->func((Jxta_object *) msg, cb->arg);
     } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Demux: No callback found for %s.\n", key);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Demux: No callback found for %s.\n", key);
         rv = JXTA_ITEM_NOTFOUND;
     }
     free(key);
@@ -669,7 +795,7 @@ JXTA_DECLARE(void) jxta_endpoint_service_demux_addr(Jxta_endpoint_service * serv
     PTValid(service, Jxta_endpoint_service);
     JXTA_OBJECT_CHECK_VALID(msg);
 
-    if( service->running == JXTA_FALSE){
+    if (service->running == JXTA_FALSE) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Demux: Endpoint stopped \n");
         return;
     }
@@ -692,7 +818,7 @@ JXTA_DECLARE(void) jxta_endpoint_service_demux_addr(Jxta_endpoint_service * serv
    **/
 
     /* pass message through appropriate filters */
-    apr_thread_mutex_lock(service->filter_list_mutex);
+    apr_thread_mutex_lock(service->demux_mutex);
 
     dl_traverse(cur, service->filter_list) {
         Jxta_message_element *el = NULL;
@@ -704,7 +830,7 @@ JXTA_DECLARE(void) jxta_endpoint_service_demux_addr(Jxta_endpoint_service * serv
             JXTA_OBJECT_RELEASE(el);
             /* discard the message if the filter returned false */
             if (!cur_filter->func(msg, cur_filter->arg)) {
-                apr_thread_mutex_unlock(service->filter_list_mutex);
+                apr_thread_mutex_unlock(service->demux_mutex);
                 return;
             }
 
@@ -714,7 +840,7 @@ JXTA_DECLARE(void) jxta_endpoint_service_demux_addr(Jxta_endpoint_service * serv
         }
     }
 
-    apr_thread_mutex_unlock(service->filter_list_mutex);
+    apr_thread_mutex_unlock(service->demux_mutex);
 
     destStr = jxta_endpoint_address_to_string(dest);
 
@@ -723,6 +849,7 @@ JXTA_DECLARE(void) jxta_endpoint_service_demux_addr(Jxta_endpoint_service * serv
         goto FINAL_EXIT;
     }
 
+    /* Todo: remove listener interface once transition to callback completed */
     listener = lookup_listener(service, dest);
 
     if (listener != NULL) {
@@ -734,8 +861,49 @@ JXTA_DECLARE(void) jxta_endpoint_service_demux_addr(Jxta_endpoint_service * serv
     }
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Demux: No demux listener for %s\n", destStr);
+    /* end of listener section to be deprecated */
   FINAL_EXIT:
     free(destStr);
+}
+
+Jxta_status endpoint_service_poll(Jxta_endpoint_service * me, apr_interval_time_t timeout)
+{
+    apr_status_t rv;
+    const apr_pollfd_t * fds;
+    int i;
+    apr_int32_t num_sockets;
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "before the pollset poll\n");
+    assert(me->pollfd_cnt > 0);
+    rv = apr_pollset_poll(me->pollset, timeout, &num_sockets, &fds);
+
+/* Not sure if we can safely ignore when endpoint is stopping. Transport should still get a chance to handle it.
+    if (! me->running) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Endpoint service is stopped, skip poll.\n");
+        return JXTA_SUCCESS;
+    }
+*/
+
+    if (APR_SUCCESS != rv) {
+                jxta_log_append(__log_cat, APR_STATUS_IS_TIMEUP(rv) ? JXTA_LOG_LEVEL_PARANOID : JXTA_LOG_LEVEL_DEBUG, 
+                                "polling func return with status %d\n", rv);
+        return rv;
+    }
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "num sockets = %d\n", num_sockets);
+    for (i = 0; i < num_sockets; i++) {
+        int ev;
+        Tc_elt * tc;
+
+        ev = fds->rtnevents;
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "APR_POLLIN %d APR_POLLPRI %d APR_POLLERR %d APR_POLLHUP %d "
+                        "APR_POLLNVAL %d\n", ev & APR_POLLIN ? 1:0, ev & APR_POLLPRI ? 1:0 , ev & APR_POLLERR  ? 1:0,
+                        ev & APR_POLLHUP ? 1:0, ev & APR_POLLNVAL ? 1:0);
+        tc = fds->client_data;
+        rv = tc->fn(&tc->fd, tc->arg);
+        fds++;
+    }
+    return JXTA_SUCCESS;
 }
 
 JXTA_DECLARE(void) jxta_endpoint_service_get_route_from_PA(Jxta_PA * padv, Jxta_RouteAdvertisement ** route)
@@ -765,17 +933,17 @@ JXTA_DECLARE(void) jxta_endpoint_service_add_transport(Jxta_endpoint_service * s
     Jxta_id *pid = NULL;
     JString *jaddress;
     char *caddress;
+    Jxta_id *assigned_id;
 
     Jxta_svc *svc = NULL;
     JString *name;
 
     PTValid(service, Jxta_endpoint_service);
-
     if (jxta_transport_allow_inbound(transport)) {
         /* Add the public address to the endpoint section of the PA */
         jxta_PG_get_PA(service->my_group, &pa);
-        jxta_PA_get_Svc_with_id(pa, service->my_assigned_id, &svc);
-
+        assigned_id = jxta_service_get_assigned_ID_priv((Jxta_service *) service);
+        jxta_PA_get_Svc_with_id(pa, assigned_id, &svc);
         if (svc == NULL) {
             svc = jxta_svc_new();
             if (svc == NULL) {
@@ -784,7 +952,7 @@ JXTA_DECLARE(void) jxta_endpoint_service_add_transport(Jxta_endpoint_service * s
                 JXTA_OBJECT_RELEASE(svc);
                 return;
             }
-            jxta_svc_set_MCID(svc, service->my_assigned_id);
+            jxta_svc_set_MCID(svc, assigned_id);
             svcs = jxta_PA_get_Svc(pa);
             jxta_vector_add_object_last(svcs, (Jxta_object *) svc);
             JXTA_OBJECT_RELEASE(svcs);
@@ -852,7 +1020,6 @@ JXTA_DECLARE(void) jxta_endpoint_service_add_transport(Jxta_endpoint_service * s
             JXTA_OBJECT_RELEASE(service->myRoute);
 
         service->myRoute = route;
-
         free(caddress);
 
         JXTA_OBJECT_RELEASE(addresses);
@@ -871,6 +1038,62 @@ JXTA_DECLARE(void) jxta_endpoint_service_add_transport(Jxta_endpoint_service * s
 
     /* String copied. Not needed anymore. */
     JXTA_OBJECT_RELEASE(name);
+    if (jxta_transport_allow_inbound(transport)) {
+        emit_local_route_change_event(service);
+    }
+}
+
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_add_poll(Jxta_endpoint_service * me, apr_socket_t * s, Jxta_callback_fn fn,
+                                                         void * arg, void ** cookie)
+{
+    Jxta_status rv;
+    Tc_elt * tc;
+    
+    rv = tc_new(&tc, fn, s, arg, jxta_PG_pool_get(me->my_group));
+    if (rv != JXTA_SUCCESS) {
+        *cookie = NULL;
+        return rv;
+    }
+
+    apr_thread_mutex_lock(me->mutex);
+    rv = apr_pollset_add(me->pollset, &tc->fd);
+    if (0 == me->pollfd_cnt++ && me->running) {
+        apr_thread_pool_push(jxta_PG_thread_pool_get(me->my_group), do_poll, me, APR_THREAD_TASK_PRIORITY_NORMAL, me);
+    }
+    apr_thread_mutex_unlock(me->mutex);
+    if (rv != JXTA_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed to add poll[%pp] with error %d\n", tc, rv);
+        *cookie = NULL;
+        tc_destroy(tc);
+        return rv;
+    }
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Add poll[%pp] with socket[%pp], total %d sockets to poll\n", tc, s,
+                    me->pollfd_cnt);
+
+    *cookie = tc;
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_remove_poll(Jxta_endpoint_service * me, void * cookie)
+{
+    Jxta_status rv;
+    Tc_elt *tc = cookie;
+
+    apr_thread_mutex_lock(me->mutex);
+    assert(me->pollfd_cnt > 0);
+    rv = apr_pollset_remove (me->pollset, &tc->fd);
+    if (APR_SUCCESS == rv) {
+        --me->pollfd_cnt;
+    }
+    apr_thread_mutex_unlock(me->mutex);
+    if (APR_SUCCESS != rv) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed to remove poll[%pp] with error %d\n", tc, rv);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Removed poll[%pp] with socket[%pp], remaining %d sockets to poll\n", 
+                        tc, tc->fd.desc.s, me->pollfd_cnt);
+    }
+    tc_destroy(tc);
+    return (APR_SUCCESS == rv) ? JXTA_SUCCESS : JXTA_FAILED;
 }
 
 JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_endpoint_service_get_local_route(Jxta_endpoint_service * service)
@@ -891,6 +1114,7 @@ JXTA_DECLARE(void) jxta_endpoint_service_set_local_route(Jxta_endpoint_service *
 
     service->myRoute = route;
     JXTA_OBJECT_SHARE(service->myRoute);
+    emit_local_route_change_event(service);
 }
 
 JXTA_DECLARE(void) jxta_endpoint_service_remove_transport(Jxta_endpoint_service * service, Jxta_transport * transport)
@@ -951,9 +1175,9 @@ JXTA_DECLARE(void) jxta_endpoint_service_add_filter(Jxta_endpoint_service * serv
     filter->arg = arg;
 
     /* insert the filter into the list */
-    apr_thread_mutex_lock(service->filter_list_mutex);
+    apr_thread_mutex_lock(service->demux_mutex);
     dl_insert_b(service->filter_list, filter);
-    apr_thread_mutex_unlock(service->filter_list_mutex);
+    apr_thread_mutex_unlock(service->demux_mutex);
 }
 
 JXTA_DECLARE(void) jxta_endpoint_service_remove_filter(Jxta_endpoint_service * service, JxtaEndpointFilter filter)
@@ -962,7 +1186,7 @@ JXTA_DECLARE(void) jxta_endpoint_service_remove_filter(Jxta_endpoint_service * s
 
     PTValid(service, Jxta_endpoint_service);
 
-    apr_thread_mutex_lock(service->filter_list_mutex);
+    apr_thread_mutex_lock(service->demux_mutex);
 
     /* find the filter registered under this handle */
 
@@ -979,7 +1203,7 @@ JXTA_DECLARE(void) jxta_endpoint_service_remove_filter(Jxta_endpoint_service * s
         dl_delete_node(cur);
     }
 
-    apr_thread_mutex_unlock(service->filter_list_mutex);
+    apr_thread_mutex_unlock(service->demux_mutex);
 }
 
 static apr_status_t cb_elt_cleanup(void *me)
@@ -1036,10 +1260,10 @@ Jxta_status endpoint_service_add_recipient(Jxta_endpoint_service * me, void **co
     Jxta_status rv;
 
     cb = cb_elt_create(me, name, param, f, arg);
-    apr_thread_mutex_lock(me->listener_table_mutex);
+    apr_thread_mutex_lock(me->demux_mutex);
     old_cb = apr_hash_get(me->cb_table, cb->recipient, APR_HASH_KEY_STRING);
     if (old_cb) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "There is a recipient for %s already, ignor request.\n", 
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "There is a recipient for %s already, ignor request.\n",
                         cb->recipient);
         cb_elt_recycle(cb);
         *cookie = NULL;
@@ -1050,7 +1274,7 @@ Jxta_status endpoint_service_add_recipient(Jxta_endpoint_service * me, void **co
         *cookie = cb->recipient;
         rv = JXTA_SUCCESS;
     }
-    apr_thread_mutex_unlock(me->listener_table_mutex);
+    apr_thread_mutex_unlock(me->demux_mutex);
     return rv;
 }
 
@@ -1059,7 +1283,7 @@ Jxta_status endpoint_service_remove_recipient(Jxta_endpoint_service * me, void *
     Jxta_status rv;
     Cb_elt *old_cb;
 
-    apr_thread_mutex_lock(me->listener_table_mutex);
+    apr_thread_mutex_lock(me->demux_mutex);
     old_cb = apr_hash_get(me->cb_table, cookie, APR_HASH_KEY_STRING);
     if (!old_cb) {
         rv = JXTA_ITEM_NOTFOUND;
@@ -1068,7 +1292,7 @@ Jxta_status endpoint_service_remove_recipient(Jxta_endpoint_service * me, void *
         cb_elt_recycle(old_cb);
         rv = JXTA_SUCCESS;
     }
-    apr_thread_mutex_unlock(me->listener_table_mutex);
+    apr_thread_mutex_unlock(me->demux_mutex);
     return rv;
 }
 
@@ -1098,17 +1322,17 @@ JXTA_DECLARE(Jxta_status)
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Register listener for %s\n", str);
 
-    apr_thread_mutex_lock(service->listener_table_mutex);
+    apr_thread_mutex_lock(service->demux_mutex);
 
     if (apr_hash_get(service->listener_table, str, APR_HASH_KEY_STRING)) {
-        apr_thread_mutex_unlock(service->listener_table_mutex);
+        apr_thread_mutex_unlock(service->demux_mutex);
         return JXTA_BUSY;
     }
 
     JXTA_OBJECT_SHARE(listener);
     apr_hash_set(service->listener_table, str, APR_HASH_KEY_STRING, (void *) listener);
 
-    apr_thread_mutex_unlock(service->listener_table_mutex);
+    apr_thread_mutex_unlock(service->demux_mutex);
     return JXTA_SUCCESS;
 }
 
@@ -1123,13 +1347,13 @@ JXTA_DECLARE(Jxta_status)
     JXTA_DEPRECATED_API();
     apr_snprintf(str, sizeof(str), "%s%s", (serviceName != NULL ? serviceName : ""), (serviceParam != NULL ? serviceParam : ""));
 
-    apr_thread_mutex_lock(service->listener_table_mutex);
+    apr_thread_mutex_lock(service->demux_mutex);
     listener = (Jxta_listener *) apr_hash_get(service->listener_table, str, APR_HASH_KEY_STRING);
     if (listener != NULL) {
         apr_hash_set(service->listener_table, str, APR_HASH_KEY_STRING, NULL);
         JXTA_OBJECT_RELEASE(listener);
     }
-    apr_thread_mutex_unlock(service->listener_table_mutex);
+    apr_thread_mutex_unlock(service->demux_mutex);
     return JXTA_SUCCESS;
 }
 
@@ -1170,11 +1394,16 @@ static Jxta_listener *lookup_listener(Jxta_endpoint_service * service, Jxta_endp
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory\n");
         return NULL;
     }
-    apr_snprintf(str, str_length, "%s%s", ea_svc_name, (ea_svc_params != NULL ? ea_svc_params : ""));
+  
+    strcpy( str, ea_svc_name );
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Lookup for listener %s-%s\n", ea_svc_name, ea_svc_params);
+    if( NULL != ea_svc_params ) {
+        strcat( str, ea_svc_params );
+    }
 
-    apr_thread_mutex_lock(service->listener_table_mutex);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Lookup for listener : %s\n", str );
+
+    apr_thread_mutex_lock(service->demux_mutex);
     listener = (Jxta_listener *) apr_hash_get(service->listener_table, str, APR_HASH_KEY_STRING);
 
     /*
@@ -1241,7 +1470,7 @@ static Jxta_listener *lookup_listener(Jxta_endpoint_service * service, Jxta_endp
         free(str1);
     }
 
-    apr_thread_mutex_unlock(service->listener_table_mutex);
+    apr_thread_mutex_unlock(service->demux_mutex);
     free(str);
     return listener;
 }
@@ -1414,6 +1643,18 @@ static void msg_task_recycle(Msg_task * me)
     apr_thread_mutex_unlock(ep->mutex);
 }
 
+static long task_priority(Jxta_message * msg)
+{
+    apr_uint16_t pri;
+    Jxta_status rv;
+
+    rv = jxta_message_get_priority(msg, &pri);
+    if (JXTA_SUCCESS != rv) {
+        return APR_THREAD_TASK_PRIORITY_NORMAL;
+    }
+    return (pri >> 8) & APR_THREAD_TASK_PRIORITY_HIGHEST;
+}
+
 static Jxta_status do_send(Jxta_PG * obj, Jxta_endpoint_service * me, Jxta_message * msg,
                            Jxta_endpoint_address * dest_addr, Jxta_boolean sync)
 {
@@ -1466,8 +1707,7 @@ static Jxta_status do_send(Jxta_PG * obj, Jxta_endpoint_service * me, Jxta_messa
         Msg_task *task;
 
         task = msg_task_create(me, msg);
-        apr_thread_pool_push(jxta_PG_thread_pool_get(me->my_group), outgoing_message_thread, task,
-                             APR_THREAD_TASK_PRIORITY_NORMAL);
+        apr_thread_pool_push(jxta_PG_thread_pool_get(me->my_group), outgoing_message_thread, task, task_priority(msg), me);
         apr_atomic_inc32(&me->msg_task_cnt);
 
         baseAddrStr = jxta_endpoint_address_get_transport_addr(dest_addr);
@@ -1602,6 +1842,8 @@ static Jxta_status outgoing_message_process(Jxta_endpoint_service * me, Jxta_mes
     char *baseAddrStr = NULL;
     Nc_entry *ptr;
     static volatile apr_uint32_t cnt = 0;
+    apr_uint16_t ttl;
+    time_t lifespan;
 
     if (me->router_transport == NULL) {
         me->router_transport = jxta_endpoint_service_lookup_transport(me, "jxta");
@@ -1613,6 +1855,16 @@ static Jxta_status outgoing_message_process(Jxta_endpoint_service * me, Jxta_mes
     }
 
     JXTA_OBJECT_CHECK_VALID(msg);
+
+    if (JXTA_SUCCESS == jxta_message_get_ttl(msg, &ttl) && 0 == ttl) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Message [%pp] is discarded with TTL 0\n", msg);
+        return JXTA_SUCCESS;
+    }
+
+    if (JXTA_SUCCESS == jxta_message_get_lifespan(msg, &lifespan) && time(NULL) >= lifespan) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Message [%pp] is discarded with lifespan %ld\n", msg, lifespan);
+        return JXTA_SUCCESS;
+    }
 
     dest = jxta_message_get_destination(msg);
     if (dest == NULL) {
@@ -1628,15 +1880,18 @@ static Jxta_status outgoing_message_process(Jxta_endpoint_service * me, Jxta_mes
                     jxta_endpoint_address_get_service_name(dest), jxta_endpoint_address_get_service_params(dest));
 
     baseAddrStr = jxta_endpoint_address_get_transport_addr(dest);
+    apr_thread_mutex_lock(me->nc_wlock);
     apr_thread_mutex_lock(me->mutex);
     ptr = apr_hash_get(me->nc, baseAddrStr, APR_HASH_KEY_STRING);
     apr_thread_mutex_unlock(me->mutex);
     if (NULL != ptr) {
         res = nc_peer_queue_msg(me, ptr, msg);
+        apr_thread_mutex_unlock(me->nc_wlock);
     } else {
+        apr_thread_mutex_unlock(me->nc_wlock);
         res = send_message(me, msg, dest);
-        if (JXTA_SUCCESS != res) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Peer at %s is unreachable, queueing msg[%pp]\n", baseAddrStr, msg);
+        if (JXTA_UNREACHABLE_DEST == res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Peer at %s is unreachable, queueing msg[%pp]\n", baseAddrStr, msg);
             ptr = nc_add_peer(me, baseAddrStr, msg);
         }
     }
@@ -1666,6 +1921,7 @@ void jxta_endpoint_service_transport_event(Jxta_endpoint_service * me, Jxta_tran
         addr = jxta_endpoint_address_get_transport_addr(e->dest_addr);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Inbound connection from %s.\n", addr);
 
+        apr_thread_mutex_lock(me->nc_wlock);
         apr_thread_mutex_lock(me->mutex);
         ptr = apr_hash_get(me->nc, addr, APR_HASH_KEY_STRING);
         apr_thread_mutex_unlock(me->mutex);
@@ -1677,6 +1933,7 @@ void jxta_endpoint_service_transport_event(Jxta_endpoint_service * me, Jxta_tran
                 nc_remove_peer(me, ptr);
             }
         }
+        apr_thread_mutex_unlock(me->nc_wlock);
         free(addr);
 
         ea = jxta_endpoint_address_new_3(e->peer_id, NULL, NULL);
@@ -1684,6 +1941,7 @@ void jxta_endpoint_service_transport_event(Jxta_endpoint_service * me, Jxta_tran
             addr = jxta_endpoint_address_get_transport_addr(ea);
             JXTA_OBJECT_RELEASE(ea);
 
+            apr_thread_mutex_lock(me->nc_wlock);
             apr_thread_mutex_lock(me->mutex);
             ptr = apr_hash_get(me->nc, addr, APR_HASH_KEY_STRING);
             apr_thread_mutex_unlock(me->mutex);
@@ -1695,6 +1953,7 @@ void jxta_endpoint_service_transport_event(Jxta_endpoint_service * me, Jxta_tran
                     nc_remove_peer(me, ptr);
                 }
             }
+            apr_thread_mutex_unlock(me->nc_wlock);
             free(addr);
         }
         break;

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: Pipe.cs,v 1.1 2006/01/18 20:31:08 lankes Exp $
+ * $Id: Pipe.cs,v 1.2 2006/08/04 10:33:20 lankes Exp $
  */
 using System;
 using System.Collections.Generic;
@@ -59,29 +59,50 @@ using System.Runtime.InteropServices;
 
 namespace JxtaNET
 {
-    public class Pipe : JxtaObject
+    internal class Pipe : JxtaObject
     {
+        #region import jxta-c functions
         [DllImport("jxta.dll")]
         private static extern UInt32 jxta_pipe_get_inputpipe(IntPtr pipe, ref IntPtr ip);
 
         [DllImport("jxta.dll")]
         private static extern UInt32 jxta_pipe_get_outputpipe(IntPtr self, ref IntPtr op);
+        #endregion
 
-        public InputPipe getInputPipe()
+        private PipeAdvertisement adv;
+
+        /// <summary>
+        /// Input pipe of the pipe.
+        /// </summary>
+        public InputPipe InputPipe
         {
-            IntPtr ret = new IntPtr();
-            Errors.check(jxta_pipe_get_inputpipe(this.self, ref ret));
-            return new InputPipe(ret);
+            get
+            {
+                IntPtr ret = new IntPtr();
+                Errors.check(jxta_pipe_get_inputpipe(this.self, ref ret));
+                return new InputPipeImpl(ret, adv);
+            }
         }
 
-        public OutputPipe getOutputPipe()
+        /// <summary>
+        /// Output pipe of the pipe.
+        /// </summary>
+        public OutputPipe OutputPipe
         {
-            IntPtr ret = new IntPtr();
-            Errors.check(jxta_pipe_get_outputpipe(this.self, ref ret));
-            return new OutputPipe(ret);
+            get
+            {
+                IntPtr ret = new IntPtr();
+                Errors.check(jxta_pipe_get_outputpipe(this.self, ref ret));
+                return new OutputPipeImpl(ret, adv);
+            }
         }
 
-        internal Pipe(IntPtr self) : base(self) { }
+        internal Pipe(IntPtr self, PipeAdvertisement a)
+            : base(self)
+        {
+            adv = a;
+        }
+
         internal Pipe()  { }
     }
 }

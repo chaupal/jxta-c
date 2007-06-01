@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jstring.h,v 1.12 2005/09/21 21:16:46 slowhog Exp $
+ * $Id: jstring.h,v 1.14 2006/08/05 00:25:53 bondolo Exp $
  */
 
 
@@ -103,7 +103,6 @@ JXTA_DECLARE(JString *) jstring_new_1(size_t initialSize);
  * Constructs a JString from a constant character 
  * array.
  *
- * @todo Check that the ending char is \0
  */
 JXTA_DECLARE(JString *) jstring_new_2(const char *);
 
@@ -146,6 +145,11 @@ JXTA_DECLARE(size_t) jstring_length(JString const *);
  * buffer.
  */
 JXTA_DECLARE(size_t) jstring_capacity(JString const *);
+
+/**
+*   Compare two strings in the same way that 'strcmp' does.
+*/
+JXTA_DECLARE(int) jstring_equals(JString const *me, JString const *you);
 
 /**
  * Returns a C-style character buffer containing

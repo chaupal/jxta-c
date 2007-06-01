@@ -89,6 +89,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Peers.cs" />
+    <Compile Include="RdvControl.cs" />
     <Compile Include="RdvStatus.cs" />
     <Compile Include="Search.cs" />
     <Compile Include="Shell.cs" />

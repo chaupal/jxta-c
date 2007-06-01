@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) 2003 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright (c) 2001 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,54 +50,125 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: route_adv_test.c,v 1.8 2005/10/13 17:07:40 exocetrick Exp $
+ * $Id: route_adv_test.c,v 1.11 2006/08/28 19:36:47 bondolo Exp $
  */
 
 #include <stdio.h>
-#include "jxta.h"
-#include "jxta_routea.h"
 
+#include <jxta.h>
 
-int routea_test(int argc, char **argv)
-{
+#include <jxta_routea.h>
 
-    Jxta_RouteAdvertisement *ad;
-    FILE *testfile;
-    JString *js;
+#include "unittest_jxta_func.h"
 
-    if (argc != 2) {
-        printf("usage: ad <filename>\n");
-        return -1;
+const char *test_route_construction(void) {
+    Jxta_status result = JXTA_SUCCESS;
+    Jxta_RouteAdvertisement *adv = jxta_RouteAdvertisement_new();
+    
+    if( NULL == adv ) {
+        return FILEANDLINE;
+    }
+    
+    if( !JXTA_OBJECT_CHECK_VALID(adv) ) {
+        return FILEANDLINE;
     }
 
-    jxta_initialize();
-
-    ad = jxta_RouteAdvertisement_new();
-
-    testfile = fopen(argv[1], "r");
-    jxta_RouteAdvertisement_parse_file(ad, testfile);
-    fclose(testfile);
-
-    js = jstring_new_1(1024);
-
-    jxta_advertisement_get_xml((Jxta_advertisement *) ad, &js);
-
-    fprintf(stdout, "%s", jstring_get_string(js));
-
-    JXTA_OBJECT_RELEASE(js);
-    JXTA_OBJECT_RELEASE(ad);
-
-    jxta_terminate();
-    return 0;
-
+    JXTA_OBJECT_RELEASE(adv);
+       
+    return NULL;
 }
 
+const char *test_route_serialization(void) {
+    Jxta_status result = JXTA_SUCCESS;
+    Jxta_RouteAdvertisement *adv;
+    FILE *testfile;
+    JString *dump1;
+    JString *dump2;
 
+    adv = jxta_RouteAdvertisement_new();
+    
+    if( NULL == adv ) {
+        return FILEANDLINE;
+    }
+
+    testfile = fopen( "RA.xml", "r");
+
+    if( NULL == testfile ) {
+        return FILEANDLINE;
+    }
+    
+    result = jxta_RouteAdvertisement_parse_file(adv, testfile);
+    fclose(testfile);
+
+    if( JXTA_SUCCESS != result ) {
+        return FILEANDLINE;
+    }    
+
+    if( !JXTA_OBJECT_CHECK_VALID(adv) ) {
+        return FILEANDLINE;
+    }
+
+    result = jxta_RouteAdvertisement_get_xml(adv, &dump1);
+    if( JXTA_SUCCESS != result ) {
+        return FILEANDLINE;
+    } 
+       
+    JXTA_OBJECT_RELEASE(adv);
+    adv = NULL;
+
+    adv = jxta_RouteAdvertisement_new();
+    result = jxta_RouteAdvertisement_parse_charbuffer( adv, jstring_get_string(dump1), jstring_length(dump1) );
+    if( JXTA_SUCCESS != result ) {
+        return FILEANDLINE;
+    }    
+
+    if( !JXTA_OBJECT_CHECK_VALID(adv) ) {
+        return FILEANDLINE;
+    }
+
+    result = jxta_advertisement_get_xml(adv, &dump2);
+    if( JXTA_SUCCESS != result ) {
+        return FILEANDLINE;
+    } 
+    
+    if( 0 != jstring_equals( dump1, dump2 ) ) {
+        return FILEANDLINE;
+    }
+
+    JXTA_OBJECT_RELEASE(adv);
+    JXTA_OBJECT_RELEASE(dump1);
+    JXTA_OBJECT_RELEASE(dump2);
+
+    return NULL;
+}
+
+static struct _funcs route_adv_test_funcs[] = {
+    /* First run simple construction destruction test. */
+    {*test_route_construction, "construction/destruction for jxta:RA"},
+
+    /* Serialization/Deserialization */
+    {*test_route_serialization, "read/write test for jxta:RA"},
+
+    {NULL, "null"}
+};
+
+/**
+* Run the unit tests for the jxta_pa test routines
+*
+* @param tests_run the variable in which to accumulate the number of tests run
+* @param tests_passed the variable in which to accumulate the number of tests passed
+* @param tests_failed the variable in which to accumulate the number of tests failed
+*
+* @return TRUE if all tests were run successfully, FALSE otherwise
+*/
+Jxta_boolean run_jxta_route_adv_tests(int *tests_run, int *tests_passed, int *tests_failed)
+{
+    return run_testfunctions(route_adv_test_funcs, tests_run, tests_passed, tests_failed);
+}
 
 #ifdef STANDALONE
 int main(int argc, char **argv)
 {
-
-    return routea_test(argc, argv);
+    return main_test_function(route_adv_test_funcs, argc, argv);
 }
 #endif

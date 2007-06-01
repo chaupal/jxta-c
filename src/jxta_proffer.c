@@ -50,6 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
+ * $Id: jxta_proffer.c,v 1.17 2006/09/19 18:45:47 exocetrick Exp $
  */
 
 #include <stdio.h>
@@ -227,41 +228,31 @@ static void handleElement(void *userdata, const XML_Char * cd, int len)
 
 JXTA_DECLARE(Jxta_ProfferAdvertisement *) jxta_ProfferAdvertisement_new()
 {
-    Jxta_ProfferAdvertisement *self;
+    Jxta_ProfferAdvertisement *me;
 
-    self = (Jxta_ProfferAdvertisement *) calloc(1, sizeof(Jxta_ProfferAdvertisement));
-    if (self == NULL)
+    me = (Jxta_ProfferAdvertisement *) calloc(1, sizeof(Jxta_ProfferAdvertisement));
+    if (me == NULL)
         return NULL;
-    JXTA_OBJECT_INIT(self, (JXTA_OBJECT_FREE_FUNC) freeProfferAdv, 0);
-    return self;
+    JXTA_OBJECT_INIT(me, (JXTA_OBJECT_FREE_FUNC) freeProfferAdv, 0);
+    return me;
+}
+
+JXTA_DECLARE(Jxta_ProfferAdvertisement *) jxta_ProfferAdvertisement_new_1(const char *ns, const char * advid, const char *peerid)
+{
+    Jxta_ProfferAdvertisement *me;
+
+    me = jxta_ProfferAdvertisement_new();
+    if (NULL == me) return NULL;
+    jxta_proffer_adv_set_nameSpace(me, ns);
+    jxta_proffer_adv_set_advId(me, advid);
+    jxta_proffer_adv_set_peerId(me, peerid);
+    return me;
 }
 
 static const Kwdtab ProfferAdvertisement_tags[] = {
     {"*", 0, *handleElement, NULL, NULL},
     {NULL, 0, 0, NULL, NULL}
 };
-
-JXTA_DECLARE(Jxta_ProfferAdvertisement *)
-    jxta_ProfferAdvertisement_new_rebuild(Jxta_advertisement * adv, const char *name, const char *xmlString)
-{
-    Jxta_ProfferAdvertisement *self;
-    self = calloc(1, sizeof(Jxta_ProfferAdvertisement));
-    if (self == NULL)
-        return NULL;
-
-    jxta_advertisement_initialize((Jxta_advertisement *) self,
-                                  name,
-                                  ProfferAdvertisement_tags, NULL, (JxtaAdvertisementGetIDFunc) jxta_proffer_adv_get_advId, NULL,
-                                  (FreeFunc) freeProfferAdv);
-
-    self->elemHash = NULL;
-    self->elemVector = NULL;
-    self->nameSpace = jstring_new_2(name);
-    self->indexables = jxta_advertisement_get_indexes(adv);
-    jxta_advertisement_parse_charbuffer((Jxta_advertisement *) self, xmlString, (size_t) strlen(xmlString));
-    /* build an advertisement with modified numeric values */
-    return self;
-}
 
 JXTA_DECLARE(Jxta_status) jxta_proffer_adv_add_item(Jxta_ProfferAdvertisement * prof, const char *name, const char *value)
 {
@@ -289,7 +280,8 @@ JXTA_DECLARE(Jxta_status) jxta_proffer_adv_set_nameSpace(Jxta_ProfferAdvertiseme
 
 JXTA_DECLARE(JString *) jxta_proffer_adv_get_nameSpace(Jxta_ProfferAdvertisement * prof)
 {
-    return jstring_clone(prof->nameSpace);
+    if (prof->nameSpace) return jstring_clone(prof->nameSpace);
+    return NULL;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_proffer_adv_set_advId(Jxta_ProfferAdvertisement * prof, const char *id)

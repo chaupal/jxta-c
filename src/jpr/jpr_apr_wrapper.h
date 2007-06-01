@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_apr_wrapper.h,v 1.6 2005/07/21 23:02:22 slowhog Exp $
+ * $Id: jpr_apr_wrapper.h,v 1.7 2006/09/29 02:01:29 slowhog Exp $
  */
 
 #ifndef __JPR_APR_WRAPPER_H__
@@ -75,12 +75,6 @@ extern "C" {
 #endif
 
 
-
-#define CHECK_APR_VERSION(major, minor, patch) \
-	(APR_MAJOR_VERSION > (major) || \
-	 (APR_MAJOR_VERSION == (major) && APR_MINOR_VERSION > (minor)) || \
-	 (APR_MAJOR_VERSION == (major) && APR_MINOR_VERSION == (minor) && \
-	  APR_PATCH_VERSION >= (patch)))
 
 #define JPR_HAS_THREADS APR_HAS_THREADS
 

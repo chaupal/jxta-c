@@ -50,21 +50,15 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_types.c,v 1.3 2005/11/22 09:42:15 mmx2005 Exp $
+ * $Id: jpr_types.c,v 1.10 2006/09/19 20:46:00 bondolo Exp $
  */
 
 #include "jpr_types.h"
 
 #include <limits.h>
 
-const Jpr_interval_time JPR_INTERVAL_ONE_SECOND = (Jpr_interval_time) 1000;
-
-#ifdef WIN32
-    const Jpr_interval_time JPR_INTERVAL_TIME_MAX = (((__int64) 1) << 63) - 1;
-    const Jpr_interval_time JPR_INTERVAL_TIME_MIN = (((__int64) 1) << 63) ;
-    const Jpr_absolute_time JPR_ABSOLUTE_TIME_MAX = ((__int64) 0) - 1; /* intentional underflow */
-#else
-    const Jpr_interval_time JPR_INTERVAL_TIME_MAX = (((long long) 1) << 63) -1;
-    const Jpr_interval_time JPR_INTERVAL_TIME_MIN = (((long long) 1) << 63) ;
-    const Jpr_absolute_time JPR_ABSOLUTE_TIME_MAX = ((long long) 0) - 1; /* intentional underflow */
-#endif
+const Jpr_interval_time JPR_INTERVAL_ONE_SECOND = (Jpr_interval_time) APR_INT64_C(1000);
+const Jpr_absolute_time JPR_ABSOLUTE_TIME_MIN = (Jpr_absolute_time) APR_INT64_C(-9223372036854775808);
+const Jpr_absolute_time JPR_ABSOLUTE_TIME_MAX = (Jpr_absolute_time) APR_INT64_C(9223372036854775807);
+const Jpr_interval_time JPR_INTERVAL_TIME_MIN = (Jpr_interval_time) APR_INT64_C(-9223372036854775808);
+const Jpr_interval_time JPR_INTERVAL_TIME_MAX = (Jpr_interval_time) APR_INT64_C(9223372036854775807);

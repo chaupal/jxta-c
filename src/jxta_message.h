@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_message.h,v 1.7 2006/05/26 02:49:51 bondolo Exp $
+ * $Id: jxta_message.h,v 1.12 2006/08/30 21:03:35 slowhog Exp $
  */
 
 #ifndef __JXTAMSG_H__
@@ -62,6 +62,7 @@
 #include "jxta_vector.h"
 #include "jstring.h"
 #include "jxta_endpoint_address.h"
+#include "jxta_qos.h"
 
 
 #ifdef __cplusplus
@@ -76,7 +77,7 @@ extern "C" {
 *  You must provide your own locking if you wish to use mutable messages from
 *  multiple threads.
 **/
-typedef struct _Jxta_message const Jxta_message;
+typedef struct _Jxta_message Jxta_message;
 
 /**
 *  JXTA elements are opaque JXTA objects. Jxta elements are effectively 
@@ -91,6 +92,9 @@ typedef struct _Jxta_message_element const Jxta_message_element;
  *  @return the new JXTA message or NULL for errors.
  **/
 JXTA_DECLARE(Jxta_message *) jxta_message_new(void);
+
+JXTA_DECLARE(Jxta_status) jxta_message_create(Jxta_message ** me, apr_pool_t *pool);
+JXTA_DECLARE(Jxta_status) jxta_message_destroy(Jxta_message * me);
 
 /**
  *  Copies a Jxta message. The copy can then be modified seperately from the
@@ -123,15 +127,31 @@ JXTA_DECLARE(Jxta_status) jxta_message_read(Jxta_message * msg, char const *mime
  *
  * @param  msg The message to which will be written.
  * @param  mime_type The mime-type which will be written to of the stream.
- * If the implementation does not support messages of this type,
- * JXTA_INVALID_ARGUMENT will be returned. If NULL then the default type,
- * "application/x-jxta-msg" will be used.
+ *   If the implementation does not support messages of this type,
+ *   JXTA_INVALID_ARGUMENT will be returned. If NULL then the default type,
+ *   "application/x-jxta-msg" will be used.
  * @param  write_func The function to be called to write message bytes.
  * @param  stream  The identifier which will be passed to write_func to identify
  * the stream.
  * @return  JXTA_SUCCESS if the message was written successfully.
  **/
 JXTA_DECLARE(Jxta_status) jxta_message_write(Jxta_message * msg, char const *mime_type, WriteFunc write_func, void *stream);
+
+/**
+ * Writes a Jxta message to a "stream".
+ *
+ * @param  msg The message to which will be written.
+ * @param  mime_type The mime-type which will be written to of the stream.
+ *   If the implementation does not support messages of this type,
+ *   JXTA_INVALID_ARGUMENT will be returned. If NULL then the default type,
+ *   "application/x-jxta-msg" will be used.
+ * @param  version The message format version which will be used to write the message. 
+ * @param  write_func The function to be called to write message bytes.
+ * @param  stream  The identifier which will be passed to write_func to identify
+ *  the stream.
+ * @return  JXTA_SUCCESS if the message was written successfully.
+ **/
+JXTA_DECLARE(Jxta_status) jxta_message_write_1(Jxta_message * msg, char const *mime_type, int version, WriteFunc write_func, void *stream);
 
 JXTA_DECLARE(Jxta_endpoint_address *) jxta_message_get_source(Jxta_message * msg);
 
@@ -208,7 +228,7 @@ JXTA_DECLARE(Jxta_status) jxta_message_remove_element(Jxta_message * msg, Jxta_m
 JXTA_DECLARE(Jxta_status) jxta_message_remove_element_1(Jxta_message * msg, char const *qname);
 
 /**
- * Removes an element from a message. The first element matching name in the specificed namespace
+ * Removes an element from a message. The first element matching name in the specified namespace
  * will be removed.
  *
  * @param  msg The message to be modified
@@ -334,6 +354,44 @@ JXTA_DECLARE(Jxta_bytevector *) jxta_message_element_get_value(Jxta_message_elem
  **/
 JXTA_DECLARE(Jxta_message_element *) jxta_message_element_get_signature(Jxta_message_element * el);
 
+/**
+ * Enable QoS capability support for the msg
+ * @param me pointer to the message
+ * @param qos The QoS to be used for sending this message
+ */
+JXTA_DECLARE(void) jxta_message_attach_qos(Jxta_message * me, const Jxta_qos * qos);
+
+/**
+ * Get the current QoS setting
+ * @param me pointer to the message
+ * @return a pointer to current QoS setting
+ */
+JXTA_DECLARE(const Jxta_qos*) jxta_message_qos(Jxta_message * me);
+
+/**
+ * Get the current jxtaMsg:priority QoS setting
+ * @param me pointer to the message
+ * @param priotity pointer to receive the value
+ * @return JXTA_SUCCESS if the value was retrieved successfully. JXTA_ITEM_NOTFOUND if the qos was not set. Error code otherwise.
+ */
+JXTA_DECLARE(Jxta_status) jxta_message_get_priority(Jxta_message * me, apr_uint16_t * priority);
+
+/**
+ * Get the current jxtaMsg:TTL QoS setting
+ * @param me pointer to the message
+ * @param ttl pointer to receive the value
+ * @return JXTA_SUCCESS if the value was retrieved successfully. JXTA_ITEM_NOTFOUND if the qos was not set. Error code otherwise.
+ */
+JXTA_DECLARE(Jxta_status) jxta_message_get_ttl(Jxta_message * me, apr_uint16_t * ttl);
+
+/**
+ * Get the current jxtaMsg:lifespan QoS setting
+ * @param me pointer to the message
+ * @param lifespan pointer to receive the value
+ * @return JXTA_SUCCESS if the value was retrieved successfully. JXTA_ITEM_NOTFOUND if the qos was not set. Error code otherwise.
+ */
+JXTA_DECLARE(Jxta_status) jxta_message_get_lifespan(Jxta_message * me, time_t * lifespan);
+
 #ifdef __cplusplus
 #if 0
 {
@@ -343,4 +401,4 @@ JXTA_DECLARE(Jxta_message_element *) jxta_message_element_get_signature(Jxta_mes
 
 #endif
 
-/* vi: set ts=4 sw=4 tw=130 et: */
+/* vim: set ts=4 sw=4 tw=130 et: */

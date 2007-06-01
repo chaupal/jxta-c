@@ -50,13 +50,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_constants.h,v 1.3 2006/06/01 02:41:32 mmx2005 Exp $
+ * $Id: jxta_constants.h,v 1.4 2006/08/04 10:35:12 lankes Exp $
  */
 #ifndef __JXTA_CONSTANTS_H__
 #define __JXTA_CONSTANTS_H__
 
 #include "jxta_types.h"
 #include "jxta_log.h"
+#include "jxta_id.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -102,6 +103,9 @@ JXTA_DECLARE(Jxta_log_level) jxta_get_JXTA_LOG_LEVEL_DEBUG(void);
 JXTA_DECLARE(Jxta_log_level) jxta_get_JXTA_LOG_LEVEL_TRACE(void);
 JXTA_DECLARE(Jxta_log_level) jxta_get_JXTA_LOG_LEVEL_PARANOID(void);
 JXTA_DECLARE(Jxta_log_level) jxta_get_JXTA_LOG_LEVEL_MAX(void);
+
+JXTA_DECLARE(Jxta_id *) jxta_get_id_worldNetPeerGroupID(void);
+JXTA_DECLARE(Jxta_id *) jxta_get_id_defaultNetPeerGroupID(void);
 
 #ifdef __cplusplus
 }

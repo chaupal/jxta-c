@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_walk_msg.c,v 1.10 2006/02/15 01:09:51 slowhog Exp $
+ * $Id: jxta_walk_msg.c,v 1.11 2006/08/03 21:34:21 bondolo Exp $
  */
 
 static const char *__log_cat = "WalkMsg";
@@ -95,6 +95,8 @@ struct _LimitedRangeRdvMessage {
     JString *svc_name;
     JString *svc_params;
 };
+
+static void LimitedRangeRdvMessage_delete(LimitedRangeRdvMessage * ad);
 
 /** Handler functions.  Each of these is responsible for
 * dealing with all of the character data associated with the 
@@ -327,7 +329,7 @@ JXTA_DECLARE(LimitedRangeRdvMessage *) LimitedRangeRdvMessage_new(void)
     return ad;
 }
 
-void LimitedRangeRdvMessage_delete(LimitedRangeRdvMessage * ad)
+static void LimitedRangeRdvMessage_delete(LimitedRangeRdvMessage * ad)
 {
     /* Fill in the required freeing functions here. */
     if (ad->src_peer_id) {
@@ -345,7 +347,7 @@ void LimitedRangeRdvMessage_delete(LimitedRangeRdvMessage * ad)
         ad->svc_params = NULL;
     }
 
-    jxta_advertisement_delete((Jxta_advertisement *) ad);
+    jxta_advertisement_destruct((Jxta_advertisement *) ad);
     memset(ad, 0xdd, sizeof(LimitedRangeRdvMessage));
     free(ad);
 }

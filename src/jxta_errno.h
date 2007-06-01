@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_errno.h,v 1.6 2005/10/06 16:33:35 bondolo Exp $
+ * $Id: jxta_errno.h,v 1.7 2006/09/01 23:36:56 bondolo Exp $
  */
 
 #ifndef JXTA_ERRNO_H
@@ -82,23 +82,23 @@ extern "C" {
 /*
  * The very first error number we need, of course :-)
  */
-#define JXTA_NOTIMP ((Jxta_status) JXTA_START_ERROR + 0)
+#define JXTA_NOTIMP ((Jxta_status) (JXTA_START_ERROR + 0))
 /*
  * And then litany of usual suspects.
  */
-#define JXTA_INVALID_ARGUMENT ((Jxta_status) JXTA_START_ERROR + 1)
-#define JXTA_ITEM_NOTFOUND ((Jxta_status) JXTA_START_ERROR + 2)
-#define JXTA_NOMEM ((Jxta_status) JXTA_START_ERROR + 3)
-#define JXTA_TIMEOUT ((Jxta_status) JXTA_START_ERROR + 4)
-#define JXTA_BUSY ((Jxta_status) JXTA_START_ERROR + 5)
-#define JXTA_VIOLATION ((Jxta_status) JXTA_START_ERROR + 6)
-#define JXTA_FAILED ((Jxta_status) JXTA_START_ERROR + 7)
-#define JXTA_CONFIG_NOTFOUND ((Jxta_status) JXTA_START_ERROR + 8)
-#define JXTA_IOERR ((Jxta_status) JXTA_START_ERROR + 9)
-#define JXTA_ITEM_EXISTS ((Jxta_status) JXTA_START_ERROR + 10)
-#define JXTA_NOT_CONFIGURED ((Jxta_status) JXTA_START_ERROR + 11)
-#define JXTA_UNREACHABLE_DEST ((Jxta_status) JXTA_START_ERROR + 12)
-#define JXTA_TTL_EXPIRED ((Jxta_status) JXTA_START_ERROR + 13)
+#define JXTA_INVALID_ARGUMENT ((Jxta_status) (JXTA_START_ERROR + 1))
+#define JXTA_ITEM_NOTFOUND ((Jxta_status) (JXTA_START_ERROR + 2))
+#define JXTA_NOMEM ((Jxta_status) (JXTA_START_ERROR + 3))
+#define JXTA_TIMEOUT ((Jxta_status) (JXTA_START_ERROR + 4))
+#define JXTA_BUSY ((Jxta_status) (JXTA_START_ERROR + 5))
+#define JXTA_VIOLATION ((Jxta_status) (JXTA_START_ERROR + 6))
+#define JXTA_FAILED ((Jxta_status) (JXTA_START_ERROR + 7))
+#define JXTA_CONFIG_NOTFOUND ((Jxta_status) (JXTA_START_ERROR + 8))
+#define JXTA_IOERR ((Jxta_status) (JXTA_START_ERROR + 9))
+#define JXTA_ITEM_EXISTS ((Jxta_status) (JXTA_START_ERROR + 10))
+#define JXTA_NOT_CONFIGURED ((Jxta_status) (JXTA_START_ERROR + 11))
+#define JXTA_UNREACHABLE_DEST ((Jxta_status) (JXTA_START_ERROR + 12))
+#define JXTA_TTL_EXPIRED ((Jxta_status) (JXTA_START_ERROR + 13))
 
 #ifdef __cplusplus
 #if 0

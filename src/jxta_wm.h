@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_wm.h,v 1.8 2005/09/21 21:16:52 slowhog Exp $
+ * $Id: jxta_wm.h,v 1.9 2006/08/03 21:34:21 bondolo Exp $
  */
 
 
@@ -72,7 +72,6 @@ typedef struct _JxtaWire JxtaWire;
 
 JXTA_DECLARE(JxtaWire *) JxtaWire_new(void);
 JXTA_DECLARE(void) JxtaWire_set_handlers(JxtaWire *, XML_Parser, void *);
-void JxtaWire_delete(JxtaWire *);
 JXTA_DECLARE(Jxta_status) JxtaWire_get_xml(JxtaWire *, JString ** xml);
 JXTA_DECLARE(void) JxtaWire_parse_charbuffer(JxtaWire *, const char *, int len);
 JXTA_DECLARE(void) JxtaWire_parse_file(JxtaWire *, FILE * stream);

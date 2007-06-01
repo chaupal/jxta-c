@@ -34,7 +34,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib xml.lib libxml2.lib zdll.lib wsock32.lib"
+				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib expat.lib libxml2.lib zdll.lib wsock32.lib"
 				OutputFile="$(OutDir)/xmltest.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(APACHE2)\lib&quot;;$(ZLIB)\lib;$(SQLITE3)\lib;$(XML2)\lib;$(OPENSSL)\lib"
@@ -96,7 +96,7 @@ copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(Configur
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib xml.lib libxml2.lib zdll.lib wsock32.lib"
+				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib expat.lib libxml2.lib zdll.lib wsock32.lib"
 				OutputFile="$(OutDir)/xmltest.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(APACHE2)\lib&quot;;$(ZLIB)\lib;$(SQLITE3)\lib;$(XML2)\lib;$(OPENSSL)\lib"

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pga.h,v 1.9 2005/11/26 07:37:21 mmx2005 Exp $
+ * $Id: jxta_pga.h,v 1.11 2006/09/01 02:56:51 bondolo Exp $
  */
 
 #ifndef JXTA_PGA_H__
@@ -71,8 +71,6 @@ typedef struct _jxta_PGA Jxta_PGA;
 /**
  * Allocates memory for a new peer group advertisement.
  *
- * @param void Doesn't take any arguments.
- *
  * @return Jxta_PGA * peer group advertisement pointer.
  */
 JXTA_DECLARE(Jxta_PGA *) jxta_PGA_new(void);
@@ -84,7 +82,7 @@ JXTA_DECLARE(Jxta_PGA *) jxta_PGA_new(void);
  * @param JString * contains buffer holding xml representation
  *        of peer group advertisement.
  *
- * @return void Doesn't return anything.
+ * @return Jxta_status JXTA_SUCCESS if successful.
  */
 JXTA_DECLARE(Jxta_status) jxta_PGA_get_xml(Jxta_PGA * ad, JString ** string);
 
@@ -99,9 +97,9 @@ JXTA_DECLARE(Jxta_status) jxta_PGA_get_xml(Jxta_PGA * ad, JString ** string);
  *        with xml syntax.
  * @param int len length of character buffer.
  *
- * @return void Doesn't return anything.
+ * @return Jxta_status JXTA_SUCCESS if successful.
  */
-JXTA_DECLARE(void) jxta_PGA_parse_charbuffer(Jxta_PGA * ad, const char *buf, int len);
+JXTA_DECLARE(Jxta_status) jxta_PGA_parse_charbuffer(Jxta_PGA * ad, const char *buf, int len);
 
 /**
  * Wrapper for jxta_advertisement_parse_file,
@@ -112,19 +110,9 @@ JXTA_DECLARE(void) jxta_PGA_parse_charbuffer(Jxta_PGA * ad, const char *buf, int
  *        the xml.
  * @param FILE * an input stream.
  *
- * @return void Doesn't return anything.
+ * @return Jxta_status JXTA_SUCCESS if successful.
  */
-JXTA_DECLARE(void) jxta_PGA_parse_file(Jxta_PGA * ad, FILE * stream);
-
-/**
- * This function is an artifact of the generating script.
- */
-JXTA_DECLARE(char *) jxta_PGA_get_Jxta_PGA(Jxta_PGA * ad);
-
-/**
- * This function is an artifact of the generating script.
- */
-JXTA_DECLARE(void) jxta_PGA_set_Jxta_PGA(Jxta_PGA * ad, char *name);
+JXTA_DECLARE(Jxta_status) jxta_PGA_parse_file(Jxta_PGA * ad, FILE * stream);
 
 /**
  * Function gets the Jxta_id associated with the peer 
@@ -141,8 +129,6 @@ JXTA_DECLARE(Jxta_id *) jxta_PGA_get_GID(Jxta_PGA * ad);
  *
  * @param Jxta_Jxta_PGA * peer group advertisement
  * @param Jxta_id * a Jxta_id to be set for the peer group advertisement.
- *
- * @return void Doesn't return anything.
  */
 JXTA_DECLARE(void) jxta_PGA_set_GID(Jxta_PGA * ad, Jxta_id * id);
 
@@ -164,8 +150,6 @@ JXTA_DECLARE(Jxta_id *) jxta_PGA_get_MSID(Jxta_PGA * ad);
  * @param Jxta_Jxta_PGA * peer group advertisement
  * @param Jxta_id * a Jxta_id to be set for the peer group advertisement
  * module services.
- *
- * @return void Doesn't return anything.
  */
 JXTA_DECLARE(void) jxta_PGA_set_MSID(Jxta_PGA * ad, Jxta_id * id);
 
@@ -183,8 +167,6 @@ JXTA_DECLARE(JString *) jxta_PGA_get_Name(Jxta_PGA * ad);
  *
  * @param Jxta_Jxta_PGA * peer group advertisement
  * @param JString * peer group name is contained here.
- *
- * @return void Doesn't return anything.
  */
 JXTA_DECLARE(void) jxta_PGA_set_Name(Jxta_PGA * ad, JString * name);
 
@@ -202,8 +184,6 @@ JXTA_DECLARE(JString *) jxta_PGA_get_Desc(Jxta_PGA * ad);
  *
  * @param Jxta_Jxta_PGA * peer group advertisement
  * @param JString * peer group description.
- *
- * return void Doesn't return anything.
  */
 JXTA_DECLARE(void) jxta_PGA_set_Desc(Jxta_PGA * ad, JString * desc);
 

@@ -50,9 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: Search.cs,v 1.3 2006/02/13 22:37:38 lankes Exp $
+ * $Id: Search.cs,v 1.4 2006/08/04 10:33:17 lankes Exp $
  */
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Text;
 
@@ -60,6 +61,9 @@ using JxtaNET;
 
 namespace JxtaNETShell
 {
+    /// <summary>
+    /// Class of the shell command "search".
+    /// </summary>
     class Search : ShellApp
     {
         //static Int32 timeout = 30 * 1000 * 1000;
@@ -67,35 +71,36 @@ namespace JxtaNETShell
         private operations operation = operations.local;
         private DiscoveryService discovery;
 
-
         /// <summary>
-        /// Standart help-method; it displays the help-text.
+        /// Standard help-method; it displays the help-text.
         /// </summary>
-        public override void help()
+        public override void Help()
         {
-            Console.WriteLine("search - discover advertisements");
-            Console.WriteLine(" ");
-            Console.WriteLine("SYNOPSIS");
-            Console.WriteLine("    search [-p <peerid>] Searchs for advertisements at a given peer location.");
-            Console.WriteLine("           [-n <num>] limit the number of responses to n from a single peer");
-            Console.WriteLine("           [-r] discovers jxta advertisements using remote propagation");
-            Console.WriteLine("           [-a <name>] specify Attribute name to limit discovery to");
-            Console.WriteLine("           [-v <attribute>] specify Attribute value to limit discovery to. Wildcard is allowed");
-            //Console.WriteLine("           [-q] specify an XPath query");
-            //Console.WriteLine("           [-i] specify a file containing an XPath query");
-            Console.WriteLine("           [-f] flush advertisements");
-            Console.WriteLine("           [-h] print this information\n");
+            textWriter.WriteLine("search - discover advertisements");
+            textWriter.WriteLine(" ");
+            textWriter.WriteLine("SYNOPSIS");
+            textWriter.WriteLine("    search [-p <peerid>] Searchs for advertisements at a given peer location.");
+            textWriter.WriteLine("           [-n <num>] limit the number of responses to n from a single peer");
+            textWriter.WriteLine("           [-r] discovers jxta advertisements using remote propagation");
+            textWriter.WriteLine("           [-a <name>] specify Attribute name to limit discovery to");
+            textWriter.WriteLine("           [-v <attribute>] specify Attribute value to limit discovery to. Wildcard is allowed");
+            //textWriter.WriteLine("           [-q] specify an XPath query");
+            //textWriter.WriteLine("           [-i] specify a file containing an XPath query"); //only first line of file is being read
+            textWriter.WriteLine("           [-f] flush advertisements");
+            textWriter.WriteLine("           [-h] print this information\n");
         }
 
         /// <summary>
-        /// Standart run-method. Call this for the 'Search'-action.
+        /// Standard run-method. Call this for the 'search'-action.
         /// </summary>
         /// <param name="args">The commandline-parameters.</param>
-        public override void run(string[] args)
+        public override void Run(string[] args)
         {
             String peerID = null;
             String attr = "Name";
             String val = @"*";
+            //String query = null;
+            //String infile = null;
             Int32 num = 10;
 
             try 
@@ -111,6 +116,7 @@ namespace JxtaNETShell
                         switch (args[i])
                         {
                             case "-p":
+                                operation = operations.remote;
                                 peerID = args[++i].Trim();
                                 break;
                             case "-r":
@@ -131,11 +137,20 @@ namespace JxtaNETShell
                                 operation = operations.local;
                                 val = args[++i].Trim();
                                 break;
+                            /*case "-q":
+                                operation = operations.remote;
+                                query = args[++i].Trim();
+                                break;*/
+                            /*case "-i":
+                                operation = operations.remote;
+                                infile = args[++i].Trim();
+                                query = ReadQueryFile(infile);
+                                break;*/
                             case "-h":
                                 operation = operations.help;
                                 break;
                             default:
-                                Console.WriteLine("Error: invalid parameter");
+                                textWriter.WriteLine("Error: invalid parameter");
                                 return;
                         }
                     }
@@ -143,57 +158,86 @@ namespace JxtaNETShell
             }
             catch
             {
-                Console.WriteLine("Error: invalid parameter");
+                textWriter.WriteLine("Error: invalid parameter");
                 return;
             }
 
             switch (operation)
             {
                 case operations.remote:
-                    PeerSearch(peerID, attr, val, num);
+                    PeerSearch(peerID, attr, val, num/*, query*/);
                     break;
                 case operations.local:
-                    PeerSearch(peerID, attr, val, num);
+                    PeerSearch(peerID, attr, val, num/*, query*/);
                     break;
                 case operations.flush:
-                    Console.WriteLine("Flushing...");
-                    discovery.flushAdvertisements(null, DiscoveryService.DISC_ADV);
+                    textWriter.WriteLine("Flushing...");
+                    discovery.FlushAdvertisements(null, DiscoveryService.DISC_ADV);
                     break;
                 case operations.help:
-                    help();
+                    Help();
                     return;
             }
-
         }
 
-        
-        public void PeerSearch(String peerID, String attr, String val, Int32 num)
+        private void PeerSearch(String peerID, String attr, String val, Int32 num/*, String query*/)
         {
             Int32 qid = -1;
-            //discovery = this.netPeerGroup.getDiscoveryService();
-            JxtaVector<Advertisement> JXTAVec = new JxtaVector<Advertisement>();
+            List<Advertisement> JXTAVec;
             if (operation == operations.remote)
             {
-                Console.WriteLine("Searching for remote peers...");
-                qid = discovery.getRemoteAdvertisements(DiscoveryService.DISC_PEER, null, attr, val, num, null);
-                Console.WriteLine("query ID: " + qid);
+                //if (query == null)
+                //{
+                    textWriter.WriteLine("Searching for remote peers...");
+                    qid = discovery.GetRemoteAdvertisements(peerID, DiscoveryService.DISC_ADV, attr, val, num);
+                /*}
+                else
+                {
+                    qid = discovery.RemoteQuery(peerID, query, num, null);
+                }*/
+                textWriter.WriteLine("query ID: " + qid);
             }
             else
             {
-                Console.WriteLine("Searching for local peers...");
-                JXTAVec = discovery.getLocalAdvertisements(DiscoveryService.DISC_PEER, attr, val);
-                Console.WriteLine("Found " + JXTAVec.Length + " local Peers.");
+                //if (query == null)
+                //{
+                    textWriter.WriteLine("Searching for local peers...");
+                    JXTAVec = discovery.GetLocalAdvertisements(DiscoveryService.DISC_ADV, attr, val);
+                /*}
+                else
+                {
+                    JXTAVec = discovery.LocalQuery<Advertisement>(query);
+                }*/
                 //for (int i = 0; i < JXTAVec.Length; i++)
                 //{
-                //    Console.WriteLine(i + ".: " + JXTAVec[i].ToString());
+                //    textWriter.WriteLine(i + ".: " + JXTAVec[i].ToString());
                 //}
+                textWriter.WriteLine("Found " + JXTAVec.Count + " local Peers.");
             }
         }
 
-
-        public Search(PeerGroup grp) : base(grp)
+        //reads first line of infile...Don't know if that is what the c-function
+        //search_read_query_file(JString * filename, JString * jquery)
+        //is supposed to do
+        private String ReadQueryFile(String infile)
         {
-            discovery = this.netPeerGroup.getDiscoveryService();
+            String line = "";
+            try
+            {
+                StreamReader reader = File.OpenText(infile);
+                line = reader.ReadLine();
+                reader.Close();
+            }
+            catch (FileNotFoundException exc) 
+            {
+                textWriter.WriteLine(exc.Message);
+            }
+            return line;
+        }
+
+        protected override void Initialize()
+        {
+            this.discovery = netPeerGroup.DiscoveryService;
         }
     }
 }

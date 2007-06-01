@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_ckcompat.c,v 1.7 2005/11/16 23:00:14 slowhog Exp $
+ * $Id: jpr_ckcompat.c,v 1.8 2006/09/13 20:04:22 bondolo Exp $
  */
 
 /*
@@ -81,10 +81,6 @@
 
 #if (JPR_START_USEERR > APR_OS_START_CANONERR)
 #error "JPR_START_USEERR > APR_OS_START_CANONERR check that jpr_errno.h is compatible with APR"
-#endif
-
-#if (JPR_END_USEERR != APR_OS_START_CANONERR)
-#error "JPR_END_USEERR != APR_OS_START_CANONERR check that jpr_errno.h is compatible with APR"
 #endif
 
 void mustCompile(void)

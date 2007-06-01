@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object_type.h,v 1.11 2005/11/17 04:23:36 slowhog Exp $
+ * $Id: jxta_object_type.h,v 1.13 2006/09/15 19:11:58 bondolo Exp $
  */
 
 #ifndef JXTA_OBJECT_TYPE_H
@@ -69,6 +69,7 @@ extern "C" {
 *   Change the following to <tt>#define NO_RUNTIME_TYPE_CHECK</tt> to disable the
 *   runtime type checking of Jxta objects provided by the PTValid macro.
 **/
+/* FIXME: NO_RUNTIME_TYPE_CHECK must be undef as the current VTBL implementation assumes thisType exist */
 #undef NO_RUNTIME_TYPE_CHECK
 /**
 * name2 is a macro for pasting strings together in the pre-processor.
@@ -138,16 +139,35 @@ JXTA_DECLARE(void *) jxta_assert_same_type(const void *object, const char *objec
 /* type * PTValid(type* thing, type ); */
 
 #ifndef NO_RUNTIME_TYPE_CHECK
-#define PTValid(thing, type) (type*) jxta_assert_same_type((thing), (((type*) (thing))->thisType), #type, __FILE__, __LINE__)
+#define PTValid(thing, type) (type*) jxta_assert_same_type((thing), PTType((type*)thing), #type, __FILE__, __LINE__)
 #else
 #define PTValid(thing, type) ((type*)(thing))
 #endif
 
+/**
+*   This macro returns the type name associated with this typed object.
+*
+*   @param thing The typed object.
+*   @return it's type name or the empty string if runtime type checks are disabled.
+*
+**/
+char const * PTType(void* thing );
+
 #ifndef NO_RUNTIME_TYPE_CHECK
-#define PTType(thing) (((type*) (thing))->thisType)
+#define PTType(thing) ((thing)->thisType)
 #else
 #define PTType(thing) ""
 #endif
+
+/**
+*   This macro returns the object pointer for the base "class"  which this object extends.
+*
+*   @param thing The typed object.
+*   @return A pointer to the ojbect it extends
+**/
+void * PTSuper( void * thing );
+
+#define PTSuper(thing) (&(thing)->_super)
 
 #ifdef __cplusplus
 #if 0

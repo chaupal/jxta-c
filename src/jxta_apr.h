@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_apr.h,v 1.6 2006/05/18 08:12:46 slowhog Exp $
+ * $Id: jxta_apr.h,v 1.14 2006/09/29 02:01:28 slowhog Exp $
  */
 
 #ifndef __JXTA_APR_H__
@@ -61,6 +61,8 @@
  * Please refer to http://www.apache.org for more information on the APR.
  **/
 #include <apr.h>
+#define APR_WANT_BYTEFUNC
+#include <apr_want.h>
 #include <apr_strings.h>
 #include <apr_hash.h>
 #include <apr_portable.h>
@@ -70,7 +72,11 @@
 #include <apr_thread_cond.h>
 #include <apr_thread_proc.h>
 #include <apr_atomic.h>
-#include <apr_want.h>
+#include <apr_uuid.h>
+#include <apr_xml.h>
+#include <apr_poll.h>
+#include <apr_lib.h>
+#include <apr_buckets.h>
 
 #ifdef HAVE_APR_THREAD_POOL_H
 #include <apr_thread_pool.h>
@@ -78,7 +84,12 @@
 #include "jpr/apr_thread_pool.h"
 #endif
 
-#include "jpr/jpr_apr_wrapper.h"
+#include "apr_version.h"
+#define CHECK_APR_VERSION(major, minor, patch) \
+	(APR_MAJOR_VERSION > (major) || \
+	 (APR_MAJOR_VERSION == (major) && APR_MINOR_VERSION > (minor)) || \
+	 (APR_MAJOR_VERSION == (major) && APR_MINOR_VERSION == (minor) && \
+	  APR_PATCH_VERSION >= (patch)))
 
 #endif /* __JXTA_APR_H__ */
 

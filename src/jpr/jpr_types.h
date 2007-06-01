@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_types.h,v 1.13 2005/11/09 09:59:23 slowhog Exp $
+ * $Id: jpr_types.h,v 1.14 2006/09/13 20:04:22 bondolo Exp $
  */
 
 #ifndef JPR_TYPES_H
@@ -62,7 +62,7 @@
 #ifdef JPR_STATIC
 #define JPR_DECLARE(type) extern type __stdcall
 #define JPR_DECLARE_DATA  extern
-#else /* JXTA_STATIC */
+#else /* JPR_STATIC */
 
 #ifdef JPR_EXPORTS
 #define JPR_DECLARE(type) __declspec(dllexport) type __stdcall
@@ -72,7 +72,7 @@
 #define JPR_DECLARE_DATA  extern __declspec(dllimport)
 #endif
 
-#endif /* JXTA_STATIC */
+#endif /* JPR_STATIC */
 
 #else /* WIN32 */
 #define JPR_DECLARE(type)  extern type
@@ -81,12 +81,13 @@
 
 #endif /* JPR_DECLARE */
 
-/*
- * Note that this file does NOT include apr_ headers. apr_ headers must not
- * be exposed to jxta app code.
- * Instead there is a c file : jpr_ckcompat.c which is designed to fail to
- * compile if jpr defintions do not match apr ones.
- */
+#include <apr.h>
+#include <apr_errno.h>
+
+#ifdef WIN32
+#include <windows.h>
+#endif
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -95,9 +96,6 @@ extern "C" {
 #endif
 #endif
 
-#ifdef WIN32
-#include <windows.h>
-#endif
 
 enum Jxta_booleans { JXTA_FALSE = 0, JXTA_TRUE = !JXTA_FALSE };
 
@@ -116,39 +114,19 @@ typedef unsigned int Jpr_boolean;
 #define FALSE JXTA_FALSE
 #endif
 
-/* 
- * These definitions are a bit light
- * we should duplicate apr's efforts at defining these
- * in a portable manner or ship a copy of apr's types
- * since we can't include apr.
- */
 typedef unsigned long Jpr_status;
 
-/**
-    @deprecated Unused
-**/
-typedef int Jpr_ssize;
-
-/**
-    @deprecated Unused
-**/
-typedef unsigned int Jpr_uint;
 typedef unsigned short Jpr_port;
 typedef unsigned long Jpr_in_addr;
 
-#ifdef WIN32
-typedef __int64 Jpr_interval_time;
-typedef unsigned __int64 Jpr_absolute_time;
-#pragma warning ( once : 4115 )
-#define snprintf _snprintf
-#define JPR_ABS_TIME_FMT "%I64u"
-#define JPR_DIFF_TIME_FMT "%I64d"
-#else
-typedef long long Jpr_interval_time;
-typedef unsigned long long Jpr_absolute_time;
-#define JPR_ABS_TIME_FMT "%llu"
-#define JPR_DIFF_TIME_FMT "%lld"
-#endif
+/*
+* NB : we cannot define these using apr_time_t since we use milliseconds and APR uses microseconds.
+*/
+typedef apr_int64_t Jpr_interval_time;
+typedef apr_int64_t Jpr_absolute_time;
+
+#define JPR_ABS_TIME_FMT  "%" APR_INT64_T_FMT
+#define JPR_DIFF_TIME_FMT "%" APR_INT64_T_FMT
 
 typedef Jpr_interval_time Jpr_expiration_time;  /* duration expressed in milliseconds */
 
@@ -176,7 +154,7 @@ JPR_DECLARE(Jpr_absolute_time) jpr_time_now(void);
  * Jpr_expiration_time specification and JXTA protocol specification.
  * The apr_time_now() is returning microseconds time. 
  */
-#define jpr_time_now() ((Jpr_absolute_time) (apr_time_now()/1000UL))
+#define jpr_time_now() ((Jpr_absolute_time) (apr_time_as_msec(apr_time_now())))
 
 #ifdef __cplusplus
 #if 0

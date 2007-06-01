@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_id_uuid.c,v 1.22 2005/11/06 00:59:50 slowhog Exp $
+ * $Id: jxta_id_uuid.c,v 1.23 2006/08/02 23:27:40 bondolo Exp $
  */
 
 static const char *__log_cat = "ENDPOINT";
@@ -64,8 +64,6 @@ static const char *__log_cat = "ENDPOINT";
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-#include <apr_uuid.h>
 
 #include "jxta_errno.h"
 #include "jxta_log.h"

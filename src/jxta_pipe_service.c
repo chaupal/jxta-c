@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_service.c,v 1.27 2006/06/15 08:12:48 mmx2005 Exp $
+ * $Id: jxta_pipe_service.c,v 1.30 2006/09/12 20:23:49 bondolo Exp $
  */
 
 static const char *__log_cat = "PIPE";
@@ -188,7 +188,7 @@ static Jxta_status pipe_service_lookup_impl(Jxta_pipe_service * self, const char
 {
     Jxta_pipe_service_impl *tmp = NULL;
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Pipe Service lookup for [%s]\n", name);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Pipe Service lookup for [%s]\n", name);
     apr_thread_mutex_lock(self->mutex);
 
     tmp = get_impl(self, name);
@@ -207,17 +207,17 @@ static Jxta_status pipe_service_add_impl(Jxta_pipe_service * self, const char *n
     Jxta_pipe_service_impl *tmp = NULL;
     Jxta_status res;
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "add_impl [%s]\n", name);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "add_impl [%s]\n", name);
     apr_thread_mutex_lock(self->mutex);
 
     tmp = get_impl(self, name);
     if (tmp != NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "There already is an implementation of name [%s]\n", name);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Existing impl already for [%s]\n", name);
         res = JXTA_INVALID_ARGUMENT;
     } else {
         if (add_impl(self, name, impl)) {
             JXTA_OBJECT_SHARE(impl);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "[%s] is added\n", name);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "[%s] is added\n", name);
             res = JXTA_SUCCESS;
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Cannot add [%s]\n", name);
@@ -307,7 +307,7 @@ static Jxta_pipe_service_impl *get_impl(Jxta_pipe_service * self, const char *na
     apr_thread_mutex_lock(self->mutex);
     if (NULL == self->impls) {
         apr_thread_mutex_unlock(self->mutex);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE,
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,
                         "No implementation available, most likely the pipe_service is not started yet!\n");
         return NULL;
     }
@@ -323,13 +323,13 @@ static Jxta_pipe_service_impl *get_impl(Jxta_pipe_service * self, const char *na
         if (strcmp(jxta_pipe_service_impl_get_name(impl), name) == 0) {
             /* This is the good service */
             apr_thread_mutex_unlock(self->mutex);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Found it\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Found it\n");
             return impl;
         }
         pt = dl_next(pt);
     }
     apr_thread_mutex_unlock(self->mutex);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Not found\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Not found\n");
     return NULL;
 }
 
@@ -437,20 +437,18 @@ static Jxta_status jxta_pipe_service_init(Jxta_module * module,
                                           Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv);
 static Jxta_status start(Jxta_module * self, const char *argv[]);
 static void stop(Jxta_module * module);
-static void get_mia(Jxta_service * module, Jxta_advertisement **);
-static void get_interface(Jxta_service * self, Jxta_service **);
 
 const _jxta_pipe_service_methods jxta_pipe_service_methods = {
     {
      {
       "Jxta_module_methods",
       jxta_pipe_service_init,   /* long name temporarily; it is exported for testing purposes */
-      jxta_module_init_e_impl,
       start,
       stop},
      "Jxta_service_methods",
-     get_mia,
-     get_interface},
+     jxta_service_get_MIA_impl,
+     jxta_service_get_interface_impl,
+     service_on_option_set},
     "Jxta_pipe_service_methods",
     pipe_service_timed_connect,
     pipe_service_connect,
@@ -669,37 +667,6 @@ static void stop(Jxta_module * module)
 
 
 /**
- * return this service's own impl adv. (a service method).
- *
- * @param service a pointer to the instance of the Pipe Service
- * @return the advertisement.
- **/
-static
-void get_mia(Jxta_service * module, Jxta_advertisement ** mia)
-{
-
-    Jxta_pipe_service *self = (Jxta_pipe_service *) module;
-
-    PTValid(self, Jxta_pipe_service);
-
-    JXTA_OBJECT_SHARE(self->impl_adv);
-    *mia = self->impl_adv;
-}
-
-/**
- * return an object that proxies this service. (a service method).
- *
- * @return this service object itself.
- **/
-static void get_interface(Jxta_service * self, Jxta_service ** svc)
-{
-    PTValid(self, Jxta_pipe_service);
-
-    JXTA_OBJECT_SHARE(self);
-    *svc = self;
-}
-
-/**
  ** Implementation of the Jxta_pipe_service API
  **/
 
@@ -708,21 +675,14 @@ JXTA_DECLARE(Jxta_status)
     jxta_pipe_service_timed_connect(Jxta_pipe_service * self,
                                 Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_vector * peers, Jxta_pipe ** pipe)
 {
-    if (self == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument\n");
-        return JXTA_INVALID_ARGUMENT;
-    }
+    PTValid(self, Jxta_pipe_service);
 
     return VTBL(self)->timed_connect(self, adv, timeout, peers, pipe);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_pipe_service_deny(Jxta_pipe_service * self, Jxta_pipe_adv * adv)
 {
-
-    if (self == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument\n");
-        return JXTA_INVALID_ARGUMENT;
-    }
+    PTValid(self, Jxta_pipe_service);
 
     return VTBL(self)->deny(self, adv);
 }
@@ -732,11 +692,7 @@ JXTA_DECLARE(Jxta_status)
     jxta_pipe_service_connect(Jxta_pipe_service * self,
                           Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_vector * peers, Jxta_listener * listener)
 {
-
-    if (self == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument\n");
-        return JXTA_INVALID_ARGUMENT;
-    }
+    PTValid(self, Jxta_pipe_service);
 
     return VTBL(self)->connect(self, adv, timeout, peers, listener);
 }
@@ -745,12 +701,7 @@ JXTA_DECLARE(Jxta_status)
 JXTA_DECLARE(Jxta_status) jxta_pipe_service_timed_accept(Jxta_pipe_service * self, Jxta_pipe_adv * adv, Jxta_time_diff timeout,
                                                          Jxta_pipe ** pipe)
 {
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "timed_accept\n");
-    if (self == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument\n");
-        return JXTA_INVALID_ARGUMENT;
-    }
+    PTValid(self, Jxta_pipe_service);
 
     return VTBL(self)->timed_accept(self, adv, timeout, pipe);
 }
@@ -759,11 +710,7 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_service_timed_accept(Jxta_pipe_service * sel
 JXTA_DECLARE(Jxta_status) jxta_pipe_service_add_accept_listener(Jxta_pipe_service * self, Jxta_pipe_adv * adv,
                                                                 Jxta_listener * listener)
 {
-
-    if (self == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument\n");
-        return JXTA_INVALID_ARGUMENT;
-    }
+    PTValid(self, Jxta_pipe_service);
 
     return VTBL(self)->add_accept_listener(self, adv, listener);
 }
@@ -773,10 +720,7 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_service_add_accept_listener(Jxta_pipe_servic
 JXTA_DECLARE(Jxta_status) jxta_pipe_service_remove_accept_listener(Jxta_pipe_service * self, Jxta_pipe_adv * adv,
                                                                    Jxta_listener * listener)
 {
-    if (self == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument\n");
-        return JXTA_INVALID_ARGUMENT;
-    }
+    PTValid(self, Jxta_pipe_service);
 
     return VTBL(self)->remove_accept_listener(self, adv, listener);
 }
@@ -785,11 +729,7 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_service_remove_accept_listener(Jxta_pipe_ser
 
 JXTA_DECLARE(Jxta_status) jxta_pipe_service_get_resolver(Jxta_pipe_service * self, Jxta_pipe_resolver ** resolver)
 {
-
-    if (self == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument\n");
-        return JXTA_INVALID_ARGUMENT;
-    }
+    PTValid(self, Jxta_pipe_service);
 
     return VTBL(self)->get_resolver(self, resolver);
 }
@@ -798,11 +738,7 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_service_get_resolver(Jxta_pipe_service * sel
 JXTA_DECLARE(Jxta_status) jxta_pipe_service_set_resolver(Jxta_pipe_service * self,
                                                          Jxta_pipe_resolver * new_resolver, Jxta_pipe_resolver ** old)
 {
-
-    if (self == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument\n");
-        return JXTA_INVALID_ARGUMENT;
-    }
+    PTValid(self, Jxta_pipe_service);
 
     return VTBL(self)->set_resolver(self, new_resolver, old);
 }
@@ -811,34 +747,21 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_service_set_resolver(Jxta_pipe_service * sel
 JXTA_DECLARE(Jxta_status) jxta_pipe_service_lookup_impl(Jxta_pipe_service * self, const char *name,
                                                         Jxta_pipe_service_impl ** impl)
 {
-
-    if (self == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument\n");
-        return JXTA_INVALID_ARGUMENT;
-    }
+    PTValid(self, Jxta_pipe_service);
 
     return VTBL(self)->lookup_impl(self, name, impl);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_pipe_service_add_impl(Jxta_pipe_service * self, const char *name, Jxta_pipe_service_impl * impl)
 {
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "add_impl [%s]\n", name);
-    if (self == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument\n");
-        return JXTA_INVALID_ARGUMENT;
-    }
+    PTValid(self, Jxta_pipe_service);
 
     return VTBL(self)->add_impl(self, name, impl);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_pipe_service_remove_impl(Jxta_pipe_service * self, const char *name, Jxta_pipe_service_impl * impl)
 {
-
-    if (self == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument\n");
-        return JXTA_INVALID_ARGUMENT;
-    }
+    PTValid(self, Jxta_pipe_service);
 
     return VTBL(self)->remove_impl(self, name, impl);
 }

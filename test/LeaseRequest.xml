@@ -1,0 +1,13 @@
+<jxta:LeaseRequest xmlns:jxta="http://jxta.org"
+   client_id="urn:jxta:uuid-59616261646162614A78746150325033DC95B0D32EB9492798BCA9C4ABFBE6C603"
+   requested_lease="200000"
+   server_adv_gen="2b84b57c-28dc-11db-a34f-0011d858b975"
+   referral_advs="2">
+	<Credential type="jxta:NullCred">
+		<PeerGroupID>urn:jxta:jxta-NetGroup</PeerGroupID>
+		<PeerID>urn:jxta:uuid-59616261646162614A78746150325033DC95B0D32EB9492798BCA9C4ABFBE6C603</PeerID>
+		<Identity>mtn1</Identity>
+	</Credential>
+	<Option type="jxta:PeerViewOptions" auto_rdv="true"/>
+	<Option type="jxta:RdvClientOptions" srdi_interval="300000"/>
+</jxta:LeaseRequest>

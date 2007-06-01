@@ -64,6 +64,8 @@ extern "C" {
 #endif
 #endif
 
+#include <jxta_cm.h>
+
 #define SQL_SELECT " SELECT "
 #define SQL_UPDATE " UPDATE "
 #define SQL_INSERT_INTO " INSERT INTO "
@@ -101,10 +103,10 @@ extern "C" {
 #define SQL_INDEX_ON " ON "
 #define SQL_END_SEMI ";"
 
-#define SQL_VALUE(st, v) jxta_sql_escape_and_wc_value(v, FALSE); \
-                         jxta_sql_numeric_quote(st, v, FALSE);
+#define SQL_VALUE(st, v) cm_sql_escape_and_wc_value(v, FALSE); \
+                         cm_sql_numeric_quote(st, v, FALSE);
                          
-#define SQL_NUMERIC_VALUE(st, v) jxta_sql_numeric_quote(st, v, TRUE);
+#define SQL_NUMERIC_VALUE(st, v) cm_sql_numeric_quote(st, v, TRUE);
 
 /* SQL column identifiers */
  
@@ -131,9 +133,6 @@ extern "C" {
 #define SQL_COLUMN_Type_index "index"
 
 #define SQL_COLUMN_Name " name "
-
-JXTA_DECLARE(Jxta_boolean) jxta_sql_escape_and_wc_value(JString * jStr, Jxta_boolean replace);
-JXTA_DECLARE(void) jxta_sql_numeric_quote(JString *jDest, JString *jStr, Jxta_boolean isNumeric) ;
 
 #ifdef __cplusplus
 #if 0

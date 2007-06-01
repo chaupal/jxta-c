@@ -50,8 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_membership_service_null.c,v 1.14 2005/10/27 01:55:26 slowhog Exp $
+ * $Id: jxta_membership_service_null.c,v 1.17 2006/09/08 19:17:54 bondolo Exp $
  */
+
+static const char *__log_cat = "membership_null";
 
 #include <assert.h>
 #include "jxta_apr.h"
@@ -163,7 +165,7 @@ static void stop(Jxta_module * membership)
 
     jxta_vector_clear(self->creds);
 
-    JXTA_LOG("Stopped.\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Stopped\n");
     /* nothing special to stop */
 }
 
@@ -286,12 +288,12 @@ Jxta_membership_service_null_methods jxta_membership_service_null_methods = {
      {
       "Jxta_module_methods",
       jxta_membership_service_null_init,
-      jxta_module_init_e_impl,
       start,
       stop},
      "Jxta_service_methods",
      get_mia,
-     get_interface},
+     get_interface,
+     service_on_option_set},
     "Jxta_membership_service_methods",
     apply,
     join,
@@ -336,7 +338,7 @@ void jxta_membership_service_null_destruct(Jxta_membership_service_null * self)
     /* call the base classe's dtor. */
     jxta_membership_service_destruct((Jxta_membership_service *) self);
 
-    JXTA_LOG("Destruction finished\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Destruction finished\n");
 }
 
 /**

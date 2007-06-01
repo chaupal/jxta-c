@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_netpg_private.h,v 1.15 2006/02/15 01:09:42 slowhog Exp $
+ * $Id: jxta_netpg_private.h,v 1.16 2006/09/08 19:17:54 bondolo Exp $
  */
 
 #ifndef JXTA_NETPG_PRIVATE_H
@@ -77,7 +77,6 @@ typedef struct _jxta_netpg Jxta_netpg;
 
 struct _jxta_netpg {
     Extends(Jxta_stdpg);
-
 
     /*
      * Netpg provides at least these transports.
@@ -107,7 +106,7 @@ extern Jxta_netpg_methods jxta_netpg_methods;
 /*
  * export the constructor to subclassers.
  */
-extern void jxta_netpg_construct(Jxta_netpg * self, Jxta_netpg_methods * methods);
+extern void jxta_netpg_construct(Jxta_netpg * self, Jxta_netpg_methods const * methods);
 
 /*
  * export the destructor to subclassers.

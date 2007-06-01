@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_svc.h,v 1.9 2006/02/02 19:53:30 slowhog Exp $
+ * $Id: jxta_svc.h,v 1.13 2006/09/01 03:08:10 bondolo Exp $
  */
 
 
@@ -60,12 +60,14 @@
 #include "jxta_advertisement.h"
 #include "jxta_hta.h"
 #include "jxta_tta.h"
+#include "jxta_cache_config_adv.h"
 #include "jxta_discovery_config_adv.h"
 #include "jxta_endpoint_config_adv.h"
 #include "jxta_rdv_config_adv.h"
 #include "jxta_srdi_config_adv.h"
 #include "jxta_relaya.h"
 #include "jxta_routea.h"
+#include "jxta_cache_config_adv.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -171,6 +173,18 @@ JXTA_DECLARE(Jxta_DiscoveryConfigAdvertisement *) jxta_svc_get_DiscoveryConfig(J
  * to remove the element.
  */
 JXTA_DECLARE(void) jxta_svc_set_DiscoveryConfig(Jxta_svc *, Jxta_DiscoveryConfigAdvertisement *);
+
+/*
+ * Unlike similar accessors in other advs, this one may return NULL if
+ * there is no such element.
+ */
+JXTA_DECLARE(Jxta_CacheConfigAdvertisement *) jxta_svc_get_CacheConfig(Jxta_svc *);
+
+/*
+ * Unlike similar mutators in other advs, it is valid to pass NULL as a means
+ * to remove the element.
+ */
+JXTA_DECLARE(void) jxta_svc_set_CacheConfig(Jxta_svc *, Jxta_CacheConfigAdvertisement *);
 
 /*
  * Unlike similar accessors in other advs, this one may return NULL if

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tcp_connection.h,v 1.12 2006/05/26 02:15:56 bondolo Exp $
+ * $Id: jxta_transport_tcp_connection.h,v 1.13 2006/09/06 00:43:48 slowhog Exp $
  */
 
 #ifndef __JXTA_TRANSPORT_TCP_CONNECTION_H__
@@ -91,6 +91,7 @@ JXTA_DECLARE(Jxta_endpoint_address *) jxta_transport_tcp_connection_get_connaddr
 JXTA_DECLARE(Jxta_id *) jxta_transport_tcp_connection_get_destination_peerid(Jxta_transport_tcp_connection * conn);
 
 JXTA_DECLARE(char *) jxta_transport_tcp_connection_get_ipaddr(Jxta_transport_tcp_connection * conn);
+JXTA_DECLARE(const char *) jxta_transport_tcp_connection_ipaddr(Jxta_transport_tcp_connection * conn);
 
 JXTA_DECLARE(apr_port_t) jxta_transport_tcp_connection_get_port(Jxta_transport_tcp_connection * conn);
 

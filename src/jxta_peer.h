@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peer.h,v 1.11 2005/09/21 21:16:48 slowhog Exp $
+ * $Id: jxta_peer.h,v 1.13 2006/10/01 01:07:55 bondolo Exp $
  */
 
 
@@ -64,9 +64,8 @@
 #include "jxta_service.h"
 
 /**
- ** This file defines the JXTA jxta_peer_t object.
+ ** This file defines the JXTA Jxta_peer object.
  **/
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -85,6 +84,17 @@ typedef struct _jxta_peer_entry Jxta_peer;
    *
    ********/
 JXTA_DECLARE(Jxta_peer *) jxta_peer_new(void);
+
+/**
+*   Determine if the two peer objects refer to the same peer. The
+*   determination is made by comparing the peer id values or the
+*   endpoint addresses if both objects have no peerid set.
+*
+*   @param a pointer to the Jxta_peer object
+*   @param b pointer to the Jxta_peer object
+*   @returns TRUE if peers refer to the same entity otherwise FALSE.
+**/
+JXTA_DECLARE(Jxta_boolean) jxta_peer_equals( Jxta_peer* a, Jxta_peer* b );
 
  /*******
    * Get the PeerId of the peer
@@ -150,6 +160,24 @@ JXTA_DECLARE(Jxta_status) jxta_peer_set_adv(Jxta_peer * peer, Jxta_PA * adv);
    * @return a status
    ********/
 JXTA_DECLARE(Jxta_status) jxta_peer_set_address(Jxta_peer * peer, Jxta_endpoint_address * addr);
+
+
+  /*******
+   * Get the expiration time of this peer record. 
+   *
+   * @param peer a pointer to the Jxta_peer object
+   * @return The absolute time in milliseconds at which this peer will expire.
+   ********/
+JXTA_DECLARE(Jxta_time) jxta_peer_get_expires(Jxta_peer * p);
+
+  /*******
+   * Set the expiration time of this peer record. 
+   *
+   * @param peer a pointer to the Jxta_peer object
+   * @param expires The absolute time in milliseconds at which this peer will expire.
+   * @return a status
+   ********/
+JXTA_DECLARE(Jxta_status) jxta_peer_set_expires(Jxta_peer * p, Jxta_time expires);
 
   /**
    * @todo Add documentation.

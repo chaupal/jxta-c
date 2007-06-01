@@ -67,7 +67,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib xml.lib libxml2.lib zdll.lib sqlite3.lib wsock32.lib"
+				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib expat.lib libxml2.lib zdll.lib sqlite3.lib wsock32.lib"
 				OutputFile="$(OutDir)/jxta.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(APACHE2)\lib&quot;;$(ZLIB)\lib;$(SQLITE3)\lib;$(XML2)\lib;$(OPENSSL)\lib"
@@ -156,7 +156,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib xml.lib libxml2.lib zdll.lib sqlite3.lib wsock32.lib"
+				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib expat.lib libxml2.lib zdll.lib sqlite3.lib wsock32.lib"
 				OutputFile="$(OutDir)/jxta.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(APACHE2)\lib&quot;;$(ZLIB)\lib;$(SQLITE3)\lib;$(XML2)\lib;$(OPENSSL)\lib"
@@ -239,6 +239,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\jxta_cache_config_adv.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\jxta_callback.c"
 				>
 			</File>
@@ -316,10 +320,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_id_uuid.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\jxta_incoming_unicast_server.c"
 				>
 			</File>
 			<File
@@ -431,6 +431,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\jxta_qos.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\jxta_query.c"
 				>
 			</File>
@@ -448,6 +452,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_rdv_service.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_rdv_service_adhoc.c"
 				>
 			</File>
 			<File
@@ -575,6 +583,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\jxta_transport_welcome_message.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\jxta_tta.c"
 				>
 			</File>
@@ -658,6 +670,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_bytevector.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_cache_config_adv.h"
 				>
 			</File>
 			<File
@@ -750,10 +766,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_id_priv.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\jxta_incoming_unicast_server.h"
 				>
 			</File>
 			<File
@@ -890,6 +902,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_proffer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_qos.h"
 				>
 			</File>
 			<File
@@ -1038,6 +1054,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_transport_tcp_private.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_transport_welcome_message.h"
 				>
 			</File>
 			<File

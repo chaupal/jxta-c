@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jstring_test.c,v 1.23 2005/09/23 20:07:13 slowhog Exp $
+ * $Id: jstring_test.c,v 1.25 2006/09/29 06:52:06 slowhog Exp $
  */
 
 
@@ -77,101 +77,101 @@
 /**
 * Test the jstring_new_0 function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jstring_new_0(void)
+const char* test_jstring_new_0(void)
 {
     JString *js = jstring_new_0();
     char const *testString;
 
     if (NULL == js)
-        return FALSE;
+        return FILEANDLINE;
 
     if (0 != jstring_length(js)) {
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* check that the returned string is empty */
     testString = jstring_get_string(js);
     if (strcmp(testString, "") != 0) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Release the allocated string */
     JXTA_OBJECT_RELEASE(js);
 
-    return TRUE;
+    return NULL;
 }
 
 /**
 * Test the jstring_new_1 function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jstring_new_1(void)
+const char* test_jstring_new_1(void)
 {
     JString *js = jstring_new_1(42);
     char const *testString;
 
     if (NULL == js) {
-        return FALSE;
+        return FILEANDLINE;
     }
 
     if (0 != jstring_length(js)) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* check that the returned string is empty */
     testString = jstring_get_string(js);
     if (strcmp(testString, "") != 0) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Release the allocated string */
     JXTA_OBJECT_RELEASE(js);
 
-    return TRUE;
+    return NULL;
 }
 
 /**
 * Test the jstring_new_2 function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jstring_new_2(void)
+const char* test_jstring_new_2(void)
 {
     static const char *source = "yahoo!";
     JString *js = jstring_new_2(source);
 
     if (NULL == js) {
-        return FALSE;
+        return FILEANDLINE;
     }
 
     if (strlen(source) != jstring_length(js)) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     if (0 != strcmp(source, jstring_get_string(js))) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Release the allocated string */
     JXTA_OBJECT_RELEASE(js);
 
-    return TRUE;
+    return NULL;
 }
 
 /**
 * Test the jstring_new_3 function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jstring_new_3(void)
+const char* test_jstring_new_3(void)
 {
     Jxta_bytevector *vector = jxta_bytevector_new_1(6);
     Jxta_status status;
@@ -179,7 +179,7 @@ Jxta_boolean test_jstring_new_3(void)
     JString *js = NULL;
 
     if (NULL == vector) {
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Initialize the byte vector with ABCDEF */
@@ -187,7 +187,7 @@ Jxta_boolean test_jstring_new_3(void)
         status = jxta_bytevector_add_byte_last(vector, (unsigned char) i);
         if (JXTA_SUCCESS != status) {
             JXTA_OBJECT_RELEASE(vector);
-            return FALSE;
+            return FILEANDLINE;
         }
     }
 
@@ -195,180 +195,180 @@ Jxta_boolean test_jstring_new_3(void)
     js = jstring_new_3(vector);
     JXTA_OBJECT_RELEASE(vector);
     if (NULL == js) {
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Test whether length and content of jstring is correct */
     if (6 != jstring_length(js)) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     if (0 != strcmp("ABCDEF", jstring_get_string(js))) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Release the allocated string */
     JXTA_OBJECT_RELEASE(js);
 
-    return TRUE;
+    return NULL;
 }
 
 /**
 * Test the jstring_clone function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jstring_clone(void)
+const char* test_jstring_clone(void)
 {
     static const char *source = "yahoo!";
     JString *js = jstring_new_2(source);
     JString *clone = NULL;
 
     if (NULL == js) {
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Clone the string */
     clone = jstring_clone(js);
     JXTA_OBJECT_RELEASE(js);
     if (NULL == clone) {
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Test that the length and contents of the cloned string is correct */
     if (strlen(source) != jstring_length(clone)) {
         JXTA_OBJECT_RELEASE(clone);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     if (0 != strcmp(source, jstring_get_string(clone))) {
         JXTA_OBJECT_RELEASE(clone);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Release the allocated string */
     JXTA_OBJECT_RELEASE(clone);
 
-    return TRUE;
+    return NULL;
 }
 
 /**
 * Test the jstring_trim function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jstring_trim(void)
+const char* test_jstring_trim(void)
 {
     static const char *source = "\v \t\nTest String\twith tab\t\f\r\v\v";
     JString *js = jstring_new_2(source);
 
     if (NULL == js) {
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Trim the JString object and test that the result is as expected */
     jstring_trim(js);
     if (0 != strcmp("Test String\twith tab", jstring_get_string(js))) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Release the allocated string */
     JXTA_OBJECT_RELEASE(js);
 
-    return TRUE;
+    return NULL;
 }
 
 /**
 * Test the jstring_length function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jstring_length(void)
+const char* test_jstring_length(void)
 {
     static const char *source = "\v \t\nTest String\twith tab\t\f\r\v\v";
     static const char *append = " Append value";
     JString *js = jstring_new_2(source);
 
     if (NULL == js) {
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Check that the length is as expected */
     if (strlen(source) != jstring_length(js)) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Trim and check that we get the expected length and text */
     jstring_trim(js);
     if (strlen("Test String\twith tab") != jstring_length(js)) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
     if (0 != strcmp("Test String\twith tab", jstring_get_string(js))) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Append data and check that we get the expected length and text */
     jstring_append_0(js, append, strlen(append));
     if (strlen("Test String\twith tab Append value") != jstring_length(js)) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
     if (0 != strcmp("Test String\twith tab Append value", jstring_get_string(js))) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Release the allocated string */
     JXTA_OBJECT_RELEASE(js);
 
-    return TRUE;
+    return NULL;
 }
 
 /**
 * Test the jstring_get_string function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jstring_get_string(void)
+const char* test_jstring_get_string(void)
 {
     static const char *source = "\v \t\nGetStringTest\t\f\r\v\v";
     JString *js = jstring_new_2(source);
 
     if (NULL == js) {
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Check that the content is as expected */
     if (0 != strcmp(source, jstring_get_string(js))) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Trim and check that the content is as expected */
     jstring_trim(js);
     if (0 != strcmp("GetStringTest", jstring_get_string(js))) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Release the allocated string */
     JXTA_OBJECT_RELEASE(js);
 
-    return TRUE;
+    return NULL;
 }
 
 /**
 * Test the jstring_reset function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jstring_reset(void)
+const char* test_jstring_reset(void)
 {
     static const char *source = "yahoo!";
     JString *js = jstring_new_2(source);
@@ -376,7 +376,7 @@ Jxta_boolean test_jstring_reset(void)
     Jxta_status status;
 
     if (NULL == js) {
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Check correct reset with passing of string */
@@ -384,72 +384,82 @@ Jxta_boolean test_jstring_reset(void)
     status = jstring_reset(js, buffer);
     if (status != JXTA_SUCCESS) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
     if (0 != strcmp(buffer[0], source)) {
         JXTA_OBJECT_RELEASE(js);
         if (buffer[0] != NULL)
             free(buffer[0]);
-        return FALSE;
+        return FILEANDLINE;
     }
     if (buffer[0] != NULL)
         free(buffer[0]);
     buffer[0] = NULL;
     if (0 != strcmp("", jstring_get_string(js))) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Check correct reset without passing of string */
     status = jstring_reset(js, NULL);
     if (status != JXTA_SUCCESS) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
     if (0 != strcmp("", jstring_get_string(js))) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Release the allocated string */
     JXTA_OBJECT_RELEASE(js);
 
-    return TRUE;
+    return NULL;
+}
+
+static Jxta_status my_sprintf(void *stream, const char *fmt, ...)
+{
+    va_list ap;
+    
+    va_start(ap, fmt);
+    vsprintf(stream, fmt, ap);
+    va_end(ap);
+    
+    return JXTA_SUCCESS;
 }
 
 /**
 * Test the jstring_print function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jstring_print(void)
+const char* test_jstring_print(void)
 {
     static const char *source = "yahoo!";
     JString *js = jstring_new_2(source);
     char buffer[100];
 
     if (NULL == js) {
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Check jstring_print using sprintf as the PrintFunc object */
-    buffer[0] = '\0';
-    jstring_print(js, sprintf, buffer);
+    jstring_print(js, my_sprintf, buffer);
     JXTA_OBJECT_RELEASE(js);
-    if (0 != strcmp("yahoo!\n", buffer)) {
-        return FALSE;
+    if (0 != memcmp(source, buffer, strlen(source))) {
+        return FILEANDLINE;
     }
 
-    return TRUE;
+    return NULL;
 }
 
 
 /**
 * Test the jstring_send function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jstring_send(void)
+const char* test_jstring_send(void)
 {
     static const char *source = "yahoo!";
     JString *js = jstring_new_2(source);
@@ -457,38 +467,42 @@ Jxta_boolean test_jstring_send(void)
     read_write_test_buffer stream;
 
     if (NULL == js) {
-        return FALSE;
+        return FILEANDLINE;
     }
 
-    /* Send data with a flag of 1 which should write the data to the buffer */
+    /* Send data with a flag of 0 which should write the data to the buffer */
     stream.buffer = buffer;
     stream.position = 0;
     buffer[0] = '\0';
-    jstring_send(js, sendFunction, (void *) (&stream), 1);
-    if (0 != strcmp("yahoo!", buffer)) {
-        JXTA_OBJECT_RELEASE(js);
-        return FALSE;
-    }
-
-    /* Send data with a flag of 0, which should write "flag set" to the buffer */
-    buffer[0] = '\0';
-    stream.position = 0;
     jstring_send(js, sendFunction, (void *) (&stream), 0);
-    JXTA_OBJECT_RELEASE(js);
-    if (0 != strcmp("flag set", buffer)) {
-        return FALSE;
+    if (0 != memcmp(source, buffer, strlen(source))) {
+        JXTA_OBJECT_RELEASE(js);
+        return FILEANDLINE;
     }
 
-    return TRUE;
+    /* Send data with a flag of 1, which should write "flag set" to the buffer */
+    stream.position = 0;
+    stream.flags = 0;
+    jstring_send(js, sendFunction, (void *) (&stream), 1);
+    JXTA_OBJECT_RELEASE(js);
+    if (0 != memcmp(source, buffer, strlen(source))) {
+        return FILEANDLINE;
+    }
+    
+    if( 1 != stream.flags ) {
+        return FILEANDLINE;
+    }
+
+    return NULL;
 }
 
 
 /**
 * Test the jstring_write function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jstring_write(void)
+const char* test_jstring_write(void)
 {
     static const char *source = "yahoo!";
     JString *js = jstring_new_2(source);
@@ -496,45 +510,44 @@ Jxta_boolean test_jstring_write(void)
     char buffer[100];
 
     if (NULL == js) {
-        return FALSE;
+        return FILEANDLINE;
     }
 
     /* Check the function using  writeFunction as the WriteFunc object */
     stream.buffer = buffer;
     stream.position = 0;
-    buffer[0] = '\0';
     jstring_write(js, writeFunction, (void *) (&stream));
     JXTA_OBJECT_RELEASE(js);
-    if (0 != strcmp("yahoo!", buffer)) {
-        return FALSE;
+    if (0 != memcmp(source, buffer, strlen(source))) {
+        return FILEANDLINE;
     }
 
-    return TRUE;
+    return NULL;
 }
 
 /**
 * Test the jstring_append_0 function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jstring_append_0(void)
+const char* test_jstring_append_0(void)
 {
     static const char *source = "yahoo!xxx ";
     JString *js = jstring_new_2(source);
     size_t size = 6;
 
     if (NULL == js) {
-        return FALSE;
+        return FILEANDLINE;
     }
 
     jstring_append_0(js, source, size);
-    if (0 != strcmp("yahoo!xxx yahoo!", jstring_get_string(js))) {
+    if (0 != memcmp("yahoo!xxx yahoo!", jstring_get_string(js), strlen("yahoo!xxx yahoo!"))) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     JXTA_OBJECT_RELEASE(js);
-    return TRUE;
+    return NULL;
 }
 
 
@@ -542,9 +555,9 @@ Jxta_boolean test_jstring_append_0(void)
 /**
 * Test the jstring_append_1 function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jstring_append_1(void)
+const char* test_jstring_append_1(void)
 {
     static const char *source = "yahoo!";
     JString *js1 = jstring_new_2(source);
@@ -555,74 +568,76 @@ Jxta_boolean test_jstring_append_1(void)
             JXTA_OBJECT_RELEASE(js1);
         if (js2 != NULL)
             JXTA_OBJECT_RELEASE(js2);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     jstring_append_1(js1, js2);
     JXTA_OBJECT_RELEASE(js2);
-    if (0 != strcmp("yahoo!yahoo!", jstring_get_string(js1))) {
+    if (0 != memcmp("yahoo!yahoo!", jstring_get_string(js1), strlen("yahoo!yahoo!"))) {
         JXTA_OBJECT_RELEASE(js1);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     JXTA_OBJECT_RELEASE(js1);
-    return TRUE;
+    return NULL;
 }
 
 /**
 * Test the jstring_append_2 function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jstring_append_2(void)
+const char* test_jstring_append_2(void)
 {
     static const char *source = "yahoo!";
+    static const char *result = "yahoo!yahoo!";
     JString *js = jstring_new_2(source);
 
     if (NULL == js) {
-        return FALSE;
+        return FILEANDLINE;
     }
 
     jstring_append_2(js, source);
-    if (0 != strcmp("yahoo!yahoo!", jstring_get_string(js))) {
+    if (0 != memcmp( result, jstring_get_string(js), strlen(result))) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     JXTA_OBJECT_RELEASE(js);
-    return TRUE;
+    return NULL;
 }
 
 /**
 * Test the jstring_concat function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jstring_concat(void)
+const char* test_jstring_concat(void)
 {
     static const char *source = "yahoo!";
+    static const char *result = "yahoo!yahoo!yahoo!yahoo!";
     JString *js = jstring_new_2(source);
 
     if (NULL == js) {
-        return FALSE;
+        return FILEANDLINE;
     }
 
     jstring_concat(js, 3, source, source, source);
-    if (0 != strcmp("yahoo!yahoo!yahoo!yahoo!", jstring_get_string(js))) {
+    if (0 != memcmp(result, jstring_get_string(js), strlen(result))) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     JXTA_OBJECT_RELEASE(js);
-    return TRUE;
+    return NULL;
 }
 
 /**
 * Test the jstring_writefunc_appender function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, FALSE otherwise
 */
-Jxta_boolean test_jstring_writefunc_appender(void)
+const char* test_jstring_writefunc_appender(void)
 {
     static const char *source = "yahoo!xxx ";
     JString *js = jstring_new_2(source);
@@ -631,29 +646,29 @@ Jxta_boolean test_jstring_writefunc_appender(void)
     int result;
 
     if (NULL == js) {
-        return FALSE;
+        return FILEANDLINE;
     }
 
     result = jstring_writefunc_appender((void *) js, NULL, size, &status);
     if (status == JXTA_SUCCESS || result != -1) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     result = jstring_writefunc_appender((void *) js, source, size, &status);
     if (status != JXTA_SUCCESS || result != size) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
 
     if (0 != strcmp("yahoo!xxx yahoo!", jstring_get_string(js))) {
         JXTA_OBJECT_RELEASE(js);
-        return FALSE;
+        return FILEANDLINE;
     }
 
     JXTA_OBJECT_RELEASE(js);
-    return TRUE;
+    return NULL;
 }
 
 
@@ -687,7 +702,7 @@ static struct _funcs testfunc[] = {
 * @param tests_passed the variable in which to accumulate the number of tests passed
 * @param tests_failed the variable in which to accumulate the number of tests failed
 *
-* @return TRUE if all tests were run successfully, FALSE otherwise
+* @return NULL if all tests were run successfully, FALSE otherwise
 */
 Jxta_boolean run_jstring_tests(int *tests_run, int *tests_passed, int *tests_failed)
 {

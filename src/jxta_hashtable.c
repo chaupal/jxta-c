@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_hashtable.c,v 1.30 2006/02/01 19:01:15 bondolo Exp $
+ * $Id: jxta_hashtable.c,v 1.31 2006/10/01 01:08:50 bondolo Exp $
  */
 
 
@@ -159,14 +159,12 @@ JXTA_DECLARE(Jxta_hashtable *) jxta_hashtable_new_0(size_t initial_usage, Jxta_b
 
     JXTA_OBJECT_INIT((void *) self, jxta_hashtable_free, 0);
 
-    self->tbl = (Entry *) malloc(sizeof(Entry) * real_size);
+    self->tbl = (Entry *) calloc(real_size, sizeof(Entry) );
 
     if (self->tbl == NULL) {
         free(self);
         return NULL;
     }
-
-    memset(self->tbl, 0, sizeof(Entry) * real_size);
 
     self->modmask = real_size - 1;
     /*
@@ -623,8 +621,30 @@ JXTA_DECLARE(Jxta_boolean) jxta_hashtable_putnoreplace(Jxta_hashtable * self, co
     return jxta_hashtable_comboput(self, key, key_size, value, NULL, FALSE);
 }
 
+JXTA_DECLARE(Jxta_status) jxta_hashtable_contains(Jxta_hashtable * self, const void *key, size_t key_size)
+{
+    Jxta_status result;
+    Entry *e;
+    size_t hashk = (size_t) hash(key, key_size);
+
+    JXTA_OBJECT_CHECK_VALID(self);
+
+    if (self->mutex != NULL)
+        apr_thread_mutex_lock(self->mutex);
+
+    e = findspot(self, hashk, key, key_size, FALSE);
+
+    result = (e == NULL) ? JXTA_ITEM_NOTFOUND : JXTA_SUCCESS;
+
+    if (self->mutex != NULL)
+        apr_thread_mutex_unlock(self->mutex);
+    return result;
+}
+
+
 JXTA_DECLARE(Jxta_status) jxta_hashtable_get(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object ** found_value)
 {
+    Jxta_status result;
     Entry *e;
     size_t hashk = (size_t) hash(key, key_size);
 
@@ -640,17 +660,16 @@ JXTA_DECLARE(Jxta_status) jxta_hashtable_get(Jxta_hashtable * self, const void *
     e = findspot(self, hashk, key, key_size, FALSE);
 
     if (e == NULL) {
-        if (self->mutex != NULL)
-            apr_thread_mutex_unlock(self->mutex);
-        return JXTA_ITEM_NOTFOUND;
+        result = JXTA_ITEM_NOTFOUND;
+    } else {
+        *found_value = JXTA_OBJECT_SHARE(e->value);
+        result = JXTA_SUCCESS;
     }
-
-    *found_value = e->value;
-    JXTA_OBJECT_SHARE(e->value);
 
     if (self->mutex != NULL)
         apr_thread_mutex_unlock(self->mutex);
-    return JXTA_SUCCESS;
+        
+    return result;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_hashtable_del(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object ** found_value)

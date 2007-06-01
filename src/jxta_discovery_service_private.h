@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_discovery_service_private.h,v 1.19 2005/11/26 12:11:47 mmx2005 Exp $
+ * $Id: jxta_discovery_service_private.h,v 1.23 2006/09/23 18:51:04 exocetrick Exp $
  */
 
 
@@ -60,6 +60,7 @@
 #include "jxta_discovery_service.h"
 #include "jxta_service_private.h"
 #include "jxta_query.h"
+#include "jxta_cred.h"
 
 /****************************************************************
  **
@@ -81,6 +82,16 @@ struct _jxta_discovery_service {
 
 };
 
+typedef struct jxta_query_result Jxta_query_result;
+
+struct jxta_query_result {
+    JXTA_OBJECT_HANDLE;
+    Jxta_advertisement * adv;
+    Jxta_discovery_service *discovery;
+    Jxta_expiration_time lifetime;
+    Jxta_expiration_time expiration;
+};
+
 typedef struct _jxta_discovery_service_methods Jxta_discovery_service_methods;
 
 struct _jxta_discovery_service_methods {
@@ -88,14 +99,8 @@ struct _jxta_discovery_service_methods {
     Extends(Jxta_service_methods);
 
     /* discovery methods */
-
-    long (*getRemoteAdv) (Jxta_discovery_service * self,
-                          Jxta_id * peerid,
-                          short type,
-                          const char *attribute, const char *value, int threshold, Jxta_discovery_listener * listener);
-
-    long (*getRemoteQuery) (Jxta_discovery_service * self,
-                            Jxta_id * peerid, const char *query, int threshold, Jxta_discovery_listener * listener);
+    long (*remoteQuery) (Jxta_discovery_service * self, Jxta_id * peerid, Jxta_discovery_query * query, 
+                         Jxta_discovery_listener * listener);
 
      Jxta_status(*cancelRemoteQuery) (Jxta_discovery_service * me, long query_id, Jxta_discovery_listener ** listener);
 
@@ -108,11 +113,11 @@ struct _jxta_discovery_service_methods {
                             Jxta_advertisement * adv,
                             short type, Jxta_expiration_time lifetime, Jxta_expiration_time lifetimeForOthers);
 
-     Jxta_status(*remotePublish) (Jxta_discovery_service * self,
-                                  Jxta_id * peerid, Jxta_advertisement * adv, short type, Jxta_expiration_time lifetimeForOthers);
+     Jxta_status(*remotePublish) (Jxta_discovery_service * self, Jxta_id * peerid, Jxta_advertisement * adv, short type, 
+                                  Jxta_expiration_time lifetimeForOthers, const Jxta_qos * qos);
 
      Jxta_status(*flush) (Jxta_discovery_service * self, char *id, short type);
-     
+
      Jxta_status(*add_listener) (Jxta_discovery_service * self, Jxta_discovery_listener * listener);
 
      Jxta_status(*remove_listener) (Jxta_discovery_service * self, Jxta_discovery_listener * listener);
@@ -121,6 +126,9 @@ struct _jxta_discovery_service_methods {
 
      Jxta_status(*getExpiration) (Jxta_discovery_service * service, short type, Jxta_id * advId, Jxta_expiration_time * exp);
 };
+
+Jxta_status getLocalGroupsQuery (Jxta_discovery_service * self, const char *query,
+                                Jxta_credential *scope[], Jxta_vector ** results, int threshold, Jxta_boolean ads_only);
 
 /**
  * The base discovery service ctor (not public: the only public way to make a

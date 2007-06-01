@@ -50,11 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_unipipe_service.c,v 1.42 2006/06/19 08:14:42 mmx2005 Exp $
+ * $Id: jxta_unipipe_service.c,v 1.44 2006/09/08 20:56:01 exocetrick Exp $
  */
 
 #include "jxta_apr.h"
-#include "jpr/jpr_excep.h"
 
 #include "jxta_errno.h"
 #include "jxta_debug.h"
@@ -63,7 +62,7 @@
 #include "jxta_hashtable.h"
 #include "jxta_id.h"
 #include "jxta_service.h"
-#include "jxta_peergroup.h"
+#include "jxta_peergroup_private.h"
 #include "jxta_service_private.h"
 #include "jxta_pipe_service.h"
 #include "jxta_resolver_service.h"
@@ -227,7 +226,7 @@ Jxta_pipe_service_impl *jxta_unipipe_service_new_instance(Jxta_pipe_service * pi
     self->generic.set_pipe_resolver = unipipe_set_pipe_resolver;
     self->generic.check_listener = unipipe_check_listener;
 
-    jxta_PG_get_cache_manager(group, &self->cm);
+    peergroup_get_cache_manager(group, &self->cm);
 
     return (Jxta_pipe_service_impl *) self;
 }

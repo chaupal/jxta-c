@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service.h,v 1.23 2006/05/17 08:27:26 slowhog Exp $
+ * $Id: jxta_rdv_service.h,v 1.26 2006/09/01 22:52:33 bondolo Exp $
  */
 
 #ifndef __JXTA_RDV_SERVICE_H__
@@ -130,7 +130,7 @@ JXTA_DECLARE(Jxta_rdv_service *) jxta_rdv_service_new(void);
 * Add a peer to the list of peers that the Rendezvous Service will
 * try to connect to.
 *
-*  @deprecated How peers get added as Rendezvous or clients is implementation dependent.
+* @deprecated How peers get added as Rendezvous or clients is implementation dependent.
 *
 * @param rdv a pointer to the instance of the Rendezvous Service
 * @param peer a pointer to the peer to add
@@ -150,8 +150,18 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_add_peer(Jxta_rdv_service * rdv, Jxta
 JXTA_DECLARE(Jxta_status) jxta_rdv_service_add_seed(Jxta_rdv_service * rdv, Jxta_peer * peer);
 
 /**
+* Get the peer
+*
+* @param rdv a pointer to the instance of the Rendezvous Servicec
+* @param peerid The peer being sought.
+* @param peer The result.
+* @return JXTA_SUCCESS if the peer is known otherwise JXTA_ITEM_NOTFOUND
+**/
+JXTA_DECLARE(Jxta_status) jxta_rdv_service_get_peer(Jxta_rdv_service * rdv, Jxta_id* peerid, Jxta_peer ** peer);
+
+/**
 * Get the list of peers used by the Rendezvous Service with their status.
-* 
+*
 * @param rdv a pointer to the instance of the Rendezvous Servicec
 * @param peerlist the list of peers (Jxta_peer*)
 * @return error code.
@@ -207,7 +217,7 @@ JXTA_DECLARE(Jxta_boolean) jxta_rdv_service_is_rendezvous(Jxta_rdv_service * rdv
 * @param listener a pointer to an Jxta_listener.
 * @return error code. Fails if there was already a listener for that address.
 *
-* @deprecated
+* @deprecated Register your listeners directly witht he endpoint.
 **/
 JXTA_DECLARE(Jxta_status) jxta_rdv_service_add_propagate_listener(Jxta_rdv_service * rdv, const char *serviceName,
                                                                   const char *serviceParam, Jxta_listener * listener);
@@ -223,7 +233,7 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_add_propagate_listener(Jxta_rdv_servi
 * @param listener a pointer to the listener to be removed.
 * @return error code. Fails if there was not already a listener for that address.
 *
-* @deprecated
+* @deprecated Register your listeners directly witht he endpoint.
 **/
 JXTA_DECLARE(Jxta_status) jxta_rdv_service_remove_propagate_listener(Jxta_rdv_service * rdv,
                                                                      const char *serviceName, const char *serviceParam,
@@ -263,6 +273,7 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_walk(Jxta_rdv_service * rdv, Jxta_mes
 /**
 * Test if the given peer is connected
 *
+* @deprecated Future implementations will not provide this information to applications.
 *
 * @param rdv a pointer to the instance of the Rendezvous Service
 * @param peer a pointer to the Jxta_peer to test upon
@@ -276,6 +287,8 @@ JXTA_DECLARE(Jxta_boolean) jxta_rdv_service_peer_is_connected(Jxta_rdv_service *
 * @param rdv a pointer to the instance of the Rendezvous Service
 * @param peer a pointer to the Jxta_peer to test upon
 * @return the time in absolute milliseconds time at which the provided peer will expire if not renewed.
+*
+* @deprecated use jxta_peer_get_expires()
 **/
 JXTA_DECLARE(Jxta_time) jxta_rdv_service_peer_get_expires(Jxta_rdv_service * rdv, Jxta_peer * peer);
 
@@ -330,14 +343,15 @@ JXTA_DECLARE(void) jxta_rdv_service_set_auto_interval(Jxta_rdv_service * rdv, Jx
 
 /**
 * Get the peerview of the peer.
-* WARNING: correctness of algorithms should never and ever rely on 
+*
+* <p/>WARNING: correctness of algorithms should never and ever rely on 
 * the behavior of the peeview. Before using this, you should ask 
 * yourself if it is really needed and share your concerns. One use case
 * is for benchmarking purpose, ie to understand the knowledge of peers
 * of others and explain results.
 *
 * @param rdv a pointer to the instance of the Rendezvous Service
-* @return The peerview of the peer
+* @return The peerview of the peer or NULL if there is no active peerview.
 */
 JXTA_DECLARE(Jxta_peerview *) jxta_rdv_service_get_peerview(Jxta_rdv_service * rdv);
 

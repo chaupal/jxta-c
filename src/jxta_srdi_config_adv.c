@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi_config_adv.c,v 1.6 2006/02/15 01:09:47 slowhog Exp $
+ * $Id: jxta_srdi_config_adv.c,v 1.7 2006/08/10 21:35:33 exocetrick Exp $
  */
 
 static const char *const __log_cat = "SrdiCfgAdv";
@@ -85,6 +85,7 @@ struct _jxta_SrdiConfigAdvertisement {
     Jxta_advertisement jxta_advertisement;
     int replicationThreshold;
     Jxta_boolean noRangeWithValue;
+    Jxta_boolean SRDIDeltaSupport;
 };
 
 #define DEFAULT_REPLICATION_THRESHOLD 4
@@ -108,7 +109,11 @@ void handleJxta_SrdiConfigAdvertisement(void *userdata, const XML_Char * cd, int
     while (atts && *atts) {
         if (0 == strcmp(*atts, "type")) {
             /* just silently skip it. */
-        } 
+        } else if (0 == strcmp(*atts, "SRDIDeltaSupport")) {
+            if (0 == strcmp(atts[1], "yes")) {
+                ad->SRDIDeltaSupport = TRUE;
+            }
+        }
         atts += 2;
     }
 }
@@ -157,6 +162,10 @@ JXTA_DECLARE(int) jxta_srdi_cfg_get_replication_threshold(Jxta_SrdiConfigAdverti
     return adv->replicationThreshold;
 }
 
+JXTA_DECLARE(Jxta_boolean) jxta_srdi_cfg_is_delta_cache_supported(Jxta_SrdiConfigAdvertisement * adv)
+{
+    return adv->SRDIDeltaSupport;
+}
 
 /** Now, build an array of the keyword structs.  Since 
  * a top-level, or null state may be of interest, 
@@ -179,7 +188,11 @@ JXTA_DECLARE(Jxta_status) jxta_SrdiConfigAdvertisement_get_xml(Jxta_SrdiConfigAd
     char tmpbuf[256];
     JString *string = jstring_new_0();
     jstring_append_2(string, "<!-- JXTA SRDI Configuration Advertisement -->\n");
-    jstring_append_2(string, "<jxta:SrdiConfig xmlns:jxta=\"http://jxta.org\" type=\"jxta:SrdiConfig\">\n");
+    jstring_append_2(string, "<jxta:SrdiConfig xmlns:jxta=\"http://jxta.org\" type=\"jxta:SrdiConfig\"");
+    jstring_append_2(string, " SRDIDeltaSupport = \"");
+    jstring_append_2(string, ad->SRDIDeltaSupport == TRUE ? "yes":"no");
+    jstring_append_2(string, "\"");
+    jstring_append_2(string, ">\n");
     jstring_append_2(string, "<NoRangeReplication withValue=\"");
     jstring_append_2(string, jxta_srdi_cfg_get_no_range(ad) ? "true":"false");
     jstring_append_2(string, "\"/>\n");
@@ -208,6 +221,7 @@ Jxta_SrdiConfigAdvertisement *jxta_SrdiConfigAdvertisement_construct(Jxta_SrdiCo
     if (NULL != self) {
         self->noRangeWithValue=FALSE;
         self->replicationThreshold = DEFAULT_REPLICATION_THRESHOLD;
+        self->SRDIDeltaSupport = FALSE;
     }
     return self;
 }

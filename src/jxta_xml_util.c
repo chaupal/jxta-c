@@ -50,20 +50,21 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_xml_util.c,v 1.24 2006/02/15 01:09:52 slowhog Exp $
+ * $Id: jxta_xml_util.c,v 1.26 2006/09/29 01:28:45 slowhog Exp $
  */
+
+static const char *__log_cat = "XMLUTIL";
 
 #include <stdlib.h>
 #include <ctype.h>
 
 #include "jxta_apr.h"
 #include "jxta_types.h"
-#include "jxta_debug.h"
+#include "jxta_log.h"
 #include "jxta_errno.h"
 #include "jxta_object.h"
 #include "jxta_xml_util.h"
 
-#define DEBUG 0
 
 /** Single call to extract an ip address and port number from 
  *  a character buffer. 
@@ -115,7 +116,7 @@ JXTA_DECLARE(void) extract_ip_and_port(const char *string, int length, Jxta_in_a
     /* char temp[128] = {0}; *//* temporary for chasing mem leak. */
 
     strncpy(temp, string, length);
-    JXTA_LOG("temp string copied extract_ip_and_port: %s\n", temp);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "temp string copied extract_ip_and_port: %s\n", temp);
 
     /* Can use strtok also. */
     /*  current_tok = strtok(temp,DELIMITERS); */
@@ -127,9 +128,7 @@ JXTA_DECLARE(void) extract_ip_and_port(const char *string, int length, Jxta_in_a
         free(temp);
         return;
     }
-#if DEBUG
-    JXTA_LOG("current_tok: %s, length: %d\n", current_tok, strlen(current_tok));
-#endif
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "current_tok: %s, length: %d\n", current_tok, strlen(current_tok));
     *ip = apr_inet_addr(current_tok);
 
     /* ip = 0 indicates current_tok was invalid data.
@@ -148,9 +147,7 @@ JXTA_DECLARE(void) extract_ip_and_port(const char *string, int length, Jxta_in_a
     /* strtok also works. */
     /* current_tok = strtok(NULL,DELIMITERS);  */
     current_tok = apr_strtok(NULL, DELIMITERS, &state);
-#if DEBUG
-    JXTA_LOG("current_tok: %s, length: %d\n", current_tok, strlen(current_tok));
-#endif
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "current_tok: %s, length: %d\n", current_tok, strlen(current_tok));
     /* Checking this value for error in c is a bitch.  The fastest
      * way to make it robust is probably to write a set of functions
      * to see how it acts on various platforms.  gnu recommends 
@@ -159,9 +156,7 @@ JXTA_DECLARE(void) extract_ip_and_port(const char *string, int length, Jxta_in_a
      * TODO: See what MS recommends here, and how apr handles it.
      */
     *port = atoi(current_tok);
-#if DEBUG
-    JXTA_LOG("port number as int: %d\n", *port);
-#endif
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "port number as int: %d\n", *port);
     free(temp);
 
 }
@@ -193,9 +188,7 @@ JXTA_DECLARE(void) extract_ip(const char *buf, int buf_length, Jxta_in_addr * ip
         free(temp);
         return;
     }
-#if DEBUG
-    printf("current_tok: %s, length: %d\n", current_tok, strlen(current_tok));
-#endif
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "current_tok: %s, length: %d\n", current_tok, strlen(current_tok));
     /* ip = 0 indicates current_tok was invalid data.
      * FIXME: Trap the error here, using whatever apr has 
      * to deal with it.  We could just return since we are 
@@ -221,9 +214,7 @@ JXTA_DECLARE(void) extract_port(const char *buf, int buf_length, Jxta_port * por
     char *temp = (char *) malloc(buf_length + 1);
     memset(temp, 0, buf_length + 1);
 
-#if DEBUG
-    printf("buf: %s, buf_length: %d\n", buf, buf_length);
-#endif
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "buf: %s, buf_length: %d\n", buf, buf_length);
 
     strncpy(temp, buf, buf_length);
     /* Can use strtok also. */
@@ -235,9 +226,8 @@ JXTA_DECLARE(void) extract_port(const char *buf, int buf_length, Jxta_port * por
         free(temp);
         return;
     }
-#if DEBUG
-    printf("current_tok: %s, length: %d\n", current_tok, strlen(current_tok));
-#endif
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "current_tok: %s, length: %d\n", current_tok, strlen(current_tok));
+
     /* Checking this value for error in c is a bitch.  The fastest
      * way to make it robust is probably to write a set of functions
      * to see how it acts on various platforms.  gnu recommends 
@@ -246,9 +236,7 @@ JXTA_DECLARE(void) extract_port(const char *buf, int buf_length, Jxta_port * por
      * TODO: See what MS recommends here, and how apr handles it.
      */
     *port = atoi(current_tok);
-#if DEBUG
-    printf("port number as int: %d\n", *port);
-#endif
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "port number as int: %d\n", *port);
 
     /* TODO: If we were *really* motivated, we could check the 
      * value of the port number to make sure it was in range.
@@ -373,8 +361,6 @@ JXTA_DECLARE(Jxta_status) jxta_xml_util_decode_jstring(JString * src, JString **
         srcbuf++;
     }
     while (1);
-
-    return JXTA_SUCCESS;
 }
 
 /**
@@ -461,8 +447,6 @@ JXTA_DECLARE(Jxta_status) jxta_xml_util_encode_jstring(JString * src, JString **
         srcbuf++;
     }
     while (1);
-
-    return JXTA_SUCCESS;
 }
 
 /* vim: set ts=4 sw=4 et tw=130: */

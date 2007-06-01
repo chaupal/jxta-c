@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_piperesolver_msg.c,v 1.18 2006/02/18 00:32:52 slowhog Exp $
+ * $Id: jxta_piperesolver_msg.c,v 1.19 2006/09/26 18:28:24 slowhog Exp $
  */
 
 
@@ -97,7 +97,6 @@ enum tokentype {
      */
 struct _jxta_piperesolver_msg {
     Jxta_advertisement jxta_advertisement;
-    char *PipeResolver;
     char *MsgType;
     char *Type;
     char *PipeId;
@@ -230,33 +229,23 @@ static void handlePeerAdv(void *userdata, const XML_Char * cd, int len)
     jstring_append_0(ad->PeerAdv, (char *) cd, len);
 }
 
-
-    /** The get/set functions represent the public
-     * interface to the ad class, that is, the API.
-     */
-JXTA_DECLARE(char *) jxta_piperesolver_msg_get_PipeResolver(Jxta_piperesolver_msg * ad)
-{
-    return NULL;
-}
-
-JXTA_DECLARE(void) jxta_piperesolver_msg_set_PipeResolver(Jxta_piperesolver_msg * ad, char *name)
-{
-}
-
 JXTA_DECLARE(Jxta_id *) jxta_piperesolver_msg_get_pipeid(Jxta_piperesolver_msg * ad)
 {
     Jxta_id *pipeid = NULL;
     JString *tmps = jstring_new_2(ad->PipeId);
-    JXTA_OBJECT_SHARE(tmps);
     jxta_id_from_jstring(&pipeid, tmps);
-    JXTA_OBJECT_SHARE(pipeid);
-    JXTA_OBJECT_RELEASE(tmps);
     return pipeid;
 }
 
 
+JXTA_DECLARE(const char *) jxta_piperesolver_msg_MsgType(Jxta_piperesolver_msg * ad)
+{
+    return ad->MsgType;
+}
+
 JXTA_DECLARE(char *) jxta_piperesolver_msg_get_MsgType(Jxta_piperesolver_msg * ad)
 {
+    JXTA_DEPRECATED_API();
     return ad->MsgType;
 }
 
@@ -276,6 +265,12 @@ JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_set_MsgType(Jxta_piperesolver_ms
 
 JXTA_DECLARE(char *) jxta_piperesolver_msg_get_Type(Jxta_piperesolver_msg * ad)
 {
+    JXTA_DEPRECATED_API();
+    return ad->Type;
+}
+
+JXTA_DECLARE(const char *) jxta_piperesolver_msg_Type(Jxta_piperesolver_msg * ad)
+{
     return ad->Type;
 }
 
@@ -292,8 +287,14 @@ JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_set_Type(Jxta_piperesolver_msg *
 
 }
 
+JXTA_DECLARE(const char *) jxta_piperesolver_msg_PipeId(Jxta_piperesolver_msg * ad)
+{
+    return ad->PipeId;
+}
+
 JXTA_DECLARE(char *) jxta_piperesolver_msg_get_PipeId(Jxta_piperesolver_msg * ad)
 {
+    JXTA_DEPRECATED_API();
     return ad->PipeId;
 }
 
@@ -331,8 +332,14 @@ JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_set_Cached(Jxta_piperesolver_msg
     return JXTA_SUCCESS;
 }
 
+JXTA_DECLARE(const char *) jxta_piperesolver_msg_Peer(Jxta_piperesolver_msg * ad)
+{
+    return ad->Peer;
+}
+
 JXTA_DECLARE(char *) jxta_piperesolver_msg_get_Peer(Jxta_piperesolver_msg * ad)
 {
+    JXTA_DEPRECATED_API();
     return ad->Peer;
 }
 

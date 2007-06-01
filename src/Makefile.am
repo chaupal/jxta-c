@@ -1,7 +1,7 @@
-SUBDIRS = jpr unicode
+SUBDIRS = jpr 
 
 AM_CPPFLAGS = \
-	      -I$(top_srcdir)/jpr \
+	      -I$(srcdir)/jpr \
 	      @APR_CPPFLAGS@ @XML2_CPPFLAGS@ @SQLITE_CPPFLAGS@ 
 
 AM_CFLAGS = -DTARGET_ARCH_OS_PLATFORM=\"$(target)\" 
@@ -12,12 +12,15 @@ libjxta_la_LIBADD = \
 		    $(top_builddir)/src/jpr/libjpr.la \
 		    @APR_LIBS@  @XML2_LIBS@ @SQLITE_LIBS@
 
+libjxta_la_LDFLAGS = -version-info 1:0:0
+
 include_HEADERS = EndpointRouter.h          \
                   jdlist.h                  \
                   jstring.h                 \
                   jxta_advertisement.h      \
                   jxta_apr.h                \
                   jxta_bytevector.h         \
+                  jxta_cache_config_adv.h   \
                   jxta_cm.h                 \
                   jxta_cred.h               \
                   jxta_debug.h              \
@@ -85,11 +88,12 @@ include_HEADERS = EndpointRouter.h          \
                   jxta_cred_null.h          \
                   jxta_pm.h                 \
                   jxta_walk_msg.h           \
+                  jxta_lease_request_msg.h \
+                  jxta_lease_response_msg.h \
                   jxta_rm.h                 \
                   jxta_test_adv.h           \
                   jxta_transport_http_client.h         \
                   jxta_transport_http_poller.h         \
-                  jxta_incoming_unicast_server.h       \
                   jxta_transport_tcp_connection.h      \
                   jxta_transport_welcome_message.h      \
                   jxta_tcp_multicast.h                 \
@@ -107,7 +111,8 @@ include_HEADERS = EndpointRouter.h          \
 		  jxta_proffer.h \
                   jxta_range.h \
 		  jxta_callback.h \
-		  jxta_constants.h
+		  jxta_constants.h \
+		  jxta_qos.h
 
 
 libjxta_la_SOURCES = jstring.c                      \
@@ -143,6 +148,9 @@ libjxta_la_SOURCES = jstring.c                      \
 		     jxta_advertisement_priv.h      \
                      jxta_rdv_service.c             \
                      jxta_rdv_service_provider.c    \
+                     jxta_rdv_service_adhoc.c       \
+                     jxta_rdv_service_client.c      \
+                     jxta_rdv_service_server.c      \
                      jxta_endpoint_config_adv.c     \
                      jxta_endpoint_service.c        \
                      jxta_endpoint_service_priv.h   \
@@ -154,7 +162,6 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_transport_http.c          \
                      jxta_transport_http_client.c   \
                      jxta_transport_welcome_message.c   \
-                     jxta_incoming_unicast_server.c \
                      jxta_transport_tcp.c           \
                      jxta_transport_tcp_connection.c \
                      jxta_transport_http_poller.c    \
@@ -179,8 +186,6 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_vector.c                  \
                      jxta_hashtable.c               \
                      jxta_rdv_config_adv.c          \
-                     jxta_rdv_service_client.c      \
-                     jxta_rdv_service_server.c      \
                      jxta_mca.c                     \
                      jxta_resolver_service_ref.c    \
                      jxta_discovery_service_ref.c   \
@@ -191,6 +196,8 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_router_client.c           \
                      jxta_pm.c                      \
                      jxta_walk_msg.c                \
+                     jxta_lease_request_msg.c       \
+                     jxta_lease_response_msg.c      \
                      jxta_listener.c                \
                      jxta_wm.c                      \
                      jxta_pipe_adv.c                \
@@ -200,12 +207,14 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_unipipe_service.c         \
                      jxta_piperesolver_impl.c       \
                      jxta_piperesolver_msg.c        \
+                     jxta_cache_config_adv.c        \
                      jxta_cm.c                      \
                      jxta_relaya.c                  \
                      jxta_apa.c                     \
                      jxta_routea.c                  \
                      jxta_relay.c                   \
                      jxta.c                         \
+                     jxta_cm_private.h               \
                      jxta_discovery_service_private.h     \
                      jxta_membership_service_private.h    \
                      jxta_module_private.h                \
@@ -239,5 +248,6 @@ libjxta_la_SOURCES = jstring.c                      \
 		     jxta_util_priv.h                   \
 		     jxta_util_priv.c                   \
 		     jxta_callback.c                    \
-		     jxta_constants.c
+		     jxta_constants.c			\
+		     jxta_qos.c
 

@@ -50,13 +50,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dr.c,v 1.70 2006/06/13 22:50:29 slowhog Exp $
+ * $Id: jxta_dr.c,v 1.74 2006/09/29 01:28:44 slowhog Exp $
  */
 
 static const char *__log_cat = "DR_ADV";
 
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include "jxta_errno.h"
 #include "jxta_debug.h"
 #include "jxta_dr.h"
@@ -69,7 +70,8 @@ static const char *__log_cat = "DR_ADV";
 
 /** Each of these corresponds to a tag in the
  * xml ad.
- */ enum tokentype {
+ */ 
+enum tokentype {
     Null_,
     Jxta_DiscoveryResponse_,
     Type_,
@@ -97,7 +99,17 @@ struct _Jxta_DiscoveryResponse {
     Jxta_advertisement *peer_advertisement;
     Jxta_vector *advertisements;
     long resolver_query_id;
+    Jxta_discovery_service *ds;
 };
+
+/**
+ * Delete a discovery response.
+ *
+ * @param pointer to discovery response to delete.
+ *
+ * @return void Doesn't return anything.
+ */
+static void discovery_response_free(void * me);
 
 /** Handler functions.  Each of these is responsible for
  * dealing with all of the character data associated with the 
@@ -112,6 +124,7 @@ static void handleType(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_DiscoveryResponse *ad = (Jxta_DiscoveryResponse *) userdata;
     char *tok;
+
     if (len > 0) {
         tok = malloc(len + 1);
         memset(tok, 0, len + 1);
@@ -152,7 +165,7 @@ static void handlePeerAdv(void *userdata, const XML_Char * cd, int len)
     }
     JXTA_OBJECT_RELEASE(ad->PeerAdv);
     ad->PeerAdv = jstring_new_1(len + 1);
-    if (ad->PeerAdv) {
+    if (!ad->PeerAdv) {
         return;
     }
     jstring_append_0(ad->PeerAdv, cd, len);
@@ -234,9 +247,21 @@ JXTA_DECLARE(long) jxta_discovery_response_get_query_id(Jxta_DiscoveryResponse *
     return ad->resolver_query_id;
 }
 
-JXTA_DECLARE(void) jxta_discovery_response_set_query_id(Jxta_DiscoveryResponse *me, long qid)
+void discovery_response_set_query_id(Jxta_DiscoveryResponse *me, long qid)
 {
     me->resolver_query_id = qid;
+}
+
+void discovery_response_set_discovery_service(Jxta_DiscoveryResponse * me, Jxta_discovery_service * ds)
+{
+    assert(NULL == me->ds);
+    me->ds = JXTA_OBJECT_SHARE(ds);
+}
+
+JXTA_DECLARE(Jxta_discovery_service*) jxta_discovery_response_discovery_service(Jxta_DiscoveryResponse * me)
+{
+    assert(NULL != me->ds);
+    return me->ds;
 }
 
 JXTA_DECLARE(short) jxta_discovery_response_get_type(Jxta_DiscoveryResponse * ad)
@@ -560,7 +585,7 @@ JXTA_DECLARE(Jxta_DiscoveryResponse *) jxta_discovery_response_new(void)
                                   (JxtaAdvertisementGetXMLFunc) jxta_discovery_response_get_xml,
                                   NULL, 
                                   NULL, 
-                                  (FreeFunc) jxta_discovery_response_free);
+                                  discovery_response_free);
     return ad;
 }
 
@@ -578,7 +603,7 @@ JXTA_DECLARE(Jxta_DiscoveryResponse *) jxta_discovery_response_new_1(short type,
                                   "jxta:DiscoveryResponse",
                                   Jxta_DiscoveryResponse_tags,
                                   (JxtaAdvertisementGetXMLFunc) jxta_discovery_response_get_xml,
-                                  NULL, NULL, (FreeFunc) jxta_discovery_response_free);
+                                  NULL, NULL, discovery_response_free);
 
     if (peeradv) {
         JXTA_OBJECT_SHARE(peeradv);
@@ -595,8 +620,10 @@ JXTA_DECLARE(Jxta_DiscoveryResponse *) jxta_discovery_response_new_1(short type,
     return ad;
 }
 
-void jxta_discovery_response_free(Jxta_DiscoveryResponse * ad)
+static void discovery_response_free(void * me)
 {
+    Jxta_DiscoveryResponse * ad = (Jxta_DiscoveryResponse * )me;
+    
     if (ad->PeerAdv)
         JXTA_OBJECT_RELEASE(ad->PeerAdv);
     if (ad->Attr)
@@ -609,6 +636,9 @@ void jxta_discovery_response_free(Jxta_DiscoveryResponse * ad)
         JXTA_OBJECT_RELEASE(ad->advertisements);
     if (ad->peer_advertisement)
         JXTA_OBJECT_RELEASE(ad->peer_advertisement);
+    if (ad->ds)
+        JXTA_OBJECT_RELEASE(ad->ds);
+
     jxta_advertisement_delete((Jxta_advertisement *) ad);
     memset(ad, 0x0, sizeof(Jxta_DiscoveryResponse));
     free(ad);

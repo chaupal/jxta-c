@@ -50,11 +50,13 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_vector_test.c,v 1.9 2005/11/15 18:41:33 slowhog Exp $
+ * $Id: jxta_vector_test.c,v 1.11 2006/08/20 20:15:58 bondolo Exp $
  */
 
-#include "jxta.h"
-#include "jxta_errno.h"
+#include <jxta.h>
+#include <jxta_errno.h>
+#include <jstring.h>
+
 #include "unittest_jxta_func.h"
 
 
@@ -75,21 +77,28 @@ typedef struct {
 } TestType;
 
 
+static void TestType_free(Jxta_object* obj) {
+
+    memset( obj, 0xdd, sizeof( TestType ) );
+    
+    free( obj );
+}
+
 /**
 * Test the jxta_vector_new  function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, a string message otherwise
 */
-Jxta_boolean test_jxta_vector_new(void)
+const char * test_jxta_vector_new(void)
 {
     Jxta_vector *vec = jxta_vector_new(0);
 
     if (NULL == vec)
-        return FALSE;
+        return FILEANDLINE;
 
     if (0 != jxta_vector_size(vec)) {
         JXTA_OBJECT_RELEASE(vec);
-        return FALSE;
+        return FILEANDLINE;
     }
     JXTA_OBJECT_RELEASE(vec);
 
@@ -97,11 +106,11 @@ Jxta_boolean test_jxta_vector_new(void)
     vec = jxta_vector_new(5);
     if (0 != jxta_vector_size(vec)) {
         JXTA_OBJECT_RELEASE(vec);
-        return FALSE;
+        return FILEANDLINE;
     }
     JXTA_OBJECT_RELEASE(vec);
 
-    return TRUE;
+    return NULL;
 }
 
 
@@ -109,30 +118,30 @@ Jxta_boolean test_jxta_vector_new(void)
 * Test the jxta_vector_add_object_at  and
 * jxta_vector_get_object_at   function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, a string message otherwise
 */
-Jxta_boolean test_jxta_vector_add_object_at(void)
+const char * test_jxta_vector_add_object_at(void)
 {
     Jxta_vector *vec = jxta_vector_new(3);
     int i;
     TestType **pt;
     Jxta_object *holder;
     Jxta_status status;
-    Jxta_boolean result = TRUE;
+    const char * result = NULL;
 
     if (NULL == vec)
-        return FALSE;
+        return FILEANDLINE;
 
     /* Initialize the test objects */
     pt = (TestType **) malloc(sizeof(TestType *) * 5);
     if (pt == NULL) {
         JXTA_OBJECT_RELEASE(vec);
-        return FALSE;
+        return FILEANDLINE;
     }
     for (i = 0; i < 5; i++) {
-        pt[i] = (TestType *) malloc(sizeof(TestType));
+        pt[i] = (TestType *) calloc(1, sizeof(TestType));
         if (pt[i] != NULL) {
-            JXTA_OBJECT_INIT((Jxta_object *) pt[i], free, 0);
+            JXTA_OBJECT_INIT((Jxta_object *) pt[i], TestType_free, NULL);
             pt[i]->field1 = i;
             pt[i]->field1 = i + 1;
         }
@@ -141,46 +150,46 @@ Jxta_boolean test_jxta_vector_add_object_at(void)
     /* Add the objects to the vector */
     status = jxta_vector_add_object_at(vec, (Jxta_object *) pt[0], 0);
     if (status != JXTA_SUCCESS) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     status = jxta_vector_add_object_at(vec, (Jxta_object *) pt[1], 1);
     if (status != JXTA_SUCCESS) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     status = jxta_vector_add_object_at(vec, (Jxta_object *) pt[2], 1);
     if (status != JXTA_SUCCESS) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     status = jxta_vector_add_object_at(vec, (Jxta_object *) pt[3], 0);
     if (status != JXTA_SUCCESS) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     status = jxta_vector_add_object_at(vec, (Jxta_object *) pt[4], 3);
     if (status != JXTA_SUCCESS) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
     /* Try a couple of invalid input */
     status = jxta_vector_add_object_at(vec, (Jxta_object *) pt[4], 10);
     if (status == JXTA_SUCCESS) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     status = jxta_vector_add_object_at(vec, (Jxta_object *) pt[4], -1);
     if (status == JXTA_SUCCESS) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
 
     /* Check that the size is correct */
     if (5 != jxta_vector_size(vec)) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
@@ -190,7 +199,7 @@ Jxta_boolean test_jxta_vector_add_object_at(void)
     if (status != JXTA_SUCCESS || holder != (Jxta_object *) pt[3]) {
         if (holder != NULL)
             JXTA_OBJECT_RELEASE(holder);
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     if (holder != NULL)
@@ -200,7 +209,7 @@ Jxta_boolean test_jxta_vector_add_object_at(void)
     if (status != JXTA_SUCCESS || holder != (Jxta_object *) pt[0]) {
         if (holder != NULL)
             JXTA_OBJECT_RELEASE(holder);
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     if (holder != NULL)
@@ -210,7 +219,7 @@ Jxta_boolean test_jxta_vector_add_object_at(void)
     if (status != JXTA_SUCCESS || holder != (Jxta_object *) pt[2]) {
         if (holder != NULL)
             JXTA_OBJECT_RELEASE(holder);
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     if (holder != NULL)
@@ -220,7 +229,7 @@ Jxta_boolean test_jxta_vector_add_object_at(void)
     if (status != JXTA_SUCCESS || holder != (Jxta_object *) pt[4]) {
         if (holder != NULL)
             JXTA_OBJECT_RELEASE(holder);
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     if (holder != NULL)
@@ -230,7 +239,7 @@ Jxta_boolean test_jxta_vector_add_object_at(void)
     if (status != JXTA_SUCCESS || holder != (Jxta_object *) pt[1]) {
         if (holder != NULL)
             JXTA_OBJECT_RELEASE(holder);
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     if (holder != NULL)
@@ -252,31 +261,31 @@ Jxta_boolean test_jxta_vector_add_object_at(void)
 * Test the jxta_vector_add_object_first  and
 * jxta_vector_get_object_at   function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, a string message otherwise
 */
-Jxta_boolean test_jxta_vector_add_object_first(void)
+const char * test_jxta_vector_add_object_first(void)
 {
     Jxta_vector *vec = jxta_vector_new(3);
     int i, j;
     TestType **pt;
     Jxta_object *holder;
     Jxta_status status;
-    Jxta_boolean result = TRUE;
+    const char * result = NULL;
     size_t size = 10;
 
     if (NULL == vec)
-        return FALSE;
+        return FILEANDLINE;
 
     /* Initialize the test objects */
     pt = (TestType **) malloc(sizeof(TestType *) * size);
     if (pt == NULL) {
         JXTA_OBJECT_RELEASE(vec);
-        return FALSE;
+        return FILEANDLINE;
     }
     for (i = 0; i < size; i++) {
-        pt[i] = (TestType *) malloc(sizeof(TestType));
+        pt[i] = (TestType *) calloc(1, sizeof(TestType));
         if (pt[i] != NULL) {
-            JXTA_OBJECT_INIT((Jxta_object *) pt[i], free, 0);
+            JXTA_OBJECT_INIT((Jxta_object *) pt[i], TestType_free, NULL);
             pt[i]->field1 = i;
             pt[i]->field1 = i + 1;
         }
@@ -286,14 +295,14 @@ Jxta_boolean test_jxta_vector_add_object_first(void)
     for (i = 0; i < size; i++) {
         status = jxta_vector_add_object_first(vec, (Jxta_object *) pt[i]);
         if (status != JXTA_SUCCESS) {
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
     }
 
     /* Check that the size is correct */
     if (size != jxta_vector_size(vec)) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
@@ -305,7 +314,7 @@ Jxta_boolean test_jxta_vector_add_object_first(void)
         if (status != JXTA_SUCCESS || holder != (Jxta_object *) pt[j]) {
             if (holder != NULL)
                 JXTA_OBJECT_RELEASE(holder);
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
         if (holder != NULL)
@@ -328,31 +337,31 @@ Jxta_boolean test_jxta_vector_add_object_first(void)
 * Test the jxta_vector_add_object_last  and
 * jxta_vector_get_object_at   function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, a string message otherwise
 */
-Jxta_boolean test_jxta_vector_add_object_last(void)
+const char * test_jxta_vector_add_object_last(void)
 {
     Jxta_vector *vec = jxta_vector_new(3);
     int i;
     TestType **pt;
     Jxta_object *holder;
     Jxta_status status;
-    Jxta_boolean result = TRUE;
+    const char * result = NULL;
     size_t size = 100;
 
     if (NULL == vec)
-        return FALSE;
+        return FILEANDLINE;
 
     /* Initialize the test objects */
     pt = (TestType **) malloc(sizeof(TestType *) * size);
     if (pt == NULL) {
         JXTA_OBJECT_RELEASE(vec);
-        return FALSE;
+        return FILEANDLINE;
     }
     for (i = 0; i < size; i++) {
-        pt[i] = (TestType *) malloc(sizeof(TestType));
+        pt[i] = (TestType *) calloc(1, sizeof(TestType));
         if (pt[i] != NULL) {
-            JXTA_OBJECT_INIT((Jxta_object *) pt[i], free, 0);
+            JXTA_OBJECT_INIT((Jxta_object *) pt[i], TestType_free, NULL);
             pt[i]->field1 = i;
             pt[i]->field1 = i + 1;
         }
@@ -362,14 +371,14 @@ Jxta_boolean test_jxta_vector_add_object_last(void)
     for (i = 0; i < size; i++) {
         status = jxta_vector_add_object_last(vec, (Jxta_object *) pt[i]);
         if (status != JXTA_SUCCESS) {
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
     }
 
     /* Check that the size is correct */
     if (size != jxta_vector_size(vec)) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
@@ -380,7 +389,7 @@ Jxta_boolean test_jxta_vector_add_object_last(void)
         if (status != JXTA_SUCCESS || holder != (Jxta_object *) pt[i]) {
             if (holder != NULL)
                 JXTA_OBJECT_RELEASE(holder);
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
         if (holder != NULL)
@@ -398,35 +407,110 @@ Jxta_boolean test_jxta_vector_add_object_last(void)
 }
 
 
+const char * test_jxta_vector_addall_objects_first(void)
+{
+Jxta_status res;
+Jxta_vector *vec = jxta_vector_new(0);
+Jxta_vector *objects = jxta_vector_new(0);
+JString *string = jstring_new_2("hello");
+
+res = jxta_vector_add_object_last( objects, (Jxta_object*) string );
+res = jxta_vector_add_object_last( objects, (Jxta_object*) string );
+res = jxta_vector_add_object_last( objects, (Jxta_object*) string );
+res = jxta_vector_add_object_last( objects, (Jxta_object*) string );
+
+res = jxta_vector_addall_objects_first( vec, objects );
+if( JXTA_SUCCESS != res ) {
+    return FILEANDLINE;
+}
+
+res = jxta_vector_addall_objects_first( vec, objects );
+if( JXTA_SUCCESS != res ) {
+    return FILEANDLINE;
+}
+
+return NULL;
+}
+
+const char * test_jxta_vector_addall_objects_at(void)
+{
+Jxta_status res;
+Jxta_vector *vec = jxta_vector_new(0);
+Jxta_vector *objects = jxta_vector_new(0);
+JString *string = jstring_new_2("hello");
+
+res = jxta_vector_add_object_last( objects, (Jxta_object*) string );
+res = jxta_vector_add_object_last( objects, (Jxta_object*) string );
+res = jxta_vector_add_object_last( objects, (Jxta_object*) string );
+res = jxta_vector_add_object_last( objects, (Jxta_object*) string );
+
+res = jxta_vector_addall_objects_at( vec, objects, 0 );
+if( JXTA_SUCCESS != res ) {
+    return FILEANDLINE;
+}
+
+res = jxta_vector_addall_objects_at( vec, objects, 2 );
+if( JXTA_SUCCESS != res ) {
+    return FILEANDLINE;
+}
+
+return NULL;
+}
+
+const char * test_jxta_vector_addall_objects_last(void)
+{
+Jxta_status res;
+Jxta_vector *vec = jxta_vector_new(0);
+Jxta_vector *objects = jxta_vector_new(0);
+JString *string = jstring_new_2("hello");
+
+res = jxta_vector_add_object_last( objects, (Jxta_object*) string );
+res = jxta_vector_add_object_last( objects, (Jxta_object*) string );
+res = jxta_vector_add_object_last( objects, (Jxta_object*) string );
+res = jxta_vector_add_object_last( objects, (Jxta_object*) string );
+
+res = jxta_vector_addall_objects_last( vec, objects );
+if( JXTA_SUCCESS != res ) {
+    return FILEANDLINE;
+}
+
+res = jxta_vector_addall_objects_last( vec, objects );
+if( JXTA_SUCCESS != res ) {
+    return FILEANDLINE;
+}
+
+return NULL;
+}
+
 /**
 * Test the jxta_vector_add_object_last  and
 * jxta_vector_get_object_at   function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, a string message otherwise
 */
-Jxta_boolean test_jxta_vector_remove_object_at(void)
+const char * test_jxta_vector_remove_object_at(void)
 {
     Jxta_vector *vec = jxta_vector_new(0);
     int i;
     TestType **pt;
     Jxta_object *holder;
     Jxta_status status;
-    Jxta_boolean result = TRUE;
+    const char * result = NULL;
     size_t size = 5;
 
     if (NULL == vec)
-        return FALSE;
+        return FILEANDLINE;
 
     /* Initialize the test objects */
     pt = (TestType **) malloc(sizeof(TestType *) * size);
     if (pt == NULL) {
         JXTA_OBJECT_RELEASE(vec);
-        return FALSE;
+        return FILEANDLINE;
     }
     for (i = 0; i < size; i++) {
-        pt[i] = (TestType *) malloc(sizeof(TestType));
+        pt[i] = (TestType *) calloc(1, sizeof(TestType));
         if (pt[i] != NULL) {
-            JXTA_OBJECT_INIT((Jxta_object *) pt[i], free, 0);
+            JXTA_OBJECT_INIT((Jxta_object *) pt[i], TestType_free, NULL);
             pt[i]->field1 = i;
             pt[i]->field2 = i + 1;
         }
@@ -436,7 +520,7 @@ Jxta_boolean test_jxta_vector_remove_object_at(void)
     for (i = 0; i < size; i++) {
         status = jxta_vector_add_object_last(vec, (Jxta_object *) pt[i]);
         if (status != JXTA_SUCCESS) {
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
     }
@@ -444,25 +528,25 @@ Jxta_boolean test_jxta_vector_remove_object_at(void)
     /* Remove a couple of objects */
     status = jxta_vector_remove_object_at(vec, NULL, 0);
     if (status != JXTA_SUCCESS) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     status = jxta_vector_remove_object_at(vec, &holder, 2);
     if (status != JXTA_SUCCESS || holder != (Jxta_object *) pt[3]) {
         if (holder != NULL)
             JXTA_OBJECT_RELEASE(holder);
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     status = jxta_vector_remove_object_at(vec, NULL, 2);
     if (status != JXTA_SUCCESS) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
     /* Check that the size is correct */
     if (2 != jxta_vector_size(vec)) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
@@ -471,7 +555,7 @@ Jxta_boolean test_jxta_vector_remove_object_at(void)
     if (status != JXTA_SUCCESS || holder != (Jxta_object *) pt[1]) {
         if (holder != NULL)
             JXTA_OBJECT_RELEASE(holder);
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     if (holder != NULL)
@@ -481,7 +565,7 @@ Jxta_boolean test_jxta_vector_remove_object_at(void)
     if (status != JXTA_SUCCESS || holder != (Jxta_object *) pt[2]) {
         if (holder != NULL)
             JXTA_OBJECT_RELEASE(holder);
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     if (holder != NULL)
@@ -501,9 +585,9 @@ Jxta_boolean test_jxta_vector_remove_object_at(void)
 /**
 * Test the jxta_vector_clone   function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, a string message otherwise
 */
-Jxta_boolean test_jxta_vector_clone(void)
+const char * test_jxta_vector_clone(void)
 {
     Jxta_vector *vec = jxta_vector_new(3);
     Jxta_vector *cloned;
@@ -511,22 +595,22 @@ Jxta_boolean test_jxta_vector_clone(void)
     int i;
     TestType **pt;
     Jxta_status status;
-    Jxta_boolean result = TRUE;
+    const char * result = NULL;
     size_t size = 100;
 
     if (NULL == vec)
-        return FALSE;
+        return FILEANDLINE;
 
     /* Initialize the test objects */
     pt = (TestType **) malloc(sizeof(TestType *) * size);
     if (pt == NULL) {
         JXTA_OBJECT_RELEASE(vec);
-        return FALSE;
+        return FILEANDLINE;
     }
     for (i = 0; i < size; i++) {
-        pt[i] = (TestType *) malloc(sizeof(TestType));
+        pt[i] = (TestType *) calloc(1, sizeof(TestType));
         if (pt[i] != NULL) {
-            JXTA_OBJECT_INIT((Jxta_object *) pt[i], free, 0);
+            JXTA_OBJECT_INIT((Jxta_object *) pt[i], TestType_free, NULL);
             pt[i]->field1 = i;
             pt[i]->field1 = i + 1;
         }
@@ -536,14 +620,14 @@ Jxta_boolean test_jxta_vector_clone(void)
     for (i = 0; i < size; i++) {
         status = jxta_vector_add_object_last(vec, (Jxta_object *) pt[i]);
         if (status != JXTA_SUCCESS) {
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
     }
 
     /* Check that the size is correct */
     if (size != jxta_vector_size(vec)) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
@@ -552,7 +636,7 @@ Jxta_boolean test_jxta_vector_clone(void)
     if (status != JXTA_SUCCESS) {
         if (cloned != NULL)
             JXTA_OBJECT_RELEASE(cloned);
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     for (i = 0; i < 20; i++) {
@@ -560,7 +644,7 @@ Jxta_boolean test_jxta_vector_clone(void)
         if (status != JXTA_SUCCESS || holder != (Jxta_object *) pt[i]) {
             if (holder != NULL)
                 JXTA_OBJECT_RELEASE(holder);
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
         if (holder != NULL)
@@ -572,7 +656,7 @@ Jxta_boolean test_jxta_vector_clone(void)
     if (status != JXTA_SUCCESS) {
         if (cloned != NULL)
             JXTA_OBJECT_RELEASE(cloned);
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
     for (i = 20; i < 20; i++) {
@@ -580,7 +664,7 @@ Jxta_boolean test_jxta_vector_clone(void)
         if (status != JXTA_SUCCESS || holder != (Jxta_object *) pt[i]) {
             if (holder != NULL)
                 JXTA_OBJECT_RELEASE(holder);
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
         if (holder != NULL)
@@ -600,31 +684,31 @@ Jxta_boolean test_jxta_vector_clone(void)
 /**
 * Test the jxta_vector_clear  function
 * 
-* @return TRUE if the test run successfully, FALSE otherwise
+* @return NULL if the test run successfully, a string message otherwise
 */
-Jxta_boolean test_jxta_vector_clear(void)
+const char * test_jxta_vector_clear(void)
 {
     Jxta_vector *vec = jxta_vector_new(3);
     int i;
     TestType **pt;
     Jxta_object *holder;
     Jxta_status status;
-    Jxta_boolean result = TRUE;
+    const char * result = NULL;
     size_t size = 100;
 
     if (NULL == vec)
-        return FALSE;
+        return FILEANDLINE;
 
     /* Initialize the test objects */
     pt = (TestType **) malloc(sizeof(TestType *) * size);
     if (pt == NULL) {
         JXTA_OBJECT_RELEASE(vec);
-        return FALSE;
+        return FILEANDLINE;
     }
     for (i = 0; i < size; i++) {
-        pt[i] = (TestType *) malloc(sizeof(TestType));
+        pt[i] = (TestType *) calloc(1, sizeof(TestType));
         if (pt[i] != NULL) {
-            JXTA_OBJECT_INIT((Jxta_object *) pt[i], free, 0);
+            JXTA_OBJECT_INIT((Jxta_object *) pt[i], TestType_free, NULL);
             pt[i]->field1 = i;
             pt[i]->field1 = i + 1;
         }
@@ -634,27 +718,27 @@ Jxta_boolean test_jxta_vector_clear(void)
     for (i = 0; i < size; i++) {
         status = jxta_vector_add_object_last(vec, (Jxta_object *) pt[i]);
         if (status != JXTA_SUCCESS) {
-            result = FALSE;
+            result = FILEANDLINE;
             goto Common_Exit;
         }
     }
 
     /* Check that the size is correct */
     if (size != jxta_vector_size(vec)) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
     /* Clear the vector */
     status = jxta_vector_clear(vec);
     if (status != JXTA_SUCCESS) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
     /* Check that the size is correct */
     if (0 != jxta_vector_size(vec)) {
-        result = FALSE;
+        result = FILEANDLINE;
         goto Common_Exit;
     }
 
@@ -677,6 +761,9 @@ static struct _funcs testfunc[] = {
     {*test_jxta_vector_clone, "jxta_vector_clone"},
     {*test_jxta_vector_remove_object_at, "jxta_vector_remove_object_at"},
     {*test_jxta_vector_clear, "jxta_vector_clear"},
+    {*test_jxta_vector_addall_objects_first, "test_jxta_vector_addall_objects_first" },
+    {*test_jxta_vector_addall_objects_at, "test_jxta_vector_addall_objects_at" },
+    {*test_jxta_vector_addall_objects_last, "test_jxta_vector_addall_objects_last" },
     {NULL, "null"}
 };
 
@@ -688,7 +775,7 @@ static struct _funcs testfunc[] = {
 * @param tests_passed the variable in which to accumulate the number of tests passed
 * @param tests_failed the variable in which to accumulate the number of tests failed
 *
-* @return TRUE if all tests were run successfully, FALSE otherwise
+* @return NULL if all tests were run successfully, FALSE otherwise
 */
 Jxta_boolean run_jxta_vector_tests(int *tests_run, int *tests_passed, int *tests_failed)
 {
@@ -706,7 +793,7 @@ int main(int argc, char **argv)
 
 
 
-/*Jxta_boolean 
+/*const char * 
 jxta_vector_test(void) {
 
   int i;
@@ -716,7 +803,7 @@ jxta_vector_test(void) {
 
   for (i = 0; i < 10; ++i) {
     TestType* pt = (TestType*) malloc (sizeof (TestType));
-    JXTA_OBJECT_INIT (pt, free, 0);
+    JXTA_OBJECT_INIT (pt, TestType_free, NULL);
     printf ("Adding [%d] %p\n", i, pt);
     jxta_vector_add_object_last (vector, (Jxta_object*) pt);
   }
@@ -740,7 +827,7 @@ jxta_vector_test(void) {
   err = jxta_vector_clone (vector, &copy, 0, jxta_vector_size(vector));
   if (err != JXTA_SUCCESS) {
     printf ("Clone failed\n");
-    return FALSE;
+    return FILEANDLINE;
   }
 
   for (i = 0; i < jxta_vector_size (copy); ++i) {
@@ -749,25 +836,6 @@ jxta_vector_test(void) {
     printf ("Copy   [%d] %p\n", i, pt);
   }
 
-  return TRUE;
+  return NULL;
 
   }*/
-
-
-
-/*#ifdef STANDALONE
-int
-main (int argc, char **argv) {
-#ifdef WIN32 
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize(); 
-#endif
-
-  if(jxta_vector_test()) {
-    return TRUE;
-  } else {
-    return FALSE;
-  }
-}
-#endif */

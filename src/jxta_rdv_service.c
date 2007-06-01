@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service.c,v 1.68 2006/05/20 06:20:08 slowhog Exp $
+ * $Id: jxta_rdv_service.c,v 1.78 2006/09/08 19:17:55 bondolo Exp $
  */
 
 /**
@@ -60,8 +60,6 @@
  **/
 
 static const char *__log_cat = "RdvService";
-
-#include <apr_uuid.h>
 
 #include "jxta_apr.h"
 #include "jpr/jpr_excep_proto.h"
@@ -117,12 +115,12 @@ static const _jxta_rdv_service_methods JXTA_RDV_SERVICE_METHODS = {
      {
       "Jxta_module_methods",
       init,
-      jxta_module_init_e_impl,
       start,
       stop},
      "Jxta_service_methods",
      jxta_service_get_MIA_impl,
-     jxta_service_get_interface_impl},
+     jxta_service_get_interface_impl,
+     service_on_option_set},
     "_jxta_rdv_service_methods"
 };
 
@@ -184,7 +182,7 @@ _jxta_rdv_service *jxta_rdv_service_construct(_jxta_rdv_service * self, const _j
 {
     PTValid(methods, _jxta_rdv_service_methods);
 
-    self = (_jxta_rdv_service *) jxta_service_construct((_jxta_service *) self, (Jxta_service_methods *) methods);
+    self = (_jxta_rdv_service *) jxta_service_construct((Jxta_service *) self, (Jxta_service_methods *) methods);
 
     if (NULL != self) {
         apr_status_t res = APR_SUCCESS;
@@ -247,7 +245,7 @@ static void jxta_rdv_service_destruct(_jxta_rdv_service * rdv)
 
     self->thisType = NULL;
 
-    jxta_service_destruct((_jxta_service *) rdv);
+    jxta_service_destruct((Jxta_service *) rdv);
 }
 
 
@@ -536,6 +534,7 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_add_propagate_listener(Jxta_rdv_servi
     void *cookie;
 
     JXTA_DEPRECATED_API();
+    
     /* Test arguments first */
     if (listener == NULL) {
         /* Invalid args. */
@@ -564,6 +563,7 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_remove_propagate_listener(Jxta_rdv_se
     Jxta_status rv;
 
     JXTA_DEPRECATED_API();
+    
     /* Test arguments first */
     if (listener == NULL) {
         /* Invalid args. */
@@ -676,8 +676,23 @@ JXTA_DECLARE(Jxta_boolean) jxta_rdv_service_peer_is_connected(Jxta_rdv_service *
         return FALSE;
     }
 
-    return jpr_time_now() <= PEER_ENTRY_VTBL(peer)->jxta_peer_get_expires(peer) ? TRUE : FALSE;
+    return jpr_time_now() <= jxta_peer_get_expires(peer) ? TRUE : FALSE;
 }
+
+JXTA_DECLARE(Jxta_time) jxta_rdv_service_peer_get_expires(Jxta_service * rdv, Jxta_peer * p)
+{
+    JXTA_DEPRECATED_API();
+    
+    return jxta_peer_get_expires(p);
+}
+
+Jxta_status jxta_rdv_service_peer_set_expires(Jxta_service * rdv, Jxta_peer * p, Jxta_time expires)
+{
+    JXTA_DEPRECATED_API();
+
+    return jxta_peer_set_expires(p, expires);
+}
+
 
 /**
  * Test if the peer is connected. For now existing and not expired is what we use to decide.
@@ -688,6 +703,8 @@ JXTA_DECLARE(Jxta_boolean) jxta_rdv_service_peer_is_connected(Jxta_rdv_service *
 JXTA_DECLARE(Jxta_boolean) jxta_rdv_service_peer_is_rdv(Jxta_rdv_service * rdv, Jxta_peer * peer)
 {
     PTValid(rdv, _jxta_rdv_service);
+
+    JXTA_DEPRECATED_API();
 
     /* Test arguments first */
     if (NULL == peer) {
@@ -702,6 +719,8 @@ JXTA_DECLARE(Jxta_boolean) jxta_rdv_service_peer_is_rdv(Jxta_rdv_service * rdv, 
 JXTA_DECLARE(Jxta_status) jxta_rdv_service_add_peer(Jxta_rdv_service * rdv, Jxta_peer * peer)
 {
     PTValid(rdv, _jxta_rdv_service);
+
+    JXTA_DEPRECATED_API();
 
     /* Test arguments first */
     if (peer == NULL) {
@@ -733,6 +752,24 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_add_seed(Jxta_rdv_service * rdv, Jxta
     }
 
     return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_rdv_service_get_peer(Jxta_rdv_service * rdv, Jxta_id* peerid, Jxta_peer ** peer)
+{
+    _jxta_rdv_service *self = PTValid(rdv, _jxta_rdv_service);
+    Jxta_status res = JXTA_SUCCESS;
+
+    apr_thread_mutex_lock(self->mutex);
+    
+    if (NULL != self->provider) {
+        res = PROVIDER_VTBL(self->provider)->get_peer((Jxta_rdv_service_provider *) self->provider, peerid, peer);
+    } else {
+        res = JXTA_BUSY;
+    }
+    
+    apr_thread_mutex_unlock(self->mutex);
+
+    return res;
 }
 
 /**
@@ -796,6 +833,11 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_set_config(Jxta_rdv_service * rdv, Rd
     }
 
     switch (config) {
+    case config_adhoc:
+        newStatus = status_adhoc;
+        newProvider = jxta_rdv_service_adhoc_new();
+        break;
+        
     case config_edge:
         newStatus = (-1 == self->auto_rdv_interval) ? status_edge : status_auto_edge;
         newProvider = jxta_rdv_service_client_new();
@@ -808,8 +850,8 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_set_config(Jxta_rdv_service * rdv, Rd
 
     default:
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Unsupported configuration!\n");
-        newProvider = jxta_rdv_service_client_new();
-        newStatus = status_auto_edge;
+        newStatus = status_adhoc;
+        newProvider = jxta_rdv_service_adhoc_new();
     }
 
     /* Do the switch */
@@ -991,8 +1033,7 @@ JXTA_DECLARE(JString *) message_id_new(void)
     return jstring_new_2(uuidStr);
 }
 
-static
-void *APR_THREAD_FUNC auto_rdv_thread(apr_thread_t * thread, void *arg)
+static void *APR_THREAD_FUNC auto_rdv_thread(apr_thread_t * thread, void *arg)
 {
     _jxta_rdv_service *self = PTValid(arg, _jxta_rdv_service);
     Jxta_status res = JXTA_SUCCESS;

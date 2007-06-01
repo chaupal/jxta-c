@@ -50,12 +50,13 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_id_jxta.c,v 1.23 2006/03/23 02:26:04 slowhog Exp $
+ * $Id: jxta_id_jxta.c,v 1.24 2006/06/24 07:18:09 slowhog Exp $
  */
 
 
 #include <stddef.h>
 #include <sys/types.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "jxta_errno.h"

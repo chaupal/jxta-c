@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_service_private.h,v 1.18 2005/09/21 21:16:50 slowhog Exp $
+ * $Id: jxta_service_private.h,v 1.22 2006/09/06 21:45:18 slowhog Exp $
  */
 
 #ifndef JXTA_SERVICE_PRIVATE_H
@@ -60,7 +60,6 @@
 #include "jxta_errno.h"
 #include "jxta_service.h"
 #include "jxta_module_private.h"
-
 
 /*
  * This is an internal header file that defines the interface between
@@ -103,7 +102,7 @@ extern "C" {
  * }
  * </pre>
  **/
-struct _jxta_service_methods {
+typedef struct jxta_service_methods {
     Extends(Jxta_module_methods);
 
     /* An implementation of Jxta_service_get_MIA */
@@ -111,10 +110,16 @@ struct _jxta_service_methods {
 
     /* An implementation of Jxta_service_get_interface */
     void (*get_interface) (Jxta_service * svc, Jxta_service ** service);
-};
 
-typedef struct _jxta_service_methods _jxta_service_methods;
-typedef _jxta_service_methods Jxta_service_methods;
+    /* option change */
+     Jxta_status(*on_option_set) (Jxta_service * me, const char *ns, const char *key, const void *old_val, const void *new_val);
+} Jxta_service_methods;
+
+typedef struct svc_cb {
+    struct svc_cb *next;
+    Jxta_callback_fn f;
+    void *arg;
+} Svc_cb;
 
 /**
  * A Jxta_service is a Jxta_module plus a thisType field of "Jxta_service".
@@ -123,7 +128,7 @@ typedef _jxta_service_methods Jxta_service_methods;
  * After allocating such an object, one must apply JXTA_OBJECT_INIT() and
  * jxta_service_construct to it.
  */
-struct _jxta_service {
+struct jxta_service {
     Extends(_jxta_module);
 
     /**
@@ -140,9 +145,13 @@ struct _jxta_service {
     *   Impl advertisement for this instance.
     **/
     Jxta_advertisement *impl_adv;
-};
 
-typedef struct _jxta_service _jxta_service;
+    Svc_cb *event_cbs;
+    apr_thread_mutex_t *mutex;
+    /* a map from namespace to the hashtable of options, which contains key/value pairs */
+    apr_hash_t *opt_tables;
+    const Jxta_qos *qos_for_all;
+};
 
 /**
  * The base service ctor (not public: the only public way to make a new service
@@ -153,14 +162,14 @@ typedef struct _jxta_service _jxta_service;
  * @param methods Pointer to the relevant Jxta_service_methods object.
  * @return the constructed object or NULL if the construction failed.
  */
-extern _jxta_service *jxta_service_construct(_jxta_service * svc, Jxta_service_methods const *methods);
+extern Jxta_service *jxta_service_construct(Jxta_service * svc, Jxta_service_methods const *methods);
 
 /**
  * The base service dtor (Not public, not virtual. Only called by subclassers).
  *
  * @param svc The Jxta_service object to destruct.
  */
-extern void jxta_service_destruct(_jxta_service * svc);
+extern void jxta_service_destruct(Jxta_service * svc);
 
 /**
 *   Initialize the service.
@@ -207,23 +216,26 @@ extern void jxta_service_get_MIA_impl(Jxta_service * svc, Jxta_advertisement ** 
  *    
  *  @return the peergroup object
 **/
-extern Jxta_PG *jxta_service_get_peergroup_priv(_jxta_service * svc);
+extern Jxta_PG *jxta_service_get_peergroup_priv(Jxta_service * svc);
 
 /**
  *  Gets the assigned id associated with this service without sharing it, dispatching or checking the object type.
  *    
  *  @return the assigned id object
 **/
-extern Jxta_id *jxta_service_get_assigned_ID_priv(_jxta_service * svc);
+extern Jxta_id *jxta_service_get_assigned_ID_priv(Jxta_service * svc);
 
 /**
  *  Gets the MIA associated with this service without sharing it, dispatching or checking the object type.
  *    
  *  @return the MIA
 **/
-extern Jxta_advertisement *jxta_service_get_MIA_priv(_jxta_service * svc);
+extern Jxta_advertisement *jxta_service_get_MIA_priv(Jxta_service * svc);
 
-#define JXTA_SERVICE_VTBL(self) (((_jxta_service_methods*)(((_jxta_module*) (self))->methods))
+extern Jxta_status service_on_option_set(Jxta_service * svc, const char *ns, const char *key, const void *old_val,
+                                         const void *new_val);
+
+#define JXTA_SERVICE_VTBL(self) ((Jxta_service_methods*)(((_jxta_module*) (self))->methods))
 
 #ifdef __cplusplus
 #if 0

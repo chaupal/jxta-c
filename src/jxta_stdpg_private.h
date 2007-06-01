@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_stdpg_private.h,v 1.12 2005/12/21 11:04:01 mmx2005 Exp $
+ * $Id: jxta_stdpg_private.h,v 1.14 2006/09/08 19:17:56 bondolo Exp $
  */
 
 #ifndef JXTA_STDPG_PRIVATE_H
@@ -152,14 +152,8 @@ extern void jxta_stdpg_destruct(Jxta_stdpg * self);
 void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv);
 
 /*
- * This routine just init the modules.
- * This is not part of the public API, this is for subclasses which may
- * need a finer grain control on the init sequence: specifically, they may
- * need to init additional services before the lot of them are started.
- *
- * Exception-throwing variant.
  */
-void jxta_stdpg_init_modules_e(Jxta_module * self, Throws);
+Jxta_status stdpg_ld_mod(Jxta_PG * self, Jxta_id * class_id, const char *name, Jxta_MIA * impl_adv, Jxta_module **);
 
 /*
  * This routine just init the modules.
@@ -177,7 +171,7 @@ Jxta_status jxta_stdpg_init_modules(Jxta_module * self);
  * specifically, the opportunity to init additional services before starting
  * ours, and then, their own.
  */
-void jxta_stdpg_start_modules(Jxta_module * self);
+Jxta_status jxta_stdpg_start_modules(Jxta_module * self);
 
 /**
  * Set the config adv for this peer group.

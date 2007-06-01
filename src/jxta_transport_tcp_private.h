@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tcp_private.h,v 1.15 2006/05/26 02:15:56 bondolo Exp $
+ * $Id: jxta_transport_tcp_private.h,v 1.16 2006/09/06 00:45:00 slowhog Exp $
  */
 
 #ifndef __JXTA_TRANSPORT_TCP_PRIVATE_H__
@@ -98,7 +98,7 @@ Jxta_endpoint_address *jxta_transport_tcp_get_public_addr(Jxta_transport_tcp * m
 
 Jxta_boolean jxta_transport_tcp_get_allow_multicast(Jxta_transport_tcp * me);
 
-void jxta_tcp_got_inbound_connection(Jxta_transport_tcp * me, Jxta_transport_tcp_connection * conn);
+void tcp_got_inbound_connection(Jxta_transport_tcp * me, Jxta_transport_tcp_connection * conn);
 
 #ifdef __cplusplus
 #if 0

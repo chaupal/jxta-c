@@ -20,7 +20,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\..\src,$(APACHE2)\include;$(XML2)\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;STANDALONE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;JXTA_STATIC;JPR_STATIC;STANDALONE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				MinimalRebuild="TRUE"
 				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="3"
@@ -34,10 +34,10 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libapr-1.lib libaprutil-1.lib wsock32.lib"
+				AdditionalDependencies="libeay32.lib ssleay32.lib libapr-1.lib libaprutil-1.lib expat.lib libxml2.lib zdll.lib wsock32.lib"
 				OutputFile="$(OutDir)/pg_start_stop_test.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;$(APACHE2)\lib&quot;"
+				AdditionalLibraryDirectories="&quot;$(APACHE2)\lib&quot;;$(ZLIB)\lib;$(SQLITE3)\lib;$(XML2)\lib;$(OPENSSL)\lib"
 				IgnoreDefaultLibraryNames="MSVCRT.lib"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/pg_start_stop_test.pdb"
@@ -83,7 +83,7 @@ copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(Configur
 				Name="VCCLCompilerTool"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..\..\..\src,$(APACHE2)\include;$(XML2)\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;STANDALONE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;JXTA_STATIC;JPR_STATIC;STANDALONE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="FALSE"
@@ -96,10 +96,10 @@ copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(Configur
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libapr-1.lib libaprutil-1.lib wsock32.lib"
+				AdditionalDependencies="libeay32.lib ssleay32.lib libapr-1.lib libaprutil-1.lib expat.lib libxml2.lib zdll.lib wsock32.lib"
 				OutputFile="$(OutDir)/pg_start_stop_test.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(APACHE2)\lib&quot;"
+				AdditionalLibraryDirectories="&quot;$(APACHE2)\lib&quot;;$(ZLIB)\lib;$(SQLITE3)\lib;$(XML2)\lib;$(OPENSSL)\lib"
 				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="TRUE"
 				SubSystem="1"

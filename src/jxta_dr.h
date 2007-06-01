@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dr.h,v 1.11 2006/06/16 03:16:55 mmx2005 Exp $
+ * $Id: jxta_dr.h,v 1.13 2006/08/17 01:39:41 mmx2005 Exp $
  */
 
 
@@ -58,7 +58,7 @@
 #define __Jxta_DiscoveryResponse_H__
 
 #include "jxta_advertisement.h"
-
+#include "jxta_discovery_service.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -93,17 +93,6 @@ JXTA_DECLARE(Jxta_DiscoveryResponse *) jxta_discovery_response_new_1(short type,
                                                                      const char *attr,
                                                                      const char *value,
                                                                      int threshold, JString * peeradv, Jxta_vector * responses);
-
-
-/**
- * Delete a discovery response.
- *
- * @param pointer to discovery response to delete.
- *
- * @return void Doesn't return anything.
- */
-void jxta_discovery_response_free(Jxta_DiscoveryResponse *);
-
 
 /**
  * Constructs a representation of a discovery response in
@@ -157,6 +146,15 @@ JXTA_DECLARE(void) jxta_discovery_response_parse_file(Jxta_DiscoveryResponse *, 
  * @return long set to value of the query ID.
  */
 JXTA_DECLARE(long) jxta_discovery_response_get_query_id(Jxta_DiscoveryResponse *);
+
+/**
+ * Return the pointer to the discovery service received the response
+ *
+ * @param me * a pointer to the discovery response.
+ *
+ * @return the pointer to the discovery service received the response
+ */
+JXTA_DECLARE(Jxta_discovery_service*) jxta_discovery_response_discovery_service(Jxta_DiscoveryResponse * me);
 
 /**
  * Gets the Type of the discovery response.

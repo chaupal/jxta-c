@@ -50,19 +50,21 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tta.c,v 1.50 2006/02/15 01:09:51 slowhog Exp $
+ * $Id: jxta_tta.c,v 1.54 2006/09/29 06:09:01 mmx2005 Exp $
  */
 
 static const char *__log_cat = "TCPADV";
 
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #include "jxta_errno.h"
 #include "jxta_tta.h"
 #include "jxta_log.h"
 #include "jxta_xml_util.h"
 #include "jxta_apr.h"
+#include "jpr/jpr_apr_wrapper.h"
 
 /** Each of these corresponds to a tag in the 
  * xml ad.
@@ -83,6 +85,9 @@ enum tokentype {
     ClientOff_
 };
 
+#ifndef INET_ADDRSTRLEN
+#define INET_ADDRSTRLEN 16
+#endif
 
 /** This is the representation of the 
  * actual ad in the code.  It should
@@ -99,7 +104,7 @@ struct _jxta_TCPTransportAdvertisement {
     Jxta_port MulticastPort;
     int MulticastSize;
     JString *Server;
-    Jxta_in_addr InterfaceAddress;
+    char * InterfaceAddress;
     JString *ConfigMode;
     Jxta_boolean ServerOff;
     Jxta_boolean ClientOff;
@@ -138,7 +143,6 @@ static void handleProtocol(void *userdata, const XML_Char * cd, int len)
 
 static void handlePort(void *userdata, const XML_Char * cd, int len)
 {
-
     Jxta_TCPTransportAdvertisement *ad = (Jxta_TCPTransportAdvertisement *) userdata;
     extract_port(cd, len, &ad->Port);
 }
@@ -167,7 +171,6 @@ static void handleMulticastAddr(void *userdata, const XML_Char * cd, int len)
 
 static void handleMulticastPort(void *userdata, const XML_Char * cd, int len)
 {
-
     Jxta_TCPTransportAdvertisement *ad = (Jxta_TCPTransportAdvertisement *) userdata;
     extract_port(cd, len, &ad->MulticastPort);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In MulticastPort element\n");
@@ -197,19 +200,28 @@ static void handleServer(void *userdata, const XML_Char * cd, int len)
 
 static void handleInterfaceAddress(void *userdata, const XML_Char * cd, int len)
 {
+    Jxta_TCPTransportAdvertisement *ad = userdata;
+    int i;
 
-    Jxta_TCPTransportAdvertisement *ad = (Jxta_TCPTransportAdvertisement *) userdata;
-    Jxta_in_addr address = 0;
+    if (len == 0)
+        return;
 
-    extract_ip(cd, len, &address);
-    if (address != 0) {
-        ad->InterfaceAddress = address;
+    assert(NULL == ad->InterfaceAddress);
+    i = 0;
+    while (len > 0 && ('\n' == *cd || '\r' == *cd || ' ' == *cd)) {
+        ++cd;
+        --len;
     }
+    while (len > 0 && ('\n' == cd[len - 1] || '\r' == cd[len - 1] || ' ' == cd[len - 1])) {
+        len--;
+    }
+
+    ad->InterfaceAddress = calloc(len + 1, sizeof(XML_Char));
+    strncpy(ad->InterfaceAddress, cd, len);
 }
 
 static void handleConfigMode(void *userdata, const XML_Char * cd, int len)
 {
-
     JString *mode;
     Jxta_TCPTransportAdvertisement *ad = (Jxta_TCPTransportAdvertisement *) userdata;
 
@@ -265,17 +277,14 @@ JXTA_DECLARE(void)
     ad->Protocol = protocol;
 }
 
-
 JXTA_DECLARE(Jxta_port)
     jxta_TCPTransportAdvertisement_get_Port(Jxta_TCPTransportAdvertisement * ad)
 {
     return ad->Port;
 }
 
-
 JXTA_DECLARE(char *) jxta_TCPTransportAdvertisement_get_Port_string(Jxta_advertisement * ad)
 {
-
     char *s = calloc(21, sizeof(char)); /* That's what it may take to print an int */
 
     apr_snprintf(s, 21, "%d", jxta_TCPTransportAdvertisement_get_Port((Jxta_TCPTransportAdvertisement *) ad));
@@ -287,7 +296,6 @@ JXTA_DECLARE(char *) jxta_TCPTransportAdvertisement_get_Port_string(Jxta_adverti
      */
     return s;
 }
-
 
 JXTA_DECLARE(void)
     jxta_TCPTransportAdvertisement_set_Port(Jxta_TCPTransportAdvertisement * ad, Jxta_port port)
@@ -313,20 +321,17 @@ JXTA_DECLARE(Jxta_in_addr)
     return ad->MulticastAddr;
 }
 
-
 JXTA_DECLARE(void)
     jxta_TCPTransportAdvertisement_set_MulticastAddr(Jxta_TCPTransportAdvertisement * ad, Jxta_in_addr addr)
 {
     ad->MulticastAddr = addr;
 }
 
-
 JXTA_DECLARE(Jxta_port)
     jxta_TCPTransportAdvertisement_get_MulticastPort(Jxta_TCPTransportAdvertisement * ad)
 {
     return ad->MulticastPort;
 }
-
 
 JXTA_DECLARE(void)
     jxta_TCPTransportAdvertisement_set_MulticastPort(Jxta_TCPTransportAdvertisement * ad, Jxta_port port)
@@ -368,14 +373,29 @@ JXTA_DECLARE(void)
 JXTA_DECLARE(Jxta_in_addr)
     jxta_TCPTransportAdvertisement_get_InterfaceAddress(Jxta_TCPTransportAdvertisement * ad)
 {
-    return ad->InterfaceAddress;
+    Jxta_in_addr ia = 0;
+
+    JXTA_DEPRECATED_API();
+    extract_ip(ad->InterfaceAddress, strlen(ad->InterfaceAddress), &ia);
+    return ia;
 }
 
 JXTA_DECLARE(void)
     jxta_TCPTransportAdvertisement_set_InterfaceAddress(Jxta_TCPTransportAdvertisement * ad, Jxta_in_addr addr)
 {
-    ad->InterfaceAddress = addr;
+    JXTA_DEPRECATED_API();
 
+    if (ad->InterfaceAddress) {
+        free(ad->InterfaceAddress);
+    }
+
+    ad->InterfaceAddress = calloc(INET_ADDRSTRLEN + 1, sizeof(char));
+    jpr_inet_ntop(AF_INET, &addr, ad->InterfaceAddress, INET_ADDRSTRLEN);
+}
+
+JXTA_DECLARE(const char*) jxta_TCPTransportAdvertisement_InterfaceAddress(Jxta_TCPTransportAdvertisement * ad)
+{
+    return ad->InterfaceAddress;
 }
 
 JXTA_DECLARE(JString *)
@@ -445,10 +465,6 @@ static const Kwdtab Jxta_TCPTransportAdvertisement_tags[] = {
     {NULL, 0, 0, NULL, NULL}
 };
 
-#ifndef INET_ADDRSTRLEN
-#define INET_ADDRSTRLEN 16
-#endif
-
 JXTA_DECLARE(Jxta_status)
     jxta_TCPTransportAdvertisement_get_xml(Jxta_TCPTransportAdvertisement * ad, JString ** result)
 {
@@ -469,7 +485,7 @@ JXTA_DECLARE(Jxta_status)
     jstring_append_2(string, "</Protocol>\n");
 
     jstring_append_2(string, "<Port>");
-    snprintf(port, sizeof(port), "%d", ad->Port);
+    apr_snprintf(port, sizeof(port), "%d", ad->Port);
     jstring_append_2(string, port);
     jstring_append_2(string, "</Port>\n");
 
@@ -483,25 +499,20 @@ JXTA_DECLARE(Jxta_status)
     jstring_append_2(string, addr_buf);
     jstring_append_2(string, "</MulticastAddr>\n");
 
-
     jstring_append_2(string, "<MulticastPort>");
-    snprintf(port, sizeof(port), "%d", ad->MulticastPort);
+    apr_snprintf(port, sizeof(port), "%d", ad->MulticastPort);
     jstring_append_2(string, port);
     jstring_append_2(string, "</MulticastPort>\n");
 
 
     jstring_append_2(string, "<MulticastSize>");
-    snprintf(port, sizeof(port), "%d", ad->MulticastSize);
+    apr_snprintf(port, sizeof(port), "%d", ad->MulticastSize);
     jstring_append_2(string, port);
     jstring_append_2(string, "</MulticastSize>\n");
 
-
     jstring_append_2(string, "<InterfaceAddress>");
-    jpr_inet_ntop(AF_INET, &(ad->InterfaceAddress), addr_buf, INET_ADDRSTRLEN);
-    jstring_append_2(string, addr_buf);
-
+    jstring_append_2(string, ad->InterfaceAddress ? ad->InterfaceAddress : APR_ANYADDR);
     jstring_append_2(string, "</InterfaceAddress>\n");
-
 
     jstring_append_2(string, "<ConfigMode>");
     jstring_append_1(string, ad->ConfigMode);
@@ -519,7 +530,6 @@ JXTA_DECLARE(Jxta_status)
 
     *result = string;
     return JXTA_SUCCESS;
-
 }
 
 static Jxta_TCPTransportAdvertisement *jxta_TCPTransportAdvertisement_construct(Jxta_TCPTransportAdvertisement * self)
@@ -541,6 +551,7 @@ static Jxta_TCPTransportAdvertisement *jxta_TCPTransportAdvertisement_construct(
         self->ClientOff = FALSE;
         self->ServerOff = FALSE;
         self->PublicAddressOnly = FALSE;
+        self->InterfaceAddress = NULL;
     }
 
     return self;
@@ -560,7 +571,6 @@ static void jxta_TCPTransportAdvertisement_destruct(Jxta_TCPTransportAdvertiseme
  */
 JXTA_DECLARE(Jxta_TCPTransportAdvertisement *) jxta_TCPTransportAdvertisement_new(void)
 {
-
     Jxta_TCPTransportAdvertisement *ad = (Jxta_TCPTransportAdvertisement *) calloc(1, sizeof(Jxta_TCPTransportAdvertisement));;
 
     JXTA_OBJECT_INIT(ad, jxta_TCPTransportAdvertisement_delete, 0);
@@ -570,7 +580,6 @@ JXTA_DECLARE(Jxta_TCPTransportAdvertisement *) jxta_TCPTransportAdvertisement_ne
 
 static void jxta_TCPTransportAdvertisement_delete(Jxta_object * obj)
 {
-
     jxta_TCPTransportAdvertisement_destruct((Jxta_TCPTransportAdvertisement *) obj);
 
     memset(obj, 0xdd, sizeof(Jxta_TCPTransportAdvertisement));
@@ -579,13 +588,11 @@ static void jxta_TCPTransportAdvertisement_delete(Jxta_object * obj)
 
 JXTA_DECLARE(void) jxta_TCPTransportAdvertisement_parse_charbuffer(Jxta_TCPTransportAdvertisement * ad, const char *buf, int len)
 {
-
     jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
 
 JXTA_DECLARE(void) jxta_TCPTransportAdvertisement_parse_file(Jxta_TCPTransportAdvertisement * ad, FILE * stream)
 {
-
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
 

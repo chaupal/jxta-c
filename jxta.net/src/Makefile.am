@@ -2,9 +2,25 @@ assemblydir = $(DESTDIR)$(prefix)/lib/mono/jxta.net
 
 TARGET = JxtaNET.dll
 
-CS_FILES =	Advertisement.cs \
+CS_FILES =	PipeMsgEvent.cs \
+		PipeID.cs \
+		PipeMsgListener.cs \
+		Service.cs \
+		DiscoveryEvent.cs \
+		DiscoveryListener.cs \
+		DiscoveryResponseMsg.cs \
+		EndpointAddress.cs \
+		IDFactory.cs \
+		Module.cs \
+		ModuleAdvertisement.cs \
+		ModuleClassID.cs \
+		ModuleSpecID.cs \
+		PeerGroupID.cs \
+		PeerID.cs \
+		Advertisement.cs \
 		JxtaObject.cs \
 		PeerGroupAdvertisement.cs \
+		PeerGroupFactory.cs \
 		JxtaString.cs \
 		PeerGroup.cs \
 		AssemblyInfo.cs \
@@ -14,7 +30,6 @@ CS_FILES =	Advertisement.cs \
 		Credential.cs \
 		MembershipService.cs \
 		ID.cs \
-		DiscoveryResponse.cs \
 		Message.cs \
 		PeerView.cs \
 		DiscoveryService.cs \

@@ -1,7 +1,9 @@
 #include <stdio.h>
 
-#include "jpr/jpr_excep.h"
+#include <jpr/jpr_excep.h>
 #include <jxta.h>
+
+#include "unittest_jxta_func.h"
 
 /*
  * Declaring a function that throws
@@ -22,7 +24,7 @@ int g(void)
     Try {
         f(0, MayThrow);
     } Catch {
-        printf("Caught error number %ld\n", jpr_lasterror_get());
+        printf("Caught error number %d\n", jpr_lasterror_get());
     }
     return 0;
 }
@@ -36,7 +38,7 @@ void h(void)
     Try {
         Throw(3);
     } Catch {
-        printf("Caught error %ld\n", jpr_lasterror_get());
+        printf("Caught error %d\n", jpr_lasterror_get());
     }
 }
 
@@ -89,7 +91,7 @@ int l(void)
     Try {
         f(0, MayThrow);
     } Catch {
-        printf("Caught error %ld\n", jpr_lasterror_get());
+        printf("Caught error %d\n", jpr_lasterror_get());
     }
     f(1, MayThrow);
 }
@@ -123,7 +125,7 @@ int example(int n, Throws)
             return 0;
         }
         Catch {
-            printf("Caught error %ld\n", jpr_lasterror_get());
+            printf("Caught error %d\n", jpr_lasterror_get());
             Throw(1);
         }
     }
@@ -152,101 +154,83 @@ int checkPlainReturn(void)
     return 0;
 }
 
+const char* test_throw_internal()
+{
+    g();
+    h();
+    if (m(1) != 0 || m(0) != 1) {
+        return FILEANDLINE "Test EXAMPLE failed\n";
+    } 
+    
+    return NULL;
+}
+        
+const char* test_returnvalue()
+{
+    Try {
+        if (example(1, MayThrow) != 0) {
+            return FILEANDLINE "Test EXAMPLE failed\n";
+        } else {
+            return NULL;
+        }
+    }
+    Catch {
+        return FILEANDLINE "Test EXAMPLE failed\n";
+    }
+}
+        
+const char* test_lasterror()
+{
+    Try {
+        example(0, MayThrow);
+        return FILEANDLINE "Test EXAMPLE failed\n";
+    }
+    Catch {
+        if (jpr_lasterror_get() != 10) {
+            return FILEANDLINE "Test EXAMPLE failed\n";
+        } else {
+            return NULL;
+        }
+    }
+}
+        
+const char* test_throw_plainreturn()
+{
+    checkReturnFromTry();
+    if (checkPlainReturn() != 0) {
+        return FILEANDLINE "Test PLAINRETURN failed\n";
+    } else {
+        return NULL;
+    }
+}
+
+static struct _funcs excep_test_funcs[] = {
+    /* constructor tests */
+    {*test_throw_internal, "test_throw_internal"},
+    {*test_returnvalue, "test_returnvalue"},
+    {*test_lasterror, "test_lasterror"},
+    {*test_throw_plainreturn, "test_throw_plainreturn"},
+
+    {NULL, "null"}
+};
+
 /**
-* Run the unit tests for excep_test
+* Run the unit tests for the lease_msg test routines
 *
 * @param tests_run the variable in which to accumulate the number of tests run
 * @param tests_passed the variable in which to accumulate the number of tests passed
 * @param tests_failed the variable in which to accumulate the number of tests failed
-* 
+*
 * @return TRUE if all tests were run successfully, FALSE otherwise
 */
 Jxta_boolean run_excep_tests(int *tests_run, int *tests_passed, int *tests_failed)
 {
-    Jxta_boolean result = TRUE;
-
-    *tests_run += 1;
-    g();
-    h();
-    if (m(1) != 0 || m(0) != 1) {
-        *tests_failed += 1;
-        printf("Test M failed\n");
-        result = FALSE;
-    } else {
-        *tests_passed += 1;
-    }
-
-    *tests_run += 1;
-    Try {
-        if (example(1, MayThrow) != 0) {
-            *tests_failed += 1;
-            result = FALSE;
-            printf("Test EXAMPLE failed\n");
-        } else {
-            *tests_passed += 1;
-        }
-    }
-    Catch {
-        *tests_failed += 1;
-        result = FALSE;
-        printf("Test EXAMPLE failed\n");
-    }
-
-
-    *tests_run += 1;
-    Try {
-        example(0, MayThrow);
-        printf("Test EXAMPLE failed\n");
-        *tests_failed += 1;
-        result = FALSE;
-    }
-    Catch {
-        if (jpr_lasterror_get() != 10) {
-            printf("Test EXAMPLE failed\n");
-            *tests_failed += 1;
-            result = FALSE;
-        } else {
-            *tests_passed += 1;
-        }
-    }
-
-    *tests_run += 1;
-    checkReturnFromTry();
-    if (checkPlainReturn() != 0) {
-        printf("Test PLAINRETURN failed\n");
-        *tests_failed += 1;
-        result = FALSE;
-    } else {
-        printf("Everything looks shipshape.\n");
-        *tests_passed += 1;
-    }
-
-    return result;
+    return run_testfunctions(excep_test_funcs, tests_run, tests_passed, tests_failed);
 }
 
 #ifdef STANDALONE
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
-    int run, passed, failed;
-    int i;
-    Jxta_boolean result;
-
-    jxta_initialize();
-
-    run = failed = passed = 0;
-    result = run_excep_tests(&run, &passed, &failed);
-    fprintf(stdout, "Tests run:    %d\n", run);
-    fprintf(stdout, "Tests passed: %d\n", passed);
-    fprintf(stdout, "Tests failed: %d\n", failed);
-    if (result == FALSE) {
-        fprintf(stdout, "Some tests failed\n");
-    }
-
-    if (result == TRUE)
-        run = 0;
-    else
-        run = -1;
-    jxta_terminate();
-    return run;
+    return main_test_function(excep_test_funcs, argc, argv);
 }
 #endif

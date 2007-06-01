@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_private.h,v 1.33 2005/11/23 03:12:50 slowhog Exp $
+ * $Id: jxta_rdv_service_private.h,v 1.35 2006/08/15 21:18:27 bondolo Exp $
  */
 
 
@@ -122,7 +122,7 @@ typedef enum RendezVousStatuses RendezVousStatus;
 *    
 **/
 struct _jxta_rdv_service {
-    Extends(_jxta_service);
+    Extends(Jxta_service);
     apr_thread_mutex_t *mutex;
     apr_pool_t *pool;
 
@@ -168,6 +168,11 @@ JXTA_DECLARE(void) jxta_rdv_generate_event(_jxta_rdv_service * rdv, Jxta_Rendezv
 Jxta_endpoint_service * jxta_rdv_service_endpoint_svc(_jxta_rdv_service * rdv);
 
 JXTA_DECLARE(Jxta_peerview *) jxta_rdv_service_get_peerview_priv(_jxta_rdv_service * rdv);
+
+/**
+*   define the instantiator method for creating a rdv adhoc. This should come from a header file.
+**/ 
+extern Jxta_rdv_service_provider* jxta_rdv_service_adhoc_new(void);
 
 /**
 *   define the instantiator method for creating a rdv client. This should come from a header file.

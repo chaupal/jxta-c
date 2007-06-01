@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http_client.h,v 1.10 2006/02/15 01:09:49 slowhog Exp $
+ * $Id: jxta_transport_http_client.h,v 1.11 2006/08/08 18:36:12 bondolo Exp $
  */
 
 #ifndef __HTTP_CLIENT_H__
@@ -85,6 +85,7 @@ typedef struct _HttpResponse HttpResponse;
 
 /**
  * Create an http client object for the specified host and port number.
+ *
  * @param host         The host to connect to
  * @param port         The port to connect to
 */
@@ -93,6 +94,7 @@ JXTA_DECLARE(HttpClient *) http_client_new(const char *proxy_host,
 
 /**
  * Attempt to establish a connection.
+ *
  * @return JXTA_SUCCESS if a connection was established.
  */
 JXTA_DECLARE(Jxta_status) http_client_connect(HttpClient * con);
@@ -110,6 +112,7 @@ void http_client_free(HttpClient * con);
 
 /**
  * Send an HTTP request over an established connection.
+ *
  * @param  method One of GET, POST, PUT, DELETE
  * @param  uri    The URI to fetch
  * @param  body   The body of the http request.  Null if no body is to be sent
@@ -121,23 +124,28 @@ JXTA_DECLARE(HttpRequest *) http_client_start_request(HttpClient * con, const ch
 /**
  * Send an http request header.  When called after http_request_write,
  * this function will corrupt the current http request.
+ *
  * @param request The current http request.
  * @param name    The name of the http header.
  * @param value   The http header's value.
  * @param JXTA_SUCCESS if the header was set.
  */
 JXTA_DECLARE(Jxta_status) http_request_set_header(HttpRequest * req, const char *name, const char *value);
+
 /**
  * Write some of the http request's body.
+ *
  * @param request The current http request.
  * @param buf     The buffer containing the characters of the request body.
  * @param size    The number of characters of the buffer to write.
  * @param JXTA_SUCCESS if the header was sent.
  */
 JXTA_DECLARE(Jxta_status) http_request_write(HttpRequest * req, const char *buf, size_t size);
+
 /**
  * Finish writing the current http request and obtain a reference
  * to an http response.
+ *
  * @param request The current http request.
  * @return An http response object.
  */
@@ -145,6 +153,7 @@ JXTA_DECLARE(HttpResponse *) http_request_done(HttpRequest * req);
 
 /**
  * Get the status code with which the http server responded.
+ *
  * @param res The http response we received.
  * @return The response status code.
  */
@@ -152,6 +161,7 @@ JXTA_DECLARE(int) http_response_get_status(HttpResponse * res);
 
 /**
  * Get the status message with which the http server responded.
+ *
  * @param res The http response we received.
  * @return The response status message.
  */
@@ -159,6 +169,7 @@ JXTA_DECLARE(char *) http_response_get_status_message(HttpResponse * res);
 
 /**
  * Get the value of a particular http response header.
+ *
  * @param res  The http response we received.
  * @param name The name of a response header.
  * @return The value of the response header.
@@ -167,6 +178,7 @@ JXTA_DECLARE(char *) http_response_get_header(HttpResponse * res, const char *na
 
 /**
  * Read some bytes from the http response body.
+ *
  * @param res  The http response we received.
  * @param buf  The character buffer into which to read the response.
  * @param size The size of the buffer.  The number of bytes actually
@@ -178,6 +190,7 @@ JXTA_DECLARE(Jxta_status) http_response_read(HttpResponse * res, char *buf, size
 
 /**
  * Read an exact number of bytes from the http response body.
+ *
  * @param res The http response we received.
  * @param buf The character buffer into which to read the response.
  * @param n   The number of bytes you would like to read.
@@ -188,6 +201,7 @@ JXTA_DECLARE(Jxta_status) http_response_read_n(HttpResponse * res, char *buf, si
 
 /**
  * Read all the data in an http response.
+ *
  * @param res  The http response we received.
  * @return The character buffer containing the body of the response.
  */
@@ -197,6 +211,7 @@ JXTA_DECLARE(char *) http_response_read_fully(HttpResponse * res);
 
 /**
  * Prepare to send another http request over the same http connection.
+ *
  * @param res The current http response.
  */
 JXTA_DECLARE(void) http_response_done(HttpResponse * res);

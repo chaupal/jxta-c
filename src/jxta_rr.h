@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rr.h,v 1.9 2005/10/01 00:02:51 slowhog Exp $
+ * $Id: jxta_rr.h,v 1.11 2006/08/17 01:26:07 mmx2005 Exp $
  */
 
 
@@ -59,6 +59,7 @@
 
 #include "jstring.h"
 #include "jxta_id.h"
+#include "jxta_qos.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,6 +69,7 @@ extern "C" {
 #endif
 
 typedef struct _ResolverResponse ResolverResponse;
+typedef struct _ResolverResponse Jxta_resolver_response;
 
 /**
  * create a new ResolverResponse object
@@ -97,13 +99,6 @@ JXTA_DECLARE(ResolverResponse *) jxta_resolver_response_new_2(JString * handlern
 
 /**
  * @param ResolverResponse the resolver response object
- * frees the ResolverQuery object
- * @param ResolverQuery the resolver response object to free
- */
-void jxta_resolver_response_free(ResolverResponse * ad);
-
-/**
- * @param ResolverResponse the resolver response object
  * return a JString represntation of the advertisement
  * it is the responsiblity of the caller to release the JString object
  * @param adv a pointer to the advertisement.
@@ -116,6 +111,7 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_response_get_xml(ResolverResponse * ad, 
  * parse the char buffer 
  * @param pointer to the buffer to parse
  * @param len length of the buffer
+ * @deprecated Use jxta_advertisement_parse_charbuffer instead.
  */
 JXTA_DECLARE(void) jxta_resolver_response_parse_charbuffer(ResolverResponse * ad, const char *buf, int len);
 
@@ -124,6 +120,7 @@ JXTA_DECLARE(void) jxta_resolver_response_parse_charbuffer(ResolverResponse * ad
  * parse a file into a ResolverResponse object
  * @param pointer to the FILE to parse
  * @param len length of the buffer
+ * @deprecated Use jxta_advertisement_parse_file instead.
  */
 JXTA_DECLARE(void) jxta_resolver_response_parse_file(ResolverResponse * ad, FILE * stream);
 
@@ -198,6 +195,9 @@ JXTA_DECLARE(void) jxta_resolver_response_get_response(ResolverResponse * ad, JS
  * @param Jstring the Response
  */
 JXTA_DECLARE(void) jxta_resolver_resposne_set_response(ResolverResponse * ad, JString * response);
+
+JXTA_DECLARE(Jxta_status) jxta_resolver_response_attach_qos(Jxta_resolver_response * me, const Jxta_qos * qos);
+JXTA_DECLARE(const Jxta_qos *) jxta_resolver_response_qos(Jxta_resolver_response * me);
 
 #ifdef __cplusplus
 #if 0

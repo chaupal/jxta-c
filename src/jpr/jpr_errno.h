@@ -51,27 +51,22 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_errno.h,v 1.3 2005/05/02 19:29:47 bondolo Exp $
+ * $Id: jpr_errno.h,v 1.4 2006/09/13 20:04:22 bondolo Exp $
  */
 
 #ifndef JPR_ERRNO_H
 #define JPR_ERRNO_H
 
-/* WE DO NOT EXPOSE APR TO JXTA APPS AND WE DO NOT WANT TO GO THROUGH A
- * CONVERSION FUNCTION FOR THAT. AS A RESULT, THIS MUST BE KEPT IN SYNC
- * WITH APR BY HAND
- * We compile src/jpr/jpr_ckerrno.c for the sole purpose of detecting
- * out-of-sync-ness.
- */
+#include <apr.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
-#define JPR_SUCCESS (0U)
-#define JPR_START_ERROR  (120000U)
+#define JPR_SUCCESS (APR_SUCCESS)
+#define JPR_START_ERROR  (APR_OS_START_USERERR)
 #define JPR_START_USEERR (JPR_START_ERROR + 250U)
-#define JPR_END_USEERR (620000U)
+#define JPR_END_USEERR (JPR_START_USEERR + 500U)
 
 #ifdef __cplusplus
 }

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: PeerAdvertisement.cs,v 1.1 2006/01/18 20:31:07 lankes Exp $
+ * $Id: PeerAdvertisement.cs,v 1.2 2006/08/04 10:33:19 lankes Exp $
  */
 using System;
 using System.Runtime.InteropServices;
@@ -61,25 +61,86 @@ namespace JxtaNET
 	/// Summary of PeerAdvertisement.
 	/// </summary>
 	public class PeerAdvertisement : Advertisement
-	{
-		[DllImport("jxta.dll")]
+    {
+        #region import jxta-c functions
+        [DllImport("jxta.dll")]
 		private static extern IntPtr jxta_PA_get_GID(IntPtr self);
 
         [DllImport("jxta.dll")]
         private static extern IntPtr jxta_PA_get_Name(IntPtr self);
 
+        [DllImport("jxta.dll")]
+        private static extern void jxta_PA_set_Name(IntPtr self, IntPtr name);
 
-		public ID getGID()
+        [DllImport("jxta.dll")]
+        private static extern IntPtr jxta_PA_get_Desc(IntPtr ad);
+
+        [DllImport("jxta.dll")]
+        private static extern void jxta_PA_set_Desc(IntPtr ad, IntPtr desc);
+
+        [DllImport("jxta.dll")]
+        private static extern IntPtr jxta_advertisement_get_id(IntPtr ad);
+
+        [DllImport("jxta.dll")]
+        private static extern Int32 jxta_PA_parse_charbuffer(IntPtr self, String xml, Int32 len);
+        #endregion
+
+        public override void ParseXML(string xml)
+        {
+            jxta_PA_parse_charbuffer(this.self, xml, xml.Length);
+        }
+
+        public override ID ID
+        {
+            get
+            {
+                IntPtr ret = jxta_advertisement_get_id(self);
+                return new PeerIDImpl(ret);
+            }
+        }
+
+        /// <summary>
+        /// Group id associated with the peer advertisement.
+        /// </summary>
+        public PeerGroupID PeerGroupID
 		{
-			return new ID(jxta_PA_get_GID(this.self));
+            get
+            {
+                return new PeerGroupIDImpl(jxta_PA_get_GID(this.self));
+            }
 		}
 
-		public string getName()
-		{
-            return new JxtaString(jxta_PA_get_Name(this.self));
-		}
+        /// <summary>
+        /// peer description
+        /// </summary>
+        public String Description
+        {
+            get
+            {
+                return new JxtaString(jxta_PA_get_Desc(this.self));
+            }
+            set
+            {
+                jxta_PA_set_Desc(this.self, new JxtaString(value).self);
+            }
+        }
 
-        internal PeerAdvertisement(IntPtr self) : base(self) { }
+        /// <summary>
+        /// name of the peer
+        /// </summary>
+        public String Name
+        {
+            get
+            {
+                return new JxtaString(jxta_PA_get_Name(this.self));
+            }
+            set
+            {
+                jxta_PA_set_Name(this.self, new JxtaString(value).self);
+            }
+        }
+
+        public PeerAdvertisement(IntPtr self) : base(self) { }
 
         public PeerAdvertisement() : base() { }
 	}

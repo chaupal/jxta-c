@@ -50,6 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
+ * $Id: jxta_proffer.h,v 1.9 2006/09/19 18:45:47 exocetrick Exp $
  */
 
 
@@ -64,16 +65,25 @@ extern "C" {
 #endif
 
 typedef struct _jxta_ProfferAdvertisement Jxta_ProfferAdvertisement;
+
 /**
 * Create a new proffer advertisement 
+*
+* @return a proffer adv object
 **/
 JXTA_DECLARE(Jxta_ProfferAdvertisement *) jxta_ProfferAdvertisement_new(void);
 
 /**
-* Create a new proffer advertisement to rebuild an advertisement
-* and deal with the numeric values in elements and/or attributes
+ * Create a new proffer advertisement
+ *
+ * @param ns NameSpace of the advertisement
+ * @param advid Advertisement ID
+ * @param peerid PeerID
+ *
+ * @return a proffer adv object
 **/
-JXTA_DECLARE(Jxta_ProfferAdvertisement *) jxta_ProfferAdvertisement_new_rebuild(Jxta_advertisement *adv, const char *name, const char* xmlString);
+JXTA_DECLARE(Jxta_ProfferAdvertisement *) jxta_ProfferAdvertisement_new_1(const char *ns, const char * advid, const char *peerid);
+
 /**
 * The namespace is the xxx:yyyy of the advertisement.
 * 
@@ -84,6 +94,7 @@ JXTA_DECLARE(Jxta_ProfferAdvertisement *) jxta_ProfferAdvertisement_new_rebuild(
 JXTA_DECLARE(Jxta_status) jxta_proffer_adv_set_nameSpace(Jxta_ProfferAdvertisement * prof, const char *ns);
 
 JXTA_DECLARE(JString *) jxta_proffer_adv_get_nameSpace(Jxta_ProfferAdvertisement * prof);
+
 /**
 * Set the unique identifier of this advertisement. It is used to match other entries.
 * 

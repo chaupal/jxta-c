@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_service_private.h,v 1.11 2005/11/24 00:20:22 mmx2005 Exp $
+ * $Id: jxta_resolver_service_private.h,v 1.12 2006/08/16 21:07:31 slowhog Exp $
  */
 
 
@@ -105,6 +105,7 @@ struct _jxta_resolver_service_methods {
 
     Jxta_status(*sendSrdi) (Jxta_resolver_service * resolver, ResolverSrdi * message, Jxta_id * peerid);
 
+    Jxta_status(*create_query) (Jxta_resolver_service * me, JString * handlername, JString * query, Jxta_resolver_query ** rq);
 };
 
 /**
@@ -119,6 +120,8 @@ extern void jxta_resolver_service_construct(Jxta_resolver_service * service, Jxt
  */
 extern void jxta_resolver_service_destruct(Jxta_resolver_service * service);
 
+Jxta_status resolver_query_create(JString * handlername, JString * qdoc, Jxta_id * src_peerid, Jxta_resolver_query ** rq);
+                                                        
 
 #ifdef __cplusplus
 #if 0

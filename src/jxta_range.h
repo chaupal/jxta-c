@@ -60,7 +60,6 @@
 
 #include "jxta_object.h"
 #include "jstring.h"
-#include "jxta_peergroup.h"
 #include "jxta_hashtable.h"
 #include "jxta_id.h"
 

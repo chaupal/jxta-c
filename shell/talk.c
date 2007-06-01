@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: talk.c,v 1.25 2006/04/26 05:45:02 mmx2005 Exp $
+ * $Id: talk.c,v 1.27 2006/07/19 19:26:12 lankes Exp $
  */
 
 #include <stdio.h>
@@ -442,6 +442,7 @@ static void create_user(const char *userName, Jxta_boolean propagate)
     jxta_pipe_adv_set_Id(adv, jstring_get_string(tmpString));
     jxta_pipe_adv_set_Type(adv, propagate ? JXTA_PROPAGATE_PIPE : JXTA_UNICAST_PIPE);
     jxta_pipe_adv_set_Name(adv, talkUserName);
+    jxta_pipe_adv_set_Desc(adv, "created by jxta-c");
 
     free(talkUserName);
     JXTA_OBJECT_RELEASE(tmpString);
@@ -491,6 +492,7 @@ static void connect_to_user(const char *userName)
         process_user_input(op, userName);
         JXTA_OBJECT_RELEASE(op);
         JXTA_OBJECT_RELEASE(adv);
+		JXTA_OBJECT_RELEASE(pipe);
     } else {
         printf("Cannot retrieve advertisement for %s\n", userName);
     }

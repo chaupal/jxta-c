@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_walk_msg.h,v 1.5 2005/09/21 21:16:52 slowhog Exp $
+ * $Id: jxta_walk_msg.h,v 1.6 2006/08/03 21:34:21 bondolo Exp $
  */
 
 
@@ -80,7 +80,6 @@ typedef struct _LimitedRangeRdvMessage LimitedRangeRdvMessage;
 
 JXTA_DECLARE(LimitedRangeRdvMessage *) LimitedRangeRdvMessage_new(void);
 JXTA_DECLARE(void) LimitedRangeRdvMessage_set_handlers(LimitedRangeRdvMessage *, XML_Parser, void *);
-void LimitedRangeRdvMessage_delete(LimitedRangeRdvMessage *);
 JXTA_DECLARE(Jxta_status) LimitedRangeRdvMessage_get_xml(LimitedRangeRdvMessage *, JString ** xml);
 JXTA_DECLARE(Jxta_status) LimitedRangeRdvMessage_parse_charbuffer(LimitedRangeRdvMessage *, const char *, int len);
 JXTA_DECLARE(Jxta_status) LimitedRangeRdvMessage_parse_file(LimitedRangeRdvMessage *, FILE * stream);

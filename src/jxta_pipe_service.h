@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_service.h,v 1.11 2006/06/16 05:44:55 mmx2005 Exp $
+ * $Id: jxta_pipe_service.h,v 1.12 2006/07/14 01:51:06 slowhog Exp $
  */
 
 
@@ -517,72 +517,72 @@ JXTA_DECLARE(Jxta_status) jxta_inputpipe_remove_listener(Jxta_inputpipe * ip, Jx
 
 typedef struct _jxta_outputpipe_event Jxta_outputpipe_event;
 
-  /**
-   ** Create a Jxta_outputpipe_event
-   **
-   ** @param ev type of the event
-   ** @param object an optional pointer to a object that can be added to the event
-   ** @return a new Jxta_outputpipe_event.
-   **/
+/**
+ * Create a Jxta_outputpipe_event
+ *
+ * @param ev type of the event
+ * @param object an optional pointer to a object that can be added to the event
+ * @return a new Jxta_outputpipe_event.
+ */
 JXTA_DECLARE(Jxta_outputpipe_event *) jxta_outputpipe_event_new(int ev, Jxta_object * object);
 
-  /**
-   ** Return the event type of the event
-   **
-   ** @param ev type of the event
-   ** @return the type of the event.
-   **/
+/**
+ * Return the event type of the event
+ *
+ * @param ev type of the event
+ * @return the type of the event.
+ */
 JXTA_DECLARE(int) jxta_outputpipe_event_get_event(Jxta_outputpipe_event * self);
 
-  /**
-   ** Return the Jxta_object associated with the event (if any).
-   **
-   ** @param ev type of the event
-   ** @param object returned value: a pointer to a pointer that will contain the object.
-   ** @return JXTA_SUCCESS when successful.
-   **         JXTA_FAILED when the even was not associated to any object.
-   **/
+/**
+ * Return the Jxta_object associated with the event (if any).
+ *
+ * @param ev type of the event
+ * @param object returned value: a pointer to a pointer that will contain the object.
+ * @return JXTA_SUCCESS when successful.
+ *         JXTA_FAILED when the even was not associated to any object.
+ */
 JXTA_DECLARE(Jxta_status) jxta_outputpipe_event_get_object(Jxta_outputpipe_event * self, Jxta_object ** object);
 
 
-  /**
-   ** Send a message onto a Jxta_outputpipe.
-   **
-   ** @param op the output pipe.
-   ** @param msg the message to send
-   **
-   ** @return an error status. JXTA_SUCCESS when successful.
-   **                          JXTA_NOMEM when the system is running out of memory.
-   **                          JXTA_FAILED when the send failed.
-   **/
+/**
+ * Send a message onto a Jxta_outputpipe.
+ *
+ * @param op the output pipe.
+ * @param msg the message to send
+ *
+ * @return an error status. JXTA_SUCCESS when successful.
+ *                          JXTA_NOMEM when the system is running out of memory.
+ *                          JXTA_FAILED when the send failed.
+ */
 JXTA_DECLARE(Jxta_status) jxta_outputpipe_send(Jxta_outputpipe * op, Jxta_message * msg);
 
 
-  /**
-   ** Add a status listener to the output pipe.
-   ** Some type of Pipe Service can asynchronously send event concerning
-   ** the state of a sent message. Setting a status listener allow the application
-   ** to receive them. The type of events received by the listener is Jxta_outputpipe_event
-   **
-   ** @param op the output pipe.
-   ** @param listener listener to add.
-   **
-   ** @return an error status. JXTA_SUCCESS when successful.
-   **                          JXTA_NOMEM when the system is running out of memory.
-   **                          JXTA_FAILED when the pipe service is not capable of throwing
-   **                          Jxta_outpipe_event.
-   **/
+/**
+ * Add a status listener to the output pipe.
+ * Some type of Pipe Service can asynchronously send event concerning
+ * the state of a sent message. Setting a status listener allow the application
+ * to receive them. The type of events received by the listener is Jxta_outputpipe_event
+ *
+ * @param op the output pipe.
+ * @param listener listener to add.
+ *
+ * @return an error status. JXTA_SUCCESS when successful.
+ *                          JXTA_NOMEM when the system is running out of memory.
+ *                          JXTA_FAILED when the pipe service is not capable of throwing
+ *                          Jxta_outpipe_event.
+ */
 JXTA_DECLARE(Jxta_status) jxta_outputpipe_add_listener(Jxta_outputpipe * op, Jxta_listener * listener);
 
-  /**
-   ** Remove a status listener to a pipe.
-   **
-   ** @param op the output pipe.
-   ** @param listener listener to remove
-   **
-   ** @return an error status. JXTA_SUCCESS when successful.
-   **                          JXTA_INVALID_ARGUMENT when the listener is not valid.
-   **/
+/**
+ * Remove a status listener to a pipe.
+ *
+ * @param op the output pipe.
+ * @param listener listener to remove
+ *
+ * @return an error status. JXTA_SUCCESS when successful.
+ *                          JXTA_INVALID_ARGUMENT when the listener is not valid.
+ */
 JXTA_DECLARE(Jxta_status) jxta_outputpipe_remove_listener(Jxta_outputpipe * op, Jxta_listener * listener);
 
 #ifdef __cplusplus

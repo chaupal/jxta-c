@@ -6,57 +6,12 @@
 	<PID>
 		urn:jxta:uuid-59616261646162614A78746150325033DC95B0D32EB9492798BCA9C4ABFBE6C603
 	</PID>
-	<Name name="foo">
+	<GID>
+		urn:jxta:jxta-netGroup
+	</GID>
+	<Name>
 		mtn1
 	</Name>
-	<Dbg>
-		error
-	</Dbg>
-	<Svc>
-		<MCID>
-			urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000905
-		</MCID>
-		<Parm>
-			<jxta:TCPTransportAdvertisement xmlns:jxta="http://jxta.org">
-				<Protocol>
-					TCP
-				</Protocol>
-				<Port>
-					9701
-				</Port>
-				<MulticastAddr>
-					224.0.1.85
-				</MulticastAddr>
-				<MulticastPort>
-					1234
-				</MulticastPort>
-				<MulticastSize>
-					16384
-				</MulticastSize>
-				<Server>
-				</Server>
-				<InterfaceAddress>
-					127.0.0.1
-				</InterfaceAddress>
-				<ConfigMode>
-					auto
-				</ConfigMode>
-			</jxta:TCPTransportAdvertisement>
-		</Parm>
-	</Svc>
-	<Svc>
-		<MCID>
-			urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000605
-		</MCID>
-		<Parm>
-			<Addr>
-				http://209.25.154.237:9700
-			</Addr>
-			<Addr>
-				http://209.25.154.235:9700
-			</Addr>
-		</Parm>
-	</Svc>
 	<Svc>
 		<MCID>
 			urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000105
@@ -87,10 +42,8 @@ k0kp4xjbf0qlKnV6SRPh6JcRxpDDtSoEFyLIf5Vp5/pBEAFCSNksHub4hBULxw==
                                 <Dst>
                                         <jxta:APA xmlns:jxta="http://jxta.org">
                                                 <EA>
-                                                        cbjx://uuid-59616261646162614A7874615032503375850911B0B7401DA6519C703A65ECA703
+                                                        tcp://192.18.191.108:9701
                                                 </EA>
-                                                <EA>
-                                                        jxtatls://uuid-59616261646162614A7874615032503375850911B0B7401DA6519C703A65ECA703                                                </EA>
                                                 <EA>
                                                         http://192.18.191.108:9700
                                                 </EA>
@@ -99,42 +52,23 @@ k0kp4xjbf0qlKnV6SRPh6JcRxpDDtSoEFyLIf5Vp5/pBEAFCSNksHub4hBULxw==
                         </jxta:RA>
                 </Parm>
         </Svc>
-
 	<Svc>
-		<MCID>
-			urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000A05
-		</MCID>
-		<Parm>
-			<jxta:HTTPTransportAdvertisement xmlns:jxta="http://jxta.org">
-				<Protocol>
-					http
-				</Protocol>
-				<InterfaceAddress>
-					127.0.0.1
-				</InterfaceAddress>
-				<ConfigMode>
-					auto
-				</ConfigMode>
-				<Port>
-					9700
-				</Port>
-				<Router>
-					209.25.154.237:9700
-				</Router>
-				<Router>
-					209.25.154.235:9700
-				</Router>
-				<Proxy>
-					myProxy.myDomain:8080
-				</Proxy>
-				<ProxyOff>
-				</ProxyOff>
-				<Server>
-					camshaft:9700
-				</Server>
-				<ServerOff>
-				</ServerOff>
-			</jxta:HTTPTransportAdvertisement>
-		</Parm>
-	</Svc>
+                <MCID>
+                        urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000905
+                </MCID>
+                <Parm>
+                        <jxta:RA xmlns:jxta="http://jxta.org">
+                                <Dst>
+                                        <jxta:APA xmlns:jxta="http://jxta.org">
+                                                <EA>
+                                                        tcp://192.18.191.108:9701
+                                                </EA>
+                                                <EA>
+                                                        http://192.18.191.108:9700
+                                                </EA>
+                                        </jxta:APA>
+                                </Dst>
+                        </jxta:RA>
+                </Parm>
+        </Svc>
 </jxta:PA>

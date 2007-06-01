@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: ID.cs,v 1.1 2006/01/18 20:31:03 lankes Exp $
+ * $Id: ID.cs,v 1.2 2006/08/04 10:33:18 lankes Exp $
  */
 using System;
 using System.Runtime.InteropServices;
@@ -58,23 +58,14 @@ using System.Runtime.InteropServices;
 namespace JxtaNET
 {
 	/// <summary>
-	/// Summary of PeerID.
+    /// IDs are used to uniquely identify peers, peer groups, pipes and other types of objects manipulated by the JXTA APIs.
 	/// </summary>
 	public class ID : JxtaObject
-	{
-        [DllImport("jxta.dll")]
-        private static extern UInt32 jxta_id_pipeid_new_1(ref IntPtr pipe, IntPtr pg);
-
+    {
+        #region import of jxta-c functions
         [DllImport("jxta.dll")]
         private static extern UInt32 jxta_id_to_jstring(IntPtr jid, ref IntPtr idstring);
-
-
-        public static ID newPipeID(ID pg)
-        {
-            IntPtr ret = new IntPtr();
-            Errors.check(jxta_id_pipeid_new_1(ref ret, pg.self));
-            return new ID(ret);
-        }
+        #endregion
 
 		public override String ToString()
 		{
@@ -84,7 +75,7 @@ namespace JxtaNET
 		}
 
         internal ID(IntPtr self) : base(self) { }
-        
+
         public ID() : base() { }
     }
 

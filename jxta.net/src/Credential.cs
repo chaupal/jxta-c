@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: Credential.cs,v 1.1 2006/01/18 20:31:01 lankes Exp $
+ * $Id: Credential.cs,v 1.2 2006/08/04 10:33:18 lankes Exp $
  */
 using System;
 using System.Runtime.InteropServices;
@@ -59,11 +59,13 @@ using System.Text;
 namespace JxtaNET
 {
 	/// <summary>
-	/// Summary of Credential.
+    /// Credentials provide the basic mechanisms for securly establishing and 
+    /// communicating identity within JXTA.
 	/// </summary>
 	public class Credential : JxtaObject
-	{
-		[DllImport("jxta.dll")]
+    {
+        #region import of jxta-c functions
+        [DllImport("jxta.dll")]
         private static extern UInt32 jxta_credential_get_peerid(IntPtr self, ref IntPtr pid);
 
 		[DllImport("jxta.dll")]
@@ -83,8 +85,15 @@ namespace JxtaNET
 
         [DllImport("kernel32", CharSet = CharSet.Ansi)]
         private static extern IntPtr GetProcAddress(int hModule, string lpProcName);*/
+        #endregion
 
-        public string getXML()
+        /// <summary>
+        /// Constructs a representation of a credential in xml format. 
+        /// This version begins output at the root node and is suitable for inclusion
+        /// in other documents
+        /// </summary>
+        /// <returns>Credential in xml format</returns>
+        public override string ToString()
 		{
             JxtaString str = new JxtaString();
 
@@ -94,21 +103,33 @@ namespace JxtaNET
 
 		}
 
-		public ID getPeerID()
+        /// <summary>
+        /// The peer id of the credential.
+        /// </summary>
+		public PeerID PeerID
 		{
-            IntPtr ret = new IntPtr();
-			Errors.check(jxta_credential_get_peerid(self, ref ret));
-            return new ID(ret);
+            get
+            {
+                IntPtr ret = new IntPtr();
+                Errors.check(jxta_credential_get_peerid(self, ref ret));
+                return new PeerIDImpl(ret);
+            }
 		}
 
-		public ID getPeerGroupID()
+        /// <summary>
+        /// The peergroup id of the credential.
+        /// </summary>
+		public PeerGroupID PeerGroupID
 		{
-            IntPtr ret = new IntPtr();
-            Errors.check(jxta_credential_get_peergroupid(self, ref ret));
-            return new ID(ret);
+            get
+            {
+                IntPtr ret = new IntPtr();
+                Errors.check(jxta_credential_get_peergroupid(self, ref ret));
+                return new PeerGroupIDImpl(ret);
+            }
 		}
 
-		Credential(IntPtr self) : base(self) { }
+		internal Credential(IntPtr self) : base(self) { }
 
         public Credential() : base() { }
 
@@ -118,21 +139,6 @@ namespace JxtaNET
         {
             // evaluate the address of jstring_writefunc_appender
             writefunc_appender = jxta_get_addr_writefunc_appender();
-
-            /*
-            //This version works only on a Windows system
-            int hmod = LoadLibrary("jxta.dll");
-            writefunc_appender = GetProcAddress(hmod, "_jstring_writefunc_appender@16");
-            FreeLibrary(hmod);
-
-            if (writefunc_appender == IntPtr.Zero)
-            {
-                Console.WriteLine("Error in Credential: Could not evaluate the address of jstring_writefunc_appender"); 
-            }
-            else 
-            {
-                Console.WriteLine("writefunc_appender = 0x" + writefunc_appender.ToString("X"));
-            }*/
         }
 	}
 }

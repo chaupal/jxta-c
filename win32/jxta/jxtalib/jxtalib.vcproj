@@ -158,6 +158,9 @@
 				RelativePath="..\..\..\src\jxta_bytevector.c">
 			</File>
 			<File
+				RelativePath="..\..\..\src\jxta_cache_config_adv.c">
+			</File>
+			<File
 				RelativePath="..\..\..\src\jxta_callback.c">
 			</File>
 			<File
@@ -218,7 +221,10 @@
 				RelativePath="..\..\..\src\jxta_id_uuid.c">
 			</File>
 			<File
-				RelativePath="..\..\..\src\jxta_incoming_unicast_server.c">
+				RelativePath="..\..\..\src\jxta_lease_request_msg.c">
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_lease_response_msg.c">
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_listener.c">
@@ -299,6 +305,9 @@
 				RelativePath="..\..\..\src\jxta_proffer.c">
 			</File>
 			<File
+				RelativePath="..\..\..\src\jxta_qos.c">
+			</File>
+			<File
 				RelativePath="..\..\..\src\jxta_query.c">
 			</File>
 			<File
@@ -312,6 +321,9 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_rdv_service.c">
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_rdv_service_adhoc.c">
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_rdv_service_client.c">
@@ -474,10 +486,16 @@
 				RelativePath="..\..\..\src\jxta_bytevector.h">
 			</File>
 			<File
+				RelativePath="..\..\..\src\jxta_cache_config_adv.h">
+			</File>
+			<File
 				RelativePath="..\..\..\src\jxta_callback.h">
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_cm.h">
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_cm_private.h">
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_constants.h">
@@ -543,7 +561,10 @@
 				RelativePath="..\..\..\src\jxta_id_priv.h">
 			</File>
 			<File
-				RelativePath="..\..\..\src\jxta_incoming_unicast_server.h">
+				RelativePath="..\..\..\src\jxta_lease_request_msg.h">
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_lease_response_msg.h">
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_listener.h">
@@ -646,6 +667,9 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_proffer.h">
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_qos.h">
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_query.h">

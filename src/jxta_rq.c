@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rq.c,v 1.71 2006/06/15 19:19:28 mmx2005 Exp $
+ * $Id: jxta_rq.c,v 1.79 2006/09/29 01:28:44 slowhog Exp $
  */
 
 static const char *__log_cat = "RSLVQuery";
@@ -99,7 +99,15 @@ struct _ResolverQuery {
     long QueryID;
     JString *Query;
     long HopCount;
+    const Jxta_qos *qos;
 };
+
+/**
+ * frees the ResolverQuery object
+ * @param ResolverQuery the resolver query object to free
+ */
+static void resolver_query_free(void * me);
+
 
 /** Handler functions.  Each of these is responsible for
  * dealing with all of the character data associated with the 
@@ -253,8 +261,6 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_query_get_xml(ResolverQuery * adv, JStri
         jstring_append_1(doc, tmps);
         JXTA_OBJECT_RELEASE(tmps);
         jstring_append_2(doc, "</SrcPeerRoute>\n");
-    } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING , "Warning: empty local route advertisement for the resolver query\n");
     }
 
     jstring_append_2(doc, "<SrcPeerID>");
@@ -342,6 +348,11 @@ JXTA_DECLARE(void) jxta_resolver_query_set_src_peer_id(ResolverQuery * ad, Jxta_
     ad->SrcPeerID = id;
 }
 
+JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_resolver_query_src_peer_route(ResolverQuery * ad)
+{
+    return ad->route;
+}
+
 JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_resolver_query_get_src_peer_route(ResolverQuery * ad)
 {
     if (ad->route != NULL) {
@@ -352,9 +363,6 @@ JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_resolver_query_get_src_peer_route(R
 
 JXTA_DECLARE(void) jxta_resolver_query_set_src_peer_route(ResolverQuery * ad, Jxta_RouteAdvertisement * route)
 {
-    if (route == NULL) {
-        return;
-    }
     if (ad->route != NULL) {
         JXTA_OBJECT_RELEASE(ad->route);
     }
@@ -479,7 +487,7 @@ JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new(void)
                                   (JxtaAdvertisementGetXMLFunc) jxta_resolver_query_get_xml,
                                   NULL, 
                                   NULL, 
-                                  (FreeFunc) jxta_resolver_query_free);
+                                  resolver_query_free);
 
     /* Fill in the required initialization code here. */
     ad->SrcPeerID = jxta_id_nullID;
@@ -489,6 +497,7 @@ JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new(void)
     ad->Query = jstring_new_0();
     ad->route = NULL;
     ad->HopCount = 0;
+    ad->qos = NULL;
 
     /*
      * in theory we're supposed to share even nullID, although, normally
@@ -500,12 +509,48 @@ JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new(void)
     return ad;
 }
 
+Jxta_status resolver_query_create(JString * handlername, JString * qdoc, Jxta_id * src_peerid, Jxta_resolver_query ** rq)
+{
+    Jxta_resolver_query *ad;
+
+    ad = malloc(sizeof(ResolverQuery));
+    if (!ad) {
+        *rq = NULL;
+        return JXTA_NOMEM;
+    }
+    memset(ad, 0xda, sizeof(ResolverQuery));
+    jxta_advertisement_initialize((Jxta_advertisement *) ad,
+                                  "jxta:ResolverQuery",
+                                  ResolverQuery_tags,
+                                  (JxtaAdvertisementGetXMLFunc) jxta_resolver_query_get_xml,
+                                  NULL, 
+                                  NULL, 
+                                  resolver_query_free);
+
+    /* Fill in the required initialization code here. */
+
+    ad->Credential = jstring_new_0();
+    JXTA_OBJECT_SHARE(src_peerid);
+    ad->SrcPeerID = src_peerid;
+    ad->QueryID = JXTA_INVALID_QUERY_ID;
+    ad->Query = qdoc;
+    if (ad->Query != NULL)
+        JXTA_OBJECT_SHARE(ad->Query);
+    ad->HandlerName = jstring_new_2(jstring_get_string(handlername));
+    ad->route = NULL;
+    ad->HopCount = 0;
+    ad->qos = NULL;
+    *rq = ad;
+    return JXTA_SUCCESS;
+}
+
 JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new_1(JString * handlername, JString * query, Jxta_id * src_pid,
                                                         Jxta_RouteAdvertisement * route)
 {
     ResolverQuery *ad;
     JString *temps = NULL;
 
+    JXTA_DEPRECATED_API();
     ad = (ResolverQuery *) malloc(sizeof(ResolverQuery));
     memset(ad, 0xda, sizeof(ResolverQuery));
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
@@ -514,7 +559,7 @@ JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new_1(JString * handlername, J
                                   (JxtaAdvertisementGetXMLFunc) jxta_resolver_query_get_xml,
                                   NULL, 
                                   NULL, 
-                                  (FreeFunc) jxta_resolver_query_free);
+                                  resolver_query_free);
 
     /* Fill in the required initialization code here. */
 
@@ -527,10 +572,13 @@ JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new_1(JString * handlername, J
     if (ad->Query != NULL)
         JXTA_OBJECT_SHARE(ad->Query);
     ad->HandlerName = jstring_new_2(jstring_get_string(handlername));
-    ad->route = route;
+    if (route) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG , FILEANDLINE 
+                        "Warning: obsolete constructor usage to include local route advertisement\n");
+    }
+    ad->route = NULL;
     ad->HopCount = 0;
-    if (route != NULL)
-        JXTA_OBJECT_SHARE(ad->route);
+    ad->qos = NULL;
     return ad;
 }
 
@@ -541,8 +589,10 @@ JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new_1(JString * handlername, J
   * pop right out as a piece of memory accessed
   * after it was freed...
   */
-void jxta_resolver_query_free(ResolverQuery * ad)
+static void resolver_query_free(void * me)
 {
+    ResolverQuery * ad = (ResolverQuery * )me;
+        
     if (ad->Credential) {
         JXTA_OBJECT_RELEASE(ad->Credential);
     }
@@ -572,6 +622,17 @@ JXTA_DECLARE(void) jxta_resolver_query_parse_charbuffer(ResolverQuery * ad, cons
 JXTA_DECLARE(void) jxta_resolver_query_parse_file(ResolverQuery * ad, FILE * stream)
 {
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+}
+
+JXTA_DECLARE(Jxta_status) jxta_resolver_query_attach_qos(Jxta_resolver_query * me, const Jxta_qos * qos)
+{
+    me->qos = qos;
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(const Jxta_qos *) jxta_resolver_query_qos(Jxta_resolver_query * me)
+{
+    return me->qos;
 }
 
 /* vi: set ts=4 sw=4 tw=130 et: */

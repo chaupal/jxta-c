@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: trailing_average.c,v 1.5 2005/07/22 03:12:57 slowhog Exp $
+ * $Id: trailing_average.c,v 1.6 2006/06/24 07:26:03 slowhog Exp $
  */
 
 #include <stdlib.h>

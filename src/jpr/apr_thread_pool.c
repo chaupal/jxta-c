@@ -17,18 +17,24 @@
 #include "apr_thread_pool.h"
 #include "apr_ring.h"
 #include "apr_thread_cond.h"
+#include "apr_portable.h"
 
 #if APR_HAS_THREADS
 
 #define TASK_PRIORITY_SEGS 4
-#define TASK_PRIORITY_SEG(x) (((x)->priority & 0xFF) / 64)
+#define TASK_PRIORITY_SEG(x) (((x)->dispatch.priority & 0xFF) / 64)
 
 typedef struct apr_thread_pool_task
 {
     APR_RING_ENTRY(apr_thread_pool_task) link;
     apr_thread_start_t func;
     void *param;
-    apr_byte_t priority;
+    void *owner;
+    union
+    {
+        apr_byte_t priority;
+        apr_time_t time;
+    } dispatch;
 } apr_thread_pool_task_t;
 
 APR_RING_HEAD(apr_thread_pool_tasks, apr_thread_pool_task);
@@ -37,6 +43,7 @@ struct apr_thread_list_elt
 {
     APR_RING_ENTRY(apr_thread_list_elt) link;
     apr_thread_t *thd;
+    volatile void *current_owner;
     volatile int stop;
 };
 
@@ -50,8 +57,10 @@ struct apr_thread_pool
     volatile apr_size_t thd_cnt;
     volatile apr_size_t idle_cnt;
     volatile apr_size_t task_cnt;
+    volatile apr_size_t scheduled_task_cnt;
     volatile apr_size_t threshold;
     struct apr_thread_pool_tasks *tasks;
+    struct apr_thread_pool_tasks *scheduled_tasks;
     struct apr_thread_list *busy_thds;
     struct apr_thread_list *idle_thds;
     apr_thread_mutex_t *lock;
@@ -94,6 +103,11 @@ static apr_status_t thread_pool_construct(apr_thread_pool_t * me,
         goto CATCH_ENOMEM;
     }
     APR_RING_INIT(me->tasks, apr_thread_pool_task, link);
+    me->scheduled_tasks = apr_palloc(me->pool, sizeof(*me->scheduled_tasks));
+    if (!me->scheduled_tasks) {
+        goto CATCH_ENOMEM;
+    }
+    APR_RING_INIT(me->scheduled_tasks, apr_thread_pool_task, link);
     me->recycled_tasks = apr_palloc(me->pool, sizeof(*me->recycled_tasks));
     if (!me->recycled_tasks) {
         goto CATCH_ENOMEM;
@@ -109,7 +123,7 @@ static apr_status_t thread_pool_construct(apr_thread_pool_t * me,
         goto CATCH_ENOMEM;
     }
     APR_RING_INIT(me->idle_thds, apr_thread_list_elt, link);
-    me->thd_cnt = me->idle_cnt = me->task_cnt = 0;
+    me->thd_cnt = me->idle_cnt = me->task_cnt = me->scheduled_task_cnt = 0;
     me->terminated = 0;
     for (i = 0; i < TASK_PRIORITY_SEGS; i++) {
         me->task_idx[i] = NULL;
@@ -129,14 +143,31 @@ static apr_status_t thread_pool_construct(apr_thread_pool_t * me,
  */
 static apr_thread_pool_task_t *pop_task(apr_thread_pool_t * me)
 {
-    apr_thread_pool_task_t *task;
+    apr_thread_pool_task_t *task = NULL;
     int seg;
 
-    if (0 == me->task_cnt) {
+    /* check for scheduled tasks */
+    if (me->scheduled_task_cnt > 0) {
+        task = APR_RING_FIRST(me->scheduled_tasks);
+        assert(task != NULL);
+        assert(task !=
+               APR_RING_SENTINEL(me->scheduled_tasks, apr_thread_pool_task,
+                                 link));
+        /* if it's time */
+        if (task->dispatch.time <= apr_time_now()) {
+            --me->scheduled_task_cnt;
+            APR_RING_REMOVE(task, link);
+            return task;
+        }
+    }
+    /* check for normal tasks if we're not returning a scheduled task */
+    if (me->task_cnt == 0) {
         return NULL;
     }
 
     task = APR_RING_FIRST(me->tasks);
+    assert(task != NULL);
+    assert(task != APR_RING_SENTINEL(me->tasks, apr_thread_pool_task, link));
     --me->task_cnt;
     seg = TASK_PRIORITY_SEG(task);
     if (task == me->task_idx[seg]) {
@@ -147,9 +178,20 @@ static apr_thread_pool_task_t *pop_task(apr_thread_pool_t * me)
             me->task_idx[seg] = NULL;
         }
     }
-
     APR_RING_REMOVE(task, link);
     return task;
+}
+
+static apr_interval_time_t waiting_time(apr_thread_pool_t * me)
+{
+    apr_thread_pool_task_t *task = NULL;
+
+    task = APR_RING_FIRST(me->scheduled_tasks);
+    assert(task != NULL);
+    assert(task !=
+           APR_RING_SENTINEL(me->scheduled_tasks, apr_thread_pool_task,
+                             link));
+    return task->dispatch.time - apr_time_now();
 }
 
 /*
@@ -162,8 +204,10 @@ static apr_thread_pool_task_t *pop_task(apr_thread_pool_t * me)
  */
 static void *APR_THREAD_FUNC thread_pool_func(apr_thread_t * t, void *param)
 {
+    apr_status_t rv = APR_SUCCESS;
     apr_thread_pool_t *me = param;
-    apr_thread_pool_task_t *task;
+    apr_thread_pool_task_t *task = NULL;
+    apr_interval_time_t wait;
     struct apr_thread_list_elt *elt;
 
     elt = apr_pcalloc(me->pool, sizeof(*elt));
@@ -184,20 +228,25 @@ static void *APR_THREAD_FUNC thread_pool_func(apr_thread_t * t, void *param)
         APR_RING_INSERT_TAIL(me->busy_thds, elt, apr_thread_list_elt, link);
         task = pop_task(me);
         while (NULL != task && !me->terminated) {
+            elt->current_owner = task->owner;
             apr_thread_mutex_unlock(me->lock);
             task->func(t, task->param);
             apr_thread_mutex_lock(me->lock);
             APR_RING_INSERT_TAIL(me->recycled_tasks, task,
                                  apr_thread_pool_task, link);
+            elt->current_owner = NULL;
             if (elt->stop) {
                 break;
             }
             task = pop_task(me);
         }
+        assert(NULL == elt->current_owner);
         APR_RING_REMOVE(elt, link);
 
         /* busy thread been asked to stop, not joinable */
-        if (me->idle_cnt >= me->idle_max || me->terminated || elt->stop) {
+        if ((me->idle_cnt >= me->idle_max
+             && !(me->scheduled_task_cnt && 0 >= me->idle_max))
+            || me->terminated || elt->stop) {
             --me->thd_cnt;
             apr_thread_mutex_unlock(me->lock);
             apr_thread_detach(t);
@@ -207,12 +256,16 @@ static void *APR_THREAD_FUNC thread_pool_func(apr_thread_t * t, void *param)
 
         ++me->idle_cnt;
         APR_RING_INSERT_TAIL(me->idle_thds, elt, apr_thread_list_elt, link);
+        wait = (me->scheduled_task_cnt) ? waiting_time(me) : -1;
         apr_thread_mutex_unlock(me->lock);
-
         apr_thread_mutex_lock(me->cond_lock);
-        apr_thread_cond_wait(me->cond, me->cond_lock);
+        if (wait >= 0) {
+            rv = apr_thread_cond_timedwait(me->cond, me->cond_lock, wait);
+        }
+        else {
+            rv = apr_thread_cond_wait(me->cond, me->cond_lock);
+        }
         apr_thread_mutex_unlock(me->cond_lock);
-
         apr_thread_mutex_lock(me->lock);
     }
 
@@ -283,7 +336,8 @@ APR_DECLARE(apr_status_t) apr_thread_pool_destroy(apr_thread_pool_t * me)
  */
 static apr_thread_pool_task_t *task_new(apr_thread_pool_t * me,
                                         apr_thread_start_t func,
-                                        void *param, apr_byte_t priority)
+                                        void *param, apr_byte_t priority,
+                                        void *owner, apr_time_t time)
 {
     apr_thread_pool_task_t *t;
 
@@ -300,9 +354,14 @@ static apr_thread_pool_task_t *task_new(apr_thread_pool_t * me,
 
     APR_RING_ELEM_INIT(t, link);
     t->func = func;
-    t->priority = priority;
     t->param = param;
-
+    t->owner = owner;
+    if (time > 0) {
+        t->dispatch.time = apr_time_now() + time;
+    }
+    else {
+        t->dispatch.priority = priority;
+    }
     return t;
 }
 
@@ -325,7 +384,7 @@ static apr_thread_pool_task_t *add_if_empty(apr_thread_pool_t * me,
         assert(APR_RING_SENTINEL(me->tasks, apr_thread_pool_task, link) !=
                me->task_idx[seg]);
         t_next = me->task_idx[seg];
-        while (t_next->priority > t->priority) {
+        while (t_next->dispatch.priority > t->dispatch.priority) {
             t_next = APR_RING_NEXT(t_next, link);
             if (APR_RING_SENTINEL(me->tasks, apr_thread_pool_task, link) ==
                 t_next) {
@@ -348,8 +407,62 @@ static apr_thread_pool_task_t *add_if_empty(apr_thread_pool_t * me,
     return NULL;
 }
 
+/*
+*   schedule a task to run in "time" milliseconds. Find the spot in the ring where
+*   the time fits. Adjust the short_time so the thread wakes up when the time is reached.
+*/
+static apr_status_t schedule_task(apr_thread_pool_t * me,
+                                  apr_thread_start_t func, void *param,
+                                  void *owner, apr_interval_time_t time)
+{
+    apr_thread_pool_task_t *t;
+    apr_thread_pool_task_t *t_loc;
+    apr_thread_t *thd;
+    apr_status_t rv = APR_SUCCESS;
+    apr_thread_mutex_lock(me->lock);
+
+    t = task_new(me, func, param, 0, owner, time);
+    if (NULL == t) {
+        apr_thread_mutex_unlock(me->lock);
+        return APR_ENOMEM;
+    }
+    t_loc = APR_RING_FIRST(me->scheduled_tasks);
+    while (NULL != t_loc) {
+        /* if the time is less than the entry insert ahead of it */
+        if (t->dispatch.time < t_loc->dispatch.time) {
+            ++me->scheduled_task_cnt;
+            APR_RING_INSERT_BEFORE(t_loc, t, link);
+            break;
+        }
+        else {
+            t_loc = APR_RING_NEXT(t_loc, link);
+            if (t_loc ==
+                APR_RING_SENTINEL(me->scheduled_tasks, apr_thread_pool_task,
+                                  link)) {
+                ++me->scheduled_task_cnt;
+                APR_RING_INSERT_TAIL(me->scheduled_tasks, t,
+                                     apr_thread_pool_task, link);
+                break;
+            }
+        }
+    }
+    /* there should be at least one thread for scheduled tasks */
+    if (0 == me->thd_cnt) {
+        rv = apr_thread_create(&thd, NULL, thread_pool_func, me, me->pool);
+        if (APR_SUCCESS == rv) {
+            ++me->thd_cnt;
+        }
+    }
+    apr_thread_mutex_unlock(me->lock);
+    apr_thread_mutex_lock(me->cond_lock);
+    apr_thread_cond_signal(me->cond);
+    apr_thread_mutex_unlock(me->cond_lock);
+    return rv;
+}
+
 static apr_status_t add_task(apr_thread_pool_t * me, apr_thread_start_t func,
-                             void *param, apr_byte_t priority, int push)
+                             void *param, apr_byte_t priority, int push,
+                             void *owner)
 {
     apr_thread_pool_task_t *t;
     apr_thread_pool_task_t *t_loc;
@@ -358,7 +471,7 @@ static apr_status_t add_task(apr_thread_pool_t * me, apr_thread_start_t func,
 
     apr_thread_mutex_lock(me->lock);
 
-    t = task_new(me, func, param, priority);
+    t = task_new(me, func, param, priority, owner, 0);
     if (NULL == t) {
         apr_thread_mutex_unlock(me->lock);
         return APR_ENOMEM;
@@ -371,7 +484,7 @@ static apr_status_t add_task(apr_thread_pool_t * me, apr_thread_start_t func,
 
     if (push) {
         while (APR_RING_SENTINEL(me->tasks, apr_thread_pool_task, link) !=
-               t_loc && t_loc->priority >= t->priority) {
+               t_loc && t_loc->dispatch.priority >= t->dispatch.priority) {
             t_loc = APR_RING_NEXT(t_loc, link);
         }
     }
@@ -403,22 +516,137 @@ static apr_status_t add_task(apr_thread_pool_t * me, apr_thread_start_t func,
 APR_DECLARE(apr_status_t) apr_thread_pool_push(apr_thread_pool_t * me,
                                                apr_thread_start_t func,
                                                void *param,
-                                               apr_byte_t priority)
+                                               apr_byte_t priority,
+                                               void *owner)
 {
-    return add_task(me, func, param, priority, 1);
+    return add_task(me, func, param, priority, 1, owner);
+}
+
+APR_DECLARE(apr_status_t) apr_thread_pool_schedule(apr_thread_pool_t * me,
+                                                   apr_thread_start_t func,
+                                                   void *param,
+                                                   apr_interval_time_t time,
+                                                   void *owner)
+{
+    return schedule_task(me, func, param, owner, time);
 }
 
 APR_DECLARE(apr_status_t) apr_thread_pool_top(apr_thread_pool_t * me,
                                               apr_thread_start_t func,
                                               void *param,
-                                              apr_byte_t priority)
+                                              apr_byte_t priority,
+                                              void *owner)
 {
-    return add_task(me, func, param, priority, 0);
+    return add_task(me, func, param, priority, 0, owner);
+}
+
+static apr_status_t remove_scheduled_tasks(apr_thread_pool_t * me,
+                                           void *owner)
+{
+    apr_thread_pool_task_t *t_loc;
+    apr_thread_pool_task_t *next;
+
+    t_loc = APR_RING_FIRST(me->scheduled_tasks);
+    while (t_loc !=
+           APR_RING_SENTINEL(me->scheduled_tasks, apr_thread_pool_task,
+                             link)) {
+        next = APR_RING_NEXT(t_loc, link);
+        /* if this is the owner remove it */
+        if (t_loc->owner == owner) {
+            --me->scheduled_task_cnt;
+            APR_RING_REMOVE(t_loc, link);
+        }
+        t_loc = next;
+    }
+    return APR_SUCCESS;
+}
+
+static apr_status_t remove_tasks(apr_thread_pool_t * me, void *owner)
+{
+    apr_thread_pool_task_t *t_loc;
+    apr_thread_pool_task_t *next;
+    int seg;
+
+    t_loc = APR_RING_FIRST(me->tasks);
+    while (t_loc != APR_RING_SENTINEL(me->tasks, apr_thread_pool_task, link)) {
+        next = APR_RING_NEXT(t_loc, link);
+        if (t_loc->owner == owner) {
+            --me->task_cnt;
+            seg = TASK_PRIORITY_SEG(t_loc);
+            if (t_loc == me->task_idx[seg]) {
+                me->task_idx[seg] = APR_RING_NEXT(t_loc, link);
+                if (me->task_idx[seg] == APR_RING_SENTINEL(me->tasks,
+                                                           apr_thread_pool_task,
+                                                           link)
+                    || TASK_PRIORITY_SEG(me->task_idx[seg]) != seg) {
+                    me->task_idx[seg] = NULL;
+                }
+            }
+            APR_RING_REMOVE(t_loc, link);
+        }
+        t_loc = next;
+    }
+    return APR_SUCCESS;
+}
+
+static void wait_on_busy_threads(apr_thread_pool_t * me, void *owner)
+{
+    struct apr_thread_list_elt *elt;
+    apr_thread_mutex_lock(me->lock);
+    elt = APR_RING_FIRST(me->busy_thds);
+    while (elt != APR_RING_SENTINEL(me->busy_thds, apr_thread_list_elt, link)) {
+#ifndef NDEBUG
+        /* make sure the thread is not the one calling tasks_cancel */
+        apr_os_thread_t *os_thread;
+        apr_os_thread_get(&os_thread, elt->thd);
+#ifdef WIN32 /* hack for apr win32 bug */
+        assert(!apr_os_thread_equal(apr_os_thread_current(), os_thread));
+#else
+        assert(!apr_os_thread_equal(apr_os_thread_current(), *os_thread));
+#endif
+#endif
+        if (elt->current_owner != owner) {
+            elt = APR_RING_NEXT(elt, link);
+            continue;
+        }
+        while (elt->current_owner == owner) {
+            apr_thread_mutex_unlock(me->lock);
+            apr_sleep(200 * 1000);
+            apr_thread_mutex_lock(me->lock);
+        }
+        elt = APR_RING_FIRST(me->busy_thds);
+    }
+    apr_thread_mutex_unlock(me->lock);
+    return;
+}
+
+APR_DECLARE(apr_status_t) apr_thread_pool_tasks_cancel(apr_thread_pool_t * me,
+                                                       void *owner)
+{
+    apr_status_t rv = APR_SUCCESS;
+
+    apr_thread_mutex_lock(me->lock);
+    if (me->task_cnt > 0) {
+        rv = remove_tasks(me, owner);
+    }
+    if (me->scheduled_task_cnt > 0) {
+        rv = remove_scheduled_tasks(me, owner);
+    }
+    apr_thread_mutex_unlock(me->lock);
+    wait_on_busy_threads(me, owner);
+
+    return rv;
 }
 
 APR_DECLARE(apr_size_t) apr_thread_pool_tasks_count(apr_thread_pool_t * me)
 {
     return me->task_cnt;
+}
+
+APR_DECLARE(apr_size_t)
+    apr_thread_pool_scheduled_tasks_count(apr_thread_pool_t * me)
+{
+    return me->scheduled_task_cnt;
 }
 
 APR_DECLARE(apr_size_t) apr_thread_pool_threads_count(apr_thread_pool_t * me)

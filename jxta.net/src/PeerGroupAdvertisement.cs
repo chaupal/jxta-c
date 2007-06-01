@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: PeerGroupAdvertisement.cs,v 1.1 2006/01/18 20:31:07 lankes Exp $
+ * $Id: PeerGroupAdvertisement.cs,v 1.2 2006/08/04 10:33:20 lankes Exp $
  */
 using System;
 using System.Runtime.InteropServices;
@@ -61,9 +61,13 @@ namespace JxtaNET
 	/// Summary of PeerGroupAdvertisment.
 	/// </summary>
 	public class PeerGroupAdvertisement : Advertisement
-	{
-		[DllImport("jxta.dll")]
+    {
+        #region import jxta-c functions
+        [DllImport("jxta.dll")]
 		private static extern IntPtr jxta_PGA_get_Name(IntPtr self);
+
+        [DllImport("jxta.dll")]
+        private static extern void jxta_PGA_set_Name(IntPtr ad, IntPtr name);
 
 		[DllImport("jxta.dll")]
 		private static extern IntPtr jxta_PGA_get_MSID(IntPtr self);
@@ -71,20 +75,62 @@ namespace JxtaNET
         [DllImport("jxta.dll")]
         private static extern IntPtr jxta_PGA_get_Desc(IntPtr ad);
 
+        [DllImport("jxta.dll")]
+        private static extern void jxta_PGA_set_Desc(IntPtr ad, IntPtr desc);
 
-		public ID getMSID()
+        [DllImport("jxta.dll")]
+        private static extern IntPtr jxta_advertisement_get_id(IntPtr ad);
+
+        [DllImport("jxta.dll")]
+        private static extern void jxta_PGA_parse_charbuffer(IntPtr ad, String buf, Int32 len);
+        #endregion
+
+        public ModuleSpecID GetModuleSpecID()
 		{
-            return new ID(jxta_PGA_get_MSID(this.self));
+            IntPtr ret = jxta_PGA_get_MSID(this.self);
+
+            return new ModuleSpecIDImpl(ret);
 		}
 
-		public string getName()
-		{
-			return new JxtaString(jxta_PGA_get_Name(this.self));
-		}
+        public override void ParseXML(string xml)
+        {
+            jxta_PGA_parse_charbuffer(this.self, xml, xml.Length);
+        }
 
-		public string getDescription()
+        public override ID ID
+        {
+            get
+            {
+                IntPtr ret = jxta_advertisement_get_id(self);
+                return new PeerGroupIDImpl(ret);
+            }
+        }
+
+        /// <summary>
+        /// Name of the peergroup
+        /// </summary>
+        public String Name
+        {
+            get
+            {
+                return new JxtaString(jxta_PGA_get_Name(this.self));
+            }
+            set
+            {
+                jxta_PGA_set_Name(this.self, new JxtaString(value).self);
+            }
+        }
+
+		public String Description
 		{
-			return new JxtaString(jxta_PGA_get_Desc(this.self));
+            get
+            {
+                return new JxtaString(jxta_PGA_get_Desc(this.self));
+            }
+            set
+            {
+                jxta_PGA_set_Desc(this.self, new JxtaString(value).self);
+            }
 		}
 
         internal PeerGroupAdvertisement(IntPtr self) : base(self) { }

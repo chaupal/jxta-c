@@ -50,10 +50,11 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_discovery_service.c,v 1.21 2005/11/26 12:11:46 mmx2005 Exp $
+ * $Id: jxta_discovery_service.c,v 1.23 2006/09/06 21:27:38 slowhog Exp $
  */
 
 #include "jxta_discovery_service_private.h"
+#include "jxta_dq.h"
 
 /**
  * The base discovery service ctor (not public: the only public way to make a
@@ -82,23 +83,40 @@ void jxta_discovery_service_destruct(Jxta_discovery_service * service)
 #define VTBL ((Jxta_discovery_service_methods*) JXTA_MODULE_VTBL(service))
 
 
-JXTA_DECLARE(long)
-discovery_service_get_remote_advertisements(Jxta_discovery_service * service,
-                                            Jxta_id * peerid,
-                                            short type,
-                                            const char *attribute,
-                                            const char *value, int threshold, Jxta_discovery_listener * listener)
+JXTA_DECLARE(long) discovery_service_get_remote_advertisements(Jxta_discovery_service * service, Jxta_id * peerid,
+                                                               short type, const char *attribute, const char *value, 
+                                                               int threshold, Jxta_discovery_listener * listener)
 {
+    Jxta_discovery_query *dq = NULL;
+    long qid = 0;
+
     PTValid(service, Jxta_discovery_service);
-    return VTBL->getRemoteAdv(service, peerid, type, attribute, value, threshold, listener);
+
+    dq = jxta_discovery_query_new_1(type, attribute, value, threshold, NULL);
+    qid = VTBL->remoteQuery(service, peerid, dq, listener);
+    JXTA_OBJECT_RELEASE(dq);
+    return qid;
 }
 
-JXTA_DECLARE(long)
-    discovery_service_remote_query(Jxta_discovery_service * service,
-                               Jxta_id * peerid, const char *query, int threshold, Jxta_discovery_listener * listener)
+JXTA_DECLARE(long) discovery_service_remote_query(Jxta_discovery_service * service, Jxta_id * peerid, const char *query, 
+                                                  int threshold, Jxta_discovery_listener * listener)
+{
+    Jxta_discovery_query *dq = NULL;
+    long qid;
+
+    PTValid(service, Jxta_discovery_service);
+
+    dq = jxta_discovery_query_new_2(query, threshold, NULL);
+    qid = VTBL->remoteQuery(service, peerid, dq, listener);
+    JXTA_OBJECT_RELEASE(dq);
+    return qid;
+}
+
+JXTA_DECLARE(long) discovery_service_remote_query_1(Jxta_discovery_service * service, Jxta_id * peerid, 
+                                                    Jxta_discovery_query * query, Jxta_discovery_listener * listener)
 {
     PTValid(service, Jxta_discovery_service);
-    return VTBL->getRemoteQuery(service, peerid, query, threshold, listener);
+    return VTBL->remoteQuery(service, peerid, query, listener);
 }
 
 JXTA_DECLARE(Jxta_status) discovery_service_cancel_remote_query(Jxta_discovery_service * service, long query_id,
@@ -138,9 +156,16 @@ JXTA_DECLARE(Jxta_status)
                                  Jxta_id * peerid, Jxta_advertisement * adv, short type, Jxta_expiration_time expirationtime)
 {
     PTValid(service, Jxta_discovery_service);
-    return VTBL->remotePublish(service, peerid, adv, type, expirationtime);
+    return VTBL->remotePublish(service, peerid, adv, type, expirationtime, NULL);
 }
 
+JXTA_DECLARE(Jxta_status) discovery_service_remote_publish_1(Jxta_discovery_service * service, Jxta_id * peerid, 
+                                                             Jxta_advertisement * adv, short type, 
+                                                             Jxta_expiration_time expirationtime, const Jxta_qos * qos)
+{
+    PTValid(service, Jxta_discovery_service);
+    return VTBL->remotePublish(service, peerid, adv, type, expirationtime, qos);
+}
 
 JXTA_DECLARE(Jxta_status)
     discovery_service_flush_advertisements(Jxta_discovery_service * service, char *id, short type)
@@ -179,3 +204,5 @@ JXTA_DECLARE(Jxta_status)
     PTValid(service, Jxta_discovery_service);
     return VTBL->getExpiration(service, type, advId, exp);
 }
+
+/* vim: set ts=4 sw=4 tw=130 et: */

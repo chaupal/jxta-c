@@ -50,11 +50,13 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: RdvStatus.cs,v 1.2 2006/02/13 21:06:16 lankes Exp $
+ * $Id: RdvStatus.cs,v 1.3 2006/08/04 10:33:17 lankes Exp $
  */
 using System;
 using JxtaNET;
 using System.Runtime.InteropServices;
+using System.IO;
+using System.Collections.Generic;
 
 namespace JxtaNETShell
 {
@@ -68,80 +70,76 @@ namespace JxtaNETShell
         public static extern ulong apr_time_now();
 
 		/// <summary>
-		/// Standart help-method; it displays the help-text.
+		/// Standard help-method; it displays the help-text.
 		/// </summary>
-		public override void help()
+		public override void Help()
 		{
-			System.Console.WriteLine("rdvstatus - displays the connected state of rdvz.");
-			Console.WriteLine("");
-			Console.WriteLine("SYNOPSIS");
-			Console.WriteLine("  rdvstatus");
-			Console.WriteLine("");
-			Console.WriteLine("DESCRIPTION");
-			Console.WriteLine("  'rdvstatus' allows you see what rendezvous you are connected to.");
-			Console.WriteLine("");
-			Console.WriteLine("OPTIONS");
-			Console.WriteLine("        [-h] print this information\n");
+			textWriter.WriteLine("rdvstatus - displays the connected state of rdvz.");
+			textWriter.WriteLine("");
+			textWriter.WriteLine("SYNOPSIS");
+			textWriter.WriteLine("  rdvstatus");
+			textWriter.WriteLine("");
+			textWriter.WriteLine("DESCRIPTION");
+			textWriter.WriteLine("  'rdvstatus' allows you see what rendezvous you are connected to.");
+			textWriter.WriteLine("");
+			textWriter.WriteLine("OPTIONS");
+			textWriter.WriteLine("        [-h] print this information\n");
 		}
 
 		/// <summary>
-		/// Standart run-method. Call this for the 'rdvstatus'-action.
+		/// Standard run-method. Call this for the 'rdvstatus'-action.
 		/// </summary>
 		/// <param name="args">The commandline-parameters.</param>
-		public override void run(string[] args)
+		public override void Run(string[] args)
 		{
             for(int i=1; i<args.Length; i++)
             {
                 switch (args[i])
                 {
                     case "-h":
-                        help();
+                        Help();
                         return;
                     default:
-                        Console.WriteLine("Error: invalid parameter");
-                        return;
+                        textWriter.WriteLine("Error: invalid parameter" + args[i]);
+                        break;
                 }
             }
 
-			JxtaNET.RendezVousService rdvSvc = netPeerGroup.getRendezVousService();
+			RdvConfig config = rdvSvc.Configuration;
 
-			RdvConfig config = rdvSvc.getConfiguration();
-
-			Console.Write("Rendezvous service config : ");
+			textWriter.Write("Rendezvous service config : ");
 
 			switch (config) 
 			{
 				case RdvConfig.adhoc:
-					Console.WriteLine("ad-hoc");
+					textWriter.WriteLine("ad-hoc");
 					break;
 
 				case RdvConfig.edge:
-					Console.WriteLine("client");
+					textWriter.WriteLine("client");
 					break;
 
 				case RdvConfig.rendezvous:
-					Console.WriteLine("rendezvous");
+					textWriter.WriteLine("rendezvous");
 					break;
 
 				default:
-					Console.WriteLine("[unknown]");
+					textWriter.WriteLine("[unknown]");
 					break;
 			}
 
-			long auto_interval = rdvSvc.getAutoInterval();
+            long auto_interval = rdvSvc.AutoInterval;
 
-			Console.Write("Auto-rdv check interval : ");
+            textWriter.Write("Auto-rdv check interval : ");
 
-			if (auto_interval >= 0) {
-				Console.WriteLine(auto_interval + "ms");
-			} else {
-				Console.WriteLine("[disabled]");
-			}
+            if (auto_interval >= 0)
+                textWriter.WriteLine(auto_interval + "ms");
+            else
+                textWriter.WriteLine("[disabled]");
 
-		
-			uint currentTime = (uint)(apr_time_now()/1000);
+            uint currentTime = (uint) (apr_time_now() / 1000);
 
-			PeerView pv = rdvSvc.getPeerView();
+            PeerView pv = rdvSvc.PeerView;
 
             Peer selfPVE = null;
             Peer down = null;
@@ -149,114 +147,114 @@ namespace JxtaNETShell
 
             try
             {
-                selfPVE = pv.getSelfPeer();
-                down = pv.getDownPeer();
-                up = pv.getUpPeer();
+                selfPVE = pv.SelfPeer;
+                down = pv.DownPeer;
+                up = pv.UpPeer;
             }
             catch (JxtaException) { }
 
-			JxtaVector<Peer> peers = null;
+            List<Peer> peers = null;
 
-			/* Get the list of peers */
-			try
-			{
-				peers = pv.getLocalView();
-			}
-			catch (Exception)
-			{
-				Console.WriteLine("Failed getting peers");
-				return;
-			}
+            /* Get the list of peers */
+            try
+            {
+                peers = pv.LocalView;
+            }
+            catch (Exception)
+            {
+                textWriter.WriteLine("Failed getting peers");
+                return;
+            }
 
-			Console.WriteLine("\nPeerview:");
+            textWriter.WriteLine("\nPeerview:");
 
-			foreach (Peer peer in peers)
-			{
-				string name = "(unknown)";
-				try 
-				{
-					name = peer.getAdvertisement().getName();
-				}
-				catch (Exception)
-				{
-				}
+            foreach (Peer peer in peers)
+            {
+                string name = "(unknown)";
 
-				Console.Write(peer.getID() + "/" + name + "\t");
+                if (peer.Advertisement != null)
+                    name = peer.Advertisement.Name;
 
-				uint expires = rdvSvc.getExpires(peer);
+                textWriter.Write(peer.ID + "/" + name + "\t");
 
-				if (expires >= currentTime) {
-					expires -= currentTime;
+                uint expires = rdvSvc.GetExpires(peer);
 
-					Console.WriteLine(expires + "ms");
+                if (expires >= currentTime)
+                {
+                    expires -= currentTime;
 
-				} else {
-					Console.WriteLine("(expired)");
-				}
+                    textWriter.WriteLine(expires + "ms");
 
-				if (down == peer) 
-				{
-					Console.Write("\t[DOWN]");
-				}
+                }
+                else
+                {
+                    textWriter.WriteLine("(expired)");
+                }
 
-				if (selfPVE == peer) 
-				{
-					Console.Write("\t[SELF]");
-				}
+                if (down == peer)
+                {
+                    textWriter.Write("\t[DOWN]");
+                }
 
-				if (up == peer) 
-				{
-					Console.Write("\t[UP]");
-				}
-				Console.Write("\n");
-			}
-		
+                if (selfPVE == peer)
+                {
+                    textWriter.Write("\t[SELF]");
+                }
 
-			Console.WriteLine("\nConnections:");
-
-			peers = rdvSvc.getPeers();
-
-			foreach (Peer peer in peers)
-			{
-					Console.WriteLine("Name: [" + peer.getAdvertisement().getName() + "]");
-					Console.WriteLine("PeerID: [" + peer.getID() + "]\n");
-
-					uint expires = rdvSvc.getExpires(peer);
-					
-					uint hours = 0;
-					uint minutes = 0;
-					uint seconds = 0;
-
-					
-					if (expires < currentTime) 
-					{
-						expires = 0;
-					} 
-					else 
-					{
-						expires -= currentTime;
-					}
-
-					seconds = expires / (1000);
-
-					hours = seconds / (60 * 60);
-					seconds -= hours * 60 * 60;
-
-					minutes = seconds / 60;
-					seconds -= minutes * 60;
+                if (up == peer)
+                {
+                    textWriter.Write("\t[UP]");
+                }
+                textWriter.Write("\n");
+            }
 
 
-					Console.WriteLine("Lease expires in " + hours + " hour(s) " 
-						+ minutes + " minute(s) " + seconds + " second(s)");
-			}
+            textWriter.WriteLine("\nConnections:");
 
-			Console.WriteLine("-----------------------------------------------------------------------------");
+            peers = rdvSvc.ConnectedPeers;
+
+            foreach (Peer peer in peers)
+            {
+                textWriter.WriteLine("Name: [" + peer.Advertisement.Name + "]");
+                textWriter.WriteLine("PeerID: [" + peer.ID + "]\n");
+
+                uint expires = rdvSvc.GetExpires(peer);
+
+                uint hours = 0;
+                uint minutes = 0;
+                uint seconds = 0;
+
+
+                if (expires < currentTime)
+                {
+                    expires = 0;
+                }
+                else
+                {
+                    expires -= currentTime;
+                }
+
+                seconds = expires / (1000);
+
+                hours = seconds / (60 * 60);
+                seconds -= hours * 60 * 60;
+
+                minutes = seconds / 60;
+                seconds -= minutes * 60;
+
+
+                textWriter.WriteLine("Lease expires in " + hours + " hour(s) "
+                    + minutes + " minute(s) " + seconds + " second(s)");
+            }
+
+			textWriter.WriteLine("-----------------------------------------------------------------------------");
 		}
 
-		/// <summary>
-		/// Standart constructor.
-		/// </summary>
-		/// <param name="grp">the PeerGroup</param>
-		public RdvStatus(PeerGroup grp) : base(grp)	{}
+        private RendezVousService rdvSvc;
+
+        protected override void Initialize()
+        {
+            rdvSvc = netPeerGroup.RendezVousService;
+        }
 	}
 }

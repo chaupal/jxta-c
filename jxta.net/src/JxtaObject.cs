@@ -50,18 +50,20 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: JxtaObject.cs,v 1.4 2006/02/16 10:46:36 lankes Exp $
+ * $Id: JxtaObject.cs,v 1.5 2006/08/04 10:33:19 lankes Exp $
  */
 using System;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 namespace JxtaNET
 {
 	/// <summary>
-	/// Summary of JxtaObject.
+	/// Base class of all JXTA objects.
 	/// </summary>
 	public class JxtaObject
-	{
+    {
+        #region import of jxta-c functions
         [DllImport("jxta.dll")]
         private static extern void jxta_initialize();
 
@@ -70,6 +72,10 @@ namespace JxtaNET
 
         [DllImport("jxta.dll")]
         private static extern Int32 _jxta_object_release(IntPtr self, String s, Int32 i);
+
+        [DllImport("jxta.dll")]
+        private static extern IntPtr _jxta_object_share(IntPtr self, String file, Int32 line);
+        #endregion
 
         /* If you enable object checking, you have also to enable this feature in jxta-c. */
 #if JXTA_OBJECT_CHECKING_ENABLE
@@ -85,26 +91,55 @@ namespace JxtaNET
         private IntPtr pself;
         internal IntPtr self
         {
-            get { this.valid();  return pself; }
-            set { pself = value; this.valid(); }
+            get
+            {
+                this.Valid();
+                return pself;
+            }
+            set
+            {
+                Release();
+                pself = value;
+                this.Valid();
+            }
         }
 
-        private void valid()
+        private void Valid()
         {
-            if (!_jxta_object_check_valid(this.pself, "JxtaObject.valid()", 0))
+            StackFrame tmp = new StackFrame(0, true);
+
+            if (!_jxta_object_check_valid(this.pself, tmp.GetFileName(), tmp.GetFileLineNumber()))
                 throw new JxtaException("JxtaObject not valid!");
+        }
+
+        internal void Release()
+        {
+            if (this.pself != IntPtr.Zero)
+            {
+                StackFrame tmp = new StackFrame(0, true);
+
+                Valid();
+                if (_jxta_object_release(this.pself, tmp.GetFileName(), tmp.GetFileLineNumber()) < 0)
+                    Console.WriteLine("Object-Release-Error!! This should not happen! Please report this error...");
+            }
+        }
+
+        internal void Share()
+        {
+            if (this.pself != IntPtr.Zero)
+            {
+                StackFrame tmp = new StackFrame(0, true);
+
+                Valid();
+                _jxta_object_share(this.pself, tmp.GetFileName(), tmp.GetFileLineNumber());
+            }
         }
 
 		~JxtaObject()
 		{
             try
             {
-                this.valid();
-
-                if (_destroy)
-                    if (_jxta_object_release(this.self, "JxtaObject release", 0) < 0)
-                        Console.WriteLine("Object-Release-Error!! This should not happen! Please report this error...");
-
+                Release();
                 jxta_terminate();
             }
             catch (JxtaException)
@@ -121,13 +156,11 @@ namespace JxtaNET
         private static int objCount = 0;
 #endif
 
-        internal JxtaObject(IntPtr self)
+        internal JxtaObject(IntPtr _self)
 		{
             jxta_initialize();
 
-            this.self = self;
-
-            _destroy = false;
+            this.pself = _self;
 
 #if TRACK_OBJECT_COUNT
             objCount++;
@@ -135,15 +168,11 @@ namespace JxtaNET
 #endif
         }
 
-        private bool _destroy;
-
         public JxtaObject()
         {
             jxta_initialize();
 
             this.pself = IntPtr.Zero;
-
-            _destroy = true;
 
 #if TRACK_OBJECT_COUNT
             objCount++;

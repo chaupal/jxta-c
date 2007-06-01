@@ -50,10 +50,12 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: Peers.cs,v 1.2 2006/02/13 21:06:16 lankes Exp $
+ * $Id: Peers.cs,v 1.3 2006/08/04 10:33:17 lankes Exp $
  */
 using System;
 using JxtaNET;
+using System.IO;
+using System.Collections.Generic;
 
 namespace JxtaNETShell
 {
@@ -64,29 +66,29 @@ namespace JxtaNETShell
     public class Peers : ShellApp
     {
         /// <summary>
-        /// Standart help-method; it displays the help-text.
+        /// Standard help-method; it displays the help-text.
         /// </summary>
-        public override void help()
+        public override void Help()
         {
-            Console.WriteLine("peers - discover peers \n");
-            Console.WriteLine("SYNOPSIS");
-            Console.WriteLine("  peers " +/*[-p peerid name attribute]");
-			Console.WriteLine("        */
+            textWriter.WriteLine("peers - discover peers \n");
+            textWriter.WriteLine("SYNOPSIS");
+            textWriter.WriteLine("  peers " +/*[-p peerid name attribute]");
+			textWriter.WriteLine("        */
                                          "[-n n] limit the number of responses to n from a single peer");
-            Console.WriteLine("        [-r] discovers peer groups using remote propagation");
-            Console.WriteLine("        [-a] specify Attribute name to limit discovery to");
-            Console.WriteLine("        [-v] specify Attribute value to limit discovery to. wild cards allowed");
-            Console.WriteLine("        [-f] flush peer advertisements");
-            Console.WriteLine("        [-h] print this information");
+            textWriter.WriteLine("        [-r] discovers peer groups using remote propagation");
+            textWriter.WriteLine("        [-a] specify Attribute name to limit discovery to");
+            textWriter.WriteLine("        [-v] specify Attribute value to limit discovery to. wild cards allowed");
+            textWriter.WriteLine("        [-f] flush peer advertisements");
+            textWriter.WriteLine("        [-h] print this information");
         }
 
         /// <summary>
-        /// Standart run-method. Call this for the 'rdvstatus'-action.
+        /// Standard run-method. Call this for the 'peers'-action.
         /// </summary>
         /// <param name="args">The commandline-parameters.</param>
-        public override void run(string[] args)
+        public override void Run(string[] args)
         {
-            DiscoveryService dis = netPeerGroup.getDiscoveryService();
+            DiscoveryService dis = netPeerGroup.DiscoveryService;
 
             bool remote = false;
             bool flush = false;
@@ -110,7 +112,7 @@ namespace JxtaNETShell
                             flush = true;
                             break;
                         case "-h":
-                            help();
+                            Help();
                             return;
                         case "-a":
                             attr = args[++i].Trim();
@@ -125,47 +127,42 @@ namespace JxtaNETShell
                          * peer = args[++i].Trim(); 
                          * break; */
                         default:
-                            Console.WriteLine("Error: invalid parameter");
+                            textWriter.WriteLine("Error: invalid parameter");
                             return;
                     }
                 }
             }
             catch
             {
-                Console.WriteLine("Error: invalid parameter");
+                textWriter.WriteLine("Error: invalid parameter");
                 return;
             }
 
             if (flush)
             {
-                dis.flushAdvertisements(null, DiscoveryService.DISC_PEER);
+                dis.FlushAdvertisements(null, DiscoveryService.DISC_PEER);
                 return;
             }
 
             if (remote)
             {
-                dis.getRemoteAdvertisements(DiscoveryService.DISC_PEER, null, attr, val, responses, null);
+                dis.GetRemoteAdvertisements(null, DiscoveryService.DISC_PEER, attr, val, responses);
 
-                System.Console.WriteLine("peer discovery message send");
+                textWriter.WriteLine("peer discovery message send");
                 return;
             }
 
-            JxtaVector<PeerAdvertisement> vec = dis.getLocalAdvertisements(DiscoveryService.DISC_PEER, attr, val);
+            List<Advertisement> vec = dis.GetLocalAdvertisements(DiscoveryService.DISC_PEER, attr, val);
 
-            for (int i = 0; i < vec.Length; i++)
-                System.Console.WriteLine("peer" + i + ": " + (vec[i]).getName());
+            for (int i = 0; i < vec.Count; i++)
+                textWriter.WriteLine("peer" + i + ": " + ((PeerAdvertisement)vec[i]).Name);
 
-            if (vec.Length == 0) 
-                Console.WriteLine("No peer advertisements retrieved");
+            if (vec.Count == 0) 
+                textWriter.WriteLine("No peer advertisements retrieved");
         }
 
-
-        /// <summary>
-        /// Standart constructor.
-        /// </summary>
-        /// <param name="grp">the PeerGroup</param>
-        public Peers(PeerGroup grp) : base(grp) { }
-
-
+        protected override void Initialize()
+        {
+        }
     }
 }

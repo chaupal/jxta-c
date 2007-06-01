@@ -50,16 +50,15 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http_client.c,v 1.25 2006/02/15 01:09:49 slowhog Exp $
+ * $Id: jxta_transport_http_client.c,v 1.26 2006/08/08 18:36:11 bondolo Exp $
  */
 
 static const char *__log_cat = "HTTP_CLIENT";
 
 #include <stdio.h>
 
-#include "jxta_debug.h"
+#include "jxta_log.h"
 #include "jxta_errno.h"
-#include "jxta_string.h"
 #include "jxta_transport_http_client.h"
 #include "jxta_apr.h"
 
@@ -67,20 +66,18 @@ static const char *__log_cat = "HTTP_CLIENT";
 /*                                                                            */
 /******************************************************************************/
 struct _HttpClient {
+    apr_pool_t *pool;
+
     const char *proxy_host;
     apr_port_t proxy_port;
     const char *host;
     apr_port_t port;
     const char *useInterface;
 
-    apr_socket_t *socket;
     apr_sockaddr_t *sockaddr;
     apr_sockaddr_t *intfaddr;
 
-    int connected;
-    int keep_alive;
-    int timeout;
-    apr_pool_t *pool;
+    apr_socket_t *socket;
 };
 
 struct _HttpRequest {
@@ -400,9 +397,9 @@ void http_response_free(void *addr)
 JXTA_DECLARE(HttpResponse *) http_request_done(HttpRequest * req)
 {
 
-    HttpResponse *res = (HttpResponse *) malloc(sizeof(HttpResponse));
+    HttpResponse *res;
     apr_ssize_t header_buf_size = 8192;
-    char *header_buf = (char *) malloc(header_buf_size * sizeof(char) + 1);
+    char *header_buf = (char *) calloc(header_buf_size + 1, sizeof(char) );
     apr_size_t read = header_buf_size;
     apr_size_t total_read = 0;
     apr_size_t i, pos = 0;
@@ -411,7 +408,10 @@ JXTA_DECLARE(HttpResponse *) http_request_done(HttpRequest * req)
     int count_lf = 0;
     char *pt;
 
-    memset(res, 0, sizeof(HttpResponse));
+    res = (HttpResponse *) calloc(1, sizeof(HttpResponse));
+    if( NULL == res ) {
+        return res;
+    }
 
     /* apr_status_t status; */
     res->protocol = NULL;

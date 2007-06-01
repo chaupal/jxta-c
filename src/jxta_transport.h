@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport.h,v 1.8 2005/10/17 20:51:48 slowhog Exp $
+ * $Id: jxta_transport.h,v 1.9 2006/09/06 21:45:18 slowhog Exp $
  */
 
 #ifndef JXTA_TRANSPORT_H
@@ -62,7 +62,7 @@
 #include "jxta_endpoint_address.h"
 #include "jxta_endpoint_messenger.h"
 #include "jxta_message.h"
-
+#include "jxta_qos.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -190,6 +190,24 @@ JXTA_DECLARE(Jxta_boolean) jxta_transport_allow_inbound(Jxta_transport * me);
  * @return Jxta_boolean TRUE if outbound message is allowed, FALSE otherwise.
  */
 JXTA_DECLARE(Jxta_boolean) jxta_transport_allow_outbound(Jxta_transport * me);
+
+/**
+ * Set default QoS to be applied for an endpoint.
+ * @param me pointer to the transport. 
+ * @param ea The endpoint address for which this default is for. NULL to indicate all peers as well as propagation.
+ * @param qos the QoS to be used as default for the endpoint 
+ * @return JXTA_SUCCESS if the value was set. JXTA_FAILED otherwise.
+ */
+JXTA_DECLARE(Jxta_status) jxta_transport_set_default_qos(Jxta_transport * me, Jxta_endpoint_address * ea, const Jxta_qos * qos);
+
+/**
+ * Get the default QoS setting for endpoints
+ * @param me pointer to the transport
+ * @param ea The endpoint address whose default QoS to be retrieved. NULL to indicate all peers as well as propagation.
+ * @param qos default QoS for the specified endpoint
+ * @return JXTA_SUCCESS if the default is retrieved successfully, JXTA_ITEM_NOTFOUND is no default was set.
+ */
+JXTA_DECLARE(Jxta_status) jxta_transport_default_qos(Jxta_transport * me, Jxta_endpoint_address * ea, const Jxta_qos ** qos);
 
 #ifdef __cplusplus
 #if 0

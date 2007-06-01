@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_stdpg.c,v 1.49 2006/06/19 08:04:54 mmx2005 Exp $
+ * $Id: jxta_stdpg.c,v 1.66 2006/09/29 01:28:45 slowhog Exp $
  */
 
 /*
@@ -67,6 +67,8 @@
 
 static const char *__log_cat = "STDPG";
 
+#include <ctype.h>
+
 #ifdef __APPLE__
 #include <sys/types.h>
 #endif
@@ -79,10 +81,12 @@ static const char *__log_cat = "STDPG";
 #include "netinet/in.h"
 #endif
 
-#include <ctype.h>
-#include "jpr/jpr_excep.h"
+#include "jpr/jpr_excep_proto.h"
 #include "jxta_errno.h"
 #include "jxta_log.h"
+#include "jxta_cm.h"
+#include "jxta_object_priv.h"
+#include "jxta_cm_private.h"
 #include "jxta_defloader_private.h"
 #include "jxta_stdpg_private.h"
 #include "jxta_id.h"
@@ -99,52 +103,61 @@ static const char *__log_cat = "STDPG";
 #ifdef __GNUC__
 #define UNUSED__  __attribute__((__unused__))
 #else
-#define UNUSED__    /* UNSUSED */
+#define UNUSED__        /* UNSUSED */
 #endif
 #endif
-
-/*
- * All the methods:
- * We first cast this back to our local derived type
- * and verify that the object is indeed of that type.
- */
 
 /*
  * Load a service properly; that is make sure it
  * initializes ok before returning it, otherwise, release it.
  */
-static Jxta_module *ld_mod(Jxta_stdpg * self, Jxta_id * class_id, const char *name, Jxta_MIA * impl_adv, Throws)
+Jxta_status stdpg_ld_mod(Jxta_PG * self, Jxta_id * class_id, const char *name, Jxta_MIA * impl_adv, Jxta_module ** module)
 {
-    Jxta_module *m;
+    Jxta_status res;
 
-    ThrowThrough();
+    res = jxta_defloader_instantiate(name, module);
 
-    m = jxta_defloader_instantiate_e(name, MayThrow);
-    Try {
-        jxta_module_init_e(m, (Jxta_PG *) self, class_id, (Jxta_advertisement *) impl_adv, MayThrow);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Module '%s' loaded and initialized\n", name);
-    } Catch {
-        Jxta_status s = jpr_lasterror_get();
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Module '%s' failed to initialize (%d)\n", name, s);
-        JXTA_OBJECT_RELEASE(m);
-        Throw(s);
+    if (JXTA_SUCCESS != res) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "%s failed to load (%d)\n", name, res);
+        return res;
     }
 
-    return m;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "%s loaded.\n", name);
+
+    res = jxta_module_init(*module, self, class_id, (Jxta_advertisement *) impl_adv);
+
+    if (JXTA_SUCCESS != res) {
+        JXTA_OBJECT_RELEASE(*module);
+        *module = NULL;
+
+        if (res == JXTA_NOT_CONFIGURED) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "%s skipped as not configured \n", name);
+            return JXTA_SUCCESS;
+        }
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "%s failed to initialize (%d)\n", name, res);
+
+        return res;
+    }
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "%s loaded and initialized\n", name);
+
+    return res;
 }
 
+#if APR_HAS_DSO
 /**
  * Dynamically load a service properly; that is make sure it
  * initializes ok before returning it, otherwise, release it.
  */
 static Jxta_module *ld_dso_mod(Jxta_stdpg * self, Jxta_id * class_id, const char *lib_name, const char *constructor_name,
-                               Jxta_MIA * impl_adv, Throws)
+                               Jxta_MIA * impl_adv)
 {
+    Jxta_status res;
     Jxta_module *m;
     apr_dso_handle_t *handle = NULL;
-    apr_dso_handle_sym_t new_instance = NULL;
     apr_status_t status;
-    void *(*module_new_instance) (void);
+    Jxta_module *(*module_new_instance) (void);
     char error_buf[256];
 
     status = apr_dso_load(&handle, lib_name, self->pool);
@@ -155,7 +168,7 @@ static Jxta_module *ld_dso_mod(Jxta_stdpg * self, Jxta_id * class_id, const char
         return NULL;
     }
 
-    status = apr_dso_sym(&new_instance, handle, constructor_name);
+    status = apr_dso_sym((apr_dso_handle_sym_t *) &module_new_instance, handle, constructor_name);
     if (status != APR_SUCCESS) {
         apr_dso_error(handle, error_buf, 256);
         apr_dso_unload(handle);
@@ -164,9 +177,8 @@ static Jxta_module *ld_dso_mod(Jxta_stdpg * self, Jxta_id * class_id, const char
         return NULL;
     }
 
-    if (new_instance != NULL) {
-        module_new_instance = (void *(*)(void)) new_instance;
-        m = (Jxta_module *) (*module_new_instance) ();
+    if (module_new_instance != NULL) {
+        m = (*module_new_instance) ();
     } else {
         apr_dso_unload(handle);
         return NULL;
@@ -189,27 +201,36 @@ static Jxta_module *ld_dso_mod(Jxta_stdpg * self, Jxta_id * class_id, const char
         JXTA_OBJECT_RELEASE(idstr);
     }
 
-    Try {
-        jxta_module_init_e(m, (Jxta_PG *) self, class_id, (Jxta_advertisement *) impl_adv, MayThrow);
+    res = jxta_module_init(m, (Jxta_PG *) self, class_id, (Jxta_advertisement *) impl_adv);
+
+    if (JXTA_SUCCESS == res) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Module '%s' loaded and initialized\n", lib_name);
-    } Catch {
-        Jxta_status s = jpr_lasterror_get();
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Module '%s' failed to initialize (%d)\n", lib_name, s);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Module '%s' failed to initialize (%d)\n", lib_name, res);
         JXTA_OBJECT_RELEASE(m);
-        Throw(s);
+        m = NULL;
     }
 
     return m;
 }
+#endif
 
 /*
  * Implementations for module methods
  */
 static Jxta_status stdpg_start(Jxta_module * self, const char *args[])
 {
+    Jxta_status rv;
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Started.\n");
 
-    return peergroup_start((Jxta_PG *) self);
+    rv = peergroup_start((Jxta_PG *) self);
+    if (JXTA_SUCCESS != rv) {
+        return rv;
+    }
+
+    /* Now, start the services */
+    rv = jxta_stdpg_start_modules(self);
+    return rv;
 }
 
 static void stdpg_stop(Jxta_module * self)
@@ -300,6 +321,7 @@ void jxta_stdpg_set_configadv(Jxta_module * self, Jxta_PA * config_adv)
  */
 void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
 {
+    Jxta_status status;
     JString *mia_parm_jstring = NULL;
     Jxta_advertisement *parm_advs = NULL;
     Jxta_vector *parm_advs_vector = NULL;
@@ -308,9 +330,12 @@ void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assign
     Jxta_id *pid_to_use = NULL;
     Jxta_id *gid_to_use = NULL;
     Jxta_id *msid_to_use = NULL;
+    Jxta_svc *svc = NULL;
     Jxta_cm *cache_manager = NULL;
-    const char * home;
+    Jxta_CacheConfigAdvertisement *cache_config = NULL;
+    const char *home;
     Jxta_stdpg *it = PTValid(self, Jxta_stdpg);
+    apr_thread_pool_t *thread_pool = NULL;
 
     /* The assigned ID is supposed to be the grp ID.
      * if we're the root group we may not have been given one, though.
@@ -360,27 +385,51 @@ void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assign
          * it is very rare that the parent's config adv makes sense.
          * It does for netpg over platform in the SE implem, but that's it
          * and we do not have that set-up in C.
-         jxta_PG_get_configadv(group, &(it->config_adv));
          */
+        jxta_PG_get_configadv(group, &(it->config_adv));
         jxta_PG_get_PID(group, &(pid_to_use));
         jxta_PG_get_peername(group, &(peername_to_use));
     }
     /* create a cache manager */
     home = getenv("JXTA_HOME");
+    jxta_PA_get_Svc_with_id(it->config_adv, jxta_cache_classid, &svc);
+    if (NULL != svc) {
+        cache_config = jxta_svc_get_CacheConfig(svc);
+    }
+    if (NULL == cache_config) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "No cache configuration specified - Using default\n");
+        cache_config = jxta_CacheConfigAdvertisement_new();
+        status = jxta_CacheConfigAdvertisement_create_default(cache_config, FALSE);
+        if (JXTA_SUCCESS != status) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create default cache Configuration %i\n", status);
+        }
+    }
     if (home != NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Using custom CM directory.\n");
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Using default CM directory.\n");
         home = ".cm";
     }
-    
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Using CM directory : %s \n", home);
+    thread_pool = jxta_PG_thread_pool_get((Jxta_PG *)it);
+    if (jxta_cache_config_addr_is_single_db(cache_config)) {
+        if (group != NULL) {
+            peergroup_get_cache_manager(group, &cache_manager);
+        }
+        if (cache_manager) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Found a cache manager --- go shared\n");
+            cache_manager = cm_shared_DB_new(cache_manager, gid_to_use);
+        }
+    }
+    if (!cache_manager) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Didn't find a cache manager --  go new\n");
+        cache_manager = cm_new(home, gid_to_use, cache_config, pid_to_use,  thread_pool);
+    }
+    JXTA_OBJECT_RELEASE(cache_config);
+    JXTA_OBJECT_RELEASE(svc);
 
-    cache_manager = jxta_cm_new(home, gid_to_use, pid_to_use);
-
-    jxta_PG_set_cache_manager((Jxta_PG *) it, cache_manager);
+    peergroup_set_cache_manager((Jxta_PG *) it, cache_manager);
     JXTA_OBJECT_RELEASE(cache_manager);
-
     /*
      * It is a fatal error (equiv to bad address) to not be given an impl adv
      * so we have an impl adv where to fish for msid. As for name and desc, we
@@ -473,158 +522,166 @@ void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assign
  * need a finer grain control on the init sequence: specifically, they may
  * need to init additional services before the lot of them are started.
  *
- * Exception-throwing variant.
- */
-void jxta_stdpg_init_modules_e(Jxta_module * self, Throws)
-{
-    char **keys_of_services_name = NULL;
-    Jxta_id *gid;
-    Jxta_status res;
-    Jxta_stdpg *it = PTValid(self, Jxta_stdpg);
-
-    /* Load/init all services */
-    Try {
-        /*
-         * Simplification: so far the C implementation does only
-         * support two cases: either the group is the root group and
-         * has an endpoint service, or it is a descendant group and
-         * borrows the endpoint service from its home group.
-         * In addition, the creation of the endpoint by the root group
-         * is care of the netpg. So, if we're the root group, we do
-         * touch the endpoint. Otherwise, we get a ref from our parent.
-         */
-        if (it->home_group != NULL) {
-            jxta_PG_get_endpoint_service(it->home_group, &(it->endpoint));
-        }
-
-        it->rendezvous = (Jxta_rdv_service *)
-            ld_mod(it, jxta_rendezvous_classid, "builtin:rdv_service", NULL, MayThrow);
-
-        it->resolver = (Jxta_resolver_service *)
-            ld_mod(it, jxta_resolver_classid, "builtin:resolver_service_ref", NULL, MayThrow);
-
-        it->srdi = (Jxta_srdi_service *)
-            ld_mod(it, jxta_srdi_classid, "builtin:srdi_service_ref", NULL, MayThrow);
-
-        it->discovery = (Jxta_discovery_service *)
-            ld_mod(it, jxta_discovery_classid, "builtin:discovery_service_ref", NULL, MayThrow);
-
-        it->pipe = (Jxta_pipe_service *)
-            ld_mod(it, jxta_pipe_classid, "builtin:pipe_service", NULL, MayThrow);
-
-        it->membership = (Jxta_membership_service *)
-            ld_mod(it, jxta_membership_classid, "builtin:null_membership_service", NULL, MayThrow);
-
-        /*
-           it->peerinfo = (Jxta_peerinfo_service*)
-           ld_mod(it, jxta_peerinfo_classid, "builtin:peerinfo", MayThrow);
-         */
-
-        keys_of_services_name = jxta_hashtable_keys_get(it->services_name);
-
-        if (keys_of_services_name != NULL) {
-            unsigned int i = 0;
-            Jxta_id *key_id = NULL;
-            JString *key_jstring = NULL;
-            Jxta_module *module = NULL;
-            JString *path_jstring = NULL;
-            char *path = NULL;
-            char *res, *state;
-            char *lib_name = NULL;
-            char *constructor_name = NULL;
-
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Custom services to load\n");
-            while (keys_of_services_name[i]) {
-                key_jstring = jstring_new_2(keys_of_services_name[i]);
-                jxta_id_from_jstring(&key_id, key_jstring);
-                if (key_jstring != NULL) {
-
-                    jxta_hashtable_get(it->services_name, keys_of_services_name[i],
-                                       strlen(keys_of_services_name[i]), JXTA_OBJECT_PPTR(&path_jstring));
-                    path = strdup(jstring_get_string(path_jstring));
-                    JXTA_OBJECT_RELEASE(path_jstring);
-
-                    res = apr_strtok(path, "$", &state);
-                    lib_name = strdup(res);
-                    res = apr_strtok(NULL, "$", &state);
-                    constructor_name = strdup(res);
-                    free(path);
-
-                    module = ld_dso_mod(it, key_id, lib_name, constructor_name, NULL, MayThrow);
-
-                    free(lib_name);
-                    free(constructor_name);
-
-                    if (module != NULL) {
-                        jxta_hashtable_put(it->services, keys_of_services_name[i],
-                                           strlen(keys_of_services_name[i]), (Jxta_object *) module);
-                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Adding custom service %s\n", keys_of_services_name[i]);
-                        JXTA_OBJECT_RELEASE(module);
-                    }
-
-                    JXTA_OBJECT_RELEASE(key_jstring);
-                    JXTA_OBJECT_RELEASE(key_id);
-                }
-                free(keys_of_services_name[i]);
-                i++;
-            }
-            free(keys_of_services_name);
-        } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "No custom services to load\n");
-        }
-
-        /*
-         * Now, register with the group registry.
-         * If we're redundant, it is a bit late to find out, but not that
-         * terrible, and it saves us from a synchronization in get_interface()
-         * which we'd need if we were to go public with basic services not
-         * hooked-up.
-         */
-        gid = jxta_PA_get_GID(it->peer_adv);
-        res = jxta_register_group_instance(gid, (Jxta_PG *) self);
-        JXTA_OBJECT_RELEASE(gid);
-
-        if (res != JXTA_SUCCESS) {
-            Throw(res);
-        }
-
-    }
-    Catch {
-        /*
-         * For now, we assume that what was init'ed needs to be stopped,
-         * but really it should not be the case and the outside world
-         * must not have to worry about stopping a group that was not
-         * even successfully init'ed. Releasing it should be enough.
-         *
-         * So, call our own stop routine behind the scenes, just to be safe.
-         */
-        stdpg_stop(self);
-
-        /*
-         * The rest can be done all right by the dtor when/if released.
-         */
-        Throw(jpr_lasterror_get());
-    }
-}
-
-/*
- * This routine just init the modules.
- * This is not part of the public API, this is for subclasses which may
- * need a finer grain control on the init sequence: specifically, they may
- * need to init additional services before the lot of them are started.
- *
  * Error-returning variant.
  */
 Jxta_status jxta_stdpg_init_modules(Jxta_module * self)
 {
-    PTValid(self, Jxta_stdpg);
-    Try {
-        jxta_stdpg_init_modules_e(self, MayThrow);
+    Jxta_status res;
+    Jxta_stdpg *it = PTValid(self, Jxta_stdpg);
+    char **keys_of_services_name = NULL;
+    Jxta_id *gid;
+
+    /* Load/init all services */
+
+    /*
+     * Simplification: so far the C implementation does only
+     * support two cases: either the group is the root group and
+     * has an endpoint service, or it is a descendant group and
+     * borrows the endpoint service from its home group.
+     * In addition, the creation of the endpoint by the root group
+     * is care of the netpg. So, if we're the root group, we do
+     * touch the endpoint. Otherwise, we get a ref from our parent.
+     */
+    if (it->home_group != NULL) {
+        jxta_PG_get_endpoint_service(it->home_group, &(it->endpoint));
     }
-    Catch {
-        return jpr_lasterror_get();
+
+    res = stdpg_ld_mod((Jxta_PG *) it, jxta_rendezvous_classid, "builtin:rdv_service", NULL, (Jxta_module **) & it->rendezvous);
+    if (JXTA_SUCCESS != res) {
+        goto ERROR_EXIT;
     }
-    return JXTA_SUCCESS;
+
+    res =
+        stdpg_ld_mod((Jxta_PG *) it, jxta_resolver_classid, "builtin:resolver_service_ref", NULL,
+                     (Jxta_module **) & it->resolver);
+    if (JXTA_SUCCESS != res) {
+        goto ERROR_EXIT;
+    }
+
+    res = stdpg_ld_mod((Jxta_PG *) it, jxta_srdi_classid, "builtin:srdi_service_ref", NULL, (Jxta_module **) & it->srdi);
+    if (JXTA_SUCCESS != res) {
+        goto ERROR_EXIT;
+    }
+
+    res =
+        stdpg_ld_mod((Jxta_PG *) it, jxta_discovery_classid, "builtin:discovery_service_ref", NULL,
+                     (Jxta_module **) & it->discovery);
+    if (JXTA_SUCCESS != res) {
+        goto ERROR_EXIT;
+    }
+
+    res = stdpg_ld_mod((Jxta_PG *) it, jxta_pipe_classid, "builtin:pipe_service", NULL, (Jxta_module **) & it->pipe);
+    if (JXTA_SUCCESS != res) {
+        goto ERROR_EXIT;
+    }
+
+    res =
+        stdpg_ld_mod((Jxta_PG *) it, jxta_membership_classid, "builtin:null_membership_service", NULL,
+                     (Jxta_module **) & it->membership);
+    if (JXTA_SUCCESS != res) {
+        goto ERROR_EXIT;
+    }
+
+    /*
+       res = stdpg_ld_mod( (Jxta_PG*) it, jxta_peerinfo_classid, "builtin:peerinfo", (Jxta_module**) &it->peerinfo);
+       if( JXTA_SUCCESS != res ) {
+       goto ERROR_EXIT;
+       }
+     */
+
+    keys_of_services_name = jxta_hashtable_keys_get(it->services_name);
+
+    if (keys_of_services_name != NULL) {
+        unsigned int i = 0;
+        Jxta_id *key_id = NULL;
+        JString *key_jstring = NULL;
+        Jxta_module *module = NULL;
+        JString *path_jstring = NULL;
+        char *path = NULL;
+        char *res, *state;
+        char *lib_name = NULL;
+        char *constructor_name = NULL;
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Custom services to load\n");
+        while (keys_of_services_name[i]) {
+            key_jstring = jstring_new_2(keys_of_services_name[i]);
+            jxta_id_from_jstring(&key_id, key_jstring);
+            if (key_jstring != NULL) {
+
+                jxta_hashtable_get(it->services_name, keys_of_services_name[i],
+                                   strlen(keys_of_services_name[i]), JXTA_OBJECT_PPTR(&path_jstring));
+                path = strdup(jstring_get_string(path_jstring));
+                JXTA_OBJECT_RELEASE(path_jstring);
+
+                res = apr_strtok(path, "$", &state);
+                lib_name = strdup(res);
+                res = apr_strtok(NULL, "$", &state);
+                constructor_name = strdup(res);
+                free(path);
+
+#if APR_HAS_DSO
+                module = ld_dso_mod(it, key_id, lib_name, constructor_name, NULL);
+#else
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,
+                                "Failed to load: %s, installed APR does not support dynamic shared objects\n",
+                                keys_of_services_name[i]);
+#endif
+
+                free(lib_name);
+                free(constructor_name);
+
+                if (module != NULL) {
+                    jxta_hashtable_put(it->services, keys_of_services_name[i],
+                                       strlen(keys_of_services_name[i]), (Jxta_object *) module);
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Adding custom service %s\n", keys_of_services_name[i]);
+                    JXTA_OBJECT_RELEASE(module);
+                } else {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed adding custom service %s\n",
+                                    keys_of_services_name[i]);
+                }
+
+                JXTA_OBJECT_RELEASE(key_jstring);
+                JXTA_OBJECT_RELEASE(key_id);
+            }
+
+            free(keys_of_services_name[i]);
+            i++;
+        }
+
+        free(keys_of_services_name);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No custom services to load\n");
+    }
+
+    /*
+     * Now, register with the group registry.
+     * If we're redundant, it is a bit late to find out, but not that
+     * terrible, and it saves us from a synchronization in get_interface()
+     * which we'd need if we were to go public with basic services not
+     * hooked-up.
+     */
+    gid = jxta_PA_get_GID(it->peer_adv);
+    res = jxta_register_group_instance(gid, (Jxta_PG *) self);
+    JXTA_OBJECT_RELEASE(gid);
+
+    if (res != JXTA_SUCCESS) {
+        goto ERROR_EXIT;
+    }
+
+    return res;
+
+  ERROR_EXIT:
+    /*
+     * For now, we assume that what was init'ed needs to be stopped,
+     * but really it should not be the case and the outside world
+     * must not have to worry about stopping a group that was not
+     * even successfully init'ed. Releasing it should be enough.
+     *
+     * So, call our own stop routine behind the scenes, just to be safe.
+     */
+    stdpg_stop(self);
+
+    return res;
 }
 
 /*
@@ -633,7 +690,7 @@ Jxta_status jxta_stdpg_init_modules(Jxta_module * self)
  * specifically, the opportunity to init additional services before starting
  * ours, and then, their own.
  */
-void jxta_stdpg_start_modules(Jxta_module * self)
+Jxta_status jxta_stdpg_start_modules(Jxta_module * self)
 {
     const char *noargs[] = { NULL };
     char **keys_of_services = NULL;
@@ -646,6 +703,7 @@ void jxta_stdpg_start_modules(Jxta_module * self)
      * managed by a subclass (for the root group).
      */
     jxta_module_start((Jxta_module *) (it->rendezvous), noargs);
+    jxta_module_start((Jxta_module *) (it->srdi), noargs);
     jxta_module_start((Jxta_module *) (it->resolver), noargs);
     jxta_module_start((Jxta_module *) (it->discovery), noargs);
     jxta_module_start((Jxta_module *) (it->pipe), noargs);
@@ -673,26 +731,7 @@ void jxta_stdpg_start_modules(Jxta_module * self)
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "No custom services to start\n");
     }
-}
-
-/*
- * The public init routine (does init and start of modules).
- */
-static void stdpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv, Throws)
-{
-    ThrowThrough();
-
-    peergroup_init((Jxta_PG *) self, group);
-    /* Do our general init */
-    jxta_stdpg_init_group(self, group, assigned_id, impl_adv);
-
-    /* load/initing modules */
-    jxta_stdpg_init_modules_e(self, MayThrow);
-
-    /* Now, start the services */
-    jxta_stdpg_start_modules(self);
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Inited.\n");
+    return JXTA_SUCCESS;
 }
 
 /*
@@ -700,11 +739,21 @@ static void stdpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
  */
 static Jxta_status stdpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * implAdv)
 {
-    Try {
-        stdpg_init_e(self, group, assigned_id, implAdv, MayThrow);
-    } Catch {
-        return jpr_lasterror_get();
+    Jxta_status res = JXTA_SUCCESS;
+
+    peergroup_init((Jxta_PG *) self, group);
+    /* Do our general init */
+    jxta_stdpg_init_group(self, group, assigned_id, implAdv);
+
+    /* load/initing modules */
+    res = jxta_stdpg_init_modules(self);
+
+    if (JXTA_SUCCESS != res) {
+        return res;
     }
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Inited.\n");
+
     return JXTA_SUCCESS;
 }
 
@@ -724,7 +773,7 @@ static void stdpg_get_interface(Jxta_service * self, Jxta_service ** service)
 {
     PTValid(self, Jxta_stdpg);
 
-    *service = JXTA_OBJECT_SHARE(self);;
+    *service = JXTA_OBJECT_SHARE(self);
 }
 
 /*
@@ -766,7 +815,7 @@ Jxta_status stdpg_add_relay_addr(Jxta_PG * self, Jxta_RdvAdvertisement * relay)
      * Publish locally and remotely the new peer advertisement
      */
     discovery_service_publish(it->discovery, (Jxta_advertisement *) padv, DISC_PEER,
-                              (Jxta_expiration_time) PA_EXPIRATION_LIFE, (Jxta_expiration_time) PA_REMOTE_EXPIRATION);
+                              (Jxta_expiration_time) PA_EXPIRATION_LIFE, LOCAL_ONLY_EXPIRATION);
     discovery_service_remote_publish(it->discovery, NULL, (Jxta_advertisement *) padv, DISC_PEER,
                                      (Jxta_expiration_time) PA_REMOTE_EXPIRATION);
 
@@ -813,13 +862,6 @@ static Jxta_status stdpg_lookup_service(Jxta_PG * self, Jxta_id * name, Jxta_ser
     *result = service;
 
     return res;
-}
-
-static void stdpg_lookup_service_e(Jxta_PG * self, Jxta_id * name, Jxta_service ** svce, Throws)
-{
-    Jxta_stdpg *it = PTValid(self, Jxta_stdpg);
-
-    Throw(JXTA_NOTIMP);
 }
 
 static void stdpg_get_compatstatement(Jxta_PG * self, JString ** compat)
@@ -876,41 +918,22 @@ static Jxta_boolean stdpg_is_compatible(Jxta_PG * self, JString * compat)
     return result;
 }
 
-static void stdpg_loadfromimpl_module_e(Jxta_PG * self,
-                                        Jxta_id * assigned_id, Jxta_advertisement * impl, Jxta_module ** mod, Throws)
+static Jxta_status stdpg_loadfromimpl_module(Jxta_PG * self,
+                                             Jxta_id * assigned_id, Jxta_advertisement * impl, Jxta_module ** module)
 {
-    Jxta_MIA *impl_adv;
+    Jxta_status res;
+    Jxta_MIA *impl_adv = (Jxta_MIA *) impl;
     JString *code;
 
-    ThrowThrough();
-
     PTValid(self, Jxta_stdpg);
 
-    impl_adv = (Jxta_MIA *) impl;
-
-    /*
-     * Looks a bit aerobatic but fine: granted that the impl adv
-     * will not be released on us, there's no reason for the code
-     * element to go away. So we can release it before we use it.
-     */
     code = jxta_MIA_get_Code(impl_adv);
+
+    res = stdpg_ld_mod(self, assigned_id, jstring_get_string(code), impl_adv, module);
+
     JXTA_OBJECT_RELEASE(code);
 
-    *mod = ld_mod((Jxta_stdpg *) self, assigned_id, jstring_get_string(code), impl_adv, MayThrow);
-}
-
-static Jxta_status stdpg_loadfromimpl_module(Jxta_PG * self,
-                                             Jxta_id * assigned_id, Jxta_advertisement * impl, Jxta_module ** result)
-{
-    PTValid(self, Jxta_stdpg);
-
-    Try {
-        stdpg_loadfromimpl_module_e(self, assigned_id, impl, result, MayThrow);
-    } Catch {
-        return jpr_lasterror_get();
-    }
-
-    return JXTA_SUCCESS;
+    return res;
 }
 
 static Jxta_status stdpg_loadfromid_module(Jxta_PG * self,
@@ -919,14 +942,6 @@ static Jxta_status stdpg_loadfromid_module(Jxta_PG * self,
     Jxta_stdpg *it = PTValid(self, Jxta_stdpg);
 
     return JXTA_NOTIMP;
-}
-
-static void stdpg_loadfromid_module_e(Jxta_PG * self,
-                                      Jxta_id * assigned_id, Jxta_MSID * spec_id, int where, Jxta_module ** mod, Throws)
-{
-    Jxta_stdpg *it = PTValid(self, Jxta_stdpg);
-
-    Throw(JXTA_NOTIMP);
 }
 
 static void stdpg_set_labels(Jxta_PG * self, JString * name, JString * description)
@@ -992,10 +1007,11 @@ static void stdpg_get_genericpeergroupMIA(Jxta_PG * self, Jxta_MIA ** mia)
     *mia = new_mia;
 }
 
-static void stdpg_newfromimpl_e(Jxta_PG * self, Jxta_PGID * gid,
-                                Jxta_advertisement * impl, JString * name,
-                                JString * description, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws)
+static Jxta_status stdpg_newfromimpl(Jxta_PG * self, Jxta_PGID * gid,
+                                     Jxta_advertisement * impl, JString * name,
+                                     JString * description, Jxta_vector * resource_groups, Jxta_PG ** pg)
 {
+    Jxta_status res;
     const char *noargs[] = { NULL };
     Jxta_PGA *pga;
     Jxta_PG *g = NULL;
@@ -1003,30 +1019,31 @@ static void stdpg_newfromimpl_e(Jxta_PG * self, Jxta_PGID * gid,
     JString *code;
     Jxta_stdpg *it = PTValid(self, Jxta_stdpg);
 
-    if ((gid != NULL)
-        && (jxta_lookup_group_instance(gid, pg) == JXTA_SUCCESS)) {
-        return;
+    if ((gid != NULL) && (jxta_lookup_group_instance(gid, pg) == JXTA_SUCCESS)) {
+        return JXTA_SUCCESS;
     }
 
     impl_adv = (Jxta_MIA *) impl;
 
     code = jxta_MIA_get_Code(impl_adv);
 
-    Try {
-        g = (Jxta_PG *) jxta_defloader_instantiate_e(jstring_get_string(code), MayThrow);
-
-        jxta_PG_set_labels(g, name, description);
-        jxta_PG_set_resourcegroups(g, resource_groups);
-        jxta_module_init_e((Jxta_module *) g, self, gid, (Jxta_advertisement *) impl_adv, MayThrow);
-        jxta_module_start((Jxta_module *) g, noargs);
+    res = jxta_defloader_instantiate(jstring_get_string(code), (Jxta_module **) & g);
+    JXTA_OBJECT_RELEASE(code);
+    if (JXTA_SUCCESS != res) {
+        return res;
     }
-    Catch {
-        Jxta_status s = jpr_lasterror_get();
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "%s failed to load/init (%d)\n", jstring_get_string(code), s);
-        JXTA_OBJECT_RELEASE(code);
-        if (g != NULL)
-            JXTA_OBJECT_RELEASE(g);
-        Throw(s);
+
+    jxta_PG_set_labels(g, name, description);
+    jxta_PG_set_resourcegroups(g, resource_groups);
+    res = jxta_module_init((Jxta_module *) g, self, gid, (Jxta_advertisement *) impl_adv);
+    if (JXTA_SUCCESS != res) {
+        JXTA_OBJECT_RELEASE(g);
+        return res;
+    }
+    res = jxta_module_start((Jxta_module *) g, noargs);
+    if (JXTA_SUCCESS != res) {
+        JXTA_OBJECT_RELEASE(g);
+        return res;
     }
 
     /**
@@ -1038,28 +1055,14 @@ static void stdpg_newfromimpl_e(Jxta_PG * self, Jxta_PGID * gid,
 
     jxta_service_get_interface((Jxta_service *) g, (Jxta_service **) pg);
     JXTA_OBJECT_RELEASE(g);
-
-    JXTA_OBJECT_RELEASE(code);
-}
-
-static Jxta_status stdpg_newfromimpl(Jxta_PG * self, Jxta_PGID * gid,
-                                     Jxta_advertisement * impl, JString * name,
-                                     JString * description, Jxta_vector * resource_groups, Jxta_PG ** result)
-{
-
     PTValid(self, Jxta_stdpg);
-
-    Try {
-        stdpg_newfromimpl_e(self, gid, impl, name, description, resource_groups, result, MayThrow);
-    } Catch {
-        return jpr_lasterror_get();
-    }
 
     return JXTA_SUCCESS;
 }
 
-static void stdpg_newfromadv_e(Jxta_PG * self, Jxta_advertisement * pgAdv, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws)
+static Jxta_status stdpg_newfromadv(Jxta_PG * self, Jxta_advertisement * pgAdv, Jxta_vector * resource_groups, Jxta_PG ** pg)
 {
+    Jxta_status res;
     Jxta_PGA *pga;
     Jxta_id *msid;
     Jxta_id *gid;
@@ -1074,7 +1077,7 @@ static void stdpg_newfromadv_e(Jxta_PG * self, Jxta_advertisement * pgAdv, Jxta_
     gid = jxta_PGA_get_GID(pga);
     if (jxta_lookup_group_instance(gid, pg) == JXTA_SUCCESS) {
         JXTA_OBJECT_RELEASE(gid);
-        return;
+        return JXTA_SUCCESS;
     }
 
     msid = jxta_PGA_get_MSID(pga);
@@ -1109,48 +1112,20 @@ static void stdpg_newfromadv_e(Jxta_PG * self, Jxta_advertisement * pgAdv, Jxta_
 
     if (mia == NULL) {
         JXTA_OBJECT_RELEASE(gid);
-        Throw(JXTA_ITEM_NOTFOUND);
+        return JXTA_ITEM_NOTFOUND;
     }
 
     name = jxta_PGA_get_Name(pga);
     desc = jxta_PGA_get_Desc(pga);
 
-    Try {
-        stdpg_newfromimpl_e(self, gid, (Jxta_advertisement *) mia, name, desc, resource_groups, pg, MayThrow);
-    }
-    Catch {
-
-        JXTA_OBJECT_RELEASE(gid);
-        JXTA_OBJECT_RELEASE(name);
-        JXTA_OBJECT_RELEASE(desc);
-        JXTA_OBJECT_RELEASE(mia);
-        Throw(jpr_lasterror_get());
-    }
+    res = stdpg_newfromimpl(self, gid, (Jxta_advertisement *) mia, name, desc, resource_groups, pg);
 
     JXTA_OBJECT_RELEASE(gid);
     JXTA_OBJECT_RELEASE(name);
     JXTA_OBJECT_RELEASE(desc);
     JXTA_OBJECT_RELEASE(mia);
-}
 
-static Jxta_status stdpg_newfromadv(Jxta_PG * self, Jxta_advertisement * pgAdv, Jxta_vector * resource_groups, Jxta_PG ** result)
-{
-    PTValid(self, Jxta_stdpg);
-
-    Try {
-        stdpg_newfromadv_e(self, pgAdv, resource_groups, result, MayThrow);
-    } Catch {
-        return jpr_lasterror_get();
-    }
-
-    return JXTA_SUCCESS;
-}
-
-static void stdpg_newfromid_e(Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * resource_group, Jxta_PG ** pg, Throws)
-{
-    Jxta_stdpg *it = PTValid(self, Jxta_stdpg);
-
-    Throw(JXTA_NOTIMP);
+    return res;
 }
 
 static Jxta_status stdpg_newfromid(Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * resource_group, Jxta_PG ** result)
@@ -1210,8 +1185,10 @@ static void stdpg_get_peerinfo_service(Jxta_PG * self, Jxta_peerinfo_service ** 
 static void stdpg_get_membership_service(Jxta_PG * self, Jxta_membership_service ** memb)
 {
     Jxta_stdpg *it = PTValid(self, Jxta_stdpg);
-
-    *memb = JXTA_OBJECT_SHARE(it->membership);
+    if (it->membership) {
+        JXTA_OBJECT_SHARE(it->membership);
+    }
+    *memb = it->membership;
 }
 
 static void stdpg_get_pipe_service(Jxta_PG * self, Jxta_pipe_service ** pipe)
@@ -1238,20 +1215,20 @@ static void stdpg_get_PID(Jxta_PG * self, Jxta_PID ** pid)
 static void stdpg_get_cache_manager(Jxta_PG * self, Jxta_cm ** cm)
 {
     Jxta_stdpg *it = PTValid(self, Jxta_stdpg);
-    if (NULL == it->cm) {
-        *cm = NULL;
-        return;
+
+    if (it->cm) {
+        JXTA_OBJECT_SHARE(it->cm);
     }
-    *cm = JXTA_OBJECT_SHARE(it->cm);
+    *cm = it->cm;
 }
 
 static void stdpg_set_cache_manager(Jxta_PG * self, Jxta_cm * cm)
 {
     Jxta_stdpg *it = PTValid(self, Jxta_stdpg);
-    if (NULL != it->cm) {
-        JXTA_OBJECT_RELEASE(it->cm);
+    if (cm) {
+        JXTA_OBJECT_SHARE(cm);
     }
-    it->cm = JXTA_OBJECT_SHARE(cm);
+    it->cm = cm;
 }
 
 static void stdpg_get_groupname(Jxta_PG * self, JString ** nm)
@@ -1341,32 +1318,24 @@ const Jxta_stdpg_methods jxta_stdpg_methods = {
      {
       "Jxta_module_methods",
       stdpg_init,
-      stdpg_init_e,
       stdpg_start,
-      stdpg_stop}
-     ,
+      stdpg_stop},
      "Jxta_service_methods",
-     stdpg_get_MIA,
-     stdpg_get_interface}
-    ,
+     jxta_service_get_MIA_impl,
+     jxta_service_get_interface_impl,
+     service_on_option_set},
     "Jxta_PG_methods",
     stdpg_get_loader,
     stdpg_get_PGA,
     stdpg_get_PA,
     stdpg_lookup_service,
-    stdpg_lookup_service_e,
     stdpg_is_compatible,
     stdpg_loadfromimpl_module,
-    stdpg_loadfromimpl_module_e,
     stdpg_loadfromid_module,
-    stdpg_loadfromid_module_e,
     stdpg_set_labels,
     stdpg_newfromadv,
-    stdpg_newfromadv_e,
     stdpg_newfromimpl,
-    stdpg_newfromimpl_e,
     stdpg_newfromid,
-    stdpg_newfromid_e,
     stdpg_get_rendezvous_service,
     stdpg_get_endpoint_service,
     stdpg_get_resolver_service,
@@ -1421,7 +1390,6 @@ void jxta_stdpg_construct(Jxta_stdpg * self, Jxta_stdpg_methods const *methods)
     self->name = NULL;
     self->desc = NULL;
     self->config_adv = NULL;
-    self->cm = NULL;
 }
 
 /*
@@ -1486,6 +1454,9 @@ void jxta_stdpg_destruct(Jxta_stdpg * self)
     keys_of_services = jxta_hashtable_keys_get(self->services);
 
     if (keys_of_services != NULL) {
+
+#if APR_HAS_DSO
+
         int i = 0;
         JString *key_jstring = NULL;
         Jxta_module *module = NULL;
@@ -1515,6 +1486,7 @@ void jxta_stdpg_destruct(Jxta_stdpg * self)
             free(keys_of_services[i]);
             i++;
         }
+#endif
         free(keys_of_services);
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "No custom services to destroy\n");
@@ -1528,14 +1500,16 @@ void jxta_stdpg_destruct(Jxta_stdpg * self)
         JXTA_OBJECT_RELEASE(self->services_name);
     }
 
+    if (self->cm != NULL) {
+        cm_stop(self->cm);
+        JXTA_OBJECT_RELEASE(self->cm);
+    }
+
     if (self->pool != 0)
         apr_pool_destroy(self->pool);
 
     JXTA_OBJECT_RELEASE(self->resource_groups);
 
-    if (self->cm) {
-        JXTA_OBJECT_RELEASE(self->cm);
-    }
     jxta_PG_destruct((Jxta_PG *) self);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Destruction finished\n");

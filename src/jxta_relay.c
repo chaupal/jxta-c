@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_relay.c,v 1.54 2006/05/23 17:37:17 slowhog Exp $
+ * $Id: jxta_relay.c,v 1.56 2006/09/08 19:17:55 bondolo Exp $
  */
 #include <stdlib.h> /* for atoi */
 
@@ -171,12 +171,6 @@ struct _jxta_peer_relay_entry {
 
 typedef struct _jxta_peer_relay_entry _jxta_peer_relay_entry;
 
-typedef struct Jxta_Relay_entry_methods {
-    Extends(Jxta_Peer_entry_methods);
-
-    /* additional methods */
-} Jxta_Relay_entry_methods;
-
 /*
  * Relay transport methods
  */
@@ -204,31 +198,12 @@ static void update_relay_peer_connection(_jxta_transport_relay * self, Jxta_RdvA
 static _jxta_peer_relay_entry *relay_entry_construct(_jxta_peer_relay_entry * self);
 static void relay_entry_destruct(_jxta_peer_relay_entry * self);
 
-static const Jxta_Relay_entry_methods JXTA_RELAY_ENTRY_METHODS = {
-    {
-     "Jxta_Peer_entry_methods",
-     jxta_peer_lock,
-     jxta_peer_unlock,
-     jxta_peer_get_peerid,
-     jxta_peer_set_peerid,
-     jxta_peer_get_address,
-     jxta_peer_set_address,
-     jxta_peer_get_adv,
-     jxta_peer_set_adv,
-     jxta_peer_get_expires,
-     jxta_peer_set_expires},
-    "Jxta_Relay_entry_methods"
-};
-
-#define RELAY_ENTRY_VTBL(self) ((Jxta_Relay_entry_methods*) ((_jxta_peer_entry*) (self))->methods)
-
 typedef Jxta_transport_methods Jxta_transport_relay_methods;
 
 static const Jxta_transport_relay_methods JXTA_TRANSPORT_RELAY_METHODS = {
     {
      "Jxta_module_methods",
      init,
-     jxta_module_init_e_impl,
      start,
      stop},
     "Jxta_transport_methods",
@@ -283,7 +258,6 @@ static _jxta_peer_relay_entry *relay_entry_new(void)
     /* Initialize the object */
     memset(self, 0, sizeof(_jxta_peer_relay_entry));
     JXTA_OBJECT_INIT(self, relay_entry_delete, 0);
-    PEER_ENTRY_VTBL(self) = (Jxta_Peer_entry_methods *) & JXTA_RELAY_ENTRY_METHODS;
 
     return relay_entry_construct(self);
 }
@@ -891,20 +865,20 @@ static void update_relay_peer_connection(_jxta_transport_relay * self, Jxta_RdvA
             /*
              *  Mark the peer entry has connected
              */
-            PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer *) peer);
+            jxta_peer_lock((Jxta_peer *) peer);
 
             /*
              * Reset the flag to our last succeeded lease renewal state
              */
             peer->is_connected = TRUE;
-            PEER_ENTRY_VTBL(peer)->jxta_peer_set_expires((Jxta_peer *) peer, jpr_time_now() + lease);
-            peer->connectTime = PEER_ENTRY_VTBL(peer)->jxta_peer_get_expires((Jxta_peer *) peer) - RELAY_LEASE_RENEWAL_DELAY;
+            jxta_peer_set_expires((Jxta_peer *) peer, jpr_time_now() + lease);
+            peer->connectTime = jxta_peer_get_expires((Jxta_peer *) peer) - RELAY_LEASE_RENEWAL_DELAY;
 
             jxta_endpoint_service_set_relay(self->endpoint,
                                             jxta_endpoint_address_get_protocol_name(((_jxta_peer_entry *) peer)->address),
                                             jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) peer)->address));
 
-            PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
+            jxta_peer_unlock((Jxta_peer *) peer);
             JXTA_OBJECT_RELEASE(peer);
             return;
         }
@@ -1237,7 +1211,7 @@ static void check_relay_lease(_jxta_transport_relay * self, _jxta_peer_relay_ent
      * check if the peer has still a valid relay
      */
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer *) peer);
+    jxta_peer_lock((Jxta_peer *) peer);
 
     add = jxta_endpoint_service_get_relay_addr(self->endpoint);
     if (add == NULL) {
@@ -1246,7 +1220,7 @@ static void check_relay_lease(_jxta_transport_relay * self, _jxta_peer_relay_ent
         peer->try_connect = FALSE;
         peer->connectTime = 0;
         peer->connectRetryDelay = RELAY_MIN_RETRY_DELAY;
-        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
+        jxta_peer_unlock((Jxta_peer *) peer);
 
         /*
          * remove the relay address from our local route
@@ -1261,7 +1235,7 @@ static void check_relay_lease(_jxta_transport_relay * self, _jxta_peer_relay_ent
         free(add);
     }
 
-    expires = PEER_ENTRY_VTBL(peer)->jxta_peer_get_expires((Jxta_peer *) peer);
+    expires = jxta_peer_get_expires((Jxta_peer *) peer);
 
     /* Check if the peer really still has a lease */
     if (expires < currentTime) {
@@ -1274,13 +1248,13 @@ static void check_relay_lease(_jxta_transport_relay * self, _jxta_peer_relay_ent
          **/
         peer->connectTime = currentTime;
         peer->connectRetryDelay = 0;
-        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
+        jxta_peer_unlock((Jxta_peer *) peer);
         return;
     }
     /* We still have a lease. Is it time to renew it ? */
     if ((expires - currentTime) <= RELAY_RENEWAL_DELAY) {
         peer->connectTime = currentTime;
-        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
+        jxta_peer_unlock((Jxta_peer *) peer);
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "relay connection reconnect\n");
 
@@ -1291,7 +1265,7 @@ static void check_relay_lease(_jxta_transport_relay * self, _jxta_peer_relay_ent
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "relay connection check ok %s\n",
                     jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) peer)->address));
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
+    jxta_peer_unlock((Jxta_peer *) peer);
     return;
 }
 
@@ -1300,7 +1274,7 @@ static void check_relay_connect(_jxta_transport_relay * self, _jxta_peer_relay_e
 
     Jxta_time currentTime = jpr_time_now();
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer *) peer);
+    jxta_peer_lock((Jxta_peer *) peer);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Relay->connect in= %" APR_INT64_T_FMT "ms\n",
                     (peer->connectTime - currentTime));
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "       RetryDelay= %" APR_INT64_T_FMT "ms\n", peer->connectRetryDelay);
@@ -1320,12 +1294,12 @@ static void check_relay_connect(_jxta_transport_relay * self, _jxta_peer_relay_e
              ** likely that the peer is still not reachable. 
              **/
             peer->connectTime = currentTime;
-            PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
+            jxta_peer_unlock((Jxta_peer *) peer);
             return;
         }
     } else {
         /* Time to try a connection */
-        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
+        jxta_peer_unlock((Jxta_peer *) peer);
 
         /*
          * NOTE: 20050607 tra
@@ -1341,7 +1315,7 @@ static void check_relay_connect(_jxta_transport_relay * self, _jxta_peer_relay_e
             reconnect_to_relay(self, peer);
         return;
     }
-    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
+    jxta_peer_unlock((Jxta_peer *) peer);
     return;
 }
 
@@ -1389,11 +1363,11 @@ static void connect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_entr
     JxtaEndpointMessenger *endpoint_messenger = NULL;
     Jxta_endpoint_address *addr = NULL;
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer *) peer);
+    jxta_peer_lock((Jxta_peer *) peer);
 
     if (peer->connectTime > currentTime) {
         /* Not time yet to try to connect */
-        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
+        jxta_peer_unlock((Jxta_peer *) peer);
         return;
     }
 
@@ -1420,7 +1394,7 @@ static void connect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_entr
 
     peer->connectTime = currentTime + peer->connectRetryDelay;
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
+    jxta_peer_unlock((Jxta_peer *) peer);
 
     /**
      ** Create a message with a connection request and build the request.
@@ -1488,11 +1462,11 @@ static void reconnect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_en
     JxtaEndpointMessenger *endpoint_messenger = NULL;
     Jxta_endpoint_address *addr = NULL;
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer *) peer);
+    jxta_peer_lock((Jxta_peer *) peer);
 
     if (peer->connectTime > currentTime) {
         /* Not time yet to try to connect */
-        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
+        jxta_peer_unlock((Jxta_peer *) peer);
         return;
     }
 
@@ -1514,7 +1488,7 @@ static void reconnect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_en
 
     peer->connectTime = currentTime + peer->connectRetryDelay;
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
+    jxta_peer_unlock((Jxta_peer *) peer);
 
     /**
      ** Create a message with a connection request and build the request.

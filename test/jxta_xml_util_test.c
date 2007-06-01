@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_xml_util_test.c,v 1.10 2005/09/23 20:07:15 slowhog Exp $
+ * $Id: jxta_xml_util_test.c,v 1.11 2006/06/30 20:38:34 bondolo Exp $
  */
 
 #include <stdio.h>
@@ -76,10 +76,10 @@
 /** Exercise the function for extracting ip numbers
  *  and ports from a character buffer.
  */
-Jxta_boolean extract_ip_and_port_test(void)
+const char * extract_ip_and_port_test(void)
 {
 
-    Jxta_boolean passed = TRUE;
+    const char * result = NULL;
     int length;
     Jxta_in_addr ip = 0;
     Jxta_port port = 0;
@@ -91,8 +91,7 @@ Jxta_boolean extract_ip_and_port_test(void)
     extract_ip_and_port(all_delims, length, &ip, &port);
 
     if (ip != 0 || port != 0) {
-        printf("Failed extract_ip_and_port()\n");
-        passed = FALSE;
+        return FILEANDLINE "Failed extract_ip_and_port()";
     } else {
         printf("Passed extract_ip_and_port()\n");
     }
@@ -103,18 +102,17 @@ Jxta_boolean extract_ip_and_port_test(void)
     if (addr == ip && port == 9700) {
         printf("Passed extract_ip_and_port()\n");
     } else {
-        printf("Failed extract_ip_and_port()\n");
-        passed = FALSE;
+        return FILEANDLINE "Failed extract_ip_and_port()";
     }
 
-    return passed;
+    return result;
 }
 
 
-Jxta_boolean extract_ip_test(void)
+const char * extract_ip_test(void)
 {
 
-    Jxta_boolean passed = TRUE;
+    const char * result = NULL;
     int length;
     Jxta_in_addr ip = 0;
     int addr;
@@ -125,8 +123,7 @@ Jxta_boolean extract_ip_test(void)
     extract_ip(all_delims, length, &ip);
 
     if (ip != 0) {
-        printf("Failed extract_ip_test()\n");
-        passed = FALSE;
+        return FILEANDLINE "Failed extract_ip_test()";
     } else {
         printf("Passed extract_ip_test()\n");
     }
@@ -137,18 +134,17 @@ Jxta_boolean extract_ip_test(void)
     if (addr == ip) {
         printf("Passed extract_ip_test()\n");
     } else {
-        printf("Failed extract_ip_test()\n");
-        passed = FALSE;
+        return FILEANDLINE "Failed extract_ip_test()";
     }
 
-    return passed;
+    return result;
 }
 
 
-Jxta_boolean extract_port_test(void)
+const char * extract_port_test(void)
 {
 
-    Jxta_boolean passed = TRUE;
+    const char * result = NULL;
     int length;
     Jxta_port port = 0;
     const char *all_delims = "    \t \n";
@@ -158,8 +154,7 @@ Jxta_boolean extract_port_test(void)
     extract_port(all_delims, length, &port);
 
     if (port != 0) {
-        printf("Failed extract_port_test() all delims\n");
-        passed = FALSE;
+        return FILEANDLINE "Failed extract_port_test() all delims";
     } else {
         printf("Passed extract_port_test() all delims\n");
     }
@@ -170,17 +165,16 @@ Jxta_boolean extract_port_test(void)
     if (port == 9700) {
         printf("Passed extract_port_test() port = 9700\n");
     } else {
-        printf("Failed extract_port_test() port = 9700\n");
-        passed = FALSE;
+        return FILEANDLINE "Failed extract_port_test() port = 9700";
     }
 
-    return passed;
+    return result;
 }
 
-Jxta_boolean extract_char_data_test(void)
+const char * extract_char_data_test(void)
 {
 
-    Jxta_boolean passed = TRUE;
+    const char * result = NULL;
     const char *all_delims = "    \t \n";
     const char *string = "  \n\n foo.bar.com \t\n  ";
     char tok[128] = { 0 };
@@ -195,8 +189,7 @@ Jxta_boolean extract_char_data_test(void)
     if (*tok == '\0') {
         printf("Passed extract_char_data_test() with empty string\n");
     } else {
-        printf("Failed extract_char_data_test() with empty string\n");
-        passed = FALSE;
+        return FILEANDLINE "Failed extract_char_data_test() with empty string";
     }
 
     extract_char_data(string, strlen(string), tok);
@@ -206,14 +199,13 @@ Jxta_boolean extract_char_data_test(void)
     if (!strncmp("foo.bar.com", tok, strlen(string))) {
         printf("Passed extract_char_data_test() with valid string\n");
     } else {
-        printf("Failed extract_char_data_test() with valid string\n");
-        passed = FALSE;
+        return FILEANDLINE "Failed extract_char_data_test() with valid string";
     }
 
-    return passed;
+    return result;
 }
 
-Jxta_boolean encode_xml_test(void)
+const char * encode_xml_test(void)
 {
     Jxta_status res = JXTA_SUCCESS;
     const char *source = "<xml>&</xml>";
@@ -226,10 +218,10 @@ Jxta_boolean encode_xml_test(void)
     res = jxta_xml_util_encode_jstring(input, &output);
 
     printf("input='%s'\noutput='%s'\nexpect='%s'\nres=%d\n", source, jstring_get_string(output), expect, res);
-    return (0 == strcmp(expect, jstring_get_string(output)));
+    return (0 == strcmp(expect, jstring_get_string(output))) ? NULL : FILEANDLINE "failed encode";;
 }
 
-Jxta_boolean decode_xml_test(void)
+const char * decode_xml_test(void)
 {
     Jxta_status res = JXTA_SUCCESS;
     const char *source = "&lt;xml&gt;&amp;&lt;/xml&gt;";
@@ -244,7 +236,7 @@ Jxta_boolean decode_xml_test(void)
 
     printf("input='%s'\noutput='%s'\nexpect='%s'\nres=%d\n", source, jstring_get_string(output), expect, res);
 
-    return (0 == strcmp(expect, jstring_get_string(output)));
+    return (0 == strcmp(expect, jstring_get_string(output))) ? NULL : FILEANDLINE "failed decode";
 }
 
 static struct _funcs testfunc[] = {
@@ -263,14 +255,14 @@ static struct _funcs testfunc[] = {
 * Run the unit tests for the jxta_xml_util test routines
 *
 * @param tests_run the variable in which to accumulate the number of tests run
-* @param tests_passed the variable in which to accumulate the number of tests passed
+* @param tests_result the variable in which to accumulate the number of tests result
 * @param tests_failed the variable in which to accumulate the number of tests failed
 *
 * @return TRUE if all tests were run successfully, FALSE otherwise
 */
-Jxta_boolean run_jxta_xml_util_tests(int *tests_run, int *tests_passed, int *tests_failed)
+Jxta_boolean run_jxta_xml_util_tests(int *tests_run, int *tests_result, int *tests_failed)
 {
-    return run_testfunctions(testfunc, tests_run, tests_passed, tests_failed);
+    return run_testfunctions(testfunc, tests_run, tests_result, tests_failed);
 }
 
 

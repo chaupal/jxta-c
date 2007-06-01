@@ -53,8 +53,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2,4,0,0
- PRODUCTVERSION 2,4,0,0
+ FILEVERSION 2,5,1,0
+ PRODUCTVERSION 2,5,1,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -71,12 +71,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Project JXTA"
             VALUE "FileDescription", "JPR Dynamic Link Library (DLL)"
-            VALUE "FileVersion", "2, 4, 0, 0"
+            VALUE "FileVersion", "2, 5, 1, 0"
             VALUE "InternalName", "JPR"
             VALUE "LegalCopyright", "Copyright © 2005"
             VALUE "OriginalFilename", "jpr.dll"
             VALUE "ProductName", "JPR Dynamic Link Library (DLL)"
-            VALUE "ProductVersion", "2, 4, 0, 0"
+            VALUE "ProductVersion", "2, 5, 1, 0"
         END
     END
     BLOCK "VarFileInfo"

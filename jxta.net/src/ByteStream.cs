@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: ByteStream.cs,v 1.2 2006/01/27 18:28:23 lankes Exp $
+ * $Id: ByteStream.cs,v 1.3 2006/08/04 10:33:18 lankes Exp $
  */
 using System;
 using System.IO;
@@ -62,6 +62,7 @@ namespace JxtaNET
 {
     public class ByteStream : Stream
     {
+        #region import of jxta-c functions
         [DllImport("jxta.dll")]
         private static extern IntPtr jxta_bytevector_new_1(Int32 initialSize);
 
@@ -93,7 +94,7 @@ namespace JxtaNET
 
         [DllImport("jxta.dll")]
         private static extern bool _jxta_object_check_valid(IntPtr obj, String file, Int32 line);
-
+        #endregion 
 
         private IntPtr pself;
         internal IntPtr self
@@ -108,10 +109,8 @@ namespace JxtaNET
                 throw new JxtaException("JxtaObject not valid!");
         }
 
-
         public override bool CanRead { get { return true; } }
         public override bool CanWrite { get { return true; } }
-
         public override bool CanSeek { get { return false; } }
 
         public override long Length
@@ -184,10 +183,9 @@ namespace JxtaNET
             byte[] tmp = new byte[count];
             System.Array.ConstrainedCopy(buffer, offset, tmp, offset, count);
             jxta_bytevector_add_bytes_at(this.self, tmp, (UInt32)pos, count);
-            pos += count;
         }
 
-        public ByteStream(String s)
+        public ByteStream(String s) : base()
         {
             pos = 0;
 
@@ -196,14 +194,14 @@ namespace JxtaNET
             Errors.check(jxta_bytevector_add_bytes_at(this.self, s, 0, s.Length));
         }
 
-        public ByteStream(IntPtr self)
+        public ByteStream(IntPtr self) : base()
         {
             pos = 0;
 
             this.pself = self;
         }
 
-        public ByteStream() : base() 
+        public ByteStream() : base()
         {
             this.self = jxta_bytevector_new_0();
         }

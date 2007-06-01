@@ -50,8 +50,9 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup.c,v 1.44 2006/06/14 17:48:15 slowhog Exp $
+ * $Id: jxta_peergroup.c,v 1.56 2006/09/26 18:24:38 slowhog Exp $
  */
+static const char *__log_cat = "PG";
 
 #include "jpr/jpr_excep.h"
 
@@ -65,12 +66,14 @@
  */
 
 #include "jxta_errno.h"
+#include "jxta_log.h"
 #include "jxta_id.h"
 #include "jxta_peergroup.h"
 #include "jxta_peergroup_private.h"
 #include "jxta_objecthashtable.h"
 #include "jxta_endpoint_service_priv.h"
 #include "jxta_util_priv.h"
+#include "jxta_log.h"
 
 #ifndef JXTA_SINGLE_THREAD_POOL
 #define JXTA_SINGLE_THREAD_POOL 1
@@ -139,6 +142,11 @@ JXTA_DECLARE(Jxta_status) jxta_lookup_group_instance(Jxta_id * gid, Jxta_PG ** p
     return res;
 }
 
+JXTA_DECLARE(Jxta_vector *) jxta_get_registered_groups()
+{
+    if (NULL == groups_global_registry) return NULL;
+    return jxta_objecthashtable_values_get(groups_global_registry);
+}
 /**
  * Well known module class identifier: peer group
  */
@@ -184,6 +192,10 @@ static Jxta_MCID *_endpoint_classid;
  */
 static Jxta_MCID *_srdi_classid;
 
+/**
+ * Well known module class identifier: cache manager
+ */
+static Jxta_MCID *_cache_classid;
 /*
  * fixme: endpointprotocols should probably all be of the same class
  * and of different specs and roles... but we'll take a shortcut for now.
@@ -315,21 +327,19 @@ static Jxta_MSID *_ref_shell_specid;
 /**
  * Used to create static well-known identifiers.
  */
-static Jxta_id *buildWellKnownID(const char *s, Throws)
+static Jxta_id *buildWellKnownID(const char *s)
 {
     Jxta_id *result = NULL;
     JString *tmp = jstring_new_2("urn:jxta:uuid-");
     jstring_append_2(tmp, s);
     jxta_id_from_jstring(&result, tmp);
     JXTA_OBJECT_RELEASE(tmp);
-    if (result == NULL)
-        Throw(JXTA_INVALID_ARGUMENT);
     return result;
 }
 
 /**
  * Well known classes for the basic services.
- * FIXME: we should make a "well-known ID" encoding implementation that
+ * FIXME: we should make a "well-known ID" format implementation that
  * has its own little name space of human readable names...later.
  * To keep their string representation shorter, we put our small spec
  * or role pseudo unique ID at the front of the second UUID string.
@@ -340,216 +350,314 @@ static Jxta_id *buildWellKnownID(const char *s, Throws)
 
 static void static_id_init(void)
 {
-    Try {
-
-        /**
-         * Well known module class identifier: peer group
-         */
-        _peergroup_classid = (Jxta_MCID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000001" "05", MayThrow);
-
-        /**
-         * Well known module class identifier: resolver service
-         */
-        _resolver_classid = (Jxta_MCID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000002" "05", MayThrow);
-
-        /**
-         * Well known module class identifier: discovery service
-         */
-        _discovery_classid = (Jxta_MCID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000003" "05", MayThrow);
-
-        /**
-         * Well known module class identifier: pipe service
-         */
-        _pipe_classid = (Jxta_MCID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000004" "05", MayThrow);
-
-        /**
-         * Well known module class identifier: membership service
-         */
-        _membership_classid = (Jxta_MCID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000005" "05", MayThrow);
-
-        /**
-         * Well known module class identifier: rendezvous service
-         */
-        _rendezvous_classid = (Jxta_MCID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000006" "05", MayThrow);
-
-        /**
-         * Well known module class identifier: peerinfo service
-         */
-        _peerinfo_classid = (Jxta_MCID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000007" "05", MayThrow);
-
-        /**
-         * Well known module class identifier: endpoint service
-         */
-        _endpoint_classid = (Jxta_MCID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000008" "05", MayThrow);
-
-        /*
-         * FIXME: EndpointProtocols should probably all be of the same class
-         * and of different specs and roles... But we'll take a shortcut for now.
-         */
-
-        /**
-         * Well known module class identifier: tcp protocol
-         */
-        _tcpproto_classid = (Jxta_MCID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000009" "05", MayThrow);
-
-        /**
-         * Well known module class identifier: http protocol
-         */
-        _httpproto_classid = (Jxta_MCID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000A" "05", MayThrow);
-        /**
-         * Well known module class identifier: relay protocol
-         */
-        _relayproto_classid = (Jxta_MCID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000F" "05", MayThrow);
-        /**
-         * Well known module class identifier: router protocol
-         */
-        _routerproto_classid = (Jxta_MCID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000B" "05", MayThrow);
-
-        /**
-         * Well known module class identifier: application
-         */
-        _application_classid = (Jxta_MCID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000C" "05", MayThrow);
-
-        /**
-         * Well known module class identifier: tlsProtocol
-         */
-        _tlsproto_classid = (Jxta_MCID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000D" "05", MayThrow);
-
-
-
-
-         /**
-         * Well known module class identifier: srdi service
-         */
-        _srdi_classid = (Jxta_MCID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000021" "05", MayThrow);
-
-
-
-
-       /**
-         * Well known group specification identifier: the platform
-         */
-        _ref_platform_specid = (Jxta_MSID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000001" "01" "06", MayThrow);
-
-        /**
-         * Well known group specification identifier: the Network Peer Group
-         */
-        _ref_netpeergroup_specid = (Jxta_MSID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000001" "02" "06", MayThrow);
-
-        /**
-         * Well known service specification identifier: the standard resolver
-         */
-        _ref_resolver_specid = (Jxta_MSID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000002" "01" "06", MayThrow);
-
-        /**
-         * Well known service specification identifier: the standard discovery
-         */
-        _ref_discovery_specid = (Jxta_MSID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000003" "01" "06", MayThrow);
-
-        /**
-         * Well known service specification identifier: the standard pipe
-         */
-        _ref_pipe_specid = (Jxta_MSID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000004" "01" "06", MayThrow);
-
-        /**
-         * Well known service specification identifier: the standard membership
-         */
-        _ref_membership_specid = (Jxta_MSID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000005" "01" "06", MayThrow);
-
-        /**
-         * Well known service specification identifier: the standard rendezvous
-         */
-        _ref_rendezvous_specid = (Jxta_MSID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000006" "01" "06", MayThrow);
-
-        /**
-         * Well known service specification identifier: the standard peerinfo
-         */
-        _ref_peerinfo_specid = (Jxta_MSID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000007" "01" "06", MayThrow);
-
-        /**
-         * Well known service specification identifier: the standard endpoint
-         */
-        _ref_endpoint_specid = (Jxta_MSID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000008" "01" "06", MayThrow);
-
-        /**
-         * Well known endpoint protocol specification identifier: the standard
-         * tcp endpoint protocol
-         */
-        _ref_tcpproto_specid = (Jxta_MSID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000009" "01" "06", MayThrow);
-
-        /**
-         * Well known endpoint protocol specification identifier: the standard
-         * http endpoint protocol
-         */
-        _ref_httpproto_specid = (Jxta_MSID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000A" "01" "06", MayThrow);
-
-        /**
-         * Well known endpoint protocol specification identifier: the standard
-         * router
-         */
-        _ref_routerproto_specid = (Jxta_MSID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000B" "01" "06", MayThrow);
-
-        /**
-         * Well known endpoint protocol specification identifier: the standard
-         * tls endpoint protocol
-         */
-        _ref_tlsproto_specid = (Jxta_MSID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000D" "01" "06", MayThrow);
-
-        /**
-         * Well known main application of the platform: startNetPeerGroup.
-         */
-        _ref_startnetpeergroup_specid = (Jxta_MSID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000C" "01" "06", MayThrow);
-
-        /**
-         * Well known application: the shell
-         */
-        _ref_shell_specid = (Jxta_MSID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000C" "02" "06", MayThrow);
-
-        /**
-         * Well known group specification identifier: an all purpose peer group
-         * specification. The java reference implementation implements it with
-         * the StdPeerGroup class and all the standard platform services and no
-         * endpoint protocols.
-         */
-        _genericpeergroup_specid = (Jxta_MSID *)
-            buildWellKnownID("DeadBeefDeafBabaFeedBabe00000001" "03" "06", MayThrow);
-
-    } Catch {
-        printf("Malformed Hardcoded well-known IDs. Error %lu\n", jpr_lasterror_get());
-        abort();
+    /**
+     * Well known module class identifier: peer group
+     */
+    _peergroup_classid = (Jxta_MCID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000001" "05");
+    if (NULL == _peergroup_classid) {
+        goto ERROR_EXIT;
     }
-}
 
+    /**
+     * Well known module class identifier: resolver service
+     */
+    _resolver_classid = (Jxta_MCID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000002" "05");
+    if (NULL == _resolver_classid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known module class identifier: discovery service
+     */
+    _discovery_classid = (Jxta_MCID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000003" "05");
+    if (NULL == _discovery_classid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known module class identifier: pipe service
+     */
+    _pipe_classid = (Jxta_MCID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000004" "05");
+    if (NULL == _pipe_classid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known module class identifier: membership service
+     */
+    _membership_classid = (Jxta_MCID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000005" "05");
+    if (NULL == _membership_classid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known module class identifier: rendezvous service
+     */
+    _rendezvous_classid = (Jxta_MCID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000006" "05");
+    if (NULL == _rendezvous_classid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known module class identifier: peerinfo service
+     */
+    _peerinfo_classid = (Jxta_MCID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000007" "05");
+    if (NULL == _peerinfo_classid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known module class identifier: endpoint service
+     */
+    _endpoint_classid = (Jxta_MCID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000008" "05");
+    if (NULL == _endpoint_classid) {
+        goto ERROR_EXIT;
+    }
+
+    /*
+     * FIXME: EndpointProtocols should probably all be of the same class
+     * and of different specs and roles... But we'll take a shortcut for now.
+     */
+
+    /**
+     * Well known module class identifier: tcp protocol
+     */
+    _tcpproto_classid = (Jxta_MCID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000009" "05");
+    if (NULL == _tcpproto_classid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known module class identifier: http protocol
+     */
+    _httpproto_classid = (Jxta_MCID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000A" "05");
+    if (NULL == _httpproto_classid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known module class identifier: relay protocol
+     */
+    _relayproto_classid = (Jxta_MCID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000F" "05");
+    if (NULL == _relayproto_classid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known module class identifier: router protocol
+     */
+    _routerproto_classid = (Jxta_MCID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000B" "05");
+    if (NULL == _routerproto_classid) {
+        goto ERROR_EXIT;
+    }
+
+
+    /**
+     * Well known module class identifier: application
+     */
+    _application_classid = (Jxta_MCID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000C" "05");
+    if (NULL == _application_classid) {
+        goto ERROR_EXIT;
+    }
+
+
+    /**
+     * Well known module class identifier: tlsProtocol
+     */
+    _tlsproto_classid = (Jxta_MCID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000D" "05");
+    if (NULL == _tlsproto_classid) {
+        goto ERROR_EXIT;
+    }
+
+     /**
+     * Well known module class identifier: srdi service
+     */
+    _srdi_classid = (Jxta_MCID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000021" "05");
+    if (NULL == _srdi_classid) {
+        goto ERROR_EXIT;
+    }
+
+     /**
+     * Well known module class identifier: cache manager
+     */
+    _cache_classid = (Jxta_MCID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000022" "05");
+    if (NULL == _cache_classid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known group specification identifier: the platform
+     */
+    _ref_platform_specid = (Jxta_MSID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000001" "01" "06");
+    if (NULL == _ref_platform_specid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known group specification identifier: the Network Peer Group
+     */
+    _ref_netpeergroup_specid = (Jxta_MSID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000001" "02" "06");
+    if (NULL == _ref_netpeergroup_specid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known service specification identifier: the standard resolver
+     */
+    _ref_resolver_specid = (Jxta_MSID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000002" "01" "06");
+    if (NULL == _ref_resolver_specid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known service specification identifier: the standard discovery
+     */
+    _ref_discovery_specid = (Jxta_MSID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000003" "01" "06");
+    if (NULL == _ref_discovery_specid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known service specification identifier: the standard pipe
+     */
+    _ref_pipe_specid = (Jxta_MSID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000004" "01" "06");
+    if (NULL == _ref_pipe_specid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known service specification identifier: the standard membership
+     */
+    _ref_membership_specid = (Jxta_MSID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000005" "01" "06");
+    if (NULL == _ref_membership_specid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known service specification identifier: the standard rendezvous
+     */
+    _ref_rendezvous_specid = (Jxta_MSID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000006" "01" "06");
+    if (NULL == _ref_rendezvous_specid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known service specification identifier: the standard peerinfo
+     */
+    _ref_peerinfo_specid = (Jxta_MSID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000007" "01" "06");
+    if (NULL == _ref_peerinfo_specid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known service specification identifier: the standard endpoint
+     */
+    _ref_endpoint_specid = (Jxta_MSID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000008" "01" "06");
+    if (NULL == _ref_endpoint_specid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known endpoint protocol specification identifier: the standard
+     * tcp endpoint protocol
+     */
+    _ref_tcpproto_specid = (Jxta_MSID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000009" "01" "06");
+    if (NULL == _ref_tcpproto_specid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known endpoint protocol specification identifier: the standard
+     * http endpoint protocol
+     */
+    _ref_httpproto_specid = (Jxta_MSID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000A" "01" "06");
+    if (NULL == _ref_httpproto_specid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known endpoint protocol specification identifier: the standard
+     * router
+     */
+    _ref_routerproto_specid = (Jxta_MSID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000B" "01" "06");
+    if (NULL == _ref_routerproto_specid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known endpoint protocol specification identifier: the standard
+     * tls endpoint protocol
+     */
+    _ref_tlsproto_specid = (Jxta_MSID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000D" "01" "06");
+    if (NULL == _ref_tlsproto_specid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known main application of the platform: startNetPeerGroup.
+     */
+    _ref_startnetpeergroup_specid = (Jxta_MSID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000C" "01" "06");
+    if (NULL == _ref_startnetpeergroup_specid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known application: the shell
+     */
+    _ref_shell_specid = (Jxta_MSID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe0000000C" "02" "06");
+    if (NULL == _ref_shell_specid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
+     * Well known group specification identifier: an all purpose peer group
+     * specification. The java reference implementation implements it with
+     * the StdPeerGroup class and all the standard platform services and no
+     * endpoint protocols.
+     */
+    _genericpeergroup_specid = (Jxta_MSID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000001" "03" "06");
+    if (NULL == _genericpeergroup_specid) {
+        goto ERROR_EXIT;
+    }
+
+    return;
+
+  ERROR_EXIT:
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_FATAL, "Malformed Hardcoded well-known IDs.\n");
+    abort();
+}
 
 /**
  * get each well known ID.
@@ -593,6 +701,12 @@ JXTA_DECLARE(Jxta_MCID *) jxta_srdi_classid_get(void)
 {
 
     return _srdi_classid;
+}
+
+JXTA_DECLARE(Jxta_MCID *) jxta_cache_classid_get(void)
+{
+
+    return _cache_classid;
 }
 
 JXTA_DECLARE(Jxta_MCID *) jxta_endpoint_classid_get(void)
@@ -735,7 +849,7 @@ Jxta_status peergroup_init(Jxta_PG * me, Jxta_PG * parent)
     if (parent && JXTA_SINGLE_THREAD_POOL) {
         me->thd_pool = NULL;
     } else {
-        apr_thread_pool_create(&me->thd_pool, 1, 3, me->pool);
+        apr_thread_pool_create(&me->thd_pool, 3, 5, me->pool);
     }
 
     return JXTA_SUCCESS;
@@ -798,13 +912,15 @@ Jxta_status peergroup_stop(Jxta_PG * me)
     jxta_PG_get_endpoint_service(me, &ep);
     rv = endpoint_service_remove_recipient(ep, &me->ep_cookie);
     JXTA_OBJECT_RELEASE(ep);
-
     if (me->thd_pool) {
         apr_thread_pool_destroy(me->thd_pool);
+        me->thd_pool = NULL;
     }
 
     return rv;
 }
+
+
 
 /**
  * The base PG dtor (Not public, not virtual. Only called by subclassers).
@@ -812,9 +928,12 @@ Jxta_status peergroup_stop(Jxta_PG * me)
  */
 void jxta_PG_destruct(Jxta_PG * me)
 {
-    jxta_service_destruct((Jxta_service *) me);
+    if (NULL != me->pool) {
+        apr_pool_destroy(me->pool);
+        me->pool = NULL;
+    }
 
-    apr_pool_destroy(me->pool);
+    jxta_service_destruct((Jxta_service *) me);
 }
 
 /**
@@ -848,9 +967,16 @@ JXTA_DECLARE(Jxta_status) jxta_PG_lookup_service(Jxta_PG * self, Jxta_id * name,
 
 JXTA_DECLARE(void) jxta_PG_lookup_service_e(Jxta_PG * self, Jxta_id * name, Jxta_service ** result, Throws)
 {
-    ThrowThrough();
+    Jxta_status res;
     PTValid(self, Jxta_PG);
-    (VTBL->lookup_service_e) (self, name, result, MayThrow);
+
+    JXTA_DEPRECATED_API();
+
+    res = (VTBL->lookup_service) (self, name, result);
+
+    if (JXTA_SUCCESS != res) {
+        Throw(res);
+    }
 }
 
 JXTA_DECLARE(Jxta_boolean) jxta_PG_is_compatible(Jxta_PG * self, JString * compat)
@@ -869,9 +995,16 @@ JXTA_DECLARE(Jxta_status) jxta_PG_loadfromimpl_module(Jxta_PG * self, Jxta_id * 
 JXTA_DECLARE(void) jxta_PG_loadfromimpl_module_e(Jxta_PG * self, Jxta_id * assigned_id,
                                                  Jxta_advertisement * impl, Jxta_module ** mod, Throws)
 {
-    ThrowThrough();
+    Jxta_status res;
     PTValid(self, Jxta_PG);
-    (VTBL->loadfromimpl_module_e) (self, assigned_id, impl, mod, MayThrow);
+
+    JXTA_DEPRECATED_API();
+
+    res = (VTBL->loadfromimpl_module) (self, assigned_id, impl, mod);
+
+    if (JXTA_SUCCESS != res) {
+        Throw(res);
+    }
 }
 
 JXTA_DECLARE(Jxta_status) jxta_PG_loadfromid_module(Jxta_PG * self, Jxta_id * assigned_id,
@@ -884,10 +1017,16 @@ JXTA_DECLARE(Jxta_status) jxta_PG_loadfromid_module(Jxta_PG * self, Jxta_id * as
 JXTA_DECLARE(void) jxta_PG_loadfromid_module_e(Jxta_PG * self, Jxta_id * assigned_id,
                                                Jxta_MSID * spec_id, int where, Jxta_module ** mod, Throws)
 {
-    ThrowThrough();
+    Jxta_status res;
     PTValid(self, Jxta_PG);
-    (VTBL->loadfromid_module_e) (self, assigned_id, spec_id, where, mod, MayThrow);
 
+    JXTA_DEPRECATED_API();
+
+    res = (VTBL->loadfromid_module) (self, assigned_id, spec_id, where, mod);
+
+    if (JXTA_SUCCESS != res) {
+        Throw(res);
+    }
 }
 
 JXTA_DECLARE(void) jxta_PG_set_labels(Jxta_PG * self, JString * name, JString * description)
@@ -897,18 +1036,25 @@ JXTA_DECLARE(void) jxta_PG_set_labels(Jxta_PG * self, JString * name, JString * 
 }
 
 JXTA_DECLARE(Jxta_status) jxta_PG_newfromadv(Jxta_PG * self, Jxta_advertisement * pgAdv,
-                                             Jxta_vector * resource_groups, Jxta_PG ** result)
+                                             Jxta_vector * resource_groups, Jxta_PG ** pg)
 {
     PTValid(self, Jxta_PG);
-    return (VTBL->newfromadv) (self, pgAdv, resource_groups, result);
+    return (VTBL->newfromadv) (self, pgAdv, resource_groups, pg);
 }
 
 JXTA_DECLARE(void) jxta_PG_newfromadv_e(Jxta_PG * self,
                                         Jxta_advertisement * pgAdv, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws)
 {
-    ThrowThrough();
+    Jxta_status res;
     PTValid(self, Jxta_PG);
-    (VTBL->newfromadv_e) (self, pgAdv, resource_groups, pg, MayThrow);
+
+    JXTA_DEPRECATED_API();
+
+    res = (VTBL->newfromadv) (self, pgAdv, resource_groups, pg);
+
+    if (JXTA_SUCCESS != res) {
+        Throw(res);
+    }
 }
 
 JXTA_DECLARE(Jxta_status) jxta_PG_newfromimpl(Jxta_PG * self, Jxta_PGID * gid,
@@ -923,9 +1069,16 @@ JXTA_DECLARE(void) jxta_PG_newfromimpl_e(Jxta_PG * self, Jxta_PGID * gid,
                                          Jxta_advertisement * impl, JString * name,
                                          JString * description, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws)
 {
-    ThrowThrough();
+    Jxta_status res;
     PTValid(self, Jxta_PG);
-    (VTBL->newfromimpl_e) (self, gid, impl, name, description, resource_groups, pg, MayThrow);
+
+    JXTA_DEPRECATED_API();
+
+    res = (VTBL->newfromimpl) (self, gid, impl, name, description, resource_groups, pg);
+
+    if (JXTA_SUCCESS != res) {
+        Throw(res);
+    }
 }
 
 JXTA_DECLARE(Jxta_status) jxta_PG_newfromid(Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * resource_groups, Jxta_PG ** result)
@@ -934,11 +1087,18 @@ JXTA_DECLARE(Jxta_status) jxta_PG_newfromid(Jxta_PG * self, Jxta_PGID * gid, Jxt
     return (VTBL->newfromid) (self, gid, resource_groups, result);
 }
 
-JXTA_DECLARE(void) jxta_PG_newfromid_e(Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws)
+JXTA_DECLARE(void) jxta_PG_newfromid_e(Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * resource_groups, Jxta_PG ** result, Throws)
 {
-    ThrowThrough();
+    Jxta_status res;
     PTValid(self, Jxta_PG);
-    (VTBL->newfromid_e) (self, gid, resource_groups, pg, MayThrow);
+
+    JXTA_DEPRECATED_API();
+
+    res = (VTBL->newfromid) (self, gid, resource_groups, result);
+
+    if (JXTA_SUCCESS != res) {
+        Throw(res);
+    }
 }
 
 JXTA_DECLARE(void) jxta_PG_get_rendezvous_service(Jxta_PG * self, Jxta_rdv_service ** rdv)
@@ -985,6 +1145,7 @@ JXTA_DECLARE(void) jxta_PG_get_pipe_service(Jxta_PG * self, Jxta_pipe_service **
 JXTA_DECLARE(void) jxta_PG_get_cache_manager(Jxta_PG * self, Jxta_cm ** cm)
 {
     PTValid(self, Jxta_PG);
+    JXTA_DEPRECATED_API();
     (VTBL->get_cache_manager) (self, cm);
 
 }
@@ -992,6 +1153,7 @@ JXTA_DECLARE(void) jxta_PG_get_cache_manager(Jxta_PG * self, Jxta_cm ** cm)
 JXTA_DECLARE(void) jxta_PG_set_cache_manager(Jxta_PG * self, Jxta_cm * cm)
 {
     PTValid(self, Jxta_PG);
+    JXTA_DEPRECATED_API();
     (VTBL->set_cache_manager) (self, cm);
 }
 
@@ -1063,53 +1225,39 @@ JXTA_DECLARE(void) jxta_PG_get_compatstatement(Jxta_PG * self, JString ** compat
 
 JXTA_DECLARE(Jxta_status) jxta_PG_new_netpg(Jxta_PG ** new_netpg)
 {
-    Jxta_PG *npg = NULL;
-    Jxta_status res = JXTA_SUCCESS;
-    const char *noargs[] = { NULL };
-
-    Try {
-        npg = (Jxta_PG *) jxta_defloader_instantiate_e("builtin:netpg", MayThrow);
-
-        jxta_module_init_e((Jxta_module *) npg, (Jxta_PG *) NULL, (Jxta_id *) NULL, NULL, MayThrow);
-
-        res = jxta_module_start((Jxta_module *) npg, noargs);
-
-        if (JXTA_SUCCESS != res)
-            Throw(res);
-    }
-    Catch {
-        if (npg != NULL)
-            JXTA_OBJECT_RELEASE(npg);
-        return jpr_lasterror_get();
-    }
-
-    *new_netpg = npg;
-    return res;
+    return jxta_PG_new_custom_netpg(new_netpg, NULL);
 }
 
-JXTA_DECLARE(Jxta_status) jxta_PG_new_custom_netpg(Jxta_PG ** new_private_netpg, Jxta_MIA * mia)
+JXTA_DECLARE(Jxta_status) jxta_PG_new_custom_netpg(Jxta_PG ** new_netpg, Jxta_MIA * mia)
 {
-    Jxta_PG *custom_npg = NULL;
+    Jxta_module *npg = NULL;
     Jxta_status res = JXTA_SUCCESS;
     const char *noargs[] = { NULL };
 
-    Try {
-        custom_npg = (Jxta_PG *) jxta_defloader_instantiate_e("builtin:netpg", MayThrow);
+    res = jxta_defloader_instantiate("builtin:netpg", &npg);
 
-        jxta_module_init_e((Jxta_module *) custom_npg, (Jxta_PG *) NULL, (Jxta_id *) NULL, (Jxta_advertisement *) mia, MayThrow);
-
-        res = jxta_module_start((Jxta_module *) custom_npg, noargs);
-
-        if (JXTA_SUCCESS != res)
-            Throw(res);
-    }
-    Catch {
-        if (custom_npg != NULL)
-            JXTA_OBJECT_RELEASE(custom_npg);
-        return jpr_lasterror_get();
+    if (JXTA_SUCCESS != res) {
+        goto FINAL_EXIT;
     }
 
-    *new_private_netpg = custom_npg;
+    res = jxta_module_init(npg, (Jxta_PG *) NULL, NULL, (Jxta_advertisement *) mia);
+
+    if (JXTA_SUCCESS != res) {
+        JXTA_OBJECT_RELEASE(npg);
+        goto FINAL_EXIT;
+    }
+
+    res = jxta_module_start((Jxta_module *) npg, noargs);
+
+    if (JXTA_SUCCESS != res) {
+        JXTA_OBJECT_RELEASE(npg);
+        goto FINAL_EXIT;
+    }
+
+    *new_netpg = (Jxta_PG *) npg;
+
+  FINAL_EXIT:
+
     return res;
 }
 
@@ -1123,6 +1271,18 @@ JXTA_DECLARE(Jxta_status) jxta_PG_remove_relay_address(Jxta_PG * self, Jxta_id *
 {
     PTValid(self, Jxta_PG);
     return (VTBL->remove_relay_address) (self, relayid);
+}
+
+void peergroup_get_cache_manager(Jxta_PG * self, Jxta_cm ** cm)
+{
+    PTValid(self, Jxta_PG);
+    (VTBL->get_cache_manager) (self, cm);
+}
+
+void peergroup_set_cache_manager(Jxta_PG * self, Jxta_cm * cm)
+{
+    PTValid(self, Jxta_PG);
+    (VTBL->set_cache_manager) (self, cm);
 }
 
 Jxta_status jxta_PG_module_initialize(void)
@@ -1147,6 +1307,7 @@ void jxta_PG_module_terminate(void)
     JXTA_OBJECT_RELEASE(_peerinfo_classid);
     JXTA_OBJECT_RELEASE(_endpoint_classid);
     JXTA_OBJECT_RELEASE(_srdi_classid);
+    JXTA_OBJECT_RELEASE(_cache_classid);
     JXTA_OBJECT_RELEASE(_tcpproto_classid);
     JXTA_OBJECT_RELEASE(_httpproto_classid);
     JXTA_OBJECT_RELEASE(_relayproto_classid);
@@ -1210,6 +1371,18 @@ JXTA_DECLARE(Jxta_PG *) jxta_PG_netpg(Jxta_PG * me)
 JXTA_DECLARE(Jxta_PG *) jxta_PG_parent(Jxta_PG * me)
 {
     return me->parent;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_PG_get_recipient_addr(Jxta_PG * me, const char * proto_name, const char * proto_addr,
+                                                     const char *name, const char *param, Jxta_endpoint_address ** ea)
+{
+    char *new_param;
+
+    new_param = get_service_key(name, param);
+    *ea = jxta_endpoint_address_new_2(proto_name, proto_addr, me->ep_name, new_param);
+    free(new_param);
+
+    return *ea ? JXTA_SUCCESS : JXTA_FAILED;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_PG_add_recipient(Jxta_PG * me, void **cookie, const char *name, const char *param,

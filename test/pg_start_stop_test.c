@@ -50,13 +50,15 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: pg_start_stop_test.c,v 1.8 2005/11/17 03:46:27 slowhog Exp $
+ * $Id: pg_start_stop_test.c,v 1.10 2006/09/01 21:28:26 lankes Exp $
  */
 
 #include <apr_time.h>
 
 #include "jxta.h"
 #include "jxta_peergroup.h"
+#include "jxta_peer.h"
+#include "jxta_peer_private.h"
 #include "jxta_rdv_service.h"
 
 /* rerutn number of connected peers, minus number in case of errors */
@@ -93,7 +95,7 @@ int display_peers(Jxta_rdv_service * rdv)
             goto Common_Exit;
         }
 
-        connected = jxta_rdv_service_peer_is_connected(rdv, peer);
+        connected = jxta_peer_get_expires(peer) > jpr_time_now();
         if (connected) {
             res++;
             err = jxta_peer_get_adv(peer, &adv);
@@ -115,7 +117,7 @@ int display_peers(Jxta_rdv_service * rdv)
 
             sprintf(linebuff, "Status: %s\n", connected ? "CONNECTED" : "NOT CONNECTED");
             jstring_append_2(outputLine, linebuff);
-            expires = jxta_rdv_service_peer_get_expires(rdv, peer);
+            expires = jxta_peer_get_expires(peer);
 
             if (connected && (expires >= 0)) {
                 Jxta_time hours = 0;

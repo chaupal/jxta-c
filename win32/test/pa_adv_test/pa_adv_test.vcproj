@@ -176,30 +176,15 @@ copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(Configur
 			<File
 				RelativePath="..\..\..\test\pa_adv_test.c">
 			</File>
+			<File
+				RelativePath="..\..\..\test\unittest_jxta_func.c">
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl">
 			<File
-				RelativePath="..\..\..\include\jpr\jpr_errno.h">
-			</File>
-			<File
-				RelativePath="..\..\..\include\jpr\jpr_excep.h">
-			</File>
-			<File
-				RelativePath="..\..\..\include\jpr\jpr_excep_proto.h">
-			</File>
-			<File
-				RelativePath="..\..\..\include\jpr\jpr_setjmp.h">
-			</File>
-			<File
-				RelativePath="..\..\..\include\jpr\jpr_thread.h">
-			</File>
-			<File
-				RelativePath="..\..\..\include\jpr\jpr_threadonce.h">
-			</File>
-			<File
-				RelativePath="..\..\..\include\jpr\jpr_types.h">
+				RelativePath="..\..\..\test\unittest_jxta_func.h">
 			</File>
 		</Filter>
 		<Filter

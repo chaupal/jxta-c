@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_id_test.c,v 1.8 2005/09/23 20:07:14 slowhog Exp $
+ * $Id: jxta_id_test.c,v 1.9 2006/06/30 20:38:34 bondolo Exp $
  */
 
 
@@ -68,7 +68,7 @@
 #include "jxta_types.h"
 #include "unittest_jxta_func.h"
 
-static Jxta_boolean jxta_id_test_wellknown(void)
+static const char * jxta_id_test_wellknown(void)
 {
     Jxta_status res;
     JString *string1 = NULL;
@@ -87,7 +87,7 @@ static Jxta_boolean jxta_id_test_wellknown(void)
     res = jxta_id_from_jstring(&id1, string1);
 
     if (!jxta_id_equals(jxta_id_nullID, id1))
-        return FALSE;
+        return FILEANDLINE;
 
     res = jxta_id_get_uniqueportion(jxta_id_worldNetPeerGroupID, &string1);
 
@@ -100,7 +100,7 @@ static Jxta_boolean jxta_id_test_wellknown(void)
     res = jxta_id_from_jstring(&id1, string1);
 
     if (!jxta_id_equals(jxta_id_worldNetPeerGroupID, id1))
-        return FALSE;
+        return FILEANDLINE;
 
     res = jxta_id_get_uniqueportion(jxta_id_defaultNetPeerGroupID, &string1);
 
@@ -113,15 +113,15 @@ static Jxta_boolean jxta_id_test_wellknown(void)
     res = jxta_id_from_jstring(&id2, string2);
 
     if (!jxta_id_equals(jxta_id_defaultNetPeerGroupID, id2))
-        return FALSE;
+        return FILEANDLINE;
 
     if (jxta_id_equals(id1, id2))
-        return FALSE;
+        return FILEANDLINE;
 
-    return TRUE;
+    return NULL;
 }
 
-static Jxta_boolean jxta_id_test_peergroupid(void)
+static const char * jxta_id_test_peergroupid(void)
 {
     JString *pgid = NULL;
 
@@ -141,11 +141,11 @@ static Jxta_boolean jxta_id_test_peergroupid(void)
     JXTA_OBJECT_RELEASE(peergroupid);
     peergroupid = NULL;
 
-    return TRUE;
+    return NULL;
 }
 
 
-static Jxta_boolean jxta_id_test_peerid(void)
+static const char * jxta_id_test_peerid(void)
 {
 
     Jxta_id *peergroupid = NULL;
@@ -195,10 +195,10 @@ static Jxta_boolean jxta_id_test_peerid(void)
     peerid2 = NULL;
 
     /* This needs to return a TRUE to pass. */
-    return TRUE;
+    return NULL;
 }
 
-static Jxta_boolean jxta_id_test_pipeid(void)
+static const char * jxta_id_test_pipeid(void)
 {
 
     Jxta_id *peergroupid = NULL;
@@ -248,7 +248,7 @@ static Jxta_boolean jxta_id_test_pipeid(void)
     pipeid2 = NULL;
 
     /* This needs to return a TRUE to pass. */
-    return TRUE;
+    return NULL;
 }
 
 
@@ -268,7 +268,7 @@ static struct _funcs testfunc[] = {
 * @param tests_passed the variable in which to accumulate the number of tests passed
 * @param tests_failed the variable in which to accumulate the number of tests failed
 *
-* @return TRUE if all tests were run successfully, FALSE otherwise
+* @return NULL if all tests were run successfully, FALSE otherwise
 */
 Jxta_boolean run_jxta_id_tests(int *tests_run, int *tests_passed, int *tests_failed)
 {

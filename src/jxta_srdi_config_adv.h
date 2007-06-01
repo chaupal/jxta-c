@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi_config_adv.h,v 1.3 2006/01/31 22:11:27 slowhog Exp $
+ * $Id: jxta_srdi_config_adv.h,v 1.4 2006/08/10 21:35:33 exocetrick Exp $
  */
 
 
@@ -80,7 +80,7 @@ JXTA_DECLARE(void) jxta_srdi_config_set_no_range(Jxta_SrdiConfigAdvertisement * 
 JXTA_DECLARE(Jxta_boolean) jxta_srdi_cfg_get_no_range(Jxta_SrdiConfigAdvertisement * adv);
 JXTA_DECLARE(void) jxta_srdi_config_set_replication_threshold(Jxta_SrdiConfigAdvertisement * adv, int threshold);
 JXTA_DECLARE(int) jxta_srdi_cfg_get_replication_threshold(Jxta_SrdiConfigAdvertisement * adv);
-
+JXTA_DECLARE(Jxta_boolean) jxta_srdi_cfg_is_delta_cache_supported(Jxta_SrdiConfigAdvertisement * adv);
 /**
 *   For other advertisement types which want to parse SrdiConfig as a sub-section.    
 **/

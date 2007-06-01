@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_service.c,v 1.17 2005/11/23 16:07:01 slowhog Exp $
+ * $Id: jxta_resolver_service.c,v 1.18 2006/08/16 21:07:31 slowhog Exp $
  */
 
 #include "jxta_resolver_service_private.h"
@@ -199,6 +199,13 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendSrdi(Jxta_resolver_service *
 {
     PTValid(service, Jxta_resolver_service);
     return VTBL->sendSrdi(service, message, peerid);
+}
+
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_create_query(Jxta_resolver_service * service, JString * handlername, 
+                                                             JString * query, Jxta_resolver_query ** rq)
+{
+    PTValid(service, Jxta_resolver_service);
+    return VTBL->create_query(service, handlername, query, rq);
 }
 
 /* vim: set ts=4 sw=4 et tw=130: */

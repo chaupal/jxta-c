@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_types.h,v 1.8 2005/09/21 21:16:52 slowhog Exp $
+ * $Id: jxta_types.h,v 1.9 2006/09/13 20:04:23 bondolo Exp $
  */
 
 #ifndef JXTA_TYPES_H
@@ -106,26 +106,13 @@ extern "C" {
 typedef Jpr_boolean Jxta_boolean;
 typedef Jpr_status Jxta_status;
 
-/**
-    @deprecated Unused
-**/
-typedef Jpr_ssize Jxta_ssize;
-
 typedef Jpr_pool Jxta_pool;
 typedef Jpr_hash Jxta_hash;
-
-/**
-    @deprecated Unused
-**/
-typedef Jpr_uint Jxta_uint;
 
 typedef Jpr_interval_time Jxta_time_diff;
 typedef Jpr_absolute_time Jxta_time;
 
-/**
-    XXX should be redefined as an interval time.
-**/
-typedef Jpr_expiration_time Jxta_expiration_time;
+typedef Jxta_time_diff Jxta_expiration_time;
 
 typedef Jpr_port Jxta_port;
 typedef Jpr_in_addr Jxta_in_addr;

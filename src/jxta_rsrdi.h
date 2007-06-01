@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rsrdi.h,v 1.7 2006/06/16 09:10:39 mmx2005 Exp $
+ * $Id: jxta_rsrdi.h,v 1.8 2006/08/17 01:26:07 mmx2005 Exp $
  */
 
 
@@ -81,12 +81,6 @@ JXTA_DECLARE(ResolverSrdi *) jxta_resolver_srdi_new(void);
  * @return pointer to the resolver message object
  */
 JXTA_DECLARE(ResolverSrdi *) jxta_resolver_srdi_new_1(JString *, JString *, Jxta_id *);
-
-/**
- * frees the ResolverSrdi object
- * @param ResolverSrdi the resolver message object to free
- */
-void jxta_resolver_srdi_free(ResolverSrdi *);
 
 /**
  * @param ResolverSrdi the resolver message object

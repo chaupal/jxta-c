@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cred_null.c,v 1.8 2006/02/18 00:32:51 slowhog Exp $
+ * $Id: jxta_cred_null.c,v 1.9 2006/08/23 20:44:49 bondolo Exp $
  */
 
 #include <stdio.h>
@@ -76,7 +76,7 @@ struct _jxta_cred_null {
 
 typedef struct _jxta_cred_null jxta_cred_null_mutable;
 
-static void jxta_cred_null_delete(Jxta_object * ptr);
+static void cred_null_delete(Jxta_object * ptr);
 static Jxta_status jxta_cred__null_getpeergroup(Jxta_credential * cred, Jxta_id ** pg);
 static Jxta_status jxta_cred__null_getpeer(Jxta_credential * cred, Jxta_id ** peer);
 static Jxta_status jxta_cred__null_getsource(Jxta_credential * cred, Jxta_service ** service);
@@ -95,16 +95,14 @@ static Jxta_cred_vtable _cred_null_vtable = {
 
 jxta_cred_null *jxta_cred_null_new(Jxta_service * service, Jxta_id * pg, Jxta_id * peer, JString * identity)
 {
-    jxta_cred_null_mutable *cred = (jxta_cred_null_mutable *) malloc(sizeof(struct _jxta_cred_null));
+    jxta_cred_null_mutable *cred = (jxta_cred_null_mutable *) calloc(1, sizeof(struct _jxta_cred_null));
 
     if (NULL == cred) {
         JXTA_LOG("Could not malloc cred");
         return NULL;
     }
 
-    memset(cred, 0, sizeof(struct _jxta_cred_null));
-
-    JXTA_OBJECT_INIT(cred, jxta_cred_null_delete, NULL);
+    JXTA_OBJECT_INIT(cred, cred_null_delete, NULL);
 
     cred->common.credfuncs = &_cred_null_vtable;
 
@@ -116,7 +114,7 @@ jxta_cred_null *jxta_cred_null_new(Jxta_service * service, Jxta_id * pg, Jxta_id
     return (jxta_cred_null *) cred;
 }
 
-static void jxta_cred_null_delete(Jxta_object * ptr)
+static void cred_null_delete(Jxta_object * ptr)
 {
     jxta_cred_null_mutable *cred = (jxta_cred_null_mutable *) ptr;
 

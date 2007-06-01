@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: dummypg_test_private.h,v 1.3 2002/04/11 16:01:41 jice Exp $
+ * $Id: dummypg_test_private.h,v 1.4 2006/09/08 19:17:56 bondolo Exp $
  */
 
 #ifndef DUMMYPG_TEST_PRIVATE_H
@@ -95,13 +95,12 @@ struct _jxta_dummypg {
  * at run-time if usefull.
  */
 typedef Jxta_PG_methods Jxta_dummypg_methods;
-extern Jxta_dummypg_methods jxta_dummypg_methods;
 
 /*
  * export the constructor to subclassers.
  */
 extern void jxta_dummypg_construct(Jxta_dummypg* this,
-				   Jxta_dummypg_methods* methods);
+				   Jxta_dummypg_methods const * methods);
 
 /*
  * export the destructor to subclassers.

@@ -50,20 +50,19 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_wire_service.c,v 1.47 2006/06/15 08:12:48 mmx2005 Exp $
+ * $Id: jxta_wire_service.c,v 1.49 2006/09/08 20:56:01 exocetrick Exp $
  */
 
 static const char *__log_cat = "WireService";
 
 #include "jxta_apr.h"
-#include "jpr/jpr_excep.h"
 
 #include "jxta_errno.h"
 #include "jxta_debug.h"
 #include "jdlist.h"
 #include "jxta_id.h"
 #include "jxta_service.h"
-#include "jxta_peergroup.h"
+#include "jxta_peergroup_private.h"
 #include "jxta_service_private.h"
 #include "jxta_hashtable.h"
 #include "jxta_pipe_service.h"
@@ -235,7 +234,7 @@ Jxta_pipe_service_impl *jxta_wire_service_new_instance(Jxta_pipe_service * pipe_
     self->listeners = jxta_hashtable_new(0);
 
     jxta_PG_get_rendezvous_service(group, &(self->rdv));
-    jxta_PG_get_cache_manager(group, &(self->cm));
+    peergroup_get_cache_manager(group, &(self->cm));
     self->group = group;
 
     res = jxta_pipe_service_get_resolver(pipe_service, &self->generic_resolver);

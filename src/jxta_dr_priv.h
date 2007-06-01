@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dr_priv.h,v 1.2 2005/09/21 21:16:46 slowhog Exp $
+ * $Id: jxta_dr_priv.h,v 1.3 2006/08/15 20:38:08 slowhog Exp $
  */
 
 
@@ -73,7 +73,9 @@ extern "C" {
  *
  * @return void
  */
-JXTA_DECLARE(void) jxta_discovery_response_set_query_id(Jxta_DiscoveryResponse * me, long qid);
+void discovery_response_set_query_id(Jxta_DiscoveryResponse * me, long qid);
+
+void discovery_response_set_discovery_service(Jxta_DiscoveryResponse * me, Jxta_discovery_service * ds);
 
 #ifdef __cplusplus
 #if 0

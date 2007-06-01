@@ -50,27 +50,93 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: ShellApp.cs,v 1.1 2006/01/18 20:30:59 lankes Exp $
+ * $Id: ShellApp.cs,v 1.2 2006/08/04 10:33:18 lankes Exp $
  */
 using System;
 using JxtaNET;
+using System.IO;
 
 namespace JxtaNETShell
 {
 	/// <summary>
-	/// Summary of ShellApp.
+	/// Base class of the shell commands
 	/// </summary>
 	public abstract class ShellApp
 	{
-		public abstract void help();
+        /// <summary>
+        /// Represents a JXTA peer group
+        /// </summary>
+        protected PeerGroup netPeerGroup;
+        
+        /// <summary>
+        /// Represents a writer that can write a sequential series of characters. 
+        /// </summary>
+        protected TextWriter textWriter;
 
-		public abstract void run(string[] args);
+        /// <summary>
+        /// Represents a writer that can write a sequential series of characters. 
+        /// </summary>
+        protected TextReader textReader;
 
-		protected PeerGroup netPeerGroup;
+        /// <summary>
+        /// Standard help-method; it displays the help-text of the command.
+        /// </summary>
+		public abstract void Help();
 
-		public ShellApp(PeerGroup grp)
-		{
-			this.netPeerGroup = grp;
-		}
-	}
+        /// <summary>
+        /// Processes the command with given parameters
+        /// </summary>
+        /// <param name="args">The commandline-parameters.</param>
+		public abstract void Run(string[] args);
+
+        protected abstract void Initialize();
+
+        internal void Initialize(PeerGroup grp, TextWriter writer, TextReader reader)
+        {
+            this.netPeerGroup = grp;
+            this.textWriter = writer;
+            this.textReader = reader;
+
+            Initialize();
+        }
+    }
+
+    public static class ShellAppFactory
+    {
+        public static ShellApp BuildShellApp(Type type, PeerGroup grp, TextWriter writer, TextReader reader)
+        {
+            ShellApp shellApp = System.Activator.CreateInstance(type, new object[] { }) as ShellApp;
+
+            shellApp.Initialize(grp, writer, reader);
+
+            return shellApp;
+        }
+
+        public static ShellApp BuildShellApp(Type type, PeerGroup grp, TextReader reader)
+        {
+            ShellApp shellApp = System.Activator.CreateInstance(type, new object[] { }) as ShellApp;
+
+            shellApp.Initialize(grp, Console.Out, reader);
+
+            return shellApp;
+        }
+
+        public static ShellApp BuildShellApp(Type type, PeerGroup grp, TextWriter writer)
+        {
+            ShellApp shellApp = System.Activator.CreateInstance(type, new object[] { }) as ShellApp;
+
+            shellApp.Initialize(grp, writer, Console.In);
+
+            return shellApp;
+        }
+
+        public static ShellApp BuildShellApp(Type type, PeerGroup grp)
+        {
+            ShellApp shellApp = System.Activator.CreateInstance(type, new object[] { }) as ShellApp;
+
+            shellApp.Initialize(grp, Console.Out, Console.In);
+
+            return shellApp;
+        }
+    }
 }

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: unit_test_runner.c,v 1.5 2005/09/23 20:07:16 slowhog Exp $
+ * $Id: unit_test_runner.c,v 1.12 2006/09/08 20:13:00 bondolo Exp $
  */
 
 
@@ -63,15 +63,7 @@
 
 #include <jxta.h>
 
-/** 
- * A structure that contains the test function to run
- * and status information
- */
-struct _unit_tests {
-    Jxta_boolean(*test) (int *, int *, int *);
-    const char *states;
-};
-
+#include "unittest_jxta_func.h"
 
 /**
 * The prototype for the jstring_test runs. It is defined in
@@ -150,59 +142,54 @@ Jxta_boolean run_jxta_msg_tests(int *tests_run, int *tests_passed, int *tests_fa
 */
 Jxta_boolean run_jxta_dq_tests(int *tests_run, int *tests_passed, int *tests_failed);
 
+/**
+ * The prototype for the pga_adv_test runs. It is defined in
+* pga_adv_test.c
+*/
+Jxta_boolean run_jxta_pga_tests(int *tests_run, int *tests_passed, int *tests_failed);
+
+/**
+ * The prototype for the pa_adv_test runs. It is defined in
+* pa_adv_test.c
+*/
+Jxta_boolean run_jxta_pa_tests(int *tests_run, int *tests_passed, int *tests_failed);
+
+/**
+ * The prototype for the dq_adv_test runs. It is defined in
+* pga_adv_test.c
+*/
+Jxta_boolean run_jxta_lease_msg_tests(int *tests_run, int *tests_passed, int *tests_failed);
+
+Jxta_boolean run_jxta_apa_adv_tests(int *tests_run, int *tests_passed, int *tests_failed);
+
+Jxta_boolean run_jxta_route_adv_tests(int *tests_run, int *tests_passed, int *tests_failed);
 
 /** 
 * The list of tests to run, terminated by NULL
 */
-static struct _unit_tests testfunc[] = {
-    {*run_jstring_tests, "jstring_test"},
-    {*run_jxta_bytevector_tests, "jxta_bytevector_test"},
-    {*run_jxta_vector_tests, "jxta_vector_test"},
-    {*run_jxta_xml_util_tests, "jxta_xml_util_test"},
-    {*jxtaobject_test, "jxtaobject_test"},
-    {*run_jxta_id_tests, "jxta_id_test"},
-    {*run_jxta_hash_tests, "jxta_hash_test"},
-    {*run_jxta_objecthash_tests, "jxta_objecthash_test"},
-    {*run_excep_tests, "run_excep_tests"},
-    {*run_dummypg_tests, "run_dummypg_tests"},
-    {*run_dummypg_tests, "run_dummypg_tests"},
-    {*run_jxta_msg_tests, "run_msg_tests"},
-    {*run_jxta_dq_tests, "run_jxta_dq_tests"},
+static struct _suite testfuncs[] = {
+    {*run_jstring_tests, "JString Tests"},
+    {*run_jxta_bytevector_tests, "Jxta_bytevector Tests"},
+    {*run_jxta_vector_tests, "Jxta_vector Tests"},
+    {*run_jxta_xml_util_tests, "Jxta_xml_util Tests"},
+    {*jxtaobject_test, "Jxta_object Tests"},
+    {*run_jxta_id_tests, "Jxta_ID Tests"},
+    {*run_jxta_hash_tests, "jxta_hash Tests"},
+    {*run_jxta_objecthash_tests, "Jxta_objecthash Tests"}, 
+    {*run_excep_tests, "excep Tests"},
+    {*run_dummypg_tests, "dummypg Tests"},
+    {*run_jxta_pga_tests, "JXTA_PGA Tests"},
+    {*run_jxta_pa_tests, "JXTA_PA Tests"},
+    {*run_jxta_dq_tests, "Jxta_dq Tests"},
+    {*run_jxta_msg_tests, "Jxta_Message Tests"},
+    {*run_jxta_lease_msg_tests, "Jxta_lease_{resquest|response}_msg Tests"},
+    {*run_jxta_route_adv_tests, "Jxta_apa Tests"},
+    {*run_jxta_apa_adv_tests, "Jxta_routea Tests"},
 
     {NULL, "null"}
 };
 
 int main(int argc, char **argv)
 {
-    int run, failed, passed;
-    Jxta_boolean result = TRUE, tmp;
-    int i = 0;
-
-    run = failed = passed = 0;
-
-    jxta_initialize();
-
-    while (testfunc[i].test != NULL) {
-        fprintf(stdout, "=========== %s ============\n", testfunc[i].states);
-        tmp = testfunc[i].test(&run, &passed, &failed);
-        if (tmp == FALSE) {
-            result = FALSE;
-            fprintf(stdout, "Test: %s failed\n", testfunc[i].states);
-        }
-        i++;
-    }
-
-    fprintf(stdout, "Tests run:    %d\n", run);
-    fprintf(stdout, "Tests passed: %d\n", passed);
-    fprintf(stdout, "Tests failed: %d\n", failed);
-    if (result == FALSE)
-        fprintf(stdout, "Some tests failed\n");
-
-    if (result == TRUE)
-        i = 0;
-    else
-        i = -1;
-
-    jxta_terminate();
-    return i;
+    return main_test_suites(testfuncs, argc, argv);
 }

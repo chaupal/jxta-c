@@ -51,11 +51,13 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_builtinmodules_private.h,v 1.4 2005/09/29 07:29:03 slowhog Exp $
+ * $Id: jxta_builtinmodules_private.h,v 1.5 2006/08/31 20:54:30 bondolo Exp $
  */
 
 #ifndef JXTA_BUILTINMODULES_PRIVATE_H
 #define JXTA_BUILTINMODULES_PRIVATE_H
+
+#include "jxta_module.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,9 +66,11 @@ extern "C" {
 #endif
 #endif
 
+typedef Jxta_module *(Jxta_module_instantiator) (void);
+
 typedef struct {
     const char *name;
-    void *(*instantiator) (void);
+    Jxta_module_instantiator *instantiator;
 } Jxta_builtinmodule_record;
 
 /*
@@ -74,20 +78,20 @@ typedef struct {
  */
 extern Jxta_builtinmodule_record jxta_builtinmodules_tbl[];
 
-extern void *jxta_endpoint_service_new_instance(void);
-extern void *jxta_rdv_service_new_instance(void);
-extern void *jxta_resolver_service_ref_new_instance(void);
-extern void *jxta_discovery_service_ref_new_instance(void);
-extern void *jxta_transport_http_new_instance(void);
-extern void *jxta_transport_tcp_new_instance(void);
-extern void *jxta_netpg_new_instance(void);
-extern void *jxta_stdpg_new_instance(void);
-extern void *jxta_router_client_new_instance(void);
-extern void *jxta_pipe_service_new_instance(void);
-extern void *jxta_membership_service_null_new_instance(void);
-extern void *jxta_peerinfo_service_new_instance(void);
-extern void *jxta_transport_relay_new_instance(void);
-extern void *jxta_srdi_service_ref_new_instance(void);
+extern Jxta_module *jxta_endpoint_service_new_instance(void);
+extern Jxta_module *jxta_rdv_service_new_instance(void);
+extern Jxta_module *jxta_resolver_service_ref_new_instance(void);
+extern Jxta_module *jxta_discovery_service_ref_new_instance(void);
+extern Jxta_module *jxta_transport_http_new_instance(void);
+extern Jxta_module *jxta_transport_tcp_new_instance(void);
+extern Jxta_module *jxta_netpg_new_instance(void);
+extern Jxta_module *jxta_stdpg_new_instance(void);
+extern Jxta_module *jxta_router_client_new_instance(void);
+extern Jxta_module *jxta_pipe_service_new_instance(void);
+extern Jxta_module *jxta_membership_service_null_new_instance(void);
+extern Jxta_module *jxta_peerinfo_service_new_instance(void);
+extern Jxta_module *jxta_transport_relay_new_instance(void);
+extern Jxta_module *jxta_srdi_service_ref_new_instance(void);
 
 
 #ifdef __cplusplus

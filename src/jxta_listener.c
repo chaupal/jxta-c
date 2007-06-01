@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_listener.c,v 1.41 2006/06/17 09:24:12 mmx2005 Exp $
+ * $Id: jxta_listener.c,v 1.42 2006/08/11 22:39:31 slowhog Exp $
  */
 
 #include <stdlib.h>
@@ -549,7 +549,7 @@ JXTA_DECLARE(Jxta_status) jxta_listener_pool_object(Jxta_listener * me, Jxta_obj
     apr_thread_mutex_unlock(me->mutex);
     assert(me == la->listener);
     la->obj = object ? JXTA_OBJECT_SHARE(object) : NULL;
-    return apr_thread_pool_push(tpool, listener_thd_func, la, APR_THREAD_TASK_PRIORITY_NORMAL);
+    return apr_thread_pool_push(tpool, listener_thd_func, la, APR_THREAD_TASK_PRIORITY_NORMAL, me);
 }
 
 /* vi: set ts=4 sw=4 tw=130 et: */

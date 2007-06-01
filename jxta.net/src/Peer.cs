@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: Peer.cs,v 1.1 2006/01/18 20:31:06 lankes Exp $
+ * $Id: Peer.cs,v 1.2 2006/08/04 10:33:19 lankes Exp $
  */
 using System;
 using System.Runtime.InteropServices;
@@ -58,10 +58,11 @@ using System.Runtime.InteropServices;
 namespace JxtaNET
 {
     /// <summary>
-    /// Summary of Peer.
+    /// Represents a jxta peer.
     /// </summary>
     public class Peer : JxtaObject
     {
+        #region import jxta-c functions
         [DllImport("jxta.dll")]
         private static extern UInt32 jxta_peer_get_adv(IntPtr self, ref IntPtr adv);
 
@@ -70,23 +71,39 @@ namespace JxtaNET
 
         public bool Equals(Peer p)
         {
-            return (this.getID().ToString().Equals(p.getID().ToString()));
+            return (this.ID.ToString().Equals(p.ID.ToString()));
         }
+        #endregion
 
-        public PeerAdvertisement getAdvertisement()
+        /// <summary>
+        /// Peer Advertisement of the peer
+        /// </summary>
+        public PeerAdvertisement Advertisement
         {
-            IntPtr ret = new IntPtr();
-            Errors.check(jxta_peer_get_adv(this.self, ref ret));
-            return new PeerAdvertisement(ret);
+            get
+            {
+                IntPtr ret = new IntPtr();
+                Errors.check(jxta_peer_get_adv(this.self, ref ret));
+
+                if (ret == IntPtr.Zero)
+                    return null;
+
+                return new PeerAdvertisement(ret);
+            }
         }
 
-        public ID getID()
+        /// <summary>
+        /// The PeerId of the peer
+        /// </summary>
+        public PeerID ID
         {
-            IntPtr ret = new IntPtr();
-            Errors.check(jxta_peer_get_peerid(this.self, ref ret));
-            return new ID(ret);
+            get
+            {
+                IntPtr ret = new IntPtr();
+                Errors.check(jxta_peer_get_peerid(this.self, ref ret));
+                return new PeerIDImpl(ret);
+            }
         }
-
 
         internal Peer(IntPtr self) : base(self) { }
 

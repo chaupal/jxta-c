@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_apa.h,v 1.9 2005/11/11 21:58:23 slowhog Exp $
+ * $Id: jxta_apa.h,v 1.10 2006/08/23 22:12:31 bondolo Exp $
  */
 
 
@@ -70,13 +70,9 @@ extern "C" {
 typedef struct _jxta_AccessPointAdvertisement Jxta_AccessPointAdvertisement;
 
 JXTA_DECLARE(Jxta_AccessPointAdvertisement *) jxta_AccessPointAdvertisement_new(void);
-JXTA_DECLARE(void) jxta_AccessPointAdvertisement_set_handlers(Jxta_AccessPointAdvertisement *, XML_Parser, void *);
 JXTA_DECLARE(Jxta_status) jxta_AccessPointAdvertisement_get_xml(Jxta_AccessPointAdvertisement *, JString **);
-JXTA_DECLARE(void) jxta_AccessPointAdvertisement_parse_charbuffer(Jxta_AccessPointAdvertisement *, const char *, int len);
-JXTA_DECLARE(void) jxta_AccessPointAdvertisement_parse_file(Jxta_AccessPointAdvertisement *, FILE * stream);
-
-JXTA_DECLARE(char *) jxta_AccessPointAdvertisement_get_Jxta_AccessPointAdvertisement(Jxta_AccessPointAdvertisement *);
-JXTA_DECLARE(void) jxta_AccessPointAdvertisement_set_Jxta_AccessPointAdvertisement(Jxta_AccessPointAdvertisement *, char *);
+JXTA_DECLARE(Jxta_status) jxta_AccessPointAdvertisement_parse_charbuffer(Jxta_AccessPointAdvertisement *, const char *, int len);
+JXTA_DECLARE(Jxta_status) jxta_AccessPointAdvertisement_parse_file(Jxta_AccessPointAdvertisement *, FILE * stream);
 
 JXTA_DECLARE(Jxta_id *) jxta_AccessPointAdvertisement_get_PID(Jxta_AccessPointAdvertisement *);
 JXTA_DECLARE(void) jxta_AccessPointAdvertisement_set_PID(Jxta_AccessPointAdvertisement *, Jxta_id *);

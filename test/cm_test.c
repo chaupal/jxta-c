@@ -2,6 +2,8 @@
 
 #include <jxta.h>
 #include <jxta_cm.h>
+#include <jxta_cm_private.h>
+#include <jxta_cache_config_adv.h>
 #include <apr_general.h>
 
 
@@ -15,8 +17,13 @@ int test_cm_new()
     Jxta_id *peerid;
     Jxta_cm *cm = NULL;
 
+    Jxta_CacheConfigAdvertisement *cache_config;
+
+    cache_config = jxta_CacheConfigAdvertisement_new();
+    jxta_CacheConfigAdvertisement_create_default(cache_config, TRUE);
+
     jxta_id_peerid_new_1(&peerid, jxta_id_worldNetPeerGroupID);
-    cm = jxta_cm_new("CM", jxta_id_worldNetPeerGroupID, peerid);
+    cm = cm_new("CM", jxta_id_worldNetPeerGroupID, cache_config, peerid, NULL);
 
     JXTA_OBJECT_RELEASE(cm);
 
@@ -30,7 +37,8 @@ int test_cm_create_folder()
 
     Jxta_id *peerid;
     Jxta_cm *cm = NULL;
-    char *keys[][2] = {
+    Jxta_CacheConfigAdvertisement *cache_config;
+    const char *keys[][2] = {
         {"foo", NULL},
         {"bar", NULL},
         {"baz", NULL},
@@ -39,10 +47,13 @@ int test_cm_create_folder()
 
     jxta_id_peerid_new_1(&peerid, jxta_id_worldNetPeerGroupID);
 
-    cm = jxta_cm_new("CM", jxta_id_worldNetPeerGroupID, peerid);
+    cache_config = jxta_CacheConfigAdvertisement_new();
+    jxta_CacheConfigAdvertisement_create_default(cache_config, TRUE);
+
+    cm = cm_new("CM", jxta_id_worldNetPeerGroupID, cache_config, peerid, NULL);
 
 
-    jxta_cm_create_folder(cm, "MyFolder", keys);
+    cm_create_folder(cm, (char *) "MyFolder", keys);
 
     JXTA_OBJECT_RELEASE(cm);
 

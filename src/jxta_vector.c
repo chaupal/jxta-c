@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_vector.c,v 1.32 2006/02/15 01:09:51 slowhog Exp $
+ * $Id: jxta_vector.c,v 1.39 2006/10/01 01:07:10 bondolo Exp $
  */
 
 static const char *__log_cat = "VECTOR";
@@ -69,8 +69,11 @@ static const char *__log_cat = "VECTOR";
  ** This file implements Jxta_vector. Please refer to jxta_vector.h
  ** for detail on the API.
  **********************************************************************/
-#define INDEX_DEFAULT_SIZE 32
-#define INDEX_DEFAULT_INCREASE 16
+
+
+static const unsigned int INDEX_DEFAULT_SIZE = 32;
+static const unsigned int INDEX_DEFAULT_INCREASE = 16;
+
 struct _jxta_vector {
     JXTA_OBJECT_HANDLE;
 
@@ -83,16 +86,27 @@ struct _jxta_vector {
     Jxta_object **elements;
 };
 
+static void jxta_vector_free(Jxta_object * vector);
+static Jxta_status increase_capacity(Jxta_vector * vector, unsigned int additional);
+static Jxta_status ensure_capacity(Jxta_vector * vector, unsigned int desired_capacity);
+static Jxta_status move_index_forward(Jxta_vector * vector, unsigned int at_index, unsigned int num_slots);
+static void move_index_backward(Jxta_vector * vector, unsigned int at_index);
+static Jxta_status add_object_at(Jxta_vector * vector, Jxta_object * object, unsigned int at_index);
+static Jxta_status addall_objects_at(Jxta_vector * vector, Jxta_vector * objects, unsigned int at_index, unsigned int from_index,
+                                     unsigned int count);
+static Jxta_boolean address_equator(const void *a, const void *b);
+static int address_comparator(const void *a, const void *b);
+
 /**
  * Free the vector
  *    - free the items in the vector
  *    - free the mutexes
  *    - free the vector object itself
  **/
-static void jxta_vector_free(Jxta_object * vector)
+static void jxta_vector_free(Jxta_object * me)
 {
-    Jxta_vector *self = (Jxta_vector *) vector;
-    unsigned int i = 0;
+    Jxta_vector *myself = (Jxta_vector *) me;
+    unsigned int i;
 
     /*
      * We need to take the lock in order to make sure that nobody
@@ -102,21 +116,27 @@ static void jxta_vector_free(Jxta_object * vector)
      * properly shared, there should not be any external code that still
      * has a reference on this vector. So things should be safe.
      */
-    apr_thread_mutex_lock(self->mutex);
+    apr_thread_mutex_lock(myself->mutex);
 
     /* Release all the object contained in the vector */
-    for (i = 0; i < self->size; ++i) {
-        JXTA_OBJECT_RELEASE(self->elements[i]);
+    for (i = 0; i < myself->size; ++i) {
+        JXTA_OBJECT_RELEASE(myself->elements[i]);
+        myself->elements[i] = NULL;
     }
-    /* Free the elements */
-    free(self->elements);
 
-    apr_thread_mutex_unlock(self->mutex);
-    apr_thread_mutex_destroy(self->mutex);
+    /* Free the elements */
+    free(myself->elements);
+
+    apr_thread_mutex_unlock(myself->mutex);
+    apr_thread_mutex_destroy(myself->mutex);
     /* Free the pool containing the mutex */
-    apr_pool_destroy(self->jpr_pool);
-    /* Free the object itself */
-    free(self);
+    apr_pool_destroy(myself->jpr_pool);
+
+    memset(myself, 0xDD, sizeof(Jxta_vector));
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FREE [%pp]\n", myself);
+
+    free(myself);
 }
 
 JXTA_DECLARE(Jxta_vector *) jxta_vector_new(unsigned int initialSize)
@@ -131,6 +151,8 @@ JXTA_DECLARE(Jxta_vector *) jxta_vector_new(unsigned int initialSize)
         /* No more memory */
         return NULL;
     }
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "NEW [%pp]\n", self);
 
     /* Initialize it. */
     JXTA_OBJECT_INIT(self, jxta_vector_free, NULL);
@@ -158,8 +180,9 @@ JXTA_DECLARE(Jxta_vector *) jxta_vector_new(unsigned int initialSize)
         free(self);
         return NULL;
     }
+
     /* Create the mutex */
-    res = apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED,    /* nested */
+    res = apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED,        /* nested */
                                   self->jpr_pool);
     if (res != APR_SUCCESS) {
         /* Free the memory that has been already allocated */
@@ -172,46 +195,91 @@ JXTA_DECLARE(Jxta_vector *) jxta_vector_new(unsigned int initialSize)
     return self;
 }
 
+
 /**
  * A new index needs to be created, increased by size.
- * The old index is copied into the new one.
- * The old index is freed.
+ * The old elements are copied into a larger block.
  * The caller of this function must make sure to be holding the mutex.
  **/
-static void increase_capacity(Jxta_vector * vector, unsigned int sizeIncrease)
+static Jxta_status ensure_capacity(Jxta_vector * vector, unsigned int desired_capacity)
 {
-    Jxta_object **oldElements = vector->elements;
+    if (vector->capacity < desired_capacity) {
+        unsigned int additional = desired_capacity - vector->capacity;
 
-    /* Allocate a new elements */
-    vector->capacity += sizeIncrease;
-    vector->elements = (Jxta_object **) calloc(vector->capacity, sizeof(Jxta_object *));
+        if (additional < INDEX_DEFAULT_INCREASE) {
+            additional = INDEX_DEFAULT_INCREASE;
+        }
+
+        return increase_capacity(vector, additional);
+    }
+
+    return JXTA_SUCCESS;
+}
+
+
+/**
+ * A new index needs to be created, increased by size.
+ * The old elements are copied into a larger block.
+ * The caller of this function must make sure to be holding the mutex.
+ **/
+static Jxta_status increase_capacity(Jxta_vector * vector, unsigned int additional)
+{
+    Jxta_object **new_elements;
+
+    if ((vector->capacity + additional) < vector->capacity) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Capacity would overflow : JXTA_INVALID_ARGUMENT\n");
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Increasing capacity : %d -> %d\n", vector->capacity,
+                    vector->capacity + additional);
+
+    new_elements = (Jxta_object **) calloc(vector->capacity + additional, sizeof(Jxta_object *));
+
+    if (NULL == new_elements) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Increase capacity failed : JXTA_NOMEM\n");
+        return JXTA_NOMEM;
+    }
+
+    vector->capacity += additional;
 
     /* Copy the old elements into the new one */
-    memmove(vector->elements, oldElements, vector->size * sizeof(Jxta_object *));
+    memmove(new_elements, vector->elements, vector->size * sizeof(Jxta_object *));
 
-    /* Free the old elements */
-    free(oldElements);
+    /* Free the old elements. */
+    free(vector->elements);
+
+    /* Assign the new elements. */
+    vector->elements = new_elements;
+
+    return JXTA_SUCCESS;
 }
 
 /**
  * Move the index up one slot starting at index.
  * The caller is responsible for holding the lock on the vector.
  **/
-static void move_index_forward(Jxta_vector * vector, unsigned int at_index)
+static Jxta_status move_index_forward(Jxta_vector * vector, unsigned int at_index, unsigned int num_slots)
 {
+    Jxta_status res;
+
     /* Check if there is enough room in the index in order to add the object */
-    if (vector->size == vector->capacity) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Increasing capacity\n");
-        increase_capacity(vector, INDEX_DEFAULT_INCREASE);
+    res = ensure_capacity(vector, vector->size + num_slots);
+
+    if (JXTA_SUCCESS != res) {
+        return res;
     }
 
     if (at_index < vector->size) {
-        memmove(&vector->elements[at_index + 1], &vector->elements[at_index], sizeof(Jxta_object *) * (vector->size - at_index));
+        memmove(&vector->elements[at_index + num_slots], &vector->elements[at_index],
+                sizeof(Jxta_object *) * (vector->size - at_index));
     }
 
-    vector->size++;
+    vector->size += num_slots;
 
-    vector->elements[at_index] = NULL;
+    memset(&vector->elements[at_index], 0x00, sizeof(Jxta_object *) * num_slots);
+
+    return JXTA_SUCCESS;
 }
 
 /**
@@ -232,6 +300,7 @@ static void move_index_backward(Jxta_vector * vector, unsigned int at_index)
 
 /**
  * add_object inserts an object into a vector.
+ *
  * IMPORTANT: the caller is responsible for holding the lock on the 
  * vector.
  **/
@@ -239,7 +308,7 @@ static Jxta_status add_object_at(Jxta_vector * vector, Jxta_object * object, uns
 {
     /* Move the index to make room for the new object */
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Move index forward\n");
-    move_index_forward(vector, at_index);
+    move_index_forward(vector, at_index, 1);
 
     /* Share the object and add it into the index */
     vector->elements[at_index] = JXTA_OBJECT_SHARE(object);
@@ -251,15 +320,12 @@ JXTA_DECLARE(Jxta_status) jxta_vector_add_object_at(Jxta_vector * vector, Jxta_o
 {
     Jxta_status err;
 
-    if (!JXTA_OBJECT_CHECK_VALID(vector) || !JXTA_OBJECT_CHECK_VALID(object)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Invalid argument\n");
-        return JXTA_INVALID_ARGUMENT;
-    }
+    JXTA_OBJECT_CHECK_VALID(vector);
 
     apr_thread_mutex_lock(vector->mutex);
     if (at_index > vector->size) {
         apr_thread_mutex_unlock(vector->mutex);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Invalid argument\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument [%pp]\n", vector);
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -272,10 +338,7 @@ JXTA_DECLARE(Jxta_status) jxta_vector_add_object_first(Jxta_vector * vector, Jxt
 {
     Jxta_status err;
 
-    if (!JXTA_OBJECT_CHECK_VALID(vector) || !JXTA_OBJECT_CHECK_VALID(object)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Invalid argument\n");
-        return JXTA_INVALID_ARGUMENT;
-    }
+    JXTA_OBJECT_CHECK_VALID(vector);
 
     apr_thread_mutex_lock(vector->mutex);
     err = add_object_at(vector, object, 0);
@@ -287,29 +350,110 @@ JXTA_DECLARE(Jxta_status) jxta_vector_add_object_last(Jxta_vector * vector, Jxta
 {
     Jxta_status err;
 
-    if (!JXTA_OBJECT_CHECK_VALID(vector) || !JXTA_OBJECT_CHECK_VALID(object)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Invalid argument\n");
-        return JXTA_INVALID_ARGUMENT;
-    }
+    JXTA_OBJECT_CHECK_VALID(vector);
+
     apr_thread_mutex_lock(vector->mutex);
     err = add_object_at(vector, object, vector->size);
     apr_thread_mutex_unlock(vector->mutex);
     return err;
 }
 
-JXTA_DECLARE(Jxta_status) jxta_vector_get_object_at(Jxta_vector * vector, Jxta_object ** objectPt, unsigned int at_index)
+/**
+ * add_object inserts an object into a vector.
+ *
+ * IMPORTANT: the caller is responsible for holding the lock on the 
+ * vector.
+ **/
+static Jxta_status addall_objects_at(Jxta_vector * vector, Jxta_vector * objects, unsigned int at_index, unsigned int from_index,
+                                     unsigned int count)
 {
+    unsigned int each_object;
 
-    if (!JXTA_OBJECT_CHECK_VALID(vector) || (NULL == objectPt)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Invalid argument\n");
+    if (vector == objects) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,
+                        FILEANDLINE "Invalid argument (sorry, source == destination not allowed)\n");
         return JXTA_INVALID_ARGUMENT;
     }
+
+    /* Move the index to make room for the new object */
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Move index forward\n");
+    move_index_forward(vector, at_index, count);
+
+    /* Share the object and add it into the index */
+    for (each_object = 0; each_object < count; each_object++) {
+        vector->elements[at_index + each_object] = JXTA_OBJECT_SHARE(objects->elements[from_index + each_object]);
+    }
+
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_vector_addall_objects_at(Jxta_vector * vector, Jxta_vector * objects, unsigned int at_index)
+{
+    Jxta_status err;
+
+    JXTA_OBJECT_CHECK_VALID(vector);
+    JXTA_OBJECT_CHECK_VALID(objects);
+
+    apr_thread_mutex_lock(vector->mutex);
+    if (at_index > vector->size) {
+        apr_thread_mutex_unlock(vector->mutex);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument [%pp]\n", vector);
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    apr_thread_mutex_lock(objects->mutex);
+    err = addall_objects_at(vector, objects, at_index, 0, objects->size);
+    apr_thread_mutex_unlock(objects->mutex);
+    apr_thread_mutex_unlock(vector->mutex);
+
+    return err;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_vector_addall_objects_first(Jxta_vector * vector, Jxta_vector * objects)
+{
+    Jxta_status err;
+
+    JXTA_OBJECT_CHECK_VALID(vector);
+    JXTA_OBJECT_CHECK_VALID(objects);
+
+    apr_thread_mutex_lock(vector->mutex);
+    apr_thread_mutex_lock(objects->mutex);
+
+    err = addall_objects_at(vector, objects, 0, 0, objects->size);
+
+    apr_thread_mutex_unlock(objects->mutex);
+    apr_thread_mutex_unlock(vector->mutex);
+
+    return err;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_vector_addall_objects_last(Jxta_vector * vector, Jxta_vector * objects)
+{
+    Jxta_status err;
+
+    JXTA_OBJECT_CHECK_VALID(vector);
+    JXTA_OBJECT_CHECK_VALID(objects);
+
+    apr_thread_mutex_lock(vector->mutex);
+    apr_thread_mutex_lock(objects->mutex);
+
+    err = addall_objects_at(vector, objects, vector->size, 0, objects->size);
+
+    apr_thread_mutex_unlock(objects->mutex);
+    apr_thread_mutex_unlock(vector->mutex);
+
+    return err;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_vector_get_object_at(Jxta_vector * vector, Jxta_object ** objectPt, unsigned int at_index)
+{
+    JXTA_OBJECT_CHECK_VALID(vector);
 
     apr_thread_mutex_lock(vector->mutex);
 
     if ((at_index >= vector->size) || (vector->size == 0)) {
         apr_thread_mutex_unlock(vector->mutex);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Invalid argument\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument [%pp]\n", vector);
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -322,15 +466,12 @@ JXTA_DECLARE(Jxta_status) jxta_vector_get_object_at(Jxta_vector * vector, Jxta_o
     return JXTA_SUCCESS;
 }
 
-JXTA_DECLARE(int) jxta_vector_remove_object(Jxta_vector * me, Jxta_object *object)
+JXTA_DECLARE(int) jxta_vector_remove_object(Jxta_vector * me, Jxta_object * object)
 {
     int num_removed = 0;
     unsigned int i = 0;
 
-    if (!JXTA_OBJECT_CHECK_VALID(me) || (NULL == object)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Invalid argument\n");
-        return -1;
-    }
+    JXTA_OBJECT_CHECK_VALID(me);
 
     apr_thread_mutex_lock(me->mutex);
     while (i < me->size) {
@@ -351,16 +492,13 @@ JXTA_DECLARE(Jxta_status) jxta_vector_remove_object_at(Jxta_vector * vector, Jxt
 {
     Jxta_object *object;
 
-    if (!JXTA_OBJECT_CHECK_VALID(vector)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Invalid argument\n");
-        return JXTA_INVALID_ARGUMENT;
-    }
+    JXTA_OBJECT_CHECK_VALID(vector);
 
     apr_thread_mutex_lock(vector->mutex);
 
     if (at_index >= vector->size) {
         apr_thread_mutex_unlock(vector->mutex);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Invalid argument\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument [%pp]\n", vector);
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -385,10 +523,8 @@ JXTA_DECLARE(unsigned int) jxta_vector_size(Jxta_vector * vector)
 {
     unsigned int size;
 
-    if (!JXTA_OBJECT_CHECK_VALID(vector)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Invalid argument\n");
-        return 0;
-    }
+    JXTA_OBJECT_CHECK_VALID(vector);
+
     apr_thread_mutex_lock(vector->mutex);
 
     size = vector->size;
@@ -398,18 +534,9 @@ JXTA_DECLARE(unsigned int) jxta_vector_size(Jxta_vector * vector)
 
 JXTA_DECLARE(Jxta_status) jxta_vector_clone(Jxta_vector * source, Jxta_vector ** dest, unsigned int at_index, unsigned int length)
 {
-    unsigned int i;
     Jxta_status err = JXTA_SUCCESS;
 
-    if (!JXTA_OBJECT_CHECK_VALID(source) || (dest == NULL)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Invalid argument\n");
-        return JXTA_INVALID_ARGUMENT;
-    }
-
-    if (length == 0) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Invalid argument\n");
-        return JXTA_INVALID_ARGUMENT;
-    }
+    JXTA_OBJECT_CHECK_VALID(source);
 
     apr_thread_mutex_lock(source->mutex);
 
@@ -418,6 +545,7 @@ JXTA_DECLARE(Jxta_status) jxta_vector_clone(Jxta_vector * source, Jxta_vector **
     /* index cant be greater than size, except when length is zero, then we 
        let be equal to size */
     if ((at_index > source->size) || ((at_index == source->size) && (length != 0))) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument [%pp]\n", source);
         err = JXTA_INVALID_ARGUMENT;
         goto Common_Exit;
     }
@@ -430,23 +558,7 @@ JXTA_DECLARE(Jxta_status) jxta_vector_clone(Jxta_vector * source, Jxta_vector **
         goto Common_Exit;
     }
 
-    /* Copy the elements */
-    for (i = 0; i < length; ++i) {
-        Jxta_object *pt;
-        err = jxta_vector_get_object_at(source, &pt, at_index + i);
-        if (err != JXTA_SUCCESS) {
-            goto Common_Exit;
-        }
-
-        err = jxta_vector_add_object_last(*dest, pt);
-        if (err != JXTA_SUCCESS) {
-            JXTA_OBJECT_RELEASE(pt);
-            pt = NULL;
-            goto Common_Exit;
-        }
-        /* We don't care about the object anymore. We need to release it. */
-        JXTA_OBJECT_RELEASE(pt);
-    }
+    err = addall_objects_at(*dest, source, 0, at_index, length);
 
   Common_Exit:
 
@@ -458,10 +570,7 @@ JXTA_DECLARE(Jxta_status) jxta_vector_clear(Jxta_vector * vector)
 {
     unsigned int i;
 
-    if (!JXTA_OBJECT_CHECK_VALID(vector)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Invalid argument\n");
-        return JXTA_INVALID_ARGUMENT;
-    }
+    JXTA_OBJECT_CHECK_VALID(vector);
 
     apr_thread_mutex_lock(vector->mutex);
 
@@ -482,15 +591,126 @@ static int address_comparator(const void *a, const void *b)
     return ((char *) a) - ((char *) b);
 }
 
-JXTA_DECLARE(Jxta_status) jxta_vector_qsort(Jxta_vector * vector, Jxta_object_compare_func * func)
+static Jxta_boolean address_equator(const void *a, const void *b)
 {
-    if (!JXTA_OBJECT_CHECK_VALID(vector)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Invalid argument\n");
-        return JXTA_INVALID_ARGUMENT;
+    return a == b;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_vector_swap_elements(Jxta_vector * vector, unsigned int first, unsigned int second)
+{
+
+    Jxta_status res;
+
+    JXTA_OBJECT_CHECK_VALID(vector);
+
+    apr_thread_mutex_lock(vector->mutex);
+
+    if ((first >= vector->size) || (second >= vector->size)) {
+        res = JXTA_INVALID_ARGUMENT;
+    } else {
+        Jxta_object *temp = vector->elements[first];
+        vector->elements[first] = vector->elements[second];
+        vector->elements[second] = temp;
+
+        res = JXTA_SUCCESS;
     }
 
-    if (NULL == func)
+    apr_thread_mutex_unlock(vector->mutex);
+
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_vector_move_element_first(Jxta_vector * vector, unsigned int to_first)
+{
+
+    Jxta_status res;
+
+    JXTA_OBJECT_CHECK_VALID(vector);
+
+    apr_thread_mutex_lock(vector->mutex);
+
+    if (to_first >= vector->size) {
+        res = JXTA_INVALID_ARGUMENT;
+    } else if (to_first > 0) {
+        Jxta_object *temp = vector->elements[to_first];
+
+        memmove(&vector->elements[1], &vector->elements[0], sizeof(Jxta_object *) * to_first);
+
+        vector->elements[0] = temp;
+
+        res = JXTA_SUCCESS;
+    } else {
+        /* already in the right spot */
+        res = JXTA_SUCCESS;
+    }
+
+    apr_thread_mutex_unlock(vector->mutex);
+
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_vector_move_element_last(Jxta_vector * vector, unsigned int to_last)
+{
+
+    Jxta_status res;
+
+    JXTA_OBJECT_CHECK_VALID(vector);
+
+    apr_thread_mutex_lock(vector->mutex);
+
+    if (to_last >= vector->size) {
+        res = JXTA_INVALID_ARGUMENT;
+    } else if (to_last != (vector->size - 1)) {
+        Jxta_object *temp = vector->elements[to_last];
+
+        memmove(&vector->elements[to_last], &vector->elements[to_last + 1], sizeof(Jxta_object *) * (vector->size - to_last - 1));
+
+        vector->elements[vector->size - 1] = temp;
+
+        res = JXTA_SUCCESS;
+    } else {
+        /* already in the right spot */
+        res = JXTA_SUCCESS;
+    }
+
+    apr_thread_mutex_unlock(vector->mutex);
+
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_boolean) jxta_vector_contains(Jxta_vector * vector, Jxta_object * object, Jxta_object_equals_func * func)
+{
+    unsigned int each_object;
+    Jxta_boolean found = FALSE;
+
+    JXTA_OBJECT_CHECK_VALID(vector);
+    JXTA_OBJECT_CHECK_VALID(object);
+
+    if (NULL == func) {
+        func = (Jxta_object_equals_func *) address_equator;
+    }
+
+    apr_thread_mutex_lock(vector->mutex);
+
+    for (each_object = 0; each_object < vector->size; each_object++) {
+        if ((*func) (vector->elements[each_object], object)) {
+            found = TRUE;
+            break;
+        }
+    }
+
+    apr_thread_mutex_unlock(vector->mutex);
+
+    return found;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_vector_qsort(Jxta_vector * vector, Jxta_object_compare_func * func)
+{
+    JXTA_OBJECT_CHECK_VALID(vector);
+
+    if (NULL == func) {
         func = (Jxta_object_compare_func *) address_comparator;
+    }
 
     apr_thread_mutex_lock(vector->mutex);
 
@@ -511,22 +731,20 @@ JXTA_DECLARE(Jxta_status) jxta_vector_qsort(Jxta_vector * vector, Jxta_object_co
 **/
 JXTA_DECLARE(void) jxta_vector_shuffle(Jxta_vector * vector)
 {
-    if (!JXTA_OBJECT_CHECK_VALID(vector)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Invalid argument\n");
-        return;
-    }
+    JXTA_OBJECT_CHECK_VALID(vector);
+
     apr_thread_mutex_lock(vector->mutex);
-    
+
     if (vector->size > 1) {
         size_t each;
-	for (each = 0; each < vector->size - 1; each++) {
-	  size_t swap = each + rand() / (RAND_MAX / (vector->size - each) + 1);
-	  Jxta_object* temp = vector->elements[swap];
-	  vector->elements[swap] = vector->elements[each];
-	  vector->elements[each] = temp;
-	}
+        for (each = 0; each < vector->size - 1; each++) {
+            size_t swap = each + rand() / (RAND_MAX / (vector->size - each) + 1);
+            Jxta_object *temp = vector->elements[swap];
+            vector->elements[swap] = vector->elements[each];
+            vector->elements[each] = temp;
+        }
     }
-    
+
     apr_thread_mutex_unlock(vector->mutex);
 }
 

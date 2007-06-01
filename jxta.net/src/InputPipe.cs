@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: InputPipe.cs,v 1.1 2006/01/18 20:31:03 lankes Exp $
+ * $Id: InputPipe.cs,v 1.2 2006/08/04 10:33:19 lankes Exp $
  */
 using System;
 using System.Collections.Generic;
@@ -59,17 +59,168 @@ using System.Runtime.InteropServices;
 
 namespace JxtaNET
 {
-    public class InputPipe : JxtaObject
+    public interface InputPipe
     {
+        /// <summary>
+        /// Wait (block) for a message to be received.
+        /// </summary>
+        /// <returns>a message or null if the pipe has been closed</returns>
+        Message WaitForMessage();
+
+        /// <summary>
+        /// Poll for a message from the pipe. If there is no message immediately 
+        /// available then wait the specified amount of time for a message to arrive.
+        /// </summary>
+        /// <param name="timeout">Maximum number of milliseconds to wait (block) for a message to be received. 
+        /// If zero then wait indefinitely for a message.</param>
+        /// <returns>Message received or null if the pipe has closed or the timeout expired 
+        /// without a message being received.</returns>
+        Message Poll(int timeout);
+
+        /// <summary>
+        /// Close the pipe.
+        /// </summary>
+        void Close();
+
+        /// <summary>
+        /// The pipe advertisement
+        /// </summary>
+        PipeAdvertisement Advertisement
+        {
+            get;
+        }
+
+        /// <summary>
+        /// The pipe type
+        /// </summary>
+        string Type
+        {
+            get;
+        }
+
+        /// <summary>
+        /// The pipe name
+        /// </summary>
+        string Name
+        {
+            get;
+        }
+    }
+
+    internal class InputPipeImpl : JxtaObject, InputPipe
+    {
+        #region import of jxta-c functions
         [DllImport("jxta.dll")]
         private static extern UInt32 jxta_inputpipe_add_listener(IntPtr ip, IntPtr listener);
 
-        public void addListener(Listener listener)
+        [DllImport("jxta.dll")]
+        private static extern UInt32 jxta_inputpipe_timed_receive(IntPtr ip, Int64 timeout, out IntPtr msg);
+        #endregion
+
+        private Listener<MessageImpl> msgListener = null;
+        private PipeMsgListener pipeListener = null;
+
+        private void MessageListener(Message msg)
         {
-            Errors.check(jxta_inputpipe_add_listener(this.self, listener.self));
+            if (pipeListener != null)
+                pipeListener.PipeMsgEvent(new PipeMsgEvent((PipeID)adv.ID, msg));
         }
 
-        internal InputPipe(IntPtr self) : base(self) { }
-        internal InputPipe() : base() { }
+        /// <summary>
+        /// Add a receive listener to a pipe. The listener is invoked for each received
+        /// message.
+        /// </summary>
+        /// <param name="pListener"></param>
+        internal void AddListener(PipeMsgListener pListener)
+        {
+            if (pipeListener != null)
+                throw new JxtaException(Errors.JXTA_BUSY);
+            if (this.self == IntPtr.Zero)
+                throw new JxtaException(Errors.JXTA_FAILED);
+
+            pipeListener = pListener;
+            msgListener = new Listener<MessageImpl>(MessageListener, 1, 200);
+            Errors.check(jxta_inputpipe_add_listener(this.self, msgListener.self));
+            msgListener.Start();
+        }
+
+        public Message WaitForMessage()
+        {
+            uint status;
+            IntPtr msg = new IntPtr();
+
+            while (true)
+            {
+                if (this.self == IntPtr.Zero)
+                    return null;
+
+                status = jxta_inputpipe_timed_receive(this.self, 300 * 1000 * 1000, out msg);
+                if (status == Errors.JXTA_SUCCESS)
+                    return new Message(msg);
+                else if (status != Errors.JXTA_TIMEOUT)
+                    return null;
+            }
+        }
+
+        public Message Poll(int timeout)
+        {
+            IntPtr msg = new IntPtr();
+            
+            if (this.self == IntPtr.Zero)
+                return null;
+
+            uint status = jxta_inputpipe_timed_receive(this.self, timeout*1000, out msg);
+            if (status == Errors.JXTA_SUCCESS)
+                return new Message(msg);
+
+            return null;
+        }
+
+        private PipeAdvertisement adv = null;
+        public PipeAdvertisement Advertisement
+        {
+            get
+            {
+                return adv;
+            }
+        }
+        
+        public string Type
+        {
+            get
+            {
+                return adv.Type;
+            }
+        }
+
+        public string Name
+        {
+            get
+            {
+                return adv.Name;
+            }
+        }
+
+        public void Close()
+        {
+            if (msgListener != null)
+                msgListener.Stop();
+
+            msgListener = null;
+            this.self = IntPtr.Zero;
+        }
+
+        internal InputPipeImpl(IntPtr self, PipeAdvertisement a)
+            : base(self)
+        {
+            adv = a;
+        }
+
+        internal InputPipeImpl() : base() { }
+
+        ~InputPipeImpl()
+        {
+            Close();
+        }
     }
 }

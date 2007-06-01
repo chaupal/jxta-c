@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tcp_message_packet_header.c,v 1.14 2006/06/14 19:54:15 mmx2005 Exp $
+ * $Id: jxta_tcp_message_packet_header.c,v 1.15 2006/09/02 00:54:22 slowhog Exp $
  */
 
 #include <stdlib.h>
@@ -88,7 +88,7 @@ typedef struct _message_packet_header {
 const char *MESSAGE_PACKET_HEADER[MESSAGE_PACKET_HEADER_COUNT] = { "content-type", "content-length", "srcEA" };
 const char *__log_cat = "TCP_MSG_PKT";
 
-Jxta_status JXTA_STDCALL message_packet_header_read(char *header_buf, ReadFunc read_func, void *stream, JXTA_LONG_LONG * msg_size,
+Jxta_status JXTA_STDCALL message_packet_header_read(char *header_buf, ReadFunc read_func, void *stream, apr_int64_t * msg_size,
                                                     Jxta_boolean is_multicast, char **src_addr)
 {
     MessagePacketHeader header[MESSAGE_PACKET_HEADER_COUNT];    /* for extra if there exists content-coding */
@@ -209,7 +209,7 @@ Jxta_status JXTA_STDCALL message_packet_header_read(char *header_buf, ReadFunc r
 
     /* get message size */
     for (i = 0, *msg_size = 0; i < 8; i++)
-        *msg_size |= ((JXTA_LONG_LONG) (header[length_index].value[i] & 0xFF)) << ((7 - i) * 8L);
+        *msg_size |= ((apr_int64_t) (header[length_index].value[i] & 0xFF)) << ((7 - i) * 8L);
 
     /* free */
     for (i = 0; i < header_count; i++) {
@@ -220,7 +220,7 @@ Jxta_status JXTA_STDCALL message_packet_header_read(char *header_buf, ReadFunc r
     return JXTA_SUCCESS;
 }
 
-Jxta_status JXTA_STDCALL message_packet_header_write(WriteFunc write_func, void *stream, JXTA_LONG_LONG msg_size,
+Jxta_status JXTA_STDCALL message_packet_header_write(WriteFunc write_func, void *stream, apr_int64_t msg_size,
                                                      Jxta_boolean is_multicast, char *src_addr)
 {
     MessagePacketHeader header[MESSAGE_PACKET_HEADER_COUNT];
@@ -246,7 +246,7 @@ Jxta_status JXTA_STDCALL message_packet_header_write(WriteFunc write_func, void 
                 return JXTA_NOMEM;
             }
             for (j = 0; j < 8; j++) {
-                header[i].value[j] = (BYTE) (msg_size >> ((7 - j) * 8L));   /* JXTA_LONG_LONG to bytes */
+                header[i].value[j] = (BYTE) (msg_size >> ((7 - j) * 8L));   /* apr_int64_t to bytes */
             }
             header[i].value_size = 8;
             break;

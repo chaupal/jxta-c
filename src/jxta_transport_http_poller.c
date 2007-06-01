@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http_poller.c,v 1.31 2006/06/14 17:48:15 slowhog Exp $
+ * $Id: jxta_transport_http_poller.c,v 1.32 2006/08/30 02:12:37 slowhog Exp $
  */
 
 static const char *__log_cat = "HTTP_POLLER";
@@ -249,6 +249,7 @@ static void *APR_THREAD_FUNC http_poller_body(apr_thread_t * t, void *arg)
     char uri[1024];
     char uri_msg[1024];
     Jxta_message *msg = NULL;
+    Jxta_status rv;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "HTTP poller thread starts\n");
 
@@ -291,7 +292,12 @@ static void *APR_THREAD_FUNC http_poller_body(apr_thread_t * t, void *arg)
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "received a lease response.\n");
 
-        jxta_message_read(msg, "application/x-jxta-msg", read_from_http_request, res);
+        rv = jxta_message_read(msg, "application/x-jxta-msg", read_from_http_request, res);
+        if (rv != JXTA_SUCCESS) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Failed to read message\n");
+            JXTA_OBJECT_RELEASE(msg);
+            msg = NULL;
+        }
 
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "received empty lease request message\n");
@@ -308,6 +314,7 @@ static void *APR_THREAD_FUNC http_poller_body(apr_thread_t * t, void *arg)
     if (msg) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "process lease: %s\n", poller->leaseid);
         jxta_endpoint_service_demux(poller->service, msg);
+        JXTA_OBJECT_RELEASE(msg);
     }
 
     while (poller->running) {
@@ -371,9 +378,13 @@ static void *APR_THREAD_FUNC http_poller_body(apr_thread_t * t, void *arg)
 
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "HTTP POLLER: received a new message.\n");
 
-            jxta_message_read(msg, "application/x-jxta-msg", read_from_http_request, res);
-
-            jxta_endpoint_service_demux(poller->service, msg);
+            rv = jxta_message_read(msg, "application/x-jxta-msg", read_from_http_request, res);
+            if (rv != JXTA_SUCCESS) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Failed to read message\n");
+            } else {
+                jxta_endpoint_service_demux(poller->service, msg);
+            }
+            JXTA_OBJECT_RELEASE(msg);
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Received empty message\n");
         }

@@ -6,7 +6,7 @@ TARGET = $(TARGET_NAME).exe
 MONO = @MONO@
 MONO_FLAGS = @MONO_FLAGS@
 
-CS_FILES = AssemblyInfo.cs Search.cs Peers.cs RdvStatus.cs Shell.cs ShellApp.cs Talk.cs WhoAmI.cs
+CS_FILES = RdvControl.cs AssemblyInfo.cs Search.cs Peers.cs RdvStatus.cs Shell.cs ShellApp.cs Talk.cs WhoAmI.cs
 		
 $(TARGET): $(CS_FILES)
 	$(GMCS) $(GMCS_FLAGS) -out:$(TARGET) -reference:$(top_srcdir)/jxta.net/src/JxtaNET.dll $(CS_FILES)

@@ -50,10 +50,11 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: PeerView.cs,v 1.1 2006/01/18 20:31:08 lankes Exp $
+ * $Id: PeerView.cs,v 1.2 2006/08/04 10:33:20 lankes Exp $
  */
 using System;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 namespace JxtaNET
 {
@@ -61,8 +62,9 @@ namespace JxtaNET
 	/// Summary of PeerView.
 	/// </summary>
 	public class PeerView : JxtaObject
-	{
-		[DllImport("jxta.dll")]
+    {
+        #region import jxta-c functions
+        [DllImport("jxta.dll")]
 		private static extern UInt32 jxta_peerview_get_self_peer(IntPtr self, ref IntPtr selfPVE);
 
 		[DllImport("jxta.dll")]
@@ -73,33 +75,52 @@ namespace JxtaNET
 
 		[DllImport("jxta.dll")]
         private static extern UInt32 jxta_peerview_get_localview(IntPtr self, ref IntPtr peers);
+        #endregion
 
-		public Peer getSelfPeer()
+        public Peer SelfPeer
 		{
-            IntPtr ret = new IntPtr();
-			Errors.check(jxta_peerview_get_self_peer(this.self, ref ret));
-            return new Peer(ret);
+            get
+            {
+                IntPtr ret = new IntPtr();
+                Errors.check(jxta_peerview_get_self_peer(this.self, ref ret));
+                return new Peer(ret);
+            }
 		}
 
-		public Peer getDownPeer()
+		public Peer DownPeer
 		{
-            IntPtr ret = new IntPtr();
-			Errors.check(jxta_peerview_get_down_peer(this.self, ref ret));
-            return new Peer(ret);
+            get
+            {
+                IntPtr ret = new IntPtr();
+                Errors.check(jxta_peerview_get_down_peer(this.self, ref ret));
+                return new Peer(ret);
+            }
         }
 		
-		public Peer getUpPeer()
+		public Peer UpPeer
 		{
-            IntPtr ret = new IntPtr();
-            Errors.check(jxta_peerview_get_up_peer(this.self, ref ret));
-            return new Peer(ret);
+            get
+            {
+                IntPtr ret = new IntPtr();
+                Errors.check(jxta_peerview_get_up_peer(this.self, ref ret));
+                return new Peer(ret);
+            }
 		}
 
-        public JxtaVector<Peer> getLocalView()
+        public List<Peer> LocalView
 		{
-            IntPtr ret = new IntPtr();
-            Errors.check(jxta_peerview_get_localview(this.self, ref ret));
-            return new JxtaVector<Peer>(ret);
+            get
+            {
+                JxtaVector jVec = new JxtaVector();
+                Errors.check(jxta_peerview_get_localview(this.self, ref jVec.self));
+
+                List<Peer> peers = new List<Peer>();
+
+                foreach (IntPtr ptr in jVec)
+                    peers.Add(new Peer(ptr));
+
+                return peers;
+            }
 		}
 
 		internal PeerView(IntPtr self) : base(self) {}

@@ -51,14 +51,16 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_service.h,v 1.9 2005/09/21 21:16:50 slowhog Exp $
+ * $Id: jxta_service.h,v 1.14 2006/09/06 23:09:47 mmx2005 Exp $
  */
 
 #ifndef JXTA_SERVICE_H
 #define JXTA_SERVICE_H
 
 #include "jxta_module.h"
-
+#include "jxta_callback.h"
+#include "jxta_id.h"
+#include "jxta_qos.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,7 +69,7 @@ extern "C" {
 #endif
 #endif
 
-typedef struct _jxta_service Jxta_service;
+typedef struct jxta_service Jxta_service;
 
 /**
  * Service objects are not manipulated directly to protect usage
@@ -94,6 +96,91 @@ JXTA_DECLARE(void) jxta_service_get_interface(Jxta_service * self, Jxta_service 
  * to return.
  */
 JXTA_DECLARE(void) jxta_service_get_MIA(Jxta_service * self, Jxta_advertisement ** mia);
+
+/**
+ * Subscribe a callback to be called for events emit by the service. The return value from the callback is ignored.
+ * @param me pointer to the Jxta_service
+ * @param f  the callback function to be called for the event
+ * @param arg the user data to be passed to the callback
+ * @return JXTA_SUCCESS if the subscription succeed, JXTA_BUSY if the same had subscribed. JXTA_FAILED otherwise
+ */
+JXTA_DECLARE(Jxta_status) jxta_service_events_connect(Jxta_service * me, Jxta_callback_fn f, void *arg);
+
+/**
+ * Unsubscribe a callback from receiving events
+ * @param me pointer to the Jxta_service
+ * @param f  the callback function to be called for the event
+ * @param arg the user data to be passed to the callback
+ * @return JXTA_SUCCESS if the unsubscription succeed, JXTA_ITEM_NOTFOUND if no matching subscription was found. JXTA_FAILED
+ * otherwise
+ */
+JXTA_DECLARE(Jxta_status) jxta_service_events_disconnect(Jxta_service * me, Jxta_callback_fn f, void *arg);
+
+/**
+ * Call event handlers for this service with the specified event and user data. I.e, f(event, arg)
+ * @param me pointer to the Jxta_service
+ * @param event pointer to the event object. The callback function should know what it subscribed to and knows how to intepret the
+ * pointer
+ * @return JXTA_SUCCESS if all subscribers are called. 
+ */
+JXTA_DECLARE(Jxta_status) jxta_service_event_emit(Jxta_service * me, void *event);
+
+/**
+ * Lock/unlock method, only for subclass to use for internal needs of service.
+ */
+JXTA_DECLARE(Jxta_status) jxta_service_lock(Jxta_service * me);
+JXTA_DECLARE(Jxta_status) jxta_service_unlock(Jxta_service * me);
+
+/**
+ * set a set of options for the service
+ * @param me pointer to the service
+ * @param ns namespace for the options
+ * @prarm options the hash table contains key/value pairs
+ * @return JXTA_SUCCESS 
+ * @note The options hash table must have a lifespan longer than the service
+ */
+JXTA_DECLARE(Jxta_status) jxta_service_options_set(Jxta_service * me, const char *ns, apr_hash_t * options);
+
+/**
+ * set an option for the service
+ * @param me pointer to the service
+ * @param ns namespace for the option
+ * @prarm key the name of the option to be set
+ * @param val the value for the option
+ * @return JXTA_SUCCESS if value is set successfully, status value otherwise.
+ * @note key and val must have a lifespan longer than the service because the value is not copied
+ */
+JXTA_DECLARE(Jxta_status) jxta_service_option_set(Jxta_service * me, const char *ns, const char *key, const void *val);
+
+/**
+ * retrieve an option value for the service
+ * @param me pointer to the service
+ * @param ns namespace for the option
+ * @prarm key the name of the option whose value to be retrieved 
+ * @param val pointer to receive the value for the option
+ * @return JXTA_SUCCESS if the value can be retrieved, JXTA_ITEM_NOTFOUND if the option was not set
+ */
+JXTA_DECLARE(Jxta_status) jxta_service_option_get(Jxta_service * me, const char *ns, const char *key, void **val);
+
+/**
+ * Set default QoS to be applied for a resource specified by Jxta_id.
+ * @param me pointer to the service
+ * @param id The resource ID for which this default to be applied. Different service may have different interpretation to the ID.
+ * NULL indicate a default for every resources.
+ * @param qos the QoS to be used as default for the resource
+ * @return JXTA_SUCCESS if the value was set. JXTA_FAILED otherwise.
+ */
+JXTA_DECLARE(Jxta_status) jxta_service_set_default_qos(Jxta_service * me, Jxta_id * id, const Jxta_qos * qos);
+
+/**
+ * Get the default QoS setting for a resource specified by Jxta_id.
+ * @param me pointer to the service
+ * @param id The resource ID for which this default to be applied. Different service may have different interpretation to the ID.
+ * NULL indicate a default for every resources.
+ * @param qos default QoS for the resource
+ * @return JXTA_SUCCESS if found successfully, JXTA_ITEM_NOTFOUND if no default was set. 
+ */
+JXTA_DECLARE(Jxta_status) jxta_service_default_qos(Jxta_service * me, Jxta_id * id, const Jxta_qos ** qos);
 
 #ifdef __cplusplus
 #if 0

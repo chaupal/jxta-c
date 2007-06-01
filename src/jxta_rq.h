@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rq.h,v 1.11 2006/06/15 19:19:28 mmx2005 Exp $
+ * $Id: jxta_rq.h,v 1.16 2006/08/17 01:26:07 mmx2005 Exp $
  */
 
 
@@ -58,6 +58,7 @@
 #define __ResolverQuery_H__
 
 #include "jxta_routea.h"
+#include "jxta_qos.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,6 +68,7 @@ extern "C" {
 #endif
 
 typedef struct _ResolverQuery ResolverQuery;
+typedef struct _ResolverQuery Jxta_resolver_query;
 
 /**
  * Defines invalid query id
@@ -86,15 +88,10 @@ JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new(void);
  * @param src_peerid  the originator's peerid
  * @param src route route advertisement of the src peer
  * @return pointer to the resolver query object
+ * @deprecated Use jxta_resolver_service_create_query instead
  */
 JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new_1(JString * handlername, JString * query, Jxta_id * src_peerid,
                                                         Jxta_RouteAdvertisement * route);
-
-/**
- * frees the ResolverQuery object
- * @param ResolverQuery the resolver query object to free
- */
-void jxta_resolver_query_free(ResolverQuery * ad);
 
 /**
  * @param ResolverQuery the resolver query object
@@ -157,6 +154,8 @@ JXTA_DECLARE(void) jxta_resolver_query_set_src_peer_id(ResolverQuery * ad, Jxta_
  */
 JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_resolver_query_get_src_peer_route(ResolverQuery * ad);
 
+JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_resolver_query_src_peer_route(ResolverQuery * ad);
+
 /**
  * set the message source peer route
  * @param ResolverQuery the resolver query object
@@ -217,6 +216,9 @@ void jxta_resolver_query_set_hopcount(ResolverQuery * ad, int hopcount);
  *
  */
 long jxta_resolver_query_get_hopcount(ResolverQuery * ad);
+
+JXTA_DECLARE(Jxta_status) jxta_resolver_query_attach_qos(Jxta_resolver_query * me, const Jxta_qos * qos);
+JXTA_DECLARE(const Jxta_qos *) jxta_resolver_query_qos(Jxta_resolver_query * me);
 
 #ifdef __cplusplus
 #if 0

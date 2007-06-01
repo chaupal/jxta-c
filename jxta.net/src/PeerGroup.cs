@@ -50,22 +50,114 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: PeerGroup.cs,v 1.2 2006/02/05 16:05:30 lankes Exp $
+ * $Id: PeerGroup.cs,v 1.3 2006/08/04 10:33:19 lankes Exp $
  */
 using System;
 using System.Runtime.InteropServices;
 
 namespace JxtaNET
 {
-	/// <summary>
+    /// <summary>
 	/// Summary of PeerGroup.
 	/// </summary>
-	public class PeerGroup : JxtaObject
-	{
-		[DllImport("jxta.dll")]
-		private static extern void jxta_PG_get_PA(IntPtr self, ref IntPtr adv);
+    public interface PeerGroup : Service
+    {
+        /// <summary>
+        /// Endpoint Service for this Peer Group. This service is present in every Peer Group.
+        /// </summary>
+        //EndpointService EndpointService
+        //{
+        //    get;
+        //}
 
-		[DllImport("jxta.dll")]
+        /// <summary>
+        /// Mebership service for this peer group
+        /// </summary>
+        MembershipService MembershipService
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Current group for its peer advertisement on this peer.
+        /// </summary>
+        PeerAdvertisement PeerAdvertisement
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Name of this peer group
+        /// </summary>
+        string PeerGroupName
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Discovery service of this peer group
+        /// </summary>
+        DiscoveryService DiscoveryService
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Name of this peer in this group.
+        /// </summary>
+        string PeerName
+        {
+            get;
+        }
+
+        /// <summary>
+        ///  ID of this group.
+        /// </summary>
+        PeerGroupID PeerGroupID
+        {
+            get;
+        }
+
+        /// <summary>
+        /// ID of this peer in this group.
+        /// </summary>
+        PeerID PeerID
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Group advertisement of this group
+        /// </summary>
+        PeerGroupAdvertisement PeerGroupAdvertisement
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Pipe service for this group
+        /// </summary>
+        PipeService PipeService
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Rendezvous service for this group.
+        /// </summary>
+        RendezVousService RendezVousService
+        {
+            get;
+        }
+    }
+
+    public class PeerGroupImpl : JxtaObject, PeerGroup
+    {
+        #region import jxta-c functions
+        [DllImport("jxta.dll")]
+        private static extern void jxta_PG_get_PA(IntPtr self, ref IntPtr adv);
+
+        [DllImport("jxta.dll")]
         private static extern void jxta_PG_get_membership_service(IntPtr self, ref IntPtr membership);
 
         [DllImport("jxta.dll")]
@@ -93,93 +185,162 @@ namespace JxtaNET
         private static extern void jxta_PG_get_rendezvous_service(IntPtr self, ref IntPtr rdv);
 
         [DllImport("jxta.dll")]
-        private static extern UInt32 jxta_PG_new_netpg(ref IntPtr p);
+        private static extern void jxta_service_get_MIA(IntPtr self, out IntPtr mia);
 
         [DllImport("jxta.dll")]
-        private static extern void jxta_module_stop(IntPtr p);
+        private static extern void jxta_PG_get_endpoint_service(IntPtr self, out IntPtr endp);
 
-		public MembershipService getMembershipService()
-		{
-            IntPtr ret = new IntPtr();
-			jxta_PG_get_membership_service(self, ref ret);
-            return new MembershipService(ret);
-		}
+        [DllImport("jxta.dll")]
+        private static extern UInt32 jxta_module_start(IntPtr self, String[] args);
 
-		public PeerAdvertisement getPeerAdvertisement()
-		{
-            IntPtr ret = new IntPtr();
-			jxta_PG_get_PA(self, ref ret);
-            return new PeerAdvertisement(ret);
-        }
+        [DllImport("jxta.dll")]
+        private static extern void jxta_module_stop(IntPtr self);
 
-		public String getPeerGroupName()
-		{
-            IntPtr ret = new IntPtr();
-            jxta_PG_get_groupname(self, ref ret);
-			return new JxtaString(ret);
-		}
+        [DllImport("jxta.dll")]
+        private static extern UInt32 jxta_module_init(IntPtr self, IntPtr group, IntPtr assigned_id, IntPtr impl_adv);
+        #endregion
 
-		public DiscoveryService getDiscoveryService()
-		{
-            IntPtr ret = new IntPtr();
-            jxta_PG_get_discovery_service(self, ref ret);
-            return new DiscoveryService(ret);
-		}
-
-		public String getPeerName()
-		{
-            IntPtr ret = new IntPtr();
-			jxta_PG_get_peername(self, ref ret);
-            return new JxtaString(ret);
-		}
-		
-		public ID getPeerGroupID()
-		{
-            IntPtr ret = new IntPtr();
-            jxta_PG_get_GID(self, ref ret);
-            return new ID(ret);
-		}
-
-		public ID getPeerID()
-		{
-            IntPtr ret = new IntPtr();
-            jxta_PG_get_PID(self, ref ret);
-            return new ID(ret);
-		}
-
-		public PeerGroupAdvertisement getPeerGroupAdvertisement()
-		{
-            IntPtr ret = new IntPtr();
-            jxta_PG_get_PGA(self, ref ret);
-            return new PeerGroupAdvertisement(ret);
-		}
-
-		public PipeService getPipeService()
-		{
-            IntPtr ret = new IntPtr();
-			jxta_PG_get_pipe_service(self, ref ret);
-			return new PipeService(ret);
-		}
-		
-		public RendezVousService getRendezVousService()
-		{
-            IntPtr ret = new IntPtr();
-			jxta_PG_get_rendezvous_service(self, ref ret);
-			return new RendezVousService(ret);
-		}
-
-        internal PeerGroup(IntPtr self) : base(self) { }
-
-        public PeerGroup()
+        public void init(PeerGroup group, ID assignedID, Advertisement implAdv)
         {
-            IntPtr ret = new IntPtr();
-            Errors.check(jxta_PG_new_netpg(ref ret));
-            self = ret;
+            jxta_module_init(this.self, ((PeerGroupImpl)group).self, assignedID.self, implAdv.self);
         }
 
-        ~PeerGroup()
+        public uint startApp(string[] args)
         {
-            jxta_module_stop(self);
+            return jxta_module_start(this.self, args);
         }
-	}
+
+        public void stopApp()
+        {
+            jxta_module_stop(this.self);
+        }
+
+        /*public EndpointService EndpointService
+        {
+            get
+            {
+                IntPtr endp = new IntPtr();
+                jxta_PG_get_endpoint_service(this.self, out endp);
+                return new EndpointServiceImpl(endp);
+            }
+        }*/
+
+        public MembershipService MembershipService
+        {
+            get
+            {
+                IntPtr ret = new IntPtr();
+                jxta_PG_get_membership_service(self, ref ret);
+                return new MembershipServiceImpl(ret);
+            }
+        }
+
+        public PeerAdvertisement PeerAdvertisement
+        {
+            get
+            {
+                IntPtr ret = new IntPtr();
+                jxta_PG_get_PA(self, ref ret);
+                return new PeerAdvertisement(ret);
+            }
+        }
+
+        public string PeerGroupName
+        {
+            get
+            {
+                IntPtr ret = new IntPtr();
+                jxta_PG_get_groupname(self, ref ret);
+                return new JxtaString(ret);
+            }
+        }
+
+        public DiscoveryService DiscoveryService
+        {
+            get
+            {
+                IntPtr ret = new IntPtr();
+                jxta_PG_get_discovery_service(self, ref ret);
+                return new DiscoveryServiceImpl(ret);
+            }
+        }
+
+        public string PeerName
+        {
+            get
+            {
+                IntPtr ret = new IntPtr();
+                jxta_PG_get_peername(self, ref ret);
+                return new JxtaString(ret);
+            }
+        }
+
+        public PeerGroupID PeerGroupID
+        {
+            get
+            {
+                IntPtr ret = new IntPtr();
+                jxta_PG_get_GID(self, ref ret);
+                return new PeerGroupIDImpl(ret);
+            }
+        }
+
+        public PeerID PeerID
+        {
+            get
+            {
+                IntPtr ret = new IntPtr();
+                jxta_PG_get_PID(self, ref ret);
+                return new PeerIDImpl(ret);
+            }
+        }
+
+        public PeerGroupAdvertisement PeerGroupAdvertisement
+        {
+            get
+            {
+                IntPtr ret = new IntPtr();
+                jxta_PG_get_PGA(self, ref ret);
+                return new PeerGroupAdvertisement(ret);
+            }
+        }
+
+        public PipeService PipeService
+        {
+            get
+            {
+                IntPtr ret = new IntPtr();
+                jxta_PG_get_pipe_service(self, ref ret);
+                return new PipeServiceImpl(ret);
+            }
+        }
+
+        public RendezVousService RendezVousService
+        {
+            get
+            {
+                IntPtr ret = new IntPtr();
+                jxta_PG_get_rendezvous_service(self, ref ret);
+                return new RendezVousServiceImpl(ret);
+            }
+        }
+
+        public Advertisement ImplAdvertisement
+        {
+            get
+            {
+                IntPtr adv = new IntPtr();
+                jxta_service_get_MIA(this.self, out adv);
+                return new PeerGroupAdvertisement(adv);
+            }
+        }
+
+        internal PeerGroupImpl(IntPtr self) : base(self) { }
+        internal PeerGroupImpl() : base() { }
+
+        ~PeerGroupImpl()
+        {
+            stopApp();
+        }
+    }
 }

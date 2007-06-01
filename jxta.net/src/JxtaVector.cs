@@ -50,24 +50,35 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: JxtaVector.cs,v 1.1 2006/01/18 20:31:04 lankes Exp $
+ * $Id: JxtaVector.cs,v 1.2 2006/08/04 10:33:19 lankes Exp $
  */
 using System;
-using System.Collections;
 using System.Runtime.InteropServices;
+using System.Collections;
 
 namespace JxtaNET
 {
 	/// <summary>
 	/// Summary of JxtaVector.
 	/// </summary>
-	public class JxtaVector<vecType> : IEnumerable where vecType : JxtaObject, new()
-	{
+	internal class JxtaVector : IEnumerable
+    {
+        #region import of jxta-c functions
+        [DllImport("jxta.dll")]
+        public static extern uint jxta_vector_size(IntPtr ptr);
+
+        [DllImport("jxta.dll")]
+        public static extern UInt32 jxta_vector_get_object_at(IntPtr _this, ref IntPtr obj, int i);
+
+        [DllImport("jxta.dll")]
+        public static extern UInt32 jxta_vector_add_object_last(IntPtr vector, IntPtr obj);
+        #endregion
+
         internal IntPtr self;
 
-		public JxtaVectorEnumerator<vecType> GetEnumerator() 
+		public JxtaVectorEnumerator GetEnumerator() 
 		{
-			return new JxtaVectorEnumerator<vecType>(this);
+			return new JxtaVectorEnumerator(this);
 		}
 
 		IEnumerator IEnumerable.GetEnumerator() 
@@ -75,45 +86,25 @@ namespace JxtaNET
 			return GetEnumerator();
 		}
 
-        public static implicit operator IntPtr(JxtaVector<vecType> jo)
-        {
-            return jo.self;
-        }
-
-        public static implicit operator JxtaVector<PeerAdvertisement>(JxtaVector<vecType> vec)
-        {
-            return new JxtaVector<PeerAdvertisement>(vec.self);
-        }
-
-        public static implicit operator JxtaVector<PipeAdvertisement>(JxtaVector<vecType> vec)
-        {
-            return new JxtaVector<PipeAdvertisement>(vec.self);
-        }
-
-        public static implicit operator JxtaVector<JxtaString>(JxtaVector<vecType> vec)
-        {
-            return new JxtaVector<JxtaString>(vec.self);
-        }
-
-        public class JxtaVectorEnumerator<enumType> : IEnumerator where enumType : JxtaObject, new()
+        public class JxtaVectorEnumerator : IEnumerator
 		{
 			private int enumerator;
-			private JxtaVector<enumType> vec;
+			private JxtaVector vec;
 
-			public JxtaVectorEnumerator(JxtaVector<enumType> vec)
+			public JxtaVectorEnumerator(JxtaVector vec)
 			{
 				this.vec = vec;
 				this.enumerator = -1;
 			}
 
-			public enumType Current
+			public IntPtr Current
 			{
 				get
 				{
 					if ((enumerator >= 0) && (enumerator < vec.Length))
 						return vec[enumerator];
 					else
-						return null;
+						return IntPtr.Zero;
 				}
 			}
 
@@ -140,28 +131,30 @@ namespace JxtaNET
 			}
 		}
 
+        public void Add(IntPtr obj)
+        {
+            jxta_vector_add_object_last(self, obj);
+        }
+
 		public uint Length
 		{
 			get
 			{
                 if (this.self == IntPtr.Zero)
                     return 0;
-                return jxtaDll.jxta_vector_size(self);
+                return jxta_vector_size(self);
 			}
 		}
 
-		public vecType this [int i]
+		public IntPtr this [int i]
 		{
 			get
 			{
                 IntPtr ptr = new IntPtr();
-                vecType ret = new vecType();
-                Errors.check(jxtaDll.jxta_vector_get_object_at(this.self, ref ptr, i));
-                ret.self = ptr;
-                return ret;
+                Errors.check(jxta_vector_get_object_at(this.self, ref ptr, i));
+                return ptr;
 			}
 		}
-
 
 		public JxtaVector(IntPtr self)
 		{

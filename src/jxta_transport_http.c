@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http.c,v 1.71 2006/02/17 23:26:11 slowhog Exp $
+ * $Id: jxta_transport_http.c,v 1.72 2006/09/08 19:17:56 bondolo Exp $
  */
 
 static const char *__log_cat = "HTTP_TRANSPORT";
@@ -161,7 +161,6 @@ const Jxta_transport_http_methods jxta_transport_http_methods = {
     {
      "Jxta_module_methods",
      init,
-     jxta_module_init_e_impl,
      start,
      stop},
     "Jxta_transport_methods",

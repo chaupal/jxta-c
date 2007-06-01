@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_server.c,v 1.50 2006/06/20 22:28:09 mmx2005 Exp $
+ * $Id: jxta_rdv_service_server.c,v 1.57 2006/09/29 02:01:29 slowhog Exp $
  **/
 
 
@@ -93,7 +93,7 @@ static const char *LIMITEDRANGEWALKELEMENT = "LimitedRangeRdvMessage";
 /**
  * Interval between background thread check iterations. Measured in relative microseconds.
  **/
-static const apr_interval_time_t PERIODIC_THREAD_NAP_TIME_NORMAL = ((apr_interval_time_t) 60) * 1000 * 1000;    /* 1 Minute */
+static const Jxta_time_diff PERIODIC_THREAD_NAP_TIME_NORMAL = ((Jxta_time_diff) 60) * 1000;    /* 1 Minute */
 
 /**
 *    Default max number of clients
@@ -127,16 +127,26 @@ struct _jxta_rdv_service_server {
     apr_thread_mutex_t *periodicMutex;
     volatile apr_thread_t *periodicThread;
     Jxta_PG *group;
+    Jxta_discovery_service *discovery;
+    Jxta_PG *parentgroup;
+    Jxta_PGID *parentgid;
+    char *groupiduniq;
+    Jxta_PID *localPeerId;
+    JString *localPeerIdJString;
+
+    /** Pipe service of the *PARENT* peergroup **/
+    Jxta_pipe_service *pipes;
+    Jxta_pipe *ann_pipe;
+    Jxta_inputpipe *ann_input_pipe;
+
+
     JString *walkerSvc;
     JString *walkerParam;
-    Jxta_discovery_service *discovery;
+
     void *ep_cookies[2];
 
     /* configuration */
     Jxta_RdvConfigAdvertisement *rdvConfig;
-    char *groupiduniq;
-    Jxta_PID *localPeerId;
-    JString *localPeerIdJString;
 
     unsigned int MAX_CLIENTS;
     Jxta_time_diff OFFERED_LEASE_DURATION;
@@ -163,14 +173,6 @@ struct _jxta_peer_client_entry {
 
 typedef struct _jxta_peer_client_entry _jxta_peer_client_entry;
 
-struct _jxta_client_entry_methods {
-    Extends(Jxta_Peer_entry_methods);
-
-    /* additional methods */
-};
-
-typedef struct _jxta_client_entry_methods _jxta_client_entry_methods;
-
 /**
  * Forward definition to make the compiler happy
  **/
@@ -183,6 +185,7 @@ static void Jxta_rdv_service_server_destruct(_jxta_rdv_service_server * rdv);
 static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service * service);
 static Jxta_status start(Jxta_rdv_service_provider * provider);
 static Jxta_status stop(Jxta_rdv_service_provider * provider);
+static Jxta_status get_peer(Jxta_rdv_service_provider * provider, Jxta_id * peerid, Jxta_peer** peer );
 static Jxta_status get_peers(Jxta_rdv_service_provider * provider, Jxta_vector ** peerlist);
 static Jxta_status propagate(Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
                              const char *serviceParam, int ttl);
@@ -198,8 +201,7 @@ static _jxta_peer_client_entry *get_peer_entry(_jxta_rdv_service_server * self, 
 static Jxta_boolean check_peer_lease(_jxta_peer_client_entry * peer);
 
 static _jxta_peer_client_entry *client_entry_new(void);
-static _jxta_peer_client_entry *client_entry_construct(_jxta_peer_client_entry * self,
-                                                       const _jxta_client_entry_methods * methods);
+static _jxta_peer_client_entry *client_entry_construct(_jxta_peer_client_entry * self );
 static void client_entry_delete(Jxta_object * addr);
 static void client_entry_destruct(_jxta_peer_client_entry * self);
 
@@ -213,28 +215,11 @@ static const _jxta_rdv_service_provider_methods JXTA_RDV_SERVICE_SERVER_METHODS 
     init,
     start,
     stop,
+    get_peer,
     get_peers,
     propagate,
     walk
 };
-
-static const _jxta_client_entry_methods JXTA_CLIENT_ENTRY_METHODS = {
-    {
-     "Jxta_Peer_entry_methods",
-     jxta_peer_lock,
-     jxta_peer_unlock,
-     jxta_peer_get_peerid,
-     jxta_peer_set_peerid,
-     jxta_peer_get_address,
-     jxta_peer_set_address,
-     jxta_peer_get_adv,
-     jxta_peer_set_adv,
-     jxta_peer_get_expires,
-     jxta_peer_set_expires},
-    "_jxta_client_entry_methods"
-};
-
-#define CLIENT_ENTRY_VTBL(self) ((Jxta_Client_entry_methods*) ((_jxta_peer_entry*) (self))->methods)
 
 static _jxta_peer_client_entry *client_entry_new(void)
 {
@@ -243,12 +228,11 @@ static _jxta_peer_client_entry *client_entry_new(void)
     /* Initialize the object */
     JXTA_OBJECT_INIT(self, client_entry_delete, 0);
 
-    return client_entry_construct(self, &JXTA_CLIENT_ENTRY_METHODS);
+    return client_entry_construct(self);
 }
 
-static _jxta_peer_client_entry *client_entry_construct(_jxta_peer_client_entry * self, const _jxta_client_entry_methods * methods)
+static _jxta_peer_client_entry *client_entry_construct(_jxta_peer_client_entry * self)
 {
-    PEER_ENTRY_VTBL(self) = (const Jxta_Peer_entry_methods *) PTValid(methods, _jxta_client_entry_methods);
     self = (_jxta_peer_client_entry *) peer_entry_construct((_jxta_peer_entry *) self);
 
     if (NULL != self) {
@@ -409,7 +393,7 @@ static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service 
     Jxta_PG *parentgroup = NULL;
     Jxta_PA *conf_adv;
     Jxta_PG *group;
-    group = jxta_service_get_peergroup_priv((_jxta_service *) service);
+    group = jxta_service_get_peergroup_priv((Jxta_service *) service);
     jxta_rdv_service_provider_init(provider, service);
 
     jxta_PG_get_discovery_service(group, &self->discovery);
@@ -541,6 +525,7 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
 {
     _jxta_rdv_service_server *self = PTValid(provider, _jxta_rdv_service_server);
     Jxta_status res;
+    apr_status_t rv;
 
     jxta_rdv_service_provider_lock_priv(provider);
 
@@ -570,7 +555,8 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
 
     res = jxta_rdv_service_provider_stop(provider);
 
-    apr_thread_join(&res, (apr_thread_t *) self->periodicThread);
+    apr_thread_join(&rv, (apr_thread_t *) self->periodicThread);
+    res = rv;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Stopped.\n");
 
@@ -749,7 +735,7 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
             /* Send the message */
             res =
                 jxta_endpoint_service_send(jxta_service_get_peergroup_priv
-                                           ((_jxta_service *) provider->service), provider->service->endpoint, newmsg, destAddr);
+                                           ((Jxta_service *) provider->service), provider->service->endpoint, newmsg, destAddr);
             JXTA_OBJECT_RELEASE(destAddr);
         }
 
@@ -792,7 +778,7 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
             /* Send the message */
             res =
                 jxta_endpoint_service_send(jxta_service_get_peergroup_priv
-                                           ((_jxta_service *) provider->service), provider->service->endpoint, newmsg, destAddr);
+                                           ((Jxta_service *) provider->service), provider->service->endpoint, newmsg, destAddr);
             JXTA_OBJECT_RELEASE(destAddr);
         }
 
@@ -849,14 +835,13 @@ static Jxta_status JXTA_STDCALL server_cb(Jxta_object * obj, void *arg)
            Publish the client's peer advertisement
          */
         if (self->discovery == NULL) {
-            jxta_PG_get_discovery_service(jxta_service_get_peergroup_priv((_jxta_service *) provider->service),
+            jxta_PG_get_discovery_service(jxta_service_get_peergroup_priv((Jxta_service *) provider->service),
                                           &(self->discovery));
         }
 
         if (self->discovery != NULL) {
             discovery_service_publish(self->discovery, (Jxta_advertisement *) client_PA, DISC_PEER, (Jxta_expiration_time)
-                                      DEFAULT_EXPIRATION, (Jxta_expiration_time)
-                                      DEFAULT_EXPIRATION);
+                                      DEFAULT_EXPIRATION, LOCAL_ONLY_EXPIRATION);
         }
 
         client_peerid = jxta_PA_get_PID(client_PA);
@@ -934,7 +919,7 @@ static Jxta_status send_connect_reply(_jxta_rdv_service_server * self, _jxta_pee
                                            jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) client)->address),
                                            JXTA_RDV_SERVICE_NAME, self->groupiduniq);
 
-    res = jxta_endpoint_service_send(jxta_service_get_peergroup_priv((_jxta_service *) provider->service),
+    res = jxta_endpoint_service_send(jxta_service_get_peergroup_priv((Jxta_service *) provider->service),
                                      provider->service->endpoint, msg, destAddr);
 
     if (res != JXTA_SUCCESS) {
@@ -1051,19 +1036,38 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
 static Jxta_boolean check_peer_lease(_jxta_peer_client_entry * peer)
 {
     Jxta_time currentTime = jpr_time_now();
-    Jxta_time expires;
-    Jxta_time_diff remaining;
-
-    PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer *) peer);
-
-    expires = PEER_ENTRY_VTBL(peer)->jxta_peer_get_expires((Jxta_peer *) peer);
-
-    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
-
-    remaining = expires - currentTime;
+    Jxta_time expires = jxta_peer_get_expires((Jxta_peer *) peer);
+    Jxta_time_diff remaining = (Jxta_time_diff) (expires - currentTime);
 
     /* any lease remaining ? */
     return (remaining > 0);
+}
+
+/**
+ * Get the list of peers used by the Rendezvous Service with their status.
+ * 
+ * @param provider a pointer to the instance of the Rendezvous Service
+ * @param peerid The peerID of the peer sought.
+ * @param peer The result.
+ * @return error code.
+ **/
+static Jxta_status get_peer(Jxta_rdv_service_provider * provider, Jxta_id * peerid, Jxta_peer** peer )
+{
+    _jxta_rdv_service_server *myself = (_jxta_rdv_service_server *) PTValid(provider, _jxta_rdv_service_server);
+
+    /* Test arguments first */
+    if ( (NULL == peerid) || (NULL == peer) ) {
+        /* Invalid args. */
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    *peer = (Jxta_peer*) get_peer_entry( myself, peerid, FALSE );
+    
+    if( NULL == *peer ) {
+        return JXTA_ITEM_NOTFOUND;
+    }
+    
+    return JXTA_SUCCESS;
 }
 
 /**

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_module_private.h,v 1.23 2006/03/14 18:07:41 slowhog Exp $
+ * $Id: jxta_module_private.h,v 1.26 2006/09/13 17:56:50 bondolo Exp $
  */
 
 #ifndef JXTA_MODULE_PRIVATE_H
@@ -76,18 +76,6 @@ extern "C" {
 #endif
 #endif
 
-typedef enum _module_states {
-    JXTA_MODULE_UNKNOWN = -1,
-    JXTA_MODULE_LOADING = 0,
-    JXTA_MODULE_LOADED,
-    JXTA_MODULE_STARTING,
-    JXTA_MODULE_STARTED,
-    JXTA_MODULE_STOPPING,
-    JXTA_MODULE_STOPPED,
-    JXTA_MODULE_UNLOADING,
-    JXTA_MODULE_UNLOADED
-} Jxta_module_state;
-
 /**
  * The set of methods that a Jxta_module must implement.
  * All Jxta_module and derivates have a pointer to such an
@@ -104,9 +92,6 @@ struct _jxta_module_methods {
 
     /* An implementation of Jxta_module_init */
     Jxta_status(*init) (Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv);
-
-    /* An implementation of Jxta_module_init_e */
-    void (*init_e) (Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv, Throws);
 
     /* An implementation of Jxta_module_start */
      Jxta_status(*start) (Jxta_module * self, const char *args[]);
@@ -126,7 +111,7 @@ typedef struct _jxta_module_methods Jxta_module_methods;
 struct _jxta_module {
     Extends(Jxta_object);       /* equivalent to JXTA_OBJECT_HANDLE; char* thisType. */
     Jxta_module_methods const *methods; /* Pointer to the module implementation set of methods. */
-    int state;
+    Jxta_module_state state;
 
     /* Implementors put their stuff after that */
 };
@@ -150,7 +135,7 @@ extern _jxta_module *jxta_module_construct(_jxta_module * self, Jxta_module_meth
 extern void jxta_module_destruct(_jxta_module * self);
 
 /**
- * Acces the vtbl for the module, nomatter how deeptly derived,
+ * Access the vtbl for the module, nomatter how deeply derived,
  * there is a single vtbl ptr and it is declared here in Jxta_module.
  * May be used to initialize the vtbl ptr by the objects creator.
  * Expands as a pointer to the Jxta_module_methods (or derivate thereof)
@@ -159,24 +144,6 @@ extern void jxta_module_destruct(_jxta_module * self);
  * @return pointer to this object's set of methods.
  */
 #define JXTA_MODULE_VTBL(self) (((_jxta_module*) (self))->methods)
-
-/**
- * Initializes an instance of module. (a module method)
- * Exception throwing variant. This implementation simply calls through to the no-exception init via
- * the vtable.
- * 
- * @param module a pointer to the instance of the module
- * @param group a pointer to the PeerGroup the module is initialized for. IMPORTANT
- * note: this code assumes that the reference to the group that has been given has been
- * shared first.
- * Throws an exception if something fouls up.
- * 
- **/
-extern void jxta_module_init_e_impl(Jxta_module * module, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv,
-                                    Throws);
-
-
-extern Jxta_module_state jxta_module_state(Jxta_module * module);
 
 #ifdef __cplusplus
 #if 0

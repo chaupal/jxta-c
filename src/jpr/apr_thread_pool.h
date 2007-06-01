@@ -87,12 +87,28 @@ APR_DECLARE(apr_status_t) apr_thread_pool_destroy(apr_thread_pool_t * me);
  * @param func The task function
  * @param param The parameter for the task function
  * @param priority The priority of the task.
+ * @param owner Owner of this task.
  * @return APR_SUCCESS if the task had been scheduled successfully
  */
 APR_DECLARE(apr_status_t) apr_thread_pool_push(apr_thread_pool_t * me,
                                                apr_thread_start_t func,
                                                void *param,
-                                               apr_byte_t priority);
+                                               apr_byte_t priority,
+                                               void *owner);
+/**
+ * Schedule a task to be run after a delay
+ * @param me The thread pool
+ * @param func The task function
+ * @param param The parameter for the task function
+ * @param time Time in microseconds
+ * @param owner Owner of this task.
+ * @return APR_SUCCESS if the task had been scheduled successfully
+ */
+APR_DECLARE(apr_status_t) apr_thread_pool_schedule(apr_thread_pool_t * me,
+                                                   apr_thread_start_t func,
+                                                   void *param,
+                                                   apr_interval_time_t time,
+                                                   void *owner);
 
 /**
  * Schedule a task to the top of the tasks of same priority.
@@ -100,12 +116,26 @@ APR_DECLARE(apr_status_t) apr_thread_pool_push(apr_thread_pool_t * me,
  * @param func The task function
  * @param param The parameter for the task function
  * @param priority The priority of the task.
+ * @param owner Owner of this task.
  * @return APR_SUCCESS if the task had been scheduled successfully
  */
 APR_DECLARE(apr_status_t) apr_thread_pool_top(apr_thread_pool_t * me,
                                               apr_thread_start_t func,
                                               void *param,
-                                              apr_byte_t priority);
+                                              apr_byte_t priority,
+                                              void *owner);
+
+/**
+ * Cancel tasks submitted by the owner. If there is any task from the owner is
+ * currently under process, the function will spin until the task finished.
+ * @param me The thread pool
+ * @param owner Owner of the task
+ * @return APR_SUCCESS if the task has been cancelled successfully
+ * @note The task function should not be calling cancel, otherwise the function
+ * may get stuck forever. The function assert if it detect such a case.
+ */
+APR_DECLARE(apr_status_t) apr_thread_pool_tasks_cancel(apr_thread_pool_t * me,
+                                                       void *owner);
 
 /**
  * Get current number of tasks waiting in the queue
@@ -113,6 +143,14 @@ APR_DECLARE(apr_status_t) apr_thread_pool_top(apr_thread_pool_t * me,
  * @return Number of tasks in the queue
  */
 APR_DECLARE(apr_size_t) apr_thread_pool_tasks_count(apr_thread_pool_t * me);
+
+/**
+ * Get current number of scheduled tasks waiting in the queue
+ * @param me The thread pool
+ * @return Number of scheduled tasks in the queue
+ */
+APR_DECLARE(apr_size_t)
+    apr_thread_pool_scheduled_tasks_count(apr_thread_pool_t * me);
 
 /**
  * Get current number of threads

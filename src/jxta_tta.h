@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tta.h,v 1.8 2005/09/21 21:16:52 slowhog Exp $
+ * $Id: jxta_tta.h,v 1.9 2006/09/02 00:51:38 slowhog Exp $
  */
 
 
@@ -100,6 +100,7 @@ JXTA_DECLARE(void) jxta_TCPTransportAdvertisement_set_Server(Jxta_TCPTransportAd
 
 JXTA_DECLARE(Jxta_in_addr) jxta_TCPTransportAdvertisement_get_InterfaceAddress(Jxta_TCPTransportAdvertisement *);
 JXTA_DECLARE(void) jxta_TCPTransportAdvertisement_set_InterfaceAddress(Jxta_TCPTransportAdvertisement *, Jxta_in_addr);
+JXTA_DECLARE(const char*) jxta_TCPTransportAdvertisement_InterfaceAddress(Jxta_TCPTransportAdvertisement *);
 
 JXTA_DECLARE(JString *) jxta_TCPTransportAdvertisement_get_ConfigMode(Jxta_TCPTransportAdvertisement *);
 JXTA_DECLARE(char *) jxta_TCPTransportAdvertisement_get_ConfigMode_string(Jxta_TCPTransportAdvertisement *);

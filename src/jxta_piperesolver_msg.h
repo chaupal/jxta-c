@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_piperesolver_msg.h,v 1.7 2005/09/21 21:16:49 slowhog Exp $
+ * $Id: jxta_piperesolver_msg.h,v 1.8 2006/09/26 18:28:24 slowhog Exp $
  */
 
 #ifndef __Jxta_piperesolver_msg_H__
@@ -72,21 +72,23 @@ typedef struct _jxta_piperesolver_msg Jxta_piperesolver_msg;
 /** The get/set functions represent the public
  * interface to the ad class, that is, the API.
  */
-JXTA_DECLARE(char *) jxta_piperesolver_msg_get_PipeResolver(Jxta_piperesolver_msg * ad);
-
-JXTA_DECLARE(void) jxta_piperesolver_msg_set_PipeResolver(Jxta_piperesolver_msg * ad, char *name);
-
 JXTA_DECLARE(Jxta_id *) jxta_piperesolver_msg_get_pipeid(Jxta_piperesolver_msg * ad);
 
+/** @deprecated */
 JXTA_DECLARE(char *) jxta_piperesolver_msg_get_MsgType(Jxta_piperesolver_msg * ad);
+JXTA_DECLARE(const char *) jxta_piperesolver_msg_MsgType(Jxta_piperesolver_msg * ad);
 
 JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_set_MsgType(Jxta_piperesolver_msg * ad, char *val);
 
+/** @deprecated */
 JXTA_DECLARE(char *) jxta_piperesolver_msg_get_Type(Jxta_piperesolver_msg * ad);
+JXTA_DECLARE(const char *) jxta_piperesolver_msg_Type(Jxta_piperesolver_msg * ad);
 
 JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_set_Type(Jxta_piperesolver_msg * ad, char *val);
 
+/** @deprecated */
 JXTA_DECLARE(char *) jxta_piperesolver_msg_get_PipeId(Jxta_piperesolver_msg * ad);
+JXTA_DECLARE(const char *) jxta_piperesolver_msg_PipeId(Jxta_piperesolver_msg * ad);
 
 JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_set_PipeId(Jxta_piperesolver_msg * ad, char *val);
 
@@ -98,7 +100,9 @@ JXTA_DECLARE(Jxta_boolean) jxta_piperesolver_msg_get_Cached(Jxta_piperesolver_ms
 
 JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_set_Cached(Jxta_piperesolver_msg * ad, Jxta_boolean val);
 
+/** @deprecated */
 JXTA_DECLARE(char *) jxta_piperesolver_msg_get_Peer(Jxta_piperesolver_msg * ad);
+JXTA_DECLARE(const char *) jxta_piperesolver_msg_Peer(Jxta_piperesolver_msg * ad);
 
 JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_set_Peer(Jxta_piperesolver_msg * ad, char *val);
 

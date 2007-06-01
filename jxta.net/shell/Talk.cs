@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2005 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: Talk.cs,v 1.4 2006/02/13 21:06:17 lankes Exp $
+ * $Id: Talk.cs,v 1.5 2006/08/04 10:33:18 lankes Exp $
  */
 using System;
 using System.IO;
@@ -61,34 +61,39 @@ using System.Threading;
 
 namespace JxtaNETShell
 {
-    class Talk : ShellApp
+    /// <summary>
+    /// Class of the shell command "talk".
+    /// </summary>
+    public class Talk : ShellApp
     {
 
         /// <summary>
-        /// Standart help-method; it displays the help-text.
+        /// Standard help-method; it displays the help-text.
         /// </summary>
-        public override void help()
+        public override void Help()
         {
-            Console.WriteLine("talk - talk to another JXTA user");
-            Console.WriteLine(" ");
-            Console.WriteLine("SYNOPSIS");
-            Console.WriteLine("    talk [-t <user>] talk to a remote user.");
-            Console.WriteLine("         [-l <user>] login for the local user.");
-            Console.WriteLine("         [-r <user> [-p]] register a new user.");
-            Console.WriteLine("         [-h] print this information");
+            textWriter.WriteLine("talk - talk to another JXTA user");
+            textWriter.WriteLine(" ");
+            textWriter.WriteLine("SYNOPSIS");
+            textWriter.WriteLine("    talk [-u <me> <you>] talk to a remote user.");
+            textWriter.WriteLine("         [-login <user>] login for the local user.");
+            textWriter.WriteLine("         [-logout <user>] logout the local user.");
+            textWriter.WriteLine("         [-register <user> [-p]] register a new user.");
+            textWriter.WriteLine("         [-h] print this information");
         }
 
-        private enum operations { help, newuser, login, talk };
+        private enum operations { help, newuser, login, logout, talk };
 
         /// <summary>
-        /// Standart run-method. Call this for the 'whoami'-action.
+        /// Standard run-method. Call this for the 'talk'-action.
         /// </summary>
         /// <param name="args">The commandline-parameters.</param>
-        public override void run(string[] args)
+        public override void Run(string[] args)
         {
             operations operation = operations.help;
 
-            String username = "";
+            string username = "";
+            string myName = "";
             bool propagate = false;
            
             try
@@ -97,253 +102,286 @@ namespace JxtaNETShell
                 {
                     switch (args[i])
                     {
+                        case "-lo":
+                        case "-logout":
+                            operation = operations.logout;
+                            username = args[++i].Trim();
+                            break;
                         case "-l":
+                        case "-login":
                             operation = operations.login;
                             username = args[++i].Trim();
                             break;
                         case "-r":
+                        case "-register":
                             operation = operations.newuser;
                             username = args[++i].Trim();
-                            if ((args.Length > i) && (args[++i] == "-p"))
+                            if ((args.Length > i+1) && (args[++i] == "-p"))
                                 propagate = true;
                             break;
-                        case "-t":
+                        case "-u":
                             operation = operations.talk;
+                            myName = args[++i].Trim();
                             username = args[++i].Trim();
                             break;
                         case "-h":
-                            help();
+                            Help();
                             return;
                         default:
-                            Console.WriteLine("Error: invalid parameter");
+                            textWriter.WriteLine("Error: invalid parameter");
                             break;
                     }
                 }
             }
             catch
             {
-                Console.WriteLine("Error: invalid parameter");
+                textWriter.WriteLine("Error: invalid parameter");
                 return;
             }
 
             switch (operation)
             {
+                case operations.logout:
+                    LogoutUser(username);
+                    break;
                 case operations.login:
-                    login_user(username);
+                    LoginUser(username, new TalkMessageListener(textWriter));
                     break;
                 case operations.newuser:
-                    create_user(username, propagate);
+                    CreateUser(username, propagate);
+                    textWriter.WriteLine("(wait 20 sec for RDV SRDI indexing).");
+                    for (int i = 1; i < 20; i++)
+                    {
+                        Thread.Sleep(1000);
+                        textWriter.Write(".");
+                    }
+                    textWriter.WriteLine();
                     break;
                 case operations.talk:
-                    connect_to_user(username);
+                    TalkToUser(myName, username);
+                    break;
+                default:
+                    textWriter.WriteLine("Error: invalid parameter");
                     break;
             }
         }
 
-        private void create_user(String userName, bool propagate)
+       public void CreateUser(string userName, bool propagate)
         {
-            ID gid = this.netPeerGroup.getPeerGroupID();
+            PeerGroupID gid = this.netPeerGroup.PeerGroupID;
 
-            ID pipeid = ID.newPipeID(gid);
+            PipeID pipeid = IDFactory.NewPipeID(gid);
 
             PipeAdvertisement adv = new PipeAdvertisement();
 
-            adv.setID(pipeid);
-            adv.setType(propagate ? "JxtaPropagate" : "JxtaUnicast");
-            adv.setName("JxtaTalkUserName." + userName);
+            adv.SetPipeID(pipeid);
+            adv.Type = (propagate ? "JxtaPropagate" : "JxtaUnicast");
+            adv.Name = "JxtaTalkUserName." + userName;
+            adv.Desc = "created by JXTA .NET";
 
-            discovery.publish(adv, 2, DiscoveryService.DEFAULT_LIFETIME, DiscoveryService.DEFAULT_LIFETIME);
-
-            Console.WriteLine("(wait 20 sec for RDV SRDI indexing).");
-            Thread.Sleep(20 * 1000);
+            discovery.Publish(adv);
         }
 
-        private PipeAdvertisement get_user_adv(String userName, Int64 timeout)
+        public PipeAdvertisement GetUserAdv(string userName, long timeout)
         {
-            //  /* Some magic hackery to always have the IP2PGRP advertisement available */
-
-            //  /* XXX 20050923 Should be a case insensitive comparison */
-            //  if (0 == strcmp("ip2pgrp", userName)) {
-            //      adv = jxta_pipe_adv_new();
-            //      jxta_pipe_adv_set_Name(adv, "JxtaTalkUserName.IP2PGRP");
-            //      /* FIXME 20050923 This is supposed to be specific for each group. This is the netgroup pipe.  */
-            //      jxta_pipe_adv_set_Id(adv, "urn:jxta:uuid-59616261646162614E50472050325033D1D1D1D1D1D141D191D191D1D1D1D1D104");
-            //      jxta_pipe_adv_set_Type(adv, "JxtaPropagate");
-
-            //      return adv;
-            //  }
-            String talkUserName = "JxtaTalkUserName." + userName;
+            string talkUserName = "JxtaTalkUserName." + userName;
 
             /*
              * check first our local cache
              */
-            JxtaVector<PipeAdvertisement> responses = discovery.getLocalAdvertisements(DiscoveryService.DISC_ADV, "Name", talkUserName);
+            List<Advertisement> responses = discovery.GetLocalAdvertisements(DiscoveryService.DISC_ADV, "Name", talkUserName);
 
             PipeAdvertisement adv;
 
-            if (responses.Length == 0)
+            if (responses.Count == 0)
             {
-
-
-                Listener listener = new Listener(null, 1, 1);
-
                 try
                 {
-                    listener.start();
+                    int query_id = discovery.GetRemoteAdvertisements(null, DiscoveryService.DISC_ADV, "Name", talkUserName, 1);
 
-                    Int32 query_id = discovery.getRemoteAdvertisements(DiscoveryService.DISC_ADV, null, "Name", talkUserName, 1, listener);
-
-                    DiscoveryResponse dr = listener.waitForEvent(timeout);
-
-                    listener = discovery.cancelRemoteQuery(query_id);
-
-                    listener.stop();
-
-                    JxtaVector<JxtaString> res = dr.getResponses();
-
-                    if (responses.Length == 0)
+                    for (int i = 0; i <= 20; i++)
                     {
-                        Console.WriteLine("No responses");
+                        Thread.Sleep(500);
+                        textWriter.Write(".");
+
+/*                    DiscoveryResponse dr = null;
+
+                    dr = listener.WaitForEvent(timeout);
+
+                    listener = discovery.CancelRemoteQuery(query_id);
+
+                    listener.Stop();
+
+                    responses = discovery.GetLocalAdvertisements<PipeAdvertisement>(DiscoveryService.DISC_ADV, "Name", talkUserName);
+*/
+                        responses = discovery.GetLocalAdvertisements(DiscoveryService.DISC_ADV, "Name", talkUserName);
+                        if (responses.Count != 0)
+                            break;
+                        
+                    }
+//                    textWriter.WriteLine("");
+                    
+                    if (responses.Count == 0)
+                    {
+                        textWriter.WriteLine("No responses");
                         return null;
                     }
-
-                    /**
-                     ** Builds the advertisement.
-                     **/
-                    adv = new PipeAdvertisement();
-
-                    adv.parse(res[0]);
                 }
                 catch (JxtaException e)
                 {
-                    Console.WriteLine(e.ErrorMessage);
-                    Console.WriteLine("No responses");
+                    textWriter.WriteLine(e.ErrorMessage);
+                    textWriter.WriteLine("No responses");
                     return null;
                 }
             }
-            else
-                adv = responses[0];
+
+            adv = (PipeAdvertisement)responses[0];
 
             return adv;
         }
 
-        static void message_listener(Message msg)//IntPtr obj, IntPtr arg)
+        private class TalkMessageListener : PipeMsgListener
         {
-            try
+            TextWriter textWriter;
+
+            public void PipeMsgEvent(PipeMsgEvent pipeMsgEvent)
             {
-                //                Message msg = new Message(obj);
-
-                StreamReader reader;
-
-                reader = new StreamReader(msg.getElement("GrpName").getValue());
-
-                String message = msg.getElement("JxtaTalkSenderMessage").getValueAsString();
-
-                reader = new StreamReader(msg.getElement("JxtaTalkSenderName").getValue());
-                String senderName = reader.ReadLine();
-
-                if (!message.Equals(""))
+                try
                 {
-                    Console.WriteLine("\n##############################################################");
-                    Console.WriteLine("CHAT MESSAGE from " + senderName + ":");
-                    Console.WriteLine(message);
-                    Console.WriteLine("##############################################################\n");
+                    Message msg = pipeMsgEvent.Message;
+                    string grpName = msg.GetMessageElement("GrpName").ToString();
+                    string message = msg.GetMessageElement("JxtaTalkSenderMessage").ToString();
+                    string senderName = msg.GetMessageElement("JxtaTalkSenderName").ToString();
+
+                    if (!message.Equals(""))
+                    {
+                        textWriter.WriteLine("\n##############################################################");
+                        textWriter.WriteLine("CHAT MESSAGE from " + senderName + ":");
+                        textWriter.WriteLine(message);
+                        textWriter.WriteLine("##############################################################\n");
+                    }
+                    else
+                        textWriter.WriteLine("Received empty message");
                 }
-                else
-                    Console.WriteLine("Received empty message");
+                catch (Exception e)
+                {
+                    textWriter.WriteLine(e.Message);
+                }
             }
-            catch (Exception e)
+
+            public TalkMessageListener(TextWriter textWriter)
             {
-                Console.WriteLine(e.Message);
+                this.textWriter = textWriter;
             }
         }
 
-        private void login_user(String userName)
+        /// <summary>
+        /// Contains the listeners of all logged in users
+        /// </summary>
+        private static Dictionary<string, InputPipe> _userDictionary = new Dictionary<string,InputPipe>();
+        
+        public void LoginUser(string userName, PipeMsgListener talkMessageListener)
         {
-            PipeAdvertisement adv = get_user_adv(userName, 30 * 1000 * 1000);
+            PipeAdvertisement adv = GetUserAdv(userName, 30 * 1000 * 1000);
+
+            if (_userDictionary.ContainsKey(userName) == true)
+            {
+                textWriter.WriteLine("User " + userName + " is already logged in!!!");
+                return;
+            }
 
             if (adv != null)
             {
-                Listener listener = new Listener(message_listener, 1, 200);
-
-                Pipe pipe = pipeservice.timedAccept(adv, 1000);
-
-                InputPipe ip = pipe.getInputPipe();
-
-                ip.addListener(listener);
-
-                listener.start();
+                InputPipe inputPipe = pipeservice.CreateInputPipe(adv, talkMessageListener);
+                
+                // Releasing of these objects are prevented by this container.
+                _userDictionary.Add(userName, inputPipe);
             }
             else
-                Console.WriteLine("Cannot retrieve advertisement for " + userName);
+                textWriter.WriteLine("Cannot retrieve advertisement for " + userName);
         }
 
-        private void connect_to_user(String userName)
+        public void LogoutUser(string userName)
         {
-            PipeAdvertisement adv = get_user_adv(userName, 1 * 5 * 1000 * 1000);
+            if (_userDictionary.Remove(userName) == true)
+                return;
+
+            textWriter.WriteLine("User " + userName + " isn't logged in!!!");
+        }
+
+        private Dictionary<string, OutputPipe> _outputPipe = new Dictionary<string, OutputPipe>();
+
+        public Dictionary<string, OutputPipe> OutputPipe
+        {
+            get
+            {
+                return _outputPipe;
+            }
+        }
+
+        public OutputPipe ConnectToUser(string userName)
+        {
+            PipeAdvertisement adv = GetUserAdv(userName, 1 * 5 * 1000 * 1000);
 
             if (adv != null)
             {
-                Pipe pipe = pipeservice.timedConnect(adv, 30 * 1000 * 1000, null);
+                OutputPipe op = pipeservice.CreateOutputPipe(adv, 30 * 1000);
 
-                OutputPipe op = pipe.getOutputPipe();
+                if (op == null)
+                {
+                    textWriter.WriteLine("peer not found.");
+                    return null;
+                }
 
-                Console.WriteLine("Welcome to JXTA-C Chat, " + userName);
-                Console.WriteLine("Type a '.' at begining of line to quit.");
+                _outputPipe.Add(userName, op);
+
+                return op;
+            }
+            return null;
+        }
+
+        private void TalkToUser(string myName, string userName)
+        {
+            OutputPipe op = ConnectToUser(userName);
+
+            if (op != null)
+            {
+                textWriter.WriteLine("Welcome to JXTA-C Chat, " + userName);
+                textWriter.WriteLine("Type a '.' at begining of line to quit.");
 
                 String userMessage = "";
 
-                for (; ; )
+                while (true)
                 {
-                    userMessage = Console.ReadLine();
+                    userMessage = textReader.ReadLine();
                     if (userMessage != "")
                     {
                         if (userMessage[0] == '.')
-                        {
                             break;
-                        }
-                        send_message(op, userName, userMessage);
+                        SendMessage(op, myName, userMessage);
                     }
                 }
-
             }
         }
 
-        private void send_message(OutputPipe op, String userName, String userMessage)
+        public void SendMessage(OutputPipe op, string myName, string userMessage)
         {
             Message msg = new Message();
 
-            ByteStream stream = new ByteStream();
-            StreamWriter writer = new StreamWriter(stream);
+            msg.AddMessageElement(new MessageElement("JxtaTalkSenderName", "text/plain", myName));
+            msg.AddMessageElement(new MessageElement("GrpName", "text/plain", "NetPeerGroup"));
+            msg.AddMessageElement(new MessageElement("JxtaTalkSenderMessage", "text/plain", userMessage));
 
-            writer.Write(this.netPeerGroup.getPeerName());
-            writer.Close();
-
-            msg.addElement(new MessageElement("JxtaTalkSenderName", "text/plain", stream));
-
-            msg.addElement(new MessageElement("GrpName", "text/plain", new ByteStream("NetPeerGroup")));
-
-            msg.addElement(new MessageElement("JxtaTalkSenderMessage", "text/plain", new ByteStream(userMessage)));
-
-            op.send(msg);
+            op.Send(msg);
         }
-
-
 
         private DiscoveryService discovery;
         private PipeService pipeservice;
 
-        /// <summary>
-        /// Standart constructor.
-        /// </summary>
-        /// <param name="grp">the PeerGroup</param>
-        public Talk(PeerGroup grp)
-            : base(grp)
+        protected override void Initialize()
         {
-            this.discovery = grp.getDiscoveryService();
-            this.pipeservice = grp.getPipeService();
+            this.discovery = netPeerGroup.DiscoveryService;
+            this.pipeservice = netPeerGroup.PipeService;
         }
     }
-
-
 }

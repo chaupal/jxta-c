@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tcp_message_packet_header.h,v 1.6 2005/11/03 07:31:51 mathieu Exp $
+ * $Id: jxta_tcp_message_packet_header.h,v 1.7 2006/09/02 00:54:22 slowhog Exp $
  */
 
 #ifndef __JXTA_MESSAGE_PACKET_HEADER_H__
@@ -66,14 +66,6 @@ extern "C" {
 #endif
 #endif
 
-#ifndef JXTA_LONG_LONG
-#ifdef WIN32
-typedef LONGLONG JXTA_LONG_LONG;
-#else
-typedef long long JXTA_LONG_LONG;
-#endif
-#endif
-
 #define	APP_MSG		 "application/x-jxta-msg"
 
 #define HEADER_BUFSIZE  1024
@@ -81,13 +73,13 @@ typedef long long JXTA_LONG_LONG;
 /********************************************************************************/
 /*                                                                              */
 /********************************************************************************/
-Jxta_status JXTA_STDCALL message_packet_header_read(char *header_buf, ReadFunc read_func, void *stream, JXTA_LONG_LONG * msg_size,
+Jxta_status JXTA_STDCALL message_packet_header_read(char *header_buf, ReadFunc read_func, void *stream, apr_int64_t * msg_size,
                                                     Jxta_boolean is_multicast, char **src_addr);
 
 /********************************************************************************/
 /*                                                                              */
 /********************************************************************************/
-Jxta_status JXTA_STDCALL message_packet_header_write(WriteFunc write_func, void *stream, JXTA_LONG_LONG msg_size,
+Jxta_status JXTA_STDCALL message_packet_header_write(WriteFunc write_func, void *stream, apr_int64_t msg_size,
                                                      Jxta_boolean is_multicast, char *src_addr);
 
 #ifdef __cplusplus

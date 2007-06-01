@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_platformconfig.c,v 1.5 2006/02/02 19:53:30 slowhog Exp $
+ * $Id: jxta_platformconfig.c,v 1.7 2006/07/26 17:39:02 slowhog Exp $
  */
 
 #include "jxta_platformconfig.h"
@@ -78,6 +78,7 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
   Jxta_RdvConfigAdvertisement *rdv = NULL;
   Jxta_SrdiConfigAdvertisement *srdi = NULL;
   Jxta_EndPointConfigAdvertisement *ep = NULL;
+  Jxta_CacheConfigAdvertisement *cache = NULL;
   
   Jxta_svc *tcpsvc;   /* append */
   Jxta_svc *htsvc;
@@ -86,7 +87,8 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
   Jxta_svc *srdisvc;
   Jxta_svc *rlsvc;
   Jxta_svc *epsvc;
-  
+  Jxta_svc *cachesvc;
+
   JString *tcp_proto; /* append */
   JString *http_proto;
   Jxta_endpoint_address *def_rdv;
@@ -137,7 +139,13 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
   jxta_RelayAdvertisement_set_IsServer(rla, jstring_new_2("false"));
   jxta_svc_set_RelayAdvertisement(rlsvc, rla);
   jxta_svc_set_MCID(rlsvc, jxta_relayproto_classid);
-  
+
+  cache = jxta_CacheConfigAdvertisement_new();
+  cachesvc = jxta_svc_new();
+  jxta_CacheConfigAdvertisement_create_default(cache, FALSE);
+  jxta_svc_set_CacheConfig(cachesvc, cache);
+  jxta_svc_set_MCID(cachesvc, jxta_cache_classid);
+
   /* Discovery */
   disc = jxta_DiscoveryConfigAdvertisement_new();
   discsvc = jxta_svc_new();
@@ -174,6 +182,7 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
   jxta_vector_add_object_last(services, (Jxta_object *) srdisvc);
   jxta_vector_add_object_last(services, (Jxta_object *) epsvc);
   jxta_vector_add_object_last(services, (Jxta_object *) discsvc);
+  jxta_vector_add_object_last(services, (Jxta_object *) cachesvc);
   
   jxta_id_peerid_new_1(&pid, jxta_id_defaultNetPeerGroupID);
   jxta_PA_set_PID(config_adv, pid);

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: Errors.cs,v 1.2 2006/01/26 20:31:09 lankes Exp $
+ * $Id: Errors.cs,v 1.3 2006/08/04 10:33:18 lankes Exp $
  */
 using System;
 using System.Collections.Generic;
@@ -59,8 +59,12 @@ using System.Runtime.InteropServices;
 
 namespace JxtaNET
 {
+    /// <summary>
+    /// Represents possible jxta-c error values
+    /// </summary>
     public class Errors
     {
+        #region import of jxta-c functions
         [DllImport("jxta.dll")] private static extern UInt32 jxta_get_JXTA_SUCCESS();
         [DllImport("jxta.dll")] private static extern UInt32 jxta_get_JXTA_INVALID_ARGUMENT();
         [DllImport("jxta.dll")] private static extern UInt32 jxta_get_JXTA_ITEM_NOTFOUND();
@@ -75,27 +79,27 @@ namespace JxtaNET
         [DllImport("jxta.dll")] private static extern UInt32 jxta_get_JXTA_NOT_CONFIGURED();
         [DllImport("jxta.dll")] private static extern UInt32 jxta_get_JXTA_UNREACHABLE_DEST();
         [DllImport("jxta.dll")] private static extern UInt32 jxta_get_JXTA_TTL_EXPIRED();
+        #endregion
 
-
-        // TODO: make it a enum
-
-        public static UInt32 JXTA_SUCCESS = 0;
-        public static UInt32 JXTA_INVALID_ARGUMENT = 0;
-        public static UInt32 JXTA_ITEM_NOTFOUND = 0;
-        public static UInt32 JXTA_NOMEM = 0;
-        public static UInt32 JXTA_TIMEOUT = 0;
-        public static UInt32 JXTA_BUSY = 0;
-        public static UInt32 JXTA_VIOLATION = 0;
-        public static UInt32 JXTA_FAILED = 0;
-        public static UInt32 JXTA_CONFIG_NOTFOUND = 0;
-        public static UInt32 JXTA_IOERR = 0;
-        public static UInt32 JXTA_ITEM_EXISTS = 0;
-        public static UInt32 JXTA_NOT_CONFIGURED = 0;
-        public static UInt32 JXTA_UNREACHABLE_DEST = 0;
-        public static UInt32 JXTA_TTL_EXPIRED = 0;
+        // some necessary constants, which are previously defined in JXTA-C
+        public static readonly UInt32 JXTA_SUCCESS;
+        public static readonly UInt32 JXTA_INVALID_ARGUMENT;
+        public static readonly UInt32 JXTA_ITEM_NOTFOUND;
+        public static readonly UInt32 JXTA_NOMEM;
+        public static readonly UInt32 JXTA_TIMEOUT;
+        public static readonly UInt32 JXTA_BUSY;
+        public static readonly UInt32 JXTA_VIOLATION;
+        public static readonly UInt32 JXTA_FAILED;
+        public static readonly UInt32 JXTA_CONFIG_NOTFOUND;
+        public static readonly UInt32 JXTA_IOERR;
+        public static readonly UInt32 JXTA_ITEM_EXISTS;
+        public static readonly UInt32 JXTA_NOT_CONFIGURED;
+        public static readonly UInt32 JXTA_UNREACHABLE_DEST;
+        public static readonly UInt32 JXTA_TTL_EXPIRED;
 
         static Errors()
         {
+            // intialization of the constants, which are previously defined in JXTA-C
             JXTA_SUCCESS = jxta_get_JXTA_SUCCESS();
             JXTA_INVALID_ARGUMENT = jxta_get_JXTA_INVALID_ARGUMENT();
             JXTA_ITEM_NOTFOUND = jxta_get_JXTA_ITEM_NOTFOUND();
@@ -119,12 +123,18 @@ namespace JxtaNET
         }
     }
 
+    /// <summary>
+    /// Represents errors that occur during JXTA.NET application execution
+    /// </summary>
     public class JxtaException : Exception
     {
         public String ErrorMessage = "";
-
         public int ErrorCode = 0;
 
+        /// <summary>
+        /// Initializes a new instance of the JxtaException class. 
+        /// </summary>
+        /// <param name="errorcode">jxta-c error code</param>
         public JxtaException(UInt32 errorcode)
         {
             String error = "JXTA-Error(" + errorcode + "): ";
@@ -148,6 +158,10 @@ namespace JxtaNET
             this.ErrorCode = (int)errorcode;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the JxtaException class with a specified error message.
+        /// </summary>
+        /// <param name="message">The message that describes the error.</param>
         public JxtaException(String message) : base(message) { }
     }
 }

@@ -50,42 +50,187 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: PipeService.cs,v 1.1 2006/01/18 20:31:09 lankes Exp $
+ * $Id: PipeService.cs,v 1.2 2006/08/04 10:33:20 lankes Exp $
  */
 using System;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 namespace JxtaNET
 {
+    public interface PipeService : Service
+    {
+        /// <summary>
+        /// Create an InputPipe from a pipe Advertisement
+        /// </summary>
+        /// <param name="adv">is the advertisement of the PipeService</param>
+        /// <param name="listener">PipeMsgListener to receive msgs</param>
+        /// <returns>InputPipe object created</returns>
+        InputPipe CreateInputPipe(PipeAdvertisement adv, PipeMsgListener listener);
+
+        /// <summary>
+        /// Create an InputPipe from a pipe Advertisement
+        /// </summary>
+        /// <param name="adv">is the advertisement of the PipeService</param>
+        /// <returns>InputPipe object created</returns>
+        InputPipe CreateInputPipe(PipeAdvertisement adv);
+
+        /// <summary>
+        /// Attempt to ceate an OutputPipe using the specified Pipe Advertisement. 
+        /// The pipe will be be resolved within the provided timeout.
+        /// </summary>
+        /// <param name="adv">The advertisement of the pipe being resolved.</param>
+        /// <param name="timeout">time duration in milliseconds to wait for a successful pipe resolution. 
+        /// 0 will wait indefinitely.</param>
+        OutputPipe CreateOutputPipe(PipeAdvertisement adv, long timeout);
+    }
+
 	/// <summary>
-	/// Summary of PipeService.
+	/// Summary of PipeServiceImpl.
 	/// </summary>
-	public class PipeService : JxtaObject
-	{
+	internal class PipeServiceImpl : JxtaObject, PipeService
+    {
+        #region import jxta-c functions
         [DllImport("jxta.dll")]
         private static extern UInt32 jxta_pipe_service_timed_accept(IntPtr self, IntPtr adv, Int64 timeout, ref IntPtr pipe);
 
         [DllImport("jxta.dll")]
         private static extern UInt32 jxta_pipe_service_timed_connect(IntPtr self, IntPtr adv, Int64 timeout, IntPtr peers, ref IntPtr pipe);
 
-        public Pipe timedAccept(Advertisement adv, Int64 timeout)
+        [DllImport("jxta.dll")]
+        private static extern void jxta_service_get_MIA(IntPtr self, out IntPtr mia);
+
+        [DllImport("jxta.dll")]
+        private static extern UInt32 jxta_module_start(IntPtr self, String[] args);
+
+        [DllImport("jxta.dll")]
+        private static extern void jxta_module_stop(IntPtr self);
+
+        [DllImport("jxta.dll")]
+        private static extern UInt32 jxta_module_init(IntPtr self, IntPtr group, IntPtr assigned_id, IntPtr impl_adv);
+
+        [DllImport("jxta.dll")]
+        public static extern IntPtr jxta_vector_new(UInt32 initialSize);
+
+        #endregion
+
+        public void init(PeerGroup group, ID assignedID, Advertisement implAdv)
+        {
+            jxta_module_init(this.self, ((PeerGroupImpl)group).self, assignedID.self, implAdv.self);
+        }
+
+        public uint startApp(string[] args)
+        {
+            return jxta_module_start(this.self, args);
+        }
+
+        public void stopApp()
+        {
+            jxta_module_stop(this.self);
+        }
+
+
+        private Dictionary<PipeAdvertisement, Pipe> _pipeDictionary = new Dictionary<PipeAdvertisement,Pipe>();
+
+        /// <summary>
+        /// Accept an incoming connection.
+        /// This function waits until the pipe is ready to receive messages, or until
+        /// the timeout is reached. The semantics of being ready to receive messages
+        /// depends on the type of pipe. After the first call to connect, the pipe
+        /// is set to wait for connection request. If a connection request arrives after
+        /// the timeout has been reached, it will be queued up, and a following call to
+        /// TimedAccept() will retrieve the connection request, until the pipe is released.
+        /// </summary>
+        /// <param name="adv">Pipe Advertisment of the pipe to connect to.</param>
+        /// <param name="timeout">timeout in micro-seconds</param>
+        /// <returns></returns>
+        internal Pipe TimedAccept(PipeAdvertisement adv, long timeout)
         {
             IntPtr ret = new IntPtr();
             Errors.check(jxta_pipe_service_timed_accept(this.self, adv.self, timeout, ref ret));
-            return new Pipe(ret);
+            return new Pipe(ret, adv);
         }
 
-        public Pipe timedConnect(Advertisement adv, Int64 timeout, JxtaVector<Peer> peers)
+        /// <summary>
+        ///  Try to synchronously connect to the remote end of a pipe.
+        ///  If peers is set to a vector containing a list of peers,
+        ///  the connection will be attempted to be established with the listed
+        ///  peer(s). The number of peers that the vector may contain depends on
+        ///  the type of type. Unicast typically can only connect to a single peer.
+        /// </summary>
+        /// <param name="adv">Pipe Advertisement</param>
+        /// <param name="timeout">timeout in micro-seconds</param>
+        /// <param name="peers">optional vector of peers</param>
+        /// <returns></returns>
+        internal Pipe TimedConnect(PipeAdvertisement adv, long timeout, List<Peer> peers)
         {
             IntPtr ret = new IntPtr();
+
             if (peers != null)
-                jxta_pipe_service_timed_connect(this.self, adv.self, timeout, peers.self, ref ret);
+            {
+                JxtaVector jVec = new JxtaVector();
+
+                jVec.self = jxta_vector_new(0);
+
+                foreach (Peer peer in peers)
+                    jVec.Add(peer.self);
+
+                jxta_pipe_service_timed_connect(this.self, adv.self, timeout, jVec.self, ref ret);
+            }
             else
                 jxta_pipe_service_timed_connect(this.self, adv.self, timeout, IntPtr.Zero, ref ret);
-            return new Pipe(ret);
+
+            if (ret != IntPtr.Zero)
+                return new Pipe(ret, adv);
+            else return null;
         }
 
-		internal PipeService(IntPtr self) : base(self) {}
-        internal PipeService() { }
+        public InputPipe CreateInputPipe(PipeAdvertisement adv)
+        {
+            Pipe pipe = new Pipe();
+
+            if (_pipeDictionary.TryGetValue(adv, out pipe) == true)
+                return pipe.InputPipe;
+
+            pipe = TimedAccept(adv, 1000);
+            _pipeDictionary.Add(adv, pipe);
+
+            return pipe.InputPipe;
+        }
+
+        public InputPipe CreateInputPipe(PipeAdvertisement adv, PipeMsgListener pipeListener)
+        {
+            InputPipeImpl pipe = (InputPipeImpl) CreateInputPipe(adv);
+
+            pipe.AddListener(pipeListener);
+        
+            return pipe;
+        }
+
+        public OutputPipe CreateOutputPipe(PipeAdvertisement adv, long timeout)
+        {
+            Pipe pipe = new Pipe();
+            
+            if (_pipeDictionary.TryGetValue(adv, out pipe) == true)
+                return pipe.OutputPipe;
+            
+            pipe = TimedConnect(adv, timeout*1000, null);
+            _pipeDictionary.Add(adv, pipe);
+
+            return (pipe != null) ? pipe.OutputPipe : null;
+        }
+
+        public Advertisement ImplAdvertisement
+        {
+            get
+            {
+                IntPtr adv = new IntPtr();
+                jxta_service_get_MIA(this.self, out adv);
+                return new ModuleAdvertisement(adv);
+            }
+        }
+
+		internal PipeServiceImpl(IntPtr self) : base(self) {}
+        internal PipeServiceImpl() { }
     }
 }

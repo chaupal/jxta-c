@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_provider_private.h,v 1.13 2005/11/16 20:10:41 lankes Exp $
+ * $Id: jxta_rdv_service_provider_private.h,v 1.14 2006/09/01 22:52:33 bondolo Exp $
  */
 
 #ifndef __JXTA_RDV_SERVICE_PROVIDER_PRIVATE_H__
@@ -79,6 +79,15 @@ struct _jxta_rdv_service_provider_methods {
     Jxta_status(*init) (Jxta_rdv_service_provider * provider, _jxta_rdv_service * service);
     Jxta_status(*start) (Jxta_rdv_service_provider * provider);
     Jxta_status(*stop) (Jxta_rdv_service_provider * provider);
+
+    /******
+     ** Get the list of peers used by the Rendezvous Service with their status.
+     * 
+     * @param service a pointer to the instance of the Rendezvous Service
+     * @param pAdv a pointer to a pointer that contains the list of peers
+     * @return error code.
+     *******/
+    Jxta_status(*get_peer) (Jxta_rdv_service_provider * provider, Jxta_id *peerid, Jxta_peer **peer);
 
     /******
      ** Get the list of peers used by the Rendezvous Service with their status.

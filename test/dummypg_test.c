@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: dummypg_test.c,v 1.20 2006/05/16 00:58:13 slowhog Exp $
+ * $Id: dummypg_test.c,v 1.23 2006/09/08 20:09:24 bondolo Exp $
  */
 
 /*
@@ -70,9 +70,10 @@
  */
 
 #include "jxta.h"
-#include "jpr/jpr_excep.h"
+
 #include "dummypg_test_private.h"
 
+#include "unittest_jxta_func.h"
 
 /*
  * For the sake of example, we declare the variable "it" in every method
@@ -87,6 +88,8 @@
 #endif
 #endif
 
+Jxta_dummypg *jxta_dummypg_new_instance(void);
+
 /*
  * All the methods:
  * We first cast this back to our local derived type
@@ -96,55 +99,28 @@
 /*
  * Implementations for module methods
  */
-static Jxta_status dummy_init(Jxta_module * self, Jxta_PG * group, Jxta_id * assignedID, Jxta_advertisement * implAdv)
+static Jxta_status dummy_init(Jxta_module * me, Jxta_PG * group, Jxta_id * assignedID, Jxta_advertisement * implAdv)
 {
-    Jxta_dummypg *UNUSED__ it = (Jxta_dummypg *) self;
-    PTValid(self, Jxta_dummypg);
+    Jxta_dummypg *UNUSED__ myself = PTValid(me, Jxta_dummypg);
+   
+    jxta_service_init((Jxta_service *) myself, NULL, NULL, NULL);
 
-    return JXTA_NOTIMP;
+    peergroup_init( (Jxta_PG *) myself, group);
+
+    return JXTA_SUCCESS;
 }
 
-static void dummy_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assignedID, Jxta_advertisement * implAdv, Throws)
+static Jxta_status dummy_start(Jxta_module * self, const char *args[])
 {
-    Jxta_dummypg *UNUSED__ it = (Jxta_dummypg *) self;
-    PTValid(self, Jxta_dummypg);
+    Jxta_dummypg *UNUSED__ it = PTValid(self, Jxta_dummypg);
 
-    Throw(JXTA_NOTIMP);
-}
-
-static Jxta_status dummy_start(Jxta_module * self, char *args[])
-{
-    Jxta_dummypg *UNUSED__ it = (Jxta_dummypg *) self;
-    PTValid(self, Jxta_dummypg);
-
-    return JXTA_NOTIMP;
+    return JXTA_SUCCESS;
 }
 
 static void dummy_stop(Jxta_module * self)
 {
     Jxta_dummypg *UNUSED__ it = (Jxta_dummypg *) self;
     PTValid(self, Jxta_dummypg);
-
-}
-
-
-/*
- * implementations for service methods
- */
-static void dummy_get_MIA(Jxta_service * self, Jxta_advertisement ** mia)
-{
-    Jxta_dummypg *UNUSED__ it = (Jxta_dummypg *) self;
-    PTValid(self, Jxta_dummypg);
-
-    *mia = NULL;
-}
-
-static void dummy_get_interface(Jxta_service * self, Jxta_service ** svc)
-{
-    Jxta_dummypg *UNUSED__ it = (Jxta_dummypg *) self;
-    PTValid(self, Jxta_dummypg);
-
-    *svc = (Jxta_service *) it;
 }
 
 /*
@@ -182,14 +158,6 @@ static Jxta_status dummy_lookup_service(Jxta_PG * self, Jxta_id * name, Jxta_ser
     return JXTA_NOTIMP;
 }
 
-static void dummy_lookup_service_e(Jxta_PG * self, Jxta_id * name, Jxta_service ** svc, Throws)
-{
-    Jxta_dummypg *UNUSED__ it = (Jxta_dummypg *) self;
-    PTValid(self, Jxta_dummypg);
-
-    Throw(JXTA_NOTIMP);
-}
-
 static Jxta_boolean dummy_is_compatible(Jxta_PG * self, JString * compat)
 {
     Jxta_dummypg *UNUSED__ it = (Jxta_dummypg *) self;
@@ -207,15 +175,6 @@ static Jxta_status dummy_loadfromimpl_module(Jxta_PG * self,
     return JXTA_NOTIMP;
 }
 
-static void dummy_loadfromimpl_module_e(Jxta_PG * self,
-                                        Jxta_id * assignedID, Jxta_advertisement * impl, Jxta_module ** mod, Throws)
-{
-    Jxta_dummypg *UNUSED__ it = (Jxta_dummypg *) self;
-    PTValid(self, Jxta_dummypg);
-
-    Throw(JXTA_NOTIMP);
-}
-
 static Jxta_status dummy_loadfromid_module(Jxta_PG * self,
                                            Jxta_id * assignedID, Jxta_MSID * specID, int where, Jxta_module ** result)
 {
@@ -223,15 +182,6 @@ static Jxta_status dummy_loadfromid_module(Jxta_PG * self,
     PTValid(self, Jxta_dummypg);
 
     return JXTA_NOTIMP;
-}
-
-static void dummy_loadfromid_module_e(Jxta_PG * self,
-                                      Jxta_id * assignedID, Jxta_MSID * specID, int where, Jxta_module ** mod, Throws)
-{
-    Jxta_dummypg *UNUSED__ it = (Jxta_dummypg *) self;
-    PTValid(self, Jxta_dummypg);
-
-    Throw(JXTA_NOTIMP);
 }
 
 static void dummy_set_labels(Jxta_PG * self, JString * name, JString * description)
@@ -248,15 +198,6 @@ static Jxta_status dummy_newfromadv(Jxta_PG * self, Jxta_advertisement * pgAdv, 
     return JXTA_NOTIMP;
 }
 
-static void dummy_newfromadv_e(Jxta_PG * self, Jxta_advertisement * pgAdv, Jxta_vector * resource_group, Jxta_PG ** pg, Throws)
-{
-
-    Jxta_dummypg *UNUSED__ it = (Jxta_dummypg *) self;
-    PTValid(self, Jxta_dummypg);
-
-    Throw(JXTA_NOTIMP);
-}
-
 static Jxta_status dummy_newfromimpl(Jxta_PG * self, Jxta_PGID * gid,
                                      Jxta_advertisement * impl, JString * name,
                                      JString * description, Jxta_vector * resource_group, Jxta_PG ** result)
@@ -268,17 +209,6 @@ static Jxta_status dummy_newfromimpl(Jxta_PG * self, Jxta_PGID * gid,
     return JXTA_NOTIMP;
 }
 
-static void dummy_newfromimpl_e(Jxta_PG * self, Jxta_PGID * gid,
-                                Jxta_advertisement * impl, JString * name,
-                                JString * description, Jxta_vector * resource_group, Jxta_PG ** pg, Throws)
-{
-
-    Jxta_dummypg *UNUSED__ it = (Jxta_dummypg *) self;
-    PTValid(self, Jxta_dummypg);
-
-    Throw(JXTA_NOTIMP);
-}
-
 static Jxta_status dummy_newfromid(Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * resource_group, Jxta_PG ** result)
 {
 
@@ -286,15 +216,6 @@ static Jxta_status dummy_newfromid(Jxta_PG * self, Jxta_PGID * gid, Jxta_vector 
     PTValid(self, Jxta_dummypg);
 
     return JXTA_NOTIMP;
-}
-
-static void dummy_newfromid_e(Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * resource_group, Jxta_PG ** pg, Throws)
-{
-
-    Jxta_dummypg *UNUSED__ it = (Jxta_dummypg *) self;
-    PTValid(self, Jxta_dummypg);
-
-    Throw(JXTA_NOTIMP);
 }
 
 static void dummy_get_rendezvous_service(Jxta_PG * self, Jxta_rdv_service ** rdv)
@@ -447,35 +368,29 @@ static void dummy_get_compatstatement(Jxta_PG * self, JString ** compat)
  * table is exported.
  */
 
-Jxta_dummypg_methods jxta_dummypg_methods = {
+Jxta_dummypg_methods const jxta_dummypg_methods = {
     {
      {
       "Jxta_module_methods",
       dummy_init,
-      dummy_init_e,
       dummy_start,
       dummy_stop},
      "Jxta_service_methods",
-     dummy_get_MIA,
-     dummy_get_interface},
+     jxta_service_get_MIA_impl,
+     jxta_service_get_interface_impl,
+     service_on_option_set},
     "Jxta_PG_methods",
     dummy_get_loader,
     dummy_get_PGA,
     dummy_get_PA,
     dummy_lookup_service,
-    dummy_lookup_service_e,
     dummy_is_compatible,
     dummy_loadfromimpl_module,
-    dummy_loadfromimpl_module_e,
     dummy_loadfromid_module,
-    dummy_loadfromid_module_e,
     dummy_set_labels,
     dummy_newfromadv,
-    dummy_newfromadv_e,
     dummy_newfromimpl,
-    dummy_newfromimpl_e,
     dummy_newfromid,
-    dummy_newfromid_e,
     dummy_get_rendezvous_service,
     dummy_get_endpoint_service,
     dummy_get_resolver_service,
@@ -498,11 +413,15 @@ Jxta_dummypg_methods jxta_dummypg_methods = {
 /*
  * Make sure we have a new that subclassers can call.
  */
-void jxta_dummypg_construct(Jxta_dummypg * self, Jxta_dummypg_methods * methods)
+Jxta_dummypg *dummypg_construct(Jxta_dummypg * myself, Jxta_dummypg_methods const * methods)
 {
     PTValid(methods, Jxta_PG_methods);
-    jxta_PG_construct((Jxta_PG *) self, (Jxta_PG_methods *) methods);
-    self->thisType = "Jxta_dummypg";
+    
+    jxta_PG_construct((Jxta_PG *) myself, (Jxta_PG_methods *) methods);
+    
+    myself->thisType = "Jxta_dummypg";
+    
+    return myself;
 }
 
 /*
@@ -513,7 +432,6 @@ void jxta_dummypg_construct(Jxta_dummypg * self, Jxta_dummypg_methods * methods)
  */
 void jxta_dummypg_destruct(Jxta_dummypg * self)
 {
-    PTValid(self, Jxta_dummypg);
     jxta_PG_destruct((Jxta_PG *) self);
 }
 
@@ -536,9 +454,9 @@ void jxta_dummypg_destruct(Jxta_dummypg * self)
  * in its built-in table and call the new_instance method that's there.
  */
 
-static void myFree(void *obj)
+static void dummypg_delete(Jxta_object *obj)
 {
-    printf("FREE %08x\n", (unsigned int) obj);
+    printf("FREE %p\n", obj);
 
     jxta_dummypg_destruct((Jxta_dummypg *) obj);
     free(obj);
@@ -550,11 +468,12 @@ static void myFree(void *obj)
  */
 Jxta_dummypg *jxta_dummypg_new_instance(void)
 {
-    Jxta_dummypg *self = (Jxta_dummypg *) malloc(sizeof(Jxta_dummypg));
-    JXTA_OBJECT_INIT(self, myFree, 0);
-    jxta_dummypg_construct(self, &jxta_dummypg_methods);
-    peergroup_init(self, NULL);
-    return self;
+    Jxta_dummypg *myself = (Jxta_dummypg *) calloc(1, sizeof(Jxta_dummypg));
+    JXTA_OBJECT_INIT(myself, dummypg_delete, 0);
+    
+    dummypg_construct(myself, &jxta_dummypg_methods);
+    
+    return myself;
 }
 
 /**
@@ -566,57 +485,53 @@ Jxta_dummypg *jxta_dummypg_new_instance(void)
 * 
 * @return TRUE if all tests were run successfully, FALSE otherwise
 */
-Jxta_boolean run_dummypg_tests(int *tests_run, int *tests_passed, int *tests_failed)
+const char * dummy_pg_test(void)
 {
     Jxta_PG *test_grp = (Jxta_PG *) jxta_dummypg_new_instance();
     Jxta_advertisement *mia = NULL;
     jxta_service_get_MIA((Jxta_service *) test_grp, &mia);
 
-    *tests_run += 1;
-
     if (mia != NULL) {
-        *tests_failed += 1;
-        printf("Uhoh, Jxta_dummypg::jxta_service_MIA_get returned, but with " "the wrong result\n");
-        return FALSE;
+        return FILEANDLINE " Uhoh, Jxta_dummypg::jxta_service_MIA_get returned, but with the wrong result\n";
     }
-    if (jxta_module_start((Jxta_module *) test_grp, (char **) 0) != JXTA_NOTIMP) {
-        *tests_failed += 1;
-        printf("Uhoh, Jxta_dummypg::jxta_module_stop returned, but with " "the wrong result\n");
-        return FALSE;
+
+    if (jxta_module_start((Jxta_module *) test_grp, NULL) != JXTA_SUCCESS) {
+        return FILEANDLINE " Uhoh, Jxta_dummypg::jxta_module_stop returned, but with the wrong result\n";
     }
+
     JXTA_OBJECT_RELEASE(test_grp);
 
-    *tests_passed += 1;
-    return TRUE;
+    return NULL;
+}
+
+static struct _funcs dummypg_test_funcs[] = {
+    /*  */
+    {*dummy_pg_test, "Construction and starting for dummy peer group"},
+
+    {NULL, "null"}
+};
+
+
+/**
+* Run the unit tests for the jxta_message test routines
+*
+* @param tests_run the variable in which to accumulate the number of tests run
+* @param tests_passed the variable in which to accumulate the number of tests passed
+* @param tests_failed the variable in which to accumulate the number of tests failed
+*
+* @return TRUE if all tests were run successfully, FALSE otherwise
+*/
+Jxta_boolean run_dummypg_tests(int *tests_run, int *tests_passed, int *tests_failed)
+{
+    return run_testfunctions(dummypg_test_funcs, tests_run, tests_passed, tests_failed);
 }
 
 
-/*
- * A main routine for testing.
- */
 #ifdef STANDALONE
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
-    int run, passed, failed;
-    int i;
-    Jxta_boolean result;
-
-    jxta_initialize();
-
-    run = failed = passed = 0;
-    result = run_dummypg_tests(&run, &passed, &failed);
-    fprintf(stdout, "Tests run:    %d\n", run);
-    fprintf(stdout, "Tests passed: %d\n", passed);
-    fprintf(stdout, "Tests failed: %d\n", failed);
-    if (result == FALSE) {
-        fprintf(stdout, "Some tests failed\n");
-    }
-
-    if (result == TRUE)
-        run = 0;
-    else
-        run = -1;
-    jxta_terminate();
-    return run;
+    return main_test_function(dummypg_test_funcs, argc, argv);
 }
 #endif
+
+/* vim: set ts=4 sw=4 et tw=130: */

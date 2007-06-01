@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rr.c,v 1.49 2006/02/15 01:09:46 slowhog Exp $
+ * $Id: jxta_rr.c,v 1.54 2006/09/29 01:28:44 slowhog Exp $
  */
 
 
@@ -103,7 +103,16 @@ struct _ResolverResponse {
     JString *HandlerName;
     long QueryID;
     JString *Response;
+    const Jxta_qos * qos;
 };
+
+/**
+ * @param ResolverResponse the resolver response object
+ * frees the ResolverQuery object
+ * @param ResolverQuery the resolver response object to free
+ */
+static void resolver_response_free(void * me);
+
 
 /** Handler functions.  Each of these is responsible for
 * dealing with all of the character data associated with the 
@@ -394,7 +403,7 @@ JXTA_DECLARE(ResolverResponse *) jxta_resolver_response_new(void)
                                 (JxtaAdvertisementGetXMLFunc) jxta_resolver_response_get_xml,
                                 NULL, 
                                 NULL, 
-                                (FreeFunc) jxta_resolver_response_free);
+                                resolver_response_free);
 
     /* Fill in the required initialization code here. */
 	ad->ResPeerID = jxta_id_nullID;
@@ -402,6 +411,7 @@ JXTA_DECLARE(ResolverResponse *) jxta_resolver_response_new(void)
     ad->QueryID = -1;
     ad->HandlerName = jstring_new_0();
     ad->Credential = jstring_new_0();
+    ad->qos = NULL;
 
     return ad;
 }
@@ -424,7 +434,7 @@ JXTA_DECLARE(ResolverResponse *) jxta_resolver_response_new_2(JString * handlern
                                 (JxtaAdvertisementGetXMLFunc) jxta_resolver_response_get_xml,
                                 NULL, 
                                 NULL, 
-                                (FreeFunc) jxta_resolver_response_free);
+                                resolver_response_free);
 
     /* Fill in the required initialization code here. */
     ad->Credential = jstring_new_0();
@@ -441,6 +451,7 @@ JXTA_DECLARE(ResolverResponse *) jxta_resolver_response_new_2(JString * handlern
     ad->QueryID = qid;
     JXTA_OBJECT_SHARE(response);
     ad->Response = response;
+    ad->qos = NULL;
     return ad;
 }
 
@@ -450,8 +461,10 @@ JXTA_DECLARE(ResolverResponse *) jxta_resolver_response_new_2(JString * handlern
 * pop right out as a piece of memory accessed
 * after it was freed...
 */
-void jxta_resolver_response_free(ResolverResponse * ad) 
+static void resolver_response_free(void * me) 
 {
+    ResolverResponse * ad = (ResolverResponse * )me;
+
     if (ad->Credential) {
         JXTA_OBJECT_RELEASE(ad->Credential);
     }
@@ -471,12 +484,25 @@ void jxta_resolver_response_free(ResolverResponse * ad)
 
 JXTA_DECLARE(void) jxta_resolver_response_parse_charbuffer(ResolverResponse * ad, const char *buf, int len) 
 {
+    JXTA_DEPRECATED_API();
     jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
 
 JXTA_DECLARE(void) jxta_resolver_response_parse_file(ResolverResponse * ad, FILE * stream) 
 {
+    JXTA_DEPRECATED_API();
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+}
+
+JXTA_DECLARE(Jxta_status) jxta_resolver_response_attach_qos(Jxta_resolver_response * me, const Jxta_qos * qos)
+{
+    me->qos = qos;
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(const Jxta_qos *) jxta_resolver_response_qos(Jxta_resolver_response * me)
+{
+    return me->qos;
 }
 
 #ifdef STANDALONE

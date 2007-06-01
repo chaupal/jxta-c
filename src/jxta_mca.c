@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_mca.c,v 1.25 2006/02/18 00:32:51 slowhog Exp $
+ * $Id: jxta_mca.c,v 1.27 2006/09/29 01:28:44 slowhog Exp $
  */
 
 static const char *const __log_cat = "MCA";
@@ -86,7 +86,7 @@ struct _jxta_MCA {
     JString *Desc;
 };
 
-void MCA_delete(Jxta_MCA * ad);
+static void MCA_delete(void * me);
 
 /** Handler functions.  Each of these is responsible for
 * dealing with all of the character data associated with the 
@@ -191,7 +191,7 @@ JXTA_DECLARE(void) jxta_MCA_set_MCID(Jxta_MCA * ad, Jxta_id * id)
     ad->MCID = id;
 }
 
-char *JXTA_STDCALL jxta_PGA_get_MCID_string(Jxta_advertisement * ad)
+static char *JXTA_STDCALL jxta_PGA_get_MCID_string(Jxta_advertisement * ad)
 {
     char *res;
     JString *js = NULL;
@@ -212,7 +212,7 @@ JXTA_DECLARE(JString *) jxta_MCA_get_Name(Jxta_MCA * ad)
     return ad->Name;
 }
 
-char *JXTA_STDCALL jxta_MCA_get_Name_string(Jxta_advertisement * ad)
+static  char *JXTA_STDCALL jxta_MCA_get_Name_string(Jxta_advertisement * ad)
 {
     return strdup(jstring_get_string(((Jxta_MCA *) ad)->Name));
 }
@@ -309,7 +309,7 @@ JXTA_DECLARE(Jxta_MCA *) jxta_MCA_new()
                                   MCA_tags,
                                   (JxtaAdvertisementGetXMLFunc) jxta_MCA_get_xml,
                                   (JxtaAdvertisementGetIDFunc) jxta_MCA_get_MCID,
-                                  (JxtaAdvertisementGetIndexFunc) jxta_MCA_get_indexes, (FreeFunc) MCA_delete);
+                                  jxta_MCA_get_indexes, MCA_delete);
 
     JXTA_OBJECT_SHARE(jxta_id_nullID);
     ad->MCID = jxta_id_nullID;
@@ -325,8 +325,9 @@ JXTA_DECLARE(Jxta_MCA *) jxta_MCA_new()
 * pop right out as a piece of memory accessed
 * after it was freed...
 */
-void MCA_delete(Jxta_MCA * ad)
+static void MCA_delete(void * me)
 {
+    Jxta_MCA * ad = (Jxta_MCA *) me;
     /* Fill in the required freeing functions here. */
 
     JXTA_OBJECT_RELEASE(ad->MCID);

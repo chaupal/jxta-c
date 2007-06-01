@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_vector.h,v 1.10 2005/09/21 21:16:52 slowhog Exp $
+ * $Id: jxta_vector.h,v 1.14 2006/10/01 01:07:10 bondolo Exp $
  */
 
 
@@ -146,6 +146,45 @@ JXTA_DECLARE(Jxta_status) jxta_vector_add_object_first(Jxta_vector * vector, Jxt
  *************************************************************************/
 JXTA_DECLARE(Jxta_status) jxta_vector_add_object_last(Jxta_vector * vector, Jxta_object * object);
 
+/************************************************************************
+ ** Add all of the objects at the specified location of the vector.  The size of the vector is 
+ ** increased by the number of elements in objects.
+ **
+ ** The object is automatically shared when added to the vector.
+ **
+ ** @param vector a pointer to the vector to use.
+ ** @param objects a pointer to the vector to add.
+ ** @param at_index where to add the objects.
+ ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
+ ** otherwise.
+ *************************************************************************/
+JXTA_DECLARE(Jxta_status) jxta_vector_addall_objects_at(Jxta_vector * vector, Jxta_vector * objects, unsigned int at_index);
+
+/************************************************************************
+ ** Add all of the objects to the start of the vector.  The size of the vector is 
+ ** increased by the number of elements in objects.
+ **
+ ** The object is automatically shared when added to the vector.
+ **
+ ** @param vector a pointer to the vector to use.
+ ** @param objects a pointer to the vector to add.
+ ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
+ ** otherwise.
+ *************************************************************************/
+JXTA_DECLARE(Jxta_status) jxta_vector_addall_objects_first(Jxta_vector * vector, Jxta_vector * objects);
+
+/************************************************************************
+ ** Add all of the objects to the end of the vector.  The size of the vector is 
+ ** increased by the number of elements in objects.
+ **
+ ** The object is automatically shared when added to the vector.
+ **
+ ** @param vector a pointer to the vector to use.
+ ** @param objects a pointer to the vector to add.
+ ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
+ ** otherwise.
+ *************************************************************************/
+JXTA_DECLARE(Jxta_status) jxta_vector_addall_objects_last(Jxta_vector * vector, Jxta_vector * objects);
 
 /************************************************************************
  ** Get the object which is at the given index. The object is shared
@@ -184,7 +223,7 @@ JXTA_DECLARE(int) jxta_vector_remove_object(Jxta_vector * me, Jxta_object * obje
  ** anymore. If objectPt is set to NULL, then the object is automatically
  ** released.
  **
- ** The size of the vector is decreased.
+ ** <p/>The size of the vector is decreased.
  **
  ** @param vector a pointer to the vector to use.
  ** @param object a pointer to a Jxta_object pointer which will contain the
@@ -210,7 +249,7 @@ JXTA_DECLARE(unsigned int) jxta_vector_size(Jxta_vector * vector);
  ** created, with a reference to all the objects that are in the original
  ** object. (shallow clone) Note that the objects are automatically shared.
  ** 
- ** Using index and length arguments, a sub section of a vector can
+ ** <p/>Using index and length arguments, a sub section of a vector can
  ** be cloned instead of the totality of the vector
  **
  ** @param source a pointer to the original vector
@@ -236,6 +275,58 @@ JXTA_DECLARE(Jxta_status) jxta_vector_clone(Jxta_vector * source, Jxta_vector **
  ** otherwise.
  ************************************************************************/
 JXTA_DECLARE(Jxta_status) jxta_vector_clear(Jxta_vector * vector);
+
+
+/*************************************************************************
+ ** Exchange the position of two elements within the vector. The vector is
+ ** otherwise unchanged.
+ **
+ ** @param vector   the vector containing the elements to be swapped.
+ ** @param first    index of the first element to be swapped.
+ ** @param second   index of the second element to be swapped.
+ **
+ ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
+ ** otherwise.
+ ************************************************************************/
+JXTA_DECLARE(Jxta_status) jxta_vector_swap_elements(Jxta_vector * vector, unsigned int first, unsigned int second );
+
+/*************************************************************************
+ ** Move the specified element to the start of the vector and move all 
+ ** intervening elements backwards (towards the end) one position. The 
+ ** vector is otherwise unchanged.
+ **
+ ** @param vector   the vector containing the elements to be swapped.
+ ** @param to_first    index of the first element to be placed first.
+ **
+ ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
+ ** otherwise.
+ ************************************************************************/
+JXTA_DECLARE(Jxta_status) jxta_vector_move_element_first(Jxta_vector * vector, unsigned int to_first );
+
+/*************************************************************************
+ ** Move the specified element to the end of the vector and move all 
+ ** intervening elements forward (towards the start) one position. The 
+ ** vector is otherwise unchanged.
+ **
+ ** @param vector   the vector containing the elements to be swapped.
+ ** @param to_last  index of the first element to be placed first.
+ **
+ ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
+ ** otherwise.
+ ************************************************************************/
+JXTA_DECLARE(Jxta_status) jxta_vector_move_element_last(Jxta_vector * vector, unsigned int to_last );
+
+/*************************************************************************
+ ** Determines if the vector contains the specified object.
+ **
+ ** @param vector   the vector to search.
+ ** @param object   The object which is sought.
+ ** @param func     the equals function. If NULL then the vector is
+ ** searched for an object who's address matches that of the object.
+ **
+ ** @return TRUE if the object was found in the vector otherwise FALSE.
+ ************************************************************************/
+JXTA_DECLARE(Jxta_boolean) jxta_vector_contains(Jxta_vector * vector, Jxta_object* object, Jxta_object_equals_func * func);
 
 /*************************************************************************
  ** Sorts a vector using the provided comparator function.
