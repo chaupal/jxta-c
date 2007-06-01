@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_piperesolver_msg.c,v 1.19 2006/09/26 18:28:24 slowhog Exp $
+ * $Id: jxta_piperesolver_msg.c,v 1.20 2007/04/28 04:41:47 mmx2005 Exp $
  */
 
 
@@ -89,7 +89,6 @@ enum tokentype {
     Found_
 };
 
-
     /** This is the representation of the
      * actual ad in the code.  It should
      * stay opaque to the programmer, and be 
@@ -106,8 +105,7 @@ struct _jxta_piperesolver_msg {
     Jxta_boolean Found;
 };
 
-
-void jxta_piperesolver_msg_delete(Jxta_piperesolver_msg *);
+static void piperesolver_msg_delete(Jxta_object *obj);
 
     /** Handler functions.  Each of these is responsible for
      * dealing with all of the character data associated with the 
@@ -121,8 +119,12 @@ static void handlePipeResolver(void *userdata, const XML_Char * cd, int len)
 static void handleMsgType(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_piperesolver_msg *ad = (Jxta_piperesolver_msg *) userdata;
+    char *tok;
 
-    char *tok = (char *) malloc(len + 1);
+	if(len == 0)
+		return;
+
+	tok = (char *) malloc(len + 1);
     memset(tok, 0, len + 1);
 
     extract_char_data(cd, len, tok);
@@ -136,10 +138,13 @@ static void handleMsgType(void *userdata, const XML_Char * cd, int len)
 
 static void handleType(void *userdata, const XML_Char * cd, int len)
 {
-
     Jxta_piperesolver_msg *ad = (Jxta_piperesolver_msg *) userdata;
+	char *tok;
 
-    char *tok = (char *) malloc(len + 1);
+	if(len == 0)
+		return;
+
+    tok = (char *) malloc(len + 1);
     memset(tok, 0, len + 1);
 
     extract_char_data(cd, len, tok);
@@ -153,10 +158,13 @@ static void handleType(void *userdata, const XML_Char * cd, int len)
 
 static void handlePipeId(void *userdata, const XML_Char * cd, int len)
 {
-
     Jxta_piperesolver_msg *ad = (Jxta_piperesolver_msg *) userdata;
+    char *tok;
 
-    char *tok = (char *) malloc(len + 1);
+	if(len == 0)
+		return;
+
+	tok = (char *) malloc(len + 1);
     memset(tok, 0, len + 1);
 
     extract_char_data(cd, len, tok);
@@ -170,10 +178,13 @@ static void handlePipeId(void *userdata, const XML_Char * cd, int len)
 
 static void handleFound(void *userdata, const XML_Char * cd, int len)
 {
-
     Jxta_piperesolver_msg *ad = (Jxta_piperesolver_msg *) userdata;
+    char *tok;
 
-    char *tok = (char *) malloc(len + 1);
+	if(len == 0)
+		return;
+
+	tok = (char *) malloc(len + 1);
     memset(tok, 0, len + 1);
 
     extract_char_data(cd, len, tok);
@@ -188,10 +199,13 @@ static void handleFound(void *userdata, const XML_Char * cd, int len)
 
 static void handleCached(void *userdata, const XML_Char * cd, int len)
 {
-
     Jxta_piperesolver_msg *ad = (Jxta_piperesolver_msg *) userdata;
+    char *tok;
 
-    char *tok = (char *) malloc(len + 1);
+	if(len == 0)
+		return;
+
+	tok = (char *) malloc(len + 1);
     memset(tok, 0, len + 1);
 
     extract_char_data(cd, len, tok);
@@ -206,10 +220,13 @@ static void handleCached(void *userdata, const XML_Char * cd, int len)
 
 static void handlePeer(void *userdata, const XML_Char * cd, int len)
 {
-
     Jxta_piperesolver_msg *ad = (Jxta_piperesolver_msg *) userdata;
+	char *tok;
 
-    char *tok = (char *) malloc(len + 1);
+	if(len == 0)
+		return;
+	
+    tok = (char *) malloc(len + 1);
     memset(tok, 0, len + 1);
 
     extract_char_data(cd, len, tok);
@@ -223,7 +240,6 @@ static void handlePeer(void *userdata, const XML_Char * cd, int len)
 
 static void handlePeerAdv(void *userdata, const XML_Char * cd, int len)
 {
-
     Jxta_piperesolver_msg *ad = (Jxta_piperesolver_msg *) userdata;
 
     jstring_append_0(ad->PeerAdv, (char *) cd, len);
@@ -236,7 +252,6 @@ JXTA_DECLARE(Jxta_id *) jxta_piperesolver_msg_get_pipeid(Jxta_piperesolver_msg *
     jxta_id_from_jstring(&pipeid, tmps);
     return pipeid;
 }
-
 
 JXTA_DECLARE(const char *) jxta_piperesolver_msg_MsgType(Jxta_piperesolver_msg * ad)
 {
@@ -401,7 +416,6 @@ JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_get_xml(Jxta_piperesolver_msg * 
     JString *string = NULL;
     JString *tmp = NULL;
     Jxta_status rv = JXTA_SUCCESS;
-    ;
 
     if (xml == NULL) {
         return JXTA_INVALID_ARGUMENT;
@@ -414,17 +428,17 @@ JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_get_xml(Jxta_piperesolver_msg * 
 
     jstring_append_2(string, "<jxta:PipeResolver>\n");
     jstring_append_2(string, "<MsgType>");
-    jstring_append_2(string, jxta_piperesolver_msg_get_MsgType(ad));
+    jstring_append_2(string, jxta_piperesolver_msg_MsgType(ad));
     jstring_append_2(string, "</MsgType>\n");
     jstring_append_2(string, "<Type>");
-    jstring_append_2(string, jxta_piperesolver_msg_get_Type(ad));
+    jstring_append_2(string, jxta_piperesolver_msg_Type(ad));
     jstring_append_2(string, "</Type>\n");
     jstring_append_2(string, "<PipeId>");
-    jstring_append_2(string, jxta_piperesolver_msg_get_PipeId(ad));
+    jstring_append_2(string, jxta_piperesolver_msg_PipeId(ad));
     jstring_append_2(string, "</PipeId>\n");
-    if (jxta_piperesolver_msg_get_Peer(ad) != NULL) {
+    if (jxta_piperesolver_msg_Peer(ad) != NULL) {
         jstring_append_2(string, "<Peer>");
-        jstring_append_2(string, jxta_piperesolver_msg_get_Peer(ad));
+        jstring_append_2(string, jxta_piperesolver_msg_Peer(ad));
         jstring_append_2(string, "</Peer>\n");
     }
 
@@ -449,7 +463,6 @@ JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_get_xml(Jxta_piperesolver_msg * 
         jstring_append_2(string, "false");
     }
     jstring_append_2(string, "</Cached>\n");
-
 
     jstring_append_2(string, "<Found>");
     if (jxta_piperesolver_msg_get_Found(ad)) {
@@ -481,7 +494,7 @@ JXTA_DECLARE(Jxta_piperesolver_msg *) jxta_piperesolver_msg_new(void)
                                   "jxta:PipeResolver",
                                   PipeResolver_tags,
                                   (JxtaAdvertisementGetXMLFunc) jxta_piperesolver_msg_get_xml,
-                                  NULL, (JxtaAdvertisementGetIndexFunc) NULL, (FreeFunc) jxta_piperesolver_msg_delete);
+                                  NULL, NULL, piperesolver_msg_delete);
 
     ad->MsgType = NULL;
     ad->Type = NULL;
@@ -500,8 +513,10 @@ JXTA_DECLARE(Jxta_piperesolver_msg *) jxta_piperesolver_msg_new(void)
      * pop right out as a piece of memory accessed
      * after it was freed...
      */
-void jxta_piperesolver_msg_delete(Jxta_piperesolver_msg * ad)
+static void piperesolver_msg_delete(Jxta_object *obj)
 {
+	Jxta_piperesolver_msg * ad = (Jxta_piperesolver_msg *)obj;
+
     /* Fill in the required freeing functions here. */
     jxta_advertisement_delete((Jxta_advertisement *) ad);
 
@@ -539,8 +554,6 @@ JXTA_DECLARE(void) jxta_piperesolver_msg_parse_charbuffer(Jxta_piperesolver_msg 
     jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
 
-
-
 JXTA_DECLARE(void) jxta_piperesolver_msg_parse_file(Jxta_piperesolver_msg * ad, FILE * stream)
 {
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
@@ -564,7 +577,7 @@ int main(int argc, char **argv)
     fclose(testfile);
 
     /* jxta_piperesolver_msg_print_xml(ad,fprintf,stdout); */
-    jxta_piperesolver_msg_delete(ad);
+    piperesolver_msg_delete(ad);
 
     return 0;
 }

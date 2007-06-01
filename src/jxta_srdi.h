@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi.h,v 1.14 2006/08/11 14:47:11 mmx2005 Exp $
+ * $Id: jxta_srdi.h,v 1.16 2007/03/28 03:01:36 mmx2005 Exp $
  */
 
 
@@ -70,14 +70,9 @@ extern "C" {
 #endif
 #endif
 
-#ifdef WIN32
-#define JXTA_SEQUENCE_NUMBER_FMT "%I64u"
-typedef unsigned __int64 Jxta_sequence_number;
-#else
-#define JXTA_SEQUENCE_NUMBER_FMT "%llu"
-typedef unsigned long long Jxta_sequence_number;
+#define JXTA_SEQUENCE_NUMBER_FMT "%"APR_UINT64_T_FMT
+typedef apr_uint64_t Jxta_sequence_number;
 
-#endif
 typedef struct _Jxta_SRDIMessage Jxta_SRDIMessage;
 typedef struct _jxta_EntryElement Jxta_SRDIEntryElement;
 

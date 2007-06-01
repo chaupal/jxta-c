@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_svc.c,v 1.58 2006/10/31 19:55:33 bondolo Exp $
+ * $Id: jxta_svc.c,v 1.59 2007/04/24 21:51:33 slowhog Exp $
  */
 
 static const char *__log_cat = "SVCADV";
@@ -64,6 +64,7 @@ static const char *__log_cat = "SVCADV";
 #include "jxta_log.h"
 #include "jxta_svc.h"
 #include "jxta_tta.h"
+#include "jxta_tls_config_adv.h"
 #include "jxta_hta.h"
 #include "jxta_discovery_config_adv.h"
 #include "jxta_endpoint_config_adv.h"
@@ -88,6 +89,7 @@ enum tokentype {
     DiscoveryConfigAdvertisement_,
     RdvConfigAdvertisement_,
     SrdiConfigAdvertisement_,
+    TlsConfigAdvertisement_,
     EndPointConfigAdvertisement_,
     RelayConfigAdvertisement_,
     isClient_,
@@ -320,18 +322,40 @@ static void handleSrdiConfigAdv(void *me, const XML_Char * cd, int len)
     JXTA_OBJECT_CHECK_VALID(ad);
     
     if (len == 0) {
-    Jxta_SrdiConfigAdvertisement *srdiConfig = jxta_SrdiConfigAdvertisement_new();
+        Jxta_SrdiConfigAdvertisement *srdiConfig = jxta_SrdiConfigAdvertisement_new();
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <jxta:SrdiConfig> Element [%pp]\n", ad );
 
         jxta_svc_set_SrdiConfig(ad, srdiConfig);
 
-    jxta_advertisement_set_handlers((Jxta_advertisement *) srdiConfig, ((Jxta_advertisement *) ad)->parser, (void *) ad);
-    JXTA_OBJECT_RELEASE(srdiConfig);
+        jxta_advertisement_set_handlers((Jxta_advertisement *) srdiConfig, ((Jxta_advertisement *) ad)->parser, (void *) ad);
+        JXTA_OBJECT_RELEASE(srdiConfig);
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <jxta:SrdiConfig> Element [%pp]\n", ad );
     }
 }
+
+static void handleTlsConfigAdv(void *userdata, const XML_Char * cd, int len)
+{
+    Jxta_svc *ad = (Jxta_svc *) userdata;
+
+    if (len == 0) {
+        Jxta_TlsConfigAdvertisement *tlsConfig = jxta_TlsConfigAdvertisement_new();
+
+        jxta_svc_set_TlsConfig(ad, tlsConfig);
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Begin Svc handleTlsConfig\n");
+
+        jxta_advertisement_set_handlers((Jxta_advertisement *) tlsConfig, ((Jxta_advertisement *) ad)->parser, (void *) ad);
+
+        ((Jxta_advertisement *) tlsConfig)->atts = ((Jxta_advertisement *) ad)->atts;
+        handleJxta_TlsConfigAdvertisement(tlsConfig, cd, len);
+        JXTA_OBJECT_RELEASE(tlsConfig);
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "END Svc handleTlsConfig\n");
+    }
+}
+
 
 static void handleEndPointConfigAdv(void *me, const XML_Char * cd, int len)
 {
@@ -346,8 +370,8 @@ static void handleEndPointConfigAdv(void *me, const XML_Char * cd, int len)
 
         jxta_svc_set_EndPointConfig(ad, endpointConfig);
 
-    jxta_advertisement_set_handlers((Jxta_advertisement *) endpointConfig, ((Jxta_advertisement *) ad)->parser, (void *) ad);
-    JXTA_OBJECT_RELEASE(endpointConfig);
+        jxta_advertisement_set_handlers((Jxta_advertisement *) endpointConfig, ((Jxta_advertisement *) ad)->parser, (void *) ad);
+        JXTA_OBJECT_RELEASE(endpointConfig);
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <jxta:EndPointConfig> Element [%pp]\n", ad );
     }
@@ -391,12 +415,12 @@ static void handleHttpRelay(void *me, const XML_Char * cd, int len)
             jxta_svc_set_RelayAdvertisement( ad, relayConfig );
         }
 
-    jstring_append_0(relay, cd, len);
-    jstring_trim(relay);
+        jstring_append_0(relay, cd, len);
+        jstring_trim(relay);
 
         jxta_RelayAdvertisement_add_HttpRelay(relayConfig, relay );
 
-    JXTA_OBJECT_RELEASE(relay);
+        JXTA_OBJECT_RELEASE(relay);
         JXTA_OBJECT_RELEASE(relayConfig);
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH DEPRECATED <httpaddress> Element [%pp]\n", ad );
@@ -422,8 +446,8 @@ static void handleTcpRelay(void *me, const XML_Char * cd, int len)
             jxta_svc_set_RelayAdvertisement( ad, relayConfig );
         }
 
-    jstring_append_0(relay, cd, len);
-    jstring_trim(relay);
+        jstring_append_0(relay, cd, len);
+        jstring_trim(relay);
 
         jxta_RelayAdvertisement_add_TcpRelay(relayConfig, relay );
 
@@ -646,6 +670,16 @@ JXTA_DECLARE(void) jxta_svc_set_SrdiConfig(Jxta_svc * ad, Jxta_SrdiConfigAdverti
     jxta_svc_set_Parm( ad, (Jxta_advertisement *) srdiConfig );
 }
 
+JXTA_DECLARE(Jxta_TlsConfigAdvertisement *) jxta_svc_get_TlsConfig(Jxta_svc * ad)
+{
+    return (Jxta_TlsConfigAdvertisement*) jxta_svc_get_Parm_type( ad, "jxta:TlsConfig" );
+}
+
+JXTA_DECLARE(void) jxta_svc_set_TlsConfig(Jxta_svc * ad, Jxta_TlsConfigAdvertisement * tlsConfig)
+{
+    jxta_svc_set_Parm( ad, (Jxta_advertisement *) tlsConfig );
+}
+
 JXTA_DECLARE(Jxta_EndPointConfigAdvertisement *) jxta_svc_get_EndPointConfig(Jxta_svc * ad)
 {
     return (Jxta_EndPointConfigAdvertisement*) jxta_svc_get_Parm_type( ad, "jxta:EndPointConfig" );
@@ -684,6 +718,7 @@ static const Kwdtab Svc_tags[] = {
     {"jxta:EndPointConfig", EndPointConfigAdvertisement_, *handleEndPointConfigAdv, NULL, NULL},
     {"jxta:RdvConfig", RdvConfigAdvertisement_, *handleRdvConfigAdv, NULL, NULL},
     {"jxta:SrdiConfig", SrdiConfigAdvertisement_, *handleSrdiConfigAdv, NULL, NULL},
+    {"jxta:TlsConfig", TlsConfigAdvertisement_, *handleTlsConfigAdv, NULL, NULL},
     {"jxta:TCPTransportAdvertisement", TCPTransportAdvertisement_, *handleTCPTransportAdvertisement, NULL, NULL},
     {"jxta:HTTPTransportAdvertisement", HTTPTransportAdvertisement_, *handleHTTPTransportAdvertisement, NULL, NULL},
     {"jxta:RelayAdvertisement", RelayConfigAdvertisement_, *handleRelayConfig, NULL, NULL},

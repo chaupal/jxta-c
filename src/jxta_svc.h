@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_svc.h,v 1.14 2006/10/31 19:55:33 bondolo Exp $
+ * $Id: jxta_svc.h,v 1.15 2007/04/24 21:51:33 slowhog Exp $
  */
 
 
@@ -64,6 +64,7 @@
 #include "jxta_discovery_config_adv.h"
 #include "jxta_endpoint_config_adv.h"
 #include "jxta_rdv_config_adv.h"
+#include "jxta_tls_config_adv.h"
 #include "jxta_srdi_config_adv.h"
 #include "jxta_relaya.h"
 #include "jxta_routea.h"
@@ -195,6 +196,18 @@ JXTA_DECLARE(Jxta_SrdiConfigAdvertisement *) jxta_svc_get_SrdiConfig(Jxta_svc *)
  * to remove the element.
  */
 JXTA_DECLARE(void) jxta_svc_set_SrdiConfig(Jxta_svc *, Jxta_SrdiConfigAdvertisement *);
+
+/*
+ * Unlike similar mutators in other advs, it is valid to pass NULL as a means
+ * to remove the element.
+ */
+JXTA_DECLARE(Jxta_TlsConfigAdvertisement *) jxta_svc_get_TlsConfig(Jxta_svc *);
+
+/*
+ * Unlike similar mutators in other advs, it is valid to pass NULL as a means
+ * to remove the element.
+ */
+JXTA_DECLARE(void) jxta_svc_set_TlsConfig(Jxta_svc *, Jxta_TlsConfigAdvertisement *);
 
 /*
  * Unlike similar accessors in other advs, this one may return NULL if

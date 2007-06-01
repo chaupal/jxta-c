@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup.h,v 1.20 2006/12/16 07:38:49 slowhog Exp $
+ * $Id: jxta_peergroup.h,v 1.21 2007/04/24 21:51:33 slowhog Exp $
  */
 
 #ifndef JXTA_PEERGROUP_H
@@ -164,6 +164,7 @@ JXTA_DECLARE(Jxta_MSID *) jxta_genericpeergroup_specid_get(void);
 #define jxta_peerinfo_classid             jxta_peerinfo_classid_get            ()
 #define jxta_endpoint_classid             jxta_endpoint_classid_get            ()
 #define jxta_tcpproto_classid             jxta_tcpproto_classid_get            ()
+#define jxta_tlsproto_classid             jxta_tlsproto_classid_get            ()
 #define jxta_httpproto_classid            jxta_httpproto_classid_get           ()
 #define jxta_routerproto_classid          jxta_routerproto_classid_get         ()
 #define jxta_relayproto_classid           jxta_relayproto_classid_get          ()

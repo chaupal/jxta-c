@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_walk_msg.c,v 1.11 2006/08/03 21:34:21 bondolo Exp $
+ * $Id: jxta_walk_msg.c,v 1.12 2007/04/27 08:17:26 mmx2005 Exp $
  */
 
 static const char *__log_cat = "WalkMsg";
@@ -111,36 +111,42 @@ static void handleLimitedRangeRdvMessage(void *userdata, const XML_Char * cd, in
 static void handleTTL(void *userdata, const XML_Char * cd, int len)
 {
     LimitedRangeRdvMessage *ad = (LimitedRangeRdvMessage *) userdata;
+	char *tok;
 
-    char *tok = (char *) calloc(len + 1, sizeof(char));
+	if(len == 0)
+		return;
 
+    tok = (char *) calloc(len + 1, sizeof(char));
     extract_char_data(cd, len, tok);
-
     if (strlen(tok) != 0) {
         ad->ttl = atoi(tok);
     }
-
     free(tok);
 }
 
 static void handleDir(void *userdata, const XML_Char * cd, int len)
 {
     LimitedRangeRdvMessage *ad = (LimitedRangeRdvMessage *) userdata;
+    char *tok;
 
-    char *tok = (char *) calloc(len + 1, sizeof(char));
+	if(len == 0)
+		return;
 
+	tok = (char *) calloc(len + 1, sizeof(char));
     extract_char_data(cd, len, tok);
-
     if (strlen(tok) != 0) {
         ad->dir = (Walk_direction) atoi(tok);
     }
-
     free(tok);
 }
 
 static void handleSrcPeerID(void *userdata, const XML_Char * cd, int len)
 {
     LimitedRangeRdvMessage *ad = (LimitedRangeRdvMessage *) userdata;
+
+	if(len == 0)
+		return;
+
     if (NULL == ad->src_peer_id) {
         ad->src_peer_id = jstring_new_1(len);
     }
@@ -151,6 +157,10 @@ static void handleSrcPeerID(void *userdata, const XML_Char * cd, int len)
 static void handleSrcSvcName(void *userdata, const XML_Char * cd, int len)
 {
     LimitedRangeRdvMessage *ad = (LimitedRangeRdvMessage *) userdata;
+
+	if(len == 0)
+		return;
+
     if (NULL == ad->svc_name) {
         ad->svc_name = jstring_new_1(len);
     }
@@ -161,6 +171,10 @@ static void handleSrcSvcName(void *userdata, const XML_Char * cd, int len)
 static void handleSrcSvcParams(void *userdata, const XML_Char * cd, int len)
 {
     LimitedRangeRdvMessage *ad = (LimitedRangeRdvMessage *) userdata;
+
+	if(len == 0)
+		return;
+
     if (NULL == ad->svc_params) {
         ad->svc_params = jstring_new_1(len);
     }
@@ -205,7 +219,7 @@ JXTA_DECLARE(void) LimitedRangeRdvMessage_set_SrcPeerID(LimitedRangeRdvMessage *
     }
 
     if (src_peer_id != NULL) {
-        ad->svc_name = jstring_new_2(src_peer_id);
+        ad->src_peer_id = jstring_new_2(src_peer_id);
     }
 }
 

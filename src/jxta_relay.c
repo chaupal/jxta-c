@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_relay.c,v 1.61 2007/01/06 01:45:12 slowhog Exp $
+ * $Id: jxta_relay.c,v 1.62 2007/04/25 04:33:57 mmx2005 Exp $
  */
 #include <stdlib.h> /* for atoi */
 
@@ -1630,35 +1630,35 @@ static Jxta_status search_remote_relay_advertisements(_jxta_transport_relay *sel
 	Jxta_vector* search_results;
 	Jxta_boolean looked_once=FALSE;
 	unsigned int i;
+	const char *attr = "RdvServiceName";
+	const char *value = "uuid-DEADBEEFDEAFBABAFEEDBABE0000000F05";
 
 	jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Start remote discovery of relay advertisements\n");
 
 	jxta_PG_get_discovery_service(self->group, &discovery);
 
 	while(self->running && (!looked_once || ((jxta_vector_size(self->peers) == 0) && continue_until_discovered))) {
-		JString *attr = jstring_new_2("RdvServiceName");
-		JString *value = jstring_new_2("uuid-DEADBEEFDEAFBABAFEEDBABE0000000F05");
-
 		looked_once=TRUE;
 
 		/* search for a relay advertisement */
 		discovery_service_get_remote_advertisements(discovery,NULL,DISC_ADV,
-			(char *) jstring_get_string(attr),
-			(char *) jstring_get_string(value),responses,NULL);
+			attr, value, responses, NULL);
 
 		/* wait 40 seconds */
         apr_thread_mutex_lock(self->stop_mutex);
         apr_thread_cond_timedwait(self->stop_cond, self->stop_mutex, 40*1000*1000);
         apr_thread_mutex_unlock(self->stop_mutex);
 
+		if(self->running == JXTA_FALSE){
+			break;
+		}
+
+		/* !!! TO FIX: advertisements got from remote peers might NOT be published into CM.
+					   refer to discovery_service_response_listener.	
+		*/
 		/* get them from local cache */
 		discovery_service_get_local_advertisements(discovery,
-			DISC_ADV,
-			(char *) jstring_get_string(attr),
-			(char *) jstring_get_string(value), &search_results);
-
-        JXTA_OBJECT_RELEASE(attr);
-        JXTA_OBJECT_RELEASE(value);
+			DISC_ADV, attr, value, &search_results);
 
 		if (search_results!=NULL) {
 

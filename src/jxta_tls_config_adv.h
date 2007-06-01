@@ -1,6 +1,5 @@
-/*
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights
- * reserved.
+/* 
+ * Copyright (c) 2002 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,7 +29,7 @@
  *    nor may "JXTA" appear in their name, without prior written
  *    permission of Sun.
  *
- * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
+ * THIS SOFTWARE IS PROVIDED AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
  * DISCLAIMED.  IN NO EVENT SHALL SUN MICROSYSTEMS OR
@@ -51,31 +50,51 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_builtinmodules.c,v 1.18 2007/04/24 21:51:33 slowhog Exp $
+ * $Id $
  */
 
-#include <stddef.h>
+#ifndef JXTA_TLSCONFIGADVERTISEMENT_H__
+#define JXTA_TLSCONFIGADVERTISEMENT_H__
 
-#include "jxta_builtinmodules_private.h"
+#include "jxta_types.h"
+#include "jxta_advertisement.h"
 
-/*
- * Placeholder for the real table, generated at link time (one day).
- */
-Jxta_builtinmodule_record jxta_builtinmodules_tbl[] = {
-    {"endpoint_service", jxta_endpoint_service_new_instance},
-    {"rdv_service", jxta_rdv_service_new_instance},
-    {"netpg", jxta_netpg_new_instance},
-    {"stdpg", jxta_stdpg_new_instance},
-    {"resolver_service_ref", jxta_resolver_service_ref_new_instance},
-    {"discovery_service_ref", jxta_discovery_service_ref_new_instance},
-    {"transport_http", jxta_transport_http_new_instance},
-    {"transport_tcp", jxta_transport_tcp_new_instance},
-    {"transport_tls", jxta_transport_tls_new_instance},
-    {"router_client", jxta_router_client_new_instance},
-    {"pipe_service", jxta_pipe_service_new_instance},
-    {"null_membership_service", jxta_membership_service_null_new_instance},
-    {"relay", jxta_transport_relay_new_instance},
-    {"srdi_service_ref", jxta_srdi_service_ref_new_instance},
-/*  { "peerinfo_service", jxta_peerinfo_service_new_instance }, */
-    {NULL, NULL}    /* must stay at the end */
+#include <openssl/ssl.h>
+
+#ifdef __cplusplus
+extern "C" {
+#if 0
 };
+#endif
+#endif
+typedef struct _jxta_TlsConfigAdvertisement Jxta_TlsConfigAdvertisement;
+
+#define TLSCONF_CERT_FORMAT_PEM 0
+#define TLSCONF_CERT_FORMAT_JXTA 1
+
+JXTA_DECLARE(Jxta_TlsConfigAdvertisement *) jxta_TlsConfigAdvertisement_new(void);
+JXTA_DECLARE(Jxta_status) jxta_TlsConfigAdvertisement_get_xml(Jxta_TlsConfigAdvertisement *, JString **);
+JXTA_DECLARE(Jxta_vector *) jxta_TlsConfigAdvertisement_get_indexes(void);
+
+JXTA_DECLARE(X509 *) jxta_TLSConfigAdvertisement_get_Certificate(Jxta_TlsConfigAdvertisement * ad);
+JXTA_DECLARE(EVP_PKEY *) jxta_TLSConfigAdvertisement_get_PrivateKey(Jxta_TlsConfigAdvertisement * ad, const char *pwd);
+JXTA_DECLARE(JString *) jxta_TLSConfigAdvertisement_get_CAChainFile(Jxta_TlsConfigAdvertisement * ad);
+JXTA_DECLARE(JString *) jxta_TLSConfigAdvertisement_get_Signature(Jxta_TlsConfigAdvertisement * ad);
+JXTA_DECLARE(JString *) jxta_TLSConfigAdvertisement_get_Format(Jxta_TlsConfigAdvertisement * ad);
+
+
+/**
+*   For other advertisement types which want to parse TlsConfig as a sub-section.    
+**/
+void handleJxta_TlsConfigAdvertisement(void *userdata, const XML_Char * cd, int len);
+
+#ifdef __cplusplus
+#if 0
+{
+#endif
+}
+#endif
+
+#endif /* JXTA_SRDICONFIGADVERTISEMENT_H__  */
+
+/* vim: set ts=4 sw=4 et tw=130: */

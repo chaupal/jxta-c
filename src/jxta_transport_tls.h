@@ -51,31 +51,36 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_builtinmodules.c,v 1.18 2007/04/24 21:51:33 slowhog Exp $
+ * $Id: jxta_transport_tls.h,v 1.1 2007/04/24 21:51:34 slowhog Exp $
  */
 
-#include <stddef.h>
+#ifndef __JXTA_TRANSPORT_TLS_H__
+#define __JXTA_TRANSPORT_TLS_H__
 
-#include "jxta_builtinmodules_private.h"
+#include "jxta_apr.h"
+#include "jxta_module.h"
 
-/*
- * Placeholder for the real table, generated at link time (one day).
- */
-Jxta_builtinmodule_record jxta_builtinmodules_tbl[] = {
-    {"endpoint_service", jxta_endpoint_service_new_instance},
-    {"rdv_service", jxta_rdv_service_new_instance},
-    {"netpg", jxta_netpg_new_instance},
-    {"stdpg", jxta_stdpg_new_instance},
-    {"resolver_service_ref", jxta_resolver_service_ref_new_instance},
-    {"discovery_service_ref", jxta_discovery_service_ref_new_instance},
-    {"transport_http", jxta_transport_http_new_instance},
-    {"transport_tcp", jxta_transport_tcp_new_instance},
-    {"transport_tls", jxta_transport_tls_new_instance},
-    {"router_client", jxta_router_client_new_instance},
-    {"pipe_service", jxta_pipe_service_new_instance},
-    {"null_membership_service", jxta_membership_service_null_new_instance},
-    {"relay", jxta_transport_relay_new_instance},
-    {"srdi_service_ref", jxta_srdi_service_ref_new_instance},
-/*  { "peerinfo_service", jxta_peerinfo_service_new_instance }, */
-    {NULL, NULL}    /* must stay at the end */
+#ifdef __cplusplus
+extern "C" {
+#if 0
 };
+#endif
+#endif
+
+/**
+ * This method needs to be called to initialize the certificates for the TLS-transport.
+ * @param the group, for which the TLS-transport is to be configured
+ * @param passphrase to decrypt private key
+ */
+JXTA_DECLARE(Jxta_status) jxta_transport_tls_init_certificates(Jxta_PG * group, const char *pwd);
+
+#ifdef __cplusplus
+#if 0
+{
+#endif
+}
+#endif
+
+#endif /* __JXTA_TRANSPORT_TLS_H__ */
+
+/* vim: set ts=4 sw=4 tw=130 et: */

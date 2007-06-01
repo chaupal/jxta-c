@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_main.c,v 1.35 2007/03/23 18:14:57 slowhog Exp $
+ * $Id: jxta_shell_main.c,v 1.36 2007/04/24 21:51:32 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -75,6 +75,8 @@
 #include "jxta_shell_environment.h"
 #include "jxta_shell_getopt.h"
 #include "jxta_shell_main.h"
+
+#include "jxta_transport_tls.h"
 
 #include "jxta_shell_app_env.h"
 
@@ -226,7 +228,6 @@ void ShellStartupApplication_stdin(Jxta_object * app, JString * inputLine)
     }
 }
 
-
 void ShellStartupApplication_start(Jxta_object * parent, int argv, char **arg)
 {
     ShellStartupApplication *frame = (ShellStartupApplication *) parent;
@@ -259,6 +260,30 @@ void ShellStartupApplication_start(Jxta_object * parent, int argv, char **arg)
     printf("\n");
     printf("A 'man' command is available to list the commands available.\n");
     printf("To exit the Shell, use the 'exit' command.\n");
+    printf("\n");
+
+	{
+		Jxta_status ret = JXTA_INVALID_ARGUMENT;
+
+		while (ret == JXTA_INVALID_ARGUMENT)
+		{
+			int size = 20;
+			char *buf = malloc(sizeof(char) * size);
+
+			apr_password_get("Please enter your certificate-passphrase for TLS: ", buf, &size);
+
+			ret = jxta_transport_tls_init_certificates(JxtaShellApplication_peergroup(frame->app), buf);
+
+			free(buf); 
+
+			if (ret != JXTA_SUCCESS)
+				if (ret == JXTA_INVALID_ARGUMENT)
+					printf("Passphrase wrong; try again...\n");
+				else
+					printf("Could not initialize tls-transport; tls won't work!\n");
+		}
+	}
+
     printf("\n");
     printf("JXTA>");
 

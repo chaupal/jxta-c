@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_service_ref.c,v 1.119 2007/03/19 01:00:20 mmx2005 Exp $
+ * $Id: jxta_resolver_service_ref.c,v 1.122 2007/04/19 23:44:06 mmx2005 Exp $
  */
 
 static const char *__log_cat = "RSLVR";
@@ -267,6 +267,7 @@ static Jxta_status start(Jxta_module * resolver, const char *argv[])
 
     if (argv) {
     }
+
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Starting ...\n");
 
     rv = endpoint_service_add_recipient(self->endpoint, &self->ep_cookies[0], self->instanceName,
@@ -325,7 +326,6 @@ static void stop(Jxta_module * resolver)
  */
 static void get_mia(Jxta_service * resolver, Jxta_advertisement ** mia)
 {
-
     Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
     PTValid(self, Jxta_resolver_service_ref);
 
@@ -363,6 +363,7 @@ Jxta_status registerQueryHandler(Jxta_resolver_service * resolver, JString * nam
     char const *hashname;
     Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
     PTValid(self, Jxta_resolver_service_ref);
+
     hashname = jstring_get_string(name);
 
     if (strlen(hashname) != 0) {
@@ -409,6 +410,7 @@ Jxta_status registerSrdiHandler(Jxta_resolver_service * resolver, JString * name
     char const *hashname;
     Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
     PTValid(self, Jxta_resolver_service_ref);
+
     hashname = jstring_get_string(name);
 
     if (strlen(hashname) != 0) {
@@ -431,7 +433,6 @@ static Jxta_status unregisterSrdiHandler(Jxta_resolver_service * resolver, JStri
     Jxta_object *ignore = 0;
     char const *hashname;
     Jxta_status status;
-
     Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
     PTValid(self, Jxta_resolver_service_ref);
 
@@ -687,7 +688,12 @@ static void mru_check(Jxta_resolver_service_ref * me, ResolverQuery * query, Jxt
     me->mru[me->mru_pos++] = JXTA_OBJECT_SHARE(peerid);
     if (me->mru_pos >= me->mru_capacity) {
         me->mru_pos = 0;
+    } 
+	
+	if (me->mru_size < me->mru_capacity) {
+		me->mru_size++;
     }
+
     apr_thread_mutex_unlock(me->mutex);
 
     route = jxta_endpoint_service_get_local_route(me->endpoint);
@@ -763,7 +769,6 @@ static Jxta_status sendResponse(Jxta_resolver_service * resolver, ResolverRespon
 
 static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * message, Jxta_id * peerid)
 {
-
     Jxta_message *msg = NULL;
     Jxta_message_element *msgElem = NULL;
     Jxta_endpoint_address *address = NULL;
@@ -1375,7 +1380,6 @@ static Jxta_status JXTA_STDCALL resolver_service_srdi_cb(Jxta_object * obj, void
  */
 static long getid(Jxta_resolver_service_ref * resolver)
 {
-
     PTValid(resolver, Jxta_resolver_service_ref);
     apr_thread_mutex_lock(resolver->mutex);
     resolver->query_id++;
@@ -1387,7 +1391,6 @@ static long getid(Jxta_resolver_service_ref * resolver)
 #ifdef GUNZIP_ENABLED
 static int zip_uncompress(Byte * dest, uLong * destLen, Byte * source, uLong sourceLen)
 {
-
     z_stream stream;
     int err;
     stream.next_in = (Bytef *) source;

@@ -112,7 +112,9 @@ include_HEADERS = EndpointRouter.h          \
                   jxta_range.h \
 		  jxta_callback.h \
 		  jxta_constants.h \
-		  jxta_qos.h
+		  jxta_qos.h \
+		  jxta_tls_config_adv.h \
+		  jxta_transport_tls.h
 
 
 libjxta_la_SOURCES = jstring.c                      \
@@ -251,5 +253,10 @@ libjxta_la_SOURCES = jstring.c                      \
 		     jxta_util_priv.c                   \
 		     jxta_callback.c                    \
 		     jxta_constants.c			\
-		     jxta_qos.c
+		     jxta_qos.c \
+		     jxta_transport_tls_private.h \
+		     jxta_tls_config_adv.c \
+		     jxta_transport_tls.c \
+		     jxta_transport_tls_connection.c \
+		     jxta_securepipe_service.c
 

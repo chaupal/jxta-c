@@ -50,8 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bytevector.c,v 1.22 2006/02/21 17:12:30 slowhog Exp $
+ * $Id: jxta_bytevector.c,v 1.23 2007/04/22 22:45:00 mmx2005 Exp $
  */
+
+static const char *__log_cat = "bytevector";
 
 #include <stdlib.h>
 
@@ -136,7 +138,6 @@ static void jxta_bytevector_free_nothing(Jxta_object * vector)
  *************************************************************************/
 JXTA_DECLARE(Jxta_bytevector *) jxta_bytevector_new_0(void)
 {
-
     return jxta_bytevector_new_1(INDEX_DEFAULT_SIZE);
 }
 
@@ -145,7 +146,6 @@ JXTA_DECLARE(Jxta_bytevector *) jxta_bytevector_new_0(void)
  *************************************************************************/
 JXTA_DECLARE(Jxta_bytevector *) jxta_bytevector_new_1(size_t initialSize)
 {
-
     Jxta_bytevector_mutable *self;
 
     /* Create the vector object */
@@ -174,28 +174,27 @@ JXTA_DECLARE(Jxta_bytevector *) jxta_bytevector_new_1(size_t initialSize)
  *************************************************************************/
 JXTA_DECLARE(Jxta_bytevector *) jxta_bytevector_new_2(unsigned char *initialPtr, size_t initialSize, size_t initialCapacity)
 {
-
     Jxta_bytevector_mutable *self;
 
     if (NULL == initialPtr) {
-        JXTA_LOG("initial ptr must me non-NULL");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "initial ptr must me non-NULL");
         return NULL;
     }
 
     if (initialCapacity == 0) {
-        JXTA_LOG("Capacity must be greater than zero");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Capacity must be greater than zero");
         return NULL;
     }
 
     if (initialCapacity < initialSize) {
-        JXTA_LOG("Capacity must be greater or equal to Size");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Capacity must be greater or equal to Size");
         return NULL;
     }
 
     /* Create the vector object */
     self = (Jxta_bytevector_mutable *) malloc(sizeof(Jxta_bytevector_mutable));
     if (self == NULL) {
-        JXTA_LOG("object allocation failed.");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "object allocation failed.");
         return NULL;
     }
 
@@ -213,7 +212,7 @@ JXTA_DECLARE(Jxta_bytevector *) jxta_bytevector_new_2(unsigned char *initialPtr,
         initialPtr = (unsigned char *) realloc(initialPtr, initialCapacity);
 
         if (NULL == initialPtr) {
-            JXTA_LOG("realloc failed, probably not a malloc ptr.");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "realloc failed, probably not a malloc ptr.");
             free(self);
             self = NULL;
             return NULL;
@@ -266,12 +265,11 @@ JXTA_DECLARE(Jxta_bytevector *) jxta_bytevector_new_3(char *content, size_t leng
  *************************************************************************/
 JXTA_DECLARE(Jxta_status) jxta_bytevector_set_synchronized(Jxta_bytevector * vector)
 {
-
     Jxta_bytevector_mutable *self = (Jxta_bytevector_mutable *) vector;
     apr_status_t res;
 
     if (!JXTA_OBJECT_CHECK_VALID(self)) {
-        JXTA_LOG("invalid vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid vector");
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -305,7 +303,6 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_set_synchronized(Jxta_bytevector * vec
  *************************************************************************/
 JXTA_DECLARE(Jxta_status) jxta_bytevector_clear(Jxta_bytevector * vector, size_t initialSize)
 {
-
     Jxta_bytevector_mutable *self = (Jxta_bytevector_mutable *) vector;
     Jxta_status res;
 
@@ -315,7 +312,7 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_clear(Jxta_bytevector * vector, size_t
         initialSize = INDEX_DEFAULT_SIZE;
 
     if (!JXTA_OBJECT_CHECK_VALID(self)) {
-        JXTA_LOG("invalid vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid vector");
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -344,11 +341,10 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_clear(Jxta_bytevector * vector, size_t
  *************************************************************************/
 static Jxta_status ensure_capacity(Jxta_bytevector_mutable * vector, size_t requiredSize)
 {
-
     _byte_t *newContent;
 
     if (!JXTA_OBJECT_CHECK_VALID(vector)) {
-        JXTA_LOG("invalid vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid vector");
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -381,6 +377,7 @@ static Jxta_status ensure_capacity(Jxta_bytevector_mutable * vector, size_t requ
 JXTA_DECLARE(const char *) jxta_bytevector_content_ptr(Jxta_bytevector * vector)
 {
     Jxta_bytevector_mutable *self = (Jxta_bytevector_mutable *) vector;
+
     return (char *) self->usr.content;
 }
 
@@ -389,11 +386,10 @@ JXTA_DECLARE(const char *) jxta_bytevector_content_ptr(Jxta_bytevector * vector)
  *************************************************************************/
 JXTA_DECLARE(Jxta_status) jxta_bytevector_add_byte_at(Jxta_bytevector * vector, unsigned char byte, unsigned int at_index)
 {
-
     Jxta_status err;
 
     if (!JXTA_OBJECT_CHECK_VALID(vector)) {
-        JXTA_LOG("invalid vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid vector");
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -406,7 +402,6 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_add_byte_at(Jxta_bytevector * vector, 
  *************************************************************************/
 JXTA_DECLARE(Jxta_status) jxta_bytevector_add_byte_first(Jxta_bytevector * vector, unsigned char byte)
 {
-
     return jxta_bytevector_add_byte_at(vector, byte, 0);
 }
 
@@ -419,7 +414,7 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_add_byte_last(Jxta_bytevector * vector
     Jxta_status err;
 
     if (!JXTA_OBJECT_CHECK_VALID(vector)) {
-        JXTA_LOG("invalid vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid vector");
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -438,12 +433,11 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_add_byte_last(Jxta_bytevector * vector
 JXTA_DECLARE(Jxta_status) jxta_bytevector_add_bytes_at(Jxta_bytevector * vector, unsigned char const *bytes,
                                                        unsigned int at_index, size_t length)
 {
-
     Jxta_bytevector_mutable *self = (Jxta_bytevector_mutable *) vector;
     Jxta_status res;
 
     if (!JXTA_OBJECT_CHECK_VALID(self)) {
-        JXTA_LOG("invalid vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid vector");
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -451,14 +445,14 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_add_bytes_at(Jxta_bytevector * vector,
         apr_thread_mutex_lock(self->usr.mutex);
 
     if (at_index > self->usr.size) {
-        JXTA_LOG("index %d is out of bounds (size of vector= %d)\n", at_index, self->usr.size);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "index %d is out of bounds (size of vector= %d)\n", at_index, self->usr.size);
         res = JXTA_INVALID_ARGUMENT;
         goto Common_Exit;
     }
 
     res = ensure_capacity(self, (self->usr.size + length));
     if (JXTA_SUCCESS != res) {
-        JXTA_LOG("Could not allocate suffcient space for elements\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Could not allocate suffcient space for elements\n");
         goto Common_Exit;
     }
 
@@ -492,16 +486,15 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_add_bytevector_at(Jxta_bytevector * ve
                                                             unsigned int dstindex)
 {
     Jxta_status err;
-
     Jxta_bytevector_mutable *self = (Jxta_bytevector_mutable *) vector;
 
     if (!JXTA_OBJECT_CHECK_VALID(self)) {
-        JXTA_LOG("invalid target vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid target vector");
         return JXTA_INVALID_ARGUMENT;
     }
 
     if (!JXTA_OBJECT_CHECK_VALID(bytes)) {
-        JXTA_LOG("invalid source vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid source vector");
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -530,16 +523,15 @@ JXTA_DECLARE(Jxta_status)
                                           Jxta_bytevector * bytes, unsigned int srcIndex, size_t length, unsigned int dstindex)
 {
     Jxta_status err;
-
     Jxta_bytevector_mutable *self = (Jxta_bytevector_mutable *) vector;
 
     if (!JXTA_OBJECT_CHECK_VALID(self)) {
-        JXTA_LOG("invalid target vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid target vector");
         return JXTA_INVALID_ARGUMENT;
     }
 
     if (!JXTA_OBJECT_CHECK_VALID(bytes)) {
-        JXTA_LOG("invalid source vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid source vector");
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -550,7 +542,7 @@ JXTA_DECLARE(Jxta_status)
         apr_thread_mutex_lock(bytes->usr.mutex);
 
     if (srcIndex >= bytes->usr.size) {
-        JXTA_LOG("Invalid argument\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid argument\n");
         err = JXTA_INVALID_ARGUMENT;
         goto Common_Exit;
     }
@@ -576,16 +568,15 @@ JXTA_DECLARE(Jxta_status)
     jxta_bytevector_add_from_stream_at(Jxta_bytevector * vector, ReadFunc func, void *stream, size_t length, unsigned int at_index)
 {
     Jxta_status err = JXTA_SUCCESS;
-
     Jxta_bytevector_mutable *self = (Jxta_bytevector_mutable *) vector;
 
     if (func == NULL) {
-        JXTA_LOG("Invalid argument\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid argument\n");
         return JXTA_INVALID_ARGUMENT;
     }
 
     if (!JXTA_OBJECT_CHECK_VALID(self)) {
-        JXTA_LOG("invalid vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid vector");
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -602,7 +593,7 @@ JXTA_DECLARE(Jxta_status)
     if (JXTA_SUCCESS != err) {
         Jxta_status res = jxta_bytevector_remove_bytes_at(self, at_index, length);
         if (JXTA_SUCCESS == res)
-            JXTA_LOG("Vector is probably corrupted.");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Vector is probably corrupted.");
         goto Common_Exit;
     }
 
@@ -621,21 +612,20 @@ JXTA_DECLARE(Jxta_status)
     jxta_bytevector_set_from_stream_at(Jxta_bytevector * vector, ReadFunc func, void *stream, size_t length, unsigned int at_index)
 {
     Jxta_status err = JXTA_SUCCESS;
-
     Jxta_bytevector_mutable *self = (Jxta_bytevector_mutable *) vector;
 
     if (func == NULL) {
-        JXTA_LOG("Invalid argument\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid argument\n");
         return JXTA_INVALID_ARGUMENT;
     }
 
     if (!JXTA_OBJECT_CHECK_VALID(self)) {
-        JXTA_LOG("invalid vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid vector");
         return JXTA_INVALID_ARGUMENT;
     }
 
     if (length > (self->usr.capacity - at_index)) {
-        JXTA_LOG("Invalid length");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid length");
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -649,7 +639,7 @@ JXTA_DECLARE(Jxta_status)
     if (JXTA_SUCCESS != err) {
         Jxta_status res = jxta_bytevector_remove_bytes_at(self, at_index, length);
         if (JXTA_SUCCESS == res)
-            JXTA_LOG("Vector is probably corrupted.");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Vector is probably corrupted.");
     }
 
     if (NULL != self->usr.mutex)
@@ -663,7 +653,6 @@ JXTA_DECLARE(Jxta_status)
  *************************************************************************/
 JXTA_DECLARE(Jxta_status) jxta_bytevector_get_byte_at(Jxta_bytevector * vector, unsigned char *byte, unsigned int at_index)
 {
-
     return jxta_bytevector_get_bytes_at(vector, byte, at_index, 1);
 }
 
@@ -679,14 +668,13 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_get_bytes_at(Jxta_bytevector * vector,
 JXTA_DECLARE(Jxta_status) jxta_bytevector_get_bytes_at_1(Jxta_bytevector * vector, unsigned char *bytes, unsigned int at_index,
                                                          size_t * length)
 {
-
     if (!JXTA_OBJECT_CHECK_VALID(vector)) {
-        JXTA_LOG("invalid vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid vector");
         return JXTA_INVALID_ARGUMENT;
     }
 
     if (NULL == bytes) {
-        JXTA_LOG("Invalid argument\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid argument\n");
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -696,7 +684,7 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_get_bytes_at_1(Jxta_bytevector * vecto
     if (at_index >= vector->usr.size) {
         if (NULL != vector->usr.mutex)
             apr_thread_mutex_unlock(vector->usr.mutex);
-        JXTA_LOG("Invalid argument\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid argument\n");
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -715,16 +703,15 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_get_bytes_at_1(Jxta_bytevector * vecto
 JXTA_DECLARE(Jxta_status)
     jxta_bytevector_get_bytevector_at(Jxta_bytevector * source, Jxta_bytevector ** dest, unsigned int at_index, size_t length)
 {
-
     Jxta_status err;
 
     if (!JXTA_OBJECT_CHECK_VALID(source)) {
-        JXTA_LOG("invalid source vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid source vector");
         return JXTA_INVALID_ARGUMENT;
     }
 
     if (NULL == dest) {
-        JXTA_LOG("invalid dest vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid dest vector");
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -732,7 +719,7 @@ JXTA_DECLARE(Jxta_status)
         apr_thread_mutex_lock(source->usr.mutex);
 
     if (at_index >= source->usr.size) {
-        JXTA_LOG("Invalid argument\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid argument\n");
         err = JXTA_INVALID_ARGUMENT;
         goto Common_Exit;
     }
@@ -761,16 +748,15 @@ JXTA_DECLARE(Jxta_status)
 JXTA_DECLARE(Jxta_status) jxta_bytevector_write(Jxta_bytevector * vector, WriteFunc func, void *stream, unsigned int at_index,
                                                 size_t length)
 {
-
     Jxta_status err;
 
     if (!JXTA_OBJECT_CHECK_VALID(vector)) {
-        JXTA_LOG("invalid vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid vector");
         return JXTA_INVALID_ARGUMENT;
     }
 
     if (NULL == func) {
-        JXTA_LOG("Invalid argument\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid argument\n");
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -778,7 +764,7 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_write(Jxta_bytevector * vector, WriteF
         apr_thread_mutex_lock(vector->usr.mutex);
 
     if (at_index >= vector->usr.size) {
-        JXTA_LOG("Invalid argument\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid argument\n");
         err = JXTA_INVALID_ARGUMENT;
         goto Common_Exit;
     }
@@ -799,7 +785,6 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_write(Jxta_bytevector * vector, WriteF
  *************************************************************************/
 JXTA_DECLARE(Jxta_status) jxta_bytevector_remove_byte_at(Jxta_bytevector * vector, unsigned int at_index)
 {
-
     return jxta_bytevector_remove_bytes_at(vector, at_index, 1);
 }
 
@@ -808,11 +793,10 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_remove_byte_at(Jxta_bytevector * vecto
  *************************************************************************/
 JXTA_DECLARE(Jxta_status) jxta_bytevector_remove_bytes_at(Jxta_bytevector * vector, unsigned int at_index, size_t length)
 {
-
     Jxta_bytevector_mutable *self = (Jxta_bytevector_mutable *) vector;
 
     if (!JXTA_OBJECT_CHECK_VALID(vector)) {
-        JXTA_LOG("invalid vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid vector");
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -822,7 +806,7 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_remove_bytes_at(Jxta_bytevector * vect
     if (at_index >= self->usr.size) {
         if (NULL != self->usr.mutex)
             apr_thread_mutex_unlock(self->usr.mutex);
-        JXTA_LOG("Invalid argument\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid argument\n");
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -844,11 +828,10 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_remove_bytes_at(Jxta_bytevector * vect
  *************************************************************************/
 JXTA_DECLARE(size_t) jxta_bytevector_size(Jxta_bytevector * vector)
 {
-
     size_t size;
 
     if (!JXTA_OBJECT_CHECK_VALID(vector)) {
-        JXTA_LOG("invalid vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid vector");
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -868,7 +851,6 @@ JXTA_DECLARE(size_t) jxta_bytevector_size(Jxta_bytevector * vector)
  *************************************************************************/
 JXTA_DECLARE(Jxta_boolean) jxta_bytevector_equals(Jxta_bytevector * vector1, Jxta_bytevector * vector2)
 {
-
     Jxta_boolean result;
 
     if (vector1 == vector2)
@@ -878,12 +860,12 @@ JXTA_DECLARE(Jxta_boolean) jxta_bytevector_equals(Jxta_bytevector * vector1, Jxt
         return FALSE;
 
     if (!JXTA_OBJECT_CHECK_VALID(vector1)) {
-        JXTA_LOG("invalid vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid vector");
         return FALSE;
     }
 
     if (!JXTA_OBJECT_CHECK_VALID(vector2)) {
-        JXTA_LOG("invalid vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid vector");
         return FALSE;
     }
 
@@ -913,11 +895,11 @@ JXTA_DECLARE(Jxta_boolean) jxta_bytevector_equals(Jxta_bytevector * vector1, Jxt
  *************************************************************************/
 JXTA_DECLARE(unsigned int) jxta_bytevector_hashcode(Jxta_bytevector * vector)
 {
-
     unsigned int hashcode;
 
     if (!JXTA_OBJECT_CHECK_VALID(vector)) {
-        JXTA_LOG("invalid vector");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid vector");
+		
         return 0;
     }
 

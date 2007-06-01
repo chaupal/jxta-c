@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_piperesolver_impl.c,v 1.52 2006/09/26 18:28:24 slowhog Exp $
+ * $Id: jxta_piperesolver_impl.c,v 1.54 2007/04/28 10:06:57 mmx2005 Exp $
  */
 
 #include <limits.h>
@@ -93,7 +93,7 @@ typedef struct {
     Jxta_cm *cm;
     Jxta_peerview *rpv;
     Jxta_hashtable *pending_requests;
-    Jxta_callback *query_listener;
+    Jxta_callback *query_callback;
     Jxta_listener *response_listener;
     Jxta_listener *srdi_listener;
     JString *name;
@@ -129,7 +129,7 @@ static Jxta_status pending_request_add(Pipe_resolver *, Pending_request *);
 static Jxta_status pending_request_remove(Pipe_resolver *, Pending_request *);
 static Pending_request *pending_request_new(Jxta_pipe_adv *, Jxta_time_diff, Jxta_peer *, Jxta_listener *);
 
-static Jxta_status JXTA_STDCALL query_listener(Jxta_object * obj, void *arg);
+static Jxta_status JXTA_STDCALL query_callback_func(Jxta_object * obj, void *arg);
 static void JXTA_STDCALL response_listener(Jxta_object * obj, void *arg);
 static void JXTA_STDCALL srdi_listener(Jxta_object * obj, void *arg);
 static Jxta_status send_query(Pipe_resolver * self, Jxta_pipe_adv * adv, Jxta_peer * peer);
@@ -313,13 +313,13 @@ static void piperesolver_free(Jxta_object * obj)
     Pipe_resolver *self = (Pipe_resolver *) obj;
     Jxta_status res;
 
-    if (self->query_listener != NULL) {
+    if (self->query_callback != NULL) {
         res = jxta_resolver_service_unregisterQueryHandler(self->resolver, self->name);
         if (res != JXTA_SUCCESS) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Cannot unregister query handler\n");
         }
-        JXTA_OBJECT_RELEASE(self->query_listener);
-        self->query_listener = NULL;
+        JXTA_OBJECT_RELEASE(self->query_callback);
+        self->query_callback = NULL;
     }
 
     if (self->response_listener != NULL) {
@@ -461,9 +461,9 @@ Jxta_pipe_resolver *jxta_piperesolver_new(Jxta_PG * group)
      ** resolver service.
      **/
 
-    jxta_callback_new(&self->query_listener, query_listener, (void *) self);
+    jxta_callback_new(&self->query_callback, query_callback_func, (void *) self);
 
-    res = jxta_resolver_service_registerQueryHandler(self->resolver, self->name, self->query_listener);
+    res = jxta_resolver_service_registerQueryHandler(self->resolver, self->name, self->query_callback);
 
     if (res != JXTA_SUCCESS) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Cannot register Query Handler to the resolver service\n");
@@ -539,9 +539,7 @@ static Jxta_status pending_request_remove(Pipe_resolver * self, Pending_request 
 {
     const char *pipeid = NULL;
     Jxta_vector *vector = NULL;
-    unsigned int i;
     Jxta_status res = JXTA_SUCCESS;
-    Pending_request *tmp = NULL;
 
     apr_thread_mutex_lock(self->mutex);
 
@@ -560,19 +558,7 @@ static Jxta_status pending_request_remove(Pipe_resolver * self, Pending_request 
         return JXTA_INVALID_ARGUMENT;
     }
 
-    for (i = 0; i < jxta_vector_size(vector); ++i) {
-        res = jxta_vector_get_object_at(vector, JXTA_OBJECT_PPTR(&tmp), i);
-        if (res != JXTA_SUCCESS) {
-            continue;
-        }
-        if (tmp == req) {
-            /* This is the request to remove */
-            res = jxta_vector_remove_object_at(vector, NULL, i);
-            JXTA_OBJECT_RELEASE(tmp);
-            break;
-        }
-        JXTA_OBJECT_RELEASE(tmp);
-    }
+	jxta_vector_remove_object(vector, (Jxta_object*)req);
 
     if (jxta_vector_size(vector) == 0) {
         /* No need to keep an entry for this pipe */
@@ -615,7 +601,6 @@ static void pending_request_free(Jxta_object * obj)
 static Pending_request *pending_request_new(Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_peer * dest,
                                             Jxta_listener * listener)
 {
-
     Pending_request *self = NULL;
     Jxta_time currentTime;
 
@@ -916,10 +901,10 @@ static Jxta_status jxta_pipe_resolver_get_replica_peer(Pipe_resolver * me, Resol
 }
 
 /*
- * Query listener handle's resolver queries for pipe
+ * Query callback handle's resolver queries for pipe
  * @param: Jxta_object *obj: the ResolverQuery
  * @param: void *me: the self pointer
- * @retuen: JXTA_SUCCESS if the query is handled and no more operation is needed. JXTA_ITEM_NOTFOUND if the query cannot be
+ * @return: JXTA_SUCCESS if the query is handled and no more operation is needed. JXTA_ITEM_NOTFOUND if the query cannot be
  * fulfilled. Other values could be returned to indicate an error.
  * 
  * The handler will try to solve the pipe locally. If the query is solved, sends a response back to the inquirer, otherwise, based
@@ -931,7 +916,7 @@ static Jxta_status jxta_pipe_resolver_get_replica_peer(Pipe_resolver * me, Resol
  *
  * By returning a value other than JXTA_SUCCESS, the resolver would try to walk the query.
  */
-static Jxta_status JXTA_STDCALL query_listener(Jxta_object * obj, void *me)
+static Jxta_status JXTA_STDCALL query_callback_func(Jxta_object * obj, void *me)
 {
     Pipe_resolver *_self = (Pipe_resolver *) me;
     ResolverQuery *rq = (ResolverQuery *) obj;
@@ -945,7 +930,6 @@ static Jxta_status JXTA_STDCALL query_listener(Jxta_object * obj, void *me)
     Jxta_id *peer_id = NULL;
     Jxta_vector *peers = NULL;
     Jxta_status res = JXTA_SUCCESS;
-
     Jxta_PA *padv;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "********** PIPE RESOLVER QUERY LISTENER *****************\n");
@@ -961,10 +945,10 @@ static Jxta_status JXTA_STDCALL query_listener(Jxta_object * obj, void *me)
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "   msg type = %s\n", jxta_piperesolver_msg_MsgType(msg));
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "    pipe id = %s\n", jxta_piperesolver_msg_PipeId(msg));
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "  pipe type = %s\n", jxta_piperesolver_msg_Type(msg));
-    if (jxta_piperesolver_msg_get_Peer(msg) != NULL)
+    if (jxta_piperesolver_msg_Peer(msg) != NULL)
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "       peer = %s\n", jxta_piperesolver_msg_Peer(msg));
 
-    if (!strcmp(jxta_piperesolver_msg_get_Type(msg), "JxtaPropagate")) {
+    if (!strcmp(jxta_piperesolver_msg_Type(msg), "JxtaPropagate")) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Get a resolver request for PROPAGATE pipe, ignore it.\n");
         goto FINAL_EXIT;
     }
@@ -974,10 +958,10 @@ static Jxta_status JXTA_STDCALL query_listener(Jxta_object * obj, void *me)
      **/
     adv = jxta_pipe_adv_new();
 
-    jxta_pipe_adv_set_Id(adv, jxta_piperesolver_msg_get_PipeId(msg));
-    jxta_pipe_adv_set_Type(adv, jxta_piperesolver_msg_get_Type(msg));
+    jxta_pipe_adv_set_Id(adv, jxta_piperesolver_msg_PipeId(msg));
+    jxta_pipe_adv_set_Type(adv, jxta_piperesolver_msg_Type(msg));
 
-    peer_id_jstring = jstring_new_2(jxta_piperesolver_msg_get_Peer(msg));
+    peer_id_jstring = jstring_new_2(jxta_piperesolver_msg_Peer(msg));
     if (peer_id_jstring != NULL) {
         jxta_id_from_jstring(&peer_id, peer_id_jstring);
         JXTA_OBJECT_RELEASE(peer_id_jstring);
@@ -999,8 +983,8 @@ static Jxta_status JXTA_STDCALL query_listener(Jxta_object * obj, void *me)
         jxta_id_to_jstring(_self->local_peerid, &tmpString);
         reply = jxta_piperesolver_msg_new();
         jxta_piperesolver_msg_set_MsgType(reply, (char *) RESPONSE_MSG_TYPE);
-        jxta_piperesolver_msg_set_PipeId(reply, jxta_piperesolver_msg_get_PipeId(msg));
-        jxta_piperesolver_msg_set_Type(reply, jxta_piperesolver_msg_get_Type(msg));
+        jxta_piperesolver_msg_set_PipeId(reply, (char*)jxta_piperesolver_msg_PipeId(msg));
+        jxta_piperesolver_msg_set_Type(reply, (char*)jxta_piperesolver_msg_Type(msg));
         jxta_piperesolver_msg_set_Found(reply, TRUE);
         jxta_piperesolver_msg_set_Peer(reply, (char *) jstring_get_string(tmpString));
         JXTA_OBJECT_RELEASE(tmpString);
@@ -1144,7 +1128,7 @@ static void JXTA_STDCALL response_listener(Jxta_object * obj, void *arg)
     if (rr_res_pid_jstring)
         JXTA_OBJECT_RELEASE(rr_res_pid_jstring);
 
-    pipeid = jxta_piperesolver_msg_get_PipeId(msg);
+    pipeid = jxta_piperesolver_msg_PipeId(msg);
 
     if (pipeid == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Invalid response\n");
@@ -1293,6 +1277,7 @@ static void JXTA_STDCALL srdi_listener(Jxta_object * obj, void *arg)
     /** Replicates entries only if unicast pipes */
     if (strcmp(jstring_get_string(jPrimaryKey), "JxtaUnicast") == 0) {
         Jxta_vector *localView = NULL;
+
         status = jxta_peerview_get_localview(self->rpv, &localView);
         if((JXTA_SUCCESS == status) && (NULL != localView)) {
             unsigned int rpv_size = jxta_vector_size(localView);

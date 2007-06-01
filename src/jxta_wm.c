@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_wm.c,v 1.25 2006/08/03 21:34:21 bondolo Exp $
+ * $Id: jxta_wm.c,v 1.26 2007/04/10 02:02:34 mmx2005 Exp $
  */
 
 static const char *const __log_cat = "WireMessage";
@@ -94,7 +94,7 @@ struct _JxtaWire {
     char *msgId;
 };
 
-void JxtaWire_delete(Jxta_object * obj);
+static void JxtaWire_delete(Jxta_object * obj);
 
 /** Handler functions.  Each of these is responsible for
  * dealing with all of the character data associated with the 
@@ -104,14 +104,17 @@ static void handleJxtaWire(void *userdata, const XML_Char * cd, int len)
 {
     /* JxtaWire * ad = (JxtaWire*)userdata; */
     
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Begining parse of JxtaWire\n");
+	if(len == 0)
+		jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Begining parse of JxtaWire\n");
+	else
+		jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "END JxtaWire\n");
 }
 
 static void handleSrcPeer(void *userdata, const XML_Char * cd, int len)
 {
     JxtaWire *ad = (JxtaWire *) userdata;
-
     char *tok = (char *) malloc(len + 1);
+
     memset(tok, 0, len + 1);
 
     extract_char_data(cd, len, tok);
@@ -126,8 +129,8 @@ static void handleSrcPeer(void *userdata, const XML_Char * cd, int len)
 static void handleMsgId(void *userdata, const XML_Char * cd, int len)
 {
     JxtaWire *ad = (JxtaWire *) userdata;
-
     char *tok = (char *) malloc(len + 1);
+
     memset(tok, 0, len + 1);
 
     extract_char_data(cd, len, tok);
@@ -139,12 +142,11 @@ static void handleMsgId(void *userdata, const XML_Char * cd, int len)
     }
 }
 
-
 static void handlePipeId(void *userdata, const XML_Char * cd, int len)
 {
     JxtaWire *ad = (JxtaWire *) userdata;
-
     char *tok = (char *) malloc(len + 1);
+
     memset(tok, 0, len + 1);
 
     extract_char_data(cd, len, tok);
@@ -158,9 +160,7 @@ static void handlePipeId(void *userdata, const XML_Char * cd, int len)
 
 static void handleTTL(void *userdata, const XML_Char * cd, int len)
 {
-
     JxtaWire *ad = (JxtaWire *) userdata;
-
     char *tok = (char *) calloc(len + 1, sizeof(char));
 
     extract_char_data(cd, len, tok);
@@ -173,12 +173,10 @@ static void handleTTL(void *userdata, const XML_Char * cd, int len)
 
 static void handleVisitedPeer(void *userdata, const XML_Char * cd, int len)
 {
-
     JxtaWire *ad = (JxtaWire *) userdata;
     char *tok;
 
     if (len > 0) {
-
         tok = (char *) malloc(len + 1);
         memset(tok, 0, len + 1);
 
@@ -186,6 +184,7 @@ static void handleVisitedPeer(void *userdata, const XML_Char * cd, int len)
 
         if (strlen(tok) != 0) {
             JString *pt = jstring_new_2(tok);
+
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "VisitedPeer: [%s]\n", tok);
             jxta_vector_add_object_last(ad->VisitedPeer, (Jxta_object *) pt);
             /* The vector shares automatically the object. We must release */
@@ -193,13 +192,13 @@ static void handleVisitedPeer(void *userdata, const XML_Char * cd, int len)
         }
         free(tok);
     }
-
 }
 
 
-    /** The get/set functions represent the public
+/** The get/set functions represent the public
      * interface to the ad class, that is, the API.
-     */
+*/
+
 JXTA_DECLARE(char *) JxtaWire_get_JxtaWire(JxtaWire * ad)
 {
     return NULL;
@@ -226,7 +225,6 @@ JXTA_DECLARE(char *) JxtaWire_get_PipeId(JxtaWire * ad)
 
 JXTA_DECLARE(void) JxtaWire_set_SrcPeer(JxtaWire * ad, const char *src)
 {
-
     if (ad->SrcPeer != NULL) {
         free(ad->SrcPeer);
         ad->SrcPeer = NULL;
@@ -241,7 +239,6 @@ JXTA_DECLARE(void) JxtaWire_set_SrcPeer(JxtaWire * ad, const char *src)
 
 JXTA_DECLARE(void) JxtaWire_set_PipeId(JxtaWire * ad, const char *src)
 {
-
     if (ad->pipeId != NULL) {
         free(ad->pipeId);
         ad->pipeId = NULL;
@@ -254,10 +251,8 @@ JXTA_DECLARE(void) JxtaWire_set_PipeId(JxtaWire * ad, const char *src)
     }
 }
 
-
 JXTA_DECLARE(void) JxtaWire_set_MsgId(JxtaWire * ad, const char *src)
 {
-
     if (ad->msgId != NULL) {
         free(ad->msgId);
         ad->msgId = NULL;
@@ -272,7 +267,6 @@ JXTA_DECLARE(void) JxtaWire_set_MsgId(JxtaWire * ad, const char *src)
 
 JXTA_DECLARE(Jxta_vector *) JxtaWire_get_VisitedPeer(JxtaWire * ad)
 {
-
     if (ad->VisitedPeer != NULL) {
         JXTA_OBJECT_SHARE(ad->VisitedPeer);
         return ad->VisitedPeer;
@@ -281,10 +275,8 @@ JXTA_DECLARE(Jxta_vector *) JxtaWire_get_VisitedPeer(JxtaWire * ad)
     }
 }
 
-JXTA_DECLARE(void)
-    JxtaWire_set_VisitedPeer(JxtaWire * ad, Jxta_vector * vector)
+JXTA_DECLARE(void) JxtaWire_set_VisitedPeer(JxtaWire * ad, Jxta_vector * vector)
 {
-
     if (ad->VisitedPeer != NULL) {
         JXTA_OBJECT_RELEASE(ad->VisitedPeer);
         ad->VisitedPeer = NULL;
@@ -296,16 +288,13 @@ JXTA_DECLARE(void)
     return;
 }
 
-JXTA_DECLARE(int)
-    JxtaWire_get_TTL(JxtaWire * ad)
+JXTA_DECLARE(int) JxtaWire_get_TTL(JxtaWire * ad)
 {
     return ad->TTL;
 }
 
-JXTA_DECLARE(void)
-    JxtaWire_set_TTL(JxtaWire * ad, int TTL)
+JXTA_DECLARE(void) JxtaWire_set_TTL(JxtaWire * ad, int TTL)
 {
-
     ad->TTL = TTL;
 }
 
@@ -326,7 +315,6 @@ static const Kwdtab JxtaWire_tags[] = {
     {"TTL", TTL_, *handleTTL, NULL, NULL},
     {NULL, 0, 0, NULL, NULL}
 };
-
 
 JXTA_DECLARE(Jxta_status) JxtaWire_get_xml(JxtaWire * ad, JString ** xml)
 {
@@ -386,14 +374,13 @@ JXTA_DECLARE(Jxta_status) JxtaWire_get_xml(JxtaWire * ad, JString ** xml)
      */
 JXTA_DECLARE(JxtaWire *) JxtaWire_new(void)
 {
-
     JxtaWire *ad;
     ad = (JxtaWire *) calloc(1, sizeof(JxtaWire));
 
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
                                   "JxtaWire",
                                   JxtaWire_tags,
-                                  (JxtaAdvertisementGetXMLFunc) JxtaWire_get_xml, NULL, NULL, (FreeFunc) JxtaWire_delete);
+                                  (JxtaAdvertisementGetXMLFunc) JxtaWire_get_xml, NULL, NULL, JxtaWire_delete);
 
     ad->SrcPeer = NULL;
     ad->msgId = NULL;
@@ -409,7 +396,7 @@ JXTA_DECLARE(JxtaWire *) JxtaWire_new(void)
      * pop right out as a piece of memory accessed
      * after it was freed...
      */
-void JxtaWire_delete(Jxta_object * obj)
+static void JxtaWire_delete(Jxta_object * obj)
 {
     JxtaWire *ad = (JxtaWire *) obj;
 
@@ -441,14 +428,11 @@ void JxtaWire_delete(Jxta_object * obj)
 
 JXTA_DECLARE(void) JxtaWire_parse_charbuffer(JxtaWire * ad, const char *buf, int len)
 {
-
     jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
 
-
 JXTA_DECLARE(void) JxtaWire_parse_file(JxtaWire * ad, FILE * stream)
 {
-
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
 

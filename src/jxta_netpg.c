@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_netpg.c,v 1.75 2006/09/08 20:00:53 bondolo Exp $
+ * $Id: jxta_netpg.c,v 1.76 2007/04/24 21:51:33 slowhog Exp $
  */
 
 /*
@@ -153,6 +153,15 @@ static Jxta_status netpg_start(Jxta_module * me, const char *args[])
         rv = jxta_module_start((Jxta_module *) (myself->tcp), noargs);
         if (JXTA_SUCCESS != rv) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failure starting tcp: %d.\n", rv);
+            netpg_stop(me);
+            return rv;
+        }
+    }
+
+    if (myself->tls) {
+        rv = jxta_module_start((Jxta_module *) (myself->tls), noargs);
+        if (JXTA_SUCCESS != rv) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failure starting tls: %d.\n", rv);
             netpg_stop(me);
             return rv;
         }
@@ -347,6 +356,11 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
     }
 
     res = stdpg_ld_mod((Jxta_PG *) it, jxta_tcpproto_classid, "builtin:transport_tcp", NULL, (Jxta_module **) & it->tcp);
+    if (JXTA_SUCCESS != res) {
+        goto ERROR_EXIT;
+    }
+	 
+    res = stdpg_ld_mod((Jxta_PG *) it, jxta_tlsproto_classid, "builtin:transport_tls", NULL, (Jxta_module **) & it->tls);
     if (JXTA_SUCCESS != res) {
         goto ERROR_EXIT;
     }

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_util_priv.c,v 1.18 2007/01/12 22:23:27 slowhog Exp $
+ * $Id: jxta_util_priv.c,v 1.19 2007/04/20 14:43:18 mmx2005 Exp $
  */
 
 static const char *__log_cat = "UTIL";
@@ -76,6 +76,7 @@ Jxta_vector *getPeerids(Jxta_vector * peers)
     unsigned int i = 0;
     JString *jPeerId;
     Jxta_hashtable *peersHash;
+
     if (NULL == peers)
         return NULL;
     if (jxta_vector_size(peers) > 0) {
@@ -94,6 +95,7 @@ Jxta_vector *getPeerids(Jxta_vector * peers)
         pid = jstring_get_string(jPeerId);
         if (jxta_hashtable_get(peersHash, pid, strlen(pid), JXTA_OBJECT_PPTR(&temp)) != JXTA_SUCCESS) {
             Jxta_id *jid;
+
             jxta_hashtable_put(peersHash, pid, strlen(pid), (Jxta_object *) jPeerId);
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "----- add peerid to result set: %s\n", pid);
             jxta_id_from_jstring(&jid, jPeerId);
@@ -166,6 +168,8 @@ Jxta_status qos_setting_to_xml(apr_hash_t * setting, char ** result, apr_pool_t 
         *result = "";
     }
 
+	JXTA_OBJECT_RELEASE(buf);
+
     return JXTA_SUCCESS;
 }
 
@@ -235,6 +239,8 @@ Jxta_status qos_support_to_xml(const char ** capability_list, char ** result, ap
     } else {
         *result = "";
     }
+
+	JXTA_OBJECT_RELEASE(buf);
 
     return JXTA_SUCCESS;
 }

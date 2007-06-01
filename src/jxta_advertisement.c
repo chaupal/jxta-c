@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_advertisement.c,v 1.107 2006/11/01 04:40:05 mmx2005 Exp $
+ * $Id: jxta_advertisement.c,v 1.108 2007/04/24 21:51:33 slowhog Exp $
  */
 static const char *__log_cat = "ADV";
 
@@ -74,13 +74,13 @@ static const char *__log_cat = "ADV";
 #include "jxta_endpoint_config_adv.h"
 #include "jxta_rdv_config_adv.h"
 #include "jxta_srdi_config_adv.h"
+#include "jxta_tls_config_adv.h"
 #include "jxta_rdv_lease_options.h"
 #include "jxta_relaya.h"
 
 #define ENHANCED_QUERY_LOG "QueryLog"
 
 #define MAX_ADV_DEPTH 32
-
 
 typedef struct _jxta_advertisement_new_func Jxta_advertisement_new_func;
 
@@ -927,6 +927,7 @@ void jxta_advertisement_register_global_handlers(void)
     jxta_advertisement_register_global_handler("jxta:RdvConfig", (JxtaAdvertisementNewFunc) jxta_RdvConfigAdvertisement_new );
     jxta_advertisement_register_global_handler("jxta:SrdiConfig", (JxtaAdvertisementNewFunc) jxta_SrdiConfigAdvertisement_new );
     jxta_advertisement_register_global_handler("jxta:TCPTransportAdvertisement", (JxtaAdvertisementNewFunc) jxta_TCPTransportAdvertisement_new );
+    jxta_advertisement_register_global_handler("jxta:TlsConfigAdvertisement", (JxtaAdvertisementNewFunc) jxta_TlsConfigAdvertisement_new );
     jxta_advertisement_register_global_handler("jxta:HTTPTransportAdvertisement", (JxtaAdvertisementNewFunc) jxta_HTTPTransportAdvertisement_new );
     jxta_advertisement_register_global_handler("jxta:RelayAdvertisement", (JxtaAdvertisementNewFunc) jxta_RelayAdvertisement_new );
 

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_builtinmodules_private.h,v 1.5 2006/08/31 20:54:30 bondolo Exp $
+ * $Id: jxta_builtinmodules_private.h,v 1.6 2007/04/24 21:51:33 slowhog Exp $
  */
 
 #ifndef JXTA_BUILTINMODULES_PRIVATE_H
@@ -84,6 +84,7 @@ extern Jxta_module *jxta_resolver_service_ref_new_instance(void);
 extern Jxta_module *jxta_discovery_service_ref_new_instance(void);
 extern Jxta_module *jxta_transport_http_new_instance(void);
 extern Jxta_module *jxta_transport_tcp_new_instance(void);
+extern Jxta_module *jxta_transport_tls_new_instance(void);
 extern Jxta_module *jxta_netpg_new_instance(void);
 extern Jxta_module *jxta_stdpg_new_instance(void);
 extern Jxta_module *jxta_router_client_new_instance(void);

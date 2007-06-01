@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup.c,v 1.58 2006/12/16 07:38:49 slowhog Exp $
+ * $Id: jxta_peergroup.c,v 1.59 2007/04/24 21:51:33 slowhog Exp $
  */
 static const char *__log_cat = "PG";
 
@@ -720,6 +720,11 @@ JXTA_DECLARE(Jxta_MCID *) jxta_tcpproto_classid_get(void)
     return _tcpproto_classid;
 }
 
+JXTA_DECLARE(Jxta_MCID *) jxta_tlsproto_classid_get(void)
+{
+    return _tlsproto_classid;
+}
+
 JXTA_DECLARE(Jxta_MCID *) jxta_httpproto_classid_get(void)
 {
     return _httpproto_classid;
@@ -740,10 +745,6 @@ JXTA_DECLARE(Jxta_MCID *) jxta_application_classid_get(void)
     return _application_classid;
 }
 
-JXTA_DECLARE(Jxta_MCID *) jxta_tlsproto_classid_get(void)
-{
-    return _tlsproto_classid;
-}
 
 JXTA_DECLARE(Jxta_MSID *) jxta_ref_platform_specid_get(void)
 {

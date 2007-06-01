@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_service.c,v 1.30 2006/09/12 20:23:49 bondolo Exp $
+ * $Id: jxta_pipe_service.c,v 1.32 2007/04/24 23:40:39 mmx2005 Exp $
  */
 
 static const char *__log_cat = "PIPE";
@@ -104,6 +104,7 @@ static Jxta_boolean remove_impl(Jxta_pipe_service * self, const char *name, Jxta
 static Jxta_pipe_service_impl *get_impl(Jxta_pipe_service * self, const char *name);
 extern Jxta_pipe_service_impl *jxta_wire_service_new_instance(Jxta_pipe_service *, Jxta_PG *);
 extern Jxta_pipe_service_impl *jxta_unipipe_service_new_instance(Jxta_pipe_service *, Jxta_PG *);
+extern Jxta_pipe_service_impl *jxta_securepipe_service_new_instance(Jxta_pipe_service * pipe_service, Jxta_PG * group);
 extern Jxta_pipe_resolver *jxta_piperesolver_new(Jxta_PG * group);
 
 static Jxta_status
@@ -612,6 +613,22 @@ static Jxta_status start(Jxta_module * module, const char *argv[])
         Jxta_pipe_service_impl *impl = NULL;
 
         impl = jxta_unipipe_service_new_instance(self, self->group);
+        res = jxta_pipe_service_add_impl(self, jxta_pipe_service_impl_get_name(impl), impl);
+        if (res != JXTA_SUCCESS) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Cannot insert pipe impl [%s] into pipe service.\n",
+                            jxta_pipe_service_impl_get_name(impl));
+        }
+
+        JXTA_OBJECT_RELEASE(impl);
+    }
+
+    /**
+     ** Creates a secure_pipe_service instance
+     **/
+    {
+        Jxta_pipe_service_impl *impl = NULL;
+
+        impl = jxta_securepipe_service_new_instance(self, self->group);
         res = jxta_pipe_service_add_impl(self, jxta_pipe_service_impl_get_name(impl), impl);
         if (res != JXTA_SUCCESS) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Cannot insert pipe impl [%s] into pipe service.\n",

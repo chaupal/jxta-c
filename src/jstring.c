@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jstring.c,v 1.73 2006/08/21 18:56:47 bondolo Exp $
+ * $Id: jstring.c,v 1.74 2007/04/27 09:53:21 mmx2005 Exp $
  */
 
 
@@ -82,6 +82,7 @@
  *
  */
 
+static const char *__log_cat = "JSTRING";
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -148,7 +149,6 @@ JXTA_DECLARE(JString *) jstring_new_0()
     return jstring_new_1(DEFAULTBUFSIZE);
 }
 
-
 JXTA_DECLARE(JString *) jstring_new_1(size_t bufsize)
 {
     JString *js = (JString *) calloc(1, sizeof(JString));
@@ -174,7 +174,6 @@ JXTA_DECLARE(JString *) jstring_new_1(size_t bufsize)
 
     return js;
 }
-
 
 JXTA_DECLARE(JString *) jstring_new_2(const char *string)
 {
@@ -215,7 +214,7 @@ JXTA_DECLARE(JString *) jstring_new_3(Jxta_bytevector * bytes)
     if (JXTA_SUCCESS != jxta_bytevector_get_bytes_at(bytes, (unsigned char *) js->string, 0, length)) {
         JXTA_OBJECT_RELEASE(js);
         return NULL;
-    };
+    }
 
     js->length = length;
 
@@ -237,12 +236,12 @@ JXTA_DECLARE(JString *) jstring_clone(JString const *origstring)
     return js;
 }
 
-
 JXTA_DECLARE(void) jstring_trim(JString * js)
 {
     size_t len = js->length;
     unsigned int st = 0;
     char *val = js->string;
+
     /* strip out leading white-space */
     while ((st < len) && (isspace(js->string[st]))) {
         st++;
@@ -271,7 +270,6 @@ JXTA_DECLARE(int) jstring_equals(JString const *me, JString const *you)
     return strcmp( jstring_get_string(me), jstring_get_string(you) );
 }
 
-
 JXTA_DECLARE(size_t) jstring_capacity(JString const *js)
 {
     return js->bufsize;
@@ -294,7 +292,7 @@ JXTA_DECLARE(void) jstring_append_0(JString * js, char const *newstring, size_t 
     JXTA_OBJECT_CHECK_VALID(js);
 
     if (NULL == newstring) {
-        JXTA_LOG("NULL string passed to append_0\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "NULL string passed to append_0\n");
         return; /* error */
     }
 
@@ -324,7 +322,7 @@ JXTA_DECLARE(void) jstring_append_2(JString * js, char const *string)
     JXTA_OBJECT_CHECK_VALID(js);
 
     if (NULL == string) {
-        JXTA_LOG("NULL string passed to append_2\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "NULL string passed to append_2\n");
         return; /* error */
     }
 
@@ -387,7 +385,7 @@ JXTA_DECLARE(Jxta_status) jstring_reset(JString * js, char **buf)
     JXTA_OBJECT_CHECK_VALID(myjs);
 
     if (myjs == NULL) {
-        JXTA_LOG("JString is null\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "JString is null\n");
         return JXTA_INVALID_ARGUMENT;
     }
 
