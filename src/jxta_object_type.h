@@ -51,12 +51,13 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object_type.h,v 1.13 2006/09/15 19:11:58 bondolo Exp $
+ * $Id: jxta_object_type.h,v 1.13.2.1 2006/12/23 19:22:10 slowhog Exp $
  */
 
 #ifndef JXTA_OBJECT_TYPE_H
 #define JXTA_OBJECT_TYPE_H
 
+#include "jxta_types.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peer.c,v 1.24 2006/10/01 23:14:10 mmx2005 Exp $
+ * $Id: jxta_peer.c,v 1.24.2.1 2006/12/02 08:17:49 slowhog Exp $
  */
 
 #include "jxta_apr.h"
@@ -267,21 +267,21 @@ Jxta_status  jxta_peer_unlock(Jxta_peer * p)
     return JXTA_SUCCESS;
 }
 
-Jxta_endpoint_address * jxta_peer_get_address_priv(Jxta_peer * p)
+JXTA_DECLARE(Jxta_endpoint_address*) jxta_peer_address(Jxta_peer * p)
 {
     _jxta_peer_entry *peer = (_jxta_peer_entry *) p;
 
     return peer->address;
 }
 
-Jxta_id * jxta_peer_get_peerid_priv(Jxta_peer * p)
+JXTA_DECLARE(Jxta_id*) jxta_peer_peerid(Jxta_peer * p)
 {
     _jxta_peer_entry *peer = (_jxta_peer_entry *) p;
 
     return peer->peerid;
 }
 
-Jxta_PA * jxta_peer_get_adv_priv(Jxta_peer * p)
+JXTA_DECLARE(Jxta_PA*) jxta_peer_adv(Jxta_peer * p)
 {
     _jxta_peer_entry *peer = (_jxta_peer_entry *) p;
 

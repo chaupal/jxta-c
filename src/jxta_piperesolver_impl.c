@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_piperesolver_impl.c,v 1.52 2006/09/26 18:28:24 slowhog Exp $
+ * $Id: jxta_piperesolver_impl.c,v 1.52.2.1 2006/11/16 00:06:32 bondolo Exp $
  */
 
 #include <limits.h>
@@ -450,7 +450,7 @@ Jxta_pipe_resolver *jxta_piperesolver_new(Jxta_PG * group)
 
     peergroup_get_cache_manager(self->group, &self->cm);
 
-    self->rpv = jxta_rdv_service_get_peerview_priv((_jxta_rdv_service *) self->rdv_service);
+    self->rpv = rdv_service_get_peerview_priv(self->rdv_service);
 
     self->name = jstring_new_2(PIPE_RESOLVER_NAME);
 
@@ -512,7 +512,7 @@ static Jxta_status pending_request_add(Pipe_resolver * self, Pending_request * r
     pipeid = jxta_pipe_adv_get_Id(req->adv);
 
     /* First find if there is already a pending request for that pipe */
-    res = jxta_hashtable_get(self->pending_requests, pipeid, strlen(pipeid), JXTA_OBJECT_PPTR(&vector));
+    res = jxta_hashtable_get(self->pending_requests, (const void *) pipeid, strlen(pipeid), JXTA_OBJECT_PPTR(&vector));
 
     if (res != JXTA_SUCCESS) {
         /* No request found. Create a new vector */
@@ -523,7 +523,7 @@ static Jxta_status pending_request_add(Pipe_resolver * self, Pending_request * r
             apr_thread_mutex_unlock(self->mutex);
             return JXTA_NOMEM;
         }
-        jxta_hashtable_put(self->pending_requests, pipeid, strlen(pipeid), (Jxta_object *) vector);
+        jxta_hashtable_put(self->pending_requests, (const void *) pipeid, strlen(pipeid), (Jxta_object *) vector);
     }
 
     res = jxta_vector_add_object_last(vector, (Jxta_object *) req);
@@ -549,7 +549,7 @@ static Jxta_status pending_request_remove(Pipe_resolver * self, Pending_request 
     pipeid = jxta_pipe_adv_get_Id(req->adv);
 
     /* First find if there is already a pending request for that pipe */
-    res = jxta_hashtable_get(self->pending_requests, pipeid, strlen(pipeid), JXTA_OBJECT_PPTR(&vector));
+    res = jxta_hashtable_get(self->pending_requests, (const void *) pipeid, strlen(pipeid), JXTA_OBJECT_PPTR(&vector));
 
     if (res != JXTA_SUCCESS) {
         /* No request found. This is an error */
@@ -576,7 +576,7 @@ static Jxta_status pending_request_remove(Pipe_resolver * self, Pending_request 
 
     if (jxta_vector_size(vector) == 0) {
         /* No need to keep an entry for this pipe */
-        res = jxta_hashtable_del(self->pending_requests, pipeid, strlen(pipeid), NULL);
+        res = jxta_hashtable_del(self->pending_requests, (const void *) pipeid, strlen(pipeid), NULL);
 
         if (res != JXTA_SUCCESS) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Cannot remove vector from hashtable\n");
@@ -873,10 +873,10 @@ static Jxta_status jxta_pipe_resolver_get_replica_peer(Pipe_resolver * me, Resol
     Jxta_id *repId = NULL;
     Jxta_peerview *rpv ;
     
-    rpv= jxta_rdv_service_get_peerview_priv((_jxta_rdv_service *) me->rdv_service);
+    rpv= rdv_service_get_peerview_priv(me->rdv_service);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Getting a replica peer for %s\n", expression);
-    replicaPeer = jxta_srdi_getReplicaPeer(me->srdi_service, me->resolver, rpv, expression);
+    replicaPeer = jxta_srdi_getReplicaPeer(me->srdi_service, expression);
 
   /** We have found a replica peer */
     if (NULL != replicaPeer) {
@@ -958,11 +958,11 @@ static Jxta_status JXTA_STDCALL query_listener(Jxta_object * obj, void *me)
     publish_peer_adv(_self, msg);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Pipe Resolver query:\n");
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "   msg type = %s\n", jxta_piperesolver_msg_MsgType(msg));
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "    pipe id = %s\n", jxta_piperesolver_msg_PipeId(msg));
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "  pipe type = %s\n", jxta_piperesolver_msg_Type(msg));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "   msg type = %s\n", jxta_piperesolver_msg_get_MsgType(msg));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "    pipe id = %s\n", jxta_piperesolver_msg_get_PipeId(msg));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "  pipe type = %s\n", jxta_piperesolver_msg_get_Type(msg));
     if (jxta_piperesolver_msg_get_Peer(msg) != NULL)
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "       peer = %s\n", jxta_piperesolver_msg_Peer(msg));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "       peer = %s\n", jxta_piperesolver_msg_get_Peer(msg));
 
     if (!strcmp(jxta_piperesolver_msg_get_Type(msg), "JxtaPropagate")) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Get a resolver request for PROPAGATE pipe, ignore it.\n");
@@ -1101,7 +1101,7 @@ static void JXTA_STDCALL response_listener(Jxta_object * obj, void *arg)
     JString *queryString = NULL;
     Jxta_piperesolver_msg *msg = NULL;
     Jxta_status res;
-    const char *pipeid = NULL;
+    char *pipeid = NULL;
     Pending_request *req = NULL;
     Jxta_id *peerid = NULL;
     Jxta_id *tmpPeerid = NULL;
@@ -1134,10 +1134,10 @@ static void JXTA_STDCALL response_listener(Jxta_object * obj, void *arg)
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Pipe Resolver Response:\n");
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "from peerid = %s\n",
                     (rr_res_pid_jstring != NULL ? jstring_get_string(rr_res_pid_jstring) : "Unknown"));
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "   msg type = %s\n", jxta_piperesolver_msg_MsgType(msg));
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "    pipe id = %s\n", jxta_piperesolver_msg_PipeId(msg));
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "  pipe type = %s\n", jxta_piperesolver_msg_Type(msg));
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "       peer = %s\n", jxta_piperesolver_msg_Peer(msg));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "   msg type = %s\n", jxta_piperesolver_msg_get_MsgType(msg));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "    pipe id = %s\n", jxta_piperesolver_msg_get_PipeId(msg));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "  pipe type = %s\n", jxta_piperesolver_msg_get_Type(msg));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "       peer = %s\n", jxta_piperesolver_msg_get_Peer(msg));
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "     status = %s\n",
                     jxta_piperesolver_msg_get_Found(msg) == TRUE ? "Found" : "NACK");
 
@@ -1154,7 +1154,7 @@ static void JXTA_STDCALL response_listener(Jxta_object * obj, void *arg)
         return;
     }
 
-    peerString = jstring_new_2((const char *) jxta_piperesolver_msg_Peer(msg));
+    peerString = jstring_new_2((const char *) jxta_piperesolver_msg_get_Peer(msg));
     res = jxta_id_from_jstring(&peerid, peerString);
 
     if (res != JXTA_SUCCESS) {
@@ -1174,7 +1174,7 @@ static void JXTA_STDCALL response_listener(Jxta_object * obj, void *arg)
     apr_thread_mutex_lock(self->mutex);
     /* Retrieve the pipe id
      * First find if there is already a pending request for that pipe */
-    res = jxta_hashtable_get(self->pending_requests, pipeid, strlen(pipeid), JXTA_OBJECT_PPTR(&vector));
+    res = jxta_hashtable_get(self->pending_requests, (const void *) pipeid, strlen(pipeid), JXTA_OBJECT_PPTR(&vector));
 
     if (res != JXTA_SUCCESS) {
         /* No request found. This is an error */
@@ -1291,43 +1291,8 @@ static void JXTA_STDCALL srdi_listener(Jxta_object * obj, void *arg)
     jxta_srdi_message_get_primaryKey(smsg, &jPrimaryKey);
 
     /** Replicates entries only if unicast pipes */
-    if (strcmp(jstring_get_string(jPrimaryKey), "JxtaUnicast") == 0) {
-        Jxta_vector *localView = NULL;
-        status = jxta_peerview_get_localview(self->rpv, &localView);
-        if((JXTA_SUCCESS == status) && (NULL != localView)) {
-            unsigned int rpv_size = jxta_vector_size(localView);
-            for (i = 0; i < rpv_size; i++) {
-                Jxta_id *tmpId;
-                Jxta_peer *peer;
-
-                status = jxta_vector_get_object_at(localView, JXTA_OBJECT_PPTR(&peer), i);
-                if (JXTA_SUCCESS != status) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "didn't get a peer from the peerview status: %i\n",
-                                    status);
-                    break;
-                }
-                status = jxta_peer_get_peerid(peer, &tmpId);
-                JXTA_OBJECT_RELEASE(peer);
-                if (JXTA_SUCCESS != status) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "didn't get the peerid from pve\n");
-                    break;
-                } 
-                  
-                /* Origin peer is in peerview, this is a replica */
-                if (jxta_id_equals( tmpId, peerid )) {
-                    bReplica = TRUE;
-                }
-                
-                JXTA_OBJECT_RELEASE(tmpId);
-                
-                if (bReplica)
-                    break;
-            }
-        }
-        if (!bReplica) {
+    if ( 0 == strcmp(jstring_get_string(jPrimaryKey), "JxtaUnicast")) {
             jxta_srdi_replicateEntries(self->srdi_service, self->resolver, smsg, self->name);
-        }
-        JXTA_OBJECT_RELEASE(localView);
     }
     
     status = jxta_srdi_message_get_entries(smsg, &entries);

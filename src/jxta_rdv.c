@@ -50,9 +50,9 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv.c,v 1.51 2005/12/28 05:11:41 mmx2005 Exp $
+ * $Id: jxta_rdv.c,v 1.52.2.1 2006/11/29 01:49:50 slowhog Exp $
  */
- 
+
 static const char *const __log_cat = "RdvAdv";
 
 #include <stdio.h>
@@ -186,6 +186,10 @@ static void handleRoute(void *userdata, const XML_Char * cd, int len)
     Jxta_RdvAdvertisement *ad = (Jxta_RdvAdvertisement *) userdata;
     Jxta_RouteAdvertisement *ra;
 
+    if (0 != len) {
+        return;
+    }
+
     ra = jxta_RouteAdvertisement_new();
     jxta_RdvAdvertisement_set_Route(ad, ra);
     JXTA_OBJECT_RELEASE(ra);
@@ -206,7 +210,7 @@ JXTA_DECLARE(char *) jxta_RdvAdvertisement_get_Name(Jxta_RdvAdvertisement * ad)
 
 static char *JXTA_STDCALL jxta_RdvAdvertisement_get_Name_string(Jxta_advertisement * ad)
 {
-    return strdup(jstring_get_string( ((Jxta_RdvAdvertisement *)ad)->Name));
+    return strdup(jstring_get_string(((Jxta_RdvAdvertisement *) ad)->Name));
 }
 
 JXTA_DECLARE(void) jxta_RdvAdvertisement_set_Name(Jxta_RdvAdvertisement * ad, const char *name)
@@ -477,7 +481,7 @@ static Jxta_status jxta_RdvAdvertisement_getxml_1(Jxta_RdvAdvertisement * self, 
 
     for (eachParam = 0; eachParam < (sizeof(params) / sizeof(const char *)); eachParam++) {
         if (NULL != params[eachParam]) {
-        free((void *) params[eachParam]);
+            free((void *) params[eachParam]);
         }
         params[eachParam] = NULL;
     }
@@ -501,11 +505,10 @@ static Jxta_RdvAdvertisement *jxta_RdvAdvertisement_construct(Jxta_RdvAdvertisem
 {
     self = (Jxta_RdvAdvertisement *) jxta_advertisement_construct((Jxta_advertisement *) self,
                                                                   "jxta:RdvAdvertisement",
-                                                                  RdvAdvertisement_tags, 
-                                                                  (JxtaAdvertisementGetXMLFunc)jxta_RdvAdvertisement_get_xml,
+                                                                  RdvAdvertisement_tags,
+                                                                  (JxtaAdvertisementGetXMLFunc) jxta_RdvAdvertisement_get_xml,
                                                                   /* FIXME, need a decision on which ID to return, if any for now none */
-                                                                  NULL, 
-                                                                  jxta_RendezvousAdvertisement_get_indexes);
+                                                                  NULL, jxta_RendezvousAdvertisement_get_indexes);
 
     if (NULL != self) {
         self->Name = jstring_new_0();

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_discovery_service_ref.c,v 1.197 2006/09/23 18:51:04 exocetrick Exp $
+ * $Id: jxta_discovery_service_ref.c,v 1.197.2.1 2006/11/16 00:06:30 bondolo Exp $
  */
 
 #include <limits.h>
@@ -633,8 +633,15 @@ Jxta_status getLocalAdv(Jxta_discovery_service * service, short type, const char
             continue;
         }
         root_adv = jxta_advertisement_new();
-        jxta_advertisement_parse_charbuffer(root_adv, jstring_get_string(res_bytes), jstring_length(res_bytes));
+        
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Parsing response : %s \n", jstring_get_string(res_bytes) );
+        
+        status = jxta_advertisement_parse_charbuffer(root_adv, jstring_get_string(res_bytes), jstring_length(res_bytes));
         JXTA_OBJECT_RELEASE(res_bytes);
+        if (status != JXTA_SUCCESS) {
+            ++i;
+            continue;
+        }
 
         jxta_advertisement_get_advs(root_adv, &res_vect);
         JXTA_OBJECT_RELEASE(root_adv);
@@ -643,7 +650,6 @@ Jxta_status getLocalAdv(Jxta_discovery_service * service, short type, const char
             continue;
         }
         if (jxta_vector_size(res_vect) != 0) {
-            Jxta_object *res_adv;
 
             /*
              * Since we're supposed to return NULL when we find nothing,
@@ -651,12 +657,10 @@ Jxta_status getLocalAdv(Jxta_discovery_service * service, short type, const char
              * successfully processed result.
              */
             if (responses == NULL) {
-                responses = jxta_vector_new(1);
+                responses = jxta_vector_new(0);
             }
-            jxta_vector_get_object_at(res_vect, &res_adv, 0);
-            jxta_vector_add_object_last(responses, res_adv);
 
-            JXTA_OBJECT_RELEASE(res_adv);
+            jxta_vector_addall_objects_last(responses, res_vect);
         }
         JXTA_OBJECT_RELEASE(res_vect);
         i++;
@@ -1390,7 +1394,6 @@ static Jxta_status discovery_service_send_to_replica(Jxta_discovery_service_ref 
 {
     Jxta_status status = JXTA_SUCCESS;
     unsigned int i;
-    Jxta_peerview *rpv = NULL;
     Jxta_hashtable *peerHash = NULL;
     const char *thisIdChar = NULL;
     Jxta_vector *peerReplicas = NULL;
@@ -1398,7 +1401,6 @@ static Jxta_status discovery_service_send_to_replica(Jxta_discovery_service_ref 
     Jxta_peer *replicaPeer = NULL;
     long hc = -1;
 
-    rpv = jxta_rdv_service_get_peerview_priv((_jxta_rdv_service *) discovery->rdv);
     thisIdChar = discovery->pid_str;
     hc = jxta_resolver_query_get_hopcount(rq);
     if (hc == 0) {
@@ -1419,7 +1421,7 @@ static Jxta_status discovery_service_send_to_replica(Jxta_discovery_service_ref 
                 rge = jxta_range_new_1(jstring_get_string(jContext->queryNameSpace), jstring_get_string(elem->jName));
                 val = jstring_get_string(elem->jValue);
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "get a numeric replica peer\n");
-                replicaPeer = jxta_srdi_getNumericReplica(discovery->srdi, discovery->resolver, rpv, rge, NULL);
+                replicaPeer = jxta_srdi_getNumericReplica(discovery->srdi, rge, NULL);
                 JXTA_OBJECT_RELEASE(rge);
             } else {
                 if (!elem->hasWildcard) {
@@ -1428,7 +1430,7 @@ static Jxta_status discovery_service_send_to_replica(Jxta_discovery_service_ref 
                     jstring_append_1(replicaExpression, elem->jValue);
                     expression = jstring_get_string(replicaExpression);
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "get a replica peer: %s\n", expression);
-                    replicaPeer = jxta_srdi_getReplicaPeer(discovery->srdi, discovery->resolver, rpv, expression);
+                    replicaPeer = jxta_srdi_getReplicaPeer(discovery->srdi, expression);
                 } else {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Wildcard query\n");
                 }
@@ -1874,28 +1876,29 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
     JString *jPeerid = NULL;
     JString *jPrimaryKey = NULL;
     unsigned int i;
-    unsigned int rpv_size;
     Jxta_peer *peer;
-    Jxta_vector *localView = NULL;
-    Jxta_peerview *rpv;
     Jxta_boolean bReplica = FALSE;
     Jxta_id *peerid = NULL;
     _jxta_rdv_service *rdv;
-    Jxta_discovery_service_ref *discovery;
+    Jxta_discovery_service_ref *discovery = PTValid(arg, Jxta_discovery_service_ref);
 
-    discovery = (Jxta_discovery_service_ref *) arg;
+    JXTA_OBJECT_CHECK_VALID(obj);
+
     rdv = (_jxta_rdv_service *) discovery->rdv;
 
-    PTValid(discovery, Jxta_discovery_service_ref);
+    if ( config_rendezvous != jxta_rdv_service_config( rdv ) ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Not a rendezvous, ignoring message.\n");
+        return;
+    }
 
     smsg = jxta_srdi_message_new();
 
-    if (JXTA_OBJECT_CHECK_VALID(obj) == FALSE) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "ooops - got a srdi message with an invalid obj \n");
-        JXTA_OBJECT_RELEASE(smsg);
-        return;
+    status = jxta_srdi_message_parse_charbuffer(smsg, jstring_get_string((JString *) obj), jstring_length((JString *) obj));
+    if( JXTA_SUCCESS != status ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed parsing SRDI message\n");
+        goto FINAL_EXIT;
     }
-    jxta_srdi_message_parse_charbuffer(smsg, jstring_get_string((JString *) obj), jstring_length((JString *) obj));
+    
     jxta_srdi_message_get_peerID(smsg, &peerid);
     jxta_id_to_jstring(peerid, &jPeerid);
     jxta_srdi_message_get_primaryKey(smsg, &jPrimaryKey);
@@ -1904,48 +1907,16 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "ooops - got a srdi message without a peerid \n");
         goto FINAL_EXIT;
     }
-    rpv = jxta_rdv_service_get_peerview_priv(rdv);
-    status = jxta_peerview_get_localview(rpv, &localView);
-    if (NULL != localView) {
-        rpv_size = jxta_vector_size(localView);
-        for (i = 0; i < rpv_size; i++) {
-            Jxta_id *tmpId;
-            JString *string;
-
-            status = jxta_vector_get_object_at(localView, JXTA_OBJECT_PPTR(&peer), i);
-            if (JXTA_SUCCESS != status) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "didn't get a peer from the peerview status: %i\n", status);
-                break;
-            }
-            status = jxta_peer_get_peerid(peer, &tmpId);
-            JXTA_OBJECT_RELEASE(peer);
-            if (JXTA_SUCCESS != status) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "didn't get the string from the peerId\n");
-                break;
-            } else {
-                jxta_id_to_jstring(tmpId, &string);
-                JXTA_OBJECT_RELEASE(tmpId);
-            }
-            if (!strcmp(jstring_get_string(string), jstring_get_string(jPeerid))) {
-                bReplica = TRUE;
-            }
-            JXTA_OBJECT_RELEASE(string);
-            if (bReplica)
-                break;
-        }
-        JXTA_OBJECT_RELEASE(localView);
-    }
 
     status = jxta_srdi_message_get_resend_entries(smsg, &entries);
 
-    if (jxta_rdv_service_is_rendezvous((Jxta_rdv_service *) rdv) != TRUE && entries == NULL) {
+    if ( !jxta_rdv_service_is_rendezvous((Jxta_rdv_service *) rdv) && entries == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "ooops - got a srdi message without resend entries and i'm not a rendezvous \n");
         goto FINAL_EXIT;
     }
 
     /* process resend entries */
     if (NULL != entries) {
-
         cm_get_resend_delta_entries(discovery->cm, entries, &resendDelta);
 
         /* clear them from the delta entries */

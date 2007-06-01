@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_adhoc.c,v 1.4 2006/09/01 22:52:33 bondolo Exp $
+ * $Id: jxta_rdv_service_adhoc.c,v 1.4.4.3 2006/12/02 08:17:50 slowhog Exp $
  **/
 
 
@@ -73,19 +73,18 @@ static const char *__log_cat = "RdvAdhoc";
 #include "jxta_vector.h"
 #include "jxta_pa.h"
 #include "jxta_svc.h"
-#include "jxta_pm.h"
+#include "jxta_rdv_diffusion_msg.h"
 #include "jxta_peergroup.h"
 #include "jxta_peerview.h"
 #include "jxta_id.h"
-#include "jxta_lease_request_msg.h"
-#include "jxta_lease_response_msg.h"
 #include "jxta_peer_private.h"
-#include "jxta_peerview_priv.h"
 #include "jxta_rdv_service_private.h"
 #include "jxta_rdv_service_provider_private.h"
-#include "jxta_endpoint_service_priv.h"
 
-const int MAX_TTL = 2;
+/**
+*   The maximum TTL we will allow for propagated messages.
+*/
+static const int DEFAULT_MAX_TTL = 2;
 
 /**
     Public typedef for the JXTA Rendezvous service adhoc object.
@@ -107,11 +106,10 @@ struct _jxta_rdv_service_adhoc {
     volatile Jxta_boolean running;
 
     /* configuration */
-
-    char *groupiduniq;
-    char *assigned_id_str;
     Jxta_RdvConfigAdvertisement *rdvConfig;
+
     Jxta_PID *localPeerId;
+    char *groupiduniq;
 
     /* state */
 };
@@ -126,19 +124,20 @@ typedef struct _jxta_rdv_service_adhoc _jxta_rdv_service_adhoc;
  **/
 
 static _jxta_rdv_service_adhoc *jxta_rdv_service_adhoc_construct(_jxta_rdv_service_adhoc * myself,
-                                                                 const _jxta_rdv_service_provider_methods * methods);
+                                                                 const _jxta_rdv_service_provider_methods * methods,
+                                                                 apr_pool_t * pool);
 static void adhoc_delete(Jxta_object * service);
 static void adhoc_destruct(_jxta_rdv_service_adhoc * myself);
 
 static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service * service);
 static Jxta_status start(Jxta_rdv_service_provider * provider);
 static Jxta_status stop(Jxta_rdv_service_provider * provider);
-static Jxta_status get_peer(Jxta_rdv_service_provider * provider, Jxta_id * peerid, Jxta_peer** peer );
+static Jxta_status get_peer(Jxta_rdv_service_provider * provider, Jxta_id * peerid, Jxta_peer ** peer);
 static Jxta_status get_peers(Jxta_rdv_service_provider * provider, Jxta_vector ** peerlist);
 static Jxta_status propagate(Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
                              const char *serviceParam, int ttl);
 static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
-                        const char *serviceParam);
+                        const char *serviceParam, const char *target_hash);
 
 static const _jxta_rdv_service_provider_methods JXTA_RDV_SERVICE_ADHOC_METHODS = {
     "_jxta_rdv_service_provider_methods",
@@ -154,7 +153,7 @@ static const _jxta_rdv_service_provider_methods JXTA_RDV_SERVICE_ADHOC_METHODS =
 /**
  * Standard instantiator
  **/
-Jxta_rdv_service_provider *jxta_rdv_service_adhoc_new(void)
+Jxta_rdv_service_provider *jxta_rdv_service_adhoc_new(apr_pool_t * pool)
 {
     /* Allocate an instance of this service */
     _jxta_rdv_service_adhoc *myself = (_jxta_rdv_service_adhoc *) calloc(1, sizeof(_jxta_rdv_service_adhoc));
@@ -168,7 +167,7 @@ Jxta_rdv_service_provider *jxta_rdv_service_adhoc_new(void)
 
     /* call the hierarchy of ctors and Return the new object */
 
-    return (Jxta_rdv_service_provider *) jxta_rdv_service_adhoc_construct(myself, &JXTA_RDV_SERVICE_ADHOC_METHODS);
+    return (Jxta_rdv_service_provider *) jxta_rdv_service_adhoc_construct(myself, &JXTA_RDV_SERVICE_ADHOC_METHODS, pool);
 }
 
 
@@ -176,10 +175,12 @@ Jxta_rdv_service_provider *jxta_rdv_service_adhoc_new(void)
  * standard constructor. This is a "final" class so it's static.
  **/
 static _jxta_rdv_service_adhoc *jxta_rdv_service_adhoc_construct(_jxta_rdv_service_adhoc * myself,
-                                                                 const _jxta_rdv_service_provider_methods * methods)
+                                                                 const _jxta_rdv_service_provider_methods * methods,
+                                                                 apr_pool_t * pool)
 {
     Jxta_status res;
-    myself = (_jxta_rdv_service_adhoc *) jxta_rdv_service_provider_construct((_jxta_rdv_service_provider *) myself, methods);
+    myself =
+        (_jxta_rdv_service_adhoc *) jxta_rdv_service_provider_construct((_jxta_rdv_service_provider *) myself, methods, pool);
 
     if (NULL != myself) {
         /* Set our rt type checking string */
@@ -192,9 +193,6 @@ static _jxta_rdv_service_adhoc *jxta_rdv_service_adhoc_construct(_jxta_rdv_servi
         if (res != APR_SUCCESS) {
             return NULL;
         }
-
-        /** The following will be updated with initialized **/
-        myself->assigned_id_str = NULL;
 
         myself->running = FALSE;
     }
@@ -239,8 +237,6 @@ static void adhoc_destruct(_jxta_rdv_service_adhoc * myself)
     JXTA_OBJECT_RELEASE(myself->localPeerId);
 
     /* Release our references */
-    if (NULL != myself->assigned_id_str)
-        free(myself->assigned_id_str);
 
     /* Free the string that contains the name of the instance */
     if (NULL != myself->groupiduniq)
@@ -266,20 +262,12 @@ static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service 
     _jxta_rdv_service_adhoc *myself = (_jxta_rdv_service_adhoc *) PTValid(provider, _jxta_rdv_service_adhoc);
     JString *tmp = NULL;
     Jxta_PGID *gid;
-    JString *string = NULL;
     Jxta_PA *conf_adv = NULL;
     Jxta_RdvConfigAdvertisement *rdvConfig = NULL;
     Jxta_PG *parentgroup;
-    Jxta_id *assigned_id = jxta_service_get_assigned_ID_priv((Jxta_service *) service);
     Jxta_PG *group = jxta_service_get_peergroup_priv((Jxta_service *) service);
 
     jxta_rdv_service_provider_init(provider, service);
-
-    jxta_id_to_jstring(assigned_id, &string);
-
-    myself->assigned_id_str = strdup(jstring_get_string(string));
-
-    JXTA_OBJECT_RELEASE(string);
 
     jxta_PG_get_PID(group, &(myself->localPeerId));
 
@@ -336,17 +324,21 @@ static Jxta_status start(Jxta_rdv_service_provider * provider)
 
     res = jxta_rdv_service_provider_start(provider);
 
-    myself->running = TRUE;
+    if (JXTA_SUCCESS == res) {
+        myself->running = TRUE;
+    }
 
     jxta_rdv_service_provider_unlock_priv(provider);
 
-    jxta_rdv_generate_event((_jxta_rdv_service *)
-                            jxta_rdv_service_provider_get_service_priv((_jxta_rdv_service_provider *) myself),
-                            JXTA_RDV_BECAME_RDV, myself->localPeerId);
+    if (JXTA_SUCCESS == res) {
+        rdv_service_generate_event(provider->service, JXTA_RDV_BECAME_RDV, myself->localPeerId);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Rendezvous Ad-hoc started for group %s\n", myself->groupiduniq);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Rendezvous Ad-hoc started for group %s\n", myself->groupiduniq);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Rendezvous Ad-hoc failed to start for group %s\n", myself->groupiduniq);
+    }
 
-    return JXTA_SUCCESS;
+    return res;
 }
 
 /**
@@ -376,9 +368,7 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
 
     jxta_rdv_service_provider_unlock_priv(provider);
 
-    jxta_rdv_generate_event((_jxta_rdv_service *)
-                            jxta_rdv_service_provider_get_service_priv((_jxta_rdv_service_provider *) myself),
-                            JXTA_RDV_FAILED, myself->localPeerId);
+    rdv_service_generate_event(provider->service, JXTA_RDV_FAILED, myself->localPeerId);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Rendezvous Ad-hoc stopped for group %s\n", myself->groupiduniq);
 
@@ -393,7 +383,7 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
  * @param peer The result.
  * @return error code.
  **/
-static Jxta_status get_peer(Jxta_rdv_service_provider * provider, Jxta_id * peerid, Jxta_peer** peer )
+static Jxta_status get_peer(Jxta_rdv_service_provider * provider, Jxta_id * peerid, Jxta_peer ** peer)
 {
     _jxta_rdv_service_adhoc *myself = (_jxta_rdv_service_adhoc *) PTValid(provider, _jxta_rdv_service_adhoc);
 
@@ -446,38 +436,104 @@ static Jxta_status propagate(Jxta_rdv_service_provider * provider, Jxta_message 
                              const char *serviceParam, int ttl)
 {
     Jxta_status res;
+    _jxta_rdv_service_adhoc *myself = (_jxta_rdv_service_adhoc *) PTValid(provider, _jxta_rdv_service_adhoc);
+    Jxta_rdv_diffusion *header = jxta_rdv_diffusion_new();
 
-    res = jxta_rdv_service_provider_update_prophdr(provider, msg, serviceName, serviceParam, ttl > MAX_TTL ? MAX_TTL : ttl);
-
-    if (JXTA_SUCCESS == res) {
-        /* Send the message to ourself */
-        jxta_rdv_service_provider_prop_listener((Jxta_object *) msg, provider);
-
-        res = jxta_rdv_service_provider_prop_to_peers(provider, msg, TRUE);
+    if (NULL == header) {
+        res = JXTA_NOMEM;
+        return res;
     }
+
+    jxta_rdv_diffusion_set_src_peer_id(header, myself->localPeerId);
+    jxta_rdv_diffusion_set_policy(header, JXTA_RDV_DIFFUSION_POLICY_BROADCAST);
+    jxta_rdv_diffusion_set_scope(header, JXTA_RDV_DIFFUSION_SCOPE_GLOBAL);
+    jxta_rdv_diffusion_set_ttl(header, ttl > DEFAULT_MAX_TTL ? DEFAULT_MAX_TTL : ttl);
+    jxta_rdv_diffusion_set_dest_svc_name(header, serviceName);
+    jxta_rdv_diffusion_set_dest_svc_param(header, serviceParam);
+
+    res = jxta_message_remove_element_2(msg, JXTA_RDV_NS_NAME, JXTA_RDV_DIFFUSION_ELEMENT_NAME);
+
+    res = jxta_rdv_service_provider_prop_handler(provider, msg, header);
+
+    JXTA_OBJECT_RELEASE(header);
 
     return res;
 }
 
 /**
- * Walks a message within the PeerGroup for which the instance of the 
+* Walk a message within the PeerGroup for which the instance of the 
  * Rendezvous Service is running in.
  *
- * @param service a pointer to the instance of the Rendezvous Service
+* @param rdv a pointer to the instance of the Rendezvous Service
  * @param msg the Jxta_message* to propagate.
- * @param addr An EndpointAddress that defines on which address the message is destinated
- * to. Note that only the Service Name and Service Parameter of the EndpointAddress is used.
+* @param serviceName pointer to a string containing the name of the service 
+* on which the listener is listening on.
+* @param serviceParam pointer to a string containing the parameter associated
+* to the serviceName.
+* @param target_hash The hash value which is being sought.
  * @return error code.
  **/
 static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
-                        const char *serviceParam)
+                        const char *serviceParam, const char *target_hash)
 {
     Jxta_status res;
+    _jxta_rdv_service_adhoc *myself = (_jxta_rdv_service_adhoc *) PTValid(provider, _jxta_rdv_service_adhoc);
+    Jxta_rdv_diffusion *header = NULL;
 
-    res = jxta_rdv_service_provider_update_prophdr(provider, msg, serviceName, serviceParam, MAX_TTL);
+    res = jxta_rdv_service_provider_get_diffusion_header(msg, &header);
 
-    if (JXTA_SUCCESS == res) {
-        res = jxta_rdv_service_provider_prop_to_peers(provider, msg, TRUE);
+    if (JXTA_ITEM_NOTFOUND == res) {
+        header = jxta_rdv_diffusion_new();
+
+        if (NULL == header) {
+            res = JXTA_NOMEM;
+            return res;
+        }
+
+        jxta_rdv_diffusion_set_src_peer_id(header, myself->localPeerId);
+        jxta_rdv_diffusion_set_policy(header, JXTA_RDV_DIFFUSION_POLICY_BROADCAST);
+        jxta_rdv_diffusion_set_scope(header, JXTA_RDV_DIFFUSION_SCOPE_GLOBAL);
+        jxta_rdv_diffusion_set_ttl(header, 1);
+        jxta_rdv_diffusion_set_dest_svc_name(header, serviceName);
+        jxta_rdv_diffusion_set_dest_svc_param(header, serviceParam);
+    } else {
+        /* Validate that the addressing has not changed */
+        const char *current_param = jxta_rdv_diffusion_get_dest_svc_param(header);
+
+        if (0 != strcmp(serviceName, jxta_rdv_diffusion_get_dest_svc_name(header))) {
+            res = JXTA_INVALID_ARGUMENT;
+            goto FINAL_EXIT;
+        }
+
+        if ((NULL != current_param) && (NULL != serviceParam)) {
+            if (0 != strcmp(current_param, serviceParam)) {
+                res = JXTA_INVALID_ARGUMENT;
+                goto FINAL_EXIT;
+            }
+        } else {
+            if ((NULL != current_param) || (NULL != serviceParam)) {
+                res = JXTA_INVALID_ARGUMENT;
+                goto FINAL_EXIT;
+            }
+        }
+    }
+
+    jxta_rdv_diffusion_set_target_hash(header, target_hash);
+
+    res = jxta_rdv_service_provider_set_diffusion_header(msg, header);
+
+    if (JXTA_SUCCESS != res) {
+        goto FINAL_EXIT;
+    }
+
+    if ((JXTA_SUCCESS == res) && (JXTA_RDV_DIFFUSION_SCOPE_TERMINAL != jxta_rdv_diffusion_get_scope(header))) {
+        res = jxta_rdv_service_provider_prop_handler(provider, msg, header);
+    }
+
+  FINAL_EXIT:
+
+    if (NULL != header) {
+        JXTA_OBJECT_RELEASE(header);
     }
 
     return res;

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_config_adv.c,v 1.33 2006/03/15 01:40:35 slowhog Exp $
+ * $Id: jxta_rdv_config_adv.c,v 1.33.4.2 2006/11/29 01:49:50 slowhog Exp $
  */
 
 static const char *const __log_cat = "RdvCfgAdv";
@@ -66,7 +66,7 @@ static const char *const __log_cat = "RdvCfgAdv";
 
 /** Each of these corresponds to a tag in the 
  * xml ad.
- */ 
+ */
 enum tokentype {
     Null_,
     Jxta_RdvConfigAdvertisement_,
@@ -194,7 +194,7 @@ JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_interval_peerview(Jxta_RdvConfig
 {
     JXTA_OBJECT_CHECK_VALID(ad);
 
-    return (Jxta_time) ad->interval_peerview ;
+    return (Jxta_time) ad->interval_peerview;
 }
 
 JXTA_DECLARE(void) jxta_RdvConfig_set_interval_peerview(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff interval)
@@ -208,7 +208,7 @@ JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_pve_expires_peerview(Jxta_RdvCon
 {
     JXTA_OBJECT_CHECK_VALID(ad);
 
-    return ad->pve_expires_peerview  ;
+    return ad->pve_expires_peerview;
 }
 
 JXTA_DECLARE(void) jxta_RdvConfig_set_pve_expires_peerview(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff interval)
@@ -344,12 +344,12 @@ JXTA_DECLARE(void) jxta_RdvConfig_set_auto_rdv_interval(Jxta_RdvConfigAdvertisem
     ad->auto_rdv_interval = auto_rdv_interval;
 }
 
-JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_connect_delay(Jxta_RdvConfigAdvertisement *ad)
+JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_connect_delay(Jxta_RdvConfigAdvertisement * ad)
 {
     return ad->connect_delay;
 }
 
-JXTA_DECLARE(void) jxta_RdvConfig_set_connect_delay(Jxta_RdvConfigAdvertisement *ad, Jxta_time_diff delay)
+JXTA_DECLARE(void) jxta_RdvConfig_set_connect_delay(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff delay)
 {
     ad->connect_delay = delay;
 }
@@ -400,142 +400,176 @@ JXTA_DECLARE(void) jxta_RdvConfig_add_seeding(Jxta_RdvConfigAdvertisement * ad, 
     jxta_vector_add_object_last(ad->seeding, (Jxta_object *) seed);
 }
 
-
 /** Handler functions.  Each of these is responsible for 
  * dealing with all of the character data associated with the 
  * tag name.
  */
-void handleJxta_RdvConfigAdvertisement(void *userdata, const XML_Char * cd, int len)
+void handleJxta_RdvConfigAdvertisement(void *me, const XML_Char * cd, int len)
 {
-    Jxta_RdvConfigAdvertisement *ad = (Jxta_RdvConfigAdvertisement *) userdata;
-    const char **atts = ((Jxta_advertisement *) ad)->atts;
+    Jxta_RdvConfigAdvertisement *myself = (Jxta_RdvConfigAdvertisement *) me;
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Begining parse of jxta:RdvConfig\n");
+    JXTA_OBJECT_CHECK_VALID(myself);
 
-    while (atts && *atts) {
-        if (0 == strcmp(*atts, "type")) {
-            /* just silently skip it. */
-        } else if (0 == strcmp(*atts, "xmlns:jxta")) {
-            /* just silently skip it. */
-        } else if (0 == strcmp(*atts, "config")) {
-            if (0 == strcmp(atts[1], "adhoc")) {
-                ad->config = config_adhoc;
-            } else if (0 == strcmp(atts[1], "client")) {
-                ad->config = config_edge;
-            } else if (0 == strcmp(atts[1], "rendezvous")) {
-                ad->config = config_rendezvous;
+    if (0 == len) {
+        const char **atts = ((Jxta_advertisement *) myself)->atts;
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "START <jxta:RdvConfig> : [%pp]\n", myself);
+
+        while (atts && *atts) {
+            if (0 == strcmp(*atts, "type")) {
+                /* just silently skip it. */
+            } else if (0 == strcmp(*atts, "xmlns:jxta")) {
+                /* just silently skip it. */
+            } else if (0 == strcmp(*atts, "config")) {
+                if (0 == strcmp(atts[1], "adhoc")) {
+                    myself->config = config_adhoc;
+                } else if (0 == strcmp(atts[1], "client")) {
+                    myself->config = config_edge;
+                } else if (0 == strcmp(atts[1], "rendezvous")) {
+                    myself->config = config_rendezvous;
+                } else {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized configuration : %s \n", atts[1]);
+                }
+            } else if (0 == strcmp(*atts, "maxTTL")) {
+                myself->max_ttl = atoi(atts[1]);
+            } else if (0 == strcmp(*atts, "autoRendezvousInterval")) {
+                myself->auto_rdv_interval = atol(atts[1]);
+            } else if (0 == strcmp(*atts, "probeRelays")) {
+                myself->probe_relays = 0 == strcmp(atts[1], "true");
+            } else if (0 == strcmp(*atts, "connectCycleNormal")) {
+                myself->connect_cycle_normal = atoi(atts[1]);
+            } else if (0 == strcmp(*atts, "connectCycleFast")) {
+                myself->connect_cycle_fast = atoi(atts[1]);
+            } else if (0 == strcmp(*atts, "minRetryDelay")) {
+                myself->min_retry_delay = atoi(atts[1]);
+            } else if (0 == strcmp(*atts, "maxRetryDelay")) {
+                myself->max_retry_delay = atoi(atts[1]);
+            } else if (0 == strcmp(*atts, "maxClients")) {
+                myself->max_clients = atoi(atts[1]);
+            } else if (0 == strcmp(*atts, "leaseDuration")) {
+                myself->lease_duration = atol(atts[1]);
+            } else if (0 == strcmp(*atts, "leaseRenewalDelay")) {
+                myself->lease_renewal_delay = atol(atts[1]);
+            } else if (0 == strcmp(*atts, "leaseMargin")) {
+                myself->lease_margin = atol(atts[1]);
+            } else if (0 == strcmp(*atts, "minConnectedRendezvous")) {
+                myself->min_connected_rendezvous = atoi(atts[1]);
             } else {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized configuration : %s \n", atts[1]);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
             }
-        } else if (0 == strcmp(*atts, "maxTTL")) {
-            ad->max_ttl = atoi(atts[1]);
-        } else if (0 == strcmp(*atts, "autoRendezvousInterval")) {
-            ad->auto_rdv_interval = atol(atts[1]);
-        } else if (0 == strcmp(*atts, "probeRelays")) {
-            ad->probe_relays = 0 == strcmp(atts[1], "true");
-        } else if (0 == strcmp(*atts, "connectCycleNormal")) {
-            ad->connect_cycle_normal = atoi(atts[1]);
-        } else if (0 == strcmp(*atts, "connectCycleFast")) {
-            ad->connect_cycle_fast = atoi(atts[1]);
-        } else if (0 == strcmp(*atts, "minRetryDelay")) {
-            ad->min_retry_delay = atoi(atts[1]);
-        } else if (0 == strcmp(*atts, "maxRetryDelay")) {
-            ad->max_retry_delay = atoi(atts[1]);
-        } else if (0 == strcmp(*atts, "maxClients")) {
-            ad->max_clients = atoi(atts[1]);
-        } else if (0 == strcmp(*atts, "leaseDuration")) {
-            ad->lease_duration = atol(atts[1]);
-        } else if (0 == strcmp(*atts, "leaseRenewalDelay")) {
-            ad->lease_renewal_delay = atol(atts[1]);
-        } else if (0 == strcmp(*atts, "leaseMargin")) {
-            ad->lease_margin = atol(atts[1]);
-        }else if (0 == strcmp(*atts, "minConnectedRendezvous")) {
-            ad->min_connected_rendezvous = atoi(atts[1]);
-        } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
+
+            atts += 2;
         }
-
-        atts += 2;
-    }
-}
-
-static void handleSeeds(void *userdata, const XML_Char * cd, int len)
-{
-    Jxta_RdvConfigAdvertisement *ad = (Jxta_RdvConfigAdvertisement *) userdata;
-    const char **atts = ((Jxta_advertisement *) ad)->atts;
-
-    while (atts && *atts) {
-        if (0 == strcmp(*atts, "useOnlySeeds")) {
-            ad->use_only_seeds = 0 == strcmp(atts[1], "true");
-        } else if (0 == strcmp(*atts, "connectDelay")) {
-            ad->connect_delay = atol(atts[1]);
-        } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized seeds attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
-        }
-
-        atts += 2;
-    }
-}
-
-static void handlePeerView(void *userdata, const XML_Char * cd, int len)
-{
-    Jxta_RdvConfigAdvertisement *ad = (Jxta_RdvConfigAdvertisement *) userdata;
-    const char **atts = ((Jxta_advertisement *) ad)->atts;
-
-    while (atts && *atts) {
-        if (0 == strcmp(*atts, "pIntervalPeerView")) {
-            ad->interval_peerview = atoi(atts[1]);
-        } else if (0 == strcmp(*atts, "pveExpiresPeerView")) {
-            ad->pve_expires_peerview = atoi(atts[1]);
-        } else if (0 == strcmp(*atts, "rdvaRefreshPeerView")) {
-            ad->rdva_refresh = atoi(atts[1]);
-        } else if (0 == strcmp(*atts, "minHappyPeerView")) {
-            ad->min_happy_peerview = atoi(atts[1]);
-        } else if (0 == strcmp(*atts, "maxProbed")) {
-            ad->max_probed = atoi(atts[1]);
-        } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized PeerView attribute : \"%s\" = \"%s\"\n", *atts,
-                            atts[1]);
-        }
-
-        atts += 2;
-    }
-}
-
-static void handleAddr(void *userdata, const XML_Char * cd, int len)
-{
-    Jxta_RdvConfigAdvertisement *ad = (Jxta_RdvConfigAdvertisement *) userdata;
-    const char **atts = ((Jxta_advertisement *) ad)->atts;
-    Jxta_boolean seeding = FALSE;
-    JString *addrStr;
-    Jxta_endpoint_address *addr;
-
-    if (len == 0)
-        return;
-
-    while (atts && *atts) {
-        if (0 == strcmp(*atts, "seeding")) {
-            seeding = 0 == strcmp(atts[1], "true");
-        } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized addr attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
-        }
-
-        atts += 2;
-    }
-
-    addrStr = jstring_new_1(len);
-    jstring_append_0(addrStr, cd, len);
-    jstring_trim(addrStr);
-    addr = jxta_endpoint_address_new_1(addrStr);
-
-    if (seeding) {
-        jxta_vector_add_object_last(ad->seeding, (Jxta_object *) addr);
     } else {
-        jxta_vector_add_object_last(ad->seeds, (Jxta_object *) addr);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "FINISH <jxta:RdvConfig> : [%pp]\n", myself);
+    }
+}
+
+static void handleSeeds(void *me, const XML_Char * cd, int len)
+{
+    Jxta_RdvConfigAdvertisement *myself = (Jxta_RdvConfigAdvertisement *) me;
+
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    if (0 == len) {
+        const char **atts = ((Jxta_advertisement *) myself)->atts;
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "START <seeds> : [%pp]\n", myself);
+
+        while (atts && *atts) {
+            if (0 == strcmp(*atts, "useOnlySeeds")) {
+                myself->use_only_seeds = 0 == strcmp(atts[1], "true");
+            } else if (0 == strcmp(*atts, "connectDelay")) {
+                myself->connect_delay = atol(atts[1]);
+            } else {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized seeds attribute : \"%s\" = \"%s\"\n", *atts,
+                                atts[1]);
+            }
+
+            atts += 2;
+        }
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "FINISH <seeds> : [%pp]\n", myself);
+    }
+}
+
+static void handlePeerView(void *me, const XML_Char * cd, int len)
+{
+    Jxta_RdvConfigAdvertisement *myself = (Jxta_RdvConfigAdvertisement *) me;
+
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    if (0 == len) {
+        const char **atts = ((Jxta_advertisement *) myself)->atts;
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "START <peerview> : [%pp]\n", myself);
+
+        while (atts && *atts) {
+            if (0 == strcmp(*atts, "pIntervalPeerView")) {
+                myself->interval_peerview = atoi(atts[1]);
+            } else if (0 == strcmp(*atts, "pveExpiresPeerView")) {
+                myself->pve_expires_peerview = atoi(atts[1]);
+            } else if (0 == strcmp(*atts, "rdvaRefreshPeerView")) {
+                myself->rdva_refresh = atoi(atts[1]);
+            } else if (0 == strcmp(*atts, "minHappyPeerView")) {
+                myself->min_happy_peerview = atoi(atts[1]);
+            } else if (0 == strcmp(*atts, "maxProbed")) {
+                myself->max_probed = atoi(atts[1]);
+            } else {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized PeerView attribute : \"%s\" = \"%s\"\n", *atts,
+                                atts[1]);
+            }
+
+            atts += 2;
+        }
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "FINISH <peerview> : [%pp]\n", myself);
+    }
+}
+
+static void handleAddr(void *me, const XML_Char * cd, int len)
+{
+    Jxta_RdvConfigAdvertisement *myself = (Jxta_RdvConfigAdvertisement *) me;
+
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    if (0 == len) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "START <addr> : [%pp]\n", myself);
+    } else {
+        const char **atts = ((Jxta_advertisement *) myself)->atts;
+        Jxta_boolean seeding = FALSE;
+        JString *addrStr;
+        Jxta_endpoint_address *addr;
+
+        /* XXX bondolo handling of attributes is normally supposed to be done in first call. */
+        while (atts && *atts) {
+            if (0 == strcmp(*atts, "seeding")) {
+                seeding = 0 == strcmp(atts[1], "true");
+            } else {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized addr attribute : \"%s\" = \"%s\"\n", *atts,
+                                atts[1]);
+            }
+
+            atts += 2;
+        }
+
+        addrStr = jstring_new_1(len);
+        jstring_append_0(addrStr, cd, len);
+        jstring_trim(addrStr);
+
+        addr = jxta_endpoint_address_new_1(addrStr);
+
+        if (seeding) {
+            jxta_vector_add_object_last(myself->seeding, (Jxta_object *) addr);
+        } else {
+            jxta_vector_add_object_last(myself->seeds, (Jxta_object *) addr);
+        }
+
+        JXTA_OBJECT_RELEASE(addrStr);
+        JXTA_OBJECT_RELEASE(addr);
     }
 
-    JXTA_OBJECT_RELEASE(addrStr);
-    JXTA_OBJECT_RELEASE(addr);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "FINISH <addr> : [%pp]\n", myself);
 }
 
 /** Now, build an array of the keyword structs.  Since 
@@ -560,8 +594,9 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
     char tmpbuf[256];
     JString *string = jstring_new_0();
     unsigned int eachSeed;
-    jstring_append_2(string, "<!-- JXTA Rendezvous Configuration Advertisement -->\n");
-    jstring_append_2(string, "<jxta:RdvConfig xmlns:jxta=\"http://jxta.org\" type=\"jxta:RdvConfig\"");
+
+
+    jstring_append_2(string, "<jxta:RdvConfig xmlns:jxta=\"http://jxta.org\"");
     jstring_append_2(string, " config=\"");
     switch (ad->config) {
     case config_adhoc:
@@ -587,11 +622,8 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
     }
 
     if (-1 != ad->auto_rdv_interval) {
-        jstring_append_2(string, "\n    ");
-        jstring_append_2(string, " autoRendezvousInterval=\"");
-        apr_snprintf(tmpbuf, sizeof(tmpbuf), "%"APR_INT64_T_FMT, ad->auto_rdv_interval);
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), " autoRendezvousInterval=\"" JPR_DIFF_TIME_FMT "\"", ad->auto_rdv_interval);
         jstring_append_2(string, tmpbuf);
-        jstring_append_2(string, "\"");
     }
 
     if (!ad->probe_relays) {
@@ -610,7 +642,7 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
     if (-1 != ad->connect_cycle_normal) {
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, "connectCycleNormal=\"");
-        apr_snprintf(tmpbuf, sizeof(tmpbuf), "%"APR_INT64_T_FMT, ad->connect_cycle_normal);
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->connect_cycle_normal);
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
@@ -618,14 +650,14 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
     if (-1 != ad->connect_cycle_fast) {
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, "connectCycleFast=\"");
-        apr_snprintf(tmpbuf, sizeof(tmpbuf), "%"APR_INT64_T_FMT, ad->connect_cycle_fast);
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->connect_cycle_fast);
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
     if (-1 != ad->min_retry_delay) {
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, "minRetryDelay=\"");
-        apr_snprintf(tmpbuf, sizeof(tmpbuf), "%"APR_INT64_T_FMT, ad->min_retry_delay);
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->min_retry_delay);
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
@@ -633,23 +665,23 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
     if (-1 != ad->max_retry_delay) {
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, "maxRetryDelay=\"");
-        apr_snprintf(tmpbuf, sizeof(tmpbuf), "%"APR_INT64_T_FMT, ad->max_retry_delay);
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->max_retry_delay);
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
-        
+
     if (-1 != ad->lease_duration) {
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, " leaseDuration=\"");
-        apr_snprintf(tmpbuf, sizeof(tmpbuf), "%"APR_INT64_T_FMT, ad->lease_duration);
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->lease_duration);
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
-        
+
     if (-1 != ad->lease_renewal_delay) {
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, "leaseRenewalDelay=\"");
-        apr_snprintf(tmpbuf, sizeof(tmpbuf), "%"APR_INT64_T_FMT, ad->lease_renewal_delay);
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->lease_renewal_delay);
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
@@ -657,11 +689,11 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
     if (-1 != ad->lease_margin) {
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, " leaseMargin=\"");
-        apr_snprintf(tmpbuf, sizeof(tmpbuf), "%"APR_INT64_T_FMT, ad->lease_margin);
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->lease_margin);
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
-    
+
     if (-1 != ad->min_connected_rendezvous) {
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, "minConnectedRendezvous=\"");
@@ -669,22 +701,22 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
-   
+
     jstring_append_2(string, ">\n");
 
     jstring_append_2(string, "<peerview ");
     if (-1 != ad->interval_peerview) {
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, "pIntervalPeerView=\"");
-        apr_snprintf(tmpbuf, sizeof(tmpbuf), "%"APR_INT64_T_FMT, ad->interval_peerview);
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->interval_peerview);
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
-    
+
     if (-1 != ad->pve_expires_peerview) {
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, "pveExpiresPeerView=\"");
-        apr_snprintf(tmpbuf, sizeof(tmpbuf), "%"APR_INT64_T_FMT, ad->pve_expires_peerview);
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->pve_expires_peerview);
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
@@ -706,24 +738,22 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
     }
 
     if (-1 != ad->rdva_refresh) {
-        jstring_append_2(string, "\n    ");
-        jstring_append_2(string, "rdvaRefreshPeerView=\"");
-        apr_snprintf(tmpbuf, sizeof(tmpbuf), "%"APR_INT64_T_FMT, ad->rdva_refresh);
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), " rdvaRefreshPeerView=\"" JPR_DIFF_TIME_FMT "\"", ad->rdva_refresh);
         jstring_append_2(string, tmpbuf);
-        jstring_append_2(string, "\"");
     }
-    
+
     jstring_append_2(string, "/>\n");
+
     if ((jxta_vector_size(ad->seeds)) > 0 || (jxta_vector_size(ad->seeding) > 0)) {
         jstring_append_2(string, "<seeds");
         /* FIXME: We want to support useOnlySeeds */
         /*
-        if (ad->use_only_seeds) {
-            jstring_append_2(string, " useOnlySeeds=\"true\"");
-        }
-        */
+           if (ad->use_only_seeds) {
+           jstring_append_2(string, " useOnlySeeds=\"true\"");
+           }
+         */
         if (-1 != ad->connect_delay) {
-            apr_snprintf(tmpbuf, sizeof(tmpbuf), " connectDelay=\"%d\"", ad->connect_delay);
+            apr_snprintf(tmpbuf, sizeof(tmpbuf), " connectDelay=\"" JPR_DIFF_TIME_FMT "\"", ad->connect_delay);
             jstring_append_2(string, tmpbuf);
         }
         jstring_append_2(string, ">\n");
@@ -776,8 +806,7 @@ Jxta_RdvConfigAdvertisement *jxta_RdvConfigAdvertisement_construct(Jxta_RdvConfi
                                      "jxta:RdvConfig",
                                      Jxta_RdvConfigAdvertisement_tags,
                                      (JxtaAdvertisementGetXMLFunc) jxta_RdvConfigAdvertisement_get_xml,
-                                     (JxtaAdvertisementGetIDFunc) NULL,
-                                     (JxtaAdvertisementGetIndexFunc) jxta_RdvConfigAdvertisement_get_indexes);
+                                     (JxtaAdvertisementGetIDFunc) NULL, (JxtaAdvertisementGetIndexFunc) NULL);
 
     /* Fill in the required initialization code here. */
     if (NULL != self) {
@@ -849,12 +878,6 @@ JXTA_DECLARE(void) jxta_RdvConfigAdvertisement_parse_charbuffer(Jxta_RdvConfigAd
 JXTA_DECLARE(void) jxta_RdvConfigAdvertisement_parse_file(Jxta_RdvConfigAdvertisement * ad, FILE * stream)
 {
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
-}
-
-JXTA_DECLARE(Jxta_vector *) jxta_RdvConfigAdvertisement_get_indexes(void)
-{
-    const char *idx[][2] = { {NULL, NULL} };
-    return jxta_advertisement_return_indexes(idx[0]);
 }
 
 /* vim: set ts=4 sw=4 et tw=130: */

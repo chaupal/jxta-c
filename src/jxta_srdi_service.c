@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi_service.c,v 1.12 2006/08/19 16:50:57 mmx2005 Exp $
+ * $Id: jxta_srdi_service.c,v 1.12.4.1 2006/11/16 00:06:34 bondolo Exp $
  */
 
 #include "jxta_srdi_service_private.h"
@@ -59,11 +59,11 @@
  * The base srdi service ctor (not public: the only public way to make a
  * new pg is to instantiate one of the derived types).
  */
-void jxta_srdi_service_construct(Jxta_srdi_service * service, Jxta_srdi_service_methods * methods)
+void jxta_srdi_service_construct(Jxta_srdi_service * service, Jxta_srdi_service_methods const * methods)
 {
 
     PTValid(methods, Jxta_srdi_service_methods);
-    jxta_service_construct((Jxta_service *) service, (Jxta_service_methods *) methods);
+    jxta_service_construct((Jxta_service *) service, (Jxta_service_methods const *) methods);
     service->thisType = "Jxta_srdi_service";
 }
 
@@ -126,18 +126,16 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_forwardQuery_threshold(Jxta_srdi_service * s
     return VTBL->forwardQuery_threshold(service, resolver, peers, query, threshold);
 }
 
-JXTA_DECLARE(Jxta_peer *) jxta_srdi_getReplicaPeer(Jxta_srdi_service * service, Jxta_resolver_service * resolver,
-                                                   Jxta_peerview * peerview, const char *expression)
+JXTA_DECLARE(Jxta_peer *) jxta_srdi_getReplicaPeer(Jxta_srdi_service * service, const char *expression)
 {
     PTValid(service, Jxta_srdi_service);
-    return VTBL->getReplicaPeer(service, resolver, peerview, expression);
+    return VTBL->getReplicaPeer(service, expression);
 }
 
-JXTA_DECLARE(Jxta_peer *) jxta_srdi_getNumericReplica(Jxta_srdi_service * service, Jxta_resolver_service * resolver,
-                                                      Jxta_peerview * peerview, Jxta_range * rge, const char *value)
+JXTA_DECLARE(Jxta_peer *) jxta_srdi_getNumericReplica(Jxta_srdi_service * service, Jxta_range * rge, const char *value)
 {
     PTValid(service, Jxta_srdi_service);
-    return VTBL->getNumericReplica(service, resolver, peerview, rge, value);
+    return VTBL->getNumericReplica(service, rge, value);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_forwardSrdiMessage(Jxta_srdi_service * service, Jxta_resolver_service * resolver,

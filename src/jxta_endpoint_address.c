@@ -50,12 +50,13 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_address.c,v 1.41 2006/08/20 20:21:07 bondolo Exp $
+ * $Id: jxta_endpoint_address.c,v 1.41.4.1 2006/12/23 19:16:25 slowhog Exp $
  */
 
 static const char *__log_cat = "EA";
 
 #include <stdlib.h>
+#include <assert.h>
 #include <apr_uri.h>
 
 #include "jxta_types.h"
@@ -453,6 +454,20 @@ JXTA_DECLARE(Jxta_boolean) jxta_endpoint_address_equals(Jxta_endpoint_address * 
             string_compare(addr1->protocol_address, addr2->protocol_address) &&
             string_compare(addr1->service_name, addr2->service_name) &&
             string_compare(addr1->service_params, addr2->service_params));
+}
+
+JXTA_DECLARE(Jxta_boolean) jxta_endpoint_address_transport_addr_equals(Jxta_endpoint_address * addr1, 
+                                                                       Jxta_endpoint_address * addr2)
+{
+    assert(JXTA_OBJECT_CHECK_VALID(addr1));
+    assert(JXTA_OBJECT_CHECK_VALID(addr2));
+
+    if (addr1 == addr2) {
+        return TRUE;
+    }
+
+    return (0 == strcasecmp(addr1->protocol_name, addr2->protocol_name) &&
+            0 == strcasecmp(addr1->protocol_address, addr2->protocol_address));
 }
 
 /* vim: set ts=4 sw=4 tw=130 et: */

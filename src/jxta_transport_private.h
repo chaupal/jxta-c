@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_private.h,v 1.18 2006/09/06 21:45:18 slowhog Exp $
+ * $Id: jxta_transport_private.h,v 1.18.4.2 2006/12/23 20:18:37 slowhog Exp $
  */
 
 #ifndef JXTA_TRANSPORT_PRIVATE_H
@@ -79,7 +79,9 @@ extern "C" {
 typedef struct _jxta_transport_methods Jxta_transport_methods;
 
 typedef enum Jxta_transport_event_types {
-    JXTA_TRANSPORT_INBOUND_CONNECT = 0
+    JXTA_TRANSPORT_INBOUND_CONNECTED = 0,
+    JXTA_TRANSPORT_OUTBOUND_CONNECTED,
+    JXTA_TRANSPORT_CONNECTION_CLOSED
 } Jxta_transport_event_type;
 
 typedef struct _jxta_transport_event {
@@ -89,6 +91,7 @@ typedef struct _jxta_transport_event {
     Jxta_id *peer_id;
     /* endpoint address in the welcome msg */
     Jxta_endpoint_address *dest_addr;
+    JxtaEndpointMessenger * msgr;
 } Jxta_transport_event;
 
 Jxta_transport_event *jxta_transport_event_new(Jxta_transport_event_type event_type);

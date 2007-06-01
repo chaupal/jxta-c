@@ -1,16 +1,19 @@
-/* Copyright 2006 Sun Microsystems, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed
+ * with this work for additional information regarding copyright
+ * ownership.  The ASF licenses this file to you under the Apache
+ * License, Version 2.0 (the "License"); you may not use this file
+ * except in compliance with the License.  You may obtain a copy of
+ * the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied.  See the License for the specific language governing
+ * permissions and limitations under the License.
  */
 
 #include <assert.h>
@@ -230,6 +233,7 @@ static void *APR_THREAD_FUNC thread_pool_func(apr_thread_t * t, void *param)
         while (NULL != task && !me->terminated) {
             elt->current_owner = task->owner;
             apr_thread_mutex_unlock(me->lock);
+            apr_thread_data_set(task, "apr_thread_pool_task", NULL, t);
             task->func(t, task->param);
             apr_thread_mutex_lock(me->lock);
             APR_RING_INSERT_TAIL(me->recycled_tasks, task,
@@ -595,21 +599,22 @@ static void wait_on_busy_threads(apr_thread_pool_t * me, void *owner)
     apr_thread_mutex_lock(me->lock);
     elt = APR_RING_FIRST(me->busy_thds);
     while (elt != APR_RING_SENTINEL(me->busy_thds, apr_thread_list_elt, link)) {
-#ifndef NDEBUG
-        /* make sure the thread is not the one calling tasks_cancel */
-        apr_os_thread_t *os_thread;
-        apr_os_thread_get(&os_thread, elt->thd);
-#ifdef WIN32 /* hack for apr win32 bug */
-        assert(!apr_os_thread_equal(apr_os_thread_current(), os_thread));
-#else
-        assert(!apr_os_thread_equal(apr_os_thread_current(), *os_thread));
-#endif
-#endif
         if (elt->current_owner != owner) {
             elt = APR_RING_NEXT(elt, link);
             continue;
         }
         while (elt->current_owner == owner) {
+#ifndef NDEBUG
+            /* make sure the thread is not the one calling tasks_cancel */
+            apr_os_thread_t *os_thread;
+            apr_os_thread_get(&os_thread, elt->thd);
+#ifdef WIN32
+            /* hack for apr win32 bug */
+            assert(!apr_os_thread_equal(apr_os_thread_current(), os_thread));
+#else
+            assert(!apr_os_thread_equal(apr_os_thread_current(), *os_thread));
+#endif
+#endif
             apr_thread_mutex_unlock(me->lock);
             apr_sleep(200 * 1000);
             apr_thread_mutex_lock(me->lock);
@@ -806,6 +811,27 @@ APR_DECLARE(apr_size_t) apr_thread_pool_threshold_set(apr_thread_pool_t * me,
     ov = me->threshold;
     me->threshold = val;
     return ov;
+}
+
+APR_DECLARE(apr_status_t) apr_thread_pool_task_owner_get(apr_thread_pool_t * me,
+                                                         apr_thread_t * thd,
+                                                         void ** owner)
+{
+    apr_status_t rv;
+    apr_thread_pool_task_t * task;
+    
+    rv = apr_thread_data_get((void**) &task, "apr_thread_pool_task", thd);
+    if (rv != APR_SUCCESS) {
+        return rv;
+    }
+
+    if (!task) {
+        *owner = NULL;
+        return APR_BADARG;
+    }
+    
+    *owner = task->owner;
+    return APR_SUCCESS;
 }
 
 #endif /* APR_HAS_THREADS */

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_config_adv.h,v 1.14 2006/06/14 21:03:42 slowhog Exp $
+ * $Id: jxta_rdv_config_adv.h,v 1.14.4.1 2006/11/16 00:06:32 bondolo Exp $
  */
 
 
@@ -72,6 +72,7 @@ extern "C" {
 typedef struct _jxta_RdvConfigAdvertisement Jxta_RdvConfigAdvertisement;
 
 enum RdvConfig_configurations {
+    config_unknown,
     config_adhoc,
     config_edge,
     config_rendezvous
@@ -108,9 +109,6 @@ JXTA_DECLARE(void) jxta_RdvConfig_set_interval_peerview(Jxta_RdvConfigAdvertisem
 
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_pve_expires_peerview(Jxta_RdvConfigAdvertisement *);
 JXTA_DECLARE(void) jxta_RdvConfig_set_pve_expires_peerview(Jxta_RdvConfigAdvertisement *, Jxta_time_diff);
-
-JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_rdva_refresh(Jxta_RdvConfigAdvertisement *);
-JXTA_DECLARE(void) jxta_RdvConfig_set_rdva_refresh(Jxta_RdvConfigAdvertisement *, Jxta_time_diff);
 
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_connect_cycle_normal(Jxta_RdvConfigAdvertisement *);
 JXTA_DECLARE(void) jxta_RdvConfig_set_connect_cycle_normal(Jxta_RdvConfigAdvertisement *, Jxta_time_diff);

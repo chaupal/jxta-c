@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pm.h,v 1.10 2005/09/21 21:16:49 slowhog Exp $
+ * $Id: jxta_pm.h,v 1.11 2006/11/04 10:44:47 mmx2005 Exp $
  */
 
 
@@ -86,7 +86,6 @@ JXTA_DECLARE(void) RendezVousPropagateMessage_set_DestSParam(RendezVousPropagate
 
 JXTA_DECLARE(JString *) RendezVousPropagateMessage_get_MessageId(RendezVousPropagateMessage *);
 JXTA_DECLARE(void) RendezVousPropagateMessage_set_MessageId(RendezVousPropagateMessage *, const char *);
-
 
 JXTA_DECLARE(Jxta_vector *) RendezVousPropagateMessage_get_Path(RendezVousPropagateMessage *);
 JXTA_DECLARE(void) RendezVousPropagateMessage_set_Path(RendezVousPropagateMessage *, Jxta_vector *);

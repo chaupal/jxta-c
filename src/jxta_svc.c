@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_svc.c,v 1.57 2006/09/01 03:08:10 bondolo Exp $
+ * $Id: jxta_svc.c,v 1.58 2006/10/31 19:55:33 bondolo Exp $
  */
 
 static const char *__log_cat = "SVCADV";
@@ -81,18 +81,15 @@ enum tokentype {
     Svc_,
     MCID_,
     Parm_,
-    RootCert_,
-    Addr_,
-    Rdv_,
     TCPTransportAdvertisement_,
     HTTPTransportAdvertisement_,
-    RelayAdvertisement_,
     RouteAdvertisement_,
     CacheConfigAdvertisement_,
     DiscoveryConfigAdvertisement_,
     RdvConfigAdvertisement_,
     SrdiConfigAdvertisement_,
     EndPointConfigAdvertisement_,
+    RelayConfigAdvertisement_,
     isClient_,
     isServer_,
     httpaddress_,
@@ -107,27 +104,25 @@ enum tokentype {
  */
 struct _jxta_svc {
     Jxta_advertisement jxta_advertisement;
-    char *Svc;
+
     Jxta_id *MCID;
-    JString *RootCert;
-    Jxta_TCPTransportAdvertisement *tta;
-    Jxta_HTTPTransportAdvertisement *hta;
-    Jxta_RelayAdvertisement *relaya;
-    Jxta_RouteAdvertisement *route;
-    Jxta_CacheConfigAdvertisement *cacheConfig;
-    Jxta_DiscoveryConfigAdvertisement *discoveryConfig;
-    Jxta_EndPointConfigAdvertisement *endpointConfig;
-    Jxta_RdvConfigAdvertisement *rdvConfig;
-    Jxta_SrdiConfigAdvertisement *srdiConfig;
+    
+    Jxta_advertisement *parm;
+    
+    JString             *text_parm;
+
 };
 
 /* forward decl for un-exported function */
-static void jxta_svc_delete(Jxta_svc *);
-static void handleCacheConfigAdv(void *userdata, const XML_Char *cd, int len);
-static void handleDiscoveryConfigAdv(void *userdata, const XML_Char * cd, int len);
-static void handleRdvConfigAdv(void *userdata, const XML_Char * cd, int len);
-static void handleSrdiConfigAdv(void *userdata, const XML_Char * cd, int len);
-static void handleEndPointConfigAdv(void *userdata, const XML_Char * cd, int len);
+static void svc_delete(Jxta_object *);
+static void handleCacheConfigAdv(void *me, const XML_Char *cd, int len);
+static void handleDiscoveryConfigAdv(void *me, const XML_Char * cd, int len);
+static void handleRdvConfigAdv(void *me, const XML_Char * cd, int len);
+static void handleSrdiConfigAdv(void *me, const XML_Char * cd, int len);
+static void handleEndPointConfigAdv(void *me, const XML_Char * cd, int len);
+static void handleRelayConfig(void *me, const XML_Char * cd, int len);
+
+static Jxta_status validate_advertisement(Jxta_svc *myself);
 
 /** Handler functions.  Each of these is responsible for 
  * dealing with all of the character data associated with the 
@@ -135,26 +130,31 @@ static void handleEndPointConfigAdv(void *userdata, const XML_Char * cd, int len
  * tag has been seen in the enclosing element. Here we see only the end tag
  * (if we ever see it...normally not)
  */
-static void handleSvc(void *userdata, const XML_Char * cd, int len)
+static void handleSvc(void *me, const XML_Char * cd, int len)
 {
-    /* Jxta_svc * ad = (Jxta_svc*)userdata; */
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "End Svc element\n");
+    Jxta_svc *ad = (Jxta_svc *) me;
+    
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    if( 0 == len ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "START <Svc> : [%pp]\n", ad);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "FINISH <Svc> : [%pp]\n", ad);
+    }
 }
 
-static void handleMCID(void *userdata, const XML_Char * cd, int len)
+static void handleMCID(void *me, const XML_Char * cd, int len)
 {
-    JString *tmp;
-    Jxta_id *mcid = NULL;
+    Jxta_svc *ad = (Jxta_svc *) me;
 
-    Jxta_svc *ad = (Jxta_svc *) userdata;
+    JXTA_OBJECT_CHECK_VALID(ad);
 
-    if (len == 0)
+    if (len == 0) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <MCID> : [%pp]\n", ad);
         return;
-
-    /* Make room for a final \0 in advance. fromString calls get_string
-     * which adds a \0 at the end.
-     */
-    tmp = jstring_new_1(len + 1);
+    } else {
+        JString *tmp = jstring_new_1(len);
+        Jxta_id *mcid = NULL;
 
     jstring_append_0(tmp, (char *) cd, len);
     jstring_trim(tmp);
@@ -167,390 +167,337 @@ static void handleMCID(void *userdata, const XML_Char * cd, int len)
         JXTA_OBJECT_RELEASE(mcid);
     }
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Done MCID element\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <MCID> : [%pp]\n", ad);
+}
 }
 
-/* There really isn't any reason to 1. have this tag, or 2. 
- * handle it here, which is why it was originally ignored.
- */
-static void handleParm(void *userdata, const XML_Char * cd, int len)
+static void handleParm(void *me, const XML_Char * cd, int len)
 {
-    /* Jxta_svc * ad = (Jxta_svc*)userdata; */
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Seen Parm or /Parm tag\n");
+    Jxta_svc *myself = (Jxta_svc *) me;
 
-    /* When we get the start and end tags on that one, we pretend it's just
-     * a text element while in reality it is a complex subelement.
-     * Since we have no text value in addition to sub-elements, it does not
-     * matter; it just looks like an empty text element. The only impact is
-     * that the jstring that serves to accumulate text values of elements
-     * is reset twice in a row before this element ends: once at the
-     * end of the last subelement, and once at the end of this element.
-     * Breaks nothing. Only possible trbl: if there's an MCID inside the
-     * Parm element, then it will be mistaken for a second occurence of
-     * MCID at the top level. Incorrect but not a concern for now.
-     */
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    if( 0 == len ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <Parm> : [%pp]\n", myself);
+    } else {
+        if( NULL == myself->parm ) {
+            JString *tmp = jstring_new_1(len);
+
+            jstring_append_0(tmp, (char *) cd, len);
+            jstring_trim(tmp);
+
+            myself->text_parm = tmp;
+    }
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <Parm> : [%pp]\n", myself);
+    }
 }
 
-static void handleRootCert(void *userdata, const XML_Char * cd, int len)
+static void handleHTTPTransportAdvertisement(void *me, const XML_Char * cd, int len)
 {
-    Jxta_svc *ad = (Jxta_svc *) userdata;
-    JString *cert;
-    if (len == 0)
-        return; /* start tag or empty data. */
+    Jxta_svc *ad = (Jxta_svc *) me;
 
-    cert = jstring_new_1(len + 1);
-    jstring_append_0(cert, (char *) cd, len);
-    jstring_trim(cert);
-    jxta_svc_set_RootCert(ad, cert);
-    JXTA_OBJECT_RELEASE(cert);
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Done RootCert element\n");
-}
-
-static void handleAddr(void *userdata, const XML_Char * cd, int len)
-{
-    JString *addr;
-    Jxta_svc *ad = (Jxta_svc *) userdata;
+    JXTA_OBJECT_CHECK_VALID(ad);
 
     if (len == 0) {
-        return;
-    }
+        Jxta_HTTPTransportAdvertisement *hta = jxta_HTTPTransportAdvertisement_new();
 
-    if (NULL == ad->rdvConfig) {
-        Jxta_RdvConfigAdvertisement *rdvConfig = jxta_RdvConfigAdvertisement_new();
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <jxta:HTTPTransportAdvertisement> Element[%pp]\n", ad );
 
-        jxta_svc_set_RdvConfig(ad, rdvConfig);
-        JXTA_OBJECT_RELEASE(rdvConfig);
+        jxta_svc_set_HTTPTransportAdvertisement(ad, hta);
 
-        jxta_RdvConfig_set_config(ad->rdvConfig, config_edge);
-    }
-
-    /*
-     * This tag can only be handled properly with the JXTA_ADV_PAIRED_CALLS
-     * option. We depend on it. There must be exactly one non-empty call
-     * per address.
-     */
-
-    addr = jstring_new_1(len);
-    jstring_append_0(addr, cd, len);
-    jstring_trim(addr);
-
-    if (jstring_length(addr) != 0) {
-        Jxta_endpoint_address *ea = jxta_endpoint_address_new_1(addr);
-
-        jxta_RdvConfig_add_seed(ad->rdvConfig, ea);
-
-        JXTA_OBJECT_RELEASE(ea);
-    }
-
-    JXTA_OBJECT_RELEASE(addr);
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Done Addr element\n");
-}
-
-static void handleRdv(void *userdata, const XML_Char * cd, int len)
-{
-    const char *p = (const char *) cd;
-    Jxta_svc *ad = (Jxta_svc *) userdata;
-    if (len == 0)
-        return;
-
-    if (NULL == ad->rdvConfig) {
-        Jxta_RdvConfigAdvertisement *rdvConfig = jxta_RdvConfigAdvertisement_new();
-
-        jxta_svc_set_RdvConfig(ad, rdvConfig);
-        JXTA_OBJECT_RELEASE(rdvConfig);
-    }
-
-    /*
-     * else the tag is present. May be it is explicitly set to false,
-     * implicit value is true.
-     * The checking for FALSE may look weird but it is quite more
-     * economical than than implementing stncasecmp (non-posix) just for
-     * that.
-     */
-    while (isspace(*p)) {
-        ++p;
-        --len;
-    }
-
-    if (((len-- > 0) && (toupper(*p++) == 'F'))
-        && ((len-- > 0) && (toupper(*p++) == 'A'))
-        && ((len-- > 0) && (toupper(*p++) == 'L'))
-        && ((len-- > 0) && (toupper(*p++) == 'S'))
-        && ((len-- > 0) && (toupper(*p++) == 'E'))) {
-
-        jxta_RdvConfig_set_config(ad->rdvConfig, config_edge);
+        jxta_advertisement_set_handlers((Jxta_advertisement *) hta, ((Jxta_advertisement *) ad)->parser, (void *) ad);
+        JXTA_OBJECT_RELEASE(hta);
     } else {
-        jxta_RdvConfig_set_config(ad->rdvConfig, config_rendezvous);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <jxta:HTTPTransportAdvertisement> Element [%pp]\n", ad );
     }
 }
 
-static void handleHTTPTransportAdvertisement(void *userdata, const XML_Char * cd, int len)
+static void handleRouteAdvertisement(void *me, const XML_Char * cd, int len)
 {
-    Jxta_svc *ad = (Jxta_svc *) userdata;
-    Jxta_HTTPTransportAdvertisement *hta = jxta_HTTPTransportAdvertisement_new();
+    Jxta_svc *ad = (Jxta_svc *) me;
 
-    jxta_svc_set_HTTPTransportAdvertisement(ad, hta);
-    JXTA_OBJECT_RELEASE(hta);
+    JXTA_OBJECT_CHECK_VALID(ad);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Begin Svc handleHTTPTransportAdvertisement" " (end may not show)\n");
-
-    jxta_advertisement_set_handlers((Jxta_advertisement *) hta, ((Jxta_advertisement *) ad)->parser, (void *) ad);
-}
-
-static void handleRouteAdvertisement(void *userdata, const XML_Char * cd, int len)
-{
-    Jxta_svc *ad = (Jxta_svc *) userdata;
+    if (len == 0) {
     Jxta_RouteAdvertisement *ra = jxta_RouteAdvertisement_new();
 
-    jxta_svc_set_RouteAdvertisement(ad, ra);
-    JXTA_OBJECT_RELEASE(ra);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <jxta:RA> : [%pp]\n", ad);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Begin Svc handleRouteAdvertisement" " (end may not show)\n");
+        jxta_svc_set_RouteAdvertisement(ad, ra);
 
     jxta_advertisement_set_handlers((Jxta_advertisement *) ra, ((Jxta_advertisement *) ad)->parser, (void *) ad);
+        JXTA_OBJECT_RELEASE(ra);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <jxta:RA> : [%pp]\n", ad);
+    }
 }
 
-static void handleTCPTransportAdvertisement(void *userdata, const XML_Char * cd, int len)
+static void handleTCPTransportAdvertisement(void *me, const XML_Char * cd, int len)
 {
-    Jxta_svc *ad = (Jxta_svc *) userdata;
+    Jxta_svc *ad = (Jxta_svc *) me;
+    
+    JXTA_OBJECT_CHECK_VALID(ad);
+    
+    if (len == 0) {
     Jxta_TCPTransportAdvertisement *tta = jxta_TCPTransportAdvertisement_new();
 
-    jxta_svc_set_TCPTransportAdvertisement(ad, tta);
-    JXTA_OBJECT_RELEASE(tta);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <jxta:TCPTransportAdvertisement> Element [%pp]\n", ad );
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "BEGIN Svc handleTCPTransportAdvertisement\n");
+        jxta_svc_set_TCPTransportAdvertisement(ad, tta);
 
     jxta_advertisement_set_handlers((Jxta_advertisement *) tta, ((Jxta_advertisement *) ad)->parser, (void *) ad);
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "END Svc handleTCPTransportAdvertisement\n");
+        JXTA_OBJECT_RELEASE(tta);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <jxta:TCPTransportAdvertisement> Element [%pp]\n", ad );
+    }
 }
  
-static void handleCacheConfigAdv(void *userdata, const XML_Char * cd, int len)
+static void handleCacheConfigAdv(void *me, const XML_Char * cd, int len)
 {
-    Jxta_svc *ad = (Jxta_svc *) userdata;
-    Jxta_CacheConfigAdvertisement *cacheConfig = jxta_CacheConfigAdvertisement_new();
+    Jxta_svc *ad = (Jxta_svc *) me;
 
-    jxta_svc_set_CacheConfig(ad, cacheConfig);
-    JXTA_OBJECT_RELEASE(cacheConfig);
+    JXTA_OBJECT_CHECK_VALID(ad);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Begin Svc handleCacheConfig\n");
+    if (len == 0) {
+        Jxta_CacheConfigAdvertisement *cacheConfig = jxta_CacheConfigAdvertisement_new();
 
-    jxta_advertisement_set_handlers((Jxta_advertisement *) cacheConfig, ((Jxta_advertisement *) ad)->parser, (void *) ad);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <jxta:CacheConfig> Element [%pp]\n", ad );
 
-    ((Jxta_advertisement *) cacheConfig)->atts = ((Jxta_advertisement *) ad)->atts;
-    handleJxta_CacheConfigAdvertisement(cacheConfig, cd, len);
+        jxta_svc_set_CacheConfig(ad, cacheConfig);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "END Svc handleCacheConfig\n");
+        jxta_advertisement_set_handlers((Jxta_advertisement *) cacheConfig, ((Jxta_advertisement *) ad)->parser, (void *) ad);
+        JXTA_OBJECT_RELEASE(cacheConfig);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <jxta:CacheConfig> Element [%pp]\n", ad );
+    }
 }
 
-static void handleDiscoveryConfigAdv(void *userdata, const XML_Char * cd, int len)
+static void handleDiscoveryConfigAdv(void *me, const XML_Char * cd, int len)
 {
-    Jxta_svc *ad = (Jxta_svc *) userdata;
-    Jxta_DiscoveryConfigAdvertisement *discoveryConfig = jxta_DiscoveryConfigAdvertisement_new();
+    Jxta_svc *ad = (Jxta_svc *) me;
 
-    jxta_svc_set_DiscoveryConfig(ad, discoveryConfig);
-    JXTA_OBJECT_RELEASE(discoveryConfig);
+    JXTA_OBJECT_CHECK_VALID(ad);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Begin Svc handleDiscoveryConfig\n");
+    if (len == 0) {
+        Jxta_DiscoveryConfigAdvertisement *discoveryConfig = jxta_DiscoveryConfigAdvertisement_new();
 
-    jxta_advertisement_set_handlers((Jxta_advertisement *) discoveryConfig, ((Jxta_advertisement *) ad)->parser, (void *) ad);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <jxta:DiscoveryConfig> Element [%pp]\n", ad );
 
-    ((Jxta_advertisement *) discoveryConfig)->atts = ((Jxta_advertisement *) ad)->atts;
-    handleJxta_DiscoveryConfigAdvertisement(discoveryConfig, cd, len);
+        jxta_svc_set_DiscoveryConfig(ad, discoveryConfig);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "END Svc handleDiscoveryConfig\n");
+        jxta_advertisement_set_handlers((Jxta_advertisement *) discoveryConfig, ((Jxta_advertisement *) ad)->parser, (void *) ad);
+        JXTA_OBJECT_RELEASE(discoveryConfig);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <jxta:DiscoveryConfig> Element [%pp]\n", ad );
+    }
 }
 
-static void handleRdvConfigAdv(void *userdata, const XML_Char * cd, int len)
+static void handleRdvConfigAdv(void *me, const XML_Char * cd, int len)
 {
-    Jxta_svc *ad = (Jxta_svc *) userdata;
-    Jxta_RdvConfigAdvertisement *rdvConfig = jxta_RdvConfigAdvertisement_new();
+    Jxta_svc *ad = (Jxta_svc *) me;
 
-    jxta_svc_set_RdvConfig(ad, rdvConfig);
-    JXTA_OBJECT_RELEASE(rdvConfig);
+    JXTA_OBJECT_CHECK_VALID(ad);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Begin Svc handleRdvConfig\n");
+    if (len == 0) {
+        Jxta_RdvConfigAdvertisement *rdvConfig = jxta_RdvConfigAdvertisement_new();
 
-    jxta_advertisement_set_handlers((Jxta_advertisement *) rdvConfig, ((Jxta_advertisement *) ad)->parser, (void *) ad);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <jxta:RdvConfig> Element [%pp]\n", ad );
 
-    ((Jxta_advertisement *) rdvConfig)->atts = ((Jxta_advertisement *) ad)->atts;
-    handleJxta_RdvConfigAdvertisement(rdvConfig, cd, len);
+        jxta_svc_set_RdvConfig(ad, rdvConfig);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "END Svc handleRdvConfig\n");
+        jxta_advertisement_set_handlers((Jxta_advertisement *) rdvConfig, ((Jxta_advertisement *) ad)->parser, (void *) ad);
+        JXTA_OBJECT_RELEASE(rdvConfig);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <jxta:RdvConfig> Element [%pp]\n", ad );
+    }
 }
 
-static void handleSrdiConfigAdv(void *userdata, const XML_Char * cd, int len)
+static void handleSrdiConfigAdv(void *me, const XML_Char * cd, int len)
 {
-    Jxta_svc *ad = (Jxta_svc *) userdata;
+    Jxta_svc *ad = (Jxta_svc *) me;
+    
+    JXTA_OBJECT_CHECK_VALID(ad);
+    
+    if (len == 0) {
     Jxta_SrdiConfigAdvertisement *srdiConfig = jxta_SrdiConfigAdvertisement_new();
 
-    jxta_svc_set_SrdiConfig(ad, srdiConfig);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <jxta:SrdiConfig> Element [%pp]\n", ad );
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Begin Svc handleSrdiConfig\n");
+        jxta_svc_set_SrdiConfig(ad, srdiConfig);
 
     jxta_advertisement_set_handlers((Jxta_advertisement *) srdiConfig, ((Jxta_advertisement *) ad)->parser, (void *) ad);
-
-    ((Jxta_advertisement *) srdiConfig)->atts = ((Jxta_advertisement *) ad)->atts;
-    handleJxta_SrdiConfigAdvertisement(srdiConfig, cd, len);
     JXTA_OBJECT_RELEASE(srdiConfig);
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "END Svc handleSrdiConfig\n");
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <jxta:SrdiConfig> Element [%pp]\n", ad );
+    }
 }
 
-static void handleEndPointConfigAdv(void *userdata, const XML_Char * cd, int len)
+static void handleEndPointConfigAdv(void *me, const XML_Char * cd, int len)
 {
-    Jxta_svc *ad = (Jxta_svc*) userdata;
+    Jxta_svc *ad = (Jxta_svc *) me;
+    
+    JXTA_OBJECT_CHECK_VALID(ad);
+    
+    if (len == 0) {
     Jxta_EndPointConfigAdvertisement *endpointConfig = jxta_EndPointConfigAdvertisement_new();
         
-    jxta_svc_set_EndPointConfig(ad, endpointConfig);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <jxta:EndPointConfig> Element [%pp]\n", ad );
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Begin Svc handleEndPointConfig\n");
+        jxta_svc_set_EndPointConfig(ad, endpointConfig);
 
     jxta_advertisement_set_handlers((Jxta_advertisement *) endpointConfig, ((Jxta_advertisement *) ad)->parser, (void *) ad);
-
-    ((Jxta_advertisement *) endpointConfig)->atts = ((Jxta_advertisement *) ad)->atts;
-    handleJxta_EndPointConfigAdvertisement(endpointConfig, cd, len);
     JXTA_OBJECT_RELEASE(endpointConfig);
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "END Svc handleEndPointConfig\n");
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <jxta:EndPointConfig> Element [%pp]\n", ad );
+    }
 }
 
-static void handleRelayAdvertisement(void *userdata, const XML_Char * cd, int len)
+static void handleRelayConfig(void *me, const XML_Char * cd, int len)
 {
-    Jxta_svc *ad = (Jxta_svc *) userdata;
+    Jxta_svc *ad = (Jxta_svc *) me;
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Begin Svc handleRelayAdvertisement" " (end tag may not show)\n");
+    JXTA_OBJECT_CHECK_VALID(ad);
 
-    jxta_advertisement_set_handlers((Jxta_advertisement *) ad->relaya, ((Jxta_advertisement *) ad)->parser, (void *) ad);
+    if (len == 0) {
+        Jxta_RelayAdvertisement * relayConfig = jxta_RelayAdvertisement_new();
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <jxta:RelayAdvertisement> Element [%pp]\n", ad );
+
+        jxta_svc_set_RelayAdvertisement( ad, relayConfig );
+ 
+        JXTA_OBJECT_RELEASE(relayConfig);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <jxta:RelayAdvertisement> Element [%pp]\n", ad );
+    }
 }
 
-/*
- * create a new pointer to a Relay advertisement
- */
-void create_new_relay_advertisement(Jxta_svc * ad)
+static void handleHttpRelay(void *me, const XML_Char * cd, int len)
 {
-    Jxta_vector *http_relays;
-    Jxta_vector *tcp_relays;
+    Jxta_svc *ad = (Jxta_svc *) me;
 
-    ad->relaya = jxta_RelayAdvertisement_new();
-    http_relays = jxta_vector_new(0);
-    tcp_relays = jxta_vector_new(0);
-    jxta_RelayAdvertisement_set_HttpRelay(ad->relaya, http_relays);
-    JXTA_OBJECT_RELEASE(http_relays);
-    jxta_RelayAdvertisement_set_TcpRelay(ad->relaya, tcp_relays);
-    JXTA_OBJECT_RELEASE(tcp_relays);
-}
+    JXTA_OBJECT_CHECK_VALID(ad);
 
-static void handleHttpRelay(void *userdata, const XML_Char * cd, int len)
-{
-
-    JString *relay;
-    Jxta_svc *ad = (Jxta_svc *) userdata;
-    Jxta_vector *relays;
-
-    if (len == 0)
+    if (len == 0) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START DEPRECATED <httpaddress> Element [%pp]\n", ad );
         return;
+    } else {
+        JString *relay = jstring_new_1(len);
+        Jxta_RelayAdvertisement * relayConfig = jxta_svc_get_RelayAdvertisement( ad );
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Http relay element\n");
+        if (relayConfig == NULL) {
+            relayConfig = jxta_RelayAdvertisement_new();
 
-    if (ad->relaya == NULL)
-        create_new_relay_advertisement(ad);
+            jxta_svc_set_RelayAdvertisement( ad, relayConfig );
+        }
 
-    relay = jstring_new_1(len);
     jstring_append_0(relay, cd, len);
     jstring_trim(relay);
 
-    relays = jxta_RelayAdvertisement_get_HttpRelay(ad->relaya);
-
-    if (jstring_length(relay) > 0) {
-        jxta_vector_add_object_last(relays, (Jxta_object *) relay);
-    }
+        jxta_RelayAdvertisement_add_HttpRelay(relayConfig, relay );
 
     JXTA_OBJECT_RELEASE(relay);
-    relay = NULL;
-    JXTA_OBJECT_RELEASE(relays);
+        JXTA_OBJECT_RELEASE(relayConfig);
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH DEPRECATED <httpaddress> Element [%pp]\n", ad );
+    }
 }
 
-static void handleTcpRelay(void *userdata, const XML_Char * cd, int len)
+static void handleTcpRelay(void *me, const XML_Char * cd, int len)
 {
-    JString *relay;
-    Jxta_svc *ad = (Jxta_svc *) userdata;
-    Jxta_vector *relays;
+    Jxta_svc *ad = (Jxta_svc *) me;
 
-    if (len == 0)
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    if (len == 0) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START DEPRECATED <tcpaddress> Element [%pp]\n", ad );
         return;
+    } else {
+        JString *relay = jstring_new_1(len);
+        Jxta_RelayAdvertisement * relayConfig = jxta_svc_get_RelayAdvertisement( ad );
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "TCP relay element\n");
+        if (relayConfig == NULL) {
+            relayConfig = jxta_RelayAdvertisement_new();
 
-    if (ad->relaya == NULL)
-        create_new_relay_advertisement(ad);
+            jxta_svc_set_RelayAdvertisement( ad, relayConfig );
+        }
 
-    relay = jstring_new_1(len);
     jstring_append_0(relay, cd, len);
     jstring_trim(relay);
 
-    relays = jxta_RelayAdvertisement_get_TcpRelay(ad->relaya);
+        jxta_RelayAdvertisement_add_TcpRelay(relayConfig, relay );
 
-    if (jstring_length(relay) > 0) {
+        JXTA_OBJECT_RELEASE(relay);
+        JXTA_OBJECT_RELEASE(relayConfig);
 
-        jxta_vector_add_object_last(relays, (Jxta_object *) relay);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH DEPRECATED <tcpaddress> Element [%pp]\n", ad );
     }
-
-    JXTA_OBJECT_RELEASE(relay);
-    relay = NULL;
-    JXTA_OBJECT_RELEASE(relays);
 }
 
-static void handleIsClient(void *userdata, const XML_Char * cd, int len)
+static void handleIsClient(void *me, const XML_Char * cd, int len)
 {
-    JString *isClient;
-    Jxta_svc *ad = (Jxta_svc *) userdata;
-    if (len == 0)
+    Jxta_svc *ad = (Jxta_svc *) me;
+    
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    if (len == 0) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START DEPRECATED <isClient> Element [%pp]\n", ad );
         return;
+    } else {
+        JString *isClient = jstring_new_1(len);
+        Jxta_RelayAdvertisement * relayConfig = jxta_svc_get_RelayAdvertisement( ad );
 
-    if (ad->relaya == NULL)
-        create_new_relay_advertisement(ad);
+        if (relayConfig == NULL) {
+            relayConfig = jxta_RelayAdvertisement_new();
+            
+            jxta_svc_set_RelayAdvertisement( ad, relayConfig );
+        }
 
-    isClient = jstring_new_1(len);
     jstring_append_0(isClient, cd, len);
     jstring_trim(isClient);
-    jxta_RelayAdvertisement_set_IsClient(ad->relaya, isClient);
+
+        jxta_RelayAdvertisement_set_IsClient(relayConfig, isClient );
     JXTA_OBJECT_RELEASE(isClient);
+        JXTA_OBJECT_RELEASE(relayConfig);
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH DEPRECATED <isClient> Element [%pp]\n", ad );
+    }
 }
 
-static void handleIsServer(void *userdata, const XML_Char * cd, int len)
+static void handleIsServer(void *me, const XML_Char * cd, int len)
 {
-    JString *isServer;
-    Jxta_svc *ad = (Jxta_svc *) userdata;
-    if (len == 0)
+    Jxta_svc *ad = (Jxta_svc *) me;
+    
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    if (len == 0) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START DEPRECATED <isServer> Element [%pp]\n", ad );
         return;
+    } else {
+        JString *isServer = jstring_new_1(len);
+        Jxta_RelayAdvertisement * relayConfig = jxta_svc_get_RelayAdvertisement( ad );
 
-    if (ad->relaya == NULL)
-        create_new_relay_advertisement(ad);
+        if (relayConfig == NULL) {
+            relayConfig = jxta_RelayAdvertisement_new();
+            
+            jxta_svc_set_RelayAdvertisement( ad, relayConfig );
+        }
 
-    isServer = jstring_new_1(len);
     jstring_append_0(isServer, cd, len);
     jstring_trim(isServer);
-    jxta_RelayAdvertisement_set_IsServer(ad->relaya, isServer);
+        
+        jxta_RelayAdvertisement_set_IsServer(relayConfig, isServer);
     JXTA_OBJECT_RELEASE(isServer);
+        JXTA_OBJECT_RELEASE(relayConfig);
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH DEPRECATED <isServer> Element [%pp]\n", ad );
+    }
 }
 
 
 /** The get/set functions represent the public
  * interface to the ad class, that is, the API.
  */
-JXTA_DECLARE(char *) jxta_svc_get_Svc(Jxta_svc * ad)
-{
-    return NULL;
-}
-
-JXTA_DECLARE(void) jxta_svc_set_Svc(Jxta_svc * ad, char *name)
-{
-
-}
-
 JXTA_DECLARE(Jxta_id *) jxta_svc_get_MCID(Jxta_svc * ad)
 {
     if (ad->MCID != NULL)
@@ -577,245 +524,145 @@ JXTA_DECLARE(void) jxta_svc_set_MCID(Jxta_svc * ad, Jxta_id * id)
     ad->MCID = id;
 }
 
-JXTA_DECLARE(char *) jxta_svc_get_Parm(Jxta_svc * ad)
+JXTA_DECLARE(Jxta_advertisement *) jxta_svc_get_Parm(Jxta_svc * ad)
 {
+    JXTA_OBJECT_CHECK_VALID(ad);
+    
+    if( NULL == ad->parm ) {
     return NULL;
+    } else {
+        return JXTA_OBJECT_SHARE(ad->parm);
+    }
 }
 
-JXTA_DECLARE(void) jxta_svc_set_Parm(Jxta_svc * ad, char *name)
+JXTA_DECLARE(Jxta_advertisement *) jxta_svc_get_Parm_type(Jxta_svc * ad, const char * doctype )
 {
+    Jxta_advertisement * result = jxta_svc_get_Parm( ad );
 
+    if( NULL != result ) {
+        if( 0 != strcmp( result->document_name, doctype ) ) {
+            JXTA_OBJECT_RELEASE(result);
+            result = NULL;
+}
 }
 
-JXTA_DECLARE(JString *) jxta_svc_get_IsClient(Jxta_svc * ad)
-{
-    JString *val;
-    val = jxta_RelayAdvertisement_get_IsClient(ad->relaya);
-    return val;
+    return result;
 }
 
-JXTA_DECLARE(void) jxta_svc_set_IsClient(Jxta_svc * ad, JString * val)
+
+
+JXTA_DECLARE(void) jxta_svc_set_Parm(Jxta_svc * ad, Jxta_advertisement *parm)
 {
-    jxta_RelayAdvertisement_set_IsClient(ad->relaya, val);
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    if( NULL != ad->parm ) {
+        JXTA_OBJECT_RELEASE(ad->parm);
+        ad->parm = NULL;
 }
 
-JXTA_DECLARE(JString *) jxta_svc_get_IsServer(Jxta_svc * ad)
-{
-    JString *val;
-    val = jxta_RelayAdvertisement_get_IsServer(ad->relaya);
-    return val;
-}
-
-JXTA_DECLARE(void) jxta_svc_set_IsServer(Jxta_svc * ad, JString * val)
-{
-    jxta_RelayAdvertisement_set_IsServer(ad->relaya, val);
-}
-
-void jxta_svc_set_Relay_Tcppaddr(Jxta_svc * ad, Jxta_vector * addrs)
-{
-    Jxta_vector *old;
-
-    if (addrs != NULL)
-        JXTA_OBJECT_SHARE(addrs);
-    old = jxta_RelayAdvertisement_get_TcpRelay(ad->relaya);
-    if (old != NULL)
-        JXTA_OBJECT_RELEASE(old);
-    jxta_RelayAdvertisement_set_TcpRelay(ad->relaya, addrs);
-}
-
-void jxta_svc_set_Relay_Httpaddr(Jxta_svc * ad, Jxta_vector * addrs)
-{
-    Jxta_vector *old;
-
-    if (addrs != NULL)
-        JXTA_OBJECT_SHARE(addrs);
-    old = jxta_RelayAdvertisement_get_HttpRelay(ad->relaya);
-    if (old != NULL)
-        JXTA_OBJECT_RELEASE(old);
-    jxta_RelayAdvertisement_set_HttpRelay(ad->relaya, addrs);
+    if( NULL != parm ) {
+        ad->parm = JXTA_OBJECT_SHARE(parm);
+    }
 }
 
 JXTA_DECLARE(Jxta_HTTPTransportAdvertisement *) jxta_svc_get_HTTPTransportAdvertisement(Jxta_svc * ad)
 {
-    if (ad->hta != NULL)
-        JXTA_OBJECT_SHARE(ad->hta);
-    return ad->hta;
+    return (Jxta_HTTPTransportAdvertisement*) jxta_svc_get_Parm_type( ad, "jxta:HTTPTransportAdvertisement" );
 }
 
 JXTA_DECLARE(void) jxta_svc_set_HTTPTransportAdvertisement(Jxta_svc * ad, Jxta_HTTPTransportAdvertisement * hta)
 {
-    if (hta != NULL)
-        JXTA_OBJECT_SHARE(hta);
-    if (ad->hta != NULL)
-        JXTA_OBJECT_RELEASE(ad->hta);
-    ad->hta = hta;
+    jxta_svc_set_Parm( ad, (Jxta_advertisement*) hta );
 }
 
 JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_svc_get_RouteAdvertisement(Jxta_svc * ad)
 {
-    if (ad->route != NULL)
-        JXTA_OBJECT_SHARE(ad->route);
-    return ad->route;
+    return (Jxta_RouteAdvertisement*) jxta_svc_get_Parm_type( ad, "jxta:RA" );
 }
 
 JXTA_DECLARE(void) jxta_svc_set_RouteAdvertisement(Jxta_svc * ad, Jxta_RouteAdvertisement * ra)
 {
-    if (ra != NULL)
-        JXTA_OBJECT_SHARE(ra);
-    if (ad->route != NULL)
-        JXTA_OBJECT_RELEASE(ad->route);
-    ad->route = ra;
+    jxta_svc_set_Parm( ad, (Jxta_advertisement*) ra );
 }
 
 JXTA_DECLARE(Jxta_RelayAdvertisement *) jxta_svc_get_RelayAdvertisement(Jxta_svc * ad)
 {
-    if (ad->relaya != NULL)
-        JXTA_OBJECT_SHARE(ad->relaya);
-    return ad->relaya;
+    return (Jxta_RelayAdvertisement*) jxta_svc_get_Parm_type( ad, "jxta:RelayAdvertisement" );
 }
 
 JXTA_DECLARE(void) jxta_svc_set_RelayAdvertisement(Jxta_svc * ad, Jxta_RelayAdvertisement * relaya)
 {
-    if (relaya != NULL)
-        JXTA_OBJECT_SHARE(relaya);
-    if (ad->relaya != NULL)
-        JXTA_OBJECT_RELEASE(ad->relaya);
-    ad->relaya = relaya;
+    jxta_svc_set_Parm( ad, (Jxta_advertisement *) relaya );
 }
 
 JXTA_DECLARE(Jxta_TCPTransportAdvertisement *) jxta_svc_get_TCPTransportAdvertisement(Jxta_svc * ad)
 {
-    if (ad->tta != NULL)
-        JXTA_OBJECT_SHARE(ad->tta);
-    return ad->tta;
+    return (Jxta_TCPTransportAdvertisement*) jxta_svc_get_Parm_type( ad, "jxta:TCPTransportAdvertisement" );
 }
 
 JXTA_DECLARE(void) jxta_svc_set_TCPTransportAdvertisement(Jxta_svc * ad, Jxta_TCPTransportAdvertisement * tta)
 {
-    if (ad->tta != NULL) {
-        JXTA_OBJECT_RELEASE(ad->tta);
-        ad->tta = NULL;
-    }
-
-    if (tta != NULL) {
-        ad->tta = JXTA_OBJECT_SHARE(tta);
-    }
+    jxta_svc_set_Parm( ad, (Jxta_advertisement *) tta );
 }
 
 JXTA_DECLARE(Jxta_DiscoveryConfigAdvertisement *) jxta_svc_get_DiscoveryConfig(Jxta_svc * ad)
 {
-    if (ad->discoveryConfig != NULL) {
-        JXTA_OBJECT_SHARE(ad->discoveryConfig);
-    }
-    return ad->discoveryConfig;
+    return (Jxta_DiscoveryConfigAdvertisement*) jxta_svc_get_Parm_type( ad, "jxta:DiscoveryConfig" );
 }
 
 JXTA_DECLARE(void) jxta_svc_set_DiscoveryConfig(Jxta_svc * ad, Jxta_DiscoveryConfigAdvertisement * discoveryConfig)
 {
-    if (ad->discoveryConfig != NULL) {
-        JXTA_OBJECT_RELEASE(ad->discoveryConfig);
-        ad->discoveryConfig = NULL;
-    }
-
-    if (discoveryConfig != NULL) {
-        ad->discoveryConfig = JXTA_OBJECT_SHARE(discoveryConfig);
-    }
+    jxta_svc_set_Parm( ad, (Jxta_advertisement *) discoveryConfig );
 }
 
 JXTA_DECLARE(Jxta_RdvConfigAdvertisement *) jxta_svc_get_RdvConfig(Jxta_svc * ad)
 {
-    if (ad->rdvConfig != NULL) {
-        JXTA_OBJECT_SHARE(ad->rdvConfig);
-    }
-    return ad->rdvConfig;
+    return (Jxta_RdvConfigAdvertisement*) jxta_svc_get_Parm_type( ad, "jxta:RdvConfig" );
+}
+
+JXTA_DECLARE(void) jxta_svc_set_RdvConfig(Jxta_svc * ad, Jxta_RdvConfigAdvertisement * rdvConfig)
+{
+    jxta_svc_set_Parm( ad, (Jxta_advertisement *) rdvConfig );
 }
 
 JXTA_DECLARE(Jxta_CacheConfigAdvertisement *) jxta_svc_get_CacheConfig(Jxta_svc * ad)
 {
-    if (ad->cacheConfig != NULL) {
-        JXTA_OBJECT_SHARE(ad->cacheConfig);
-    }
-    return ad->cacheConfig;
+    return (Jxta_CacheConfigAdvertisement*) jxta_svc_get_Parm_type( ad, "jxta:CacheConfig" );
 }
 
 JXTA_DECLARE(void) jxta_svc_set_CacheConfig(Jxta_svc * ad, Jxta_CacheConfigAdvertisement * cacheConfig)
 {
-    if (ad->cacheConfig != NULL) {
-        JXTA_OBJECT_RELEASE(ad->cacheConfig);
-        ad->cacheConfig = NULL;
+    jxta_svc_set_Parm( ad, (Jxta_advertisement *) cacheConfig );
     }
 
-    if (cacheConfig != NULL) {
-        ad->cacheConfig = JXTA_OBJECT_SHARE(cacheConfig);
-    }
-}
-
-
-JXTA_DECLARE(void) jxta_svc_set_RdvConfig(Jxta_svc * ad, Jxta_RdvConfigAdvertisement * rdvConfig)
-{
-    if (ad->rdvConfig != NULL) {
-        JXTA_OBJECT_RELEASE(ad->rdvConfig);
-        ad->rdvConfig = NULL;
-    }
-
-    if (rdvConfig != NULL) {
-        ad->rdvConfig = JXTA_OBJECT_SHARE(rdvConfig);
-    }
-}
 
 JXTA_DECLARE(Jxta_SrdiConfigAdvertisement *) jxta_svc_get_SrdiConfig(Jxta_svc * ad)
 {
-    if (ad->srdiConfig != NULL) {
-        JXTA_OBJECT_SHARE(ad->srdiConfig);
-    }
-    return ad->srdiConfig;
+    return (Jxta_SrdiConfigAdvertisement*) jxta_svc_get_Parm_type( ad, "jxta:SrdiConfig" );
 }
 
 JXTA_DECLARE(void) jxta_svc_set_SrdiConfig(Jxta_svc * ad, Jxta_SrdiConfigAdvertisement * srdiConfig)
 {
-    if (ad->srdiConfig != NULL) {
-        JXTA_OBJECT_RELEASE(ad->srdiConfig);
-        ad->srdiConfig = NULL;
-    }
-
-    if (srdiConfig != NULL) {
-        ad->srdiConfig = JXTA_OBJECT_SHARE(srdiConfig);
-    }
+    jxta_svc_set_Parm( ad, (Jxta_advertisement *) srdiConfig );
 }
 
 JXTA_DECLARE(Jxta_EndPointConfigAdvertisement *) jxta_svc_get_EndPointConfig(Jxta_svc * ad)
 {
-    if (ad->endpointConfig != NULL) {
-        JXTA_OBJECT_SHARE(ad->endpointConfig);
-    }
-    return ad->endpointConfig;
+    return (Jxta_EndPointConfigAdvertisement*) jxta_svc_get_Parm_type( ad, "jxta:EndPointConfig" );
 }
 
 JXTA_DECLARE(void) jxta_svc_set_EndPointConfig(Jxta_svc * ad, Jxta_EndPointConfigAdvertisement * endpointConfig)
 {
-    if (ad->endpointConfig != NULL) {
-        JXTA_OBJECT_RELEASE(ad->endpointConfig);
-        ad->endpointConfig = NULL;
+    jxta_svc_set_Parm( ad, (Jxta_advertisement *) endpointConfig );
     }
 
-    if (endpointConfig != NULL) {
-        ad->endpointConfig = JXTA_OBJECT_SHARE(endpointConfig);
-    }
-}
 JXTA_DECLARE(JString *) jxta_svc_get_RootCert(Jxta_svc * ad)
 {
-    if (ad->RootCert != NULL)
-        JXTA_OBJECT_SHARE(ad->RootCert);
-    return ad->RootCert;
+    return NULL;
 }
 
 JXTA_DECLARE(void) jxta_svc_set_RootCert(Jxta_svc * ad, JString * rootcert)
 {
-    if (rootcert != NULL)
-        JXTA_OBJECT_SHARE(rootcert);
-    if (ad->RootCert != NULL)
-        JXTA_OBJECT_RELEASE(ad->RootCert);
-    ad->RootCert = rootcert;
 }
 
 /** Now, build an array of the keyword structs.  Since 
@@ -831,9 +678,7 @@ static const Kwdtab Svc_tags[] = {
     {"Svc", Svc_, *handleSvc, NULL, NULL},
     {"MCID", MCID_, *handleMCID, NULL, NULL},
     {"Parm", Parm_, *handleParm, NULL, NULL},
-    {"RootCert", RootCert_, *handleRootCert, NULL, NULL},
-    {"Addr", Addr_, *handleAddr, NULL, NULL},
-    {"Rdv", Rdv_, *handleRdv, NULL, NULL},
+    
     {"jxta:CacheConfig", CacheConfigAdvertisement_, *handleCacheConfigAdv, NULL, NULL},
     {"jxta:DiscoveryConfig", DiscoveryConfigAdvertisement_, *handleDiscoveryConfigAdv, NULL, NULL},
     {"jxta:EndPointConfig", EndPointConfigAdvertisement_, *handleEndPointConfigAdv, NULL, NULL},
@@ -841,7 +686,11 @@ static const Kwdtab Svc_tags[] = {
     {"jxta:SrdiConfig", SrdiConfigAdvertisement_, *handleSrdiConfigAdv, NULL, NULL},
     {"jxta:TCPTransportAdvertisement", TCPTransportAdvertisement_, *handleTCPTransportAdvertisement, NULL, NULL},
     {"jxta:HTTPTransportAdvertisement", HTTPTransportAdvertisement_, *handleHTTPTransportAdvertisement, NULL, NULL},
+    {"jxta:RelayAdvertisement", RelayConfigAdvertisement_, *handleRelayConfig, NULL, NULL},
     {"jxta:RA", RouteAdvertisement_, *handleRouteAdvertisement, NULL, NULL},
+    
+    /* Deprecated : temporarily preserved for backwards compatibility. */
+    
     {"isClient", isClient_, *handleIsClient, NULL, NULL},
     {"isServer", isServer_, *handleIsServer, NULL, NULL},
     {"httpaddress", httpaddress_, *handleHttpRelay, NULL, NULL},
@@ -849,130 +698,71 @@ static const Kwdtab Svc_tags[] = {
     {NULL, 0, 0, NULL, NULL}
 };
 
-JXTA_DECLARE(Jxta_status) jxta_svc_get_xml(Jxta_svc * ad, JString ** result)
+static Jxta_status validate_advertisement(Jxta_svc *myself) {
+
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+
+    if( NULL == myself->MCID ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "MCID not defined. [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    return JXTA_SUCCESS;
+    }
+
+JXTA_DECLARE(Jxta_status) jxta_svc_get_xml(Jxta_svc * ad, JString ** xml)
 {
-    JString *ids;
-    JString *string = jstring_new_0();
+    Jxta_status res = JXTA_SUCCESS;
+    JString *string;
+    JString *ids = NULL;
+
+    if (xml == NULL) {
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    res = validate_advertisement(ad);
+    if( JXTA_SUCCESS != res ) {
+         return res;
+    }
+
+    string = jstring_new_0();
 
     jstring_append_2(string, "<Svc>\n");
 
-    if (ad->MCID != NULL) {
-        jstring_append_2(string, "<MCID>");
-        ids = NULL;
-        jxta_id_to_jstring(ad->MCID, &ids);
-        jstring_append_1(string, ids);
-        JXTA_OBJECT_RELEASE(ids);
-        jstring_append_2(string, "</MCID>\n");
+    jstring_append_2(string, "<MCID>");
+    ids = NULL;
+    res = jxta_id_to_jstring(ad->MCID, &ids);
+    if( JXTA_SUCCESS != res ) {
+        JXTA_OBJECT_RELEASE( string );
+        return res;
     }
+    jstring_append_1(string, ids);
+    JXTA_OBJECT_RELEASE(ids);
+    jstring_append_2(string, "</MCID>\n");
 
     jstring_append_2(string, "<Parm>\n");
-
-    if (ad->RootCert != NULL) {
-        jstring_append_2(string, "<RootCert>\n");
-        jstring_append_1(string, ad->RootCert);
-        jstring_append_2(string, "\n</RootCert>\n");
-    }
-
-    if (ad->hta != NULL) {
-        /* http transport adv is a self standing adv. It's get_xml
-         * method has the std nehaviour; it allocates a new jstring.
-         */
-        JString *tmp;
-        jxta_HTTPTransportAdvertisement_get_xml(ad->hta, &tmp);
-        jstring_append_1(string, tmp);
-        JXTA_OBJECT_RELEASE(tmp);
-    }
-
-    if (ad->route != NULL) {
-        /* route adv is a self standing adv. It's get_xml
-         * method has the std nehaviour; it allocates a new jxtring.
-         */
-        JString *tmp;
-        jxta_RouteAdvertisement_get_xml(ad->route, &tmp);
-        jstring_append_1(string, tmp);
-        JXTA_OBJECT_RELEASE(tmp);
-
-    }
-
-    if (ad->tta != NULL) {
-        /* tcp transport adv is a self standing adv. It's get_xml
-         * method has the std nehaviour; it allocates a new jxtring.
-         */
-        JString *tmp;
-        jxta_TCPTransportAdvertisement_get_xml(ad->tta, &tmp);
-        jstring_append_1(string, tmp);
-        JXTA_OBJECT_RELEASE(tmp);
-    }
-
-    if (ad->relaya != NULL) {
-        /* relay transport adv is a self standing adv. It's get_xml
-         * method has the std nehaviour; it allocates a new jstring.
-         */
-        JString *tmp = jstring_new_0();
-        JString *val;
-
-        jstring_append_2(tmp, "<isClient>");
-        val = jxta_RelayAdvertisement_get_IsClient(ad->relaya);
-        jstring_append_1(tmp, val);
-        JXTA_OBJECT_RELEASE(val);
-        jstring_append_2(tmp, "</isClient>\n");
-
-        jstring_append_2(tmp, "<isServer>");
-        val = jxta_RelayAdvertisement_get_IsServer(ad->relaya);
-        jstring_append_1(tmp, val);
-        JXTA_OBJECT_RELEASE(val);
-        jstring_append_2(tmp, "</isServer>\n");
-
-        httpRelay_printer(ad->relaya, tmp);
-        tcpRelay_printer(ad->relaya, tmp);
-
-        jstring_append_1(string, tmp);
-        JXTA_OBJECT_RELEASE(tmp);
-    }
-
-    if (ad->cacheConfig != NULL) {
-        JString *tmp;
-        jxta_advertisement_get_xml((Jxta_advertisement *) ad->cacheConfig, &tmp);
-        jstring_append_1(string, tmp);
-        JXTA_OBJECT_RELEASE(tmp);
-    }
-
-    if (ad->discoveryConfig != NULL) {
-        JString *tmp;
-        jxta_DiscoveryConfigAdvertisement_get_xml(ad->discoveryConfig, &tmp);
-        jstring_append_1(string, tmp);
-        JXTA_OBJECT_RELEASE(tmp);
-    }
-
-    if (ad->rdvConfig != NULL) {
-        /* rdv config adv is a self standing adv. It's get_xml
-         * method has the std nehaviour; it allocates a new jstring.
-         */
-        JString *tmp;
-        jxta_RdvConfigAdvertisement_get_xml(ad->rdvConfig, &tmp);
-        jstring_append_1(string, tmp);
-        JXTA_OBJECT_RELEASE(tmp);
-    }
     
-    if (ad->srdiConfig != NULL) {
+    if (ad->parm != NULL) {
         JString *tmp;
-        jxta_SrdiConfigAdvertisement_get_xml(ad->srdiConfig, &tmp);
-        jstring_append_1(string, tmp);
-        JXTA_OBJECT_RELEASE(tmp);
+        res = jxta_advertisement_get_xml(ad->parm, &tmp);
+        if( JXTA_SUCCESS != res ) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failure printing param [%pp]\n", ad );
+            JXTA_OBJECT_RELEASE( string );
+            return res;
     }
-
-    if (ad->endpointConfig != NULL) {
-        JString *tmp;
-        jxta_EndPointConfigAdvertisement_get_xml(ad->endpointConfig, &tmp);
         jstring_append_1(string, tmp);
         JXTA_OBJECT_RELEASE(tmp);
+    } if( NULL != ad->text_parm ) {
+        jstring_append_1(string, ad->text_parm );
     }
 
     jstring_append_2(string, "</Parm>\n");
     jstring_append_2(string, "</Svc>\n");
 
-    *result = string;
-    return JXTA_SUCCESS;
+    *xml = string;
+    
+    return res;
 }
 
 /** Get a new instance of the ad. 
@@ -993,16 +783,7 @@ static Jxta_svc *jxta_svc_construct(Jxta_svc * self)
     /* Fill in the required initialization code here. */
     if (NULL != self) {
         self->MCID = NULL;
-        self->RootCert = NULL;
-        self->hta = NULL;
-        self->tta = NULL;
-        self->relaya = NULL;
-        self->route = NULL;
-        self->cacheConfig = NULL;
-        self->discoveryConfig = NULL;
-        self->endpointConfig = NULL;
-        self->rdvConfig = NULL;
-        self->srdiConfig = NULL;
+        self->parm = NULL;
     }
 
     return self;
@@ -1010,56 +791,86 @@ static Jxta_svc *jxta_svc_construct(Jxta_svc * self)
 
 JXTA_DECLARE(Jxta_svc *) jxta_svc_new(void)
 {
-    Jxta_svc *ad = (Jxta_svc *) calloc(1, sizeof(Jxta_svc));
+    Jxta_svc *myself = (Jxta_svc *) calloc(1, sizeof(Jxta_svc));
 
-    JXTA_OBJECT_INIT(ad, (JXTA_OBJECT_FREE_FUNC) jxta_svc_delete, NULL);
+    if( NULL == myself ) {
+        return NULL;
+    }
 
-    return jxta_svc_construct(ad);
+    JXTA_OBJECT_INIT(myself, svc_delete, NULL);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Svc NEW [%pp]\n", myself );    
+
+    return jxta_svc_construct(myself);
 }
 
-/** Shred the memory going out.  Again,
- * if there ever was a segfault (unlikely,
- * of course), the hex value dddddddd will 
- * pop right out as a piece of memory accessed
- * after it was freed...
- */
-static void jxta_svc_delete(Jxta_svc * ad)
+static void svc_delete(Jxta_object * me)
 {
+    Jxta_svc *ad = (Jxta_svc *) me;
+
     if (ad->MCID != NULL)
         JXTA_OBJECT_RELEASE(ad->MCID);
-    if (ad->RootCert != NULL)
-        JXTA_OBJECT_RELEASE(ad->RootCert);
-    if (ad->tta != NULL)
-        JXTA_OBJECT_RELEASE(ad->tta);
-    if (ad->hta != NULL)
-        JXTA_OBJECT_RELEASE(ad->hta);
-    if (ad->relaya != NULL)
-        JXTA_OBJECT_RELEASE(ad->relaya);
-    if (ad->route != NULL)
-        JXTA_OBJECT_RELEASE(ad->route);
-    if (ad->cacheConfig != NULL)
-        JXTA_OBJECT_RELEASE(ad->cacheConfig);
-    if (ad->discoveryConfig != NULL)
-        JXTA_OBJECT_RELEASE(ad->discoveryConfig);
-    if (ad->endpointConfig != NULL)
-        JXTA_OBJECT_RELEASE(ad->endpointConfig);
-    if (ad->rdvConfig != NULL)
-        JXTA_OBJECT_RELEASE(ad->rdvConfig);
-    if (ad->srdiConfig != NULL)
-        JXTA_OBJECT_RELEASE(ad->srdiConfig);
+        
+    if (ad->parm != NULL)
+        JXTA_OBJECT_RELEASE(ad->parm);
+
     jxta_advertisement_destruct((Jxta_advertisement *) ad);
+    
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Svc FREE [%pp]\n", ad );    
+    
     memset(ad, 0xdd, sizeof(Jxta_svc));
+    
     free(ad);
 }
 
-JXTA_DECLARE(void) jxta_svc_parse_charbuffer(Jxta_svc * ad, const char *buf, int len)
+JXTA_DECLARE(Jxta_status) jxta_svc_parse_charbuffer(Jxta_svc * myself, const char *buf, int len)
 {
-    jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    Jxta_status res;
+
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    res = jxta_advertisement_parse_charbuffer((Jxta_advertisement *) myself, buf, len);
+    
+    if( JXTA_SUCCESS == res ) {
+        res = validate_advertisement(myself);
 }
 
-JXTA_DECLARE(void) jxta_svc_parse_file(Jxta_svc * ad, FILE * stream)
+    return res;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_svc_parse_file(Jxta_svc * myself, FILE * stream)
 {
-    jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    Jxta_status res;
+
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    res = jxta_advertisement_parse_file((Jxta_advertisement *) myself, stream);
+    
+    if( JXTA_SUCCESS == res ) {
+        res = validate_advertisement(myself);
+    }
+    
+    return res;
+}
+
+/**
+*   @deprecated
+**/
+JXTA_DECLARE(JString*) jxta_svc_get_IsClient(Jxta_svc * relay_svc )
+{
+    Jxta_RelayAdvertisement * relay;
+
+    JXTA_OBJECT_CHECK_VALID(relay_svc);
+
+    relay = jxta_svc_get_RelayAdvertisement(relay_svc);
+    
+    if( NULL == relay ) {
+        return NULL;
+    }
+    
+    JXTA_OBJECT_CHECK_VALID(relay);
+    
+    return jxta_RelayAdvertisement_get_IsClient(relay);
 }
 
 /* vi: set ts=4 sw=4 tw=130 et: */

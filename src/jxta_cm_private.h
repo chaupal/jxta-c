@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cm_private.h,v 1.15 2006/09/23 18:51:04 exocetrick Exp $
+ * $Id: jxta_cm_private.h,v 1.15.2.1 2007/03/30 00:06:21 ExocetRick Exp $
  */
 #ifndef __JXTA_CM_PRIVATE_H__
 #define __JXTA_CM_PRIVATE_H__
@@ -262,6 +262,17 @@ Jxta_status cm_save_srdi(Jxta_cm * self, JString * handler, JString * peerid, JS
 Jxta_status cm_save_srdi_elements(Jxta_cm * self, JString * handler, JString * peerid, JString * primaryKey, Jxta_vector * entries, Jxta_vector **resendEntries);
 
 /**
+ * Get a SRDI entry by sequence number and populate the entry.
+ *
+ * @param Jxta_cm (A ptr to) the cm object to apply the operation to
+ * @param jPeerid Peerid of srdi entry
+ * @param seqNumber Sequence number assigned from the source peerid.
+ * @param entry Entry to modify with the SRDI data.
+ *
+ */
+Jxta_status cm_get_srdi_with_seq_number (Jxta_cm * me, JString * jPeerid, Jxta_sequence_number seqNumber, Jxta_SRDIEntryElement * entry);
+
+/**
  * Remove the SRDI entries in the SRDI Delta table for the peer.
  *
  * @param Jxta_cm (A ptr to) the cm object to apply the operation to
@@ -278,9 +289,10 @@ void cm_remove_srdi_delta_entries(Jxta_cm * self, JString * jPeerid, Jxta_vector
  * @param jHandler Handler for the entry
  * @param entry Jxta_SRDIEntryElement to save
  * @param jNewValue New value if there is an entry in the table for the sequence number
+ * @param newSequenceNumber New seqeuence number if an entry exists for this entry
  * @return Jxta_status 
  */
-Jxta_status cm_save_delta_entry(Jxta_cm * self, JString * jPeerid, JString * jHandler, Jxta_SRDIEntryElement * entry, JString **jNewValue);
+Jxta_status cm_save_delta_entry(Jxta_cm * self, JString * jPeerid, JString * jHandler, Jxta_SRDIEntryElement * entry, JString **jNewValue, Jxta_sequence_number *newSeqNumber);
 
 /**
  * Get the entries with the sequence number in resendEntries
@@ -476,6 +488,7 @@ Jxta_vector * cm_get_srdi_entries(Jxta_cm * self, JString * folder_name, JString
  *
 **/
 void cm_remove_srdi_entries(Jxta_cm * self, JString * peerid);
+
 
 /**
  * Update SRDI/Replica times to reflect the length of the lease

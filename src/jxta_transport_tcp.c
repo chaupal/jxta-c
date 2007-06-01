@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tcp.c,v 1.61 2006/10/11 20:08:21 slowhog Exp $
+ * $Id: jxta_transport_tcp.c,v 1.62.2.8 2007/02/03 23:06:46 slowhog Exp $
  */
 
 static const char *__log_cat = "TCP_TRANSPORT";
@@ -80,6 +80,16 @@ static const char *__log_cat = "TCP_TRANSPORT";
 #include "jxta_svc.h"
 #include "jxta_tta.h"
 
+/* Constants specifying when a messenger should be removed
+ * and connection closed */
+/* 5 minutes */
+#define MESSENGER_TIMEOUT (5*60)
+#define CLOSE_CONNECTION_AFTER_TIMEOUT_JPR (5*60*1000)
+#define CONSERVATIVE_MESSENGER_REMOVAL
+
+/* 1 minute */
+#define INTERVAL_CHECK_FOR_UNUSED_MESSENGERS_APR (60*1000000L)
+
 /*************************************************************************
  **
  *************************************************************************/
@@ -91,6 +101,14 @@ static const char *MESSAGE_DESTINATION_NAME = "EndpointDestinationAddress";
 /********************************************************************************/
 /*                                                                              */
 /********************************************************************************/
+typedef struct tcp_conn_elt
+{
+    APR_RING_ENTRY(tcp_conn_elt) link;
+    Jxta_transport_tcp_connection * conn;
+} Tcp_conn_elt;
+
+typedef APR_RING_HEAD(tcp_conn_list, tcp_conn_elt) Tcp_connections;
+
 struct _jxta_transport_tcp {
     Extends(Jxta_transport);
 
@@ -104,33 +122,21 @@ struct _jxta_transport_tcp {
     Jxta_boolean be_server;
     apr_socket_t *srv_socket;
     void *srv_poll;
+
     TcpMulticast *multicast;
     Jxta_endpoint_address *public_addr;
     Jxta_endpoint_service *endpoint;
     JString *peerid;
 
-    Jxta_hashtable *tcp_messengers;
+    Tcp_connections * inbounds;
+    Tcp_connections * outbounds;
+
+    Jxta_PG *group;
 };
 
 typedef struct _jxta_transport_tcp _jxta_transport_tcp;
 
 typedef Jxta_transport_methods Jxta_transport_tcp_methods;
-
-struct _tcp_messenger {
-    struct _JxtaEndpointMessenger messenger;
-
-    apr_pool_t *pool;
-    apr_thread_mutex_t *mutex;
-
-    Jxta_transport_tcp *tp;
-    Jxta_transport_tcp_connection *conn;
-
-    Jxta_message_element *src_msg_el;
-
-    Jxta_boolean initialized_connection;
-};
-
-typedef struct _tcp_messenger _tcp_messenger;
 
 /********************************************************************************/
 /*                                                                              */
@@ -152,13 +158,86 @@ static Jxta_transport_tcp *jxta_transport_tcp_construct(Jxta_transport_tcp * _se
 void jxta_transport_tcp_destruct(Jxta_transport_tcp * _self);
 static void tcp_free(Jxta_object * obj);
 
-static Jxta_status tcp_messenger_send(JxtaEndpointMessenger * mes, Jxta_message * msg);
-static void tcp_messenger_free(Jxta_object * obj);
+static Jxta_status create_outbound_connection(Jxta_transport_tcp * me, Jxta_endpoint_address * dest,
+                                              Jxta_transport_tcp_connection ** tc);
 
-static Jxta_status tcp_demux_cb(void *param, void *arg);
-static TcpMessenger *tcp_messenger_new(Jxta_transport_tcp * tp);
-static Jxta_status tcp_messenger_initialize_connection(TcpMessenger * mes, Jxta_transport_tcp_connection * conn,
-                                                       Jxta_endpoint_address * dest);
+static Tcp_conn_elt * tcp_conn_new(Jxta_transport_tcp_connection * conn)
+{
+    Tcp_conn_elt * me;
+
+    me = calloc(1, sizeof(*me));
+    APR_RING_ELEM_INIT(me, link);
+    me->conn = JXTA_OBJECT_SHARE(conn);
+
+    return me;
+}
+
+static void tcp_conn_free(Tcp_conn_elt * me)
+{
+    JXTA_OBJECT_RELEASE(me->conn);
+    free(me);
+}
+
+static apr_status_t tcp_connections_cleanup(void *me)
+{
+    Tcp_connections * myself = me;
+    Tcp_conn_elt * conn;
+
+    while (!APR_RING_EMPTY(myself, tcp_conn_elt, link)) {
+        conn = APR_RING_FIRST(myself);
+        APR_RING_REMOVE(conn, link);
+        tcp_conn_free(conn);
+    }
+
+    return APR_SUCCESS;
+}
+
+static Jxta_status tcp_connections_create(Tcp_connections **me, apr_pool_t * pool)
+{
+    *me = apr_palloc(pool, sizeof(Tcp_connections));
+    if (NULL == *me) {
+        return JXTA_NOMEM;
+    }
+    apr_pool_cleanup_register(pool, *me, tcp_connections_cleanup, apr_pool_cleanup_null);
+    APR_RING_INIT(*me, tcp_conn_elt, link);
+    return JXTA_SUCCESS;
+}
+
+static Jxta_status tcp_connections_destroy(Tcp_connections * me)
+{
+    tcp_connections_cleanup(me);
+    return JXTA_SUCCESS;
+}
+
+static Jxta_status tcp_connections_add(Tcp_connections *me, Jxta_transport_tcp_connection * conn)
+{
+    Tcp_conn_elt *elt;
+
+    elt = tcp_conn_new(conn);
+    if (!elt) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory");
+        return JXTA_NOMEM;
+    }
+
+    APR_RING_INSERT_TAIL(me, elt, tcp_conn_elt, link);
+    return JXTA_SUCCESS;
+}
+
+static Jxta_status tcp_connections_lookup(Tcp_connections *me, Jxta_endpoint_address *ea, Jxta_transport_tcp_connection **conn)
+{
+    Tcp_conn_elt *elt;
+    Jxta_endpoint_address *remote_ea;
+
+    for (elt = APR_RING_FIRST(me); elt != APR_RING_SENTINEL(me, tcp_conn_elt, link); elt = APR_RING_NEXT(elt, link)) {
+        remote_ea = jxta_transport_tcp_connection_get_destaddr(elt->conn);
+        if (jxta_endpoint_address_transport_addr_equals(ea, remote_ea)) {
+            *conn = JXTA_OBJECT_SHARE(elt->conn);
+            return JXTA_SUCCESS;
+        }
+    }
+
+    return JXTA_ITEM_NOTFOUND;
+}
 
 /******************************************************************************/
 /*                                                                            */
@@ -218,6 +297,8 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     apr_port_t multicast_port;
     int multicast_size;
     JString *server_name;
+    char * addr_buffer;
+    int len;
 
 #ifndef WIN32
     struct sigaction sa;
@@ -240,8 +321,12 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
         return JXTA_FAILED;
     }
 
-    _self->tcp_messengers = jxta_hashtable_new(20);
-    if (_self->tcp_messengers == NULL) {
+    if (JXTA_SUCCESS != tcp_connections_create(&_self->inbounds, _self->pool)) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory");
+        return JXTA_NOMEM;
+    }
+
+    if (JXTA_SUCCESS != tcp_connections_create(&_self->outbounds, _self->pool)) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory");
         return JXTA_NOMEM;
     }
@@ -280,26 +365,39 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
 
     if (jstring_length(server_name) > 0) {
         /* Set public address from server_name */
-        _self->public_addr = jxta_endpoint_address_new_2(_self->protocol_name, jstring_get_string(server_name), NULL, NULL);
-        if (_self->public_addr == NULL) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory");
-            JXTA_OBJECT_RELEASE(server_name);
-            return JXTA_NOMEM;
-        }
-    } else {
-        char *proto_addr;
-        int len;
-
-        if (0 != strcmp(APR_ANYADDR, _self->ipaddr)) {
-            len = strlen(_self->ipaddr) + 20;
-            proto_addr = (char *) malloc(len);
-            if (proto_addr == NULL) {
+        if (strchr(jstring_get_string(server_name), ':')) {
+            _self->public_addr = jxta_endpoint_address_new_2(_self->protocol_name, jstring_get_string(server_name), NULL, NULL);
+        } else {
+            len = jstring_length(server_name) + 20;
+            addr_buffer = (char *) malloc(len);
+            if (addr_buffer == NULL) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
                 JXTA_OBJECT_RELEASE(server_name);
                 JXTA_OBJECT_RELEASE(tta);
                 return JXTA_NOMEM;
             }
-            apr_snprintf(proto_addr, len, "%s:%d", _self->ipaddr, _self->port);
+            apr_snprintf(addr_buffer, len, "%s:%d", jstring_get_string(server_name), _self->port);
+            _self->public_addr = jxta_endpoint_address_new_2(_self->protocol_name, addr_buffer, NULL, NULL);
+            free(addr_buffer);
+            addr_buffer = NULL;
+        }
+        if (_self->public_addr == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory");
+            JXTA_OBJECT_RELEASE(server_name);
+            JXTA_OBJECT_RELEASE(tta);
+            return JXTA_NOMEM;
+        }
+    } else {
+        if (0 != strcmp(APR_ANYADDR, _self->ipaddr)) {
+            len = strlen(_self->ipaddr) + 20;
+            addr_buffer = (char *) malloc(len);
+            if (addr_buffer == NULL) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+                JXTA_OBJECT_RELEASE(server_name);
+                JXTA_OBJECT_RELEASE(tta);
+                return JXTA_NOMEM;
+            }
+            apr_snprintf(addr_buffer, len, "%s:%d", _self->ipaddr, _self->port);
         } else {
             /* Public Address */
             char *local_host = (char *) malloc(APRMAXHOSTLEN);
@@ -307,6 +405,7 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
             apr_sockaddr_t *localsa;
             if (local_host == NULL) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+                JXTA_OBJECT_RELEASE(server_name);
                 JXTA_OBJECT_RELEASE(tta);
                 return JXTA_NOMEM;
             }
@@ -320,22 +419,29 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
             free(local_host);
             local_host = NULL;
 
-            apr_sockaddr_ip_get(&local_host, localsa);
+            if (!localsa) {
+                /* failed to resolve the name, use 0.0.0.0 as the last resort */
+                local_host = APR_ANYADDR;
+            } else {
+                apr_sockaddr_ip_get(&local_host, localsa);
+            }
 
             len = strlen(local_host) + 20;
-            proto_addr = (char *) malloc(len);
-            if (proto_addr == NULL) {
+            addr_buffer = (char *) malloc(len);
+            if (addr_buffer == NULL) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
                 apr_pool_destroy(pool);
+                JXTA_OBJECT_RELEASE(server_name);
                 JXTA_OBJECT_RELEASE(tta);
                 return JXTA_NOMEM;
             }
-            apr_snprintf(proto_addr, len, "%s:%d", local_host, _self->port);
+            apr_snprintf(addr_buffer, len, "%s:%d", local_host, _self->port);
             apr_pool_destroy(pool);
         }
 
-        _self->public_addr = jxta_endpoint_address_new_2(_self->protocol_name, proto_addr, NULL, NULL);
-        free(proto_addr);
+        _self->public_addr = jxta_endpoint_address_new_2(_self->protocol_name, addr_buffer, NULL, NULL);
+        free(addr_buffer);
+        addr_buffer = NULL;
     }
 
     JXTA_OBJECT_RELEASE(server_name);
@@ -388,6 +494,8 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
 
     free(multicast_addr);
 
+    _self->group = group;
+
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "TCP transport inited.\n");
 
     return JXTA_SUCCESS;
@@ -438,14 +546,86 @@ static Jxta_status JXTA_STDCALL accept_cb(void *param, void *arg)
         return JXTA_FAILED;
     }
 
-    JXTA_OBJECT_CHECK_VALID(conn);
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Incoming connection[%pp] from %s:%d\n", conn,
-                    jxta_transport_tcp_connection_ipaddr(conn), jxta_transport_tcp_connection_get_port(conn));
-
-    tcp_got_inbound_connection(me, conn);
+    tcp_connections_add(me->outbounds, conn);
     JXTA_OBJECT_RELEASE(conn);
+
     return JXTA_SUCCESS;
+}
+
+static Jxta_status check_unused_connections(Jxta_transport_tcp * me, Tcp_connections * conns)
+{
+    Tcp_conn_elt * elt;
+    Tcp_conn_elt * next;
+    Jxta_transport_tcp_connection * tc;
+    int i;
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Started TCP messenger removal iteration for messengers[%pp]\n", conns);
+
+    apr_thread_mutex_lock(me->mutex);
+
+    i = 0;
+    for (elt = APR_RING_FIRST(conns); elt != APR_RING_SENTINEL(conns, tcp_conn_elt, link); elt = next) {
+        if (jxta_module_state((Jxta_module *) me) != JXTA_MODULE_STARTED) {
+           break;
+        }
+
+        next = APR_RING_NEXT(elt, link);
+        tc = elt->conn;
+
+        if (CONN_DISCONNECTED == tcp_connection_state(tc)) {
+            APR_RING_REMOVE(elt, link);
+            tcp_conn_free(elt);
+            i++;
+            continue;
+        }
+
+        /* check that the connection belonging to the messenger has
+         * not been used for a while. By removing it from here, the connection will be once no one hold the messenger. Do we want
+         * to close connection no matter what? */
+        if ((get_tcp_connection_last_time_used(tc) + CLOSE_CONNECTION_AFTER_TIMEOUT_JPR) < jpr_time_now()) {
+#ifndef CONSERVATIVE_MESSENGER_REMOVAL
+            jxta_transport_tcp_connection_close(tc);
+#endif
+            APR_RING_REMOVE(elt, link);
+            tcp_conn_free(elt);
+            i++;
+            continue;
+        }
+    }
+
+    apr_thread_mutex_unlock(me->mutex);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "%d TCP messengers were removed from messengers[%pp]\n", i, conns);
+    return JXTA_SUCCESS;
+}
+
+/*
+ * The entry point for the remove_unused_messengers thread, 
+ * the reads watches the hashtable of messengers and removes
+ * the messengers which do not belong to anyone and have not been
+ * used in a while
+ *
+ * @param thread the thread
+ * @param arg _jxta_transport_tcp
+ * @return
+ */
+static void *APR_THREAD_FUNC remove_unused_connections(apr_thread_t * thread, void *arg)
+{
+    _jxta_transport_tcp *me = arg;
+
+    assert(PTValid(arg, _jxta_transport_tcp));
+
+    check_unused_connections(me, me->inbounds);
+    check_unused_connections(me, me->outbounds);
+
+    apr_thread_mutex_lock(me->mutex);
+    if (JXTA_MODULE_STARTED == jxta_module_state((Jxta_module *) me)) {
+        apr_thread_pool_schedule(jxta_PG_thread_pool_get(me->group), remove_unused_connections, me,
+                                 INTERVAL_CHECK_FOR_UNUSED_MESSENGERS_APR, me);
+    }
+    apr_thread_mutex_unlock(me->mutex);
+
+    return NULL;
 }
 
 /******************************************************************************/
@@ -477,6 +657,10 @@ static Jxta_status start(Jxta_module * module, const char *argv[])
         }
     }
 
+    /* start the thread for deleting unused messengers */
+    apr_thread_pool_schedule(jxta_PG_thread_pool_get(_self->group), remove_unused_connections, _self,
+                             INTERVAL_CHECK_FOR_UNUSED_MESSENGERS_APR, _self);
+
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "TCP transport started\n");
     return JXTA_SUCCESS;
 }
@@ -500,6 +684,8 @@ static void stop(Jxta_module * me)
     if (NULL != myself->multicast) {
         tcp_multicast_stop(myself->multicast);
     }
+
+    apr_thread_pool_tasks_cancel(jxta_PG_thread_pool_get(myself->group), (void *) myself);
 
     jxta_endpoint_service_remove_transport(myself->endpoint, (Jxta_transport *) myself);
 
@@ -537,13 +723,59 @@ static Jxta_endpoint_address *publicaddr_get(Jxta_transport * t)
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static JxtaEndpointMessenger *messenger_get(Jxta_transport * t, Jxta_endpoint_address * dest)
+static JxtaEndpointMessenger *messenger_get(Jxta_transport * me, Jxta_endpoint_address * dest)
 {
-    _jxta_transport_tcp *_self = PTValid(t, _jxta_transport_tcp);
+    _jxta_transport_tcp *myself = PTValid(me, _jxta_transport_tcp);
+    Jxta_status rv;
+    Jxta_transport_tcp_connection *tc;
+    TcpMessenger * msgr;
 
-    JxtaEndpointMessenger *messenger = (JxtaEndpointMessenger *) get_tcp_messenger(_self, NULL, dest);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Need a messenger for %s://%s.\n",
+                    jxta_endpoint_address_get_protocol_name(dest), jxta_endpoint_address_get_protocol_address(dest));
 
-    return messenger;
+    apr_thread_mutex_lock(myself->mutex);
+    /* should no needed, if messenger is available, it would be registered with ep already */
+    /* Begin: Drop this section to optimize */
+    /* Cannot drop because relay is getting messenger from transport directly, not from endpoint */
+    rv = tcp_connections_lookup(myself->inbounds, dest, &tc);
+    if (JXTA_SUCCESS != rv) {
+        rv = tcp_connections_lookup(myself->outbounds, dest, &tc);
+    }
+    /* End: Drop this section to optimize */
+    if (JXTA_SUCCESS != rv) {
+        rv = create_outbound_connection(myself, dest, &tc);
+    }
+    apr_thread_mutex_unlock(myself->mutex);
+    if (JXTA_SUCCESS != rv) {
+        return NULL;
+    }
+
+    assert(tc);
+    rv = tcp_connection_get_messenger(tc, apr_time_from_sec(60), &msgr);
+    switch (rv) {
+        case JXTA_TIMEOUT:
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE 
+                            "Tcp connection[%pp] for %s://%s is not ready after 1 minute.\n", tc,
+                            jxta_endpoint_address_get_protocol_name(dest), jxta_endpoint_address_get_protocol_address(dest));
+            msgr = NULL;
+            break;
+        case JXTA_SUCCESS:
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Get Messenger[%pp] for %s://%s.\n", msgr,
+                            jxta_endpoint_address_get_protocol_name(dest), jxta_endpoint_address_get_protocol_address(dest));
+            break;
+        case JXTA_FAILED:
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE 
+                            "Tcp connection[%pp] for %s://%s is not ready, more likely it had been closed.\n", tc,
+                            jxta_endpoint_address_get_protocol_name(dest), jxta_endpoint_address_get_protocol_address(dest));
+            msgr = NULL;
+            break;
+        default:
+            assert(FALSE);
+            msgr = NULL;
+            break;
+    }
+
+    return (JxtaEndpointMessenger*) msgr;
 }
 
 /******************************************************************************/
@@ -620,7 +852,8 @@ static Jxta_transport_tcp *jxta_transport_tcp_construct(_jxta_transport_tcp * _s
 
     _self->protocol_name = NULL;
     _self->peerid = NULL;
-    _self->tcp_messengers = NULL;
+    _self->inbounds = NULL;
+    _self->outbounds = NULL;
     _self->be_server = JXTA_FALSE;
     _self->multicast = NULL;
     _self->public_addr = NULL;
@@ -628,6 +861,8 @@ static Jxta_transport_tcp *jxta_transport_tcp_construct(_jxta_transport_tcp * _s
 
     _self->srv_poll = NULL;
     _self->srv_socket = NULL;
+
+    _self->group = NULL;
 
     return _self;
 }
@@ -654,9 +889,8 @@ void jxta_transport_tcp_destruct(Jxta_transport_tcp * tp)
         free(_self->ipaddr);
     }
 
-    if (_self->tcp_messengers != NULL) {
-        JXTA_OBJECT_RELEASE(_self->tcp_messengers);
-    }
+    tcp_connections_destroy(_self->inbounds);
+    tcp_connections_destroy(_self->outbounds);
 
     if (_self->public_addr != NULL) {
         JXTA_OBJECT_RELEASE(_self->public_addr);
@@ -708,276 +942,6 @@ Jxta_transport_tcp *jxta_transport_tcp_new_instance()
     JXTA_OBJECT_INIT(_self, tcp_free, NULL);
 
     return jxta_transport_tcp_construct(_self, (Jxta_transport_tcp_methods const *) &jxta_transport_tcp_methods);;
-}
-
-/******************************************************************************/
-/*                                                                            */
-/******************************************************************************/
-
-
-/************************************************************************
-* Creates new TCP messenger, does not open a new connection
-*
-* @param tp TCP transport
-* @return new messenger is successful, NULL otherwise
-*************************************************************************/
-static TcpMessenger *tcp_messenger_new(Jxta_transport_tcp * tp)
-{
-    TcpMessenger *mes = NULL;
-    apr_status_t status;
-
-    JXTA_OBJECT_CHECK_VALID(tp);
-
-    /* create the object */
-    mes = (TcpMessenger *) calloc(1, sizeof(TcpMessenger));
-    if (mes == NULL)
-        return NULL;
-
-    /* setting */
-    status = apr_pool_create(&mes->pool, NULL);
-    if (APR_SUCCESS != status) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to create messenger apr pool\n");
-        free(mes);
-        return NULL;
-    }
-
-    status = apr_thread_mutex_create(&mes->mutex, APR_THREAD_MUTEX_NESTED, mes->pool);
-    if (APR_SUCCESS != status) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to create messenger mutex\n");
-        apr_pool_destroy(mes->pool);
-        free(mes);
-        return NULL;
-    }
-
-    mes->tp = tp;   /* NOTE: We do not share a reference for the transport */
-
-    mes->initialized_connection = FALSE;
-
-    mes->messenger.jxta_send = NULL;
-
-    /* initialize it */
-    JXTA_OBJECT_INIT(mes, tcp_messenger_free, NULL);
-
-    return mes;
-}
-
-/************************************************************************
-* Open a connection for a tcp messenger
-*
-* @param mes the messenger
-* @param conn the connection object if incoming, NULL otherwise
-* @param dest destination address
-* @return JXTA_SUCCESS if the connection was established
-*************************************************************************/
-static Jxta_status tcp_messenger_initialize_connection(TcpMessenger * mes, Jxta_transport_tcp_connection * conn,
-                                                       Jxta_endpoint_address * dest)
-{
-    apr_status_t status;
-    char *addr_buffer;
-    Jxta_endpoint_address *src_addr;
-
-    assert(mes);
-
-    apr_thread_mutex_lock(mes->mutex);
-
-    if (mes->initialized_connection) {
-        apr_thread_mutex_unlock(mes->mutex);
-        return JXTA_SUCCESS;
-    }
-
-    mes->initialized_connection = TRUE;
-
-    if (!conn) {
-        mes->conn = jxta_transport_tcp_connection_new_1(mes->tp, dest);
-        if (NULL == mes->conn) {
-            addr_buffer = jxta_endpoint_address_get_transport_addr(dest);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Failed opening connection -> %s\n", addr_buffer);
-            free(addr_buffer);
-            apr_thread_mutex_unlock(mes->mutex);
-            return JXTA_FAILED;
-        }
-    } else {
-        mes->conn = JXTA_OBJECT_SHARE(conn);
-    }
-
-    status = jxta_transport_tcp_connection_start(mes->conn);
-    if (JXTA_SUCCESS != status) {
-        addr_buffer = jxta_endpoint_address_get_transport_addr(dest);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to start TCP connection with %s\n", addr_buffer);
-        free(addr_buffer);
-        JXTA_OBJECT_RELEASE(mes->conn);
-        mes->conn = NULL;
-        apr_thread_mutex_unlock(mes->mutex);
-        return JXTA_FAILED;
-    }
-
-    src_addr = publicaddr_get((Jxta_transport *) mes->tp);
-    addr_buffer = jxta_endpoint_address_to_string(src_addr);
-    mes->src_msg_el = jxta_message_element_new_2(MESSAGE_SOURCE_NS,
-                                                 MESSAGE_SOURCE_NAME, "text/plain", addr_buffer, strlen(addr_buffer), NULL);
-    if (mes->src_msg_el == NULL) {
-        apr_thread_mutex_unlock(mes->mutex);
-        return JXTA_FAILED;
-    }
-    free(addr_buffer);
-    JXTA_OBJECT_RELEASE(src_addr);
-
-    mes->messenger.address = JXTA_OBJECT_SHARE(dest);
-    mes->messenger.jxta_send = tcp_messenger_send;
-
-    apr_thread_mutex_unlock(mes->mutex);
-    return JXTA_SUCCESS;
-}
-
-static void tcp_messenger_free(Jxta_object * obj)
-{
-    TcpMessenger *mes = (TcpMessenger *) obj;
-
-    if (mes->src_msg_el != NULL)
-        JXTA_OBJECT_RELEASE(mes->src_msg_el);
-
-    if (NULL != mes->messenger.address)
-        JXTA_OBJECT_RELEASE(mes->messenger.address);
-
-    if (NULL != mes->conn) {
-        jxta_transport_tcp_connection_close(mes->conn);
-        JXTA_OBJECT_RELEASE(mes->conn);
-    }
-
-    apr_thread_mutex_destroy(mes->mutex);
-    apr_pool_destroy(mes->pool);
-
-    memset(mes, 0xDD, sizeof(TcpMessenger));
-    free(mes);
-}
-
-Jxta_boolean messenger_is_connected(TcpMessenger * mes)
-{
-    if (NULL == mes->conn) {
-        return FALSE;
-    }
-
-    return jxta_transport_tcp_connection_is_connected(mes->conn);
-}
-
-TcpMessenger *get_tcp_messenger(Jxta_transport_tcp * me, Jxta_transport_tcp_connection * conn, Jxta_endpoint_address * addr)
-{
-    Jxta_status res;
-    _jxta_transport_tcp *_self = PTValid(me, _jxta_transport_tcp);
-    TcpMessenger *messenger = NULL;
-    char *key;
-
-    JXTA_OBJECT_CHECK_VALID(addr);
-
-    key = jxta_endpoint_address_get_transport_addr(addr);
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Get Messenger -> %s\n", key);
-
-    apr_thread_mutex_lock(_self->mutex);
-
-    res = jxta_hashtable_get(_self->tcp_messengers, key, strlen(key), JXTA_OBJECT_PPTR(&messenger));
-
-    if (NULL != messenger) {
-        if ((FALSE == messenger_is_connected(messenger)) && (messenger->initialized_connection)) {
-            jxta_hashtable_del(_self->tcp_messengers, key, strlen(key), NULL);
-            if (res != JXTA_SUCCESS) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot remove TcpMessenger into vector\n");
-            } else {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Invalid TcpMessenger [%pp] removed.\n", messenger);
-            }
-            JXTA_OBJECT_RELEASE(messenger);
-            messenger = NULL;
-        }
-    }
-
-    if ((res != JXTA_SUCCESS) || (NULL == messenger)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Create new messenger -> %s\n", key);
-        messenger = tcp_messenger_new(_self);
-
-        if (messenger != NULL) {
-            jxta_hashtable_put(_self->tcp_messengers, key, strlen(key), (Jxta_object *) messenger);
-        } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Failed getting messenger -> %s\n", key);
-        }
-    }
-    apr_thread_mutex_unlock(_self->mutex);
-
-    /* try to initialize the messenger */
-    if (!messenger->initialized_connection) {
-        /* if unable to initialize connection do not return the messenger */
-        if (tcp_messenger_initialize_connection(messenger, conn, addr) != JXTA_SUCCESS) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Unable to create connection for messenger [%pp] -> %s\n", messenger,
-                            key);
-            free(key);
-            JXTA_OBJECT_RELEASE(messenger);
-            return NULL;
-        }
-    }
-
-    if (NULL != messenger) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Got Messenger [%pp] -> %s\n", messenger, key);
-    }
-
-    free(key);
-    return messenger;
-}
-
-Jxta_status jxta_transport_tcp_remove_messenger(Jxta_transport_tcp * _self, Jxta_endpoint_address * addr)
-{
-    Jxta_status res;
-    char *key;
-
-    JXTA_OBJECT_CHECK_VALID(_self);
-    JXTA_OBJECT_CHECK_VALID(addr);
-
-    key = jxta_endpoint_address_to_string(addr);
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Remove messenger -> %s\n", key);
-
-    apr_thread_mutex_lock(_self->mutex);
-
-    res = jxta_hashtable_del(_self->tcp_messengers, key, strlen(key), NULL);
-
-    apr_thread_mutex_unlock(_self->mutex);
-
-    free(key);
-    return res;
-}
-
-static Jxta_status tcp_messenger_send(JxtaEndpointMessenger * mes, Jxta_message * msg)
-{
-    Jxta_status status;
-    TcpMessenger *_self = (TcpMessenger *) mes;
-
-    JXTA_OBJECT_CHECK_VALID(_self);
-    JXTA_OBJECT_CHECK_VALID(msg);
-
-    if (!_self->initialized_connection) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Tried to send on uninitialized TCP messenger\n");
-        return JXTA_FAILED;
-    }
-
-    apr_thread_mutex_lock(_self->mutex);
-
-    if (NULL == _self->conn) {
-        apr_thread_mutex_unlock(_self->mutex);
-        return JXTA_FAILED;
-    } else {
-        JXTA_OBJECT_CHECK_VALID(_self->conn);
-    }
-
-    apr_thread_mutex_unlock(_self->mutex);
-
-    JXTA_OBJECT_SHARE(msg);
-
-    jxta_message_remove_element_2(msg, MESSAGE_SOURCE_NS, MESSAGE_SOURCE_NAME);
-    jxta_message_add_element(msg, _self->src_msg_el);
-
-    status = jxta_transport_tcp_connection_send_message(_self->conn, msg);
-
-    JXTA_OBJECT_RELEASE(msg);
-
-    return status;
 }
 
 Jxta_endpoint_service *jxta_transport_tcp_get_endpoint_service(Jxta_transport_tcp * me)
@@ -1035,33 +999,23 @@ Jxta_boolean jxta_transport_tcp_get_allow_multicast(Jxta_transport_tcp * me)
     return _self->allow_multicast;
 }
 
-void tcp_got_inbound_connection(Jxta_transport_tcp * me, Jxta_transport_tcp_connection * conn)
+static Jxta_status create_outbound_connection(Jxta_transport_tcp * me, Jxta_endpoint_address * dest, 
+                                              Jxta_transport_tcp_connection ** tc)
 {
-    TcpMessenger *m = NULL;
-    Jxta_transport_event *e = NULL;
-    Jxta_endpoint_address *ea;
+    Jxta_transport_tcp_connection * conn;
 
-    ea = jxta_transport_tcp_connection_get_destaddr(conn);
-    /* Add the connection to messenger table */
-    m = get_tcp_messenger(me, conn, ea);
-    if (NULL == m) {
-        JXTA_OBJECT_RELEASE(ea);
-        jxta_transport_tcp_connection_close(conn);
-        return;
+    conn = jxta_transport_tcp_connection_new_1(me, dest);
+    if (NULL == conn) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Failed opening connection -> %s://%s\n",
+                        jxta_endpoint_address_get_protocol_name(dest), jxta_endpoint_address_get_protocol_address(dest));
+        *tc = NULL;
+        return JXTA_FAILED;
     }
 
-    JXTA_OBJECT_RELEASE(m);
-    e = jxta_transport_event_new(JXTA_TRANSPORT_INBOUND_CONNECT);
-    if (NULL == e) {
-        JXTA_OBJECT_RELEASE(ea);
-        jxta_transport_tcp_connection_close(conn);
-        return;
-    }
+    tcp_connections_add(me->outbounds, conn);
+    *tc = conn;
 
-    e->dest_addr = ea;
-    e->peer_id = jxta_transport_tcp_connection_get_destination_peerid(conn);
-    jxta_endpoint_service_transport_event(me->endpoint, e);
-    JXTA_OBJECT_RELEASE(e);
+    return JXTA_SUCCESS;
 }
 
 /* vim: set sw=4 ts=4 tw=130 et: */

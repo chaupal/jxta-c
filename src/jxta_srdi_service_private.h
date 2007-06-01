@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi_service_private.h,v 1.13 2006/08/10 21:35:33 exocetrick Exp $
+ * $Id: jxta_srdi_service_private.h,v 1.13.4.1 2006/11/16 00:06:34 bondolo Exp $
  */
 
 
@@ -106,11 +106,9 @@ struct _jxta_srdi_service_methods {
                                           Jxta_resolver_service * resolver,
                                           Jxta_vector * peers, ResolverQuery * query, int threshold);
 
-    Jxta_peer *(*getReplicaPeer) (Jxta_srdi_service * self, Jxta_resolver_service * resolver, Jxta_peerview * peerview,
-                                  const char *expression);
+    Jxta_peer *(*getReplicaPeer) (Jxta_srdi_service * self, const char *expression);
 
-    Jxta_peer *(*getNumericReplica) (Jxta_srdi_service * self, Jxta_resolver_service * resolver, Jxta_peerview * peerview,
-				     Jxta_range *rge, const char * value);
+    Jxta_peer *(*getNumericReplica) (Jxta_srdi_service * self, Jxta_range *rge, const char * value);
     
     Jxta_status(*forwardSrdiMessage) (Jxta_srdi_service * self, Jxta_resolver_service * resolver, Jxta_peer * peer,
 				      Jxta_id * srcPid, const char *primaryKey, const char *secondarykey, const char *value,
@@ -123,7 +121,7 @@ struct _jxta_srdi_service_methods {
  * The base discovery service ctor (not public: the only public way to make a
  * new pg is to instantiate one of the derived types).
  */
-extern void jxta_srdi_service_construct(Jxta_srdi_service * service, Jxta_srdi_service_methods * methods);
+extern void jxta_srdi_service_construct(Jxta_srdi_service * service, Jxta_srdi_service_methods const * methods);
 
 /**
  * The base resolver service dtor (Not public, not virtual. Only called by

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tcp_connection.h,v 1.13 2006/09/06 00:43:48 slowhog Exp $
+ * $Id: jxta_transport_tcp_connection.h,v 1.13.4.1 2006/12/23 20:18:37 slowhog Exp $
  */
 
 #ifndef __JXTA_TRANSPORT_TCP_CONNECTION_H__
@@ -77,8 +77,6 @@ JXTA_DECLARE(Jxta_transport_tcp_connection *) jxta_transport_tcp_connection_new_
 
 JXTA_DECLARE(Jxta_transport_tcp_connection *) jxta_transport_tcp_connection_new_2(Jxta_transport_tcp * tp,
                                                                                   apr_socket_t * inc_socket);
-
-JXTA_DECLARE(Jxta_status) jxta_transport_tcp_connection_start(Jxta_transport_tcp_connection * self);
 
 JXTA_DECLARE(Jxta_status) jxta_transport_tcp_connection_close(Jxta_transport_tcp_connection * self);
 

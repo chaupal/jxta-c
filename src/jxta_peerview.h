@@ -50,17 +50,20 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peerview.h,v 1.16 2006/02/01 23:37:50 slowhog Exp $
+ * $Id: jxta_peerview.h,v 1.16.4.1 2006/11/16 00:06:30 bondolo Exp $
  */
 
 
 #ifndef JXTA_PEERVIEW_H
 #define JXTA_PEERVIEW_H
 
+#include <openssl/bn.h>
+
 #include "jxta_apr.h"
 
 #include "jxta_id.h"
 #include "jxta_listener.h"
+#include "jxta_peer.h"
 #include "jxta_vector.h"
 
 #ifdef __cplusplus
@@ -70,7 +73,7 @@ extern "C" {
 #endif
 #endif
 
-typedef struct _jxta_peerview const Jxta_peerview;
+typedef struct _jxta_peerview Jxta_peerview;
 
 /**
  * The Peerview event types
@@ -89,32 +92,100 @@ typedef struct _jxta_peerview_event {
     Jxta_id *pid;
 } Jxta_peerview_event;
 
+/**
+*   Returns TRUE if this peer is an active member of the peerview.
+*   @param pv The peerview.
+*   @return TRUE if this peer is an active member of the peerview otherwise false.
+**/
+JXTA_DECLARE(Jxta_boolean) jxta_peerview_is_member(Jxta_peerview * pv );
 
+/**
+*   Returns TRUE if this peer is active in trying to join the peerview.
+*
+*   @param pv The peerview.
+*   @return TRUE if this peer is active in trying to join the peerview otherwise FALSE.
+**/
+JXTA_DECLARE(Jxta_boolean) jxta_peerview_is_active(Jxta_peerview * pv );
+
+/**
+*   Sets the peerview to the active state.
+*
+*   @param pv The peerview.
+*   @param active If TRUE this peer will actively try to join the peerview.
+**/
+JXTA_DECLARE(Jxta_boolean) jxta_peerview_set_active(Jxta_peerview * pv, Jxta_boolean active );
+
+/**
+*   Returns a vector containing Jxta_peer_entry objects for each of the current
+*   peerview members we are partnered with in other clusters.
+*
+*   @param pv The peerview.
+*   @param view the address of the destination vector for the entries.
+*   @return JXTA_SUCCESS if entries could be retrieved otherwise false.
+*/
+JXTA_DECLARE(Jxta_status) jxta_peerview_get_globalview(Jxta_peerview * pv, Jxta_vector ** view);
+
+/**
+*   Returns a count of the number of entries in the global view (the number of clusters).
+*
+*   @param pv The peerview.
+*   @return The number of clusters used by this peerview.
+*/
+JXTA_DECLARE(unsigned int) jxta_peerview_get_globalview_size(Jxta_peerview * pv);
+
+/**
+*   Returns a vector containing Jxta_peer_entry objects for each of the current
+*   peerview members.
+*
+*   @param pv The peerview.
+*   @param view the address of the destination vector for the entries.
+*   @return JXTA_SUCCESS if entries could be retrieved otherwise false.
+*/
 JXTA_DECLARE(Jxta_status) jxta_peerview_get_localview(Jxta_peerview * pv, Jxta_vector ** view);
 
+/**
+*   Returns a count of the current number of entries in the current local view.
+*   Usually more efficient than getting the view just to count the entries.
+*
+*   @deprecated Since the structure of the peerview has changed this is no longer really useful.
+*
+*   @param pv The peerview.
+*   @return number of entries in the current view.
+*/
 JXTA_DECLARE(unsigned int) jxta_peerview_get_localview_size(Jxta_peerview * pv);
 
+/**
+*
+**/
+JXTA_DECLARE(Jxta_status) jxta_peerview_gen_hash(Jxta_peerview * me, unsigned char const *value, size_t length, BIGNUM ** hash);
+                                                              
+/**
+*   Return the associate peer for the specified cluster.
+*
+*   @param pv The peerview.
+*   @param cluster The cluster who's associate peer is sought.
+*   @param peer The result associate peer.
+*   @return JXTA_SUCCESS If a peer could be returned otherwise errors per the fault.
+*/
+JXTA_DECLARE(Jxta_status) jxta_peerview_get_associate_peer(Jxta_peerview * pv, unsigned int cluster, Jxta_peer ** peer);
+                                                              
+/**
+*   Returns a Jxta_peer object for the specified target hash value.
+*
+*   @param pv The peerview.
+*   @param target_hash The target hash value. The peer returned will be the peer which mostly closely matches the hash.
+*   @param peer The peer which will be returned.
+*   @return JXTA_SUCCESS If a peer could be returned otherwise errors per the fault.
+*/
+JXTA_DECLARE(Jxta_status) jxta_peerview_get_peer_for_target_hash(Jxta_peerview * pv, BIGNUM *target_hash, Jxta_peer ** peer);
+
+
+
 JXTA_DECLARE(Jxta_status) jxta_peerview_add_event_listener(Jxta_peerview * pv, const char *serviceName,
-							   const char *serviceParam, void *listener);
+                                                           const char *serviceParam, Jxta_listener *listener);
 
 JXTA_DECLARE(Jxta_status) jxta_peerview_remove_event_listener(Jxta_peerview * pv, const char *serviceName,
-							      const char *serviceParam, Jxta_listener **listener);
-                                                              
-JXTA_DECLARE(Jxta_status) jxta_peerview_set_happy_size(Jxta_peerview * pv, unsigned int happy_view);
-JXTA_DECLARE(unsigned int) jxta_peerview_get_happy_size(Jxta_peerview * pv);
-                                                              
-JXTA_DECLARE(Jxta_status) jxta_peerview_set_max_probed(Jxta_peerview * pv, unsigned int max_probed);
-JXTA_DECLARE(unsigned int) jxta_peerview_get_max_probed(Jxta_peerview * pv);
-
-JXTA_DECLARE(Jxta_status) jxta_peerview_set_thread_interval(Jxta_peerview * pv, Jxta_time interval);
-JXTA_DECLARE(Jxta_time) jxta_peerview_get_thread_interval(Jxta_peerview * pv);
-
-JXTA_DECLARE(Jxta_status) jxta_peerview_set_rdva_refresh(Jxta_peerview * pv, Jxta_time_diff interval);
-JXTA_DECLARE(Jxta_time_diff) jxta_peerview_get_rdva_refresh(Jxta_peerview * pv);
-
-JXTA_DECLARE(Jxta_status) jxta_peerview_set_pve_expires(Jxta_peerview * pv, Jxta_time expires);
-JXTA_DECLARE(Jxta_time) jxta_peerview_get_pve_expires(Jxta_peerview * pv);
-
+                                                              const char *serviceParam);
 #ifdef __cplusplus
 #if 0
 {

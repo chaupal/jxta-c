@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdvclient_test.c,v 1.25 2005/11/15 18:41:33 slowhog Exp $
+ * $Id: jxta_rdvclient_test.c,v 1.25.4.1 2006/11/16 00:06:36 bondolo Exp $
  */
 
 
@@ -61,6 +61,7 @@
  ****************************************************************/
 
 #include "jxta.h"
+#include "jxta_peer.h"
 #include "jxta_peergroup.h"
 
 #include "apr_time.h"
@@ -113,7 +114,7 @@ Jxta_boolean display_peers(Jxta_rdv_service * rdv)
 
             printf("\nRDV Addr: %s\n", jxta_endpoint_address_to_string(addr));
 
-            connected = jxta_rdv_service_peer_is_connected(rdv, peer);
+            connected = jxta_peer_get_expires(peer) > jpr_time_now();
             fprintf(stderr, "Status: %s\n", connected ? "CONNECTED" : "NOT CONNECTED");
 
             if (connected) {
@@ -135,7 +136,7 @@ Jxta_boolean display_peers(Jxta_rdv_service * rdv)
                     }
                 }
 
-                expires = jxta_rdv_service_peer_get_expires(rdv, peer);
+                expires = jxta_peer_get_expires(peer);
 
                 if (connected && (expires >= 0)) {
                     Jxta_time hours = 0;
@@ -160,7 +161,7 @@ Jxta_boolean display_peers(Jxta_rdv_service * rdv)
 
                     seconds = expires;
 
-                    printf("Lease expires in %lld hour(s) %lld minute(s) %lld second(s)\n",
+                    printf("Lease expires in " JPR_DIFF_TIME_FMT " hour(s) " JPR_DIFF_TIME_FMT " minute(s) " JPR_DIFF_TIME_FMT " second(s)\n",
                            (Jxta_time) hours, (Jxta_time) minutes, (Jxta_time) seconds);
                 }
             }
@@ -192,16 +193,12 @@ Jxta_boolean jxta_rdv_service_client_test(int argc, char **argv)
     jxta_PG_get_rendezvous_service(pg, &rdv);
 
     {
-        Jxta_peer *peer = jxta_peer_new();
         Jxta_endpoint_address *addr = jxta_endpoint_address_new_2((char *) "http",
                                                                   rdvAddr,
                                                                   NULL,
                                                                   NULL);
-        jxta_peer_set_address(peer, addr);
-
-        jxta_rdv_service_add_peer(rdv, peer);
+        jxta_rdv_service_add_seed(rdv, addr);
         JXTA_OBJECT_RELEASE(addr);
-        JXTA_OBJECT_RELEASE(peer);
     }
 
     /* Wait a bit */

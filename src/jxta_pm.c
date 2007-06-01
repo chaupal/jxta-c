@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pm.c,v 1.34 2006/02/18 00:32:52 slowhog Exp $
+ * $Id: jxta_pm.c,v 1.35 2006/11/04 10:44:47 mmx2005 Exp $
  */
 
 static const char *__log_cat = "PropMsg";
@@ -91,7 +91,7 @@ struct _RendezVousPropagateMessage {
     int ttl;
 };
 
-void RendezVousPropagateMessage_delete(Jxta_object * obj);
+static void RendezVousPropagateMessage_delete(Jxta_object * obj);
 
     /** Handler functions.  Each of these is responsible for
      * dealing with all of the character data associated with the 
@@ -106,6 +106,7 @@ static void handleRendezVousPropagateMessage(void *userdata, const XML_Char * cd
 static void handleDestSName(void *userdata, const XML_Char * cd, int len)
 {
     RendezVousPropagateMessage *ad = (RendezVousPropagateMessage *) userdata;
+
     if (0 == len)
         return;
     if (NULL == ad->destSName) {
@@ -118,6 +119,7 @@ static void handleDestSName(void *userdata, const XML_Char * cd, int len)
 static void handleDestSParam(void *userdata, const XML_Char * cd, int len)
 {
     RendezVousPropagateMessage *ad = (RendezVousPropagateMessage *) userdata;
+
     if (0 == len)
         return;
     if (NULL == ad->destSParam) {
@@ -175,7 +177,6 @@ static void handlePath(void *userdata, const XML_Char * cd, int len)
         free(tok);
     }
 }
-
 
  /** The get/set functions represent the public
    * interface to the ad class, that is, the API.
@@ -367,7 +368,7 @@ JXTA_DECLARE(RendezVousPropagateMessage *) RendezVousPropagateMessage_new(void)
     return ad;
 }
 
-void RendezVousPropagateMessage_delete(Jxta_object * obj)
+static void RendezVousPropagateMessage_delete(Jxta_object * obj)
 {
     RendezVousPropagateMessage *ad = (RendezVousPropagateMessage *) obj;
 
@@ -402,8 +403,6 @@ JXTA_DECLARE(Jxta_status) RendezVousPropagateMessage_parse_charbuffer(RendezVous
 {
     return jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
-
-
 
 JXTA_DECLARE(Jxta_status) RendezVousPropagateMessage_parse_file(RendezVousPropagateMessage * ad, FILE * stream)
 {

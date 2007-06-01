@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_unipipe_service.c,v 1.44 2006/09/08 20:56:01 exocetrick Exp $
+ * $Id: jxta_unipipe_service.c,v 1.44.4.1 2007/04/25 19:28:09 slowhog Exp $
  */
 
 #include "jxta_apr.h"
@@ -107,7 +107,6 @@ typedef struct {
     Jxta_outputpipe generic;
     Jxta_unipipe_pipe *pipe;
     Jxta_endpoint_address *addr;
-    Jxta_listener *user_listener;
 } Jxta_unipipe_outputpipe;
 
 typedef struct {
@@ -141,7 +140,6 @@ static Jxta_status unipipe_pipe_get_pipeadv(Jxta_pipe *, Jxta_pipe_adv ** pipead
 
 static void jxta_unipipe_service_free(Jxta_object * obj)
 {
-
     Jxta_unipipe_service *self = (Jxta_unipipe_service *) obj;
 
     JXTA_OBJECT_RELEASE(self->cm);
@@ -233,7 +231,6 @@ Jxta_pipe_service_impl *jxta_unipipe_service_new_instance(Jxta_pipe_service * pi
 
 static char *unipipe_get_name(Jxta_pipe_service_impl * obj)
 {
-
     Jxta_unipipe_service *self = (Jxta_unipipe_service *) obj;
     if (self == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid argument\n");
@@ -244,7 +241,6 @@ static char *unipipe_get_name(Jxta_pipe_service_impl * obj)
 
 static Jxta_status unipipe_deny(Jxta_pipe_service_impl * obj, Jxta_pipe_adv * adv)
 {
-
     Jxta_unipipe_service *self = (Jxta_unipipe_service *) obj;
     if (self == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid argument\n");
@@ -262,7 +258,6 @@ static Jxta_status
 unipipe_timed_connect(Jxta_pipe_service_impl * obj,
                       Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_vector * peers, Jxta_pipe ** pipe)
 {
-
     Jxta_unipipe_service *self = (Jxta_unipipe_service *) obj;
     Jxta_status res;
     Jxta_listener *listener = NULL;
@@ -326,7 +321,6 @@ static Jxta_status
 unipipe_connect(Jxta_pipe_service_impl * obj,
                 Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_vector * peers, Jxta_listener * listener)
 {
-
     Jxta_unipipe_service *self = (Jxta_unipipe_service *) obj;
     Jxta_status res = JXTA_SUCCESS;
 
@@ -347,7 +341,6 @@ unipipe_connect(Jxta_pipe_service_impl * obj,
 static Jxta_status
 unipipe_timed_accept(Jxta_pipe_service_impl * obj, Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_pipe ** pipe)
 {
-
     Jxta_unipipe_service *self = (Jxta_unipipe_service *) obj;
     Jxta_listener *listener = NULL;
     Jxta_pipe_connect_event *event = NULL;
@@ -390,6 +383,7 @@ unipipe_timed_accept(Jxta_pipe_service_impl * obj, Jxta_pipe_adv * adv, Jxta_tim
 
     if (res != JXTA_SUCCESS) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot wait for event on the listener\n");
+		apr_thread_mutex_unlock(self->mutex);
         return res;
     }
 
@@ -416,7 +410,6 @@ unipipe_timed_accept(Jxta_pipe_service_impl * obj, Jxta_pipe_adv * adv, Jxta_tim
 
 static Jxta_status unipipe_add_accept_listener(Jxta_pipe_service_impl * obj, Jxta_pipe_adv * adv, Jxta_listener * listener)
 {
-
     Jxta_unipipe_service *self = (Jxta_unipipe_service *) obj;
     Jxta_status res;
 
@@ -446,7 +439,6 @@ static Jxta_status unipipe_add_accept_listener(Jxta_pipe_service_impl * obj, Jxt
 
 static Jxta_status unipipe_remove_accept_listener(Jxta_pipe_service_impl * obj, Jxta_pipe_adv * adv, Jxta_listener * listener)
 {
-
     Jxta_unipipe_service *self = (Jxta_unipipe_service *) obj;
 
     if (self == NULL) {
@@ -462,7 +454,6 @@ static Jxta_status unipipe_remove_accept_listener(Jxta_pipe_service_impl * obj, 
 
 static Jxta_status unipipe_get_pipe_resolver(Jxta_pipe_service_impl * obj, Jxta_pipe_resolver ** resolver)
 {
-
     Jxta_unipipe_service *self = (Jxta_unipipe_service *) obj;
 
     if (self == NULL) {
@@ -480,7 +471,6 @@ static Jxta_status unipipe_get_pipe_resolver(Jxta_pipe_service_impl * obj, Jxta_
 
 static Jxta_status unipipe_set_pipe_resolver(Jxta_pipe_service_impl * obj, Jxta_pipe_resolver * new, Jxta_pipe_resolver ** old)
 {
-
     Jxta_unipipe_service *self = (Jxta_unipipe_service *) obj;
 
     if (self == NULL) {
@@ -508,9 +498,7 @@ static Jxta_status unipipe_check_listener(Jxta_pipe_service_impl * impl, const c
     Jxta_object *tmp = NULL;
 
     apr_thread_mutex_lock(self->mutex);
-
     res = jxta_hashtable_get(self->accept_sessions, id, strlen(id), &tmp);
-
     apr_thread_mutex_unlock(self->mutex);
 
     if (res == JXTA_SUCCESS) {
@@ -529,7 +517,6 @@ static Jxta_status unipipe_check_listener(Jxta_pipe_service_impl * impl, const c
 
 static void jxta_unipipe_pipe_free(Jxta_object * obj)
 {
-
     Jxta_unipipe_pipe *self = (Jxta_unipipe_pipe *) obj;
 
     if (self->unipipe_service != NULL) {
@@ -557,13 +544,11 @@ static void jxta_unipipe_pipe_free(Jxta_object * obj)
 
 static Jxta_unipipe_pipe *jxta_unipipe_pipe_new(const char *id, Jxta_pipe_adv * adv, Jxta_unipipe_service * pipe_service)
 {
-
     Jxta_unipipe_pipe *self = NULL;
 
     self = (Jxta_unipipe_pipe *) malloc(sizeof(Jxta_unipipe_pipe));
     memset(self, 0, sizeof(Jxta_unipipe_pipe));
     JXTA_OBJECT_INIT(self, jxta_unipipe_pipe_free, 0);
-
 
     self->id = malloc(strlen(id) + 1);
     strcpy(self->id, id);
@@ -588,7 +573,6 @@ static Jxta_unipipe_pipe *jxta_unipipe_pipe_new(const char *id, Jxta_pipe_adv * 
 
 static void JXTA_STDCALL resolve_listener(Jxta_object * obj, void *arg)
 {
-
     Jxta_pipe_resolver_event *event = (Jxta_pipe_resolver_event *) obj;
     ResolveRequest *req = (ResolveRequest *) arg;
     Jxta_unipipe_pipe *pipe = NULL;
@@ -684,14 +668,12 @@ static void JXTA_STDCALL resolve_listener(Jxta_object * obj, void *arg)
         JXTA_OBJECT_RELEASE(req->listener);
 
     free(req);
-    return;
 }
 
 static Jxta_status
 jxta_unipipe_pipe_connect(Jxta_unipipe_service * pipe_service, const char *id, Jxta_pipe_adv * adv, 
                           Jxta_vector * peers, Jxta_time_diff timeout, Jxta_listener * listener)
 {
-
     Jxta_unipipe_pipe *self = NULL;
     Jxta_status res;
     Jxta_peer *peer = NULL;
@@ -810,7 +792,6 @@ static Jxta_status
 jxta_unipipe_pipe_accept(Jxta_unipipe_service * pipe_service, const char *id, Jxta_pipe_adv * adv, 
                          Jxta_listener * listener)
 {
-
     Jxta_unipipe_pipe *self = NULL;
     Jxta_pipe_connect_event *event = NULL;
     Jxta_status res;
@@ -845,7 +826,6 @@ jxta_unipipe_pipe_accept(Jxta_unipipe_service * pipe_service, const char *id, Jx
 
 static Jxta_status unipipe_pipe_get_outputpipe(Jxta_pipe * obj, Jxta_outputpipe ** op)
 {
-
     Jxta_unipipe_pipe *self = (Jxta_unipipe_pipe *) obj;
     Jxta_outputpipe *tmp;
 
@@ -866,7 +846,6 @@ static Jxta_status unipipe_pipe_get_outputpipe(Jxta_pipe * obj, Jxta_outputpipe 
 
 static Jxta_status unipipe_pipe_get_inputpipe(Jxta_pipe * obj, Jxta_inputpipe ** ip)
 {
-
     Jxta_unipipe_pipe *self = (Jxta_unipipe_pipe *) obj;
     Jxta_inputpipe *tmp;
 
@@ -906,8 +885,7 @@ static Jxta_status unipipe_pipe_get_pipeadv(Jxta_pipe * obj, Jxta_pipe_adv ** pi
     JXTA_OBJECT_SHARE(self->adv);   
     *pipeadv = self->adv;
 
-    return JXTA_SUCCESS;
-    
+    return JXTA_SUCCESS;    
 }
 
 /****************************************************************
@@ -916,7 +894,6 @@ static Jxta_status unipipe_pipe_get_pipeadv(Jxta_pipe * obj, Jxta_pipe_adv ** pi
 
 static Jxta_status inputpipe_timed_receive(Jxta_inputpipe * obj, Jxta_time_diff timeout, Jxta_message ** msg)
 {
-
     Jxta_unipipe_inputpipe *self = (Jxta_unipipe_inputpipe *) obj;
     Jxta_listener *listener = NULL;
     Jxta_endpoint_service *endpoint = NULL;
@@ -959,7 +936,6 @@ static Jxta_status inputpipe_timed_receive(Jxta_inputpipe * obj, Jxta_time_diff 
 
 static Jxta_status inputpipe_add_listener(Jxta_inputpipe * obj, Jxta_listener * listener)
 {
-
     Jxta_unipipe_inputpipe *self = (Jxta_unipipe_inputpipe *) obj;
     Jxta_status res;
     Jxta_endpoint_service *endpoint = NULL;
@@ -1018,7 +994,6 @@ static Jxta_status inputpipe_add_listener(Jxta_inputpipe * obj, Jxta_listener * 
 
 static Jxta_status inputpipe_remove_listener(Jxta_inputpipe * obj, Jxta_listener * listener)
 {
-
     Jxta_unipipe_inputpipe *self = (Jxta_unipipe_inputpipe *) obj;
     Jxta_endpoint_service *endpoint = NULL;
     Jxta_status res;
@@ -1060,7 +1035,6 @@ static Jxta_status inputpipe_remove_listener(Jxta_inputpipe * obj, Jxta_listener
 
 static void unipipe_inputpipe_free(Jxta_object * obj)
 {
-
     Jxta_unipipe_inputpipe *self = (Jxta_unipipe_inputpipe *) obj;
     Jxta_status res;
     Jxta_endpoint_service *endpoint = NULL;
@@ -1091,7 +1065,6 @@ static void unipipe_inputpipe_free(Jxta_object * obj)
 
 static Jxta_unipipe_inputpipe *unipipe_inputpipe_new(Jxta_unipipe_pipe * pipe)
 {
-
     Jxta_unipipe_inputpipe *self = NULL;
 
     self = (Jxta_unipipe_inputpipe *) malloc(sizeof(Jxta_unipipe_inputpipe));
@@ -1112,7 +1085,7 @@ static Jxta_unipipe_inputpipe *unipipe_inputpipe_new(Jxta_unipipe_pipe * pipe)
     self->generic.add_listener = inputpipe_add_listener;
     self->generic.remove_listener = inputpipe_remove_listener;
 
-    return (Jxta_unipipe_inputpipe *) self;
+    return self;
 }
 
 /****************************************************************
@@ -1121,7 +1094,6 @@ static Jxta_unipipe_inputpipe *unipipe_inputpipe_new(Jxta_unipipe_pipe * pipe)
 
 static Jxta_status outputpipe_add_listener(Jxta_outputpipe * obj, Jxta_listener * listener)
 {
-
     /**
      ** The unipipe service does not implement this. (no meaning).
      **/
@@ -1130,7 +1102,6 @@ static Jxta_status outputpipe_add_listener(Jxta_outputpipe * obj, Jxta_listener 
 
 static Jxta_status outputpipe_remove_listener(Jxta_outputpipe * obj, Jxta_listener * listener)
 {
-
     /**
      ** The unipipe service does not implement this. (no meaning).
      **/
@@ -1139,7 +1110,6 @@ static Jxta_status outputpipe_remove_listener(Jxta_outputpipe * obj, Jxta_listen
 
 static Jxta_status outputpipe_send(Jxta_outputpipe * obj, Jxta_message * msg)
 {
-
     Jxta_unipipe_outputpipe *self = (Jxta_unipipe_outputpipe *) obj;
     Jxta_endpoint_service *endpoint = NULL;
     Jxta_status res = JXTA_SUCCESS;
@@ -1173,17 +1143,11 @@ static Jxta_status outputpipe_send(Jxta_outputpipe * obj, Jxta_message * msg)
 
 static void unipipe_outputpipe_free(Jxta_object * obj)
 {
-
     Jxta_unipipe_outputpipe *self = (Jxta_unipipe_outputpipe *) obj;
 
     if (self->pipe != NULL) {
         JXTA_OBJECT_RELEASE(self->pipe);
         self->pipe = NULL;
-    }
-
-    if (self->user_listener != NULL) {
-        JXTA_OBJECT_RELEASE(self->user_listener);
-        self->user_listener = NULL;
     }
 
     if (self->addr != NULL) {
@@ -1196,7 +1160,6 @@ static void unipipe_outputpipe_free(Jxta_object * obj)
 
 static Jxta_unipipe_outputpipe *unipipe_outputpipe_new(Jxta_unipipe_pipe * pipe)
 {
-
     Jxta_unipipe_outputpipe *self = NULL;
     Jxta_peer *peer = NULL;
     Jxta_id *pid = NULL;
@@ -1205,7 +1168,6 @@ static Jxta_unipipe_outputpipe *unipipe_outputpipe_new(Jxta_unipipe_pipe * pipe)
 
     self = (Jxta_unipipe_outputpipe *) calloc(1, sizeof(Jxta_unipipe_outputpipe));
 
-    self->user_listener = NULL;
     JXTA_OBJECT_SHARE(pipe);
     self->pipe = pipe;
 
@@ -1256,7 +1218,7 @@ static Jxta_unipipe_outputpipe *unipipe_outputpipe_new(Jxta_unipipe_pipe * pipe)
     self->generic.remove_listener = outputpipe_remove_listener;
 
     JXTA_OBJECT_INIT(self, unipipe_outputpipe_free, 0);
-    return (Jxta_unipipe_outputpipe *) self;
+    return self;
 }
 
 /* vim: set ts=4 sw=4 tw=130 et: */

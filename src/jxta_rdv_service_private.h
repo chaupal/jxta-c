@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_private.h,v 1.35 2006/08/15 21:18:27 bondolo Exp $
+ * $Id: jxta_rdv_service_private.h,v 1.35.4.3 2006/12/02 08:17:50 slowhog Exp $
  */
 
 
@@ -80,19 +80,28 @@ extern "C" {
 #endif
 #endif
 
+extern const char* RDV_V3_MCID;
+extern const char* RDV_V3_MSID;
+
     /**
-     ** Name of the service (as being used in forming the Endpoint Address).
+ *  Namespace for message elements we will send.
      **/
 extern const char JXTA_RDV_NS_NAME[];
-extern const char JXTA_RDV_SERVICE_NAME[];
-extern const char JXTA_RDV_PROPAGATE_ELEMENT_NAME[];
+
+/**
+*   Service Param of endpoint addresses for leasing messages.
+**/
+extern const char JXTA_RDV_LEASING_SERVICE_NAME[];
+
+/**
+*   Service Param of endpoint addresses for walker messages.
+**/
+extern const char JXTA_RDV_WALKER_SERVICE_NAME[];
+
+/**
+*   Service Param of endpoint addresses for propagate messages.
+**/
 extern const char JXTA_RDV_PROPAGATE_SERVICE_NAME[];
-extern const char JXTA_RDV_CONNECT_REQUEST_ELEMENT_NAME[];
-extern const char JXTA_RDV_DISCONNECT_REQUEST_ELEMENT_NAME[];
-extern const char JXTA_RDV_CONNECTED_REPLY_ELEMENT_NAME[];
-extern const char JXTA_RDV_LEASE_REPLY_ELEMENT_NAME[];
-extern const char JXTA_RDV_RDVADV_REPLY_ELEMENT_NAME[];
-extern const char JXTA_RDV_ADV_ELEMENT_NAME[];
 
 /**
 *    Method table for rendezvous services.
@@ -131,9 +140,17 @@ struct _jxta_rdv_service {
     apr_thread_mutex_t *periodicMutex;
     volatile apr_thread_t *periodicThread;
 
+    Jxta_PG *group;
     Jxta_PG *parentgroup;
+    Jxta_id *pid;
+    char *assigned_id_str;
 
+    Jxta_RdvConfigAdvertisement *rdvConfig;
+    RdvConfig_configuration current_config;
     RdvConfig_configuration config;
+
+    Jxta_vector *active_seeds;
+    Jxta_time last_seeding_update;
 
     volatile Jxta_boolean auto_interval_lock;
     Jxta_time_diff auto_rdv_interval;
@@ -144,10 +161,11 @@ struct _jxta_rdv_service {
 
     RendezVousStatus status;
 
-    volatile Jxta_rdv_service_provider *provider;
+    Jxta_rdv_service_provider *provider;
 
-    JString *peerviewNameString;
     Jxta_peerview *peerview;
+
+    Jxta_listener *peerview_listener;
 };
 
 /**
@@ -163,28 +181,45 @@ typedef struct _jxta_rdv_service _jxta_rdv_service;
 *    @param id The peer for which the event occurred.
 *    
 **/
-JXTA_DECLARE(void) jxta_rdv_generate_event(_jxta_rdv_service * rdv, Jxta_Rendezvous_event_type event, Jxta_id * id);
+extern void rdv_service_generate_event(_jxta_rdv_service * rdv, Jxta_Rendezvous_event_type event, Jxta_id * id);
 
-Jxta_endpoint_service * jxta_rdv_service_endpoint_svc(_jxta_rdv_service * rdv);
-
-JXTA_DECLARE(Jxta_peerview *) jxta_rdv_service_get_peerview_priv(_jxta_rdv_service * rdv);
+extern Jxta_peerview *rdv_service_get_peerview_priv(Jxta_rdv_service * rdv);
 
 /**
-*   define the instantiator method for creating a rdv adhoc. This should come from a header file.
-**/ 
-extern Jxta_rdv_service_provider* jxta_rdv_service_adhoc_new(void);
+*   Returns the vector of active seeds peers. 
+*
+*  @param me A pointer to the instance of the Rendezvous Service
+*  @param seeds A vector of seeds. Each is a Jxta_endpoint_address
+*  @return error code.
+*/
+extern Jxta_status rdv_service_get_seeds(Jxta_rdv_service * me, Jxta_vector ** seeds);
+
+/**
+*  Adds a referral seed.
+*/
+extern Jxta_status rdv_service_add_referral_seed(Jxta_rdv_service * me, Jxta_peer * seed);
+
+
+/**
+*   Sends a broadcast request for seeds.
+*/
+extern Jxta_status rdv_service_send_seed_request(Jxta_rdv_service * rdv);
+
+/**
+*   define the instantiator method for creating a rdv ad-hoc. This should come from a header file.
+**/
+extern Jxta_rdv_service_provider *jxta_rdv_service_adhoc_new(apr_pool_t * pool);
 
 /**
 *   define the instantiator method for creating a rdv client. This should come from a header file.
-**/ 
-extern Jxta_rdv_service_provider* jxta_rdv_service_client_new(void);
+**/
+extern Jxta_rdv_service_provider *jxta_rdv_service_client_new(apr_pool_t * pool);
 
 /**
 *   define the instantiator method for creating a rdv server. This should come from a header file.
 **/
-extern Jxta_rdv_service_provider* jxta_rdv_service_server_new(void);
+extern Jxta_rdv_service_provider *jxta_rdv_service_server_new(apr_pool_t * pool);
 
-extern _jxta_rdv_service *jxta_rdv_service_construct(_jxta_rdv_service * rdv, const _jxta_rdv_service_methods * methods);
 /**
  * Create a new message id
  * 

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peerview_priv.h,v 1.3 2006/02/01 23:37:50 slowhog Exp $
+ * $Id: jxta_peerview_priv.h,v 1.3.4.1 2006/11/16 00:06:32 bondolo Exp $
  */
 
 
@@ -61,7 +61,6 @@
 
 #include "jxta_peerview.h"
 #include "jxta_id.h"
-#include "jxta_pipe_adv.h"
 #include "jxta_peergroup.h"
 
 #ifdef __cplusplus
@@ -72,45 +71,52 @@ extern "C" {
 #endif
 
     /**
-     ** Name of the service (as being used in forming the Endpoint Address).
+ *  Name of the service (as being used in forming the Endpoint Address).
      **/
 extern const char JXTA_PEERVIEW_NAME[];
-extern const char JXTA_PEERVIEW_RDVADV_ELEMENT_NAME[];
-extern const char JXTA_PEERVIEW_RDVRESP_ELEMENT_NAME[];
+extern const char JXTA_PEERVIEW_PA_ELEMENT_NAME[];
 extern const char JXTA_PEERVIEW_FAILURE_ELEMENT_NAME[];
-extern const char JXTA_PEERVIEW_CACHED_ELEMENT_NAME[];
-extern const char JXTA_PEERVIEW_EDGE_ELEMENT_NAME[];
-extern const char JXTA_PEERVIEW_RESPONSE_ELEMENT_NAME[];
 
-JXTA_DECLARE(Jxta_peerview *) jxta_peerview_new(void);
+/**
+*   Construct a new peerview instance.
+*
+*   @param parent_pool The apr_pool in which the peerview sub-pool will be allocated.
+*   @return The newly constructed peerview or NULL if the peerview could not be created.
+*/
+extern Jxta_peerview * jxta_peerview_new(apr_pool_t* parent_pool);
 
 /**
 *   Initializes the Peerview. The Peerview is usable if init succeeds.
 *
 *   @param pv    The peerview.
 *   @param group The group in which the peerview is operating.
+*   @param assigned_id  The module class id associated with this peerview instance.
 **/
-JXTA_DECLARE(Jxta_status) jxta_peerview_init(Jxta_peerview * pv, Jxta_PG * group, JString * name);
+extern Jxta_status peerview_init(Jxta_peerview * pv, Jxta_PG * group, Jxta_id * assigned_id);
 
-JXTA_DECLARE(Jxta_status) jxta_peerview_start(Jxta_peerview * pv);
+/**
+*   When started this peer actively participates in the peerview protocols until
+*   <tt>stop()</tt> is called.
+*
+*   @param pv The peerview.
+**/
+extern Jxta_status  peerview_start(Jxta_peerview * pv );
 
-JXTA_DECLARE(Jxta_status) jxta_peerview_stop(Jxta_peerview * peerview);
+/**
+*   When stopped the peer will cease active participation in the peerview 
+*   protocols. <tt>start()</tt> may be called again to resume operation.
+*
+*   @param pv The peerview.
+*/
+extern Jxta_status  peerview_stop(Jxta_peerview * peerview);
 
-JXTA_DECLARE(Jxta_status) jxta_peerview_send_rdv_probe(Jxta_peerview * self, Jxta_endpoint_address * dest);
+extern Jxta_status  jxta_peerview_get_self_peer(Jxta_peerview * pv, Jxta_peer ** peer);
 
-JXTA_DECLARE(Jxta_status) jxta_peerview_send_rdv_request(Jxta_peerview * pv, Jxta_boolean announce, Jxta_boolean failure);
+extern char * peerview_get_assigned_id_str(Jxta_peerview * pv);
 
-JXTA_DECLARE(Jxta_status) jxta_peerview_add_seed(Jxta_peerview * peerview, Jxta_peer * peer);
+extern Jxta_status jxta_peerview_set_pa_refresh(Jxta_peerview * pv, Jxta_time_diff interval);
+extern Jxta_time_diff jxta_peerview_get_pa_refresh(Jxta_peerview * pv);
 
-JXTA_DECLARE(Jxta_status) jxta_peerview_probe_cached_rdvadv(Jxta_peerview * pv, Jxta_RdvAdvertisement * rdva);
-
-JXTA_DECLARE(Jxta_status) jxta_peerview_get_down_peer(Jxta_peerview * pv, Jxta_peer ** peer);
-JXTA_DECLARE(Jxta_status) jxta_peerview_get_self_peer(Jxta_peerview * pv, Jxta_peer ** peer);
-JXTA_DECLARE(Jxta_status) jxta_peerview_get_up_peer(Jxta_peerview * pv, Jxta_peer ** peer);
-
-JXTA_DECLARE(JString *) jxta_peerview_get_name(Jxta_peerview * pv);
-
-JXTA_DECLARE(Jxta_vector *) jxta_peerview_get_seeds(Jxta_peerview * self);
 
 #ifdef __cplusplus
 #if 0

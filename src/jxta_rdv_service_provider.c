@@ -50,180 +50,253 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_provider.c,v 1.23 2006/06/24 08:02:28 slowhog Exp $
+ * $Id: jxta_rdv_service_provider.c,v 1.23.4.5 2007/05/23 15:30:14 exocetrick Exp $
  */
 
 static const char *__log_cat = "RdvProvider";
 
 #include <stddef.h>
 
+#include <openssl/sha.h>
+#include <assert.h>
+
 #include "jxta_log.h"
 #include "jxta_peer_private.h"
 #include "jxta_peergroup.h"
-#include "jxta_pm.h"
+#include "jxta_lease_request_msg.h"
+#include "jxta_rdv_diffusion_msg.h"
+#include "jxta_rdv_service.h"
 #include "jxta_rdv_service_provider.h"
 #include "jxta_rdv_service_provider_private.h"
 
-_jxta_rdv_service_provider *jxta_rdv_service_provider_construct(_jxta_rdv_service_provider * self,
-                                                                const _jxta_rdv_service_provider_methods * methods)
+/**
+*   The maximum ttl value we will allow applications/services to set.
+*/
+const static unsigned int DEFAULT_MAX_ALLOWED_TTL = 2;
+
+/**
+*   If true then only the src peer will broadcast propagate messages.
+*/
+const static Jxta_boolean SELECTIVE_BROADCAST = TRUE;
+
+static Jxta_status JXTA_STDCALL rdv_service_provider_prop_cb(Jxta_object * obj, void *arg);
+
+
+_jxta_rdv_service_provider *jxta_rdv_service_provider_construct(_jxta_rdv_service_provider * myself,
+                                                                const _jxta_rdv_service_provider_methods * methods,
+                                                                apr_pool_t * pool)
 {
     apr_status_t res = APR_SUCCESS;
 
-    self->methods = PTValid(methods, _jxta_rdv_service_provider_methods);
-    self->thisType = "_jxta_rdv_service_provider";
+    myself->methods = PTValid(methods, _jxta_rdv_service_provider_methods);
+    myself->thisType = "_jxta_rdv_service_provider";
 
-    apr_pool_create(&self->pool, NULL);
+    apr_pool_create(&myself->pool, pool);
+
     /* Create the mutex */
-    res = apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED,        /* nested */
-                                  self->pool);
+    res = apr_thread_mutex_create(&myself->mutex, APR_THREAD_MUTEX_NESTED, myself->pool);
 
-    self->service = NULL;
+    myself->thread_pool = NULL;
 
-    return self;
+    myself->local_peer_id = NULL;
+    myself->local_pa = NULL;
+
+    myself->service = NULL;
+
+    myself->parentgroup = NULL;
+    myself->parentgid = NULL;
+
+    myself->pipes = NULL;
+    myself->seed_pipe = NULL;
+
+    return myself;
 }
 
-void jxta_rdv_service_provider_destruct(_jxta_rdv_service_provider * self)
+void jxta_rdv_service_provider_destruct(_jxta_rdv_service_provider * myself)
 {
-    JXTA_OBJECT_RELEASE(self->service);
+    JXTA_OBJECT_RELEASE(myself->service);
 
-    JXTA_OBJECT_RELEASE(self->peerview);
-    JXTA_OBJECT_RELEASE(self->localPeerIdJString);
-
-    if (NULL != self->listener_propagate) {
-        JXTA_OBJECT_RELEASE(self->listener_propagate);
-        self->listener_propagate = NULL;
+    if (NULL != myself->seed_pipe) {
+        JXTA_OBJECT_RELEASE(myself->seed_pipe);
     }
 
-    if (self->messageElementName) {
-        free(self->messageElementName);
+    if (NULL != myself->pipes) {
+        JXTA_OBJECT_RELEASE(myself->pipes);
     }
-    free(self->groupiduniq);
+
+    if (NULL != myself->parentgroup) {
+        JXTA_OBJECT_RELEASE(myself->parentgroup);
+    }
+
+    if (NULL != myself->parentgid) {
+        JXTA_OBJECT_RELEASE(myself->parentgid);
+    }
+
+    JXTA_OBJECT_RELEASE(myself->peerview);
+
+    free(myself->assigned_id_str);
+
+    JXTA_OBJECT_RELEASE(myself->local_peer_id);
+
+    free(myself->gid_uniq_str);
+
+    myself->thread_pool = NULL;
 
     /* Free the pool used to allocate the thread and mutex */
-    apr_thread_mutex_destroy(self->mutex);
-    apr_pool_destroy(self->pool);
+    apr_thread_mutex_destroy(myself->mutex);
+    apr_pool_destroy(myself->pool);
 
-    self->thisType = NULL;
+    myself->thisType = NULL;
 }
 
 Jxta_status jxta_rdv_service_provider_init(Jxta_rdv_service_provider * provider, _jxta_rdv_service * service)
 {
-    _jxta_rdv_service_provider *self = PTValid(provider, _jxta_rdv_service_provider);
-    Jxta_PG *group = jxta_service_get_peergroup_priv((Jxta_service *) service);
+    _jxta_rdv_service_provider *myself = PTValid(provider, _jxta_rdv_service_provider);
     JString *string;
     Jxta_PGID *gid;
-    Jxta_PID *pid;
+    Jxta_id *assigned_id = jxta_service_get_assigned_ID_priv((Jxta_service *) service);
 
-    self->service = JXTA_OBJECT_SHARE(service);
+    myself->pg = jxta_service_get_peergroup_priv((Jxta_service *) service);
+    myself->thread_pool = jxta_PG_thread_pool_get(myself->pg);
 
-    self->peerview = JXTA_OBJECT_SHARE(jxta_rdv_service_get_peerview_priv(service));
+    myself->service = JXTA_OBJECT_SHARE(service);
 
-    jxta_PG_get_GID(group, &gid);
-    jxta_id_get_uniqueportion(gid, &string);
-    JXTA_OBJECT_RELEASE(gid);
-    self->groupiduniq = strdup(jstring_get_string(string));
+    jxta_id_to_jstring(assigned_id, &string);
+    myself->assigned_id_str = strdup(jstring_get_string(string));
     JXTA_OBJECT_RELEASE(string);
 
-    jxta_PG_get_PID(group, &pid);
-    jxta_id_to_jstring(pid, &self->localPeerIdJString);
-    JXTA_OBJECT_RELEASE(pid);
+    jxta_PG_get_PID(myself->pg, &myself->local_peer_id);
+    jxta_PG_get_PA(myself->pg, &myself->local_pa);
 
-    /**
-     ** Builds the element name contained into each propagated message.
-     **/
-    self->messageElementName = malloc(strlen(JXTA_RDV_PROPAGATE_ELEMENT_NAME) + strlen(self->groupiduniq) + 1);
-    strcpy(self->messageElementName, JXTA_RDV_PROPAGATE_ELEMENT_NAME);
-    strcat(self->messageElementName, self->groupiduniq);
+    jxta_PG_get_GID(myself->pg, &gid);
+    jxta_id_get_uniqueportion(gid, &string);
+    JXTA_OBJECT_RELEASE(gid);
+    myself->gid_uniq_str = strdup(jstring_get_string(string));
+    JXTA_OBJECT_RELEASE(string);
 
-    return JXTA_SUCCESS;
-}
-
-Jxta_status jxta_rdv_service_provider_start(Jxta_rdv_service_provider * provider)
-{
-    _jxta_rdv_service_provider *self = PTValid(provider, _jxta_rdv_service_provider);
-
-    /**
-     ** Add the Rendezvous Service Message receiver listener
-     **/
-
-    self->listener_propagate = jxta_listener_new(jxta_rdv_service_provider_prop_listener, (void *) self, 10, 100);
-
-    jxta_endpoint_service_add_listener(provider->service->endpoint,
-                                       JXTA_RDV_PROPAGATE_SERVICE_NAME, self->groupiduniq, self->listener_propagate);
-
-    jxta_listener_start(self->listener_propagate);
+    myself->peerview = jxta_rdv_service_get_peerview((Jxta_rdv_service *) service);
 
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_rdv_service_provider_stop(Jxta_rdv_service_provider * provider)
+Jxta_status jxta_rdv_service_provider_start(Jxta_rdv_service_provider * me)
 {
-    _jxta_rdv_service_provider *self = PTValid(provider, _jxta_rdv_service_provider);
+    Jxta_status res = JXTA_SUCCESS;
+    PTValid(me, _jxta_rdv_service_provider);
 
-    jxta_endpoint_service_remove_listener(self->service->endpoint, JXTA_RDV_PROPAGATE_SERVICE_NAME, self->groupiduniq);
-
-    jxta_listener_stop(self->listener_propagate);
-
-    if (self->listener_propagate) {
-        JXTA_OBJECT_RELEASE(self->listener_propagate);
-        self->listener_propagate = NULL;
+    /*
+     * Add the Rendezvous Service Message receiver
+     */
+    res = jxta_PG_add_recipient(me->pg, &me->ep_cookie, RDV_V3_MSID, JXTA_RDV_PROPAGATE_SERVICE_NAME,
+                                rdv_service_provider_prop_cb, me);
+    if (JXTA_SUCCESS != res) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not register propagate callback.[%pp].\n", me);
     }
 
-    return JXTA_SUCCESS;
+    return res;
+}
+
+Jxta_status jxta_rdv_service_provider_stop(Jxta_rdv_service_provider * me)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    PTValid(me, _jxta_rdv_service_provider);
+
+    assert(NULL != me->ep_cookie);
+    res = jxta_PG_remove_recipient(me->pg, me->ep_cookie);
+    if (JXTA_SUCCESS != res) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not deregister propagate callback.[%pp].\n", me);
+    }
+
+    return res;
 }
 
 apr_pool_t *jxta_rdv_service_provider_get_pool_priv(Jxta_rdv_service_provider * provider)
 {
-    _jxta_rdv_service_provider *self = (_jxta_rdv_service_provider *) provider;
+    _jxta_rdv_service_provider *myself = (_jxta_rdv_service_provider *) provider;
 
-    return self->pool;
+    return myself->pool;
 }
 
 void jxta_rdv_service_provider_lock_priv(Jxta_rdv_service_provider * provider)
 {
-    _jxta_rdv_service_provider *self = (_jxta_rdv_service_provider *) provider;
+    _jxta_rdv_service_provider *myself = (_jxta_rdv_service_provider *) provider;
 
-    apr_thread_mutex_lock(self->mutex);
+    apr_thread_mutex_lock(myself->mutex);
 }
 
 void jxta_rdv_service_provider_unlock_priv(Jxta_rdv_service_provider * provider)
 {
-    _jxta_rdv_service_provider *self = (_jxta_rdv_service_provider *) provider;
+    _jxta_rdv_service_provider *myself = (_jxta_rdv_service_provider *) provider;
 
-    apr_thread_mutex_unlock(self->mutex);
+    apr_thread_mutex_unlock(myself->mutex);
 }
 
 _jxta_rdv_service *jxta_rdv_service_provider_get_service_priv(Jxta_rdv_service_provider * provider)
 {
-    _jxta_rdv_service_provider *self = (_jxta_rdv_service_provider *) provider;
+    _jxta_rdv_service_provider *myself = (_jxta_rdv_service_provider *) provider;
 
-    return self->service;
+    return myself->service;
 }
 
 /**
- ** This listener is called when a propagated message is received.
+ *  This listener is called when a propagated message is received.
  **/
-void JXTA_STDCALL jxta_rdv_service_provider_prop_listener(Jxta_object * obj, void *arg)
+static Jxta_status JXTA_STDCALL rdv_service_provider_prop_cb(Jxta_object * obj, void *arg)
 {
     Jxta_status res;
+    Jxta_rdv_service_provider *myself = PTValid(arg, _jxta_rdv_service_provider);
     Jxta_message *msg = (Jxta_message *) obj;
-    Jxta_rdv_service_provider *self = PTValid(arg, _jxta_rdv_service_provider);
-    Jxta_message_element *el = NULL;
-    RendezVousPropagateMessage *pmsg;
-    Jxta_endpoint_address *realDest;
-    Jxta_bytevector *bytes;
-    JString *string;
-    Jxta_boolean message_seen = FALSE;
+    Jxta_rdv_diffusion *header;
 
     JXTA_OBJECT_CHECK_VALID(msg);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Rendezvous received a propagated message [%pp].\n", msg);
 
-    res = jxta_message_get_element_1(msg, self->messageElementName, &el);
+    res = jxta_rdv_service_provider_get_diffusion_header(msg, &header);
+
+    if (JXTA_SUCCESS != res) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Header unavailable. Dropping msg [%pp].\n", msg);
+    } else {
+        char const *svc_name = jxta_rdv_diffusion_get_dest_svc_name(header);
+        char const *svc_param = jxta_rdv_diffusion_get_dest_svc_param(header);
+        unsigned int use_ttl;
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Received propagated msg [%pp] -> %s/%s\n", msg, svc_name, svc_param);
+
+        jxta_message_remove_element_2(msg, JXTA_RDV_NS_NAME, JXTA_RDV_DIFFUSION_ELEMENT_NAME);
+
+        /* Adjust the Propagate TTL */
+        use_ttl = jxta_rdv_diffusion_get_ttl(header);
+
+        if (0 < use_ttl) {
+            use_ttl--;
+        }
+
+        use_ttl = use_ttl < DEFAULT_MAX_ALLOWED_TTL ? use_ttl : DEFAULT_MAX_ALLOWED_TTL;
+
+        jxta_rdv_diffusion_set_ttl(header, use_ttl);
+
+        /* call the handler */
+        res = jxta_rdv_service_provider_prop_handler(myself, msg, header);
+    }
+
+    JXTA_OBJECT_RELEASE(header);
+
+    return res;
+}
+
+Jxta_status jxta_rdv_service_provider_get_diffusion_header(Jxta_message * msg, Jxta_rdv_diffusion ** header)
+{
+    Jxta_status res;
+    Jxta_message_element *el = NULL;
+    Jxta_bytevector *bytes;
+    JString *string;
+
+    res = jxta_message_get_element_2(msg, JXTA_RDV_NS_NAME, JXTA_RDV_DIFFUSION_ELEMENT_NAME, &el);
 
     if ((JXTA_SUCCESS != res) || (NULL == el)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "PropHdr element missing. Dropping msg [%pp].\n", msg);
-        return;
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "No Diffusion header element.\n");
+        return res;
     }
 
     bytes = jxta_message_element_get_value(el);
@@ -231,205 +304,102 @@ void JXTA_STDCALL jxta_rdv_service_provider_prop_listener(Jxta_object * obj, voi
     string = jstring_new_3(bytes);
     JXTA_OBJECT_RELEASE(bytes);
 
-    pmsg = RendezVousPropagateMessage_new();
+    *header = jxta_rdv_diffusion_new();
 
-    res = RendezVousPropagateMessage_parse_charbuffer(pmsg, jstring_get_string(string), jstring_length(string));
+    res = jxta_rdv_diffusion_parse_charbuffer(*header, jstring_get_string(string), jstring_length(string));
     JXTA_OBJECT_RELEASE(string);
 
-    if (JXTA_SUCCESS != res) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Damaged PropHdr. Dropping msg [%pp].\n", msg);
-    } else {
-        JString *msgid = RendezVousPropagateMessage_get_MessageId(pmsg);
-        JString *svc_name = RendezVousPropagateMessage_get_DestSName(pmsg);
-        JString *svc_param = RendezVousPropagateMessage_get_DestSParam(pmsg);
-        Jxta_vector *vector = NULL;
-
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Demux propagated message [%pp] MessageId [%s] -> %s/%s\n",
-                        msg, jstring_get_string(msgid), jstring_get_string(svc_name), jstring_get_string(svc_param));
-
-        /* XXX 20050516 bondolo Do duplicate message removal based upon msgid here */
-
-
-#if 0
-        /* Check if we are already in the path */
-        vector = RendezVousPropagateMessage_get_Path(pmsg);
-
-        JXTA_OBJECT_CHECK_VALID(vector);
-
-        if (vector != NULL) {
-            unsigned int eachVisited;
-
-            for (eachVisited = 0; eachVisited < jxta_vector_size(vector); eachVisited++) {
-                JString *aPeer;
-
-                res = jxta_vector_get_object_at(vector, JXTA_OBJECT_PPTR(&aPeer), eachVisited);
-
-                if (res != JXTA_SUCCESS) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot retrieve peer_id from vector.\n");
-                    continue;
-                }
-
-                if (0 == strcmp(jstring_get_string(aPeer), jstring_get_string(self->localPeerIdJString))) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Removing previously seen meessage [%pp] msgid [%s]\n", msg,
-                                    jstring_get_string(msgid));
-                    message_seen = TRUE;
-                    break;
-                }
-
-                JXTA_OBJECT_RELEASE(aPeer);
-            }
-            JXTA_OBJECT_RELEASE(vector);
-        }
-#endif
-
-        JXTA_OBJECT_RELEASE(msgid);
-
-        /* set the message destination */
-        realDest =
-            jxta_endpoint_address_new_2("jxta", self->groupiduniq, jstring_get_string(svc_name), jstring_get_string(svc_param));
-
-        JXTA_OBJECT_RELEASE(svc_name);
-        JXTA_OBJECT_RELEASE(svc_param);
-
-        /* Invoke the endpoint service demux again with the new destination */
-        if (!message_seen) {
-            jxta_endpoint_service_demux_addr(self->service->endpoint, realDest, msg);
-        }
-        JXTA_OBJECT_RELEASE(realDest);
-                
-        /* XXX bondolo 20050925 handle adhoc repropagation here */
-    }
-
-    JXTA_OBJECT_RELEASE(pmsg);
+    return res;
 }
 
-Jxta_status jxta_rdv_service_provider_update_prophdr(Jxta_rdv_service_provider * provider, Jxta_message * msg,
-                                                     const char *serviceName, const char *serviceParam, int ttl)
+Jxta_status jxta_rdv_service_provider_set_diffusion_header(Jxta_message * msg, Jxta_rdv_diffusion * header)
 {
-    Jxta_status res;
-    Jxta_rdv_service_provider *self = PTValid(provider, _jxta_rdv_service_provider);
+    Jxta_status res = JXTA_SUCCESS;
+    JString *header_xml = NULL;
     Jxta_message_element *el = NULL;
-    RendezVousPropagateMessage *pmsg = NULL;
-    JString *propMsgStr = NULL;
-    Jxta_vector *vector = NULL;
-    JString *messageId;
 
-    JXTA_OBJECT_CHECK_VALID(msg);
+    res = jxta_rdv_diffusion_get_xml(header, &header_xml);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Updating message [%pp].\n", msg);
-
-    /* Test arguments first */
-    if ((ttl <= 0) || (NULL == serviceName)) {
-        /* Invalid args. */
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid arguments. Message is dropped\n");
-        return JXTA_INVALID_ARGUMENT;
+    if (JXTA_SUCCESS != res) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Could generate diffusion header XML [%pp]\n", header);
+        return res;
     }
 
-    /* Retrieve (if any) the propagate message element */
-
-    res = jxta_message_get_element_1(msg, self->messageElementName, &el);
-
-    if ((JXTA_SUCCESS == res) && (NULL != el)) {
-        /* Recover the prop header element from the message */
-        Jxta_bytevector *bytes = NULL;
-        JString *propHdrStr = NULL;
-        int hdrTTL;
-
-        jxta_message_remove_element(msg, el);
-
-        JXTA_OBJECT_CHECK_VALID(el);
-
-        bytes = jxta_message_element_get_value(el);
-        propHdrStr = jstring_new_3(bytes);
-        JXTA_OBJECT_RELEASE(bytes);
-        bytes = NULL;
-        pmsg = RendezVousPropagateMessage_new();
-        RendezVousPropagateMessage_parse_charbuffer(pmsg, jstring_get_string(propHdrStr), jstring_length(propHdrStr));
-        JXTA_OBJECT_RELEASE(propHdrStr);
-        JXTA_OBJECT_RELEASE(el);
-        
-        messageId = RendezVousPropagateMessage_get_MessageId(pmsg);
-
-        hdrTTL = RendezVousPropagateMessage_get_TTL(pmsg);
-        hdrTTL--;
-        hdrTTL = (hdrTTL < ttl) ? hdrTTL : ttl;
-        RendezVousPropagateMessage_set_TTL(pmsg, hdrTTL);
-        ttl = hdrTTL;
-    } else {
-        messageId = message_id_new();
-
-        /* Create a new propagate message element */
-        pmsg = RendezVousPropagateMessage_new();
-        /* Initialize it */
-        RendezVousPropagateMessage_set_DestSName(pmsg, serviceName);
-        RendezVousPropagateMessage_set_DestSParam(pmsg, serviceParam);
-        RendezVousPropagateMessage_set_MessageId(pmsg, jstring_get_string(messageId));
-        RendezVousPropagateMessage_set_TTL(pmsg, ttl);
-    }
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Updating message [%pp] ID [%s] ttl=%d \n", msg,
-                    jstring_get_string(messageId), ttl);
-    JXTA_OBJECT_RELEASE(messageId);
-
-    if (ttl <= 0) {
-        JXTA_OBJECT_RELEASE(pmsg);
-        return JXTA_TTL_EXPIRED;
-    }
-
-    /* Add ourselves into the path */
-    vector = RendezVousPropagateMessage_get_Path(pmsg);
-
-    JXTA_OBJECT_CHECK_VALID(vector);
-
-    if (vector == NULL) {
-        vector = jxta_vector_new(1);
-    }
-
-    res = jxta_vector_add_object_first(vector, (Jxta_object *) self->localPeerIdJString);
-
-    if (res != JXTA_SUCCESS) {
-        /* We just display an error LOG message and keep going. */
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed adding local peer into the path\n");
-    }
-
-    RendezVousPropagateMessage_set_Path(pmsg, vector);
-
-    JXTA_OBJECT_RELEASE(vector);
-
-    /* Add pmsg into the message */
-    res = RendezVousPropagateMessage_get_xml(pmsg, &propMsgStr);
-    JXTA_OBJECT_RELEASE(pmsg);
-
-    JXTA_OBJECT_CHECK_VALID(propMsgStr);
-
-    if (res != JXTA_SUCCESS) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot retrieve XML from advertisement.\n");
-        return JXTA_INVALID_ARGUMENT;
-    }
-
-    el = jxta_message_element_new_1(self->messageElementName, "text/xml", jstring_get_string(propMsgStr),
-                                    jstring_length(propMsgStr), NULL);
+    el = jxta_message_element_new_2(JXTA_RDV_NS_NAME, JXTA_RDV_DIFFUSION_ELEMENT_NAME, "text/xml", jstring_get_string(header_xml),
+                                    jstring_length(header_xml), NULL);
+    JXTA_OBJECT_RELEASE(header_xml);
     if (NULL == el) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot create propagate message element.\n");
-        JXTA_OBJECT_RELEASE(propMsgStr);
-        return JXTA_FAILED;
+        res = JXTA_FAILED;
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Could generate diffusion header element [%pp]\n", header);
+        return res;
     }
 
-    JXTA_OBJECT_RELEASE(propMsgStr);
-    JXTA_OBJECT_CHECK_VALID(el);
+    jxta_message_remove_element_2(msg, JXTA_RDV_NS_NAME, JXTA_RDV_DIFFUSION_ELEMENT_NAME);
 
-    jxta_message_add_element(msg, el);
+    res = jxta_message_add_element(msg, el);
 
     JXTA_OBJECT_RELEASE(el);
 
-    return JXTA_SUCCESS;
+    return res;
 }
 
-Jxta_status jxta_rdv_service_provider_prop_to_peers(Jxta_rdv_service_provider * provider, Jxta_message * msg,
-                                                    Jxta_boolean andEndpoint)
+Jxta_status jxta_rdv_service_provider_prop_handler(Jxta_rdv_service_provider * myself, Jxta_message * msg,
+                                                   Jxta_rdv_diffusion * header)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    char const *svc_name = jxta_rdv_diffusion_get_dest_svc_name(header);
+    char const *svc_param = jxta_rdv_diffusion_get_dest_svc_param(header);
+    Jxta_endpoint_address *realDest = jxta_endpoint_address_new_2("jxta", myself->gid_uniq_str, svc_name, svc_param);
+    Jxta_id *src_peer_id = NULL;
+
+    /* Invoke the endpoint service demux again with the "real" destination */
+    jxta_endpoint_service_demux_addr(myself->service->endpoint, realDest, msg);
+    JXTA_OBJECT_RELEASE(realDest);
+
+    /* Attach the diffusion header to the message */
+    res = jxta_rdv_service_provider_set_diffusion_header(msg, header);
+
+    if (JXTA_SUCCESS != res) {
+        goto FINAL_EXIT;
+    }
+
+    /* Are a peerview member? Then walk the message to the rest of the peerview. */
+    if ((NULL != myself->peerview) && jxta_peerview_is_member(myself->peerview)) {
+        res = jxta_rdv_service_walk((Jxta_rdv_service *) myself->service, msg, svc_name, svc_param);
+
+        if (JXTA_SUCCESS != res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Walk failed for [%pp].\n", msg);
+        }
+    }
+
+    if (JXTA_RDV_DIFFUSION_POLICY_TRAVERSAL == jxta_rdv_diffusion_get_policy(header)) {
+        /* Traversals don't flood. */
+        goto FINAL_EXIT;
+    }
+
+    if (0 == jxta_rdv_diffusion_get_ttl(header)) {
+        /* No TTL left? give up! */
+        goto FINAL_EXIT;
+    }
+
+    /* broadcast it? */
+    src_peer_id = jxta_rdv_diffusion_get_src_peer_id(header);
+    if (!SELECTIVE_BROADCAST || jxta_id_equals(src_peer_id, myself->local_peer_id)) {
+        res = jxta_endpoint_service_propagate(myself->service->endpoint, msg, RDV_V3_MSID, JXTA_RDV_PROPAGATE_SERVICE_NAME);
+    }
+    JXTA_OBJECT_RELEASE(src_peer_id);
+
+    /* Send the message to each connected peer. (rdvs or clients) */
+    res = jxta_rdv_service_provider_prop_to_peers(myself, msg);
+
+  FINAL_EXIT:
+    return res;
+}
+
+Jxta_status jxta_rdv_service_provider_prop_to_peers(Jxta_rdv_service_provider * provider, Jxta_message * msg)
 {
     Jxta_status res;
-    Jxta_rdv_service_provider *self = PTValid(provider, _jxta_rdv_service_provider);
+    Jxta_rdv_service_provider *myself = PTValid(provider, _jxta_rdv_service_provider);
     Jxta_vector *vector = NULL;
 
     JXTA_OBJECT_CHECK_VALID(msg);
@@ -439,18 +409,8 @@ Jxta_status jxta_rdv_service_provider_prop_to_peers(Jxta_rdv_service_provider * 
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Propagating message [%pp].\n", msg);
 
-    /*
-     * propagate via physical transport if any transport
-     * is available and support multicast
-     */
-    if (andEndpoint) {
-        res =
-            jxta_endpoint_service_propagate(provider->service->endpoint, msg, JXTA_RDV_PROPAGATE_SERVICE_NAME, self->groupiduniq);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Endpoint service propagation status= %d\n", res);
-    }
-
     /* propagate to the connected peers (either our clients or our rdv) */
-    res = PROVIDER_VTBL(self)->get_peers((Jxta_rdv_service_provider *) self, &vector);
+    res = PROVIDER_VTBL(myself)->get_peers((Jxta_rdv_service_provider *) myself, &vector);
 
     JXTA_OBJECT_CHECK_VALID(vector);
     if ((res == JXTA_SUCCESS) && (vector != NULL)) {
@@ -477,22 +437,20 @@ Jxta_status jxta_rdv_service_provider_prop_to_peers(Jxta_rdv_service_provider * 
                 /*
                  * Set the destination address of the message.
                  */
-                destAddr =
-                    jxta_endpoint_address_new_2(jxta_endpoint_address_get_protocol_name(((_jxta_peer_entry *) peer)->address),
-                                                jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) peer)->address),
-                                                JXTA_RDV_PROPAGATE_SERVICE_NAME, self->groupiduniq);
+                res = jxta_PG_get_recipient_addr(provider->pg, 
+                                                 jxta_endpoint_address_get_protocol_name(peer->address),
+                                                 jxta_endpoint_address_get_protocol_address(peer->address),
+                                                 RDV_V3_MSID, JXTA_RDV_PROPAGATE_SERVICE_NAME, &destAddr);
+                if (JXTA_SUCCESS == res) {
+                    res = jxta_endpoint_service_send_ex(provider->service->endpoint, msg, destAddr, JXTA_FALSE);
+                }
 
-                /* Send the message */
-                res =
-                    jxta_endpoint_service_send(jxta_service_get_peergroup_priv
-                                               ((Jxta_service *) provider->service), provider->service->endpoint, msg, destAddr);
                 if (res != JXTA_SUCCESS) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to propagate message [%pp]. Expiring %s://%s\n",
-                                    msg,
-                                    jxta_endpoint_address_get_protocol_name(((_jxta_peer_entry *) peer)->address),
-                                    jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) peer)->address));
-
-                    jxta_peer_set_expires((Jxta_peer *) peer, 0);
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, 
+                                    "Failed to propagate message [%pp]. Expiring %s://%s\n", msg,
+                                    jxta_endpoint_address_get_protocol_name(peer->address),
+                                    jxta_endpoint_address_get_protocol_address(peer->address));
+                    jxta_peer_set_expires(peer, 0);
                 } else {
                     peerCount++;
                 }
@@ -508,6 +466,166 @@ Jxta_status jxta_rdv_service_provider_prop_to_peers(Jxta_rdv_service_provider * 
     }
 
     JXTA_OBJECT_RELEASE(msg);
+
+    return JXTA_SUCCESS;
+}
+
+/**
+ * Construct the associated peergroup RDV seed prop pipe advertisement.
+ *
+ *  @param pv Ourself.
+ * 
+ **/
+static Jxta_pipe_adv *provider_get_seed_pipeadv(Jxta_rdv_service_provider * myself, Jxta_id * dest_gid)
+{
+    Jxta_status status;
+    Jxta_id *pid;
+    JString *hash_string;
+    JString *pipeId;
+    Jxta_pipe_adv *adv = NULL;
+    unsigned char hash[SHA_DIGEST_LENGTH];
+
+    jxta_id_to_jstring(dest_gid, &hash_string);
+
+    jstring_append_2(hash_string, "#");
+    jstring_append_2(hash_string, RDV_V3_MSID);
+    jstring_append_2(hash_string, "/");
+    jstring_append_2(hash_string, JXTA_RDV_LEASING_SERVICE_NAME);
+
+    SHA1((unsigned char const *) jstring_get_string(hash_string), jstring_length(hash_string), hash);
+
+    /* create pipe id in the designated group */
+    status = jxta_id_pipeid_new_2(&pid, (Jxta_PGID *) dest_gid, hash, SHA_DIGEST_LENGTH);
+
+    if (status != JXTA_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Error creating RDV prop pipe adv\n");
+        return NULL;
+    }
+
+    jxta_id_to_jstring(pid, &pipeId);
+    JXTA_OBJECT_RELEASE(pid);
+
+    adv = jxta_pipe_adv_new();
+
+    jxta_pipe_adv_set_Id(adv, jstring_get_string(pipeId));
+    JXTA_OBJECT_RELEASE(pipeId);
+    jxta_pipe_adv_set_Type(adv, JXTA_PROPAGATE_PIPE);
+    jxta_pipe_adv_set_Name(adv, jstring_get_string(hash_string));
+
+    JXTA_OBJECT_RELEASE(hash_string);
+
+    return adv;
+}
+
+Jxta_status provider_send_seed_request(Jxta_rdv_service_provider * me)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    Jxta_rdv_service_provider *myself = PTValid(me, _jxta_rdv_service_provider);
+    Jxta_outputpipe *op = NULL;
+    Jxta_PA *pa = NULL;
+    Jxta_lease_request_msg *lease_request;
+    JString *lease_request_xml = NULL;
+    Jxta_message_element *elem = NULL;
+    Jxta_message *msg = NULL;
+
+    /*
+     * Create a message with a lease request.
+     */
+    lease_request = jxta_lease_request_msg_new();
+
+    if (NULL == lease_request) {
+        return JXTA_NOMEM;
+    }
+
+    jxta_lease_request_msg_set_client_id(lease_request, myself->local_peer_id);
+    jxta_lease_request_msg_set_requested_lease(lease_request, 0);
+    jxta_lease_request_msg_set_referral_advs(lease_request, 0);
+    jxta_PG_get_PA(myself->service->group, &pa);
+    jxta_lease_request_msg_set_client_adv(lease_request, pa);
+    JXTA_OBJECT_RELEASE(pa);
+    jxta_lease_request_msg_set_client_adv_exp(lease_request, 5 * 60 * 1000UL);
+
+    jxta_lease_request_msg_get_xml(lease_request, &lease_request_xml);
+    JXTA_OBJECT_RELEASE(lease_request);
+
+    elem = jxta_message_element_new_2(JXTA_RDV_NS_NAME, JXTA_LEASE_REQUEST_ELEMENT_NAME,
+                                      "text/xml", jstring_get_string(lease_request_xml), jstring_length(lease_request_xml), NULL);
+    JXTA_OBJECT_RELEASE(lease_request_xml);
+
+    if (NULL == elem) {
+        return JXTA_NOMEM;
+    }
+
+    msg = jxta_message_new();
+
+    if (NULL == msg) {
+        JXTA_OBJECT_RELEASE(elem);
+        return JXTA_NOMEM;
+    }
+
+    jxta_message_add_element(msg, elem);
+    JXTA_OBJECT_RELEASE(elem);
+
+    if (myself->seed_pipe) {
+        /*
+         * Send the message via the announce pipe.
+         */
+        res = jxta_pipe_get_outputpipe(myself->seed_pipe, &op);
+
+        if (res != JXTA_SUCCESS) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Cannot get peerview adv outputpipe\n");
+            JXTA_OBJECT_RELEASE(msg);
+            return res;
+        }
+
+        if (op == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Cannot get output pipe\n");
+            JXTA_OBJECT_RELEASE(msg);
+            return JXTA_FAILED;
+        }
+
+        res = jxta_outputpipe_send(op, msg);
+        if (res != JXTA_SUCCESS) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Sending RDV prop pipe failed: %d\n", res);
+        } else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Sent RDV prop pipe\n");
+        }
+
+        JXTA_OBJECT_RELEASE(op);
+    } else {
+        /*
+         *   Send the message via the endpoint.
+         */
+        res =
+            jxta_endpoint_service_propagate(myself->service->endpoint, msg, RDV_V3_MSID, JXTA_RDV_LEASING_SERVICE_NAME);
+    }
+
+    JXTA_OBJECT_RELEASE(msg);
+
+    return res;
+}
+
+static Jxta_status open_adv_pipe(Jxta_rdv_service_provider * myself)
+{
+    Jxta_status res = JXTA_SUCCESS;
+
+    /* If we are not running in the top group then register advertisement pipe in the parent group */
+    if (NULL != myself->parentgroup) {
+        Jxta_pipe_adv *adv = NULL;
+        adv = provider_get_seed_pipeadv(myself, myself->parentgid);
+        jxta_PG_get_pipe_service(myself->parentgroup, &myself->pipes);
+
+        if (NULL != myself->pipes) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Waiting to bind peerview prop pipe\n");
+            res = jxta_pipe_service_timed_connect(myself->pipes, adv, 15 * JPR_INTERVAL_ONE_SECOND, NULL, &myself->seed_pipe);
+
+            if ((res != JXTA_SUCCESS) || (NULL == myself->seed_pipe)) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not connect to peerview pipe\n");
+            }
+        }
+
+        JXTA_OBJECT_RELEASE(adv);
+    }
 
     return JXTA_SUCCESS;
 }

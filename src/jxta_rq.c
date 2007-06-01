@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rq.c,v 1.79 2006/09/29 01:28:44 slowhog Exp $
+ * $Id: jxta_rq.c,v 1.82.2.1 2007/01/02 18:15:39 slowhog Exp $
  */
 
 static const char *__log_cat = "RSLVQuery";
@@ -104,18 +104,27 @@ struct _ResolverQuery {
 
 /**
  * frees the ResolverQuery object
- * @param ResolverQuery the resolver query object to free
+ * @param me the resolver query object to free
  */
-static void resolver_query_free(void * me);
-
+static void resolver_query_delete(Jxta_object * me);
+ResolverQuery * resolver_query_construct(ResolverQuery * myself);
+static Jxta_status validate_msg(ResolverQuery * myself);
 
 /** Handler functions.  Each of these is responsible for
  * dealing with all of the character data associated with the 
  * tag name.
  */
-static void handleResolverQuery(void *userdata, const XML_Char * cd, int len)
+static void handleResolverQuery(void *me, const XML_Char * cd, int len)
 {
-    /*ResolverQuery * ad = (ResolverQuery*)userdata; */
+    ResolverQuery *myself = (ResolverQuery *) me;
+
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    if( 0 == len ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "START <jxta:ResolverQuery> : [%pp]\n", myself);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "FINISH <jxta:ResolverQuery> : [%pp]\n", myself);
+    }
 }
 
 static void handleCredential(void *userdata, const XML_Char * cd, int len)
@@ -124,88 +133,143 @@ static void handleCredential(void *userdata, const XML_Char * cd, int len)
     jstring_append_0(((struct _ResolverQuery *) ad)->Credential, cd, len);
 }
 
-static void handleSrcPeerID(void *userdata, const XML_Char * cd, int len)
+static void handleSrcPeerID(void *me, const XML_Char * cd, int len)
 {
-    ResolverQuery *ad = (ResolverQuery *) userdata;
-    char *tok;
+    ResolverQuery *msg = (ResolverQuery *) me;
 
-    if (len > 0) {
-        tok = (char *) malloc(len + 1);
-        memset(tok, 0, len + 1);
-        extract_char_data(cd, len, tok);
-        /* XXXX hamada@jxta.org it is possible to get called many times, some of which are
-         * calls on white-space, we only care for the id therefore
-         * we create the id only when we have data, this not an elegant way
-         * of dealing with this.
-         */
-        if (*tok != '\0') {
-            JString *tmps = jstring_new_2(tok);
-            /* hamada@jxta.org it would be desirable to have a function that
-               takes a "char *" we would not need to create a JString to create 
-               the ID
-             */
-            ad->SrcPeerID = NULL;
-            jxta_id_from_jstring(&ad->SrcPeerID, tmps);
-            JXTA_OBJECT_RELEASE(tmps);
+    JXTA_OBJECT_CHECK_VALID(msg);
+
+    if (len == 0) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <SrcPeerID> : [%pp]\n", msg);
+    } else {
+        Jxta_status res;
+        JString *tmp = jstring_new_1(len );
+        Jxta_id *pid = NULL;
+
+        jstring_append_0(tmp, (char *) cd, len);
+        jstring_trim(tmp);
+
+        res = jxta_id_from_jstring(&pid, tmp);
+        if( JXTA_SUCCESS == res ) {
+            jxta_resolver_query_set_src_peer_id(msg, pid);
+            JXTA_OBJECT_RELEASE(pid);
+        } else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid PID %s : [%pp]\n", jstring_get_string(tmp), msg);    
         }
-        free(tok);
+        
+        JXTA_OBJECT_RELEASE(tmp);
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <SrcPeerID> : [%pp]\n", msg);
     }
 }
 
-static void handleSrcRoute(void *userdata, const XML_Char * cd, int len)
+static void handleSrcRoute(void *me, const XML_Char * cd, int len)
 {
-    ResolverQuery *ad = (ResolverQuery *) userdata;
-    Jxta_RouteAdvertisement *ra = jxta_RouteAdvertisement_new();
+    ResolverQuery *msg = (ResolverQuery *) me;
+    
+    JXTA_OBJECT_CHECK_VALID(msg);
+    
+    if (len == 0) {
+        Jxta_RouteAdvertisement *ra;
+        
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <SrcPeerRoute> Element [%pp]\n", msg );
+        
+        ra = jxta_RouteAdvertisement_new();
 
-    jxta_resolver_query_set_src_peer_route(ad, ra);
-    JXTA_OBJECT_RELEASE(ra);
+        jxta_resolver_query_set_src_peer_route(msg, ra);
 
-    jxta_advertisement_set_handlers((Jxta_advertisement *) ra, ((Jxta_advertisement *) ad)->parser, (Jxta_advertisement *) ad);
-}
-
-static void handleHandlerName(void *userdata, const XML_Char * cd, int len)
-{
-    ResolverQuery *ad = (ResolverQuery *) userdata;
-    jstring_append_0((JString *) ad->HandlerName, cd, len);
-}
-
-static void handleQueryID(void *userdata, const XML_Char * cd, int len)
-{
-    ResolverQuery *ad = (ResolverQuery *) userdata;
-    char *tok;
-
-    /* XXXX hamada@jxta.org this can be cleaned up once parsing is corrected */
-    if (len > 0) {
-        tok = (char *) malloc(len + 1);
-        memset(tok, 0, len + 1);
-        extract_char_data(cd, len, tok);
-        if (*tok != '\0') {
-            ad->QueryID = (int) strtol(cd, NULL, 0);
-        }
-        free(tok);
+        jxta_advertisement_set_handlers((Jxta_advertisement *) ra, ((Jxta_advertisement *) msg)->parser, (void *) msg);
+        JXTA_OBJECT_RELEASE(ra);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <SrcPeerRoute> Element [%pp]\n", msg );
     }
 }
 
-static void handleQuery(void *userdata, const XML_Char * cd, int len)
+static void handleHandlerName(void *me, const XML_Char * cd, int len)
 {
-    ResolverQuery *ad = (ResolverQuery *) userdata;
-    jstring_append_0(ad->Query, (char *) cd, len);
+    ResolverQuery *ad = (ResolverQuery *) me;
+
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    if (len == 0) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <HandlerName> : [%pp]\n", ad);
+    } else {
+        JString *name = jstring_new_1(len );
+
+        jstring_append_0( name, cd, len);
+        jstring_trim(name);
+
+        jxta_resolver_query_set_handlername(ad, name);
+
+        JXTA_OBJECT_RELEASE(name);
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <HandlerName> : [%pp]\n", ad);
+    }
 }
 
-static void handleHopCount(void *userdata, const XML_Char * cd, int len)
+static void handleQueryID(void *me, const XML_Char * cd, int len)
 {
-    ResolverQuery *ad = (ResolverQuery *) userdata;
-    char *tok;
+    ResolverQuery *ad = (ResolverQuery *) me;
 
-    /* XXXX hamada@jxta.org this can be cleaned up once parsing is corrected */
-    if (len > 0) {
-        tok = (char *) malloc(len + 1);
-        memset(tok, 0, len + 1);
-        extract_char_data(cd, len, tok);
-        if (*tok != '\0') {
-            ad->HopCount = (int) strtol(cd, NULL, 0);
-        }
-        free(tok);
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    if (len == 0) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <QueryID> : [%pp]\n", ad);
+    } else {
+        JString *query = jstring_new_1(len );
+
+        jstring_append_0( query, cd, len);
+        jstring_trim(query);
+
+        jxta_resolver_query_set_queryid(ad, strtol(jstring_get_string(query), NULL, 0) );
+
+        JXTA_OBJECT_RELEASE(query);
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <QueryID> : [%pp]\n", ad);
+    }
+}
+
+static void handleQuery(void *me, const XML_Char * cd, int len)
+{
+    ResolverQuery *ad = (ResolverQuery *) me;
+
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    if (len == 0) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <Query> : [%pp]\n", ad);
+    } else {
+        JString *query = jstring_new_1(len );
+
+        jstring_append_0( query, cd, len);
+        jstring_trim(query);
+
+        jxta_resolver_query_set_query(ad, query);
+
+        JXTA_OBJECT_RELEASE(query);
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <Query> : [%pp]\n", ad);
+    }
+}
+
+static void handleHopCount(void *me, const XML_Char * cd, int len)
+{
+    ResolverQuery *ad = (ResolverQuery *) me;
+
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    if (len == 0) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <HC> : [%pp]\n", ad);
+    } else {
+        JString *hops = jstring_new_1(len );
+
+        jstring_append_0( hops, cd, len);
+        jstring_trim(hops);
+
+        jxta_resolver_query_set_hopcount(ad, atoi(jstring_get_string(hops)) );
+
+        JXTA_OBJECT_RELEASE(hops);
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <HC> : [%pp]\n", ad);
     }
 }
 
@@ -221,6 +285,21 @@ static void trim_elements(ResolverQuery * adv)
  * interface to the ad class, that is, the API.
  */
 
+
+static Jxta_status validate_msg(ResolverQuery * myself) {
+
+    if ( jxta_id_equals(myself->SrcPeerID, jxta_id_nullID)) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "src peer id must not be null ID [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    if( NULL == myself->Query ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Query must not be null ID [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    
+    return JXTA_SUCCESS;
+}
 
 /**
  * return a JString representation of the advertisement
@@ -238,9 +317,6 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_query_get_xml(ResolverQuery * adv, JStri
     int buflen;
     Jxta_status status;
 
-    if (adv == NULL) {
-        return JXTA_INVALID_ARGUMENT;
-    }
     buflen = 128;
     buf = (char *) calloc(1, buflen);
 
@@ -307,6 +383,8 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_query_get_xml(ResolverQuery * adv, JStri
 
 JXTA_DECLARE(JString *) jxta_resolver_query_get_credential(ResolverQuery * ad)
 {
+    JXTA_OBJECT_CHECK_VALID(ad);
+
     if (ad->Credential) {
         jstring_trim(ad->Credential);
         JXTA_OBJECT_SHARE(ad->Credential);
@@ -316,9 +394,8 @@ JXTA_DECLARE(JString *) jxta_resolver_query_get_credential(ResolverQuery * ad)
 
 JXTA_DECLARE(void) jxta_resolver_query_set_credential(ResolverQuery * ad, JString * credential)
 {
-    if (ad == NULL) {
-        return;
-    }
+    JXTA_OBJECT_CHECK_VALID(ad);
+
     if (ad->Credential) {
         JXTA_OBJECT_RELEASE(ad->Credential);
         ad->Credential = NULL;
@@ -329,6 +406,8 @@ JXTA_DECLARE(void) jxta_resolver_query_set_credential(ResolverQuery * ad, JStrin
 
 JXTA_DECLARE(Jxta_id *) jxta_resolver_query_get_src_peer_id(ResolverQuery * ad)
 {
+    JXTA_OBJECT_CHECK_VALID(ad);
+
     if (ad->SrcPeerID) {
         JXTA_OBJECT_SHARE(ad->SrcPeerID);
     }
@@ -337,42 +416,49 @@ JXTA_DECLARE(Jxta_id *) jxta_resolver_query_get_src_peer_id(ResolverQuery * ad)
 
 JXTA_DECLARE(void) jxta_resolver_query_set_src_peer_id(ResolverQuery * ad, Jxta_id * id)
 {
-    if (ad == NULL) {
-        return;
-    }
+    JXTA_OBJECT_CHECK_VALID(ad);
+
     if (ad->SrcPeerID) {
         JXTA_OBJECT_RELEASE(ad->SrcPeerID);
         ad->SrcPeerID = NULL;
     }
-    JXTA_OBJECT_SHARE(id);
-    ad->SrcPeerID = id;
+    
+    ad->SrcPeerID = JXTA_OBJECT_SHARE(id);
 }
 
 JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_resolver_query_src_peer_route(ResolverQuery * ad)
 {
+    JXTA_OBJECT_CHECK_VALID(ad);
+
     return ad->route;
 }
 
 JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_resolver_query_get_src_peer_route(ResolverQuery * ad)
 {
+    JXTA_OBJECT_CHECK_VALID(ad);
+
     if (ad->route != NULL) {
         JXTA_OBJECT_SHARE(ad->route);
     }
+
     return ad->route;
 }
 
 JXTA_DECLARE(void) jxta_resolver_query_set_src_peer_route(ResolverQuery * ad, Jxta_RouteAdvertisement * route)
 {
+    JXTA_OBJECT_CHECK_VALID(ad);
+
     if (ad->route != NULL) {
         JXTA_OBJECT_RELEASE(ad->route);
     }
 
-    ad->route = route;
-    JXTA_OBJECT_SHARE(ad->route);
+	ad->route = JXTA_OBJECT_SHARE(route);
 }
 
 JXTA_DECLARE(void) jxta_resolver_query_get_handlername(ResolverQuery * ad, JString ** str)
 {
+    JXTA_OBJECT_CHECK_VALID(ad);
+
     if (ad->HandlerName) {
         jstring_trim(ad->HandlerName);
         JXTA_OBJECT_SHARE(ad->HandlerName);
@@ -382,52 +468,52 @@ JXTA_DECLARE(void) jxta_resolver_query_get_handlername(ResolverQuery * ad, JStri
 
 JXTA_DECLARE(void) jxta_resolver_query_set_handlername(ResolverQuery * ad, JString * handlerName)
 {
-    if (ad == NULL) {
-        return;
-    }
+    JXTA_OBJECT_CHECK_VALID(ad);
+
     if (ad->HandlerName) {
         JXTA_OBJECT_RELEASE(ad->HandlerName);
         ad->HandlerName = NULL;
     }
-    JXTA_OBJECT_SHARE(handlerName);
-    ad->HandlerName = handlerName;
+    
+    ad->HandlerName = JXTA_OBJECT_SHARE(handlerName);
 }
 
 JXTA_DECLARE(long) jxta_resolver_query_get_queryid(ResolverQuery * ad)
 {
+    JXTA_OBJECT_CHECK_VALID(ad);
+
     return ad->QueryID;
 }
 
 JXTA_DECLARE(void) jxta_resolver_query_set_queryid(ResolverQuery * ad, long qid)
 {
-    if (ad == NULL) {
-        return;
-    }
+    JXTA_OBJECT_CHECK_VALID(ad);
+
     ad->QueryID = qid;
 }
 
 JXTA_DECLARE(void) jxta_resolver_query_get_query(ResolverQuery * ad, JString ** query)
 {
+    JXTA_OBJECT_CHECK_VALID(ad);
+
     if (ad->Query) {
         jstring_trim(ad->Query);
         JXTA_OBJECT_SHARE(ad->Query);
     }
+    
     *query = ad->Query;
 }
 
 JXTA_DECLARE(void) jxta_resolver_query_set_query(ResolverQuery * ad, JString * query)
 {
-    if (ad == NULL) {
-        return;
-    }
+    JXTA_OBJECT_CHECK_VALID(ad);
+
     if (ad->Query != NULL) {
         JXTA_OBJECT_RELEASE(ad->Query);
         ad->Query = NULL;
     }
-    if (query != NULL) {
-        ad->Query = query;
-        JXTA_OBJECT_SHARE(ad->Query);
-    }
+
+    ad->Query = JXTA_OBJECT_SHARE(query);
 }
 
  /**
@@ -435,10 +521,9 @@ JXTA_DECLARE(void) jxta_resolver_query_set_query(ResolverQuery * ad, JString * q
  */
 void jxta_resolver_query_set_hopcount(ResolverQuery * ad, int hopcount)
 {
-    if (ad == NULL) {
-        return;
-    }
-    ad->HopCount = hopcount;
+   JXTA_OBJECT_CHECK_VALID(ad);
+
+   ad->HopCount = hopcount;
 }
 
  /**
@@ -446,6 +531,8 @@ void jxta_resolver_query_set_hopcount(ResolverQuery * ad, int hopcount)
  */
 long jxta_resolver_query_get_hopcount(ResolverQuery * ad)
 {
+    JXTA_OBJECT_CHECK_VALID(ad);
+
     return ad->HopCount;
 }
 
@@ -477,109 +564,74 @@ static const Kwdtab ResolverQuery_tags[] = {
  */
 JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new(void)
 {
-    ResolverQuery *ad;
+    ResolverQuery *myself = (ResolverQuery *) calloc(1, sizeof(ResolverQuery));
 
-    ad = (ResolverQuery *) malloc(sizeof(ResolverQuery));
-    memset(ad, 0xda, sizeof(ResolverQuery));
-    jxta_advertisement_initialize((Jxta_advertisement *) ad,
+    JXTA_OBJECT_INIT(myself, resolver_query_delete, 0);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "ResolverQuery NEW [%pp]\n", myself );
+
+    return resolver_query_construct(myself);
+}
+
+ResolverQuery * resolver_query_construct(ResolverQuery * myself)
+{
+    myself = (ResolverQuery *) jxta_advertisement_construct((Jxta_advertisement *) myself,
                                   "jxta:ResolverQuery",
                                   ResolverQuery_tags,
                                   (JxtaAdvertisementGetXMLFunc) jxta_resolver_query_get_xml,
-                                  NULL, 
-                                  NULL, 
-                                  resolver_query_free);
+                                  (JxtaAdvertisementGetIDFunc) NULL,
+                                  (JxtaAdvertisementGetIndexFunc) NULL);
 
-    /* Fill in the required initialization code here. */
-    ad->SrcPeerID = jxta_id_nullID;
-    ad->Credential = jstring_new_0();
-    ad->HandlerName = jstring_new_0();
-    ad->QueryID = JXTA_INVALID_QUERY_ID;
-    ad->Query = jstring_new_0();
-    ad->route = NULL;
-    ad->HopCount = 0;
-    ad->qos = NULL;
-
-    /*
-     * in theory we're supposed to share even nullID, although, normally
-     * it is never freed, no matter the ref-count, but let's not assume too much
-     */
-    JXTA_OBJECT_SHARE(jxta_id_nullID);
-    ad->SrcPeerID = jxta_id_nullID;
-
-    return ad;
+    if( NULL != myself ) {
+        myself->SrcPeerID = JXTA_OBJECT_SHARE(jxta_id_nullID);
+        myself->Credential = jstring_new_0();
+        myself->HandlerName = jstring_new_0();
+        myself->QueryID = JXTA_INVALID_QUERY_ID;
+        myself->Query = NULL;
+        myself->route = NULL;
+        myself->HopCount = 0;
+        myself->qos = NULL;
+    }
+    
+    return myself;
 }
 
 Jxta_status resolver_query_create(JString * handlername, JString * qdoc, Jxta_id * src_peerid, Jxta_resolver_query ** rq)
 {
-    Jxta_resolver_query *ad;
+    Jxta_resolver_query *msg = jxta_resolver_query_new();
 
-    ad = malloc(sizeof(ResolverQuery));
-    if (!ad) {
-        *rq = NULL;
+    if( NULL == msg ) {
         return JXTA_NOMEM;
     }
-    memset(ad, 0xda, sizeof(ResolverQuery));
-    jxta_advertisement_initialize((Jxta_advertisement *) ad,
-                                  "jxta:ResolverQuery",
-                                  ResolverQuery_tags,
-                                  (JxtaAdvertisementGetXMLFunc) jxta_resolver_query_get_xml,
-                                  NULL, 
-                                  NULL, 
-                                  resolver_query_free);
 
-    /* Fill in the required initialization code here. */
+    jxta_resolver_query_set_src_peer_id(msg, src_peerid);
+    jstring_append_1(msg->HandlerName, handlername);
+    jxta_resolver_query_set_query( msg, qdoc );
 
-    ad->Credential = jstring_new_0();
-    JXTA_OBJECT_SHARE(src_peerid);
-    ad->SrcPeerID = src_peerid;
-    ad->QueryID = JXTA_INVALID_QUERY_ID;
-    ad->Query = qdoc;
-    if (ad->Query != NULL)
-        JXTA_OBJECT_SHARE(ad->Query);
-    ad->HandlerName = jstring_new_2(jstring_get_string(handlername));
-    ad->route = NULL;
-    ad->HopCount = 0;
-    ad->qos = NULL;
-    *rq = ad;
+    *rq = msg;
+
     return JXTA_SUCCESS;
 }
 
 JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new_1(JString * handlername, JString * query, Jxta_id * src_pid,
                                                         Jxta_RouteAdvertisement * route)
 {
-    ResolverQuery *ad;
-    JString *temps = NULL;
+    Jxta_resolver_query *msg = jxta_resolver_query_new();
 
-    JXTA_DEPRECATED_API();
-    ad = (ResolverQuery *) malloc(sizeof(ResolverQuery));
-    memset(ad, 0xda, sizeof(ResolverQuery));
-    jxta_advertisement_initialize((Jxta_advertisement *) ad,
-                                  "jxta:ResolverQuery",
-                                  ResolverQuery_tags,
-                                  (JxtaAdvertisementGetXMLFunc) jxta_resolver_query_get_xml,
-                                  NULL, 
-                                  NULL, 
-                                  resolver_query_free);
-
-    /* Fill in the required initialization code here. */
-
-    ad->Credential = jstring_new_0();
-    jxta_id_to_jstring(src_pid, &temps);
-    jxta_id_from_jstring(&ad->SrcPeerID, temps);
-    JXTA_OBJECT_RELEASE(temps);
-    ad->QueryID = JXTA_INVALID_QUERY_ID;
-    ad->Query = query;
-    if (ad->Query != NULL)
-        JXTA_OBJECT_SHARE(ad->Query);
-    ad->HandlerName = jstring_new_2(jstring_get_string(handlername));
-    if (route) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG , FILEANDLINE 
-                        "Warning: obsolete constructor usage to include local route advertisement\n");
+    if( NULL == msg ) {
+        return NULL;
     }
-    ad->route = NULL;
-    ad->HopCount = 0;
-    ad->qos = NULL;
-    return ad;
+
+    jxta_resolver_query_set_src_peer_id(msg, src_pid);
+    msg->HandlerName = jstring_new_2(jstring_get_string(handlername));
+    jxta_resolver_query_set_query( msg, query );
+
+    if (route) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE 
+                        "Obsolete constructor usage to include local route advertisement\n");
+    }
+
+    return msg;
 }
 
  /** 
@@ -589,49 +641,80 @@ JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new_1(JString * handlername, J
   * pop right out as a piece of memory accessed
   * after it was freed...
   */
-static void resolver_query_free(void * me)
+static void resolver_query_delete(Jxta_object * me)
 {
-    ResolverQuery * ad = (ResolverQuery * )me;
+    ResolverQuery * myself = (ResolverQuery * )me;
         
-    if (ad->Credential) {
-        JXTA_OBJECT_RELEASE(ad->Credential);
+    if (myself->Credential) {
+        JXTA_OBJECT_RELEASE(myself->Credential);
     }
-    if (ad->SrcPeerID) {
-        JXTA_OBJECT_RELEASE(ad->SrcPeerID);
+    
+    if (myself->SrcPeerID) {
+        JXTA_OBJECT_RELEASE(myself->SrcPeerID);
     }
-    if (ad->HandlerName) {
-        JXTA_OBJECT_RELEASE(ad->HandlerName);
+    
+    if (myself->HandlerName) {
+        JXTA_OBJECT_RELEASE(myself->HandlerName);
     }
-    if (ad->Query) {
-        JXTA_OBJECT_RELEASE(ad->Query);
+    
+    if (myself->Query) {
+        JXTA_OBJECT_RELEASE(myself->Query);
     }
-    if (ad->route != NULL) {
-        JXTA_OBJECT_RELEASE(ad->route);
+    if (myself->route != NULL) {
+        JXTA_OBJECT_RELEASE(myself->route);
     }
 
-    jxta_advertisement_delete((Jxta_advertisement *) ad);
-    memset(ad, 0xdd, sizeof(ResolverQuery));
-    free(ad);
+    jxta_advertisement_destruct((Jxta_advertisement *) myself);
+    
+    memset(myself, 0xDD, sizeof(ResolverQuery));
+    
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "ResolverQuery FREE [%pp]\n", myself );
+
+    free(myself);
 }
 
-JXTA_DECLARE(void) jxta_resolver_query_parse_charbuffer(ResolverQuery * ad, const char *buf, int len)
+JXTA_DECLARE(Jxta_status) jxta_resolver_query_parse_charbuffer(ResolverQuery * myself, const char *buf, int len)
 {
-    jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    Jxta_status res;
+    
+    JXTA_OBJECT_CHECK_VALID(myself);
+    
+    res =  jxta_advertisement_parse_charbuffer((Jxta_advertisement *) myself, buf, len);
+    
+    if( JXTA_SUCCESS == res ) {
+        res = validate_msg(myself);
+    }
+    
+    return res;
 }
 
-JXTA_DECLARE(void) jxta_resolver_query_parse_file(ResolverQuery * ad, FILE * stream)
+JXTA_DECLARE(Jxta_status) jxta_resolver_query_parse_file(ResolverQuery * myself, FILE * stream)
 {
-    jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    Jxta_status res;
+    
+    JXTA_OBJECT_CHECK_VALID(myself);
+    
+    res = jxta_advertisement_parse_file((Jxta_advertisement *) myself, stream);
+    
+    if( JXTA_SUCCESS == res ) {
+        res = validate_msg(myself);
+    }
+    
+    return res;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_resolver_query_attach_qos(Jxta_resolver_query * me, const Jxta_qos * qos)
 {
+    JXTA_OBJECT_CHECK_VALID(me);
+
     me->qos = qos;
     return JXTA_SUCCESS;
 }
 
 JXTA_DECLARE(const Jxta_qos *) jxta_resolver_query_qos(Jxta_resolver_query * me)
 {
+    JXTA_OBJECT_CHECK_VALID(me);
+
     return me->qos;
 }
 

@@ -1,0 +1,11 @@
+<jxta:PeerviewAddressAssign xmlns:jxta="http://jxta.org"
+   peer_id="urn:jxta:uuid-59616261646162614E50472050325033A1691B1C75EB4310A9AD97CB6D95384203">
+    <Credential type="jxta:NullCred">
+	    <PeerGroupID>urn:jxta:jxta-NetGroup</PeerGroupID>
+	    <PeerID>urn:jxta:uuid-59616261646162614E50472050325033A1691B1C75EB4310A9AD97CB6D95384203</PeerID>
+	    <Identity>bondolo1</Identity>
+    </Credential>
+    <InstanceMask>68026c239d1a8878d8cec84a79d3e35f2039710b</InstanceMask>
+    <TargetHash>1db6b78bfd745f5ed85d578c3c66e310def6d102</TargetHash>
+    <Option type="jxta:MadeupOptions" foobar="false"/>
+</jxta:PeerviewAddressAssign>

@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) 2003 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright (c) 2001 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,53 +50,123 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: relay_adv_test.c,v 1.5 2005/09/23 20:07:16 slowhog Exp $
+ * $Id: relay_adv_test.c,v 1.6 2006/10/31 21:55:16 bondolo Exp $
  */
 
 #include <stdio.h>
+
 #include "jxta.h"
-#include "jxta_relaya.h"
 
+#include "unittest_jxta_func.h"
 
-Jxta_boolean relaya_test(int argc, char **argv)
-{
+const char *test_jxta_relaya_construction(void) {
+    Jxta_status result = JXTA_SUCCESS;
+    Jxta_RelayAdvertisement *ad = jxta_RelayAdvertisement_new();
 
-    Jxta_RelayAdvertisement *ad;
-    FILE *testfile;
-    JString *js;
-
-    if (argc != 2) {
-        printf("usage: ad <filename>\n");
-        return -1;
+    if( NULL == ad ) {
+        return FILEANDLINE;
     }
 
-    jxta_initialize();
+    if( !JXTA_OBJECT_CHECK_VALID(ad) ) {
+        return FILEANDLINE;
+    }
 
-    ad = jxta_RelayAdvertisement_new();
+    JXTA_OBJECT_RELEASE(ad);
 
-    testfile = fopen(argv[1], "r");
-    jxta_RelayAdvertisement_parse_file(ad, testfile);
-    fclose(testfile);
-
-    js = jstring_new_1(1024);
-
-    jxta_advertisement_get_xml((Jxta_advertisement *) ad, &js);
-
-    fprintf(stdout, "%s", jstring_get_string(js));
-
-    JXTA_OBJECT_RELEASE(js);
-
-    jxta_terminate();
-    return 0;
-
+    return NULL;
 }
 
+const char *test_jxta_relaya_serialization(void) {
+    Jxta_status result = JXTA_SUCCESS;
+    Jxta_RelayAdvertisement *ad;
+    FILE *testfile;
+    JString *dump1;
+    JString *dump2;
 
+    ad = jxta_RelayAdvertisement_new();
+    
+    if( NULL == ad ) {
+        return FILEANDLINE;
+    }
+
+    testfile = fopen( "RelayAdvertisement.xml", "r");
+    
+    if( -1 == testfile ) {
+        return FILEANDLINE;
+    }
+    
+    result = jxta_RelayAdvertisement_parse_file(ad, testfile);
+    fclose(testfile);
+
+    if( JXTA_SUCCESS != result ) {
+        return FILEANDLINE;
+    }    
+
+    if( !JXTA_OBJECT_CHECK_VALID(ad) ) {
+        return FILEANDLINE;
+    }
+
+    result = jxta_advertisement_get_xml(ad, &dump1);
+    if( JXTA_SUCCESS != result ) {
+        return FILEANDLINE;
+    }
+
+    JXTA_OBJECT_RELEASE(ad);
+    ad = NULL;
+
+    ad = jxta_RelayAdvertisement_new();
+    result = jxta_RelayAdvertisement_parse_charbuffer( ad, jstring_get_string(dump1), jstring_length(dump1) );
+    if( JXTA_SUCCESS != result ) {
+        return FILEANDLINE;
+    }    
+
+    if( !JXTA_OBJECT_CHECK_VALID(ad) ) {
+        return FILEANDLINE;
+    }
+
+    result = jxta_RelayAdvertisement_get_xml(ad, &dump2);
+    if( JXTA_SUCCESS != result ) {
+        return FILEANDLINE;
+    }
+    
+    if( 0 != jstring_equals( dump1, dump2 ) ) {
+        return FILEANDLINE;
+    }
+
+    JXTA_OBJECT_RELEASE(ad);
+    JXTA_OBJECT_RELEASE(dump1);
+    JXTA_OBJECT_RELEASE(dump2);
+
+    return NULL;
+}
+
+static struct _funcs relaya_test_funcs[] = {
+    /* First run simple construction destruction test. */
+    {*test_jxta_relaya_construction, "construction/destruction for RelayAdvertisement"},
+
+    /* Serialization/Deserialization */
+    {*test_jxta_relaya_serialization, "read/write test for RelayAdvertisement"},
+
+    {NULL, "null"}
+};
+
+/**
+* Run the unit tests for the jxta_pa test routines
+*
+* @param tests_run the variable in which to accumulate the number of tests run
+* @param tests_passed the variable in which to accumulate the number of tests passed
+* @param tests_failed the variable in which to accumulate the number of tests failed
+*
+* @return TRUE if all tests were run successfully, FALSE otherwise
+*/
+Jxta_boolean run_jxta_relaya_tests(int *tests_run, int *tests_passed, int *tests_failed)
+{
+    return run_testfunctions(relaya_test_funcs, tests_run, tests_passed, tests_failed);
+}
 
 #ifdef STANDALONE
 int main(int argc, char **argv)
 {
-
-    return relaya_test(argc, argv);
+    return main_test_function(relaya_test_funcs, argc, argv);
 }
 #endif

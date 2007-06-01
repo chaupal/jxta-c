@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_test.c,v 1.23 2005/10/27 09:44:56 lankes Exp $
+ * $Id: jxta_resolver_test.c,v 1.23.4.1 2006/11/16 00:06:36 bondolo Exp $
  */
 
 #include "jxta.h"
@@ -186,16 +186,9 @@ int main(int argc, char *argv[])
     jxta_resolver_query_parse_file(query, testfile);
     fclose(testfile);
 
-    {
-        Jxta_peer *peer = jxta_peer_new();
         addr = jxta_endpoint_address_new_2("http", jstring_get_string(rdv), NULL, NULL);
-        jxta_peer_set_address(peer, addr);
-        jxta_rdv_service_add_peer(rendezvous, peer);
+    jxta_rdv_service_add_seed(rendezvous, addr);
         JXTA_OBJECT_RELEASE(addr);
-        JXTA_OBJECT_RELEASE(peer);
-    }
-
-
 
     fprintf(stdout, "sending %s \n", jstring_get_string(rq));
     /* use null id to begin with. Support real addresses later */

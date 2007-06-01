@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_service.h,v 1.17 2006/09/05 06:12:11 slowhog Exp $
+ * $Id: jxta_endpoint_service.h,v 1.17.4.2 2006/12/04 22:36:58 slowhog Exp $
  */
 
 
@@ -59,6 +59,7 @@
 #ifndef JXTA_ENDPOINT_SERVICE_H
 #define JXTA_ENDPOINT_SERVICE_H
 
+#include "jxta_apr.h"
 #include "jxta_service.h"
 
 #include "jxta_listener.h"
@@ -231,6 +232,24 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_async(Jxta_PG * pg, Jxta_en
 #define jxta_endpoint_service_send jxta_endpoint_service_send_async
 
 /*
+ * Sends the given message to the given destination using the appropriate
+ * transport according to the protocol name referenced by the given
+ * destination address and the transports currently registered with this
+ * endpoint service.
+ *
+ * @param me Handle of the endpoint service object to which the
+ * operation is applied.
+ * @param msg The message to be sent.
+ * @param dest_addr The destination of the message.
+ * @param sync Set to TRUE to use synchronous mode, FALSE for asynchrnomous.
+ * @return Jxta_status success or failed
+ *
+ * @note: This version does not do peergroup mangling. Use jxta_PG_send instead.
+ */
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ex(Jxta_endpoint_service * me, Jxta_message * msg,
+                                                        Jxta_endpoint_address * dest_addr, Jxta_boolean sync);
+
+/*
  * Propagate the given message to the given service destination using 
  * any available propagation transport. There is no guarantee
  * the call will succeed as no propagation transport may be configured
@@ -350,6 +369,8 @@ JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_endpoint_service_get_local_route(Jx
  ** @return void
  **/
 JXTA_DECLARE(void) jxta_endpoint_service_set_local_route(Jxta_endpoint_service * service, Jxta_RouteAdvertisement * route);
+
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_get_thread_pool(Jxta_endpoint_service *me, apr_thread_pool_t **tp);
 
 #ifdef __cplusplus
 #if 0

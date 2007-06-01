@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_lease_request_msg.h,v 1.4 2006/08/28 23:27:16 bondolo Exp $
+ * $Id: jxta_lease_request_msg.h,v 1.5 2006/10/31 20:25:13 bondolo Exp $
  */
 
 
@@ -100,6 +100,9 @@ JXTA_DECLARE(void) jxta_lease_request_msg_set_client_adv(Jxta_lease_request_msg 
 JXTA_DECLARE(Jxta_time_diff) jxta_lease_request_msg_get_client_adv_exp(Jxta_lease_request_msg * me);
 JXTA_DECLARE(void) jxta_lease_request_msg_set_client_adv_exp(Jxta_lease_request_msg * me, Jxta_time_diff expiration);
 
+JXTA_DECLARE(Jxta_vector *) jxta_lease_request_msg_get_options(Jxta_lease_request_msg * me);
+JXTA_DECLARE(void) jxta_lease_request_msg_clear_options(Jxta_lease_request_msg * me );
+JXTA_DECLARE(void) jxta_lease_request_msg_add_option(Jxta_lease_request_msg * me, Jxta_advertisement *adv );
 
 #ifdef __cplusplus
 #if 0

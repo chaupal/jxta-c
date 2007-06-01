@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_relay.c,v 1.56 2006/09/08 19:17:55 bondolo Exp $
+ * $Id: jxta_relay.c,v 1.57 2006/10/28 05:32:02 slowhog Exp $
  */
 #include <stdlib.h> /* for atoi */
 
@@ -1461,6 +1461,8 @@ static void reconnect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_en
     Jxta_transport *transport = NULL;
     JxtaEndpointMessenger *endpoint_messenger = NULL;
     Jxta_endpoint_address *addr = NULL;
+    JString *request;
+    Jxta_message_element *msgElem;
 
     jxta_peer_lock((Jxta_peer *) peer);
 
@@ -1498,6 +1500,20 @@ static void reconnect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_en
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
         return;
     }
+    
+    request = jstring_new_2(RELAY_CONNECT_REQUEST);
+    jstring_append_2(request, ",");
+    jstring_append_2(request, LEASE_REQUEST);
+    jstring_append_2(request, ",");
+    jstring_append_2(request, LAZY_CLOSE);
+
+    msgElem = jxta_message_element_new_1(RELAY_LEASE_REQUEST,
+                                         "text/plain", (char *) jstring_get_string(request),
+                                         jstring_length(request), NULL);
+
+    jxta_message_add_element(msg, msgElem);
+    JXTA_OBJECT_RELEASE(msgElem);
+    JXTA_OBJECT_RELEASE(request);
 
     /**
      ** Set the destination address of the message.

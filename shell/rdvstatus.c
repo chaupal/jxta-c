@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rdvstatus.c,v 1.24 2005/11/24 04:17:50 mmx2005 Exp $
+ * $Id: rdvstatus.c,v 1.24.4.1 2006/11/16 00:06:29 bondolo Exp $
  */
 
 
@@ -64,6 +64,7 @@
 
 #include "jxta.h"
 #include "jxta_peergroup.h"
+#include "jxta_peer.h"
 
 #include "jxta_shell_application.h"
 #include "jxta_shell_getopt.h"
@@ -98,6 +99,55 @@ void jxta_rdvstatus_process_input(Jxta_object * appl, JString * inputLine)
     JxtaShellApplication_terminate(app);
 }
 
+void print_peerview_peer( JString *outputLine, Jxta_peer *peer )
+{
+   Jxta_status err;
+   char linebuff[1024];
+   Jxta_id *pid = NULL;
+   Jxta_PA *adv = NULL;
+   JString *string = NULL;
+   Jxta_time expires = 0;
+   Jxta_boolean connected = FALSE;
+   Jxta_time currentTime = jpr_time_now();
+
+   err = jxta_peer_get_peerid(peer, &pid);
+
+   if ((NULL != pid) && (err == JXTA_SUCCESS)) {
+       jxta_id_to_jstring(pid, &string);
+       sprintf(linebuff, "%s", jstring_get_string(string));
+       jstring_append_2(outputLine, linebuff);
+       JXTA_OBJECT_RELEASE(string);
+       JXTA_OBJECT_RELEASE(pid);
+   }
+
+   err = jxta_peer_get_adv(peer, &adv);
+
+   if ((NULL != adv) && (err == JXTA_SUCCESS)) {
+       string = jxta_PA_get_Name(adv);
+       JXTA_OBJECT_RELEASE(adv);
+   } else {
+       string = jstring_new_2("(unknown)");
+   }
+
+   jstring_append_2(outputLine, "/");
+   jstring_append_1(outputLine, string);
+   JXTA_OBJECT_RELEASE(string);
+
+       expires = jxta_peer_get_expires(peer);
+
+   if (expires >= currentTime) {
+       expires -= currentTime;
+
+       sprintf(linebuff, "\t" JPR_ABS_TIME_FMT "s", expires / 1000 );
+   } else {
+       sprintf(linebuff, "\t(expired)");
+   }
+
+   jstring_append_2(outputLine, linebuff);
+
+   jstring_append_2(outputLine, "\n");
+}
+
 Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
 {
     Jxta_boolean res = TRUE;
@@ -105,9 +155,7 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
     Jxta_status err;
     Jxta_vector *peers = NULL;
     unsigned int i;
-    Jxta_peerview *pv = jxta_rdv_service_get_peerview_priv(rdv);
-    Jxta_peer *down = NULL;
-    Jxta_peer *up = NULL;
+    Jxta_peerview *pv = jxta_rdv_service_get_peerview(rdv);
     Jxta_peer *selfPVE = NULL;
 
     RdvConfig_configuration config = jxta_rdv_service_config(rdv);
@@ -145,29 +193,21 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
         jstring_append_2(outputLine, "[disabled]\n");
     }
 
+    if( NULL != pv ) {
     jxta_peerview_get_self_peer(pv, &selfPVE);
-    jxta_peerview_get_down_peer(pv, &down);
-    jxta_peerview_get_up_peer(pv, &up);
 
     /* Get the list of peers */
-    err = jxta_peerview_get_localview(pv, &peers);
+        err = jxta_peerview_get_globalview(pv, &peers);
     if (err != JXTA_SUCCESS) {
-        jstring_append_2(outputLine, "Failed getting the peers.\n");
+            jstring_append_2(outputLine, "Failed getting the associate peers.\n");
         res = FALSE;
         goto Common_Exit;
     }
 
-    jstring_append_2(outputLine, "\nPeerview:\n");
+        jstring_append_2(outputLine, "\nAssociate Peers:\n");
 
     for (i = 0; i < jxta_vector_size(peers); ++i) {
         Jxta_peer *peer = NULL;
-        char linebuff[1024];
-        Jxta_id *pid = NULL;
-        Jxta_PA *adv = NULL;
-        JString *string = NULL;
-        Jxta_time expires = 0;
-        Jxta_boolean connected = FALSE;
-        Jxta_time currentTime = jpr_time_now();
 
         err = jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer), i);
         if (err != JXTA_SUCCESS) {
@@ -176,65 +216,53 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
             goto Common_Exit;
         }
 
-        err = jxta_peer_get_peerid(peer, &pid);
+            print_peerview_peer( outputLine, peer );
 
-        if ((NULL != pid) && (err == JXTA_SUCCESS)) {
-            jxta_id_to_jstring(pid, &string);
-            sprintf(linebuff, "%s", jstring_get_string(string));
-            jstring_append_2(outputLine, linebuff);
-            JXTA_OBJECT_RELEASE(string);
-            JXTA_OBJECT_RELEASE(pid);
+            JXTA_OBJECT_RELEASE(peer);
         }
 
-        err = jxta_peer_get_adv(peer, &adv);
+        JXTA_OBJECT_RELEASE(peers);
 
-        if ((NULL != adv) && (err == JXTA_SUCCESS)) {
-            string = jxta_PA_get_Name(adv);
-            JXTA_OBJECT_RELEASE(adv);
-        } else {
-            string = jstring_new_2("(unknown)");
+        err = jxta_peerview_get_localview(pv, &peers);
+        if (err != JXTA_SUCCESS) {
+            jstring_append_2(outputLine, "Failed getting the partner peers.\n");
+            res = FALSE;
+            goto Common_Exit;
         }
 
-        jstring_append_2(outputLine, "/");
-        jstring_append_1(outputLine, string);
-        JXTA_OBJECT_RELEASE(string);
+        jstring_append_2(outputLine, "\nPartner Peers:\n");
 
-        expires = jxta_rdv_service_peer_get_expires(rdv, peer);
+        for (i = 0; i < jxta_vector_size(peers); ++i) {
+            Jxta_peer *peer = NULL;
+            char linebuff[1024];
+            Jxta_id *pid = NULL;
+            Jxta_PA *adv = NULL;
+            JString *string = NULL;
+            Jxta_time expires = 0;
+            Jxta_boolean connected = FALSE;
+            Jxta_time currentTime = jpr_time_now();
 
-        if (expires >= currentTime) {
-            expires -= currentTime;
-
-            sprintf(linebuff, "\t" JPR_ABS_TIME_FMT "ms", expires);
-        } else {
-            sprintf(linebuff, "\t(expired)");
+            err = jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer), i);
+            if (err != JXTA_SUCCESS) {
+                jstring_append_2(outputLine, "Failed getting a peer.\n");
+                res = FALSE;
+                goto Common_Exit;
         }
 
-        jstring_append_2(outputLine, linebuff);
-
-        if (down == peer) {
-            jstring_append_2(outputLine, "\t[DOWN]");
-        }
-
-        if (selfPVE == peer) {
-            jstring_append_2(outputLine, "\t[SELF]");
-        }
-
-        if (up == peer) {
-            jstring_append_2(outputLine, "\t[UP]");
-        }
-
-        jstring_append_2(outputLine, "\n");
+            print_peerview_peer( outputLine, peer );
 
         JXTA_OBJECT_RELEASE(peer);
     }
+        
     JXTA_OBJECT_RELEASE(peers);
+    }
 
     jstring_append_2(outputLine, "\nConnections:\n");
 
     /* Get the list of peers */
     err = jxta_rdv_service_get_peers(rdv, &peers);
     if (err != JXTA_SUCCESS) {
-        jstring_append_2(outputLine, "Failed getting the peers.\n");
+        jstring_append_2(outputLine, "Failed getting the connected peers.\n");
         res = FALSE;
         goto Common_Exit;
     }
@@ -247,6 +275,7 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
         JString *string = NULL;
         Jxta_time expires = 0;
         Jxta_boolean connected = FALSE;
+        Jxta_time currentTime;
 
         err = jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer), i);
         if (err != JXTA_SUCCESS) {
@@ -258,7 +287,7 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
         err = jxta_peer_get_adv(peer, &adv);
         if ((NULL != adv) && (err == JXTA_SUCCESS)) {
             string = jxta_PA_get_Name(adv);
-            sprintf(linebuff, "Name: [%s]\n", jstring_get_string(string));
+            sprintf(linebuff, "%s", jstring_get_string(string));
             jstring_append_2(outputLine, linebuff);
             JXTA_OBJECT_RELEASE(string);
             JXTA_OBJECT_RELEASE(adv);
@@ -266,72 +295,39 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
         err = jxta_peer_get_peerid(peer, &pid);
         if ((NULL != pid) && (err == JXTA_SUCCESS)) {
             jxta_id_to_jstring(pid, &string);
-            sprintf(linebuff, "PeerId: [%s]\n", jstring_get_string(string));
+            sprintf(linebuff, "\t[%s]", jstring_get_string(string));
             jstring_append_2(outputLine, linebuff);
             JXTA_OBJECT_RELEASE(string);
             JXTA_OBJECT_RELEASE(pid);
         }
 
-        expires = jxta_rdv_service_peer_get_expires(rdv, peer);
-
-        if ((expires > 0)) {
-            Jxta_time currentTime;
-
-            Jxta_time_diff hours = 0;
-            Jxta_time_diff minutes = 0;
-            Jxta_time_diff seconds = 0;
+        expires = jxta_peer_get_expires(peer);
 
             currentTime = jpr_time_now();
-            if (expires < currentTime) {
-                expires = 0;
-            } else {
-                expires -= currentTime;
-            }
 
-            seconds = expires / (1000);
+        if (expires > currentTime) {
+            Jxta_time_diff remaining = (Jxta_time_diff) (expires - currentTime);;
+            Jxta_time_diff seconds = 0;
 
-            hours = (Jxta_time_diff) (seconds / (Jxta_time_diff) (60 * 60));
-            seconds -= hours * 60 * 60;
+           seconds = remaining / (1000);
 
-            minutes = seconds / 60;
-            seconds -= minutes * 60;
-
-
-            /* This produces a compiler warning about L not being ansi.
-             * But long longs aren't ansi either. 
-             */
-#ifndef WIN32
-
-            sprintf(linebuff, "\nLease expires in %lld hour(s) %lld minute(s) %lld second(s)\n",
-                    (Jxta_time_diff) hours, (Jxta_time_diff) minutes, (Jxta_time_diff) seconds);
-#else
-
-            sprintf(linebuff, "\nLease expires in %I64d hour(s) %I64d minute(s) %I64d second(s)\n",
-                    (Jxta_time) hours, (Jxta_time) minutes, (Jxta_time) seconds);
-#endif
+            sprintf(linebuff, "\tLease : " JPR_DIFF_TIME_FMT " second(s)\n", seconds);
 
             jstring_append_2(outputLine, linebuff);
         } else {
-            sprintf(linebuff, "\nLease expired\n");
+            sprintf(linebuff, "\tLease : expired\n");
             jstring_append_2(outputLine, linebuff);
         }
-        jstring_append_2(outputLine, "-----------------------------------------------------------------------------\n");
 
         JXTA_OBJECT_RELEASE(peer);
     }
+    
     JXTA_OBJECT_RELEASE(peers);
+    JXTA_OBJECT_RELEASE(pv);
 
   Common_Exit:
     if (jstring_length(outputLine) > 0) {
         JxtaShellApplication_print((JxtaShellApplication *) appl, outputLine);
-    }
-
-    if (NULL != down) {
-        JXTA_OBJECT_RELEASE(down);
-    }
-
-    if (NULL != up) {
-        JXTA_OBJECT_RELEASE(up);
     }
 
     if (NULL != selfPVE) {

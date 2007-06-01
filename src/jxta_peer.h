@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peer.h,v 1.13 2006/10/01 01:07:55 bondolo Exp $
+ * $Id: jxta_peer.h,v 1.13.2.1 2006/12/02 08:17:49 slowhog Exp $
  */
 
 
@@ -76,112 +76,115 @@ extern "C" {
 
 typedef struct _jxta_peer_entry Jxta_peer;
 
-  /*******
-   * Create a Jxta_peer object. This object is mutable.
-   * A Jxta_peer object is a Jxta_object: the new object is
-   * already initialized by this method, and needs to be released
-   * when it is no longer used.
-   *
-   ********/
+/*******
+ * Create a Jxta_peer object. This object is mutable.
+ * A Jxta_peer object is a Jxta_object: the new object is
+ * already initialized by this method, and needs to be released
+ * when it is no longer used.
+ *
+ ********/
 JXTA_DECLARE(Jxta_peer *) jxta_peer_new(void);
 
 /**
-*   Determine if the two peer objects refer to the same peer. The
-*   determination is made by comparing the peer id values or the
-*   endpoint addresses if both objects have no peerid set.
-*
-*   @param a pointer to the Jxta_peer object
-*   @param b pointer to the Jxta_peer object
-*   @returns TRUE if peers refer to the same entity otherwise FALSE.
-**/
+ *   Determine if the two peer objects refer to the same peer. The
+ *   determination is made by comparing the peer id values or the
+ *   endpoint addresses if both objects have no peerid set.
+ *
+ *   @param a pointer to the Jxta_peer object
+ *   @param b pointer to the Jxta_peer object
+ *   @returns TRUE if peers refer to the same entity otherwise FALSE.
+ **/
 JXTA_DECLARE(Jxta_boolean) jxta_peer_equals( Jxta_peer* a, Jxta_peer* b );
 
- /*******
-   * Get the PeerId of the peer
-   *
-   * @param peer a pointer to the Jxta_peer object
-   * @param  id a pointer to a pointer to Jxta_id containing resulting id. This object
-   * needs to be released when not used anymore.
-   * @returns JXTA_SUCCESS when succesfull, or JXTA_INVALID_ARGUMENT when no
-   * peer id is associated to the given Jxta_peer.
-   ********/
+/*******
+ * Get the PeerId of the peer
+ *
+ * @param peer a pointer to the Jxta_peer object
+ * @param  id a pointer to a pointer to Jxta_id containing resulting id. This object
+ * needs to be released when not used anymore.
+ * @returns JXTA_SUCCESS when succesfull, or JXTA_INVALID_ARGUMENT when no
+ * peer id is associated to the given Jxta_peer.
+ ********/
 JXTA_DECLARE(Jxta_status) jxta_peer_get_peerid(Jxta_peer * peer, Jxta_id ** id);
+JXTA_DECLARE(Jxta_id*) jxta_peer_peerid(Jxta_peer * me);
 
-  /*******
-   * Get the Peer Advertisement of the peer
-   *
-   * @param peer a pointer to the Jxta_peer object
-   * @param pa a pointer to a pointer to Jxta_PA containing resulting advertisement. This object
-   * needs to be released when not used anymore.
-   * Note that the return object has to be released
-   * @returns JXTA_SUCCESS when succesfull, or JXTA_INVALID_ARGUMENT when no
-   * Peer Advertisement is associated to the given Jxta_peer.
-   ********/
+/*******
+ * Get the Peer Advertisement of the peer
+ *
+ * @param peer a pointer to the Jxta_peer object
+ * @param pa a pointer to a pointer to Jxta_PA containing resulting advertisement. This object
+ * needs to be released when not used anymore.
+ * Note that the return object has to be released
+ * @returns JXTA_SUCCESS when succesfull, or JXTA_INVALID_ARGUMENT when no
+ * Peer Advertisement is associated to the given Jxta_peer.
+ ********/
 JXTA_DECLARE(Jxta_status) jxta_peer_get_adv(Jxta_peer * peer, Jxta_PA ** pa);
+JXTA_DECLARE(Jxta_PA*) jxta_peer_adv(Jxta_peer * me);
 
-  /*******
-   * Get the Endpoint Address of the peer
-   *
-   * @param peer a pointer to the Jxta_peer object
-   * @param addr a pointer to a pointer to Jxta_endpoint_addresscontaining resulting
-   * Endpoint Address. This object needs to be released when not used anymore.
-   * Note that the return object has to be released
-   * @returns JXTA_SUCCESS when succesfull, or JXTA_INVALID_ARGUMENT when no
-   * Jxta_endpoint_address is associated to the given Jxta_peer.
-   ********/
+/*******
+ * Get the Endpoint Address of the peer
+ *
+ * @param peer a pointer to the Jxta_peer object
+ * @param addr a pointer to a pointer to Jxta_endpoint_addresscontaining resulting
+ * Endpoint Address. This object needs to be released when not used anymore.
+ * Note that the return object has to be released
+ * @returns JXTA_SUCCESS when succesfull, or JXTA_INVALID_ARGUMENT when no
+ * Jxta_endpoint_address is associated to the given Jxta_peer.
+ ********/
 JXTA_DECLARE(Jxta_status) jxta_peer_get_address(Jxta_peer * peer, Jxta_endpoint_address ** addr);
+JXTA_DECLARE(Jxta_endpoint_address*) jxta_peer_address(Jxta_peer * me);
 
-  /*******
-   * Set the PeerId of the peer
-   *
-   * @param peer a pointer to the Jxta_peer object
-   * @param peerId a pointer to the Jxta_id. Note that the object
-   * is automatically shared by this call.
-   * @return a status
-   ********/
+/*******
+ * Set the PeerId of the peer
+ *
+ * @param peer a pointer to the Jxta_peer object
+ * @param peerId a pointer to the Jxta_id. Note that the object
+ * is automatically shared by this call.
+ * @return a status
+ ********/
 JXTA_DECLARE(Jxta_status) jxta_peer_set_peerid(Jxta_peer * peer, Jxta_id * peerId);
 
-  /*******
-   * Set the Peer Advertisement of the peer
-   *
-   * @param peer a pointer to the Jxta_peer object
-   * @param adv a pointer to the Jxta_id. Note that the object
-   * is automatically shared by this call.
-   * @return a status
-   ********/
+/*******
+ * Set the Peer Advertisement of the peer
+ *
+ * @param peer a pointer to the Jxta_peer object
+ * @param adv a pointer to the Jxta_id. Note that the object
+ * is automatically shared by this call.
+ * @return a status
+ ********/
 JXTA_DECLARE(Jxta_status) jxta_peer_set_adv(Jxta_peer * peer, Jxta_PA * adv);
 
-  /*******
-   * Set the Endpoint Address of the peer
-   *
-   * @param peer a pointer to the Jxta_peer object
-   * @param addr a pointer to the Jxta_endpoint_address. Note that the object
-   * is automatically shared by this call.
-   * @return a status
-   ********/
+/*******
+ * Set the Endpoint Address of the peer
+ *
+ * @param peer a pointer to the Jxta_peer object
+ * @param addr a pointer to the Jxta_endpoint_address. Note that the object
+ * is automatically shared by this call.
+ * @return a status
+ ********/
 JXTA_DECLARE(Jxta_status) jxta_peer_set_address(Jxta_peer * peer, Jxta_endpoint_address * addr);
 
 
-  /*******
-   * Get the expiration time of this peer record. 
-   *
-   * @param peer a pointer to the Jxta_peer object
-   * @return The absolute time in milliseconds at which this peer will expire.
-   ********/
+/*******
+ * Get the expiration time of this peer record. 
+ *
+ * @param peer a pointer to the Jxta_peer object
+ * @return The absolute time in milliseconds at which this peer will expire.
+ ********/
 JXTA_DECLARE(Jxta_time) jxta_peer_get_expires(Jxta_peer * p);
 
-  /*******
-   * Set the expiration time of this peer record. 
-   *
-   * @param peer a pointer to the Jxta_peer object
-   * @param expires The absolute time in milliseconds at which this peer will expire.
-   * @return a status
-   ********/
+/*******
+ * Set the expiration time of this peer record. 
+ *
+ * @param peer a pointer to the Jxta_peer object
+ * @param expires The absolute time in milliseconds at which this peer will expire.
+ * @return a status
+ ********/
 JXTA_DECLARE(Jxta_status) jxta_peer_set_expires(Jxta_peer * p, Jxta_time expires);
 
-  /**
-   * @todo Add documentation.
-   */
+/**
+ * @todo Add documentation.
+ */
 JXTA_DECLARE(Jxta_time) jxta_rdv_service_peer_get_expires(Jxta_service * rdv, Jxta_peer * p);
 
 #ifdef __cplusplus
@@ -190,7 +193,6 @@ JXTA_DECLARE(Jxta_time) jxta_rdv_service_peer_get_expires(Jxta_service * rdv, Jx
 #endif
 }
 #endif
-
 
 #endif /* __JXTA_PEER_H__ */
 

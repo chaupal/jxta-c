@@ -1,0 +1,55 @@
+<jxta:PeerviewAddressRequest xmlns:jxta="http://jxta.org">
+	<Credential type="jxta:NullCred">
+		<PeerGroupID>urn:jxta:jxta-NetGroup</PeerGroupID>
+		<PeerID>urn:jxta:uuid-59616261646162614E50472050325033A1691B1C75EB4310A9AD97CB6D95384203</PeerID>
+		<Identity>bondolo1</Identity>
+	</Credential>
+        <InstanceMask>68026c239d1a8878d8cec84a79d3e35f2039710b</InstanceMask>
+        <CurrentTargetHash radius="9137ccf60d390173b230ceeebe3001be">1db6b78bfd745f5ed85d578c3c66e310def6d102</CurrentTargetHash>
+        <Adv type="jxta:PA" adv_gen="d5db4fac-28de-11db-ad4a-0011d858b975" expiration="3600000">
+	    <PID>
+		    urn:jxta:uuid-59616261646162614E50472050325033A1691B1C75EB4310A9AD97CB6D95384203
+	    </PID>
+	    <Name>
+		    bondolo1
+	    </Name>
+	    <Svc>
+		    <MCID>
+			    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000105
+		    </MCID>
+		    <Parm>
+			    <RootCert>
+				    MIICOjCCAaOgAwIBAgIBATANBgkqhkiG9w0BAQUFADBlMRUwEwYDVQQKEwx3d3cu
+anh0YS5vcmcxCzAJBgNVBAcTAlNGMQswCQYDVQQGEwJVUzETMBEGA1UEAxMKZGRv
+b2xpbi1DQTEdMBsGA1UECxMUMDAyQTA2MjVCRjAzMjBDNEVGQTcwHhcNMDIwMTE2
+MTYwMDQyWhcNMTIwMTE2MTYwMDQyWjBlMRUwEwYDVQQKEwx3d3cuanh0YS5vcmcx
+CzAJBgNVBAcTAlNGMQswCQYDVQQGEwJVUzETMBEGA1UEAxMKZGRvb2xpbi1DQTEd
+MBsGA1UECxMUMDAyQTA2MjVCRjAzMjBDNEVGQTcwgZswCwYJKoZIhvcNAQEBA4GL
+ADCBhwKBgQCultWzIg2osmQ5h1+j2ewsf89zWFsHfje/4aK2K8zWXKs/g36lNJ/o
+Uhc0LIdzLyTEnsUKhGX9fX91kgHCMHyQ+rDYGIf80a/AcCszN10kX1JUgSp20jw3
+PKwJ/tyf8vfhHcup2KgJ5t75ZABdFw6P5cqGiLs19Hb8kk1P8Hr3kwIBETANBgkq
+hkiG9w0BAQUFAAOBgQB1np7sSmS2sf9Jzt/JV3AHxv/Gk8GI4SX3o1Fu4h0kC/9C
+WR64sRNI4KByfMJJ1nuib+XMV+NoYUbwNPj+bL1lL9AjVupdQl7r+zBnYjb2/ofy
+k0kp4xjbf0qlKnV6SRPh6JcRxpDDtSoEFyLIf5Vp5/pBEAFCSNksHub4hBULxw==
+			    </RootCert>
+		    </Parm>
+	    </Svc>
+	    <Svc>
+                    <MCID>
+                            urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000805
+                    </MCID>
+                    <Parm>
+                            <jxta:RA xmlns:jxta="http://jxta.org">
+                                    <Dst>
+                                            <jxta:APA xmlns:jxta="http://jxta.org">
+                                                    <EA>
+                                                            http://192.18.191.108:9700
+                                                    </EA>
+                                            </jxta:APA>
+                                    </Dst>
+                            </jxta:RA>
+                    </Parm>
+            </Svc>
+    </Adv>
+    <Option type="jxta:MadeupOptions" foobar="false"/>
+</jxta:PeerviewAddressRequest>

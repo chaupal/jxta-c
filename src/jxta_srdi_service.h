@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi_service.h,v 1.11 2006/08/10 21:35:33 exocetrick Exp $
+ * $Id: jxta_srdi_service.h,v 1.11.4.1 2006/11/16 00:06:34 bondolo Exp $
  */
 
 #ifndef JXTA_SRDI_SERVICE_H
@@ -150,8 +150,7 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_forwardQuery_threshold(Jxta_srdi_service * s
  * @param  expression  expression to derive the mapping from
  * @return             The replicaPeer value
  */
-JXTA_DECLARE(Jxta_peer *) jxta_srdi_getReplicaPeer(Jxta_srdi_service * service, Jxta_resolver_service * resolver,
-                                                   Jxta_peerview * pvw, const char *expression);
+JXTA_DECLARE(Jxta_peer *) jxta_srdi_getReplicaPeer(Jxta_srdi_service * service, const char *expression);
 
 /**
  * Given an expression return a peer from the list peers in the peerview
@@ -159,15 +158,12 @@ JXTA_DECLARE(Jxta_peer *) jxta_srdi_getReplicaPeer(Jxta_srdi_service * service, 
  * given a high and low range for the value.
  *
  * @param Jxta_srdi_service * service - SRDI service for this group
- * @param Jxta_resolver_service * resolver - Resolver service within the group
- * @param Jxta_object * pvw - Peerview contains the list of peers for replication
  * @param Jxta_range * rge - High and low range for the value
  * @param double value - Value to be applied to find the position in the range.
  * @param  expression  expression to derive the mapping from
  * @return             The replicaPeer value
  */
-JXTA_DECLARE(Jxta_peer *) jxta_srdi_getNumericReplica(Jxta_srdi_service * service, Jxta_resolver_service * resolver,
-                                                      Jxta_peerview * pvw, Jxta_range * rge, const char *value);
+JXTA_DECLARE(Jxta_peer *) jxta_srdi_getNumericReplica(Jxta_srdi_service * service, Jxta_range * rge, const char *value);
 
 /**
  * forward srdi message to another peer

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_router_client.c,v 1.103 2006/09/22 22:49:11 slowhog Exp $
+ * $Id: jxta_router_client.c,v 1.103.2.1 2007/01/12 22:39:27 slowhog Exp $
  */
 
 static const char *__log_cat = "ROUTER";
@@ -922,6 +922,28 @@ static Jxta_RouteAdvertisement *search_in_local_cm(Jxta_router_client * self, Jx
     return route;
 }
 
+static Jxta_endpoint_address * demangle_ea(Jxta_router_client * me, Jxta_endpoint_address * ea)
+{
+    Jxta_endpoint_address * new_ea = NULL;
+    char * name;
+    char * param;
+    
+    if (strcmp(jxta_endpoint_address_get_service_name(ea), me->router_name)) {
+        return JXTA_OBJECT_SHARE(ea);
+    }
+
+    name = strdup(jxta_endpoint_address_get_service_params(ea));
+    param = strchr(name, '/');
+    if (param) {
+        *param++ = '\0';
+    }
+    
+    new_ea = jxta_endpoint_address_new_4(ea, name, param);
+    free(name);
+
+    return new_ea;
+}
+
 static JxtaEndpointMessenger *messenger_get(Jxta_transport * t, Jxta_endpoint_address * dest)
 {
     Jxta_router_client *self = PTValid(t, Jxta_router_client);
@@ -938,7 +960,7 @@ static JxtaEndpointMessenger *messenger_get(Jxta_transport * t, Jxta_endpoint_ad
     JXTA_OBJECT_INIT(messenger, messenger_delete, NULL);
 
     messenger->router = JXTA_OBJECT_SHARE(self);
-    messenger->generic.address = JXTA_OBJECT_SHARE(dest);
+    messenger->generic.address = demangle_ea(self, dest);
     messenger->generic.jxta_send = messenger_send;
     messenger->peerid = get_peerid_from_endpoint_address(dest);
 

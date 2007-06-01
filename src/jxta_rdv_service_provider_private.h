@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_provider_private.h,v 1.14 2006/09/01 22:52:33 bondolo Exp $
+ * $Id: jxta_rdv_service_provider_private.h,v 1.14.4.3 2006/12/02 08:17:50 slowhog Exp $
  */
 
 #ifndef __JXTA_RDV_SERVICE_PROVIDER_PRIVATE_H__
@@ -62,6 +62,7 @@
 #include "jxta_object_type.h"
 #include "jxta_rdv_service_private.h"
 #include "jxta_rdv_service_provider.h"
+#include "jxta_rdv_diffusion_msg.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -74,20 +75,21 @@ extern "C" {
 * The set of methods that a rdv provider object must implement.
 **/
 struct _jxta_rdv_service_provider_methods {
-    Extends_nothing;    /* could extend Jxta_object but that'd be overkill */
+    Extends_nothing;            /* could extend Jxta_object but that'd be overkill */
 
     Jxta_status(*init) (Jxta_rdv_service_provider * provider, _jxta_rdv_service * service);
     Jxta_status(*start) (Jxta_rdv_service_provider * provider);
     Jxta_status(*stop) (Jxta_rdv_service_provider * provider);
 
-    /******
-     ** Get the list of peers used by the Rendezvous Service with their status.
+    /**
+     * Return the peer record for the specified peer id.
      * 
-     * @param service a pointer to the instance of the Rendezvous Service
-     * @param pAdv a pointer to a pointer that contains the list of peers
-     * @return error code.
-     *******/
-    Jxta_status(*get_peer) (Jxta_rdv_service_provider * provider, Jxta_id *peerid, Jxta_peer **peer);
+     * @param provider The instance of the Rendezvous Service Provider
+     * @param peerid The peerID of the peer sought.
+     * @param peer The result.
+     * @return JXTA_SUCCESS if peer is returned otherwise JXTA_ITEM_NOTFOUND.
+     **/
+    Jxta_status(*get_peer) (Jxta_rdv_service_provider * provider, Jxta_id * peerid, Jxta_peer ** peer);
 
     /******
      ** Get the list of peers used by the Rendezvous Service with their status.
@@ -112,19 +114,21 @@ struct _jxta_rdv_service_provider_methods {
     Jxta_status(*propagate) (Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
                              const char *serviceParam, int ttl);
 
-    /******
-     * Walks a message within the PeerGroup for which the instance of the 
+     /**
+     * Walk a message within the PeerGroup for which the instance of the 
      * Rendezvous Service is running in.
      *
-     * @param service a pointer to the instance of the Rendezvous Service
+     * @param rdv a pointer to the instance of the Rendezvous Service
      * @param msg the Jxta_message* to propagate.
-     * @param addr An EndpointAddress that defines on which address the message is destinated
-     * to. Note that only the Service Name and Service Parameter of the EndpointAddress is used.
-     * @param ttl Maximum number of peers the propagated message can go through.
+     * @param serviceName pointer to a string containing the name of the service 
+     * on which the listener is listening on.
+     * @param serviceParam pointer to a string containing the parameter associated
+     * to the serviceName.
+     * @param target_hash The hash value which is being sought.
      * @return error code.
-     *******/
+     **/
     Jxta_status(*walk) (Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
-                        const char *serviceParam);
+                        const char *serviceParam, const char *target_hash);
 };
 
 typedef struct _jxta_rdv_service_provider_methods _jxta_rdv_service_provider_methods;
@@ -141,17 +145,28 @@ struct _jxta_rdv_service_provider {
     Extends(Jxta_object);
     _jxta_rdv_service_provider_methods const *methods;  /* Pointer to the implementation set of methods. */
 
+    _jxta_rdv_service *service;
+
     apr_thread_mutex_t *mutex;
     apr_pool_t *pool;
 
-    char *messageElementName;
-    char *groupiduniq;
-    JString *localPeerIdJString;
+    Jxta_PG *pg;
+    apr_thread_pool_t *thread_pool;
+
+    char *gid_uniq_str;
+    char *assigned_id_str;
+    Jxta_id *local_peer_id;
+    Jxta_PA *local_pa;
 
     Jxta_peerview *peerview;
-    Jxta_listener *listener_propagate;
 
-    _jxta_rdv_service *service;
+    void *ep_cookie;
+
+    /** Pipe service of the *PARENT* peergroup **/
+    Jxta_PG *parentgroup;
+    Jxta_PGID *parentgid;
+    Jxta_pipe_service *pipes;
+    Jxta_pipe *seed_pipe;
 };
 
 typedef struct _jxta_rdv_service_provider _jxta_rdv_service_provider;
@@ -160,7 +175,8 @@ typedef struct _jxta_rdv_service_provider _jxta_rdv_service_provider;
     Cosntructor for Rendezvous providers.
 **/
 extern _jxta_rdv_service_provider *jxta_rdv_service_provider_construct(_jxta_rdv_service_provider * self,
-                                                                       const _jxta_rdv_service_provider_methods * methods);
+                                                                       const _jxta_rdv_service_provider_methods * methods,
+                                                                       apr_pool_t * pool);
 
 /**
     Standard Destructor
@@ -192,22 +208,33 @@ extern _jxta_rdv_service *jxta_rdv_service_provider_get_service_priv(Jxta_rdv_se
 **/
 extern Jxta_peerview *jxta_rdv_service_provider_get_peerview_priv(Jxta_rdv_service_provider * provider);
 
-extern Jxta_status jxta_rdv_service_provider_update_prophdr(Jxta_rdv_service_provider * provider, Jxta_message * msg,
-                                                            const char *serviceName, const char *serviceParam, int ttl);
+/**
+    
+**/
+extern Jxta_status jxta_rdv_service_provider_get_diffusion_header(Jxta_message * msg, Jxta_rdv_diffusion ** header);
+
+/**
+    
+**/
+extern Jxta_status jxta_rdv_service_provider_set_diffusion_header(Jxta_message * msg, Jxta_rdv_diffusion * header);
+
+/**
+    
+**/
+extern Jxta_status jxta_rdv_service_provider_prop_handler(Jxta_rdv_service_provider * myself, Jxta_message * msg,
+                                                          Jxta_rdv_diffusion * header);
 
 /**
 *   Propagates a message to the set of peers associated with this rendezvous
 *   provider instance. These peers will typically be either the rdv server or
 *   rdv clients.
 **/
-extern Jxta_status jxta_rdv_service_provider_prop_to_peers(Jxta_rdv_service_provider * provider, Jxta_message * msg,
-                                                           Jxta_boolean andEndpoint);
-
+extern Jxta_status jxta_rdv_service_provider_prop_to_peers(Jxta_rdv_service_provider * provider, Jxta_message * msg);
 
 /**
-*   Listener for incoming propagate messages.
+*   Broadcast a seed request.
 **/
-extern void JXTA_STDCALL jxta_rdv_service_provider_prop_listener(Jxta_object * obj, void *arg);
+extern Jxta_status provider_send_seed_request(Jxta_rdv_service_provider * me);
 
 #ifdef __cplusplus
 #if 0

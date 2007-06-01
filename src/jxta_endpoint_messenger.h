@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_messenger.h,v 1.6 2005/09/21 21:16:46 slowhog Exp $
+ * $Id: jxta_endpoint_messenger.h,v 1.6.4.1 2006/12/23 19:22:09 slowhog Exp $
  */
 
 
@@ -76,7 +76,7 @@ struct _JxtaEndpointMessenger {
     JXTA_OBJECT_HANDLE;
     Jxta_endpoint_address *address;
 
-     Jxta_status(*jxta_send) (JxtaEndpointMessenger *, Jxta_message *);
+    Jxta_status(*jxta_send) (JxtaEndpointMessenger *, Jxta_message *);
 };
 
 

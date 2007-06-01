@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peer_private.h,v 1.17 2006/09/06 01:12:32 bondolo Exp $
+ * $Id: jxta_peer_private.h,v 1.17.4.1 2006/12/02 08:17:49 slowhog Exp $
  */
 
 
@@ -108,12 +108,6 @@ extern Jxta_status  jxta_peer_lock(Jxta_peer * p);
  * Protected method for sub-classes.
  */
 extern Jxta_status  jxta_peer_unlock(Jxta_peer * p);
-
-extern Jxta_endpoint_address * jxta_peer_get_address_priv(Jxta_peer * p);
-
-extern Jxta_id * jxta_peer_get_peerid_priv(Jxta_peer * p);
-
-extern Jxta_PA * jxta_peer_get_adv_priv(Jxta_peer * p);
 
 #ifdef __cplusplus
 #if 0

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_query.c,v 1.23 2006/10/04 23:45:05 exocetrick Exp $
+ * $Id: jxta_query.c,v 1.25 2006/10/31 18:12:47 slowhog Exp $
   *
   */
 #include <stdlib.h>
@@ -383,41 +383,20 @@ static Jxta_status query_xform_query(Jxta_query_context * jctx, const char *quer
 static Jxta_status query_find_Ns(Jxta_query_context * jctx, const char *q, Jxta_boolean appendQuery)
 {
     Jxta_boolean bns = FALSE;
-    char prefix[64];
-    char name[64];
     int i = 0;
 
-    memset(prefix, 0, 64);
-    memset(name, 0, 64);
-    for (; *q; q++) {
-        if (*q == ':') {
-            bns = TRUE;
-        }
-        if (('[' == *q) || ('/' == *q) || bns) {
-            q++;
-            prefix[i++] = '\0';
-            break;
-        } else {
-            prefix[i++] = *q;
-        }
+    jstring_reset(jctx->prefix, NULL);
+    jstring_reset(jctx->name, NULL);
+
+    for (i = 0; q[i] != '\0' && q[i] != ':' && q[i] != '[' && q[i] != '/'; i++);
+    if (':' == q[i]) {
+        jstring_append_0(jctx->prefix, q, i);
+        q += i + 1;
+        for (i = 0; q[i] != '\0' && q[i] != '[' && q[i] != '/'; i++);
     }
-    if (bns) {
-        jstring_reset(jctx->prefix, NULL);
-    }
-    i = 0;
-    for (; *q; q++) {
-        if (*q == '[' || *q == '/') {
-            break;
-        } else {
-            name[i++] = *q;
-        }
-    }
-    if (bns) {
-        jstring_reset(jctx->prefix, NULL);
-        jstring_append_2(jctx->prefix, (char const *) &prefix);
-        jstring_reset(jctx->name, NULL);
-        jstring_append_2(jctx->name, (char const *) &name);
-    }
+    jstring_append_0(jctx->name, q, i);
+    q += i;
+
     if (appendQuery) {
         jstring_reset(jctx->query, NULL);
         jstring_append_2(jctx->query, q);
@@ -428,32 +407,19 @@ static Jxta_status query_find_Ns(Jxta_query_context * jctx, const char *q, Jxta_
 
 static void query_split_Ns(Jxta_query_context * jctx, const char *q, Jxta_boolean bPrefix, Jxta_boolean bName)
 {
-    char work[64];
     int i = 0;
 
-    memset(work, 0, 64);
-    for (; *q; q++) {
-        if (*q == ':') {
-            work[i++] = '\0';
-            if (bPrefix) {
-                jstring_reset(jctx->prefix, NULL);
-                jstring_append_2(jctx->prefix, work);
-            }
-            q++;
-            break;
-        } else {
-            work[i++] = *q;
+    for (i = 0; q[i] != '\0' && q[i] != ':'; i++);
+    if (':' == q[i]) {
+        if (bPrefix) {
+            jstring_reset(jctx->prefix, NULL);
+            jstring_append_0(jctx->prefix, q, i);
         }
+        q += i + 1;
     }
-    i = 0;
-    memset(work, 0, 64);
-    for (; *q; q++) {
-        work[i++] = *q;
-    }
-    work[i] = '\0';
     if (bName) {
         jstring_reset(jctx->name, NULL);
-        jstring_append_2(jctx->name, work);
+        jstring_append_2(jctx->name, q);
     }
 }
 
@@ -938,3 +904,5 @@ static void query_examine_object(Jxta_query_context * jctx, xmlXPathObjectPtr cu
         break;
     }
 }
+
+/* vim: set ts=4 sw=4 et tw=130: */

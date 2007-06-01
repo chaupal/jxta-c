@@ -86,8 +86,7 @@ include_HEADERS = EndpointRouter.h          \
                   jxta_routea.h             \
                   jxta_relay.h              \
                   jxta_cred_null.h          \
-                  jxta_pm.h                 \
-                  jxta_walk_msg.h           \
+                  jxta_rdv_diffusion_msg.h  \
                   jxta_lease_request_msg.h \
                   jxta_lease_response_msg.h \
                   jxta_rm.h                 \
@@ -151,6 +150,8 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_rdv_service_adhoc.c       \
                      jxta_rdv_service_client.c      \
                      jxta_rdv_service_server.c      \
+                     jxta_rdv_lease_options.h       \
+                     jxta_rdv_lease_options.c       \
                      jxta_endpoint_config_adv.c     \
                      jxta_endpoint_service.c        \
                      jxta_endpoint_service_priv.h   \
@@ -176,6 +177,14 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_peer.c                    \
                      jxta_peerview.c                \
 		     jxta_peerview_priv.h           \
+                     jxta_peerview_ping_msg.c       \
+                     jxta_peerview_ping_msg.h       \
+                     jxta_peerview_pong_msg.c       \
+                     jxta_peerview_pong_msg.h       \
+                     jxta_peerview_address_request_msg.c       \
+                     jxta_peerview_address_request_msg.h       \
+                     jxta_peerview_address_assign_msg.c       \
+                     jxta_peerview_address_assign_msg.h       \
                      jxta_peergroup.c               \
                      jxta_service.c                 \
                      jxta_module.c                  \
@@ -194,8 +203,7 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_debug.c                   \
                      jxta_rm.c                      \
                      jxta_router_client.c           \
-                     jxta_pm.c                      \
-                     jxta_walk_msg.c                \
+                     jxta_rdv_diffusion_msg.c       \
                      jxta_lease_request_msg.c       \
                      jxta_lease_response_msg.c      \
                      jxta_listener.c                \

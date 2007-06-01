@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: route_adv_test.c,v 1.11 2006/08/28 19:36:47 bondolo Exp $
+ * $Id: route_adv_test.c,v 1.12 2006/10/24 17:53:36 bondolo Exp $
  */
 
 #include <stdio.h>
@@ -80,64 +80,94 @@ const char *test_route_construction(void) {
 
 const char *test_route_serialization(void) {
     Jxta_status result = JXTA_SUCCESS;
-    Jxta_RouteAdvertisement *adv;
+    Jxta_RouteAdvertisement *ad;
+    Jxta_advertisement *raw_ad;
     FILE *testfile;
     JString *dump1;
     JString *dump2;
+    Jxta_vector* child_advs = NULL;
 
-    adv = jxta_RouteAdvertisement_new();
+    ad = jxta_RouteAdvertisement_new();
     
-    if( NULL == adv ) {
+    if( NULL == ad ) {
         return FILEANDLINE;
     }
 
     testfile = fopen( "RA.xml", "r");
-
-    if( NULL == testfile ) {
-        return FILEANDLINE;
-    }
     
-    result = jxta_RouteAdvertisement_parse_file(adv, testfile);
+    result = jxta_PA_parse_file(ad, testfile);
     fclose(testfile);
 
     if( JXTA_SUCCESS != result ) {
         return FILEANDLINE;
     }    
 
-    if( !JXTA_OBJECT_CHECK_VALID(adv) ) {
+    if( !JXTA_OBJECT_CHECK_VALID(ad) ) {
         return FILEANDLINE;
     }
 
-    result = jxta_RouteAdvertisement_get_xml(adv, &dump1);
+    result = jxta_RouteAdvertisement_get_xml(ad, &dump1);
     if( JXTA_SUCCESS != result ) {
         return FILEANDLINE;
-    } 
-       
-    JXTA_OBJECT_RELEASE(adv);
-    adv = NULL;
+    }    
+    JXTA_OBJECT_RELEASE(ad);
+    ad = NULL;
 
-    adv = jxta_RouteAdvertisement_new();
-    result = jxta_RouteAdvertisement_parse_charbuffer( adv, jstring_get_string(dump1), jstring_length(dump1) );
+    ad = jxta_RouteAdvertisement_new();
+    result = jxta_RouteAdvertisement_parse_charbuffer( ad, jstring_get_string(dump1), jstring_length(dump1) );
     if( JXTA_SUCCESS != result ) {
         return FILEANDLINE;
     }    
 
-    if( !JXTA_OBJECT_CHECK_VALID(adv) ) {
+    if( !JXTA_OBJECT_CHECK_VALID(ad) ) {
         return FILEANDLINE;
     }
 
-    result = jxta_advertisement_get_xml(adv, &dump2);
+    result = jxta_advertisement_get_xml((Jxta_advertisement*) ad, &dump2);
     if( JXTA_SUCCESS != result ) {
         return FILEANDLINE;
-    } 
+    }
     
     if( 0 != jstring_equals( dump1, dump2 ) ) {
         return FILEANDLINE;
     }
-
-    JXTA_OBJECT_RELEASE(adv);
-    JXTA_OBJECT_RELEASE(dump1);
     JXTA_OBJECT_RELEASE(dump2);
+
+    raw_ad = jxta_advertisement_new();
+    result = jxta_RouteAdvertisement_parse_charbuffer(raw_ad, jstring_get_string(dump1), jstring_length(dump1));
+
+    if( !JXTA_OBJECT_CHECK_VALID(raw_ad) ) {
+        return FILEANDLINE;
+    }
+    
+    jxta_advertisement_get_advs( raw_ad, &child_advs );
+    if( NULL == child_advs ) {
+        return FILEANDLINE;
+    }
+    
+    if( 1 != jxta_vector_size( child_advs ) ) {
+        return FILEANDLINE;
+    }
+    
+    result = jxta_vector_get_object_at( child_advs, JXTA_OBJECT_PPTR(&ad), 0 );
+    JXTA_OBJECT_RELEASE(child_advs);
+    if( JXTA_SUCCESS != result ) {
+        return FILEANDLINE;
+    }
+
+    result = jxta_advertisement_get_xml((Jxta_advertisement*) ad, &dump2);
+    if( JXTA_SUCCESS != result ) {
+        return FILEANDLINE;
+    }
+    
+    if( 0 != jstring_equals( dump1, dump2 ) ) {
+        return FILEANDLINE;
+    }
+    JXTA_OBJECT_RELEASE(dump2);
+
+    JXTA_OBJECT_RELEASE(raw_ad);
+    JXTA_OBJECT_RELEASE(ad);
+    JXTA_OBJECT_RELEASE(dump1);
 
     return NULL;
 }

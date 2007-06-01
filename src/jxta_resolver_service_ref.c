@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_service_ref.c,v 1.118 2006/10/02 21:33:51 slowhog Exp $
+ * $Id: jxta_resolver_service_ref.c,v 1.118.2.1 2007/04/25 18:39:49 slowhog Exp $
  */
 
 static const char *__log_cat = "RSLVR";
@@ -86,7 +86,6 @@ typedef struct {
     Jxta_PG *group;
     Jxta_rdv_service *rendezvous;
     Jxta_endpoint_service *endpoint;
-    Jxta_discovery_service *discovery;
     Jxta_hashtable *queryhandlers;
     Jxta_hashtable *responsehandlers;
     Jxta_hashtable *srdihandlers;
@@ -268,8 +267,8 @@ static Jxta_status start(Jxta_module * resolver, const char *argv[])
 
     if (argv) {
     }
+
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Starting ...\n");
-    jxta_PG_get_discovery_service(self->group, &(self->discovery));
 
     rv = endpoint_service_add_recipient(self->endpoint, &self->ep_cookies[0], self->instanceName,
                                         self->outque, resolver_service_query_cb, self);
@@ -311,11 +310,6 @@ static void stop(Jxta_module * resolver)
         endpoint_service_remove_recipient(self->endpoint, self->ep_cookies[i]);
     }
 
-    if (NULL != self->discovery) {
-        JXTA_OBJECT_RELEASE(self->discovery);
-        self->discovery = NULL;
-    }
-
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Stopped.\n");
     /* nothing special to stop */
 }
@@ -332,7 +326,6 @@ static void stop(Jxta_module * resolver)
  */
 static void get_mia(Jxta_service * resolver, Jxta_advertisement ** mia)
 {
-
     Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
     PTValid(self, Jxta_resolver_service_ref);
 
@@ -370,6 +363,7 @@ Jxta_status registerQueryHandler(Jxta_resolver_service * resolver, JString * nam
     char const *hashname;
     Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
     PTValid(self, Jxta_resolver_service_ref);
+
     hashname = jstring_get_string(name);
 
     if (strlen(hashname) != 0) {
@@ -416,6 +410,7 @@ Jxta_status registerSrdiHandler(Jxta_resolver_service * resolver, JString * name
     char const *hashname;
     Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
     PTValid(self, Jxta_resolver_service_ref);
+
     hashname = jstring_get_string(name);
 
     if (strlen(hashname) != 0) {
@@ -438,7 +433,6 @@ static Jxta_status unregisterSrdiHandler(Jxta_resolver_service * resolver, JStri
     Jxta_object *ignore = 0;
     char const *hashname;
     Jxta_status status;
-
     Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
     PTValid(self, Jxta_resolver_service_ref);
 
@@ -694,7 +688,12 @@ static void mru_check(Jxta_resolver_service_ref * me, ResolverQuery * query, Jxt
     me->mru[me->mru_pos++] = JXTA_OBJECT_SHARE(peerid);
     if (me->mru_pos >= me->mru_capacity) {
         me->mru_pos = 0;
+    } 
+	
+	if (me->mru_size < me->mru_capacity) {
+		me->mru_size++;
     }
+
     apr_thread_mutex_unlock(me->mutex);
 
     route = jxta_endpoint_service_get_local_route(me->endpoint);
@@ -770,7 +769,6 @@ static Jxta_status sendResponse(Jxta_resolver_service * resolver, ResolverRespon
 
 static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * message, Jxta_id * peerid)
 {
-
     Jxta_message *msg = NULL;
     Jxta_message_element *msgElem = NULL;
     Jxta_endpoint_address *address = NULL;
@@ -975,9 +973,6 @@ void jxta_resolver_service_ref_destruct(Jxta_resolver_service_ref * self)
     }
     if (self->endpoint != 0) {
         JXTA_OBJECT_RELEASE(self->endpoint);
-    }
-    if (self->discovery != 0) {
-        JXTA_OBJECT_RELEASE(self->discovery);
     }
     if (self->localPeerId != 0) {
         JXTA_OBJECT_RELEASE(self->localPeerId);
@@ -1385,7 +1380,6 @@ static Jxta_status JXTA_STDCALL resolver_service_srdi_cb(Jxta_object * obj, void
  */
 static long getid(Jxta_resolver_service_ref * resolver)
 {
-
     PTValid(resolver, Jxta_resolver_service_ref);
     apr_thread_mutex_lock(resolver->mutex);
     resolver->query_id++;
@@ -1397,7 +1391,6 @@ static long getid(Jxta_resolver_service_ref * resolver)
 #ifdef GUNZIP_ENABLED
 static int zip_uncompress(Byte * dest, uLong * destLen, Byte * source, uLong sourceLen)
 {
-
     z_stream stream;
     int err;
     stream.next_in = (Bytef *) source;

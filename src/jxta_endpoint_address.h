@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_address.h,v 1.20 2006/08/20 20:21:07 bondolo Exp $
+ * $Id: jxta_endpoint_address.h,v 1.20.4.1 2006/12/23 19:16:25 slowhog Exp $
  */
 
 
@@ -231,13 +231,23 @@ JXTA_DECLARE(char *) jxta_endpoint_address_get_transport_addr(Jxta_endpoint_addr
 JXTA_DECLARE(char *) jxta_endpoint_address_get_recipient_cstr(Jxta_endpoint_address * addr);
 
 /**
- ** Checks of two Jxta_endpoint_address refers to the same Endpoint Address.
- **
- ** @param addr1 pointer to a Jxta_endpoint_address
- ** @param addr2 pointer to a Jxta_endpoint_address
- ** @return TRUE if the two Jxta_endpoint_address are equal, FALSE otherwise.
- **/
+ * Checks of two Jxta_endpoint_address refers to the same Endpoint Address.
+ *
+ * @param addr1 pointer to a Jxta_endpoint_address
+ * @param addr2 pointer to a Jxta_endpoint_address
+ * @return TRUE if the two Jxta_endpoint_address are equal, FALSE otherwise.
+ */
 JXTA_DECLARE(Jxta_boolean) jxta_endpoint_address_equals(Jxta_endpoint_address * addr1, Jxta_endpoint_address * addr2);
+
+/**
+ * Checks of two Jxta_endpoint_address refers to the same transport address.
+ *
+ * @param addr1 pointer to a Jxta_endpoint_address
+ * @param addr2 pointer to a Jxta_endpoint_address
+ * @return TRUE if the two Jxta_endpoint_address are equal, FALSE otherwise.
+ */
+JXTA_DECLARE(Jxta_boolean) jxta_endpoint_address_transport_addr_equals(Jxta_endpoint_address * addr1, 
+                                                                       Jxta_endpoint_address * addr2);
 
 /* deprecated APIs */
 #define jxta_endpoint_address_new1 jxta_endpoint_address_new_1

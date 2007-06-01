@@ -51,7 +51,13 @@ bin_PROGRAMS = jstring_test	    \
 	       jxta_server_tunnel   \
 	       jxta_client_tunnel   \
 	       pg_start_stop_test   \
-	       npg_test                
+	       npg_test             \
+	       rdv_lease_options_test \
+	       peerview_ping_msg_test \
+	       peerview_pong_msg_test \
+	       peerview_address_request_msg_test \
+	       peerview_address_assign_msg_test \
+               rdv_diffusion_msg_test    
 
 LDADD = \
 	$(top_builddir)/src/libjxta.la \
@@ -91,6 +97,10 @@ srdi_test_SOURCES	     = srdi_test.c
 srdi_test.0:	srdi_test.c
 	$(COMPILE) -DSTANDALONE -o srdi_test.0 -c $(srcdir)/srdi_test.c
 
+rdv_diffusion_msg_test_SOURCES	     = rdv_diffusion_msg_test.c unittest_jxta_func.c
+rdv_diffusion_msg_test.o:	rdv_diffusion_msg_test.c
+	$(COMPILE) -DSTANDALONE -o rdv_diffusion_msg_test.o -c $(srcdir)/rdv_diffusion_msg_test.c
+
 pa_adv_test_SOURCES	     = pa_adv_test.c unittest_jxta_func.c
 pa_adv_test.o:	pa_adv_test.c
 	$(COMPILE) -DSTANDALONE -o pa_adv_test.o -c $(srcdir)/pa_adv_test.c
@@ -107,11 +117,11 @@ lease_msg_test_SOURCES	     = lease_msg_test.c unittest_jxta_func.c
 lease_msg_test.o:  lease_msg_test.c
 	$(COMPILE) -DSTANDALONE -o lease_msg_test.o -c $(srcdir)/lease_msg_test.c
 
-rr_adv_test_SOURCES	     = rr_adv_test.c
+rr_adv_test_SOURCES	     = rr_adv_test.c unittest_jxta_func.c
 rr_adv_test.o:	rr_adv_test.c
 	$(COMPILE) -DSTANDALONE -o rr_adv_test.o -c $(srcdir)/rr_adv_test.c
 
-rq_adv_test_SOURCES	     = rq_adv_test.c
+rq_adv_test_SOURCES	     = rq_adv_test.c unittest_jxta_func.c
 rq_adv_test.o:	rq_adv_test.c
 	$(COMPILE) -DSTANDALONE -o rq_adv_test.o -c $(srcdir)/rq_adv_test.c
 
@@ -223,6 +233,26 @@ jxta_join_test_SOURCES	     = jxta_join_test.c
 jxta_join_test.o:  jxta_join_test.c
 	$(COMPILE) -DSTANDALONE -o jxta_join_test.o -c $(srcdir)/jxta_join_test.c
 
+rdv_lease_options_test_SOURCES	     = rdv_lease_options_test.c unittest_jxta_func.c
+rdv_lease_options_test.o:  rdv_lease_options_test.c 
+	$(COMPILE) -DSTANDALONE -o rdv_lease_options_test.o -c $(srcdir)/rdv_lease_options_test.c
+
+peerview_ping_msg_test_SOURCES	     = peerview_ping_msg_test.c unittest_jxta_func.c
+peerview_ping_msg_test.o:  peerview_ping_msg_test.c 
+	$(COMPILE) -DSTANDALONE -o peerview_ping_msg_test.o -c $(srcdir)/peerview_ping_msg_test.c
+
+peerview_pong_msg_test_SOURCES	     = peerview_pong_msg_test.c unittest_jxta_func.c
+peerview_pong_msg_test.o:  peerview_pong_msg_test.c 
+	$(COMPILE) -DSTANDALONE -o peerview_pong_msg_test.o -c $(srcdir)/peerview_pong_msg_test.c
+
+peerview_address_request_msg_test_SOURCES	     = peerview_address_request_msg_test.c unittest_jxta_func.c
+peerview_address_request_msg_test.o:  peerview_address_request_msg_test.c 
+	$(COMPILE) -DSTANDALONE -o peerview_address_request_msg_test.o -c $(srcdir)/peerview_address_request_msg_test.c
+
+peerview_address_assign_msg_test_SOURCES	     = peerview_address_assign_msg_test.c unittest_jxta_func.c
+peerview_address_assign_msg_test.o:  peerview_address_assign_msg_test.c 
+	$(COMPILE) -DSTANDALONE -o peerview_address_assign_msg_test.o -c $(srcdir)/peerview_address_assign_msg_test.c
+
 cm_test_SOURCES		     = cm_test.c
 cm_test.o:  cm_test.c
 	$(COMPILE) -DSTANDALONE -o cm_test.o -c $(srcdir)/cm_test.c
@@ -247,7 +277,13 @@ unit_test_runner_extra_obj = jstring_test_comp.o	    \
 			   dq_adv_test_comp.o               \
 			   apa_adv_test_comp.o               \
 			   route_adv_test_comp.o               \
-			   lease_msg_test_comp.o            
+			   lease_msg_test_comp.o            \
+			   rdv_lease_options_test_comp.o            \
+			   peerview_ping_msg_test_comp.o            \
+			   peerview_pong_msg_test_comp.o            \
+			   peerview_address_request_msg_test_comp.o            \
+			   peerview_address_assign_msg_test_comp.o            \
+			   rdv_diffusion_msg_test_comp.o
 
 unit_test_runner_DEPENDENCIES = $(unit_test_runner_extra_obj)
 
@@ -281,9 +317,21 @@ route_adv_test_comp.o:  route_adv_test.c
 	$(COMPILE) -o route_adv_test_comp.o -c $(srcdir)/route_adv_test.c
 pa_adv_test_comp.o:  pa_adv_test.c
 	$(COMPILE) -o pa_adv_test_comp.o -c $(srcdir)/pa_adv_test.c
+rdv_diffusion_msg_test_comp.o:  rdv_diffusion_msg_test.c
+	$(COMPILE) -o rdv_diffusion_msg_test_comp.o -c $(srcdir)/rdv_diffusion_msg_test.c
 lease_msg_test_comp.o:  lease_msg_test.c
 	$(COMPILE) -o lease_msg_test_comp.o -c $(srcdir)/lease_msg_test.c
 msg_test_comp.o:  msg_test.c
 	$(COMPILE) -o msg_test_comp.o -c $(srcdir)/msg_test.c
 dq_adv_test_comp.o:  dq_adv_test.c
 	$(COMPILE) -o dq_adv_test_comp.o -c $(srcdir)/dq_adv_test.c
+rdv_lease_options_test_comp.o:  rdv_lease_options_test.c
+	$(COMPILE) -o rdv_lease_options_test_comp.o -c $(srcdir)/rdv_lease_options_test.c
+peerview_ping_msg_test_comp.o:  peerview_ping_msg_test.c
+	$(COMPILE) -o peerview_ping_msg_test_comp.o -c $(srcdir)/peerview_ping_msg_test.c
+peerview_pong_msg_test_comp.o:  peerview_pong_msg_test.c
+	$(COMPILE) -o peerview_pong_msg_test_comp.o -c $(srcdir)/peerview_pong_msg_test.c
+peerview_address_request_msg_test_comp.o:  peerview_address_request_msg_test.c
+	$(COMPILE) -o peerview_address_request_msg_test_comp.o -c $(srcdir)/peerview_address_request_msg_test.c
+peerview_address_assign_msg_test_comp.o:  peerview_address_assign_msg_test.c
+	$(COMPILE) -o peerview_address_assign_msg_test_comp.o -c $(srcdir)/peerview_address_assign_msg_test.c
