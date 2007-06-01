@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<jxta:DiscoveryResponse>
+  <Type>2</Type>
+  <Count>3</Count> 
+  <PeerAdv>
+    &lt;?xml version="1.0"?>
+    &lt;!DOCTYPE jxta:PA>
+    &lt;jxta:PA xmlns:jxta="http://jxta.org">
+    &lt;PID>
+    urn:jxta:uuid-59616261646162614A7874615032503304BD268FA4764960AB93A53D7F15044503
+    &lt;/PID>
+    ... omitted ...
+    &lt;/jxta:PA>
+  </PeerAdv>
+  <Attr>Name</Attr>
+  <Value>*sidus*</Value>
+
+  <Response Expiration="36000000">
+    &lt;?xml version="1.0"?>
+    &lt;!DOCTYPE jxta:PipeAdvertisement>
+    &lt;jxta:PipeAdvertisement xmlns:jxta="http://jxta.org">
+    &lt;Id>
+    urn:jxta:uuid-094AB61B99C14AB694D5BFD56C66E512FF7980EA1E6F4C238A26BB362B34D1F104
+    &lt;/Id>
+    &lt;Type>
+    JxtaUnicastSecure
+    &lt;/Type>
+    &lt;Name>
+    JxtaTalkUserName.sidus
+    &lt;/Name>
+    &lt;/jxta:PipeAdvertisement>
+  </Response>
+
+  <Response Expiration="36000000">
+    &lt;?xml version="1.0"?>
+    &lt;!DOCTYPE jxta:PipeAdvertisement>
+    &lt;jxta:PipeAdvertisement xmlns:jxta="http://jxta.org">
+    &lt;Id>
+    urn:jxta:uuid-094AB61B99C14AB694D5BFD56C66E512FF7980EA1E6F4C238A26BB362B34D1F104
+    &lt;/Id>
+    &lt;Type>
+    JxtaUnicastSecure
+    &lt;/Type>
+    &lt;Name>
+    JxtaTalkUserName.sidus
+    &lt;/Name>
+    &lt;/jxta:PipeAdvertisement>
+  </Response>
+
+  <Response Expiration="36000000">
+    &lt;?xml version="1.0"?>
+    &lt;!DOCTYPE jxta:PipeAdvertisement>
+    &lt;jxta:PipeAdvertisement xmlns:jxta="http://jxta.org">
+    &lt;Id>
+    urn:jxta:uuid-094AB61B99C14AB694D5BFD56C66E512FF7980EA1E6F4C238A26BB362B34D1F104
+    &lt;/Id>
+    &lt;Type>
+    JxtaUnicastSecure
+    &lt;/Type>
+    &lt;Name>
+    JxtaTalkUserName.sidus
+    &lt;/Name>
+    &lt;/jxta:PipeAdvertisement>
+  </Response>
+
+
+</jxta:DiscoveryResponse>

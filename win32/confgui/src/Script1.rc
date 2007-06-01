@@ -1,0 +1,175 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+// Generated Help ID header file
+#define APSTUDIO_HIDDEN_SYMBOLS
+//#include "resource.hm"
+//#undef APSTUDIO_HIDDEN_SYMBOLS
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+IDD_PEERNAME DIALOGEX 0, 0, 210, 154
+STYLE WS_CHILD | WS_VISIBLE | WS_CAPTION
+CAPTION "Property Page"
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX        "Peer Name",IDC_STATIC,7,7,196,140
+    EDITTEXT        IDC_PEERNAME,68,25,55,14,ES_AUTOHSCROLL,0,IDC_PEERNAME
+    EDITTEXT        IDC_HOSTNAME,68,46,56,14,ES_AUTOHSCROLL
+    LTEXT           "(mandatory)",IDC_STATIC,131,27,53,12
+    LTEXT           "(mandatory)",IDC_STATIC,131,48,53,12
+    LTEXT           "Peer Name",IDC_STATIC,26,27,38,14
+    LTEXT           "Host Name",IDC_STATIC,23,49,36,8
+    CONTROL         "Debug mode",IDC_DEBUG,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,32,75,95,10
+END
+IDD_RENDEZVOUS DIALOG DISCARDABLE  0, 0, 210, 154
+STYLE WS_CHILD | WS_DISABLED | WS_CAPTION
+CAPTION "Property Page"
+FONT 8, "MS Sans Serif"
+BEGIN
+    COMBOBOX        IDC_HTTP_RENDEZVOUS_COMBO,15,101,111,30,CBS_DROPDOWN | 
+                    CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "HTTP Rendezvous",IDC_STATIC,7,88,196,59
+    CONTROL         "Act as JXTA Rendezvous Peer",IDC_ACT_AS_PEER,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,7,123,10
+    LISTBOX         IDC_HTTP_RENDEZVOUS_LIST,15,113,112,28,LBS_SORT | 
+                    LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "+",IDC_HTTP_RENDEZVOUS_PLUS_BUTTON,127,101,20,14
+    PUSHBUTTON      "-",IDC_HTTP_RENDEZVOUS_MINUS_BUTTON,127,114,20,14
+    GROUPBOX        "TCP Rendezvous",IDC_STATIC,7,20,196,64
+    LISTBOX         IDC_TCP_RENDEZVOUS_LIST,14,49,112,28,LBS_SORT | 
+                    LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_TCP_RENDEZVOUS_COMBO,14,36,112,30,CBS_DROPDOWN | 
+                    CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "+",IDC_TCP_RENDEZVOUS_PLUS_BUTTON,126,36,20,14
+    PUSHBUTTON      "-",IDC_TCP_RENDEZVOUS_MINUS_BUTTON,126,51,20,14
+END
+IDD_NETWORK DIALOG DISCARDABLE  0, 0, 210, 154
+STYLE WS_CHILD | WS_DISABLED | WS_CAPTION
+CAPTION "Property Page"
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX        "TCP Settings",IDC_STATIC,7,7,196,62
+    GROUPBOX        "HTTP Settings",IDC_STATIC,7,74,196,73
+    CONTROL         "Direct LAN connection",IDC_CHECK1,"Button",
+                    BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,67,16,114,10
+    EDITTEXT        IDC_TCPHOSTNAME,111,30,70,14,ES_AUTOHSCROLL
+    LTEXT           "Host name",IDC_STATIC,69,32,39,8
+    EDITTEXT        IDC_TCPPORT,111,47,40,14,ES_AUTOHSCROLL
+    LTEXT           "Port",IDC_STATIC,69,49,14,8
+    EDITTEXT        IDC_HTTP,115,105,70,14,ES_AUTOHSCROLL
+END
+IDD_ROUTER DIALOG DISCARDABLE  0, 0, 210, 154
+STYLE WS_CHILD | WS_DISABLED | WS_CAPTION
+CAPTION "Property Page"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "Act as JXTA Router",IDC_JXTA_ROUTER_CHECK,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,16,21,82,10
+    LTEXT           "(TCP and HTTP must be enabled)",IDC_STATIC,27,30,170,8
+    CONTROL         "Use a router",IDC_USE_ROUTER_CHECK,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,15,41,53,10
+    LTEXT           "(Required if behind firewall)",IDC_STATIC,71,42,121,8
+    GROUPBOX        "Routers",IDC_STATIC,16,58,174,75
+    LISTBOX         IDC_ROUTER_LIST,21,102,112,28,LBS_SORT | 
+                    LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_ROUTER_COMBO,21,86,112,30,CBS_DROPDOWN | CBS_SORT | 
+                    WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "+",IDC_ROUTER_PLUS_BUTTON,135,86,20,14
+    PUSHBUTTON      "-",IDC_ROUTER_MINUS_BUTTON,135,102,20,14
+END
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+#endif    // APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_PEERNAME, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 203
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 147
+    END
+    IDD_RENDEZVOUS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 203
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 147
+    END
+    IDD_NETWORK, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 203
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 147
+    END
+    IDD_ROUTER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 203
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 147
+    END
+END
+#endif    // APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_ICON1               ICON    DISCARDABLE     "icon1.ico"
+IDI_ICON2               ICON    DISCARDABLE     "icon2.ico"
+IDI_ICON3               ICON    DISCARDABLE     "icon3.ico"
+IDI_ICON4               ICON    DISCARDABLE     "icon4.ico"
+IDI_ICON5               ICON    DISCARDABLE     "icon5.ico"
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
