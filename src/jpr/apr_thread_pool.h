@@ -1,16 +1,19 @@
-/* Copyright 2006 Sun Microsystems, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed
+ * with this work for additional information regarding copyright
+ * ownership.  The ASF licenses this file to you under the Apache
+ * License, Version 2.0 (the "License"); you may not use this file
+ * except in compliance with the License.  You may obtain a copy of
+ * the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied.  See the License for the specific language governing
+ * permissions and limitations under the License.
  */
 
 #ifndef APR_THREAD_POOL_H
@@ -222,6 +225,17 @@ APR_DECLARE(apr_size_t) apr_thread_pool_threshold_set(apr_thread_pool_t * me,
  * @return The current threshold
  */
 APR_DECLARE(apr_size_t) apr_thread_pool_threshold_get(apr_thread_pool_t * me);
+
+/**
+ * Get owner of the task currently been executed by the thread. 
+ * @param me The thread pool
+ * @param thd The thread is executing a task 
+ * @param owner Pointer to receive owner of the task.
+ * @return APR_SUCCESS if the owner is retrieved successfully
+ */
+APR_DECLARE(apr_status_t) apr_thread_pool_task_owner_get(apr_thread_pool_t * me,
+                                                         apr_thread_t * thd,
+                                                         void ** owner);
 
 #ifdef __cplusplus
 #if 0

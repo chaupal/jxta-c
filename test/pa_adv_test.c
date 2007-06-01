@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: pa_adv_test.c,v 1.28 2006/09/29 06:52:06 slowhog Exp $
+ * $Id: pa_adv_test.c,v 1.29 2006/10/31 20:44:27 bondolo Exp $
  */
 
 #include <stdio.h>
@@ -92,6 +92,10 @@ const char *test_jxta_pa_serialization(void) {
     }
 
     testfile = fopen( "pa.xml", "r");
+    
+    if( -1 == testfile ) {
+        return FILEANDLINE "File not found.";        
+    }
     
     result = jxta_PA_parse_file(ad, testfile);
     fclose(testfile);

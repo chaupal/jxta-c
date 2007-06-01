@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cm.c,v 1.162 2006/10/11 20:13:48 slowhog Exp $
+ * $Id: jxta_cm.c,v 1.166 2007/01/19 02:09:06 slowhog Exp $
  */
 
 #include <stdlib.h>
@@ -712,12 +712,14 @@ Jxta_cm *cm_new_priv(Jxta_cm * cm, const char *home_directory, Jxta_id * group_i
 
     self->thread_pool = thread_pool;
     /* adjust thread max as needed, this is a temporary hack before we have a solution to configure PG */
-    thd_max = apr_thread_pool_thread_max_get(thread_pool);
-    if (cache_config_threads_maximum(self->cacheConfig) > thd_max) {
-        thd_max += cache_config_threads_needed(self->cacheConfig);
-        thd_max = (thd_max <= cache_config_threads_maximum(self->cacheConfig)) ?
-            thd_max : cache_config_threads_maximum(self->cacheConfig);
-        apr_thread_pool_thread_max_set(thread_pool, thd_max);
+    if (thread_pool) {
+        thd_max = apr_thread_pool_thread_max_get(thread_pool);
+        if (cache_config_threads_maximum(self->cacheConfig) > thd_max) {
+            thd_max += cache_config_threads_needed(self->cacheConfig);
+            thd_max = (thd_max <= cache_config_threads_maximum(self->cacheConfig)) ?
+                thd_max : cache_config_threads_maximum(self->cacheConfig);
+            apr_thread_pool_thread_max_set(thread_pool, thd_max);
+        }
     }
 
     self->folders = jxta_hashtable_new_0(3, FALSE);
@@ -1475,7 +1477,7 @@ Jxta_status cm_remove_advertisements(Jxta_cm * self, const char *folder_name, ch
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "db_id: %d ----------      Ending Transaction inside -- %s\n",
                             dbSpace->conn->log_id, dbSpace->alias);
             if (rv) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d End transaction failed! %i\n%s\n",
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d End transaction failed! %d\n%s\n",
                                 dbSpace->conn->log_id, rv, apr_dbd_error(dbSpace->conn->driver, dbSpace->conn->sql, rv));
             } else if (JXTA_SUCCESS == status) {
                 retry_count = 0;
@@ -2418,7 +2420,7 @@ Jxta_status cm_save(Jxta_cm * self, const char *folder_name, char *primary_key,
             rv = apr_dbd_transaction_end(dbSpace->conn->driver, pool, dbSpace->conn->transaction);
 
             if (rv) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d End transaction failed! %i\n%s\n",
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d End transaction failed! %d\n%s\n",
                                 dbSpace->conn->log_id, rv, apr_dbd_error(dbSpace->conn->driver, dbSpace->conn->sql, rv));
                 goto CommonExit;
             }
@@ -2592,7 +2594,13 @@ static Jxta_status cm_srdi_transaction_save(Jxta_cm_srdi_task * task_parms)
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d End transaction failed in save SRDI! %d\n%s\n",
                                     dbSpace->conn->log_id, rv, apr_dbd_error(dbSpace->conn->driver, dbSpace->conn->sql, rv));
                     /* this should not happen - clean up */
-                    retry_transaction = TRUE;
+                    /* this does happen on a system has an instable disk */
+                    if (--retry_count > 0) {
+                        retry_transaction = TRUE;
+                    } else {
+                        retries_exhausted = TRUE;
+                        retry_transaction = FALSE;
+                    }
                 }
                 if (NULL != xactionElements && retry_transaction) {
                     unsigned int j;
@@ -2638,8 +2646,8 @@ static Jxta_status cm_srdi_transaction_save(Jxta_cm_srdi_task * task_parms)
                     rv = apr_dbd_transaction_start(dbSpace->conn->driver, pool, dbSpace->conn->sql,
                                                    &dbSpace->conn->transaction);
                     if (rv) {
-                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d Start transaction failed on retry! %d \n%s\n", rv,
-                                        dbSpace->conn->log_id, apr_dbd_error(dbSpace->conn->driver, dbSpace->conn->sql, rv));
+                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d Start transaction failed on retry! %d \n%s\n", 
+                                        dbSpace->conn->log_id, rv, apr_dbd_error(dbSpace->conn->driver, dbSpace->conn->sql, rv));
                         goto FINAL_EXIT;
                     }
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "db_id: %d ----      Starting Retry Transaction\n",
@@ -3128,6 +3136,9 @@ Jxta_cache_entry **cm_query_ctx(Jxta_cm * me, Jxta_credential ** scope, int thre
     jstring_append_2(jJoin, SQL_FROM CM_TBL_ELEM_ATTRIBUTES_SRC SQL_JOIN);
     jstring_append_2(jJoin, CM_TBL_ADVERTISEMENTS_JOIN SQL_ON);
     jstring_append_2(jJoin, CM_COL_SRC SQL_DOT CM_COL_AdvId SQL_EQUAL CM_COL_JOIN SQL_DOT CM_COL_AdvId);
+    if (me->sharedDB) {
+        jstring_append_2(jJoin, SQL_AND CM_COL_SRC SQL_DOT CM_COL_GroupID SQL_EQUAL CM_COL_JOIN SQL_DOT CM_COL_GroupID);
+    }
 
     /* concatenate groupIDs within the scope of the query */
     jSQLcmd = jstring_new_2(jstring_get_string(jContext->sqlcmd));
@@ -4696,7 +4707,7 @@ static Jxta_status cm_advertisement_update(DBSpace * dbSpace, JString * jNameSpa
     jstring_append_2(update_sql, SQL_AND CM_COL_GroupID SQL_EQUAL);
     SQL_VALUE(update_sql, dbSpace->jId);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "db_id: %d %s -- update : %s \n", dbSpace->conn->log_id, dbSpace->id,
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d %s -- update : %s \n", dbSpace->conn->log_id, dbSpace->id,
                     jstring_get_string(update_sql));
 
     sqlCmd = jstring_get_string(update_sql);
@@ -4795,7 +4806,7 @@ static Jxta_status cm_advertisement_save(DBSpace * dbSpace, const char *key, Jxt
     jstring_append_2(sqlval, SQL_RIGHT_PAREN);
 
     jstring_append_1(insert_sql, sqlval);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "db_id: %d %s -- Save Adv: %s \n", dbSpace->conn->log_id, dbSpace->id,
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d %s -- Save Adv: %s \n", dbSpace->conn->log_id, dbSpace->id,
                     jstring_get_string(insert_sql));
 
     rv = apr_dbd_query(dbSpace->conn->driver, dbSpace->conn->sql, &nrows, jstring_get_string(insert_sql));
@@ -5181,7 +5192,7 @@ static Jxta_status cm_srdi_item_update(DBSpace * dbSpace, const char *table, JSt
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- Couldn't update rc=%i\n %s \n", dbSpace->conn->log_id,
                         dbSpace->id, rv, jstring_get_string(update_sql));
     } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "db_id: %d %s -- Updated %d - %s \n", dbSpace->conn->log_id, dbSpace->id,
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d %s -- Updated %d - %s \n", dbSpace->conn->log_id, dbSpace->id,
                         nrows, jstring_get_string(update_sql));
     }
 
@@ -5220,7 +5231,7 @@ static Jxta_status cm_delta_entry_update(DBSpace * dbSpace, JString * jHandler, 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- Couldn't update rc=%i\n %s \n", dbSpace->conn->log_id,
                         dbSpace->id, rv, jstring_get_string(update_sql));
     } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "db_id: %d %s -- Updated %d rows - %s \n", dbSpace->conn->log_id,
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d %s -- Updated %d rows - %s \n", dbSpace->conn->log_id,
                         dbSpace->id, nrows, jstring_get_string(update_sql));
     }
 
@@ -5309,7 +5320,7 @@ static Jxta_status cm_item_insert(DBSpace * dbSpace, const char *table, const ch
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- Couldn't insert %s  rv=%i status=%i\n",
                         dbSpace->conn->log_id, dbSpace->id, jstring_get_string(insert_sql), rv, status);
     } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "db_id: %d %s -- Saved %s  rv=%i status=%i\n", dbSpace->conn->log_id,
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d %s -- Saved %s  rv=%i status=%i\n", dbSpace->conn->log_id,
                         dbSpace->id, jstring_get_string(insert_sql), rv, status);
     }
 
@@ -5348,7 +5359,7 @@ static Jxta_status cm_item_delete(DBSpace * dbSpace, const char *table, const ch
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- Couldn't delete %s  rc=%i\n", dbSpace->conn->log_id,
                         dbSpace->id, jstring_get_string(statement), rv);
     } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "db_id: %d %s -- Deleted %i  %s\n", dbSpace->conn->log_id, dbSpace->id,
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d %s -- Deleted %i  %s\n", dbSpace->conn->log_id, dbSpace->id,
                         nrows, jstring_get_string(statement));
     }
 
@@ -5382,7 +5393,7 @@ static Jxta_status cm_sql_delete_with_where(DBSpace * dbSpace, const char *table
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- Couldn't delete rc=%i\n %s \n", dbSpace->conn->log_id,
                         dbSpace->id, rv, jstring_get_string(statement));
     } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "db_id: %d %s -- Deleted %i rows  %s\n", dbSpace->conn->log_id,
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d %s -- Deleted %i rows  %s\n", dbSpace->conn->log_id,
                         dbSpace->id, nrows, jstring_get_string(statement));
     }
     JXTA_OBJECT_RELEASE(statement);
@@ -5416,7 +5427,7 @@ static Jxta_status cm_sql_update_with_where(DBSpace * dbSpace, const char *table
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- Couldn't update rc=%i\n %s \n", dbSpace->conn->log_id,
                         dbSpace->id, rv, jstring_get_string(statement));
     } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "db_id: %d %s -- Updated %i rows  %s\n", dbSpace->conn->log_id,
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d %s -- Updated %i rows  %s\n", dbSpace->conn->log_id,
                         dbSpace->id, nrows, jstring_get_string(statement));
     }
     JXTA_OBJECT_RELEASE(statement);
@@ -5454,7 +5465,7 @@ static Jxta_status cm_expired_records_remove(DBSpace * dbSpace, const char *fold
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- Couldn't delete rc=%i\n %s \n", dbSpace->conn->log_id,
                         dbSpace->id, status, jstring_get_string(where));
     } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "db_id: %d %s -- Deleted ALL -- %s\n", dbSpace->conn->log_id,
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "db_id: %d %s -- Deleted ALL -- %s\n", dbSpace->conn->log_id,
                         dbSpace->id, jstring_get_string(where));
     }
     JXTA_OBJECT_RELEASE(where);
@@ -5673,7 +5684,7 @@ static Jxta_status cm_sql_select(DBSpace * dbSpace, apr_pool_t * pool, const cha
 
     rv = apr_dbd_select(dbSpace->conn->driver, pool, dbSpace->conn->sql, res, jstring_get_string(statement), 0);
     if (rv == 0) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "db_id: %d %s -- %i tuples %s\n", dbSpace->conn->log_id, dbSpace->id,
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d %s -- %i tuples %s\n", dbSpace->conn->log_id, dbSpace->id,
                         apr_dbd_num_tuples(dbSpace->conn->driver, *res), jstring_get_string(statement));
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- error cm_sql_select %i   %s\n", dbSpace->conn->log_id,
@@ -5756,6 +5767,7 @@ static Jxta_status cm_sql_select_join(DBSpace * dbSpace, apr_pool_t * pool, apr_
     jstring_append_2(jJoin, SQL_FROM CM_TBL_ELEM_ATTRIBUTES_SRC SQL_JOIN);
     jstring_append_2(jJoin, CM_TBL_ADVERTISEMENTS_JOIN SQL_ON);
     jstring_append_2(jJoin, CM_COL_SRC SQL_DOT CM_COL_AdvId SQL_EQUAL CM_COL_JOIN SQL_DOT CM_COL_AdvId);
+    jstring_append_2(jJoin, SQL_AND CM_COL_SRC SQL_DOT CM_COL_GroupID SQL_EQUAL CM_COL_JOIN SQL_DOT CM_COL_GroupID);
 
     jGroup = jstring_new_2(SQL_GROUP CM_COL_Advert);
     status = cm_sql_select_join_generic(dbSpace, pool, jJoin, jGroup, res, where, TRUE);

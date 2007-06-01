@@ -64,7 +64,7 @@ extern "C" {
 #endif
 #endif
 
-#include <jxta_cm.h>
+#include "jxta_cm.h"
 
 #define SQL_SELECT " SELECT "
 #define SQL_UPDATE " UPDATE "

@@ -38,7 +38,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib expat.lib libxml2.lib zdll.lib sqlite3.lib wsock32.lib"
+				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib libexpat.lib libxml2.lib zdll.lib sqlite3.lib wsock32.lib"
 				OutputFile="$(OutDir)/jxta.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(APACHE2)\lib&quot;;$(ZLIB)\lib;$(SQLITE3)\lib;$(XML2)\lib;$(OPENSSL)\lib"
@@ -97,7 +97,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib expat.lib libxml2.lib zdll.lib sqlite3.lib wsock32.lib"
+				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib libexpat.lib libxml2.lib zdll.lib sqlite3.lib wsock32.lib"
 				OutputFile="$(OutDir)/jxta.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(APACHE2)\lib&quot;;$(ZLIB)\lib;$(SQLITE3)\lib;$(XML2)\lib;$(OPENSSL)\lib"
@@ -328,6 +328,9 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_rdv_config_adv.c">
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_rdv_lease_options.c">
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_rdv_service.c">
@@ -693,6 +696,9 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_rdv_config_adv.h">
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_rdv_lease_options.h">
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_rdv_service.h">

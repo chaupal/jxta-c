@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_relaya.c,v 1.14 2006/02/15 01:09:45 slowhog Exp $
+ * $Id: jxta_relaya.c,v 1.16 2006/10/31 22:08:54 bondolo Exp $
  */
 
 
@@ -106,6 +106,9 @@ struct _jxta_RelayAdvertisement {
 
 /* Forw decl for un-exported function */
 static void jxta_RelayAdvertisement_delete(Jxta_RelayAdvertisement *);
+
+static Jxta_vector *
+    jxta_RelayAdvertisement_get_indexes(Jxta_advertisement * dummy);
 
 /** Handler functions.  Each of these is responsible for 
  * dealing with all of the character data associated with the 
@@ -201,23 +204,6 @@ static void handleIsServer(void *userdata, const XML_Char * cd, int len)
 /** The get/set functions represent the public
  * interface to the ad class, that is, the API.
  */
-JXTA_DECLARE(char *)
-    jxta_RelayAdvertisement_get_Jxta_RelayAdvertisement(Jxta_RelayAdvertisement * ad)
-{
-    return NULL;
-}
-
-char *JXTA_STDCALL jxta_RelayAdvertisement_get_Jxta_RelayAdvertisement_string(Jxta_advertisement * ad)
-{
-    return NULL;
-}
-
-JXTA_DECLARE(void)
-    jxta_RelayAdvertisement_set_Jxta_RelayAdvertisement(Jxta_RelayAdvertisement * ad, char *name)
-{
-
-}
-
 JXTA_DECLARE(JString *)
     jxta_RelayAdvertisement_get_IsServer(Jxta_RelayAdvertisement * ad)
 {
@@ -282,6 +268,13 @@ JXTA_DECLARE(void)
     ad->Httplist = relays;
 }
 
+JXTA_DECLARE(void)
+    jxta_RelayAdvertisement_add_HttpRelay(Jxta_RelayAdvertisement * ad, JString * relay)
+{
+    jxta_vector_add_object_last( ad->Httplist, (Jxta_object*) relay );
+}
+
+
 JXTA_DECLARE(Jxta_vector *)
     jxta_RelayAdvertisement_get_TcpRelay(Jxta_RelayAdvertisement * ad)
 {
@@ -302,6 +295,13 @@ JXTA_DECLARE(void)
     ad->Tcplist = relays;
 }
 
+JXTA_DECLARE(void)
+    jxta_RelayAdvertisement_add_TcpRelay(Jxta_RelayAdvertisement * ad, JString * relay)
+{
+    jxta_vector_add_object_last( ad->Tcplist, (Jxta_object*) relay );
+}
+
+
 /** Now, build an array of the keyword structs.  Since 
  * a top-level, or null state may be of interest, 
  * let that lead off.  Then, walk through the enums,
@@ -311,10 +311,11 @@ JXTA_DECLARE(void)
  */
 static const Kwdtab Jxta_RelayAdvertisement_tags[] = {
     {"Null", Null_, NULL, NULL, NULL},
-    {"jxta:RelayAdvertisement", Jxta_RelayAdvertisement_, *handleJxta_RelayAdvertisement,
-     *jxta_RelayAdvertisement_get_Jxta_RelayAdvertisement_string, NULL},
+    {"jxta:RelayAdvertisement", Jxta_RelayAdvertisement_, *handleJxta_RelayAdvertisement, NULL, NULL},
     {"isClient", IsClient_, *handleIsClient, *jxta_RelayAdvertisement_get_IsClient_string, NULL},
     {"isServer", IsServer_, *handleIsServer, *jxta_RelayAdvertisement_get_IsServer_string, NULL},
+    {"httpaddress", HttpRelay_, *handleHttpRelay, *jxta_RelayAdvertisement_get_HttpRelay_string, NULL},
+    {"tcpaddress", TcpRelay_, *handleTcpRelay, *jxta_RelayAdvertisement_get_TcpRelay_string, NULL},
     {"httpaddr", HttpRelay_, *handleHttpRelay, *jxta_RelayAdvertisement_get_HttpRelay_string, NULL},
     {"tcpaddr", TcpRelay_, *handleTcpRelay, *jxta_RelayAdvertisement_get_TcpRelay_string, NULL},
     {NULL, 0, 0, NULL, NULL}
@@ -444,49 +445,23 @@ static void jxta_RelayAdvertisement_delete(Jxta_RelayAdvertisement * ad)
 }
 
 
-JXTA_DECLARE(void) jxta_RelayAdvertisement_parse_charbuffer(Jxta_RelayAdvertisement * ad, const char *buf, int len)
+JXTA_DECLARE(Jxta_status) jxta_RelayAdvertisement_parse_charbuffer(Jxta_RelayAdvertisement * ad, const char *buf, int len)
 {
 
-    jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    return jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
 
-JXTA_DECLARE(void) jxta_RelayAdvertisement_parse_file(Jxta_RelayAdvertisement * ad, FILE * stream)
+JXTA_DECLARE(Jxta_status) jxta_RelayAdvertisement_parse_file(Jxta_RelayAdvertisement * ad, FILE * stream)
 {
 
-    jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    return jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
 
-JXTA_DECLARE(Jxta_vector *)
+static Jxta_vector *
     jxta_RelayAdvertisement_get_indexes(Jxta_advertisement * dummy)
 {
     const char *idx[][2] = { {NULL, NULL} };
     return jxta_advertisement_return_indexes(idx[0]);
 }
-
-
-
-#ifdef STANDALONE
-int main(int argc, char **argv)
-{
-    Jxta_RelayAdvertisement *ad;
-    FILE *testfile;
-
-    if (argc != 2) {
-        printf("usage: ad <filename>\n");
-        return -1;
-    }
-
-    ad = jxta_RelayAdvertisement_new();
-
-    testfile = fopen(argv[1], "r");
-    jxta_RelayAdvertisement_parse_file(ad, testfile);
-    fclose(testfile);
-
-    /* jxta_RelayAdvertisement_print_xml(ad,fprintf,stdout); */
-    jxta_RelayAdvertisement_delete(ad);
-
-    return 0;
-}
-#endif
 
 /* vi: set ts=4 sw=4 tw=130 et: */

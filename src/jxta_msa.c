@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_msa.c,v 1.27 2006/09/29 01:28:44 slowhog Exp $
+ * $Id: jxta_msa.c,v 1.28 2006/10/31 19:49:29 bondolo Exp $
  */
 
 static const char *const __log_cat = "MSA";
@@ -235,6 +235,10 @@ static void handlePipeAdvertisement(void *userdata, const XML_Char * cd, int len
 {
     Jxta_MSA *ad = (Jxta_MSA *) userdata;
     Jxta_pipe_adv *pipeadv;
+    
+    if( 0 != len ) {
+        return;
+    }
 
     pipeadv = jxta_pipe_adv_new();
     jxta_MSA_set_PipeAdvertisement(ad, pipeadv);

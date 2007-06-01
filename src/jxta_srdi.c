@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi.c,v 1.34 2006/10/04 21:53:34 slowhog Exp $
+ * $Id: jxta_srdi.c,v 1.35 2007/03/17 15:52:07 mmx2005 Exp $
  */
  
 static const char *__log_cat = "SRDI";
@@ -93,7 +93,7 @@ struct _Jxta_SRDIMessage {
     Jxta_vector *resendEntries;
 };
 
-static void jxta_srdi_message_free(Jxta_SRDIMessage *);
+static void jxta_srdi_message_free(Jxta_object *);
 
 
 /** Handler functions.  Each of these is responsible for
@@ -121,6 +121,7 @@ static void handleJxta_SRDIMessage(void *userdata, const XML_Char * cd, int len)
                 break;
             }
             if (entry->nameSpace) {
+				JXTA_OBJECT_RELEASE(entry);
                 continue;
             }
             
@@ -132,6 +133,7 @@ static void handleJxta_SRDIMessage(void *userdata, const XML_Char * cd, int len)
             } else {
                 entry->nameSpace = jstring_new_2("jxta:ADV");
             }
+			JXTA_OBJECT_RELEASE(entry);
         }
     }
 }
@@ -544,7 +546,7 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new(void)
                                   "jxta:GenSRDI",
                                   Jxta_SRDIMessage_tags,
                                   (JxtaAdvertisementGetXMLFunc) jxta_srdi_message_get_xml,
-                                  NULL, NULL, (FreeFunc) jxta_srdi_message_free);
+                                  NULL, NULL, jxta_srdi_message_free);
     return ad;
 }
 
@@ -559,7 +561,7 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_1(int ttl, Jxta_id * peer
                                   "jxta:GenSRDI",
                                   Jxta_SRDIMessage_tags,
                                   (JxtaAdvertisementGetXMLFunc) jxta_srdi_message_get_xml,
-                                  NULL, NULL, (FreeFunc) jxta_srdi_message_free);
+                                  NULL, NULL, jxta_srdi_message_free);
 
     JXTA_OBJECT_SHARE(peerid);
     JXTA_OBJECT_SHARE(entries);
@@ -572,8 +574,10 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_1(int ttl, Jxta_id * peer
     return ad;
 }
 
-static void jxta_srdi_message_free(Jxta_SRDIMessage * ad)
+static void jxta_srdi_message_free(Jxta_object *obj)
 {
+    Jxta_SRDIMessage * ad = (Jxta_SRDIMessage * )obj;
+
     if (ad->PeerID) {
         JXTA_OBJECT_RELEASE(ad->PeerID);
     }
@@ -593,13 +597,11 @@ static void jxta_srdi_message_free(Jxta_SRDIMessage * ad)
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_message_parse_charbuffer(Jxta_SRDIMessage * ad, const char *buf, int len)
 {
-
     return jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_message_parse_file(Jxta_SRDIMessage * ad, FILE * stream)
 {
-
     return jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
 

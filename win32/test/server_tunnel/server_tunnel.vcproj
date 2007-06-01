@@ -45,7 +45,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib expat.lib libxml2.lib zdll.lib wsock32.lib"
+				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib libexpat.lib libxml2.lib zdll.lib wsock32.lib"
 				OutputFile=".\Debug/server_tunnel.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
@@ -123,7 +123,7 @@ copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(Configur
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib expat.lib libxml2.lib zdll.lib wsock32.lib"
+				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib libexpat.lib libxml2.lib zdll.lib wsock32.lib"
 				OutputFile=".\Release/server_tunnel.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"

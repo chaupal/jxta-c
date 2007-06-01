@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv.c,v 1.51 2005/12/28 05:11:41 mmx2005 Exp $
+ * $Id: jxta_rdv.c,v 1.52 2006/10/31 19:50:35 bondolo Exp $
  */
  
 static const char *const __log_cat = "RdvAdv";
@@ -185,6 +185,10 @@ static void handleRoute(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_RdvAdvertisement *ad = (Jxta_RdvAdvertisement *) userdata;
     Jxta_RouteAdvertisement *ra;
+    
+    if( 0 != len ) {
+        return;
+    }
 
     ra = jxta_RouteAdvertisement_new();
     jxta_RdvAdvertisement_set_Route(ad, ra);

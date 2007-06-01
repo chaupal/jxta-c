@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) 2002-2004 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright (c) 2002 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,12 +50,16 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_relay.h,v 1.8 2006/11/20 21:38:31 rednax Exp $
+ * $Id: jxta_rdv_lease_options.h,v 1.2 2006/10/31 20:12:13 bondolo Exp $
  */
 
-#ifndef JXTA_RELAY_H__
-#define JXTA_RELAY_H__
 
+#ifndef JXTA_RDV_LEASE_OPTIONS_H__
+#define JXTA_RDV_LEASE_OPTIONS_H__
+
+#include "jxta_apr.h"
+#include "jxta_types.h"
+#include "jxta_advertisement.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,32 +68,19 @@ extern "C" {
 #endif
 #endif
 
-#define LEASE_REQUEST    "3600000"  /* 1 hour */
-#define REQUEST_TIMEOUT  "120000,-1"
-#define LAZY_CLOSE       "keep,true"
-#define RELAY_LEASE_RENEWAL_DELAY ((Jxta_time_diff) 5 * 60 * 1000 * 1000)   /* 5 Minutes */
-#define LEASE_REQUEST_TIME    ((Jxta_time_diff) 60 * 60 * 1000 * 1000)  /* 1 hour */
-#define RELAY_PREFIX_ADDRESS "EndpointService:"
-#define RELAY_SUFFIX_ADDRESS "/uuid-DEADBEEFDEAFBABAFEEDBABE0000000F05"
-#define RELAY_LEASE_ELEMENT "relay:lease"
-#define RELAY_LEASE_REQUEST "relay:request"
-#define RELAY_LEASE_RESPONSE "relay:response"
-#define RELAY_RESPONSE_ADV "relay:relayAdv"
-#define RELAY_CONNECT_REQUEST "connect"
-#define RELAY_RESPONSE_CONNECTED "connected"
-#define RELAY_RESPONSE_DISCONNECTED "disconnected"
+typedef struct _Jxta_rdv_lease_options Jxta_rdv_lease_options;
 
-typedef struct _jxta_transport_relay Jxta_transport_relay_public;
 
-/************************************************************************
- * Takes a relay and returns true if it is a server
- *
- *
- * @param  jxta_transport_relay relay transport
- * @return  true if relay is a server, false otherwise, also returns false if
- *          the parameter is null
- *************************************************************************/
-Jxta_boolean jxta_relay_is_server(Jxta_transport_relay_public* jxta_transport_relay);
+JXTA_DECLARE(Jxta_rdv_lease_options *) jxta_rdv_lease_options_new(void);
+JXTA_DECLARE(Jxta_status) jxta_rdv_lease_options_get_xml(Jxta_rdv_lease_options *, JString **);
+JXTA_DECLARE(Jxta_status) jxta_rdv_lease_options_parse_charbuffer(Jxta_rdv_lease_options * myself, const char *buf, int len);
+JXTA_DECLARE(Jxta_status) jxta_rdv_lease_options_parse_file(Jxta_rdv_lease_options *, FILE * stream);
+
+JXTA_DECLARE(unsigned int) jxta_rdv_lease_options_get_suitability(Jxta_rdv_lease_options * ad);
+JXTA_DECLARE(void) jxta_rdv_lease_options_set_suitability(Jxta_rdv_lease_options * ad, unsigned int suitability );
+
+JXTA_DECLARE(unsigned int) jxta_rdv_lease_options_get_willingness(Jxta_rdv_lease_options * ad);
+JXTA_DECLARE(void) jxta_rdv_lease_options_set_willingness(Jxta_rdv_lease_options * ad, unsigned int willingness );
 
 
 #ifdef __cplusplus
@@ -99,6 +90,6 @@ Jxta_boolean jxta_relay_is_server(Jxta_transport_relay_public* jxta_transport_re
 }
 #endif
 
-#endif /* JXTA_RELAY_H__  */
+#endif /* JXTA_RDV_LEASE_OPTIONS_H__  */
 
-/* vi: set ts=4 sw=4 tw=130 et: */
+/* vim: set ts=4 sw=4 et tw=130: */

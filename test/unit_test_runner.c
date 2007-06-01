@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: unit_test_runner.c,v 1.12 2006/09/08 20:13:00 bondolo Exp $
+ * $Id: unit_test_runner.c,v 1.13 2006/10/30 22:54:13 bondolo Exp $
  */
 
 
@@ -164,6 +164,8 @@ Jxta_boolean run_jxta_apa_adv_tests(int *tests_run, int *tests_passed, int *test
 
 Jxta_boolean run_jxta_route_adv_tests(int *tests_run, int *tests_passed, int *tests_failed);
 
+Jxta_boolean run_jxta_rq_tests(int *tests_run, int *tests_passed, int *tests_failed);
+
 /** 
 * The list of tests to run, terminated by NULL
 */
@@ -185,6 +187,7 @@ static struct _suite testfuncs[] = {
     {*run_jxta_lease_msg_tests, "Jxta_lease_{resquest|response}_msg Tests"},
     {*run_jxta_route_adv_tests, "Jxta_apa Tests"},
     {*run_jxta_apa_adv_tests, "Jxta_routea Tests"},
+    {*run_jxta_rq_tests, "Resolver Query Tests"},
 
     {NULL, "null"}
 };

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_advertisement.h,v 1.31 2006/08/28 19:33:55 bondolo Exp $
+ * $Id: jxta_advertisement.h,v 1.33 2006/11/01 01:41:36 bondolo Exp $
  */
 
 /**
@@ -143,13 +143,13 @@ extern "C" {
 #endif
 
 typedef struct _jxta_advertisement Jxta_advertisement;
-typedef struct _jxta_advertisement_new_func_struct Jxta_advertisement_new_func_struct;
 typedef struct _jxta_index Jxta_index;
 typedef struct _jxta_attribute Jxta_attribute;
 
 #ifndef FREE_FUNC
 #define FREE_FUNC
-typedef void (*FreeFunc) (void *userdata);
+/* FIXME 20060822 bondolo Why is this not JXTA_OBJECT_FREE_FUNC? */
+typedef void (*FreeFunc) (void *me);
 #endif
 
 #ifndef  JXTA_ADVERTISEMENT_GET_XML_FUNC
@@ -212,23 +212,6 @@ typedef Jxta_vector *(JXTA_STDCALL * JxtaAdvertisementGetIndexFunc) (Jxta_advert
  *
  */
 
-
-/** 
- * Allowing the extensibility of the jxta protocols
- * discovery architecture is enabled by creating delayed
- * execution handlers.  This way, each piece of the 
- * protocol can be handled in a customized way, precisely
- * when and where necessary, not sooner, not later.  This is
- * accomplished by hashing the methods for creating 
- * advertisement handlers, and only invoking these when 
- * it is necessary to transform the advertisement serialized
- * in XML to its representation in memory.  
- */
-struct _jxta_advertisement_new_func_struct {
-    JXTA_OBJECT_HANDLE;
-    JxtaAdvertisementNewFunc jxta_advertisement_new_func;
-};
-
 typedef void (*Jxta_advertisement_node_handler) (void *, const XML_Char *, int);
 
 struct _kwdtab {
@@ -245,18 +228,11 @@ typedef struct _kwdtab Kwdtab;
 struct _jxta_advertisement {
     JXTA_OBJECT_HANDLE;
 
-    Jxta_advertisement *parent;
     const char *document_name;
     JxtaAdvertisementGetXMLFunc get_xml;
     JxtaAdvertisementGetIDFunc get_id;
     JxtaAdvertisementGetIndexFunc get_indexes;
-    const char **atts;
     Kwdtab *dispatch_table;
-    Jxta_advertisement_node_handler curr_handler;
-    int depth;
-    JString *name_space;
-    JString *accum;
-    const char *currElement;
     char *local_id;
 
     /*
@@ -268,8 +244,16 @@ struct _jxta_advertisement {
      * jxta_advertisement for that particular usage.
      */
     Jxta_vector *adv_list;
-    Jxta_advertisement_node_handler *handler_stk;
+
+    Jxta_advertisement *parent;
     XML_Parser parser;
+    Jxta_advertisement_node_handler *handler_stk;
+    unsigned int depth;
+    const char **atts;
+    JString *accum;
+    Jxta_advertisement_node_handler curr_handler;
+    /** @deprecated Never used */
+    const char *currElement;
 };
 
 struct _jxta_index {
@@ -280,19 +264,13 @@ struct _jxta_index {
     Jxta_object *range;
 };
 
-/** Private. */
-
-void jxta_advertisement_handle_chardata(void *userdata, const XML_Char * cd, int len);
-void jxta_advertisement_start_element(void *userdata, const char *ename, const char **atts);
-void jxta_advertisement_end_element(void *userdata, const char *name);
-
 /**
 *   
 *
 *   @deprecated This is being deprecated in favor of the style used by other jxta objects. @see jxta_advertisement_construct()
 *   and @see jxta_advertisement_destruct()
 **/
-JXTA_DECLARE(void) jxta_advertisement_initialize(Jxta_advertisement * ad,
+JXTA_DECLARE(Jxta_advertisement *) jxta_advertisement_initialize(Jxta_advertisement * ad,
                                                  const char *document_name,
                                                  const Kwdtab * dispatch_table,
                                                  JxtaAdvertisementGetXMLFunc,
@@ -308,7 +286,7 @@ JXTA_DECLARE(Jxta_advertisement *) jxta_advertisement_construct(Jxta_advertiseme
                                                                 JxtaAdvertisementGetIndexFunc get_index_func);
 
 /**
-*   to be called from inside delete functions for sub-classes
+*   to be called from inside destruct functions for sub-classes
 */
 JXTA_DECLARE(void) jxta_advertisement_destruct(Jxta_advertisement * ad);
 
@@ -321,6 +299,8 @@ void jxta_advertisement_delete(Jxta_advertisement * ad);
 
 
 JXTA_DECLARE(void) jxta_advertisement_set_handlers(Jxta_advertisement * ad, XML_Parser parser, Jxta_advertisement * parent);
+
+JXTA_DECLARE(void) jxta_advertisement_clear_handlers(Jxta_advertisement * ad );
 
 /** 
  ** Convenience function to builds a vector of Jxta_index structs that return the
@@ -344,11 +324,6 @@ JXTA_DECLARE(Jxta_vector *) jxta_advertisement_return_indexes(const char *idx[])
  * @return status
  */
 JXTA_DECLARE(Jxta_status) jxta_advertisement_get_xml(Jxta_advertisement * ad, JString **);
-
-/** 
-* Function to return the name space identification of this advertisement
-*/
-JXTA_DECLARE(void) jxta_advertisement_get_name_space(Jxta_advertisement * ad, JString **);
 
 /** Some advertisements have IDs that are used for indexing etc. 
  * This function wraps a callback to get the specific ID type 
@@ -464,13 +439,9 @@ JXTA_DECLARE(const char **) jxta_advertisement_get_tagnames(Jxta_advertisement *
 JXTA_DECLARE(void) jxta_advertisement_register_global_handler(const char *key, const JxtaAdvertisementNewFunc ad_new_function);
 
 /**
- * 
- * @param Jxta_advertisement * ad
- * @param
- *
- * @return nothing
- */
-JXTA_DECLARE(void) jxta_advertisement_global_lookup(Jxta_advertisement * ad, const char *key);
+*
+**/
+JXTA_DECLARE(Jxta_status) jxta_advertisement_global_handler(Jxta_advertisement * ad, const char *doc_type, Jxta_advertisement** new_ad);
 
 /**
  * The base type Jxta_advertisement can be used to parse documents containing

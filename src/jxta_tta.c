@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tta.c,v 1.54 2006/09/29 06:09:01 mmx2005 Exp $
+ * $Id: jxta_tta.c,v 1.55 2006/11/08 17:31:57 slowhog Exp $
  */
 
 static const char *__log_cat = "TCPADV";
@@ -513,6 +513,12 @@ JXTA_DECLARE(Jxta_status)
     jstring_append_2(string, "<InterfaceAddress>");
     jstring_append_2(string, ad->InterfaceAddress ? ad->InterfaceAddress : APR_ANYADDR);
     jstring_append_2(string, "</InterfaceAddress>\n");
+    
+    if (ad->Server) {
+        jstring_append_2(string, "<Server>");
+        jstring_append_1(string, ad->Server);
+        jstring_append_2(string, "</Server>\n");
+    }
 
     jstring_append_2(string, "<ConfigMode>");
     jstring_append_1(string, ad->ConfigMode);

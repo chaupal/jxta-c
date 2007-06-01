@@ -151,7 +151,6 @@ typedef struct {
     JString *srdi_queue_name;
     Jxta_listener *rdv_listener;
     Jxta_SrdiConfigAdvertisement *config;
-    Jxta_hashtable *deltaPeers;
     void *ep_cookie;
 } Jxta_srdi_service_ref;
 
@@ -201,7 +200,6 @@ Jxta_status jxta_srdi_service_ref_init(Jxta_module * module, Jxta_PG * group, Jx
 
     if (status != JXTA_SUCCESS)
         return JXTA_FAILED;
-    me->deltaPeers = jxta_hashtable_new(0);
     jxta_advertisement_register_global_handler("jxta:GenSRDI", (JxtaAdvertisementNewFunc) jxta_srdi_message_new);
 
     me->srdi_queue_name = jstring_new_0();
@@ -386,7 +384,6 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
     Jxta_hashtable *seq_hash = NULL;
     Jxta_vector *entries = NULL;
     JString *jPeer=NULL;
-    Jxta_id *hashPeer=NULL;
     const char *peerString = NULL;
 
     if (NULL == peer) {
@@ -397,16 +394,8 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
     } else {
         jxta_id_to_jstring(peer, &jPeer);
     }
-    jxta_srdi_message_set_support_delta(msg, TRUE);
     peerString = jstring_get_string(jPeer);
-    if (JXTA_SUCCESS != jxta_hashtable_get(me->deltaPeers, peerString, strlen(peerString), JXTA_OBJECT_PPTR(&hashPeer))) {
-        if (jxta_srdi_message_delta_supported(msg)) {
-            hashPeer = JXTA_OBJECT_SHARE(peer);
-            jxta_hashtable_put(me->deltaPeers, peerString, strlen(peerString), (Jxta_object *) hashPeer);
-        } else {
-            goto FINAL_EXIT;
-        }
-    }
+    
     res = jxta_srdi_message_get_entries(msg, &entries);
     seq_hash = jxta_hashtable_new(0);
     for (i = 0; i < jxta_vector_size(entries); i++) {
@@ -449,8 +438,6 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
         JXTA_OBJECT_RELEASE(entry);
     }
 FINAL_EXIT:
-    if (hashPeer)
-        JXTA_OBJECT_RELEASE(hashPeer);
     JXTA_OBJECT_RELEASE(jPeer);
     JXTA_OBJECT_RELEASE(seq_hash);
     JXTA_OBJECT_RELEASE(entries);
@@ -1177,8 +1164,6 @@ static void jxta_srdi_service_ref_destruct(Jxta_srdi_service_ref * srdi)
         JXTA_OBJECT_RELEASE(srdi->gid);
     if (srdi->parentgroup)
         JXTA_OBJECT_RELEASE(srdi->parentgroup);
-    if (srdi->deltaPeers)
-        JXTA_OBJECT_RELEASE(srdi->deltaPeers);
 
     /* call the base classe's dtor. */
     jxta_srdi_service_destruct((Jxta_srdi_service *) srdi);

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_main.c,v 1.33 2006/10/18 03:09:12 slowhog Exp $
+ * $Id: jxta_shell_main.c,v 1.35 2007/03/23 18:14:57 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -61,7 +61,7 @@
 #include <config.h>
 #else
 #define PACKAGE "JXTA"
-#define VERSION "2.5.1"
+#define VERSION "2.5.2"
 #endif
 
 #include <apr_general.h>

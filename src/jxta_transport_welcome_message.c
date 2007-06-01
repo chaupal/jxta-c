@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_welcome_message.c,v 1.6 2006/07/14 21:35:54 bondolo Exp $
+ * $Id: jxta_transport_welcome_message.c,v 1.7 2006/12/23 19:53:01 slowhog Exp $
  */
 
 static const char *__log_cat = "WELCOME_MSG";
@@ -326,10 +326,11 @@ JXTA_DECLARE( Jxta_welcome_message *) welcome_message_new_2(JString * welcome_st
     goto Common_Exit;
 
 Error_Exit :
-        JXTA_OBJECT_RELEASE(myself);
-        myself = NULL;
+    JXTA_OBJECT_RELEASE(myself);
+    myself = NULL;
 
 Common_Exit :
+    myself->welcome_str = JXTA_OBJECT_SHARE(welcome_str);
 
     return myself;
 }

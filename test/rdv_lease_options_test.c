@@ -50,52 +50,51 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: route_adv_test.c,v 1.12 2006/10/24 17:53:36 bondolo Exp $
+ * $Id: rdv_lease_options_test.c,v 1.1 2006/10/31 20:00:40 bondolo Exp $
  */
 
 #include <stdio.h>
 
-#include <jxta.h>
-
-#include <jxta_routea.h>
+#include "jxta.h"
+#include "jxta_rdv_lease_options.h"
 
 #include "unittest_jxta_func.h"
 
-const char *test_route_construction(void) {
+const char *test_rdv_lease_options_construction(void) {
     Jxta_status result = JXTA_SUCCESS;
-    Jxta_RouteAdvertisement *adv = jxta_RouteAdvertisement_new();
+    Jxta_rdv_lease_options *ad = jxta_rdv_lease_options_new();
     
-    if( NULL == adv ) {
+    if( NULL == ad ) {
         return FILEANDLINE;
     }
     
-    if( !JXTA_OBJECT_CHECK_VALID(adv) ) {
+    if( !JXTA_OBJECT_CHECK_VALID(ad) ) {
         return FILEANDLINE;
     }
 
-    JXTA_OBJECT_RELEASE(adv);
+    JXTA_OBJECT_RELEASE(ad);
        
     return NULL;
 }
 
-const char *test_route_serialization(void) {
+const char *test_rdv_lease_options_serialization(void) {
     Jxta_status result = JXTA_SUCCESS;
-    Jxta_RouteAdvertisement *ad;
+    Jxta_rdv_lease_options *ad;
     Jxta_advertisement *raw_ad;
     FILE *testfile;
     JString *dump1;
     JString *dump2;
     Jxta_vector* child_advs = NULL;
 
-    ad = jxta_RouteAdvertisement_new();
+    ad = jxta_rdv_lease_options_new();
     
     if( NULL == ad ) {
         return FILEANDLINE;
     }
 
-    testfile = fopen( "RA.xml", "r");
+    testfile = fopen( "RdvLeaseOptions.xml", "r");
     
-    result = jxta_PA_parse_file(ad, testfile);
+    result = jxta_rdv_lease_options_parse_file(ad, testfile);
     fclose(testfile);
 
     if( JXTA_SUCCESS != result ) {
@@ -106,15 +105,15 @@ const char *test_route_serialization(void) {
         return FILEANDLINE;
     }
 
-    result = jxta_RouteAdvertisement_get_xml(ad, &dump1);
+    result = jxta_rdv_lease_options_get_xml(ad, &dump1);
     if( JXTA_SUCCESS != result ) {
         return FILEANDLINE;
     }    
     JXTA_OBJECT_RELEASE(ad);
     ad = NULL;
 
-    ad = jxta_RouteAdvertisement_new();
-    result = jxta_RouteAdvertisement_parse_charbuffer( ad, jstring_get_string(dump1), jstring_length(dump1) );
+    ad = jxta_rdv_lease_options_new();
+    result = jxta_rdv_lease_options_parse_charbuffer( ad, jstring_get_string(dump1), jstring_length(dump1) );
     if( JXTA_SUCCESS != result ) {
         return FILEANDLINE;
     }    
@@ -134,7 +133,7 @@ const char *test_route_serialization(void) {
     JXTA_OBJECT_RELEASE(dump2);
 
     raw_ad = jxta_advertisement_new();
-    result = jxta_RouteAdvertisement_parse_charbuffer(raw_ad, jstring_get_string(dump1), jstring_length(dump1));
+    result = jxta_advertisement_parse_charbuffer(raw_ad, jstring_get_string(dump1), jstring_length(dump1));
 
     if( !JXTA_OBJECT_CHECK_VALID(raw_ad) ) {
         return FILEANDLINE;
@@ -172,18 +171,18 @@ const char *test_route_serialization(void) {
     return NULL;
 }
 
-static struct _funcs route_adv_test_funcs[] = {
+static struct _funcs rdv_lease_options_test_funcs[] = {
     /* First run simple construction destruction test. */
-    {*test_route_construction, "construction/destruction for jxta:RA"},
+    {*test_rdv_lease_options_construction, "construction/destruction for RdvLeaseOptions"},
 
     /* Serialization/Deserialization */
-    {*test_route_serialization, "read/write test for jxta:RA"},
+    {*test_rdv_lease_options_serialization, "read/write test for RdvLeaseOptions"},
 
     {NULL, "null"}
 };
 
 /**
-* Run the unit tests for the jxta_pa test routines
+* Run the unit tests for the rdv_lease_options test routines
 *
 * @param tests_run the variable in which to accumulate the number of tests run
 * @param tests_passed the variable in which to accumulate the number of tests passed
@@ -191,14 +190,14 @@ static struct _funcs route_adv_test_funcs[] = {
 *
 * @return TRUE if all tests were run successfully, FALSE otherwise
 */
-Jxta_boolean run_jxta_route_adv_tests(int *tests_run, int *tests_passed, int *tests_failed)
+Jxta_boolean run_rdv_lease_options_tests(int *tests_run, int *tests_passed, int *tests_failed)
 {
-    return run_testfunctions(route_adv_test_funcs, tests_run, tests_passed, tests_failed);
+    return run_testfunctions(rdv_lease_options_test_funcs, tests_run, tests_passed, tests_failed);
 }
 
 #ifdef STANDALONE
 int main(int argc, char **argv)
 {
-    return main_test_function(route_adv_test_funcs, argc, argv);
+    return main_test_function(rdv_lease_options_test_funcs, argc, argv);
 }
 #endif

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_util_priv.c,v 1.16 2006/10/01 23:14:10 mmx2005 Exp $
+ * $Id: jxta_util_priv.c,v 1.18 2007/01/12 22:23:27 slowhog Exp $
  */
 
 static const char *__log_cat = "UTIL";
@@ -307,7 +307,9 @@ Jxta_status JXTA_STDCALL brigade_read(void *stream, char *buf, apr_size_t len)
     apr_size_t sz;
     int done = 0;
 
-    assert(len > 0);
+    if (0 == len) {
+        return JXTA_SUCCESS;
+    }
 
     e = APR_BRIGADE_FIRST(b);
     while (APR_BRIGADE_SENTINEL(b) != e && !done) {
@@ -323,6 +325,7 @@ Jxta_status JXTA_STDCALL brigade_read(void *stream, char *buf, apr_size_t len)
 
         if (sz >= len) {
             memcpy(buf, data, len);
+            /* avoid split when size == len */
             if (sz > len) {
                 apr_bucket_split(e, len);
             }

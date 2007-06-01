@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_router_client.c,v 1.103 2006/09/22 22:49:11 slowhog Exp $
+ * $Id: jxta_router_client.c,v 1.105 2007/01/16 22:27:04 slowhog Exp $
  */
 
 static const char *__log_cat = "ROUTER";
@@ -75,6 +75,7 @@ static const char *__log_cat = "ROUTER";
 #include "jxta_routea.h"
 #include "jxta_log.h"
 #include "jxta_endpoint_service_priv.h"
+#include "jxta_relay.h"
 
 struct _jxta_router_client {
     Extends(Jxta_transport);
@@ -93,6 +94,10 @@ struct _jxta_router_client {
 
     volatile Jxta_boolean started;
     void *ep_cookie;
+
+	/* needed to optimize open connection performance, records the addresses
+	 * to which there is a consistent connection failure */
+	Jxta_hashtable *failed_connections_table;
 };
 
 typedef struct {
@@ -109,12 +114,22 @@ typedef struct {
     apr_pool_t *pool;
 } Peer_entry;
 
+typedef struct _failed_address _failed_address;
+ 
+struct _failed_address {
+	JXTA_OBJECT_HANDLE;
+	Jxta_time ignore_until_time;
+}; 
+
 extern Jxta_id *jxta_id_defaultNetPeerGroupID;
 
 static const char JXTA_ENDPOINT_PREFIX_ROUTER_NAME[] = "EndpointService:";
 static const char JXTA_ENDPOINT_ROUTER_SVC_PAR[] = "EndpointRouter";
 static const char JXTA_ENDPOINT_ROUTER_ELEMENT_NS[] = "jxta";
 static const char JXTA_ENDPOINT_ROUTER_ELEMENT_NAME[] = "EndpointRouterMsg";
+
+/* failed connections table change */
+#define ROUTING_IGNORE_ADDRESS_PERIOD (60*1000)
 
 static Jxta_status JXTA_STDCALL router_client_cb(Jxta_object * msg, void *arg);
 static Peer_entry *get_peer_entry(Jxta_router_client * self, Jxta_id * peerid, Jxta_boolean create);
@@ -127,6 +142,10 @@ static Jxta_endpoint_address *jxta_router_select_best_route(Jxta_router_client *
                                                             Jxta_AccessPointAdvertisement * ap,
                                                             Jxta_AccessPointAdvertisement * hop);
 static int reachable_address(Jxta_router_client * router, Jxta_endpoint_address * addr);
+static _failed_address* failed_address_new(Jxta_time ignore_until_time);
+static Jxta_status failed_address_exists(Jxta_hashtable* failed_addresses_list, 
+										 JString* address_key);
+static void failed_address_delete(Jxta_object * obj);
 
 /******************
  * Module methods *
@@ -512,7 +531,6 @@ static Jxta_status messenger_route(Router_messenger * messenger, Jxta_message * 
     Jxta_AccessPointAdvertisement *ap = NULL;
     Jxta_AccessPointAdvertisement *hop = NULL;
     unsigned int sz;
-
     /* Get the Peer_entry for the destination */
     res = get_peer_forward_gateways(messenger->router, messenger->peerid, &forwardGateways, &new_addr);
 
@@ -537,6 +555,7 @@ static Jxta_status messenger_route(Router_messenger * messenger, Jxta_message * 
         route = search_in_local_cm(messenger->router, messenger->peerid);
         if (route != NULL) {
             JString *routeadv;
+
             jxta_RouteAdvertisement_get_xml(route, &routeadv);
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Route adv : \n%s\n", jstring_get_string(routeadv));
             JXTA_OBJECT_RELEASE(routeadv);
@@ -569,7 +588,29 @@ static Jxta_status messenger_route(Router_messenger * messenger, Jxta_message * 
              */
             ap = jxta_RouteAdvertisement_get_Dest(route);
 
+			/* if there is no relay hop specified and the address we are about
+			 * to try has failed repeatedly, skip trying to connect and go
+			 * directly to relay
+			 * This is a bit dangerous if there is no relay but with small storage
+			 * interval in failed_addresses list, it should be ok */
+			{
+				Jxta_boolean call_select_best_route=TRUE;
+
+				if (hop==NULL) {
+					JString *xml_key=NULL;
+
+					jxta_AccessPointAdvertisement_get_xml(ap, &xml_key);
+					if (failed_address_exists(messenger->router->failed_connections_table,xml_key)==JXTA_SUCCESS) {
+						call_select_best_route=FALSE;
+					}
+
+					JXTA_OBJECT_RELEASE(xml_key);
+				}
+
+				if (call_select_best_route) {
             new_addr = jxta_router_select_best_route(messenger->router, ap, hop);
+				}
+			} 
 
             JXTA_OBJECT_RELEASE(ap);
             if (hop) {
@@ -649,6 +690,7 @@ static Jxta_status messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
     const char *transport_name;
     JxtaEndpointMessenger *endpoint_messenger = NULL;
     Jxta_endpoint_address *addr = NULL;
+	Jxta_boolean relay_tried=TRUE;
 
     JXTA_OBJECT_CHECK_VALID(msg);
     JXTA_OBJECT_CHECK_VALID(messenger);
@@ -675,6 +717,9 @@ static Jxta_status messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failed to get message destination\n");
             return JXTA_FAILED;
         }
+		/* since this is a direct connection we have not yet tried the relay */
+		/* disabled */
+		/* relay_tried=FALSE; */
     } else {
       /**
        ** Check if destination is local
@@ -769,10 +814,66 @@ static int reachable_address(Jxta_router_client * router, Jxta_endpoint_address 
     return INT_MIN;
 }
 
+/************************************************************************
+* Adds an address encoded by address_key to the list of addresses that
+* have recently failed, the address will be in the list for
+* ROUTING_IGNORE_ADDRESS_PERIOD
+*
+*
+* @param failed_addresses_list hashtable for storing addresses
+* @param address_key the key to hash on
+* @return true if the addition was successful
+*************************************************************************/
+static Jxta_status failed_address_add(Jxta_hashtable* failed_addresses_list, 
+									  JString* address_key)
+{
+	_failed_address* failed_address=NULL;
+
+	failed_address=failed_address_new(jpr_time_now()+ROUTING_IGNORE_ADDRESS_PERIOD);
+	jxta_hashtable_put(failed_addresses_list,jstring_get_string(address_key),
+		jstring_length(address_key),JXTA_OBJECT(failed_address));
+	JXTA_OBJECT_RELEASE(failed_address);
+
+	return JXTA_SUCCESS;
+}
+
+/************************************************************************
+* Check if the address with address_key is in the failed list
+*
+*
+* @param failed_addresses_list hashtable for storing addresses
+* @param address_key the key to hash on
+* @return true if the address is in the list
+*************************************************************************/
+static Jxta_status failed_address_exists(Jxta_hashtable* failed_addresses_list, 
+											JString* address_key)
+{
+	_failed_address* failed_address=NULL;
+
+	/* check of this address is contained in the failed list */
+	if (jxta_hashtable_get(failed_addresses_list,jstring_get_string(address_key),
+		jstring_length(address_key),JXTA_OBJECT_PPTR(&failed_address))==JXTA_SUCCESS) {
+
+			/* check the expiry value, if expired delete it */
+			if (failed_address->ignore_until_time<jpr_time_now()) {
+				jxta_hashtable_delcheck(failed_addresses_list,jstring_get_string(address_key),
+					jstring_length(address_key), JXTA_OBJECT(failed_address));
+				JXTA_OBJECT_RELEASE(failed_address);
+				return JXTA_ITEM_NOTFOUND;
+			}
+
+			JXTA_OBJECT_RELEASE(failed_address);
+			return JXTA_SUCCESS;
+		}
+
+	return JXTA_ITEM_NOTFOUND;
+}
+
 static Jxta_endpoint_address *jxta_router_select_best_route(Jxta_router_client * router, Jxta_AccessPointAdvertisement * ap,
                                                             Jxta_AccessPointAdvertisement * hop)
 {
     Jxta_endpoint_address *addr = NULL;
+	JString* xml_key=NULL;
 
     apr_thread_mutex_lock(router->mutex);
     if (!router->started) {
@@ -780,15 +881,80 @@ static Jxta_endpoint_address *jxta_router_select_best_route(Jxta_router_client *
         return NULL;
     }
 
+	/* failed connections table change */
+	jxta_AccessPointAdvertisement_get_xml(ap, &xml_key);
+
+	/* if address is marked as failed first try the relay and then direct, if not then first try direct */
+	if (failed_address_exists(router->failed_connections_table,xml_key)==JXTA_SUCCESS) {
+
+		/* first try the relay */
+		if (hop != NULL) {
+			addr = jxta_router_select_best_address(router, hop);
+		}
+
+		if (NULL == addr) {
+			addr = jxta_router_select_best_address(router, ap);
+		}
+
+	} else {
     /* try first the direct route, then relay */
     addr = jxta_router_select_best_address(router, ap);
+
+		/* if direct route failed add it to the table of failing addresses */
+		if (addr == NULL) {
+			failed_address_add(router->failed_connections_table,xml_key);
+		}
+
     if (NULL == addr && NULL != hop) {
         addr = jxta_router_select_best_address(router, hop);
     }
+	}
+
+	JXTA_OBJECT_RELEASE(xml_key);
 
     apr_thread_mutex_unlock(router->mutex);
     return addr;
 }
+
+/************************************************************************
+* Generate a new failed_address object
+*
+*
+* @param  ignore_until_time ignore the address until the time specified
+* @return  the new object
+*************************************************************************/
+static _failed_address* failed_address_new(Jxta_time ignore_until_time)
+{
+	_failed_address* self;
+
+	self = (_failed_address *) calloc(1, sizeof(_failed_address));
+
+	if (NULL == self)
+		return NULL;
+
+	self->ignore_until_time=ignore_until_time;
+
+	JXTA_OBJECT_INIT(self, failed_address_delete, 0);
+
+	return self;
+}
+
+/************************************************************************
+* Deallocates an existing failed_address object
+*
+* @param  the object to deallocate
+*************************************************************************/
+static void failed_address_delete(Jxta_object * obj)
+{
+	_failed_address *self = (_failed_address *) obj;
+
+	if (NULL == self)
+		return;
+
+	free(self);
+}
+
+
 
 static Jxta_endpoint_address *jxta_router_select_best_address(Jxta_router_client * router, Jxta_AccessPointAdvertisement * ap)
 {
@@ -922,6 +1088,28 @@ static Jxta_RouteAdvertisement *search_in_local_cm(Jxta_router_client * self, Jx
     return route;
 }
 
+static Jxta_endpoint_address * demangle_ea(Jxta_router_client * me, Jxta_endpoint_address * ea)
+{
+    Jxta_endpoint_address * new_ea = NULL;
+    char * name;
+    char * param;
+    
+    if (strcmp(jxta_endpoint_address_get_service_name(ea), me->router_name)) {
+        return JXTA_OBJECT_SHARE(ea);
+    }
+
+    name = strdup(jxta_endpoint_address_get_service_params(ea));
+    param = strchr(name, '/');
+    if (param) {
+        *param++ = '\0';
+    }
+    
+    new_ea = jxta_endpoint_address_new_4(ea, name, param);
+    free(name);
+
+    return new_ea;
+}
+
 static JxtaEndpointMessenger *messenger_get(Jxta_transport * t, Jxta_endpoint_address * dest)
 {
     Jxta_router_client *self = PTValid(t, Jxta_router_client);
@@ -938,7 +1126,7 @@ static JxtaEndpointMessenger *messenger_get(Jxta_transport * t, Jxta_endpoint_ad
     JXTA_OBJECT_INIT(messenger, messenger_delete, NULL);
 
     messenger->router = JXTA_OBJECT_SHARE(self);
-    messenger->generic.address = JXTA_OBJECT_SHARE(dest);
+    messenger->generic.address = demangle_ea(self, dest);
     messenger->generic.jxta_send = messenger_send;
     messenger->peerid = get_peerid_from_endpoint_address(dest);
 
@@ -1052,6 +1240,17 @@ Jxta_router_client *jxta_router_client_construct(Jxta_router_client * self, Jxta
         JXTA_OBJECT_RELEASE(self);
         return NULL;
     }
+
+	/* failed connections table change */
+	self->failed_connections_table=NULL;
+	self->failed_connections_table=jxta_hashtable_new(10);
+
+	if (self->failed_connections_table == NULL) {
+		jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+		JXTA_OBJECT_RELEASE(self);
+		return NULL;
+	}
+
     self->started = FALSE;
 
     return self;
@@ -1107,6 +1306,12 @@ void jxta_router_client_destruct(Jxta_router_client * self)
         apr_pool_destroy(self->pool);
         self->pool = NULL;
     }
+
+	/* failed connections table change */
+	if (self->failed_connections_table) {
+		JXTA_OBJECT_RELEASE(self->failed_connections_table);
+		self->failed_connections_table=NULL;
+	}
 
     jxta_transport_destruct((Jxta_transport *) self);
 }
@@ -1242,6 +1447,9 @@ static Jxta_status JXTA_STDCALL router_client_cb(Jxta_object * obj, void *arg)
     Jxta_vector *reverseGateways;
     Jxta_bytevector *bytes = NULL;
     JString *string = NULL;
+	Jxta_transport *transport = NULL;
+	JxtaEndpointMessenger* endpoint_messenger=NULL;
+	Jxta_endpoint_address* relay_dest_addr=NULL;
 
     JXTA_OBJECT_CHECK_VALID(msg);
 
@@ -1381,9 +1589,67 @@ static Jxta_status JXTA_STDCALL router_client_cb(Jxta_object * obj, void *arg)
 
             jxta_endpoint_service_demux_addr(self->endpoint, realDest, msg);
         } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,
                             "Recevied a routed message [%pp] for an unrecognized destination [%s]\n", msg,
                             jxta_endpoint_address_get_protocol_address(realDest));
+
+			/* first check if this message is directed to one of the clients who
+			   have lease on the relay server of this peer, if this peer is a 
+			   relay server */
+
+			/* get the transport based on the destination address */
+			transport = jxta_endpoint_service_lookup_transport(self->endpoint, "relay");
+
+			if (!transport) {
+				jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Relay transport does not exist, exiting\n");
+				goto ERROR_EXIT;
+			}
+
+			/*construct relay dest address*/
+			relay_dest_addr = jxta_endpoint_address_new_2(
+				"relay",
+				jxta_endpoint_address_get_protocol_address(realDest),
+				jxta_endpoint_address_get_service_name(realDest), 
+				jxta_endpoint_address_get_service_params(realDest));
+
+			/* get the end point messenger which will take care of sending the message */
+			endpoint_messenger = jxta_transport_messenger_get(transport, relay_dest_addr);
+
+			/* if we were able to obtain the relay messenger send the msg through it */
+			if (endpoint_messenger!=NULL) {
+				jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Message routed through relay\n");
+
+				jxta_message_set_source(msg, realSrc);
+				jxta_message_set_destination(msg, relay_dest_addr);
+
+				endpoint_messenger->jxta_send(endpoint_messenger,msg);
+
+				JXTA_OBJECT_RELEASE(endpoint_messenger);
+
+			} else if (jxta_relay_is_server((Jxta_transport_relay_public*)transport)) {
+			/* if we are a relay server and if this is some other address try to get the appropriate messenger
+			 * and still deliver the message 
+			 */
+				transport = jxta_endpoint_service_lookup_transport(self->endpoint, jxta_endpoint_address_get_protocol_name(realDest));
+				endpoint_messenger = jxta_transport_messenger_get(transport, realDest);
+
+				if (endpoint_messenger) {
+					jxta_message_set_source(msg, realSrc);
+					jxta_message_set_destination(msg, realDest);
+										
+					if (endpoint_messenger->jxta_send(endpoint_messenger,msg)==JXTA_SUCCESS) {
+						jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Message routed through [%s] protocol handler\n", jxta_endpoint_address_get_protocol_name(realDest));
+					} else {
+						jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to send through [%s] protocol handler\n", jxta_endpoint_address_get_protocol_name(realDest));
+					}
+
+				} else {
+					jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to create messenger [%s] protocol handler\n", jxta_endpoint_address_get_protocol_name(realDest));
+				}
+			}
+
+			JXTA_OBJECT_RELEASE(relay_dest_addr);
+
         }
     }
 

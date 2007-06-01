@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_svc.h,v 1.13 2006/09/01 03:08:10 bondolo Exp $
+ * $Id: jxta_svc.h,v 1.14 2006/10/31 19:55:33 bondolo Exp $
  */
 
 
@@ -81,14 +81,8 @@ typedef struct _jxta_svc Jxta_svc;
 JXTA_DECLARE(Jxta_svc *) jxta_svc_new(void);
 
 JXTA_DECLARE(Jxta_status) jxta_svc_get_xml(Jxta_svc *, JString **);
-JXTA_DECLARE(void) jxta_svc_parse_charbuffer(Jxta_svc *, const char *, int len);
-JXTA_DECLARE(void) jxta_svc_parse_file(Jxta_svc *, FILE * stream);
-
-JXTA_DECLARE(char *) jxta_svc_get_Svc(Jxta_svc *);
-JXTA_DECLARE(void) jxta_svc_set_Svc(Jxta_svc *, char *);
-
-JXTA_DECLARE(char *) jxta_svc_get_Parm(Jxta_svc *);
-JXTA_DECLARE(void) jxta_svc_set_Parm(Jxta_svc *, char *);
+JXTA_DECLARE(Jxta_status) jxta_svc_parse_charbuffer(Jxta_svc *, const char *, int len);
+JXTA_DECLARE(Jxta_status) jxta_svc_parse_file(Jxta_svc *, FILE * stream);
 
 /*
  * Unlike similar accessors in other advs, this one may return NULL if
@@ -102,29 +96,9 @@ JXTA_DECLARE(Jxta_id *) jxta_svc_get_MCID(Jxta_svc *);
  */
 JXTA_DECLARE(void) jxta_svc_set_MCID(Jxta_svc *, Jxta_id *);
 
-/*
- * Unlike similar accessors in other advs, this one may return NULL
- * if there was no IsClient  element instead of an empty vector. 
- */
-JXTA_DECLARE(JString *) jxta_svc_get_IsClient(Jxta_svc *);
+JXTA_DECLARE(Jxta_advertisement *) jxta_svc_get_Parm(Jxta_svc *);
 
-/*
- * Unlike similar mutators in other advs, it is valid to pass NULL
- * instead of an empty vector.
- */
-JXTA_DECLARE(void) jxta_svc_set_IsClient(Jxta_svc *, JString *);
-
-/*
- * Unlike similar accessors in other advs, this one may return NULL
- * if there was no IsServer  element instead of an empty vector. 
- */
-JXTA_DECLARE(JString *) jxta_svc_get_IsServer(Jxta_svc *);
-
-/*
- * Unlike similar mutators in other advs, it is valid to pass NULL
- * instead of an empty vector.
- */
-JXTA_DECLARE(void) jxta_svc_set_IsServer(Jxta_svc *, JString *);
+JXTA_DECLARE(void) jxta_svc_set_Parm(Jxta_svc *, Jxta_advertisement * adv);
 
 /*
  * Unlike similar accessors in other advs, this one may return NULL if
@@ -233,7 +207,6 @@ JXTA_DECLARE(Jxta_RelayAdvertisement *) jxta_svc_get_RelayAdvertisement(Jxta_svc
  * to remove the element.
  */
 JXTA_DECLARE(void) jxta_svc_set_RelayAdvertisement(Jxta_svc *, Jxta_RelayAdvertisement *);
-
 /*
  * Unlike similar accessors in other advs, this one may return NULL if
  * there is no such element.
@@ -245,6 +218,14 @@ JXTA_DECLARE(JString *) jxta_svc_get_RootCert(Jxta_svc *);
  * of an empty JString.
  */
 JXTA_DECLARE(void) jxta_svc_set_RootCert(Jxta_svc *, JString *);
+
+
+/**
+*   @deprecated Use the relay advertisement directly!
+*
+*   returns the contents of the RelayAdvertisement IsClient function.
+**/
+JXTA_DECLARE(JString*) jxta_svc_get_IsClient(Jxta_svc *);
 
 #ifdef __cplusplus
 #if 0
