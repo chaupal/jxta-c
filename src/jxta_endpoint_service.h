@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_service.h,v 1.6 2005/03/28 23:27:28 bondolo Exp $
+ * $Id: jxta_endpoint_service.h,v 1.10 2005/06/16 23:11:42 slowhog Exp $
  */
 
 
@@ -76,7 +76,10 @@ extern "C" {
 #endif
 #endif
 #define  JXTA_ENDPOINT_SERVICE_NAME "EndpointService"
-#define  JXTA_ENDPOINT_DEST_UNREACHABLE_TIMEOUT ((Jxta_time_diff) (10L * 60L * 1000L)) /* 10 minutes */
+/**
+    XXX 20050409 bondolo I'm not sure why this is public.
+**/ extern const Jxta_time_diff JXTA_ENDPOINT_DEST_UNREACHABLE_TIMEOUT;
+
 typedef struct _jxta_endpoint_service Jxta_endpoint_service;
 
 typedef void (*JxtaEndpointListener) (Jxta_message * msg, void *arg);
@@ -91,7 +94,7 @@ typedef int (*JxtaEndpointFilter) (Jxta_message * msg, void *arg);
  * operation is applied.
  * @param msg (Ptr to) The message to be delivered.
  */
-extern void jxta_endpoint_service_demux(Jxta_endpoint_service * service, Jxta_message * msg);
+JXTA_DECLARE(void) jxta_endpoint_service_demux(Jxta_endpoint_service * service, Jxta_message * msg);
 
 /*
  * Registers a transport protocol object with this endpoint service.
@@ -100,7 +103,7 @@ extern void jxta_endpoint_service_demux(Jxta_endpoint_service * service, Jxta_me
  * operation is applied.
  * @param transport (Ptr to) The transport to be registered.
  */
-extern void jxta_endpoint_service_add_transport(Jxta_endpoint_service * service, Jxta_transport * transport);
+JXTA_DECLARE(void) jxta_endpoint_service_add_transport(Jxta_endpoint_service * service, Jxta_transport * transport);
 
 /*
  * Unregisters a transport protocol object with this endpoint service.
@@ -109,7 +112,7 @@ extern void jxta_endpoint_service_add_transport(Jxta_endpoint_service * service,
  * operation is applied.
  * @param transport (Ptr to) The transport to be unregistered.
  */
-extern void jxta_endpoint_service_remove_transport(Jxta_endpoint_service * service, Jxta_transport * transport);
+JXTA_DECLARE(void) jxta_endpoint_service_remove_transport(Jxta_endpoint_service * service, Jxta_transport * transport);
 
 
 /*
@@ -140,7 +143,8 @@ extern void jxta_endpoint_service_remove_transport(Jxta_endpoint_service * servi
  * m set to the message being received and a set to the argument arg
  * passed to the jxta_endpoint_add_filter call.
  */
-extern void jxta_endpoint_service_add_filter(Jxta_endpoint_service * service, char const *str, JxtaEndpointFilter f, void *arg);
+JXTA_DECLARE(void) jxta_endpoint_service_add_filter(Jxta_endpoint_service * service, char const *str, JxtaEndpointFilter f,
+                                                    void *arg);
 
 /*
  * Removes a filter routine previously registered with this endpoint service.
@@ -149,7 +153,7 @@ extern void jxta_endpoint_service_add_filter(Jxta_endpoint_service * service, ch
  * operation is applied.
  * @param filter The filter to be removed.
  */
-extern void jxta_endpoint_service_remove_filter(Jxta_endpoint_service * service, JxtaEndpointFilter filter);
+JXTA_DECLARE(void) jxta_endpoint_service_remove_filter(Jxta_endpoint_service * service, JxtaEndpointFilter filter);
 
 /*
  * Sends the given message to the given destination using the appropriate
@@ -164,8 +168,8 @@ extern void jxta_endpoint_service_remove_filter(Jxta_endpoint_service * service,
  * @param dest_addr The destination of the message.
  * @return Jxta_status success or failed
  */
-extern Jxta_status
-jxta_endpoint_service_send(Jxta_PG * pg, Jxta_endpoint_service * service, Jxta_message * msg, Jxta_endpoint_address * dest_addr);
+JXTA_DECLARE(Jxta_status)
+    jxta_endpoint_service_send(Jxta_PG * pg, Jxta_endpoint_service * service, Jxta_message * msg, Jxta_endpoint_address * dest_addr);
 
 
 /*
@@ -180,8 +184,8 @@ jxta_endpoint_service_send(Jxta_PG * pg, Jxta_endpoint_service * service, Jxta_m
  * @param service_parameter The destination service_parameter of the message.
  * @return Jxta_status success or failed
  */
-extern Jxta_status
-jxta_endpoint_service_propagate(Jxta_endpoint_service * service,
+JXTA_DECLARE(Jxta_status)
+    jxta_endpoint_service_propagate(Jxta_endpoint_service * service,
                                 Jxta_message * msg, const char *service_name, const char *service_parameter);
 
 /**
@@ -197,8 +201,8 @@ jxta_endpoint_service_propagate(Jxta_endpoint_service * service,
  **          JXTA_BUSY if there was already a listener registered
  **          JXTA_SUCCESS otherwise
  **/
-extern Jxta_status
-jxta_endpoint_service_add_listener(Jxta_endpoint_service * endpoint,
+JXTA_DECLARE(Jxta_status)
+    jxta_endpoint_service_add_listener(Jxta_endpoint_service * endpoint,
                                    char const *serviceName, char const *serviceParam, Jxta_listener * listener);
 
 /**
@@ -211,8 +215,8 @@ jxta_endpoint_service_add_listener(Jxta_endpoint_service * endpoint,
  ** serviceName.
  ** @returns JXTA_INVALID_PARAMETERS if some arguments are invalid, JXTA_SUCCESS otherise
  **/
-extern Jxta_status
-jxta_endpoint_service_remove_listener(Jxta_endpoint_service * endpoint, char const *serviceName, char const *serviceParam);
+JXTA_DECLARE(Jxta_status)
+    jxta_endpoint_service_remove_listener(Jxta_endpoint_service * endpoint, char const *serviceName, char const *serviceParam);
 
 /**
  ** lookup for a specific transport
@@ -222,7 +226,8 @@ jxta_endpoint_service_remove_listener(Jxta_endpoint_service * endpoint, char con
  ** we are looking for
  ** @returns a pointer to the corresponding transport
  **/
-extern Jxta_transport *jxta_endpoint_service_lookup_transport(Jxta_endpoint_service * service, const char *transport_name);
+JXTA_DECLARE(Jxta_transport *) jxta_endpoint_service_lookup_transport(Jxta_endpoint_service * service,
+                                                                      const char *transport_name);
 
 /**
  ** set current relay address information after a peer connected
@@ -232,7 +237,8 @@ extern Jxta_transport *jxta_endpoint_service_lookup_transport(Jxta_endpoint_serv
  ** @param protocol_name pointer to a string containing the name of the transport protocol
  ** @param address_name pointer to a string containing the name of the transport address
  **/
-extern void jxta_endpoint_service_set_relay(Jxta_endpoint_service * service, char *protocol_name, char *address_name);
+JXTA_DECLARE(void) jxta_endpoint_service_set_relay(Jxta_endpoint_service * service, const char *protocol_name,
+                                                   const char *address_name);
 
 /**
  ** get current relay protocol address information after a peer connected
@@ -241,7 +247,7 @@ extern void jxta_endpoint_service_set_relay(Jxta_endpoint_service * service, cha
  ** @param endpoint pointer to the instance of the endpoint service.
  ** @return protocol_name pointer to a string containing the name of the transport protocol
  **/
-extern char *jxta_endpoint_service_get_relay_proto(Jxta_endpoint_service * service);
+JXTA_DECLARE(char *) jxta_endpoint_service_get_relay_proto(Jxta_endpoint_service * service);
 
 
 /**
@@ -251,7 +257,7 @@ extern char *jxta_endpoint_service_get_relay_proto(Jxta_endpoint_service * servi
  ** @param endpoint pointer to the instance of the endpoint service.
  ** @relay address_name pointer to a string containing the name of the transport address
  **/
-extern char *jxta_endpoint_service_get_relay_addr(Jxta_endpoint_service * service);
+JXTA_DECLARE(char *) jxta_endpoint_service_get_relay_addr(Jxta_endpoint_service * service);
 
 
 
@@ -261,7 +267,7 @@ extern char *jxta_endpoint_service_get_relay_addr(Jxta_endpoint_service * servic
  ** @param peer advertisement
  ** @param route advertisement associated with this peer advertisement
  **/
-extern void jxta_endpoint_service_get_route_from_PA(Jxta_PA * padv, Jxta_RouteAdvertisement **);
+JXTA_DECLARE(void) jxta_endpoint_service_get_route_from_PA(Jxta_PA * padv, Jxta_RouteAdvertisement **);
 
 
 /**
@@ -270,7 +276,7 @@ extern void jxta_endpoint_service_get_route_from_PA(Jxta_PA * padv, Jxta_RouteAd
  ** @param Jxta_endpoint_service endpoint service
  ** @return route advertisement associated with this peer advertisement
  **/
-extern Jxta_RouteAdvertisement *jxta_endpoint_service_get_local_route(Jxta_endpoint_service * service);
+JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_endpoint_service_get_local_route(Jxta_endpoint_service * service);
 
 
 /**
@@ -281,7 +287,7 @@ extern Jxta_RouteAdvertisement *jxta_endpoint_service_get_local_route(Jxta_endpo
  **
  ** @return void
  **/
-extern void jxta_endpoint_service_set_local_route(Jxta_endpoint_service * service, Jxta_RouteAdvertisement * route);
+JXTA_DECLARE(void) jxta_endpoint_service_set_local_route(Jxta_endpoint_service * service, Jxta_RouteAdvertisement * route);
 
 
 #ifdef __cplusplus

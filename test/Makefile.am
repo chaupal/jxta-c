@@ -1,14 +1,6 @@
-AM_CFLAGS = -Wall		    \
-	 -pedantic		    \
-	 -Wno-long-long		    \
-	 -Wstrict-prototypes	    \
-	 -Wwrite-strings	    \
-	 -Wpointer-arith	    \
-	 -g
+AM_CFLAGS = -Wall -W -pedantic -Wno-long-long -Wstrict-prototypes -Wwrite-strings -Wpointer-arith
 
-AM_CPPFLAGS =  -I$(PREFIX)/include  \
-	    -I../src		    \
-	    @APR_CPPFLAGS@
+AM_CPPFLAGS =  -I../src @APR_CPPFLAGS@ @XML2_CPPFLAGS@ @SQLITE_CPPFLAGS@
 
 #LIBRARY_LDFLAGS = -static
 
@@ -42,6 +34,7 @@ bin_PROGRAMS = jstring_test	    \
 	       jxta_xml_util_test   \
 	       jxta_rdvclient_test  \
 	       jxta_rdvclient_listener_test  \
+	       jxta_rdvserver_test  \
 	       jxta_resolver_test   \
 	       jxta_discovery_test  \
 	       jxta_pg_test	    \
@@ -55,25 +48,28 @@ bin_PROGRAMS = jstring_test	    \
 	       cm_test		    \
 	       unit_test_runner	    \
 	       jxta_bidipipe_test   \
+	       jxta_bench_comm	    \
 	       jxta_log_unit_test   \
 	       jxta_server_tunnel   \
 	       jxta_client_tunnel   \
-	       pg_start_stop_test
+	       pg_start_stop_test   \
+	       npg_test
 
 LDADD = @APR_LIBS@		    \
+        @XML2_LIBS@		    \
+        @SQLITE_LIBS@               \
 	-L../src/		    \
 	-L../src/.libs		    \
 	-L../src/jpr		    \
 	-L../src/jpr/.libs	    \
 	  -lpthread		    \
-	  -lapr-0		    \
-	  -laprutil-0		    \
 	  -ljpr			    \
 	  -ljxta
 
 jxta_log_unit_test_SOURCES = jxta_log_unit_test.c
 
 jxta_bidipipe_test_SOURCES = jxta_bidipipe_test.c
+jxta_bench_comm_SOURCES = jxta_bench_comm.c
 jxta_server_tunnel_SOURCES = jxta_server_tunnel.c
 jxta_client_tunnel_SOURCES = jxta_client_tunnel.c
 
@@ -200,6 +196,10 @@ jxta_rdvclient_test.o:	jxta_rdvclient_test.c
 jxta_rdvclient_listener_test_SOURCES  = jxta_rdvclient_listener_test.c
 jxta_rdvclient_listener_test.o:  jxta_rdvclient_listener_test.c
 	$(COMPILE) -DSTANDALONE -o jxta_rdvclient_listener_test.o -c jxta_rdvclient_listener_test.c
+
+jxta_rdvserver_test_SOURCES  = jxta_rdvserver_test.c
+jxta_rdvserver_test.o:	jxta_rdvserver_test.c
+	$(COMPILE) -DSTANDALONE -o jxta_rdvserver_test.o -c jxta_rdvserver_test.c
 
 jxta_resolver_test_SOURCES   = jxta_resolver_test.c
 jxta_resolver_test.o:  jxta_resolver_test.c

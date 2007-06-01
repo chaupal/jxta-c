@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_mia.h,v 1.3 2005/02/02 02:58:28 exocetrick Exp $
+ * $Id: jxta_mia.h,v 1.6 2005/08/03 05:51:16 slowhog Exp $
  */
 
-   
+
 #ifndef __jxta_MIA_H__
 #define __jxta_MIA_H__
 
@@ -66,42 +66,47 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _jxta_MIA Jxta_MIA;
 
-Jxta_MIA * jxta_MIA_new(void);
-void jxta_MIA_set_handlers(Jxta_MIA *, XML_Parser, void *);
-Jxta_status jxta_MIA_get_xml(Jxta_MIA *, JString **);
-void jxta_MIA_parse_charbuffer(Jxta_MIA *, const char *, int len); 
-void jxta_MIA_parse_file(Jxta_MIA *, FILE * stream);
- 
-char * jxta_MIA_get_jxta_MIA(Jxta_MIA *);
-void jxta_MIA_set_jxta_MIA(Jxta_MIA *, char *);
- 
-Jxta_id * jxta_MIA_get_MSID(Jxta_MIA *);
-void jxta_MIA_set_MSID(Jxta_MIA *, Jxta_id *);
- 
-JString * jxta_MIA_get_Comp(Jxta_MIA *);
-void jxta_MIA_set_Comp(Jxta_MIA *, JString *);
- 
-JString * jxta_MIA_get_Code(Jxta_MIA *);
-void jxta_MIA_set_Code(Jxta_MIA *, JString *);
- 
-JString * jxta_MIA_get_PURI(Jxta_MIA *);
-void jxta_MIA_set_PURI(Jxta_MIA *, JString *);
- 
-JString * jxta_MIA_get_Prov(Jxta_MIA *);
-void jxta_MIA_set_Prov(Jxta_MIA *, JString *);
- 
-JString * jxta_MIA_get_Desc(Jxta_MIA *);
-void jxta_MIA_set_Desc(Jxta_MIA *, JString *);
- 
-JString * jxta_MIA_get_Parm(Jxta_MIA *);
-void jxta_MIA_set_Parm(Jxta_MIA *, JString *);
+JXTA_DECLARE(Jxta_MIA *) jxta_MIA_new(void);
+JXTA_DECLARE(void) jxta_MIA_set_handlers(Jxta_MIA *, XML_Parser, void *);
+JXTA_DECLARE(Jxta_status) jxta_MIA_get_xml(Jxta_MIA *, JString **);
+JXTA_DECLARE(void) jxta_MIA_parse_charbuffer(Jxta_MIA *, const char *, int len);
+JXTA_DECLARE(void) jxta_MIA_parse_file(Jxta_MIA *, FILE * stream);
 
-Jxta_vector * jxta_MIA_get_indexes(void); 
+JXTA_DECLARE(char *) jxta_MIA_get_jxta_MIA(Jxta_MIA *);
+JXTA_DECLARE(void) jxta_MIA_set_jxta_MIA(Jxta_MIA *, char *);
+
+JXTA_DECLARE(Jxta_id *) jxta_MIA_get_MSID(Jxta_MIA *);
+JXTA_DECLARE(void) jxta_MIA_set_MSID(Jxta_MIA *, Jxta_id *);
+
+JXTA_DECLARE(JString *) jxta_MIA_get_Comp(Jxta_MIA *);
+JXTA_DECLARE(void) jxta_MIA_set_Comp(Jxta_MIA *, JString *);
+
+JXTA_DECLARE(JString *) jxta_MIA_get_Code(Jxta_MIA *);
+JXTA_DECLARE(void) jxta_MIA_set_Code(Jxta_MIA *, JString *);
+
+JXTA_DECLARE(JString *) jxta_MIA_get_PURI(Jxta_MIA *);
+JXTA_DECLARE(void) jxta_MIA_set_PURI(Jxta_MIA *, JString *);
+
+JXTA_DECLARE(JString *) jxta_MIA_get_Prov(Jxta_MIA *);
+JXTA_DECLARE(void) jxta_MIA_set_Prov(Jxta_MIA *, JString *);
+
+JXTA_DECLARE(JString *) jxta_MIA_get_Desc(Jxta_MIA *);
+JXTA_DECLARE(void) jxta_MIA_set_Desc(Jxta_MIA *, JString *);
+
+JXTA_DECLARE(JString *) jxta_MIA_get_Parm(Jxta_MIA *);
+JXTA_DECLARE(void) jxta_MIA_set_Parm(Jxta_MIA *, JString *);
+
+JXTA_DECLARE(Jxta_vector *) jxta_MIA_get_indexes(Jxta_advertisement *); 
  
-#endif /* __jxta_MIA_H__  */
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
+#endif /* __jxta_MIA_H__  */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

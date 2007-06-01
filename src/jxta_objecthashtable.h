@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_objecthashtable.h,v 1.3 2005/01/12 20:20:53 brent Exp $
+ * $Id: jxta_objecthashtable.h,v 1.6 2005/07/22 03:12:52 slowhog Exp $
  */
 
 
@@ -83,11 +83,9 @@ extern "C" {
 }
 #endif
 #endif
-
 /*
  * The opaque type definition.
- */
-typedef struct _Jxta_objecthashtable const Jxta_objecthashtable;
+ */ typedef struct _Jxta_objecthashtable const Jxta_objecthashtable;
 
 
 /************************************************************************
@@ -106,10 +104,8 @@ typedef struct _Jxta_objecthashtable const Jxta_objecthashtable;
  ** @return a new hash table, or NULL if allocation failed.
  *************************************************************************/
 
-Jxta_objecthashtable*
-jxta_objecthashtable_new (size_t initial_size,
-                          Jxta_object_hash_func hash,
-                          Jxta_object_equals_func equals );
+JXTA_DECLARE(Jxta_objecthashtable *)
+    jxta_objecthashtable_new(size_t initial_size, Jxta_object_hash_func hash, Jxta_object_equals_func equals);
 
 
 /************************************************************************
@@ -121,9 +117,8 @@ jxta_objecthashtable_new (size_t initial_size,
  ** @param value A pointer to a Jxta_object to be associated with the key
  ** @return JXTA_SUCCESS or (rare) errors otherwise.
  *************************************************************************/
-Jxta_status
-jxta_objecthashtable_put(Jxta_objecthashtable* self,
-                         Jxta_object* key, Jxta_object* value);
+JXTA_DECLARE(Jxta_status)
+    jxta_objecthashtable_put(Jxta_objecthashtable * self, Jxta_object * key, Jxta_object * value);
 
 /************************************************************************
  ** Inserts a new item under the specified key. If an item already
@@ -135,9 +130,8 @@ jxta_objecthashtable_put(Jxta_objecthashtable* self,
  ** @return JXTA_SUCCESS or errors otherwise. JXTA_ITEM_EXISTS is
  ** returned if an item already exists under the given key.
  *************************************************************************/
-Jxta_status
-jxta_objecthashtable_putnoreplace(Jxta_objecthashtable* self,
-				  Jxta_object* key, Jxta_object* value);
+JXTA_DECLARE(Jxta_status)
+    jxta_objecthashtable_putnoreplace(Jxta_objecthashtable * self, Jxta_object * key, Jxta_object * value);
 
 
 /************************************************************************
@@ -152,9 +146,8 @@ jxta_objecthashtable_putnoreplace(Jxta_objecthashtable* self,
  ** *old_value. Otherwise this pointer is not used.
  ** @return JXTA_SUCCESS or (rare) errors otherwise.
  *************************************************************************/
-Jxta_status
-jxta_objecthashtable_replace(Jxta_objecthashtable* self,
-                             Jxta_object* key, Jxta_object* value, Jxta_object** old_value);
+JXTA_DECLARE(Jxta_status)
+    jxta_objecthashtable_replace(Jxta_objecthashtable * self, Jxta_object * key, Jxta_object * value, Jxta_object ** old_value);
 
 
 /************************************************************************
@@ -170,9 +163,8 @@ jxta_objecthashtable_replace(Jxta_objecthashtable* self,
  ** @return JXTA_SUCCESS if an item was found, JXTA_ITEM_NOTFOUND if it was
  ** not found, or (rare) errors otherwise.
  *************************************************************************/
-Jxta_status
-jxta_objecthashtable_get(Jxta_objecthashtable* self,
-                         Jxta_object* key, Jxta_object** found_value );
+JXTA_DECLARE(Jxta_status)
+    jxta_objecthashtable_get(Jxta_objecthashtable * self, Jxta_object * key, Jxta_object ** found_value);
 
 
 /************************************************************************
@@ -189,9 +181,8 @@ jxta_objecthashtable_get(Jxta_objecthashtable* self,
  ** @return JXTA_SUCCESS if an item was found and removed. An error
  ** otherwise.
  *************************************************************************/
-Jxta_status
-jxta_objecthashtable_del(Jxta_objecthashtable* self,
-                         Jxta_object* key, Jxta_object** found_value);
+JXTA_DECLARE(Jxta_status)
+    jxta_objecthashtable_del(Jxta_objecthashtable * self, Jxta_object * key, Jxta_object ** found_value);
 
 /************************************************************************
  ** Removes the value associated with the specified key only if that
@@ -208,9 +199,8 @@ jxta_objecthashtable_del(Jxta_objecthashtable* self,
  ** if the key was not found. JXTA_VIOLATION if the key was found associated to
  ** a different value.
  *************************************************************************/
-Jxta_status
-jxta_objecthashtable_delcheck(Jxta_objecthashtable* self,
-			      Jxta_object* key, Jxta_object* value);
+JXTA_DECLARE(Jxta_status)
+    jxta_objecthashtable_delcheck(Jxta_objecthashtable * self, Jxta_object * key, Jxta_object * value);
 
 
 /************************************************************************
@@ -225,8 +215,8 @@ jxta_objecthashtable_delcheck(Jxta_objecthashtable* self,
  ** @return Jxta_vector* a pointer to a vector of all the values, or NULL
  ** if there is not enough memory to perform the operation.
  *************************************************************************/
-Jxta_vector*
-jxta_objecthashtable_keys_get(Jxta_objecthashtable* self);
+JXTA_DECLARE(Jxta_vector *)
+    jxta_objecthashtable_keys_get(Jxta_objecthashtable * self);
 
 /************************************************************************
  ** Returns a vector of all the values referenced by the given hashtable.
@@ -240,8 +230,8 @@ jxta_objecthashtable_keys_get(Jxta_objecthashtable* self);
  ** @return Jxta_vector* a pointer to a vector of all the values, or NULL
  ** if there is not enough memory to perform the operation.
  *************************************************************************/
-Jxta_vector*
-jxta_objecthashtable_values_get(Jxta_objecthashtable* self);
+JXTA_DECLARE(Jxta_vector *)
+    jxta_objecthashtable_values_get(Jxta_objecthashtable * self);
 
 /**
  ** Provides some statistics regarding the given hashtable.
@@ -263,10 +253,9 @@ jxta_objecthashtable_values_get(Jxta_objecthashtable* self);
  ** first alternate location, etc. A value of about 1 for an occupancy/size
  ** ratio of about 0.5 is the norm.
  */
-Jxta_status
-jxta_objecthashtable_stats(Jxta_objecthashtable* self, size_t* size, size_t* usage,
-                           size_t* occupancy, size_t* max_occupancy,
-                           double* avg_hops);
+JXTA_DECLARE(Jxta_status)
+    jxta_objecthashtable_stats(Jxta_objecthashtable * self, size_t * size, size_t * usage,
+                           size_t * occupancy, size_t * max_occupancy, double *avg_hops);
 
 /************************************************************************
  ** A generic hash function in case you dont want to write your own. This
@@ -278,7 +267,14 @@ jxta_objecthashtable_stats(Jxta_objecthashtable* self, size_t* size, size_t* usa
  ** @param ksz size of the value to be hashed
  ** @return a hash value
  *************************************************************************/
-unsigned int
-jxta_objecthashtable_simplehash( const void* key, size_t ksz );
+JXTA_DECLARE(unsigned int) jxta_objecthashtable_simplehash(const void *key, size_t ksz);
+
+#ifdef __cplusplus
+#if 0
+{
+#endif
+}
+#endif
+
 
 #endif /* JXTA_HASH_H */

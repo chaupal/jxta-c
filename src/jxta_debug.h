@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_debug.h,v 1.5 2005/02/17 20:31:44 bondolo Exp $
+ * $Id: jxta_debug.h,v 1.11 2005/06/16 23:11:40 slowhog Exp $
  */
 
 
@@ -58,7 +58,8 @@
 #define __JXTA_DEBUG_H__
 
 #include <stddef.h>
-#include <jxta_log.h>
+
+#include "jxta_log.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,11 +73,13 @@ extern "C" {
 #endif
 #endif
     /**
-     * Change the following line to <tt>#define JXTA_LOG_ENABLE</tt>
+     * Change the following line to <tt>#define JXTA_LOG_ENABLE 1</tt>
      *
      * This will enable debug log for all the platform.
      **/
-#undef JXTA_LOG_ENABLE
+#ifndef JXTA_LOG_ENABLE
+#define JXTA_LOG_ENABLE 0
+#endif
 
     /**
     *   Record the specified message to the JXTA debug log.
@@ -95,7 +98,7 @@ extern "C" {
     **/
     int JXTA_LOG_NOLINE(const char *fmt, ...);
 
-#ifdef JXTA_LOG_ENABLE
+#if JXTA_LOG_ENABLE
 
     /**
     *   Record the specified message to the JXTA debug log, but without
@@ -104,9 +107,9 @@ extern "C" {
     *   @param fmt  The format string for the log event.
     *   @return number of characters written to the log.
     **/
-    int jxta_log(const char *fmt, ...);
-    
-extern const char * __debug_log_cat;
+     JXTA_DECLARE(int) jxta_log(const char *fmt, ...);
+
+    extern const char *__debug_log_cat;
 
     /*
      * __VA_ARGS__  is c99.
@@ -141,7 +144,7 @@ extern const char * __debug_log_cat;
      * Non printable values are printed into their decimal value.
      * @param buf the buffer to display.
      * @param size the length of the buffer.
-     **/ void jxta_buffer_display(const char *buf, size_t size);
+     **/ JXTA_DECLARE(void) jxta_buffer_display(const char *buf, size_t size);
 
 #ifdef __cplusplus
 }

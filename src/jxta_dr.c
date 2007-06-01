@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dr.c,v 1.48 2005/04/02 23:50:44 bondolo Exp $
+ * $Id: jxta_dr.c,v 1.62 2005/08/29 06:38:07 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -58,9 +58,11 @@
 #include "jxta_errno.h"
 #include "jxta_debug.h"
 #include "jxta_dr.h"
+#include "jxta_dr_priv.h"
 #include "jxta_xml_util.h"
 #include "jxta_advertisement.h"
 #include "jxta_discovery_service.h"
+#include "jxtaapr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -97,6 +99,7 @@ struct _Jxta_DiscoveryResponse {
     Jxta_vector *responselist;
     Jxta_advertisement *peer_advertisement;
     Jxta_vector *advertisements;
+    long resolver_query_id;
 };
 
 /** Handler functions.  Each of these is responsible for
@@ -205,12 +208,12 @@ static void handleResponse(void *userdata, const XML_Char * cd, int len)
      * FIXME: jice@jxta.org 20020404 - Mo, you forgot to JXTA_OBJECT_INIT
      * r. (and also to release it after the vector got his own ref.
      */
-    r = (Jxta_DiscoveryResponseElement *) malloc(sizeof(Jxta_DiscoveryResponseElement));
+    r = (Jxta_DiscoveryResponseElement *) calloc(1, sizeof(Jxta_DiscoveryResponseElement));
     JXTA_OBJECT_INIT(r, DRE_Free, 0);
 
     r->expiration = 0;
     if (atts != NULL) {
-        if (!strncmp("Expiration", atts[0], sizeof("Expiration") - 1) ) {
+        if (!strncmp("Expiration", atts[0], sizeof("Expiration") - 1)) {
             r->expiration = atol(atts[1]);
         }
     }
@@ -221,13 +224,22 @@ static void handleResponse(void *userdata, const XML_Char * cd, int len)
     JXTA_LOG("In Response element\n");
 }
 
-short jxta_discovery_response_get_type(Jxta_DiscoveryResponse * ad)
+JXTA_DECLARE(long) jxta_discovery_response_get_query_id(Jxta_DiscoveryResponse * ad)
+{
+    return ad->resolver_query_id;
+}
+
+JXTA_DECLARE(void) jxta_discovery_response_set_query_id(Jxta_DiscoveryResponse *me, long qid)
+{
+    me->resolver_query_id = qid;
+}
+
+JXTA_DECLARE(short) jxta_discovery_response_get_type(Jxta_DiscoveryResponse * ad)
 {
     return ad->Type;
 }
 
-
-Jxta_status jxta_discovery_response_set_type(Jxta_DiscoveryResponse * ad, short type)
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_set_type(Jxta_DiscoveryResponse * ad, short type)
 {
     if (type < DISC_PEER || type > DISC_ADV) {
         return JXTA_INVALID_ARGUMENT;
@@ -236,18 +248,18 @@ Jxta_status jxta_discovery_response_set_type(Jxta_DiscoveryResponse * ad, short 
     return JXTA_SUCCESS;
 }
 
-int jxta_discovery_response_get_count(Jxta_DiscoveryResponse * ad)
+JXTA_DECLARE(int) jxta_discovery_response_get_count(Jxta_DiscoveryResponse * ad)
 {
     return ad->Count;
 }
 
-Jxta_status jxta_discovery_response_set_count(Jxta_DiscoveryResponse * ad, int count)
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_set_count(Jxta_DiscoveryResponse * ad, int count)
 {
     ad->Count = count;
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_discovery_response_get_peeradv(Jxta_DiscoveryResponse * ad, JString ** padv)
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_peeradv(Jxta_DiscoveryResponse * ad, JString ** padv)
 {
     if (ad->PeerAdv) {
         jstring_trim(ad->PeerAdv);
@@ -257,7 +269,7 @@ Jxta_status jxta_discovery_response_get_peeradv(Jxta_DiscoveryResponse * ad, JSt
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_discovery_response_set_peeradv(Jxta_DiscoveryResponse * ad, JString * padv)
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_set_peeradv(Jxta_DiscoveryResponse * ad, JString * padv)
 {
     if (ad == NULL || padv == NULL) {
         return JXTA_INVALID_ARGUMENT;
@@ -271,7 +283,8 @@ Jxta_status jxta_discovery_response_set_peeradv(Jxta_DiscoveryResponse * ad, JSt
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_discovery_response_get_peer_advertisement(Jxta_DiscoveryResponse * ad, Jxta_advertisement ** peer_advertisement)
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_peer_advertisement(Jxta_DiscoveryResponse * ad,
+                                                                         Jxta_advertisement ** peer_advertisement)
 {
     if (ad->peer_advertisement) {
         JXTA_OBJECT_SHARE(ad->peer_advertisement);
@@ -299,7 +312,7 @@ Jxta_status jxta_discovery_response_set_peeradvertisement(Jxta_DiscoveryResponse
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_discovery_response_get_attr(Jxta_DiscoveryResponse * ad, JString ** attr)
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_attr(Jxta_DiscoveryResponse * ad, JString ** attr)
 {
     jstring_trim(ad->Attr);
     JXTA_OBJECT_SHARE(ad->Attr);
@@ -307,7 +320,7 @@ Jxta_status jxta_discovery_response_get_attr(Jxta_DiscoveryResponse * ad, JStrin
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_discovery_response_set_attr(Jxta_DiscoveryResponse * ad, JString * attr)
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_set_attr(Jxta_DiscoveryResponse * ad, JString * attr)
 {
     if (ad == NULL || attr == NULL) {
         return JXTA_INVALID_ARGUMENT;
@@ -321,7 +334,7 @@ Jxta_status jxta_discovery_response_set_attr(Jxta_DiscoveryResponse * ad, JStrin
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_discovery_response_get_value(Jxta_DiscoveryResponse * ad, JString ** value)
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_value(Jxta_DiscoveryResponse * ad, JString ** value)
 {
     jstring_trim(ad->Value);
     JXTA_OBJECT_SHARE(ad->Value);
@@ -329,7 +342,7 @@ Jxta_status jxta_discovery_response_get_value(Jxta_DiscoveryResponse * ad, JStri
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_discovery_response_set_value(Jxta_DiscoveryResponse * ad, JString * value)
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_set_value(Jxta_DiscoveryResponse * ad, JString * value)
 {
     if (ad == NULL) {
         return JXTA_INVALID_ARGUMENT;
@@ -343,7 +356,7 @@ Jxta_status jxta_discovery_response_set_value(Jxta_DiscoveryResponse * ad, JStri
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_discovery_response_get_responses(Jxta_DiscoveryResponse * ad, Jxta_vector ** responses)
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_responses(Jxta_DiscoveryResponse * ad, Jxta_vector ** responses)
 {
     if (ad->responselist != NULL) {
         JXTA_OBJECT_SHARE(ad->responselist);
@@ -355,7 +368,7 @@ Jxta_status jxta_discovery_response_get_responses(Jxta_DiscoveryResponse * ad, J
 }
 
 
-void jxta_discovery_response_set_responses(Jxta_DiscoveryResponse * ad, Jxta_vector * responselist)
+JXTA_DECLARE(void) jxta_discovery_response_set_responses(Jxta_DiscoveryResponse * ad, Jxta_vector * responselist)
 {
     if (ad->responselist != NULL) {
         JXTA_OBJECT_RELEASE(ad->responselist);
@@ -369,14 +382,17 @@ void jxta_discovery_response_set_responses(Jxta_DiscoveryResponse * ad, Jxta_vec
 }
 
 
-Jxta_status jxta_discovery_response_get_advertisements(Jxta_DiscoveryResponse * ad, Jxta_vector ** advertisements)
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_advertisements(Jxta_DiscoveryResponse * ad, Jxta_vector ** advertisements)
 {
     Jxta_DiscoveryResponseElement *res;
     Jxta_advertisement *radv = NULL;
-    int i = 0;
+    unsigned int i = 0;
 
     if (jxta_vector_size(ad->advertisements) < jxta_vector_size(ad->responselist)) {
         Jxta_vector *adv_vec = NULL;
+        if (NULL != ad->advertisements) {
+            JXTA_OBJECT_RELEASE(ad->advertisements);
+        }
         ad->advertisements = jxta_vector_new(1);
         for (i = 0; i < jxta_vector_size(ad->responselist); i++) {
             Jxta_object *tmpadv = NULL;
@@ -393,15 +409,16 @@ Jxta_status jxta_discovery_response_get_advertisements(Jxta_DiscoveryResponse * 
                 /* call listener(s) if any */
                 JXTA_OBJECT_RELEASE(res);
                 JXTA_OBJECT_RELEASE(radv);
+                JXTA_OBJECT_RELEASE(tmpadv);
+                JXTA_OBJECT_RELEASE(adv_vec);
             }
         }
-        JXTA_OBJECT_SHARE(ad->advertisements);
     }
-    *advertisements = ad->advertisements;
+    *advertisements = JXTA_OBJECT_SHARE(ad->advertisements);
     return JXTA_SUCCESS;
 }
 
-void jxta_discovery_response_set_advertisements(Jxta_DiscoveryResponse * ad, Jxta_vector * advertisements)
+JXTA_DECLARE(void) jxta_discovery_response_set_advertisements(Jxta_DiscoveryResponse * ad, Jxta_vector * advertisements)
 {
     if (ad->advertisements != NULL) {
         JXTA_OBJECT_RELEASE(ad->advertisements);
@@ -409,7 +426,7 @@ void jxta_discovery_response_set_advertisements(Jxta_DiscoveryResponse * ad, Jxt
     }
     if (advertisements != NULL) {
         JXTA_OBJECT_SHARE(advertisements);
-        ad->responselist = advertisements;
+        ad->advertisements = advertisements;
     }
     return;
 }
@@ -422,15 +439,15 @@ void jxta_discovery_response_set_advertisements(Jxta_DiscoveryResponse * ad, Jxt
  * on the value in the char * kwd.
  */
 static const Kwdtab Jxta_DiscoveryResponse_tags[] = {
-    {"Null", Null_, NULL, NULL},
-    {"jxta:DiscoveryResponse", Jxta_DiscoveryResponse_, *handleJxta_DiscoveryResponse, NULL},
-    {"Type", Type_, *handleType, NULL},
-    {"Count", Count_, *handleCount, NULL},
-    {"PeerAdv", PeerAdv_, *handlePeerAdv, NULL},
-    {"Attr", Attr_, *handleAttr, NULL},
-    {"Value", Value_, *handleValue, NULL},
-    {"Response", Response_, *handleResponse, NULL},
-    {NULL, 0, 0, NULL}
+    {"Null", Null_, NULL, NULL, NULL},
+    {"jxta:DiscoveryResponse", Jxta_DiscoveryResponse_, *handleJxta_DiscoveryResponse, NULL, NULL},
+    {"Type", Type_, *handleType, NULL, NULL},
+    {"Count", Count_, *handleCount, NULL, NULL},
+    {"PeerAdv", PeerAdv_, *handlePeerAdv, NULL, NULL},
+    {"Attr", Attr_, *handleAttr, NULL, NULL},
+    {"Value", Value_, *handleValue, NULL, NULL},
+    {"Response", Response_, *handleResponse, NULL, NULL},
+    {NULL, 0, 0, NULL, NULL}
 };
 
 
@@ -453,35 +470,31 @@ Jxta_status response_print(Jxta_DiscoveryResponse * ad, JString * js)
         }
 
         JXTA_OBJECT_CHECK_VALID(anElement);
-#ifdef WIN32
-        sprintf(buf, "<Response Expiration=\"%I64d\">\n", anElement->expiration);
-#else
-        sprintf(buf, "<Response Expiration=\"%lld\">\n", anElement->expiration);
-#endif
+        apr_snprintf(buf, sizeof(buf), "<Response Expiration=\"%" APR_INT64_T_FMT "\">\n", anElement->expiration);
         jstring_append_2(js, buf);
         status = jxta_xml_util_encode_jstring(anElement->response, &tmps);
         if (status != JXTA_SUCCESS) {
             JXTA_LOG("error encoding the response, retrun status :%d\n", status);
             return status;
         }
-        JXTA_OBJECT_SHARE(tmps);
+
         jstring_append_1(js, tmps);
         JXTA_OBJECT_RELEASE(tmps);
         jstring_append_2(js, "</Response>\n");
 
         JXTA_OBJECT_RELEASE(anElement);
     }
+    JXTA_OBJECT_RELEASE(responselist);
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_discovery_response_get_xml(Jxta_DiscoveryResponse * ad, JString ** document)
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_xml(Jxta_DiscoveryResponse * ad, JString ** document)
 {
 
     JString *doc;
     JString *tmps = NULL;
     Jxta_status status;
-    char *buf = malloc(128);
-    memset(buf, 0, 128);
+    char *buf = calloc(1, 128);
 
     doc = jstring_new_2("<?xml version=\"1.0\"?>\n");
     jstring_append_2(doc, "<!DOCTYPE jxta:DiscoveryResponse>\n");
@@ -489,12 +502,12 @@ Jxta_status jxta_discovery_response_get_xml(Jxta_DiscoveryResponse * ad, JString
     jstring_append_2(doc, "<jxta:DiscoveryResponse>\n");
 
     jstring_append_2(doc, "<Type>");
-    sprintf(buf, "%d", ad->Type);
+    apr_snprintf(buf, 128, "%d", ad->Type);
     jstring_append_2(doc, buf);
     jstring_append_2(doc, "</Type>\n");
 
     jstring_append_2(doc, "<Count>");
-    sprintf(buf, "%d", ad->Count);
+    apr_snprintf(buf, 128, "%d", ad->Count);
     jstring_append_2(doc, buf);
     jstring_append_2(doc, "</Count>\n");
 
@@ -522,7 +535,7 @@ Jxta_status jxta_discovery_response_get_xml(Jxta_DiscoveryResponse * ad, JString
     return JXTA_SUCCESS;
 }
 
-Jxta_DiscoveryResponse *jxta_discovery_response_new(void)
+JXTA_DECLARE(Jxta_DiscoveryResponse *) jxta_discovery_response_new(void)
 {
 
     Jxta_DiscoveryResponse *ad;
@@ -531,7 +544,6 @@ Jxta_DiscoveryResponse *jxta_discovery_response_new(void)
     memset(ad, 0x0, sizeof(Jxta_DiscoveryResponse));
     ad->PeerAdv = jstring_new_0();
     ad->responselist = jxta_vector_new(4);
-    ad->advertisements = jxta_vector_new(4);
     ad->advertisements = jxta_vector_new(4);
     ad->Attr = jstring_new_0();
     ad->Value = jstring_new_0();
@@ -543,9 +555,10 @@ Jxta_DiscoveryResponse *jxta_discovery_response_new(void)
     return ad;
 }
 
-Jxta_DiscoveryResponse *jxta_discovery_response_new_1(short type,
-                                                      char *attr,
-                                                      char *value, int threshold, JString * peeradv, Jxta_vector * responses)
+JXTA_DECLARE(Jxta_DiscoveryResponse *) jxta_discovery_response_new_1(short type,
+                                                                     char *attr,
+                                                                     char *value, int threshold, JString * peeradv,
+                                                                     Jxta_vector * responses)
 {
 
     Jxta_DiscoveryResponse *ad;
@@ -567,6 +580,7 @@ Jxta_DiscoveryResponse *jxta_discovery_response_new_1(short type,
     ad->Type = type;
     ad->Attr = jstring_new_2(attr);
     ad->Value = jstring_new_2(value);
+    ad->Count = threshold;
 
     return ad;
 }
@@ -581,6 +595,10 @@ void jxta_discovery_response_free(Jxta_DiscoveryResponse * ad)
         JXTA_OBJECT_RELEASE(ad->Value);
     if (ad->responselist)
         JXTA_OBJECT_RELEASE(ad->responselist);
+    if (ad->advertisements)
+        JXTA_OBJECT_RELEASE(ad->advertisements);
+    if (ad->peer_advertisement)
+        JXTA_OBJECT_RELEASE(ad->peer_advertisement);
     jxta_advertisement_delete((Jxta_advertisement *) ad);
     memset(ad, 0x0, sizeof(Jxta_DiscoveryResponse));
     free(ad);
@@ -588,13 +606,13 @@ void jxta_discovery_response_free(Jxta_DiscoveryResponse * ad)
 
 
 
-void jxta_discovery_response_parse_charbuffer(Jxta_DiscoveryResponse * ad, const char *buf, int len)
+JXTA_DECLARE(void) jxta_discovery_response_parse_charbuffer(Jxta_DiscoveryResponse * ad, const char *buf, int len)
 {
 
     jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
 
-void jxta_discovery_response_parse_file(Jxta_DiscoveryResponse * ad, FILE * stream)
+JXTA_DECLARE(void) jxta_discovery_response_parse_file(Jxta_DiscoveryResponse * ad, FILE * stream)
 {
 
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
@@ -609,7 +627,7 @@ static void response_element_free(Jxta_object * o)
 }
 
 
-Jxta_DiscoveryResponseElement *jxta_discovery_response_new_element(void)
+JXTA_DECLARE(Jxta_DiscoveryResponseElement *) jxta_discovery_response_new_element(void)
 {
 
     Jxta_DiscoveryResponseElement *dre = (Jxta_DiscoveryResponseElement *) malloc(sizeof(Jxta_DiscoveryResponseElement));
@@ -618,7 +636,8 @@ Jxta_DiscoveryResponseElement *jxta_discovery_response_new_element(void)
     return dre;
 }
 
-Jxta_DiscoveryResponseElement *jxta_discovery_response_new_element_1(JString * response, Jxta_expiration_time expiration)
+JXTA_DECLARE(Jxta_DiscoveryResponseElement *) jxta_discovery_response_new_element_1(JString * response,
+                                                                                    Jxta_expiration_time expiration)
 {
 
     Jxta_DiscoveryResponseElement *dre = jxta_discovery_response_new_element();
@@ -633,5 +652,10 @@ Jxta_DiscoveryResponseElement *jxta_discovery_response_new_element_1(JString * r
 }
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
+/* vi: set ts=4 sw=4 tw=130 et: */

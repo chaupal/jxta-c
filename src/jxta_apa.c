@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_apa.c,v 1.8 2005/04/06 21:49:11 bondolo Exp $
+ * $Id: jxta_apa.c,v 1.14 2005/08/03 05:51:14 slowhog Exp $
  */
 
 static const char *__log_cat = "APA";
@@ -158,21 +158,21 @@ static void handleEndpoint(void *userdata, const XML_Char * cd, int len)
 /** The get/set functions represent the public
  * interface to the ad class, that is, the API.
  */
-char *jxta_AccessPointAdvertisement_get_Jxta_AccessPointAdvertisement(Jxta_AccessPointAdvertisement * ad)
+JXTA_DECLARE(char *) jxta_AccessPointAdvertisement_get_Jxta_AccessPointAdvertisement(Jxta_AccessPointAdvertisement * ad)
 {
     return NULL;
 }
 
-char *jxta_AccessPointAdvertisement_get_Jxta_AccessPointAdvertisement_string(Jxta_advertisement * ad)
+char * JXTA_STDCALL jxta_AccessPointAdvertisement_get_Jxta_AccessPointAdvertisement_string(Jxta_advertisement * ad)
 {
     return NULL;
 }
 
-void jxta_AccessPointAdvertisement_set_Jxta_AccessPointAdvertisement(Jxta_AccessPointAdvertisement * ad, char *name)
+JXTA_DECLARE(void) jxta_AccessPointAdvertisement_set_Jxta_AccessPointAdvertisement(Jxta_AccessPointAdvertisement * ad, char *name)
 {
 }
 
-Jxta_id *jxta_AccessPointAdvertisement_get_PID(Jxta_AccessPointAdvertisement * ad)
+JXTA_DECLARE(Jxta_id *) jxta_AccessPointAdvertisement_get_PID(Jxta_AccessPointAdvertisement * ad)
 {
     if (ad->PID != NULL) {
         JXTA_OBJECT_SHARE(ad->PID);
@@ -183,7 +183,7 @@ Jxta_id *jxta_AccessPointAdvertisement_get_PID(Jxta_AccessPointAdvertisement * a
 }
 
 
-void jxta_AccessPointAdvertisement_set_PID(Jxta_AccessPointAdvertisement * ad, Jxta_id * id)
+JXTA_DECLARE(void) jxta_AccessPointAdvertisement_set_PID(Jxta_AccessPointAdvertisement * ad, Jxta_id * id)
 {
 
     if (id == NULL)
@@ -197,13 +197,14 @@ void jxta_AccessPointAdvertisement_set_PID(Jxta_AccessPointAdvertisement * ad, J
 }
 
 
-Jxta_vector *jxta_AccessPointAdvertisement_get_EndpointAddresses(Jxta_AccessPointAdvertisement * ad)
+JXTA_DECLARE(Jxta_vector *) jxta_AccessPointAdvertisement_get_EndpointAddresses(Jxta_AccessPointAdvertisement * ad)
 {
     JXTA_OBJECT_SHARE(ad->endpoints);
     return ad->endpoints;
 }
 
-void jxta_AccessPointAdvertisement_set_EndpointAddresses(Jxta_AccessPointAdvertisement * ad, Jxta_vector * addresses)
+JXTA_DECLARE(void) jxta_AccessPointAdvertisement_set_EndpointAddresses(Jxta_AccessPointAdvertisement * ad,
+                                                                       Jxta_vector * addresses)
 {
     JXTA_OBJECT_SHARE(addresses);
     JXTA_OBJECT_RELEASE(ad->endpoints);
@@ -217,13 +218,15 @@ void jxta_AccessPointAdvertisement_set_EndpointAddresses(Jxta_AccessPointAdverti
  * Later, the stream will be dispatched to the handler based
  * on the value in the char * kwd.
  */
-const static Kwdtab Jxta_AccessPointAdvertisement_tags[] = {
-    {"Null", Null_, NULL, NULL},
+static const Kwdtab Jxta_AccessPointAdvertisement_tags[] = {
+    {"Null", Null_, NULL, NULL, NULL},
+
     {"jxta:APA", Jxta_AccessPointAdvertisement_, *handleJxta_AccessPointAdvertisement,
-     *jxta_AccessPointAdvertisement_get_Jxta_AccessPointAdvertisement_string},
-    {"PID", PID_, *handlePID, *jxta_AccessPointAdvertisement_get_PID},
-    {"EA", EA_, *handleEndpoint, NULL},
-    {NULL, 0, 0, NULL}
+     *jxta_AccessPointAdvertisement_get_Jxta_AccessPointAdvertisement_string, NULL},
+
+    {"PID", PID_, *handlePID, *jxta_AccessPointAdvertisement_get_PID, NULL},
+    {"EA", EA_, *handleEndpoint, NULL, NULL},
+    {NULL, 0, 0, NULL, NULL}
 };
 
 /* This being an internal call, we chose a behaviour for handling the jstring
@@ -250,7 +253,7 @@ void endpoints_printer(Jxta_AccessPointAdvertisement * ad, JString * js)
     }
 }
 
-Jxta_status jxta_AccessPointAdvertisement_get_xml(Jxta_AccessPointAdvertisement * ad, JString ** result)
+JXTA_DECLARE(Jxta_status) jxta_AccessPointAdvertisement_get_xml(Jxta_AccessPointAdvertisement * ad, JString ** result)
 {
 
     JString *string = jstring_new_0();
@@ -281,7 +284,7 @@ Jxta_status jxta_AccessPointAdvertisement_get_xml(Jxta_AccessPointAdvertisement 
  * just in case there is a segfault (not that 
  * that would ever happen, but in case it ever did.)
  */
-Jxta_AccessPointAdvertisement *jxta_AccessPointAdvertisement_new(void)
+JXTA_DECLARE(Jxta_AccessPointAdvertisement *) jxta_AccessPointAdvertisement_new(void)
 {
 
     Jxta_AccessPointAdvertisement *ad;
@@ -316,34 +319,39 @@ static void jxta_AccessPointAdvertisement_delete(Jxta_AccessPointAdvertisement *
     if (ad->endpoints != NULL)
         JXTA_OBJECT_RELEASE(ad->endpoints);
 
-    jxta_advertisement_delete((Jxta_advertisement *) ad);
+    jxta_advertisement_destruct((Jxta_advertisement *) ad);
 
     memset(ad, 0xdd, sizeof(Jxta_AccessPointAdvertisement));
     free(ad);
 }
 
 
-void jxta_AccessPointAdvertisement_parse_charbuffer(Jxta_AccessPointAdvertisement * ad, const char *buf, int len)
+JXTA_DECLARE(void) jxta_AccessPointAdvertisement_parse_charbuffer(Jxta_AccessPointAdvertisement * ad, const char *buf, int len)
 {
 
     jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
 
-void jxta_AccessPointAdvertisement_parse_file(Jxta_AccessPointAdvertisement * ad, FILE * stream)
+JXTA_DECLARE(void) jxta_AccessPointAdvertisement_parse_file(Jxta_AccessPointAdvertisement * ad, FILE * stream)
 {
 
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
 
-Jxta_vector *jxta_AccessPointAdvertisement_get_indexes(void)
+JXTA_DECLARE(Jxta_vector *) jxta_AccessPointAdvertisement_get_indexes(Jxta_advertisement * dummy)
 {
     const char *idx[][2] = {
         {"PID", NULL},
         {NULL, NULL}
     };
-    return jxta_advertisement_return_indexes(idx);
+    return jxta_advertisement_return_indexes(idx[0]);
 }
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
+/* vi: set ts=4 sw=4 tw=130 et: */

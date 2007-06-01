@@ -20,26 +20,27 @@
 
 #include <stdarg.h>
 
+#include "jxta_types.h"
 #include "jxta_errno.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-enum Jxta_log_levels {
-    JXTA_LOG_LEVEL_INVALID = -1,
-    JXTA_LOG_LEVEL_MIN = 0,
-    JXTA_LOG_LEVEL_FATAL = 0,
-    JXTA_LOG_LEVEL_ERROR,
-    JXTA_LOG_LEVEL_WARNING,
-    JXTA_LOG_LEVEL_INFO,
-    JXTA_LOG_LEVEL_DEBUG,
-    JXTA_LOG_LEVEL_TRACE,
-    JXTA_LOG_LEVEL_PARANOID,
-    JXTA_LOG_LEVEL_MAX
-};
+    enum Jxta_log_levels {
+        JXTA_LOG_LEVEL_INVALID = -1,
+        JXTA_LOG_LEVEL_MIN = 0,
+        JXTA_LOG_LEVEL_FATAL = 0,
+        JXTA_LOG_LEVEL_ERROR,
+        JXTA_LOG_LEVEL_WARNING,
+        JXTA_LOG_LEVEL_INFO,
+        JXTA_LOG_LEVEL_DEBUG,
+        JXTA_LOG_LEVEL_TRACE,
+        JXTA_LOG_LEVEL_PARANOID,
+        JXTA_LOG_LEVEL_MAX
+    };
 
-typedef enum Jxta_log_levels Jxta_log_level;
+    typedef enum Jxta_log_levels Jxta_log_level;
 
 #define JXTA_LOG_LEVEL_FLAG_FATAL 1
 #define JXTA_LOG_LEVEL_FLAG_ERROR 2
@@ -75,12 +76,11 @@ typedef enum Jxta_log_levels Jxta_log_level;
  *
  * @return Status code
  */
-typedef Jxta_status (*Jxta_log_callback) (void *user_data, const char *cat,
-                                          int level, const char *fmt,
-                                          va_list ap);
+    typedef Jxta_status(JXTA_STDCALL * Jxta_log_callback) (void *user_data, const char *cat,
+                                                           int level, const char *fmt, va_list ap);
 
-Jxta_status jxta_log_initialize(void);
-void jxta_log_terminate(void);
+     JXTA_DECLARE(Jxta_status) jxta_log_initialize(void);
+     JXTA_DECLARE(void) jxta_log_terminate(void);
 
 /**
  * Register the logger function
@@ -89,29 +89,29 @@ void jxta_log_terminate(void);
  * @param void * user data, typically would be a struct holding the
  *        data needed by the logger function
  */
-void jxta_log_using(Jxta_log_callback log_cb, void *user_data);
+     JXTA_DECLARE(void) jxta_log_using(Jxta_log_callback log_cb, void *user_data);
 
 /**
  * Call this function to append log with the global registered callback
  * logger function
  */
-Jxta_status jxta_log_append(const char *cat, int level, const char *fmt, ...);
+     JXTA_DECLARE(Jxta_status) jxta_log_append(const char *cat, int level, const char *fmt, ...);
 
 /**
  * Call this function to append log with the global registered callback
  * logger function
  */
-Jxta_status jxta_log_appendv(const char *cat, int level, const char *fmt, va_list ap );
+     JXTA_DECLARE(Jxta_status) jxta_log_appendv(const char *cat, int level, const char *fmt, va_list ap);
 
 /**
  * Log selector - helper structure to determine whether a log should be
  * recorded by the logger
  */
-typedef struct Jxta_log_selector Jxta_log_selector;
+    typedef struct Jxta_log_selector Jxta_log_selector;
 
-Jxta_log_selector *jxta_log_selector_new(void);
+     JXTA_DECLARE(Jxta_log_selector *) jxta_log_selector_new(void);
 
-void jxta_log_selector_delete(Jxta_log_selector *self);
+     JXTA_DECLARE(void) jxta_log_selector_delete(Jxta_log_selector * self);
 
 /**
  * Create a log selector
@@ -119,18 +119,17 @@ void jxta_log_selector_delete(Jxta_log_selector *self);
  * @return Jxta_log_selector* - the pointer to the Jxta_log_selector
  *         structure constructed. NULL if the seletor is invalid.
  */
-Jxta_log_selector *jxta_log_selector_new_and_set(const char *selector, Jxta_status *rv);
+     JXTA_DECLARE(Jxta_log_selector *) jxta_log_selector_new_and_set(const char *selector, Jxta_status * rv);
 
-Jxta_status jxta_log_selector_add_category(Jxta_log_selector *self,
-                                         const char *cat);
+     JXTA_DECLARE(Jxta_status) jxta_log_selector_add_category(Jxta_log_selector * self, const char *cat);
 
-Jxta_status jxta_log_selector_remove_category(Jxta_log_selector *self, const char *cat);
+     JXTA_DECLARE(Jxta_status) jxta_log_selector_remove_category(Jxta_log_selector * self, const char *cat);
 
-Jxta_status jxta_log_selector_list_positive(Jxta_log_selector *self, Jxta_boolean positive);
+     JXTA_DECLARE(Jxta_status) jxta_log_selector_list_positive(Jxta_log_selector * self, Jxta_boolean positive);
 
-Jxta_status jxta_log_selector_set_level_mask(Jxta_log_selector *self, unsigned int mask);
+     JXTA_DECLARE(Jxta_status) jxta_log_selector_set_level_mask(Jxta_log_selector * self, unsigned int mask);
 
-Jxta_status jxta_log_selector_clear_level_mask(Jxta_log_selector *self, unsigned int mask);
+     JXTA_DECLARE(Jxta_status) jxta_log_selector_clear_level_mask(Jxta_log_selector * self, unsigned int mask);
 
 /**
  * Set the selector by config string
@@ -139,7 +138,7 @@ Jxta_status jxta_log_selector_clear_level_mask(Jxta_log_selector *self, unsigned
  *        selector, the format is basically like selector used by syslog.conf
  *
  */
-Jxta_status jxta_log_selector_set(Jxta_log_selector *self, const char *selector);
+     JXTA_DECLARE(Jxta_status) jxta_log_selector_set(Jxta_log_selector * self, const char *selector);
 
 /**
  * Determine whether the category and level is selected by the selector
@@ -151,12 +150,12 @@ Jxta_status jxta_log_selector_set(Jxta_log_selector *self, const char *selector)
  *
  * @return 0 if not selected, 1 otherwise.
  */
-Jxta_boolean jxta_log_selector_is_selected(Jxta_log_selector *self, const char *cat, Jxta_log_level level);
+     JXTA_DECLARE(Jxta_boolean) jxta_log_selector_is_selected(Jxta_log_selector * self, const char *cat, Jxta_log_level level);
 
 /**
  * Log into a user file
  */
-typedef struct Jxta_log_file Jxta_log_file;
+    typedef struct Jxta_log_file Jxta_log_file;
 
 /**
  * Open a log file
@@ -166,26 +165,26 @@ typedef struct Jxta_log_file Jxta_log_file;
  *        absolute path to ensure the file location; Otherwise, the file
  *        will be created as a relative path to current folder
  */
-Jxta_status jxta_log_file_open(Jxta_log_file **newf, const char *fname);
+     JXTA_DECLARE(Jxta_status) jxta_log_file_open(Jxta_log_file ** newf, const char *fname);
 
 /**
  * Close the log file
  */
-Jxta_status jxta_log_file_close(Jxta_log_file *self);
+     JXTA_DECLARE(Jxta_status) jxta_log_file_close(Jxta_log_file * self);
 
 /**
  * The logger callback function
  *
  * @param void *userdata, the pointer to the Jxta_log_file structure
  */
-Jxta_status
-jxta_log_file_append(void *user_data, const char *cat,
-                     int level, const char *fmt, va_list ap);
+     JXTA_DECLARE(Jxta_status)
+     jxta_log_file_append(void *user_data, const char *cat, int level, const char *fmt, va_list ap);
 
 /**
  * Set the selector for the log file
  */
-Jxta_status jxta_log_file_attach_selector(Jxta_log_file *self, Jxta_log_selector *selector, Jxta_log_selector** orig_sel);
+     JXTA_DECLARE(Jxta_status) jxta_log_file_attach_selector(Jxta_log_file * self, Jxta_log_selector * selector,
+                                                             Jxta_log_selector ** orig_sel);
 
 #define _STR(x) _VAL(x)
 #define _VAL(x) #x
@@ -198,9 +197,7 @@ Jxta_status jxta_log_file_attach_selector(Jxta_log_file *self, Jxta_log_selector
 #define FILEANDLINE "[" __FILE__ ":" _STR(__LINE__) "] "
 
 #ifdef __cplusplus
-} /* extern "C" */
+}                               /* extern "C" */
 #endif
-
-#endif /* __JXTA_LOG_H__ */
-
+#endif                          /* __JXTA_LOG_H__ */
 /* vim: set sw=4 ts=4 et: */

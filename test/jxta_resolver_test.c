@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_test.c,v 1.17 2005/04/07 22:58:55 slowhog Exp $
+ * $Id: jxta_resolver_test.c,v 1.19 2005/08/03 08:10:22 lankes Exp $
  */
 
 #include "jxta.h"
@@ -60,8 +60,78 @@
 #include "jxta_endpoint_service.h"
 #include "jxta_object.h"
 #include "jxtaapr.h"
-#include "jpr/jpr_thread.h"
+#ifndef WIN32
 #include <unistd.h>
+#else
+static char*	optarg = NULL;		// global argument pointer
+static int		optind = 0; 		// global argv index
+
+static int getopt(int argc, char* argv[], char* optstring)
+{
+	static char*	next = NULL;
+	char			c;
+	char*			cp = NULL;
+
+	if (optind == 0)
+		next = NULL;
+
+	optarg = NULL;
+
+	if (next == NULL || *next == '\0')
+	{
+		if (optind == 0)
+			optind++;
+
+		if (optind >= argc || argv[optind][0] != '-' || argv[optind][1] == '\0')
+		{
+			optarg = NULL;
+			if (optind < argc)
+				optarg = argv[optind];
+			return EOF;
+		}
+
+		if (strcmp(argv[optind], "--") == 0)
+		{
+			optind++;
+			optarg = NULL;
+			if (optind < argc)
+				optarg = argv[optind];
+			return EOF;
+		}
+
+		next = argv[optind];
+		next++;	
+		optind++;
+	}
+
+	c = *next++;
+	cp = strchr(optstring, c);
+
+	if (cp == NULL || c == ':')
+		return '?';
+
+	cp++;
+	if (*cp == ':')
+	{
+		if (*next != '\0')
+		{
+			optarg = next;
+			next = NULL;
+		}
+		else if (optind < argc)
+		{
+			optarg = argv[optind];
+			optind++;
+		}
+		else
+		{
+			return '?';
+		}
+	}
+
+	return c;
+}
+#endif
 
 /*
  *
@@ -69,7 +139,7 @@
  *
  */
 static void rs_wait(int msec){
-        jpr_thread_delay ((Jpr_interval_time) msec);
+        apr_sleep ((Jpr_interval_time) msec);
 }
 
 int main(int argc, char *argv[])
@@ -144,7 +214,11 @@ int main(int argc, char *argv[])
     } else  {
 	fprintf(stdout,"jxta_resolver_test: query %s sent to %s\n", jstring_get_string(rq), jstring_get_string(rdv));
     }
+#ifdef WIN32
+	Sleep(10000);
+#else
     sleep(10);
+#endif
     JXTA_OBJECT_RELEASE(resolver);
     jxta_module_stop((Jxta_module*) pg);
     JXTA_OBJECT_RELEASE(pg);

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_environment.h,v 1.2 2005/01/18 19:20:47 bondolo Exp $
+ * $Id: jxta_shell_environment.h,v 1.4 2005/08/24 01:21:20 slowhog Exp $
  */
 
 #ifndef __JXTA_SHELL_ENVIRONMENT_H__
@@ -70,7 +70,6 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _jxta_shell_environement JxtaShellEnvironment;
 
 /**
@@ -80,7 +79,7 @@ typedef struct _jxta_shell_environement JxtaShellEnvironment;
 *               this object was
 *               properly shared by the calling function.
 */
-JxtaShellEnvironment * JxtaShellEnvironment_new(JxtaShellEnvironment * parent);
+JxtaShellEnvironment *JxtaShellEnvironment_new(JxtaShellEnvironment * parent);
 
 
 /************************************************************************
@@ -90,7 +89,7 @@ JxtaShellEnvironment * JxtaShellEnvironment_new(JxtaShellEnvironment * parent);
  * @param env the environment to which to add the  object
  * @param obj the object to add. It is shared automatically
  */
-void JxtaShellEnvironment_add_0(JxtaShellEnvironment * env,JxtaShellObject * obj);
+void JxtaShellEnvironment_add_0(JxtaShellEnvironment * env, JxtaShellObject * obj);
 
 
 /************************************************************************
@@ -98,9 +97,9 @@ void JxtaShellEnvironment_add_0(JxtaShellEnvironment * env,JxtaShellObject * obj
  * @param env the environment to which to add the  object
  * @param obj the object to add. It is shared automatically
  */
-void JxtaShellEnvironment_add_1(JxtaShellEnvironment * env,Jxta_object * obj);
+void JxtaShellEnvironment_add_1(JxtaShellEnvironment * env, Jxta_object * obj);
 
-  
+
 
 /************************************************************************
  * Inserts a new  Jxta_object. 
@@ -108,14 +107,14 @@ void JxtaShellEnvironment_add_1(JxtaShellEnvironment * env,Jxta_object * obj);
  * @param name the name under which to store the object. It is shared automatically
  * @param obj the object to add. It is shared automatically
  */
-void JxtaShellEnvironment_add_2(JxtaShellEnvironment * env,JString *name, Jxta_object * obj);
-  
+void JxtaShellEnvironment_add_2(JxtaShellEnvironment * env, JString * name, Jxta_object * obj);
+
 /*
 * Returns the JxtaShellObject stored under the indicated name
 * @param env the environment  from which to get the name
 * @param name the name of the variable to find
 */
-JxtaShellObject * JxtaShellEnvironment_get(JxtaShellEnvironment * env,JString *name);
+JxtaShellObject *JxtaShellEnvironment_get(JxtaShellEnvironment * env, JString * name);
 
 /*
 * If an item under the name exists, it is deleted. It is not deleted, if 
@@ -123,14 +122,22 @@ JxtaShellObject * JxtaShellEnvironment_get(JxtaShellEnvironment * env,JString *n
 * @param env the environment  from which to get the name
 * @param name the name of the variable to delete
 */
-void JxtaShellEnvironment_delete(JxtaShellEnvironment * env,JString *name);
+void JxtaShellEnvironment_delete(JxtaShellEnvironment * env, JString * name);
+
+/*
+ *If an item with this type exists, it is deleted. It is not deleted, if 
+ *the parameter is in the parent enviroment
+ *@param env the environment from which to get the type
+ *@param type the type of the variable to delete
+ */
+void JxtaShellEnvironment_delete_type(JxtaShellEnvironment * env, JString * type);
 
 /**
 * Does the indicated environment contain the indicted key
 * @param env the environment  to query
 * @param name the key  for which to search
 */
-Jxta_boolean JxtaShellEnvironment_contains_key(JxtaShellEnvironment * env,JString *name);
+Jxta_boolean JxtaShellEnvironment_contains_key(JxtaShellEnvironment * env, JString * name);
 
 /**
 * Gets a list of all the values in this environment.
@@ -139,7 +146,7 @@ Jxta_boolean JxtaShellEnvironment_contains_key(JxtaShellEnvironment * env,JStrin
 * when no-longer needed. 
 * @param env the environment  to query
 */
-Jxta_vector* JxtaShellEnvironment_contains_values(JxtaShellEnvironment * env);
+Jxta_vector *JxtaShellEnvironment_contains_values(JxtaShellEnvironment * env);
 
 /**
 * Gets a list of the values in this environment of the specified type.
@@ -148,7 +155,7 @@ Jxta_vector* JxtaShellEnvironment_contains_values(JxtaShellEnvironment * env);
 * when no-longer needed. 
 * @param env the environment  to query
 */
-Jxta_vector* JxtaShellEnvironment_get_of_type(JxtaShellEnvironment * env, JString* type );
+Jxta_vector *JxtaShellEnvironment_get_of_type(JxtaShellEnvironment * env, JString * type);
 
 /**
 *   sets the current group variables to the provided group in the specified env.
@@ -157,11 +164,9 @@ Jxta_vector* JxtaShellEnvironment_get_of_type(JxtaShellEnvironment * env, JStrin
 *   @return the result.
 *
 **/
-Jxta_status JxtaShellEnvironment_set_current_group( JxtaShellEnvironment * env, Jxta_PG * pg );
+Jxta_status JxtaShellEnvironment_set_current_group(JxtaShellEnvironment * env, Jxta_PG * pg);
 
 
-JString * JxtaShellEnvironment_createName(void);
+JString *JxtaShellEnvironment_createName(void);
 
 #endif /* __JXTA_SHELL_ENVIRONMENT_H__ */
-
-

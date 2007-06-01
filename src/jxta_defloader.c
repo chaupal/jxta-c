@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_defloader.c,v 1.6 2005/01/12 22:37:39 bondolo Exp $
+ * $Id: jxta_defloader.c,v 1.7 2005/06/16 23:11:40 slowhog Exp $
  */
 
 #include <string.h>
@@ -70,19 +70,20 @@
  * This only knows how to load "builtin: modules".
  */
 
-Jxta_module* jxta_defloader_instantiate_e(const char* name, Throws) {
-    Jxta_builtinmodule_record* r = &(jxta_builtinmodules_tbl[0]);
+Jxta_module *jxta_defloader_instantiate_e(const char *name, Throws)
+{
+    Jxta_builtinmodule_record *r = &(jxta_builtinmodules_tbl[0]);
 
     if (strncmp(name, "builtin:", strlen("builtin:"))) {
-	Throw(JXTA_ITEM_NOTFOUND);
+        Throw(JXTA_ITEM_NOTFOUND);
     }
 
     name += strlen("builtin:");
 
     while (r->name != 0) {
-	if (! strcmp(name, r->name)) return (Jxta_module*)(r->instantiator)();
-	++r;
+        if (!strcmp(name, r->name))
+            return (Jxta_module *) (r->instantiator) ();
+        ++r;
     }
     Throw(JXTA_ITEM_NOTFOUND);
 }
-

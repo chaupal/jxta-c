@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: leave.c,v 1.2 2004/12/05 02:16:43 slowhog Exp $
+ * $Id: leave.c,v 1.6 2005/08/19 22:16:06 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -65,127 +65,137 @@
 
 #include "jxta_shell_getopt.h"
 
-static Jxta_PG * group;
-static JxtaShellEnvironment * environment;
+static Jxta_PG *group;
+static JxtaShellEnvironment *environment;
 
-JxtaShellApplication * jxta_leave_new(Jxta_PG * pg,
-                                       Jxta_listener* standout,
-                                       JxtaShellEnvironment *env,
-                                       Jxta_object * parent,
-                                       shell_application_terminate terminate) {
-    JxtaShellApplication *app  =
-        JxtaShellApplication_new(pg,standout,env,parent,terminate);
-    if( app == 0)
+JxtaShellApplication *jxta_leave_new(Jxta_PG * pg,
+                                     Jxta_listener * standout,
+                                     JxtaShellEnvironment * env, Jxta_object * parent, shell_application_terminate terminate)
+{
+    JxtaShellApplication *app = JxtaShellApplication_new(pg, standout, env, parent, terminate);
+    if (app == 0)
         return 0;
     JxtaShellApplication_setFunctions(app,
-                                      (Jxta_object*)app,
+                                      (Jxta_object *) app,
                                       jxta_leave_print_help,
-                                      jxta_leave_start,
-                                      (shell_application_stdin)jxta_leave_process_input);
+                                      jxta_leave_start, (shell_application_stdin) jxta_leave_process_input);
     group = pg;
     environment = env;
     return app;
 }
 
 
-void  jxta_leave_process_input(Jxta_object * appl,
-                                JString * inputLine) {
-    JxtaShellApplication * app = (JxtaShellApplication*)appl;
+void jxta_leave_process_input(Jxta_object * appl, JString * inputLine)
+{
+    JxtaShellApplication *app = (JxtaShellApplication *) appl;
     JxtaShellApplication_terminate(app);
 }
 
 
-void jxta_leave_start(Jxta_object * appl,
-                       int argv,
-                       char **arg) {
+void jxta_leave_start(Jxta_object * appl, int argv, char **arg)
+{
 
     Jxta_status res;
-    JxtaShellGetopt * opt = JxtaShellGetopt_new(argv,arg,"hr");
-    JxtaShellApplication * app = (JxtaShellApplication*)appl;
-    JString * outputLine = jstring_new_0();
-    Jxta_PG * newPG = NULL;
+    JxtaShellGetopt *opt = JxtaShellGetopt_new(argv, arg, "hrk");
+    JxtaShellApplication *app = (JxtaShellApplication *) appl;
+    JString *outputLine = jstring_new_0();
+    Jxta_PG *newPG = NULL;
     Jxta_boolean doResign = FALSE;
+    Jxta_boolean doDestroy = FALSE;
 
-    while(1) {
+    while (1) {
         int type = JxtaShellGetopt_getNext(opt);
         int error = 0;
 
-        if( type == -1)
+        if (type == -1)
             break;
-        switch(type) {
-		case 'h':
+        switch (type) {
+        case 'h':
             jxta_leave_print_help(appl);
             break;
-		case 'r':
+        case 'r':
             doResign = TRUE;
+            break;
+        case 'k':
+            doDestroy = TRUE;
             break;
         default:
             jxta_leave_print_help(appl);
             error = 1;
             break;
         }
-        if( error != 0 )
+        if (error != 0)
             goto Common_Exit;
     }
 
     JxtaShellGetopt_delete(opt);
 
-    if( !JXTA_OBJECT_CHECK_VALID( group ) ) {
-        jstring_append_2 ( outputLine, "# ERROR - invalid group object\n" );
+    if (!JXTA_OBJECT_CHECK_VALID(group)) {
+        jstring_append_2(outputLine, "# ERROR - invalid group object\n");
         goto Common_Exit;
     }
-    
-    if( doResign ) {
-        Jxta_membership_service * membership; 
-        
-        jxta_PG_get_membership_service( group, &membership );
-        
-        if( NULL != membership ) {
-            jxta_membership_service_resign( membership );
-            }
-        }
-    
-    jxta_PG_get_parentgroup( group, &newPG );
-    
-    if( NULL == newPG ) {
-        JString * grpname = jstring_new_2( "netPeerGroup" );
-        JxtaShellObject * object = JxtaShellEnvironment_get ( environment, grpname );
-        
-        if( NULL != object )
-            newPG = (Jxta_PG*) JxtaShellObject_object(object);
-        JXTA_OBJECT_RELEASE(grpname); grpname = NULL;
-        }
-     
-    if( NULL == newPG ) {
-        jstring_append_2 ( outputLine, "# ERROR - could not get parent or net peer group!\n" );
-        goto Common_Exit;
-        }
-        
-    res = JxtaShellEnvironment_set_current_group ( environment, newPG);
 
-Common_Exit:
-    if( jstring_length( outputLine ) > 0 )
-        JxtaShellApplication_print(app, outputLine );
+    if (doResign) {
+        Jxta_membership_service *membership;
+
+        jxta_PG_get_membership_service(group, &membership);
+
+        if (NULL != membership) {
+            jxta_membership_service_resign(membership);
+        }
+    }
+
+    jxta_PG_get_parentgroup(group, &newPG);
+
+    if (NULL == newPG) {
+        JString *grpname = jstring_new_2("netPeerGroup");
+        JxtaShellObject *object = JxtaShellEnvironment_get(environment, grpname);
+
+        if (NULL != object)
+            newPG = (Jxta_PG *) JxtaShellObject_object(object);
+        JXTA_OBJECT_RELEASE(grpname);
+        grpname = NULL;
+    }
+
+    if (NULL == newPG) {
+        jstring_append_2(outputLine, "# ERROR - could not get parent or net peer group!\n");
+        goto Common_Exit;
+    }
+
+    res = JxtaShellEnvironment_set_current_group(environment, newPG);
+    JXTA_OBJECT_RELEASE(newPG);
+
+    if (doDestroy) {
+        jxta_module_stop((Jxta_module *) group);
+        JXTA_OBJECT_RELEASE(group);
+    }
+  Common_Exit:
+    if (jstring_length(outputLine) > 0)
+        JxtaShellApplication_print(app, outputLine);
+    JXTA_OBJECT_RELEASE(outputLine);
 
     JxtaShellApplication_terminate(app);
 }
 
-void jxta_leave_print_help(Jxta_object *appl) {
+void jxta_leave_print_help(Jxta_object * appl)
+{
 
-    JxtaShellApplication * app = (JxtaShellApplication*)appl;
-    JString * inputLine = jstring_new_2("#\tleave - leave a peer group \n\n");
-    jstring_append_2(inputLine,"SYNOPSIS\n");
-    jstring_append_2(inputLine,"\tleave [-r]\n\n");
-    jstring_append_2(inputLine,"DESCRIPTION\n");
-    jstring_append_2(inputLine,"\t'leave' allows you to leave a peer group and " );
-    jstring_append_2(inputLine,"optionally resign from the group.\n\n" );
-    jstring_append_2(inputLine,"OPTIONS\n");
-    jstring_append_2(inputLine,"\t-h\tthis help information. \n");
-    jstring_append_2(inputLine,"\t-r\tresign from the group. \n\n");
+    JxtaShellApplication *app = (JxtaShellApplication *) appl;
+    JString *inputLine = jstring_new_2("#\tleave - leave a peer group \n\n");
+    jstring_append_2(inputLine, "SYNOPSIS\n");
+    jstring_append_2(inputLine, "\tleave [-r]\n\n");
+    jstring_append_2(inputLine, "DESCRIPTION\n");
+    jstring_append_2(inputLine, "\t'leave' allows you to leave a peer group and ");
+    jstring_append_2(inputLine, "optionally resign from the group.\n\n");
+    jstring_append_2(inputLine, "OPTIONS\n");
+    jstring_append_2(inputLine, "\t-h\tthis help information. \n");
+    jstring_append_2(inputLine, "\t-r\tresign from the group. \n");
+    jstring_append_2(inputLine, "\t-k\tstop the group. \n\n");
 
-    if( app != NULL ) {
-        JXTA_OBJECT_SHARE(inputLine);
-        JxtaShellApplication_print(app,inputLine);
+    if (app != NULL) {
+        JxtaShellApplication_print(app, inputLine);
     }
     JXTA_OBJECT_RELEASE(inputLine);
 }
+
+/* vi: set ts=4 sw=4 et tw=130: */

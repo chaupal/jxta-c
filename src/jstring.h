@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jstring.h,v 1.9 2005/01/21 01:48:33 bondolo Exp $
+ * $Id: jstring.h,v 1.11 2005/04/30 22:04:40 bondolo Exp $
  */
 
 
@@ -87,7 +87,7 @@ typedef struct _jstring JString;
  * and '\0' in the initial position.  The number
  * of bytes for the initial preallocation is preset.
  */
-JString *jstring_new_0(void);
+JXTA_DECLARE(JString *) jstring_new_0(void);
 
 /**
  * Returns a pointer to a user-specified number
@@ -96,7 +96,7 @@ JString *jstring_new_0(void);
  *
  * @todo Check that the ending char is \0
  */
-JString *jstring_new_1(size_t initialSize);
+JXTA_DECLARE(JString *) jstring_new_1(size_t initialSize);
 
 /**
  * Constructs a JString from a constant character 
@@ -104,7 +104,7 @@ JString *jstring_new_1(size_t initialSize);
  *
  * @todo Check that the ending char is \0
  */
-JString *jstring_new_2(const char *);
+JXTA_DECLARE(JString *) jstring_new_2(const char *);
 
 /**
  * Constructs a JString from a byte vector
@@ -112,7 +112,7 @@ JString *jstring_new_2(const char *);
  *
  * @todo Check that the ending char is \0
  */
-JString *jstring_new_3(Jxta_bytevector *);
+JXTA_DECLARE(JString *) jstring_new_3(Jxta_bytevector *);
 
 /**
  * Returns a pointer to a copy of the character 
@@ -121,7 +121,7 @@ JString *jstring_new_3(Jxta_bytevector *);
  * @todo Maybe this should return an exact copy of
  *       argument?
  */
-JString *jstring_clone(JString const *);
+JXTA_DECLARE(JString *) jstring_clone(JString const *);
 
 /**
  * Trims white-space from JString.  white-space is defined in
@@ -130,20 +130,27 @@ JString *jstring_clone(JString const *);
  * and vertical tab ('\v')
  */
 
-void jstring_trim(JString *);
+JXTA_DECLARE(void) jstring_trim(JString *);
 
 /** 
  * Each JString has a data length and buffer size.
  * This returns the length of the data in the char
  * buffer.
  */
-size_t jstring_length(JString const *);
+JXTA_DECLARE(size_t) jstring_length(JString const *);
+
+/** 
+ * Each JString has a data length and buffer size.
+ * This returns the length of the data in the char
+ * buffer.
+ */
+JXTA_DECLARE(size_t) jstring_capacity(JString const *);
 
 /**
  * Returns a C-style character buffer containing
  * NULL-terminated data.
  */
-char const *jstring_get_string(JString const *js);
+JXTA_DECLARE(char const *) jstring_get_string(JString const *js);
 
 /**
  * Reset the JString.
@@ -158,27 +165,30 @@ char const *jstring_get_string(JString const *js);
  * @return JXTA_INVALID_ARGUMENT if an argument is invalid, JXTA_SUCCESS
  * otherwise.
  **/
-Jxta_status jstring_reset(JString * js, char **buf);
+JXTA_DECLARE(Jxta_status) jstring_reset(JString * js, char **buf);
 
 
-void jstring_print(JString const *, PrintFunc printer, void *stream);
+JXTA_DECLARE(void) jstring_print(JString const *, PrintFunc printer, void *stream);
 
 /* Can't "write" to a SOCKET in Win32. */
-void jstring_send(JString const *, SendFunc sender, void *stream, unsigned int flags);
+JXTA_DECLARE(void) jstring_send(JString const *, SendFunc sender, void *stream, unsigned int flags);
 
-void jstring_write(JString const *, WriteFunc writer, void *stream);
+JXTA_DECLARE(void) jstring_write(JString const *, WriteFunc writer, void *stream);
 
-void jstring_append_0(JString * oldstring, char const *newstring, size_t length);
+JXTA_DECLARE(void) jstring_append_0(JString * oldstring, char const *newstring, size_t length);
 
-void jstring_append_1(JString * oldstring, JString * newstring);
+JXTA_DECLARE(void) jstring_append_1(JString * oldstring, JString * newstring);
 
-void jstring_append_2(JString * oldstring, const char *newstring);
+JXTA_DECLARE(void) jstring_append_2(JString * oldstring, const char *newstring);
 
-void jstring_concat(JString * oldstring, int number, ...);
+JXTA_DECLARE(void) jstring_concat(JString * oldstring, int number, ...);
 
-int jstring_writefunc_appender(void *stream, const char *buf, size_t len, Jxta_status * res);
+JXTA_DECLARE(int) jstring_writefunc_appender(void *stream, const char *buf, size_t len, Jxta_status * res);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 

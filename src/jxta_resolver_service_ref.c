@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_service_ref.c,v 1.65 2005/04/02 00:26:10 slowhog Exp $
+ * $Id: jxta_resolver_service_ref.c,v 1.80 2005/08/14 17:39:09 exocetrick Exp $
  */
 
-
+#include <zlib.h>
 #include "jxtaapr.h"
 #include "jpr/jpr_excep.h"
 
@@ -77,40 +77,55 @@
 typedef struct {
 
     Extends(Jxta_resolver_service);
-    JString*                instanceName;
-    Jxta_boolean            running;
-    Jxta_PG*                group;
-    Jxta_rdv_service*       rendezvous;
-    Jxta_endpoint_service*  endpoint;
-    Jxta_discovery_service* discovery;
-    Jxta_hashtable*         queryhandlers;
-    Jxta_hashtable*         responsehandlers;
-    Jxta_PID*               localPeerId;
-    Jxta_id*                assigned_id;
-    Jxta_advertisement*     impl_adv;
-    JString*                inque;
-    JString*                outque;
-    JString*                srdique;
-    apr_thread_mutex_t*     mutex;
-    long                    query_id;
-    apr_pool_t*             pool;
+    JString *instanceName;
+    Jxta_boolean running;
+    Jxta_PG *group;
+    Jxta_rdv_service *rendezvous;
+    Jxta_endpoint_service *endpoint;
+    Jxta_discovery_service *discovery;
+    Jxta_hashtable *queryhandlers;
+    Jxta_hashtable *responsehandlers;
+    Jxta_hashtable *srdihandlers;
+    Jxta_PID *localPeerId; 
+    Jxta_id *assigned_id; 
+    Jxta_advertisement *impl_adv;
+    JString *inque;
+    JString *outque;
+    JString *srdique; 
+    apr_thread_mutex_t *mutex;
+    long query_id;
+    apr_pool_t *pool;
 
     /* hold listener to stop, no API to retrieve the listener */
     Jxta_listener *o_listener;
     Jxta_listener *i_listener;
-}
-Jxta_resolver_service_ref;
+    Jxta_listener *s_listener;
+} Jxta_resolver_service_ref;
+
+#define __log_cat "RSLV" 
+
+#ifdef GZIP_ENABLED
+#ifndef GUNZIP_ENABLED
+#define GUNZIP_ENABLED
+#endif /* ndef GUNZIP_ENABLED */
+#endif /* GZIP_ENABLED */
 
 /* used to make an adress out of a peerid */
-static Jxta_endpoint_address* get_endpoint_address_from_peerid (Jxta_id* peerid, char * name, char * que);
-static void  resolver_service_query_listener (Jxta_object* msg, void* arg);
-static void  resolver_service_response_listener (Jxta_object* msg, void* arg);
-static long getid(Jxta_resolver_service_ref* resolver);
-
-static const char *  INQUENAMESHORT = "IRes";
-static const char *  OUTQUENAMESHORT = "ORes";
-static const char *  SRDIQUENAMESHORT = "Srdi";
-static const char *  JXTA_NAMESPACE = "jxta:";
+static Jxta_endpoint_address *get_endpoint_address_from_peerid(Jxta_id * peerid, char *name, char *que);
+static void resolver_service_query_listener(Jxta_object * msg, void *arg);
+static void resolver_service_response_listener(Jxta_object * msg, void *arg);
+static void resolver_service_srdi_listener(Jxta_object * obj, void *arg);
+static long getid(Jxta_resolver_service_ref * resolver);
+#ifdef GUNZIP_ENABLED
+static int zip_uncompress(Byte * dest, uLong * destLen, Byte * source, uLong sourceLen);
+#ifdef GZIP_ENABLED
+static int zip_compress(unsigned char **out, size_t *out_len, const char *in, size_t in_len);
+#endif /* GZIP_ENABLED */
+#endif /* GUNZIP_ENABLED */
+static const char *INQUENAMESHORT = "IRes";
+static const char *OUTQUENAMESHORT = "ORes";
+static const char *SRDIQUENAMESHORT = "Srdi";
+static const char *JXTA_NAMESPACE = "jxta:";
 
 /*
  * module methods
@@ -127,11 +142,10 @@ static const char *  JXTA_NAMESPACE = "jxta:";
  */
 
 Jxta_status
-jxta_resolver_service_ref_init(Jxta_module* resolver, Jxta_PG* group,
-                                Jxta_id* assigned_id, Jxta_advertisement* impl_adv) {
-    Jxta_listener* listener = NULL;
+jxta_resolver_service_ref_init(Jxta_module * resolver, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
+{
     Jxta_status status = JXTA_SUCCESS;
-    Jxta_resolver_service_ref* self = (Jxta_resolver_service_ref*) resolver;
+    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
 
     /* Test arguments first */
     if ((resolver == NULL) || (group == NULL)) {
@@ -140,9 +154,10 @@ jxta_resolver_service_ref_init(Jxta_module* resolver, Jxta_PG* group,
     }
 
 
-    apr_pool_create (&self->pool, NULL);
+    apr_pool_create(&self->pool, NULL);
     self->queryhandlers = jxta_hashtable_new(3);
     self->responsehandlers = jxta_hashtable_new(3);
+    self->srdihandlers = jxta_hashtable_new(3);
     self->query_id = 0;
     /* store a copy of our assigned id */
     if (assigned_id != 0) {
@@ -157,36 +172,37 @@ jxta_resolver_service_ref_init(Jxta_module* resolver, Jxta_PG* group,
     self->group = group;
     self->impl_adv = impl_adv;
 
-    jxta_PG_get_endpoint_service (group, &(self->endpoint));
-    jxta_PG_get_rendezvous_service (group, &(self->rendezvous));
-    jxta_PG_get_PID (group, &(self->localPeerId));
+    jxta_PG_get_endpoint_service(group, &(self->endpoint));
+    jxta_PG_get_rendezvous_service(group, &(self->rendezvous));
+    jxta_PG_get_PID(group, &(self->localPeerId));
     /* Create the mutex */
-    apr_thread_mutex_create (&self->mutex,
-                             APR_THREAD_MUTEX_NESTED, /* nested */
-                             self->pool);
+    apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED,  /* nested */
+                            self->pool);
 
     /**
      ** Build the local name of the instance
      **/
     self->instanceName = NULL;
-    jxta_id_to_jstring( self->assigned_id, &self->instanceName );
+    jxta_id_to_jstring(self->assigned_id, &self->instanceName);
 
-    {       /* don't release this object */
-        JString * grp_str = NULL;
-        Jxta_id* gid;
+    {   /* don't release this object */
+        JString *grp_str = NULL;
+        Jxta_id *gid;
 
         jxta_PG_get_GID(self->group, &gid);
-        jxta_id_get_uniqueportion ( gid, &grp_str );
+        jxta_id_get_uniqueportion(gid, &grp_str);
         JXTA_OBJECT_RELEASE(gid);
 
-        self->inque  = jstring_new_2(jstring_get_string(grp_str));
+        self->inque = jstring_new_2(jstring_get_string(grp_str));
         self->outque = jstring_new_2(jstring_get_string(grp_str));
         self->srdique = jstring_new_2(jstring_get_string(grp_str));
 
         /* append queue identifier */
-        jstring_append_2(self->inque,INQUENAMESHORT);
-        jstring_append_2(self->outque,OUTQUENAMESHORT);
-        jstring_append_2(self->srdique,SRDIQUENAMESHORT);
+        jstring_append_2(self->inque, INQUENAMESHORT);
+        jstring_append_2(self->outque, OUTQUENAMESHORT);
+        jstring_append_2(self->srdique, SRDIQUENAMESHORT);
+
+        JXTA_OBJECT_RELEASE(grp_str);
     }
 
     return status;
@@ -201,11 +217,9 @@ jxta_resolver_service_ref_init(Jxta_module* resolver, Jxta_PG* group,
  *
  */
 
-static void
-init_e (Jxta_module* resolver, Jxta_PG* group, Jxta_id* assigned_id,
-        Jxta_advertisement* impl_adv, Throws) {
-    Jxta_status s =
-        jxta_resolver_service_ref_init(resolver, group, assigned_id, impl_adv);
+static void init_e(Jxta_module * resolver, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv, Throws)
+{
+    Jxta_status s = jxta_resolver_service_ref_init(resolver, group, assigned_id, impl_adv);
     if (s != JXTA_SUCCESS)
         Throw(s);
 }
@@ -219,37 +233,38 @@ init_e (Jxta_module* resolver, Jxta_PG* group, Jxta_id* assigned_id,
  * @param this a pointer to the instance of the Resolver Service
  * @param argv a vector of string arguments.
  */
-static Jxta_status
-start(Jxta_module* resolver, char* argv[]) {
+static Jxta_status start(Jxta_module * resolver, const char *argv[])
+{
     Jxta_status status = JXTA_SUCCESS;
-    Jxta_resolver_service_ref* self = (Jxta_resolver_service_ref*) resolver;
+    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
+    if (argv) {
+    }
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Starting ...\n");
+    jxta_PG_get_discovery_service(self->group, &(self->discovery));
 
-    jxta_PG_get_discovery_service (self->group, &(self->discovery));
-
-    self->o_listener = jxta_listener_new ((Jxta_listener_func) resolver_service_query_listener,
-                                  self,
-                                  1,
-                                  200);
-    status = jxta_rdv_service_add_propagate_listener (self->rendezvous,
-                    (char*) jstring_get_string(self->instanceName),
-                    (char*) jstring_get_string(self->outque),
-                    self->o_listener);
-    if (status != JXTA_SUCCESS ) {
+    self->o_listener = jxta_listener_new((Jxta_listener_func) resolver_service_query_listener, self, 1, 200);
+    status = jxta_rdv_service_add_propagate_listener(self->rendezvous,
+                                                     (char *) jstring_get_string(self->instanceName),
+                                                     (char *) jstring_get_string(self->outque), self->o_listener);
+    if (status != JXTA_SUCCESS) {
         return status;
     }
 
     jxta_listener_start(self->o_listener);
 
-    self->i_listener = jxta_listener_new ((Jxta_listener_func) resolver_service_response_listener,
-                                   self,
-                                   1,
-                                   200);
-    status = jxta_rdv_service_add_propagate_listener (self->rendezvous,
-                     (char*) jstring_get_string(self->instanceName),
-                     (char*) jstring_get_string(self->inque),
-                     self->i_listener);
+    self->i_listener = jxta_listener_new((Jxta_listener_func) resolver_service_response_listener, self, 1, 200);
+    status = jxta_rdv_service_add_propagate_listener(self->rendezvous,
+                                                     (char *) jstring_get_string(self->instanceName),
+                                                     (char *) jstring_get_string(self->inque), self->i_listener);
     jxta_listener_start(self->i_listener);
-           
+
+    self->s_listener = jxta_listener_new((Jxta_listener_func) resolver_service_srdi_listener, self, 1, 200);
+    status = jxta_endpoint_service_add_listener(self->endpoint,
+                                                (char *) jstring_get_string(self->instanceName),
+                                                (char *) jstring_get_string(self->srdique), self->s_listener);
+    jxta_listener_start(self->s_listener);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Started\n");
     return status;
 }
 
@@ -259,16 +274,24 @@ start(Jxta_module* resolver, char* argv[]) {
  * @param service a pointer to the instance of the Resolver Service
  * @return Jxta_status
  */
-static void
-stop(Jxta_module* resolver) {
+static void stop(Jxta_module * resolver)
+{
     Jxta_status status = JXTA_SUCCESS;
-    Jxta_resolver_service_ref* self = (Jxta_resolver_service_ref*) resolver;
+    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
+
+    if (NULL != self->s_listener) {
+        status = jxta_endpoint_service_remove_listener(self->endpoint,
+                                                       (char *) jstring_get_string(self->instanceName),
+                                                       (char *) jstring_get_string(self->srdique));
+        jxta_listener_stop(self->s_listener);
+        JXTA_OBJECT_RELEASE(self->s_listener);
+        self->s_listener = NULL;
+    }
 
     if (NULL != self->i_listener) {
         status = jxta_rdv_service_remove_propagate_listener(self->rendezvous,
-                     (char*) jstring_get_string(self->instanceName),
-                     (char*) jstring_get_string(self->inque),
-                     self->i_listener);
+                                                            (char *) jstring_get_string(self->instanceName),
+                                                            (char *) jstring_get_string(self->inque), self->i_listener);
         jxta_listener_stop(self->i_listener);
         JXTA_OBJECT_RELEASE(self->i_listener);
         self->i_listener = NULL;
@@ -276,9 +299,8 @@ stop(Jxta_module* resolver) {
 
     if (NULL != self->o_listener) {
         status = jxta_rdv_service_remove_propagate_listener(self->rendezvous,
-                     (char*) jstring_get_string(self->instanceName),
-                     (char*) jstring_get_string(self->outque),
-                     self->o_listener);
+                                                            (char *) jstring_get_string(self->instanceName),
+                                                            (char *) jstring_get_string(self->outque), self->o_listener);
         jxta_listener_stop(self->o_listener);
         JXTA_OBJECT_RELEASE(self->o_listener);
         self->o_listener = NULL;
@@ -289,7 +311,7 @@ stop(Jxta_module* resolver) {
         self->discovery = NULL;
     }
 
-    JXTA_LOG("Stopped.\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Stopped.\n");
     /* nothing special to stop */
 }
 
@@ -303,10 +325,10 @@ stop(Jxta_module* resolver) {
  * @param service a pointer to the instance of the Resolver Service
  * @return the advertisement.
  */
-static void
-get_mia(Jxta_service* resolver,  Jxta_advertisement** mia) {
+static void get_mia(Jxta_service * resolver, Jxta_advertisement ** mia)
+{
 
-    Jxta_resolver_service_ref* self = (Jxta_resolver_service_ref*) resolver;
+    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
     PTValid(self, Jxta_resolver_service_ref);
 
     JXTA_OBJECT_SHARE(self->impl_adv);
@@ -318,8 +340,8 @@ get_mia(Jxta_service* resolver,  Jxta_advertisement** mia) {
  *
  * @return this service object itself.
  */
-static void
-get_interface(Jxta_service* self, Jxta_service** svc) {
+static void get_interface(Jxta_service * self, Jxta_service ** svc)
+{
     PTValid(self, Jxta_resolver_service_ref);
 
     JXTA_OBJECT_SHARE(self);
@@ -338,19 +360,17 @@ get_interface(Jxta_service* self, Jxta_service** svc) {
  * @param handler The handler.
  * @return Jxta_status
  */
-Jxta_status
-registerQueryHandler(Jxta_resolver_service* resolver,
-                     JString* name,
-                     Jxta_listener* handler) {
-    char const *  hashname;
-    Jxta_resolver_service_ref* self = (Jxta_resolver_service_ref*) resolver;
+Jxta_status registerQueryHandler(Jxta_resolver_service * resolver, JString * name, Jxta_listener * handler)
+{
+    char const *hashname;
+    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
     PTValid(self, Jxta_resolver_service_ref);
     hashname = jstring_get_string(name);
 
-    if ( strlen(hashname) != 0) {
-        jxta_hashtable_put(self->queryhandlers, hashname, strlen(hashname), (Jxta_object *)handler);
+    if (strlen(hashname) != 0) {
+        jxta_hashtable_put(self->queryhandlers, hashname, strlen(hashname), (Jxta_object *) handler);
         return JXTA_SUCCESS;
-    } else  {
+    } else {
         return JXTA_INVALID_ARGUMENT;
     }
 }
@@ -362,23 +382,23 @@ registerQueryHandler(Jxta_resolver_service* resolver,
   * @return error code
   *
   */
-static Jxta_status
-unregisterQueryHandler(Jxta_resolver_service * resolver,
-                       JString* name) {
-    Jxta_object * ignore = 0;
-    char const *  hashname;
+static Jxta_status unregisterQueryHandler(Jxta_resolver_service * resolver, JString * name)
+{
+    Jxta_object *ignore = 0;
+    char const *hashname;
     Jxta_status status;
 
-    Jxta_resolver_service_ref* self = (Jxta_resolver_service_ref*) resolver;
+    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
     PTValid(self, Jxta_resolver_service_ref);
 
     hashname = jstring_get_string(name);
 
-    status = jxta_hashtable_del(self->queryhandlers, hashname, strlen(hashname), & ignore);
+    status = jxta_hashtable_del(self->queryhandlers, hashname, strlen(hashname), &ignore);
     if (ignore != 0)
         JXTA_OBJECT_RELEASE(ignore);
     return status;
 }
+
 /**
  * Registers a given ResolveHandler.
  *
@@ -386,19 +406,17 @@ unregisterQueryHandler(Jxta_resolver_service * resolver,
  * @param handler The handler.
  * @return Jxta_status
  */
-Jxta_status
-registerResponseHandler(Jxta_resolver_service* resolver,
-                        JString * name,
-                        Jxta_listener* handler) {
-    char const *  hashname;
-    Jxta_resolver_service_ref* self = (Jxta_resolver_service_ref*) resolver;
+Jxta_status registerSrdiHandler(Jxta_resolver_service * resolver, JString * name, Jxta_listener * handler)
+{
+    char const *hashname;
+    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
     PTValid(self, Jxta_resolver_service_ref);
     hashname = jstring_get_string(name);
 
-    if ( strlen(hashname) != 0) {
-        jxta_hashtable_put(self->responsehandlers, hashname, strlen(hashname), (Jxta_object *)handler);
+    if (strlen(hashname) != 0) {
+        jxta_hashtable_put(self->srdihandlers, hashname, strlen(hashname), (Jxta_object *) handler);
         return JXTA_SUCCESS;
-    } else  {
+    } else {
         return JXTA_INVALID_ARGUMENT;
     }
 }
@@ -410,257 +428,118 @@ registerResponseHandler(Jxta_resolver_service* resolver,
   * @return error code
   *
   */
-static Jxta_status
-unregisterResponseHandler(Jxta_resolver_service * resolver,
-                          JString* name) {
-    Jxta_object * ignore = 0;
-    char const *  hashname;
+static Jxta_status unregisterSrdiHandler(Jxta_resolver_service * resolver, JString * name)
+{
+    Jxta_object *ignore = 0;
+    char const *hashname;
     Jxta_status status;
 
-    Jxta_resolver_service_ref* self = (Jxta_resolver_service_ref*) resolver;
+    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
     PTValid(self, Jxta_resolver_service_ref);
 
     hashname = jstring_get_string(name);
 
-    status = jxta_hashtable_del(self->responsehandlers, hashname, strlen(hashname), & ignore);
+    status = jxta_hashtable_del(self->srdihandlers, hashname, strlen(hashname), &ignore);
+    if (ignore != 0)
+        JXTA_OBJECT_RELEASE(ignore);
+    return status;
+}
+
+/**
+ * Registers a given ResolveHandler.
+ *
+ * @param name The name under which this handler is to be registered.
+ * @param handler The handler.
+ * @return Jxta_status
+ */
+Jxta_status registerResponseHandler(Jxta_resolver_service * resolver, JString * name, Jxta_listener * handler)
+{
+    char const *hashname;
+    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
+    PTValid(self, Jxta_resolver_service_ref);
+    hashname = jstring_get_string(name);
+
+    if (strlen(hashname) != 0) {
+        jxta_hashtable_put(self->responsehandlers, hashname, strlen(hashname), (Jxta_object *) handler);
+        return JXTA_SUCCESS;
+    } else {
+        return JXTA_INVALID_ARGUMENT;
+    }
+}
+
+/**
+  * unregisters a given ResolveHandler.
+  *
+  * @param name The name of the handler to unregister.
+  * @return error code
+  *
+  */
+static Jxta_status unregisterResponseHandler(Jxta_resolver_service * resolver, JString * name)
+{
+    Jxta_object *ignore = 0;
+    char const *hashname;
+    Jxta_status status;
+
+    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
+    PTValid(self, Jxta_resolver_service_ref);
+
+    hashname = jstring_get_string(name);
+
+    status = jxta_hashtable_del(self->responsehandlers, hashname, strlen(hashname), &ignore);
     if (ignore != 0)
         JXTA_OBJECT_RELEASE(ignore);
     return status;
 }
 
 
-static Jxta_status
-sendQuery(Jxta_resolver_service* resolver,
-           ResolverQuery* query,
-           Jxta_id* peerid) {
-
-        Jxta_message* msg = NULL;
-	Jxta_message_element* msgElem;
-	Jxta_endpoint_address* address;
-	char * tmp;
-	JString * doc;
-	Jxta_status status;
-	JString* el_name;
-	Jxta_resolver_service_ref* self = (Jxta_resolver_service_ref*) resolver;
-	
-	PTValid(self, Jxta_resolver_service_ref);
-	/* Test arguments first */
-	if ((self == NULL) ||  (query == NULL) )
-	{
-		/* Invalid args. */
-		return JXTA_INVALID_ARGUMENT;
-	}
-	
-        jxta_resolver_query_set_queryid (query, getid(self) );
-	status = jxta_resolver_query_get_xml(query, & doc);
-	if (status != JXTA_SUCCESS ) {
-		return status;
-	}
-
-	/**
-	 ** XXX fixme hamada@jxta.org 3/09/2002
-	 ** FIXME 3/8/2002 lomax@jxta.org
-	 ** Allocate a buffer than can be freed by the message 
-	 ** This is currentely needed because the message API does not yet
-	 ** support sharing of data. When that will be completed, we will be
-	 ** able to avoid this extra copy.
-	 **/	
-
-	tmp = (char *)  jstring_get_string (doc);
-	tmp = malloc (jstring_length(doc) + 1);
-	tmp[jstring_length(doc)] = 0;
-	memcpy (tmp, jstring_get_string(doc), jstring_length(doc));
-
-	msg = jxta_message_new ();
-
-	el_name = jstring_new_2(JXTA_NAMESPACE);
-	jstring_append_1(el_name, self->outque);
-	msgElem =  jxta_message_element_new_1 (jstring_get_string(el_name),
-	                                       "text/xml",
-	                                       tmp,
-	                                       strlen(tmp),
-	                                       NULL);
-	JXTA_OBJECT_RELEASE(el_name);
-	if (msgElem == NULL) {
-		JXTA_LOG ("failed to create message element.\n");
-		free (tmp);
-		JXTA_OBJECT_RELEASE(msg);
-		return JXTA_INVALID_ARGUMENT;
-	}
-	jxta_message_add_element (msg, msgElem);
-
-	if (peerid == NULL) {
-		jxta_rdv_service_propagate(self->rendezvous,
-		                           msg,
-		                           (char *)jstring_get_string(self->instanceName),
-		                           (char*) jstring_get_string(self->outque),
-		                           1);
-	} else  {
-		address = get_endpoint_address_from_peerid (peerid,
-		                                     (char *)jstring_get_string(self->instanceName),
-						     (char*) jstring_get_string(self->outque));
-		status = jxta_endpoint_service_send (self->group, self->endpoint, msg, address);
-		if (status != JXTA_SUCCESS) {
-		  JXTA_LOG("Failed to send resolver message\n");
-		}
-		JXTA_OBJECT_RELEASE(address);
-		JXTA_OBJECT_RELEASE(msg);
-	}	
-	JXTA_OBJECT_RELEASE(msgElem);
-	JXTA_OBJECT_RELEASE(doc);
-	free (tmp);
-
-  return JXTA_SUCCESS;
-
-}
-/* XXX fixme hamada@jxta.org breakout the sending part out into static function both
-   send query, and response will use 
- */
-
-static Jxta_status
-sendResponse(Jxta_resolver_service* resolver,
-              ResolverResponse* response,
-              Jxta_id* peerid)
+static Jxta_status sendQuery(Jxta_resolver_service * resolver, ResolverQuery * query, Jxta_id * peerid)
 {
-	Jxta_message* msg;
-	Jxta_message_element* msgElem;
-	Jxta_endpoint_address* address;
-	JString * doc;
-	char * tmp;
-	Jxta_status status;
-        JString * pid;
-	JString* el_name;
 
-	Jxta_resolver_service_ref* self = (Jxta_resolver_service_ref*) resolver;
-	PTValid(self, Jxta_resolver_service_ref);
-
-	/* Test arguments first */
-	if ((resolver == NULL) ||  (response == NULL) )
-	{
-		/* Invalid args. */
-		return JXTA_INVALID_ARGUMENT;
-	}
-	status = jxta_resolver_response_get_xml(response, & doc);
-	if (status != JXTA_SUCCESS ) {
-		return status;
-	}
-
-	/**
-	 ** XXX fixme hamada@jxta.org 3/09/2002
-	 ** FIXME 3/8/2002 lomax@jxta.org
-	 ** Allocate a buffer than can be freed by the message 
-	 ** This is currentely needed because the message API does not yet
-	 ** support sharing of data. When that will be completed, we will be
-	 ** able to avoid this extra copy.
-	 **/	
-
-	tmp = (char *)  jstring_get_string (doc);
-	tmp = malloc (jstring_length(doc) + 1);
-	tmp[jstring_length(doc)] = 0;
-	memcpy (tmp, jstring_get_string(doc), jstring_length(doc));
-
-	JXTA_OBJECT_RELEASE (doc);
-	msg = jxta_message_new ();
-
-	el_name = jstring_new_2(JXTA_NAMESPACE);
-	jstring_append_1(el_name, self->inque);
-	msgElem =  jxta_message_element_new_1 (jstring_get_string(el_name),
-	                                       "text/xml",
-	                                       tmp,
-	                                       strlen(tmp),
-	                                       NULL);
-	JXTA_OBJECT_RELEASE(el_name);
-
-	if (msgElem == NULL) {
-		JXTA_LOG ("failed to create message element.\n");
-		free (tmp);
-		JXTA_OBJECT_RELEASE(msg);
-		return JXTA_INVALID_ARGUMENT;
-	}
-	jxta_message_add_element (msg, msgElem);
-
-	if (peerid != NULL) {
-	  jxta_id_to_jstring ( peerid, &pid );
-	  JXTA_LOG ("Send resolver response to peer %s\n", jstring_get_string(pid));
-	}
-
-	if (peerid == NULL) {
-		jxta_rdv_service_propagate(self->rendezvous,
-		                           msg,
-		                           (char *)jstring_get_string(self->instanceName),
-		                           (char*) jstring_get_string(self->inque),
-		                           1);
-	} else  {
-		/* unicast */
-		address = get_endpoint_address_from_peerid (peerid,
-		                                     (char *)jstring_get_string(self->instanceName),
-						     (char*) jstring_get_string(self->inque));
-
-		JXTA_LOG ("address message to %s://%s/%s/%s\n",
-			  jxta_endpoint_address_get_protocol_name (address),
-			  jxta_endpoint_address_get_protocol_address (address),
-			  jxta_endpoint_address_get_service_name (address),
-			  jxta_endpoint_address_get_service_params (address));
-		
-		status = jxta_endpoint_service_send (self->group, self->endpoint, msg, address);
-		if (status != JXTA_SUCCESS) {
-		  JXTA_LOG("Failed to send resolver message\n");
-		}
-		JXTA_OBJECT_RELEASE(address);
-		JXTA_OBJECT_RELEASE(msg);
-	}
-	
-	JXTA_OBJECT_RELEASE(msgElem);
-	free (tmp);
-	return JXTA_SUCCESS;
-}
-
-static Jxta_status
-sendSrdi(Jxta_resolver_service* resolver,
-           ResolverSrdi* message,
-           Jxta_id* peerid) {
-
-    Jxta_message* msg = NULL;
-    Jxta_message_element* msgElem = NULL;
-    Jxta_endpoint_address* address = NULL;
-    char * tmp;
-    JString * doc = NULL;
+    Jxta_message *msg = NULL;
+    Jxta_message_element *msgElem;
+    Jxta_endpoint_address *address;
+    char *tmp;
+    JString *doc;
     Jxta_status status;
-    JString* el_name = NULL;
-
-    Jxta_resolver_service_ref* self = (Jxta_resolver_service_ref*) resolver;
-    
-    JXTA_LOG("Send SRDI resolver message \n");
+    JString *el_name;
+    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
 
     PTValid(self, Jxta_resolver_service_ref);
     /* Test arguments first */
-    if ((self == NULL) ||  (message == NULL) ) {
+    if ((self == NULL) || (query == NULL)) {
         /* Invalid args. */
         return JXTA_INVALID_ARGUMENT;
     }
 
-    status = jxta_resolver_srdi_get_xml(message, &doc);
-    if (status != JXTA_SUCCESS ) {
+    jxta_resolver_query_set_queryid(query, getid(self));
+    status = jxta_resolver_query_get_xml(query, &doc);
+    if (status != JXTA_SUCCESS) {
         return status;
     }
 
-    tmp = malloc(jstring_length(doc) + 1);
+        /**
+	 ** XXX fixme hamada@jxta.org 3/09/2002
+	 ** FIXME 3/8/2002 lomax@jxta.org
+	 ** Allocate a buffer than can be freed by the message 
+	 ** This is currentely needed because the message API does not yet
+	 ** support sharing of data. When that will be completed, we will be
+	 ** able to avoid this extra copy.
+	 **/
+
+    tmp = (char *) jstring_get_string(doc);
+    tmp = (char *) malloc(jstring_length(doc) + 1);
     tmp[jstring_length(doc)] = 0;
     memcpy(tmp, jstring_get_string(doc), jstring_length(doc));
 
     msg = jxta_message_new();
-    el_name = jstring_new_2(JXTA_NAMESPACE);
-    jstring_append_1(el_name, self->srdique);
-    msgElem =  jxta_message_element_new_1 (jstring_get_string(el_name),
-                                           "text/xml",
-                                           tmp,
-                                           strlen(tmp),
-                                           NULL);
-    JXTA_OBJECT_RELEASE(el_name);
 
+    el_name = jstring_new_2(JXTA_NAMESPACE);
+    jstring_append_1(el_name, self->outque);
+    msgElem = jxta_message_element_new_1(jstring_get_string(el_name), "text/xml", tmp, strlen(tmp), NULL);
+    JXTA_OBJECT_RELEASE(el_name);
     if (msgElem == NULL) {
-        JXTA_LOG ("failed to create message element.\n");
-        free (tmp);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "failed to create message element.\n");
+        free(tmp);
         JXTA_OBJECT_RELEASE(msg);
         return JXTA_INVALID_ARGUMENT;
     }
@@ -669,25 +548,217 @@ sendSrdi(Jxta_resolver_service* resolver,
     if (peerid == NULL) {
         jxta_rdv_service_propagate(self->rendezvous,
                                    msg,
-                                   (char*) jstring_get_string(self->instanceName),
-                                   (char*) jstring_get_string(self->srdique),
-                                   1);
-    } else  { 
-        address = get_endpoint_address_from_peerid (peerid,
-                  (char *)jstring_get_string(self->instanceName),
-                  (char*) jstring_get_string(self->srdique));
-        status = jxta_endpoint_service_send (self->group, self->endpoint, msg, address);
-	if (status != JXTA_SUCCESS) {
-	  JXTA_LOG("Failed to send srdi message\n");
-	}
+                                   (char *) jstring_get_string(self->instanceName), (char *) jstring_get_string(self->outque), 1);
+    } else {
+        address = get_endpoint_address_from_peerid(peerid,
+                                                   (char *) jstring_get_string(self->instanceName),
+                                                   (char *) jstring_get_string(self->outque));
+        status = jxta_endpoint_service_send(self->group, self->endpoint, msg, address);
+        if (status != JXTA_SUCCESS) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to send resolver message\n");
+        }
         JXTA_OBJECT_RELEASE(address);
-	JXTA_OBJECT_RELEASE(msg);
     }
-   
     JXTA_OBJECT_RELEASE(msgElem);
+    JXTA_OBJECT_RELEASE(msg);
     JXTA_OBJECT_RELEASE(doc);
-    free (tmp);
+    free(tmp);
+
     return JXTA_SUCCESS;
+
+}
+
+/* XXX fixme hamada@jxta.org breakout the sending part out into static function both
+   send query, and response will use 
+ */
+
+static Jxta_status sendResponse(Jxta_resolver_service * resolver, ResolverResponse * response, Jxta_id * peerid)
+{
+    Jxta_message *msg;
+    Jxta_message_element *msgElem;
+    Jxta_endpoint_address *address;
+    JString *doc;
+    char *tmp;
+    Jxta_status status;
+    JString *pid;
+    JString *el_name;
+
+    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
+    PTValid(self, Jxta_resolver_service_ref);
+
+    /* Test arguments first */
+    if ((resolver == NULL) || (response == NULL)) {
+        /* Invalid args. */
+        return JXTA_INVALID_ARGUMENT;
+    }
+    status = jxta_resolver_response_get_xml(response, &doc);
+    if (status != JXTA_SUCCESS) {
+        return status;
+    }
+
+        /**
+	 ** XXX fixme hamada@jxta.org 3/09/2002
+	 ** FIXME 3/8/2002 lomax@jxta.org
+	 ** Allocate a buffer than can be freed by the message 
+	 ** This is currentely needed because the message API does not yet
+	 ** support sharing of data. When that will be completed, we will be
+	 ** able to avoid this extra copy.
+	 **/
+
+    tmp = (char *) jstring_get_string(doc);
+    tmp = (char *) malloc(jstring_length(doc) + 1);
+    tmp[jstring_length(doc)] = 0;
+    memcpy(tmp, jstring_get_string(doc), jstring_length(doc));
+
+    JXTA_OBJECT_RELEASE(doc);
+    msg = jxta_message_new();
+
+    el_name = jstring_new_2(JXTA_NAMESPACE);
+    jstring_append_1(el_name, self->inque);
+    msgElem = jxta_message_element_new_1(jstring_get_string(el_name), "text/xml", tmp, strlen(tmp), NULL);
+    JXTA_OBJECT_RELEASE(el_name);
+
+    if (msgElem == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "failed to create message element.\n");
+        free(tmp);
+        JXTA_OBJECT_RELEASE(msg);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    jxta_message_add_element(msg, msgElem);
+
+    if (peerid != NULL) {
+        jxta_id_to_jstring(peerid, &pid);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Send resolver response to peer %s\n", jstring_get_string(pid));
+        JXTA_OBJECT_RELEASE(pid);
+    }
+
+    if (peerid == NULL) {
+        jxta_rdv_service_propagate(self->rendezvous,
+                                   msg,
+                                   (char *) jstring_get_string(self->instanceName), (char *) jstring_get_string(self->inque), 1);
+    } else {
+        /* unicast */
+        address = get_endpoint_address_from_peerid(peerid,
+                                                   (char *) jstring_get_string(self->instanceName),
+                                                   (char *) jstring_get_string(self->inque));
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "address message to %s://%s/%s/%s\n",
+                        jxta_endpoint_address_get_protocol_name(address),
+                        jxta_endpoint_address_get_protocol_address(address),
+                        jxta_endpoint_address_get_service_name(address), jxta_endpoint_address_get_service_params(address));
+
+        status = jxta_endpoint_service_send(self->group, self->endpoint, msg, address);
+        if (status != JXTA_SUCCESS) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to send resolver message\n");
+        }
+        JXTA_OBJECT_RELEASE(address);
+    }
+
+    JXTA_OBJECT_RELEASE(msgElem);
+    JXTA_OBJECT_RELEASE(msg);
+    free(tmp);
+    return JXTA_SUCCESS;
+}
+
+static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * message, Jxta_id * peerid)
+{
+
+    Jxta_message *msg = NULL;
+    Jxta_message_element *msgElem = NULL;
+    Jxta_endpoint_address *address = NULL;
+    unsigned char *tmp=NULL;
+    unsigned char *zipped=NULL;
+    Byte *bytes=NULL;
+    size_t zipped_len=0;
+    int ret=0;
+    size_t byte_len=0;
+    JString *doc = NULL;
+    Jxta_bytevector *jSend_buf=NULL;
+    Jxta_status status;
+    JString *el_name = NULL;
+
+    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Send SRDI resolver message \n");
+
+    PTValid(self, Jxta_resolver_service_ref);
+    /* Test arguments first */
+    if ((self == NULL) || (message == NULL)) {
+        /* Invalid args. */
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    status = jxta_resolver_srdi_get_xml(message, &doc);
+    if (status != JXTA_SUCCESS) {
+        return status;
+    }
+
+    tmp = (unsigned char *) calloc(1,jstring_length(doc) + 1);
+    if (NULL == tmp) {
+        status = JXTA_NOMEM;
+        goto finish;
+    }
+    tmp[jstring_length(doc)] = 0;
+    memcpy(tmp, jstring_get_string(doc), jstring_length(doc));
+
+    msg = jxta_message_new();
+    el_name = jstring_new_2(JXTA_NAMESPACE);
+    jstring_append_1(el_name, self->srdique);
+    
+#ifndef GZIP_ENABLED        
+    msgElem = jxta_message_element_new_1(jstring_get_string(el_name), "text/xml", (char*)tmp, strlen((char *)tmp), NULL);
+#else
+    ret = zip_compress(&zipped, &zipped_len, (const char *) tmp, (size_t) strlen((char *) tmp));  
+    
+    if (Z_OK == ret) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "length:%d zipped_len:%d \n",strlen((char*)tmp), zipped_len);
+        jSend_buf = jxta_bytevector_new_2(zipped, zipped_len, zipped_len);
+        byte_len = jxta_bytevector_size(jSend_buf);
+        bytes = calloc(1, byte_len);
+        if (NULL == bytes) {
+            status = JXTA_NOMEM;
+            goto finish;
+        }
+        jxta_bytevector_get_bytes_at(jSend_buf ,bytes ,0 , byte_len); 
+        msgElem = jxta_message_element_new_1(jstring_get_string(el_name), "application/gzip", (char *) bytes
+                            , jxta_bytevector_size(jSend_buf)  , NULL); 
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "GZip comression error %d \n", ret);
+        msgElem = jxta_message_element_new_1(jstring_get_string(el_name), "text/xml", (char*)tmp, strlen((char *)tmp), NULL);
+    }
+#endif
+    if (msgElem == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "failed to create message element.\n");
+        status = JXTA_FAILED;
+        goto finish;
+    }
+    jxta_message_add_element(msg, msgElem);
+
+    if (peerid == NULL) {
+        jxta_rdv_service_propagate(self->rendezvous,
+                                   msg,
+                                   (char *) jstring_get_string(self->instanceName),
+                                   (char *) jstring_get_string(self->srdique), 1);
+    } else {
+        address = get_endpoint_address_from_peerid(peerid,
+                                                   (char *) jstring_get_string(self->instanceName),
+                                                   (char *) jstring_get_string(self->srdique));
+        status = jxta_endpoint_service_send(self->group, self->endpoint, msg, address);
+        if (status != JXTA_SUCCESS) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to send srdi message\n");
+        }
+    }
+
+finish:
+    if (jSend_buf) JXTA_OBJECT_RELEASE(jSend_buf);
+    if (el_name) JXTA_OBJECT_RELEASE(el_name);
+    if (msgElem) JXTA_OBJECT_RELEASE(msgElem);
+    if (msg) JXTA_OBJECT_RELEASE(msg);
+    if (doc) JXTA_OBJECT_RELEASE(doc);
+    if (address) JXTA_OBJECT_RELEASE(address);
+    if (tmp) free(tmp);
+    if (bytes) free(bytes); 
+    return status;
 }
 
 
@@ -705,63 +776,68 @@ sendSrdi(Jxta_resolver_service* resolver,
 typedef Jxta_resolver_service_methods Jxta_resolver_service_ref_methods;
 
 Jxta_resolver_service_ref_methods jxta_resolver_service_ref_methods = {
-            {
-                {
-                    "Jxta_module_methods",
-                    jxta_resolver_service_ref_init, /* temp long name, for testing */
-                    init_e,
-                    start,
-                    stop
-                },
-                "Jxta_service_methods",
-                get_mia,
-                get_interface
-            },
-            "Jxta_resolver_service_methods",
-            registerQueryHandler,
-            unregisterQueryHandler,
-            registerResponseHandler,
-            unregisterResponseHandler,
-            sendQuery,
-            sendResponse,
-	    sendSrdi
-        };
+    {
+     {
+      "Jxta_module_methods",
+      jxta_resolver_service_ref_init,   /* temp long name, for testing */
+      init_e,
+      start,
+      stop},
+     "Jxta_service_methods",
+     get_mia,
+     get_interface},
+    "Jxta_resolver_service_methods",
+    registerQueryHandler,
+    unregisterQueryHandler,
+    registerSrdiHandler,
+    unregisterSrdiHandler,
+    registerResponseHandler,
+    unregisterResponseHandler,
+    sendQuery,
+    sendResponse,
+    sendSrdi
+};
 
-void
-jxta_resolver_service_ref_construct(Jxta_resolver_service_ref* self,
-                                    Jxta_resolver_service_ref_methods* methods) {
+void jxta_resolver_service_ref_construct(Jxta_resolver_service_ref * self, Jxta_resolver_service_ref_methods * methods)
+{
     /*
      * we do not extend Jxta_resolver_service_methods; so the type string
      * is that of the base table
      */
     PTValid(methods, Jxta_resolver_service_methods);
 
-    jxta_resolver_service_construct((Jxta_resolver_service*) self,
-                                    (Jxta_resolver_service_methods*) methods);
+    jxta_resolver_service_construct((Jxta_resolver_service *) self, (Jxta_resolver_service_methods *) methods);
 
     /* Set our rt type checking string */
     self->thisType = "Jxta_resolver_service_ref";
 }
 
-void jxta_resolver_service_ref_destruct(Jxta_resolver_service_ref* self) {
+void jxta_resolver_service_ref_destruct(Jxta_resolver_service_ref * self)
+{
     PTValid(self, Jxta_resolver_service_ref);
 
     /* release/free/destroy our own stuff */
 
+    if (self->rendezvous != 0) {
+        JXTA_OBJECT_RELEASE(self->rendezvous);
+    }
     if (self->endpoint != 0) {
-        JXTA_OBJECT_RELEASE (self->endpoint);
+        JXTA_OBJECT_RELEASE(self->endpoint);
     }
     if (self->discovery != 0) {
-        JXTA_OBJECT_RELEASE (self->discovery);
+        JXTA_OBJECT_RELEASE(self->discovery);
     }
     if (self->localPeerId != 0) {
-        JXTA_OBJECT_RELEASE (self->localPeerId);
+        JXTA_OBJECT_RELEASE(self->localPeerId);
     }
     if (self->queryhandlers != 0) {
-        JXTA_OBJECT_RELEASE (self->queryhandlers);
+        JXTA_OBJECT_RELEASE(self->queryhandlers);
     }
     if (self->responsehandlers != 0) {
-        JXTA_OBJECT_RELEASE (self->responsehandlers);
+        JXTA_OBJECT_RELEASE(self->responsehandlers);
+    }
+    if (self->srdihandlers != 0) {
+        JXTA_OBJECT_RELEASE(self->srdihandlers);
     }
     if (self->instanceName != 0) {
         JXTA_OBJECT_RELEASE(self->instanceName);
@@ -770,17 +846,20 @@ void jxta_resolver_service_ref_destruct(Jxta_resolver_service_ref* self) {
     self->group = NULL;
 
     if (self->impl_adv != 0) {
-        JXTA_OBJECT_RELEASE (self->impl_adv);
+        JXTA_OBJECT_RELEASE(self->impl_adv);
     }
     if (self->assigned_id != 0) {
         JXTA_OBJECT_RELEASE(self->assigned_id);
     }
+    JXTA_OBJECT_RELEASE(self->inque);
+    JXTA_OBJECT_RELEASE(self->outque);
+    JXTA_OBJECT_RELEASE(self->srdique);
     if (self->pool != 0) {
-        apr_pool_destroy (self->pool);
+        apr_pool_destroy(self->pool);
     }
 
     /* call the base classe's dtor. */
-    jxta_resolver_service_destruct((Jxta_resolver_service*) self);
+    jxta_resolver_service_destruct((Jxta_resolver_service *) self);
 
     JXTA_LOG("Destruction finished\n");
 }
@@ -791,13 +870,13 @@ void jxta_resolver_service_ref_destruct(Jxta_resolver_service_ref* self) {
  * 
  * @param service a pointer to the instance of the Resolver Service to free.
  */
-static void
-resol_free (void* service) {
+static void resol_free(void *service)
+{
     /* call the hierarchy of dtors */
-    jxta_resolver_service_ref_destruct((Jxta_resolver_service_ref*) service);
+    jxta_resolver_service_ref_destruct((Jxta_resolver_service_ref *) service);
 
     /* free the object itself */
-    free (service);
+    free(service);
 }
 
 
@@ -811,23 +890,22 @@ resol_free (void* service) {
  * @return a non initialized instance of the Resolver Service
  */
 
-Jxta_resolver_service_ref*
-jxta_resolver_service_ref_new_instance (void) {
+Jxta_resolver_service_ref *jxta_resolver_service_ref_new_instance(void)
+{
     /* Allocate an instance of this service */
-    Jxta_resolver_service_ref* self = (Jxta_resolver_service_ref*)
-                                      malloc (sizeof (Jxta_resolver_service_ref));
+    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *)
+        malloc(sizeof(Jxta_resolver_service_ref));
 
     if (self == NULL) {
         return NULL;
     }
 
     /* Initialize the object */
-    memset (self, 0, sizeof (Jxta_resolver_service_ref));
+    memset(self, 0, sizeof(Jxta_resolver_service_ref));
     JXTA_OBJECT_INIT(self, (JXTA_OBJECT_FREE_FUNC) resol_free, 0);
 
     /* call the hierarchy of ctors */
-    jxta_resolver_service_ref_construct(self,
-                                        &jxta_resolver_service_ref_methods);
+    jxta_resolver_service_ref_construct(self, &jxta_resolver_service_ref_methods);
 
     /* return the new object */
     return self;
@@ -837,163 +915,234 @@ jxta_resolver_service_ref_new_instance (void) {
 
 
 
-static void
-resolver_service_query_listener (Jxta_object* obj, void* arg) {
+static void resolver_service_query_listener(Jxta_object * obj, void *arg)
+{
+    Jxta_message *msg = (Jxta_message *) obj;
+    Jxta_message_element *element = NULL;
+    Jxta_object *handler = NULL;
+    ResolverQuery *rq = NULL;
+    JString *handlername = NULL;
+    Jxta_status status;
+    Jxta_resolver_service_ref *resolver = (Jxta_resolver_service_ref *) arg;
+    JString *pid = NULL;
+    JString *el_name;
+    Jxta_RouteAdvertisement *route = NULL;
+    Jxta_AccessPointAdvertisement *dest = NULL;
+    Jxta_id *src_pid = NULL;
 
-	Jxta_message*              msg = (Jxta_message*) obj;
-	Jxta_message_element * element = NULL;
-	Jxta_object *          handler = NULL;
-	ResolverQuery *             rq = NULL;
-	JString  *         handlername = NULL;
-	Jxta_status status;
-	Jxta_resolver_service_ref * resolver = (Jxta_resolver_service_ref *)arg;
-	JString* pid = NULL;
-	JString* el_name;
-	Jxta_RouteAdvertisement* route = NULL;
-	Jxta_AccessPointAdvertisement* dest = NULL;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Resolver Query Listener, query received\n");
 
-	JXTA_LOG ("Resolver Query Listener, query received\n");
-        /*jxta_message_print(msg);*/
+    JXTA_OBJECT_CHECK_VALID(msg);
+    JXTA_OBJECT_CHECK_VALID(resolver);
 
-	JXTA_OBJECT_CHECK_VALID (msg);
-	JXTA_OBJECT_CHECK_VALID (resolver);
+    el_name = jstring_new_2(JXTA_NAMESPACE);
+    jstring_append_1(el_name, resolver->outque);
+    status = jxta_message_get_element_1(msg, (char *)
+                                        jstring_get_string(el_name), &element);
+    JXTA_OBJECT_RELEASE(el_name);
 
-	el_name = jstring_new_2(JXTA_NAMESPACE);
-	jstring_append_1(el_name, resolver->outque);
-	status = jxta_message_get_element_1 (msg, (char*)
-	                                     jstring_get_string(el_name),
-	                                     &element );
-	JXTA_OBJECT_RELEASE(el_name);
+    if (element) {
+        Jxta_bytevector *bytes = NULL;
+        JString *string = NULL;
 
-	if (element) {
-		Jxta_bytevector*       bytes = NULL;
-		JString*               string = NULL;
-		
-		rq = jxta_resolver_query_new();
-		bytes = jxta_message_element_get_value (element);
-		string = jstring_new_3( bytes );
-		JXTA_OBJECT_RELEASE(bytes); bytes = NULL;
-		jxta_resolver_query_parse_charbuffer(rq, jstring_get_string (string), jstring_length(string) );
-		JXTA_OBJECT_RELEASE(string); string = NULL;
-		JXTA_OBJECT_RELEASE (element);
-		JXTA_OBJECT_RELEASE (msg);
-	} else {
-	        JXTA_OBJECT_RELEASE (msg);
-		return;
-	}
+        rq = jxta_resolver_query_new();
+        bytes = jxta_message_element_get_value(element);
+        string = jstring_new_3(bytes);
+        JXTA_OBJECT_RELEASE(bytes);
+        bytes = NULL;
+        jxta_resolver_query_parse_charbuffer(rq, jstring_get_string(string), jstring_length(string));
+        JXTA_OBJECT_RELEASE(string);
+        string = NULL;
+        JXTA_OBJECT_RELEASE(element);
+    } else {
+        return;
+    }
+    src_pid = jxta_resolver_query_get_src_peer_id(rq);
+    jxta_id_to_jstring(src_pid, &pid);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Resolver response to peer %s\n", jstring_get_string(pid));
+    JXTA_OBJECT_RELEASE(pid);
+    JXTA_OBJECT_RELEASE(src_pid);
 
-	jxta_id_to_jstring ( jxta_resolver_query_get_src_peer_id (rq), &pid );
-	JXTA_LOG ("Resolver response to peer %s\n", jstring_get_string(pid));
+    /*
+     * check if we have a route info as part of the query to respond
+     */
+    route = jxta_resolver_query_get_src_peer_route(rq);
+    if (route != NULL) {
+        /* 
+         * check if we do have a valid destination, we may have been
+         * send a NULL route info
+         */
+        dest = jxta_RouteAdvertisement_get_Dest(route);
+        if (dest != 0) {
+            if (resolver->discovery == NULL) {
+                jxta_PG_get_discovery_service(resolver->group, &(resolver->discovery));
+            }
 
-	/*
-	 * check if we have a route info as part of the query to respond
-	 */
-	route = jxta_resolver_query_get_src_peer_route(rq);
-	if (route != NULL) {
-	  /* 
-	   * check if we do have a valid destination, we may have been
-	   * send a NULL route info
-	   */
-	  dest = jxta_RouteAdvertisement_get_Dest(route);
-	  if (dest != 0) {
-	    if (resolver->discovery == NULL) {
-	      jxta_PG_get_discovery_service (resolver->group, &(resolver->discovery));
-	    }
-	    
-	    if (resolver->discovery != NULL) {
-	      status = discovery_service_publish(resolver->discovery,
-						 (Jxta_advertisement *)  route,
-						 DISC_ADV,
-						 (Jxta_expiration_time) ROUTEADV_DEFAULT_LIFETIME,
-						 (Jxta_expiration_time) ROUTEADV_DEFAULT_EXPIRATION);
-	      if (status != JXTA_SUCCESS) {
-		JXTA_LOG("Failed to publish sender route %d\n", status);
-	      }	  
-	    }
-	    JXTA_OBJECT_RELEASE(dest);
-	  }
-	  JXTA_OBJECT_RELEASE(route);
-	}
+            if (resolver->discovery != NULL) {
+                status = discovery_service_publish(resolver->discovery,
+                                                   (Jxta_advertisement *) route,
+                                                   DISC_ADV,
+                                                   (Jxta_expiration_time) ROUTEADV_DEFAULT_LIFETIME,
+                                                   (Jxta_expiration_time) ROUTEADV_DEFAULT_EXPIRATION);
+                if (status != JXTA_SUCCESS) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to publish sender route %d\n", status);
+                }
+            }
+            JXTA_OBJECT_RELEASE(dest);
+        }
+        JXTA_OBJECT_RELEASE(route);
+    }
 
-	jxta_resolver_query_get_handlername (rq, &handlername);
+    jxta_resolver_query_get_handlername(rq, &handlername);
 
-	if (handlername != NULL) {
-	  status = jxta_hashtable_get(
-				      resolver->queryhandlers,
-				      jstring_get_string(handlername),
-				      jstring_length(handlername),
-				      & handler);
-	  /* call the query handler with the query */
-	  if (handler != NULL) {
-	    status = jxta_listener_schedule_object ((Jxta_listener*) handler,
-						    (Jxta_object* ) rq);
-	    JXTA_OBJECT_RELEASE (handler);
-	  }
-	  JXTA_OBJECT_RELEASE (rq);
-	  JXTA_OBJECT_RELEASE(handlername);
-	  handlername=NULL;	
-	}
+    if (handlername != NULL) {
+        status = jxta_hashtable_get(resolver->queryhandlers,
+                                    jstring_get_string(handlername), jstring_length(handlername), &handler);
+        /* call the query handler with the query */
+        if (handler != NULL) {
+            status = jxta_listener_schedule_object((Jxta_listener *) handler, (Jxta_object *) rq);
+            JXTA_OBJECT_RELEASE(handler);
+        }
+        JXTA_OBJECT_RELEASE(rq);
+        JXTA_OBJECT_RELEASE(handlername);
+        handlername = NULL;
+    }
 }
 
-static void
-resolver_service_response_listener (Jxta_object* obj, void* arg) {
+static void resolver_service_response_listener(Jxta_object * obj, void *arg)
+{
 
-	Jxta_message*             msg = (Jxta_message*) obj;
-	Jxta_message_element* element = NULL;
-	Jxta_object *         handler = NULL;
-	JString  * handlername        = NULL;
-	ResolverResponse * rr         = NULL;
-	Jxta_status status;
-	JString* el_name;
+    Jxta_message *msg = (Jxta_message *) obj;
+    Jxta_message_element *element = NULL;
+    Jxta_object *handler = NULL;
+    JString *handlername = NULL;
+    ResolverResponse *rr = NULL;
+    Jxta_status status;
+    JString *el_name;
 
-	Jxta_resolver_service_ref * resolver = (Jxta_resolver_service_ref *)arg;
+    Jxta_resolver_service_ref *resolver = (Jxta_resolver_service_ref *) arg;
 
-	JXTA_LOG ("Resolver Response Listener, response received\n");
-        /*jxta_message_print(msg);*/
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Resolver Response Listener, response received\n");
 
-	el_name = jstring_new_2(JXTA_NAMESPACE);
-	jstring_append_1(el_name, resolver->inque);
-	status = jxta_message_get_element_1 (msg, (char*)
-	                                     jstring_get_string(el_name),
-	                                     &element );
-	JXTA_OBJECT_RELEASE(el_name);
+    el_name = jstring_new_2(JXTA_NAMESPACE);
+    jstring_append_1(el_name, resolver->inque);
+    status = jxta_message_get_element_1(msg, (char *)
+                                        jstring_get_string(el_name), &element);
+    JXTA_OBJECT_RELEASE(el_name);
 
-	if (element) {
-		Jxta_bytevector*       bytes = NULL;
-		JString*               string = NULL;
+    if (element) {
+        Jxta_bytevector *bytes = NULL;
+        JString *string = NULL;
 
-		rr = jxta_resolver_response_new();
-		bytes = jxta_message_element_get_value (element);
-		string = jstring_new_3( bytes );
-		JXTA_OBJECT_RELEASE(bytes); bytes = NULL;
-		jxta_resolver_response_parse_charbuffer(rr, jstring_get_string (string), jstring_length(string) );
-		JXTA_OBJECT_RELEASE(string); string = NULL;
-		JXTA_OBJECT_RELEASE (element);
-		JXTA_OBJECT_RELEASE (msg);
-	} else {
-	        JXTA_OBJECT_RELEASE (msg);
-		return;
-	}
-	
-	jxta_resolver_response_get_handlername (rr, &handlername);
+        rr = jxta_resolver_response_new();
+        bytes = jxta_message_element_get_value(element);
+        string = jstring_new_3(bytes);
+        JXTA_OBJECT_RELEASE(bytes);
+        bytes = NULL;
+        jxta_resolver_response_parse_charbuffer(rr, jstring_get_string(string), jstring_length(string));
+        JXTA_OBJECT_RELEASE(string);
+        string = NULL;
+        JXTA_OBJECT_RELEASE(element);
+    } else {
+        return;
+    }
 
-	if (handlername != NULL) {
-	status = jxta_hashtable_get(
-	                 resolver->responsehandlers,
-	                 jstring_get_string(handlername),
-	                 jstring_length(handlername),
-	                 & handler);
+    jxta_resolver_response_get_handlername(rr, &handlername);
 
-	if (handler != NULL) {
-		status = jxta_listener_schedule_object ((Jxta_listener*) handler,
-		                                        (Jxta_object* ) rr);
-		JXTA_OBJECT_RELEASE (handler);
-	}
-	JXTA_OBJECT_RELEASE (rr);
-	JXTA_OBJECT_RELEASE(handlername);
-	handlername=NULL;
-	}
+    if (handlername != NULL) {
+        status = jxta_hashtable_get(resolver->responsehandlers,
+                                    jstring_get_string(handlername), jstring_length(handlername), &handler);
 
+        if (handler != NULL) {
+            status = jxta_listener_schedule_object((Jxta_listener *) handler, (Jxta_object *) rr);
+            JXTA_OBJECT_RELEASE(handler);
+        }
+        JXTA_OBJECT_RELEASE(rr);
+        JXTA_OBJECT_RELEASE(handlername);
+        handlername = NULL;
+    }
+
+
+}
+
+static void resolver_service_srdi_listener(Jxta_object * obj, void *arg)
+{
+    Jxta_message *msg = (Jxta_message *) obj;
+    Jxta_message_element *element = NULL;
+    Jxta_object *handler = NULL;
+    JString *handlername = NULL;
+    ResolverSrdi *srdi_msg = NULL;
+    Jxta_status status;
+    JString *el_name;
+    Jxta_resolver_service_ref *resolver = (Jxta_resolver_service_ref *) arg;
+
+    /*jxta_message_print(msg); */
+    JXTA_OBJECT_CHECK_VALID(msg);
+
+    el_name = jstring_new_2(JXTA_NAMESPACE);
+    jstring_append_1(el_name, resolver->srdique);
+    status = jxta_message_get_element_1(msg, (char *)
+                                        jstring_get_string(el_name), &element);
+    JXTA_OBJECT_RELEASE(el_name);
+    if (element) {
+        const char *mime_type = jxta_message_element_get_mime_type(element);
+        if (mime_type != NULL) {
+            Byte *bytes = NULL;
+            Byte *uncompr = NULL;
+            uLong uncomprLen=0;
+            int size, err;
+            Jxta_bytevector *jb = jxta_message_element_get_value(element);
+            size = jxta_bytevector_size(jb);
+            bytes = calloc(1, size);
+            jxta_bytevector_get_bytes_at(jb, bytes, 0, size);
+            if (!strcmp(mime_type, "application/gzip")) {
+#ifdef GUNZIP_ENABLED
+                uncomprLen = 40 * size;
+                uncompr = calloc(1, uncomprLen);
+                err = zip_uncompress(uncompr, &uncomprLen, bytes, size);
+                free(bytes);
+                if (err != Z_OK) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error %d from zlib\n", err);
+                } else {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Received %d bytes, uncompress to %d bytes\n", size, uncomprLen);
+                }
+#else
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Received GZip mime type but GZip is disabled \n");
+#endif
+            } else {
+                uncompr = bytes;
+                uncomprLen = size;
+            }
+            if (NULL != uncompr) {
+                srdi_msg = jxta_resolver_srdi_new();
+                jxta_resolver_srdi_parse_charbuffer(srdi_msg, (const char *) uncompr, uncomprLen);
+                jxta_resolver_srdi_get_handlername(srdi_msg, &handlername);
+                if (handlername != NULL) {
+                    status = jxta_hashtable_get(resolver->srdihandlers,
+                                            jstring_get_string(handlername), jstring_length(handlername), &handler);
+                    JXTA_OBJECT_RELEASE(handlername);
+                }
+                /* call the query handler with the query */
+                if (handler != NULL) {
+                    JString *payload = NULL;
+                    jxta_resolver_srdi_get_payload(srdi_msg, &payload);
+                    if (payload != NULL) {
+                        status = jxta_listener_schedule_object((Jxta_listener *) handler, (Jxta_object *) payload);
+                        JXTA_OBJECT_RELEASE(payload);
+                    }
+                    JXTA_OBJECT_RELEASE(handler);
+                }
+                JXTA_OBJECT_RELEASE(srdi_msg);
+                free(uncompr);
+            }
+        } else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "got a message with a null mime type \n");
+        }
+        JXTA_OBJECT_RELEASE(element);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Didn't get the resolver srdi msg expected \n");
+        return;
+    }
 
 }
 
@@ -1001,41 +1150,143 @@ resolver_service_response_listener (Jxta_object* obj, void* arg) {
  * generate a unique id within this instance of this service on this peer
  *
  */
-static long getid(Jxta_resolver_service_ref * resolver) {
+static long getid(Jxta_resolver_service_ref * resolver)
+{
 
     PTValid(resolver, Jxta_resolver_service_ref);
-    apr_thread_mutex_lock (resolver->mutex);
-    resolver->query_id ++;
-    JXTA_LOG("querid :%ld\n",resolver->query_id);
-    apr_thread_mutex_unlock (resolver->mutex);
+    apr_thread_mutex_lock(resolver->mutex);
+    resolver->query_id++;
+    JXTA_LOG("querid :%ld\n", resolver->query_id);
+    apr_thread_mutex_unlock(resolver->mutex);
     return resolver->query_id;
 }
 
-static Jxta_endpoint_address*
-get_endpoint_address_from_peerid (Jxta_id* peerid, char * name, char * que) {
-    JString* tmp = NULL;
-    Jxta_endpoint_address* addr = NULL;
-    char* pt;
+static Jxta_endpoint_address *get_endpoint_address_from_peerid(Jxta_id * peerid, char *name, char *que)
+{
+    JString *tmp = NULL;
+    Jxta_endpoint_address *addr = NULL;
+    char *pt;
 
-    JXTA_OBJECT_CHECK_VALID (peerid);
+    JXTA_OBJECT_CHECK_VALID(peerid);
 
     tmp = NULL;
-    jxta_id_get_uniqueportion ( peerid, &tmp );
+    jxta_id_get_uniqueportion(peerid, &tmp);
 
-    JXTA_OBJECT_CHECK_VALID (tmp);
+    JXTA_OBJECT_CHECK_VALID(tmp);
 
     if (tmp == NULL) {
-        JXTA_LOG ("Cannot get the unique portion of the peer id\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot get the unique portion of the peer id\n");
         return NULL;
     }
 
-    pt = (char*) jstring_get_string (tmp);
-    addr = jxta_endpoint_address_new2 ((char*) "jxta", pt, name, que);
+    pt = (char *) jstring_get_string(tmp);
+    addr = jxta_endpoint_address_new2((char *) "jxta", pt, name, que);
 
-    JXTA_OBJECT_CHECK_VALID (addr);
+    JXTA_OBJECT_CHECK_VALID(addr);
 
-    JXTA_OBJECT_RELEASE (tmp);
+    JXTA_OBJECT_RELEASE(tmp);
     return addr;
 }
 
+#ifdef GUNZIP_ENABLED
+static int zip_uncompress(Byte * dest, uLong * destLen, Byte * source, uLong sourceLen)
+{
+
+    z_stream stream;
+    int err;
+    stream.next_in = (Bytef *) source;
+    stream.avail_in = sourceLen;
+    stream.next_out = dest;
+    stream.avail_out = *destLen;
+    stream.zalloc = 0;
+    stream.zfree = 0;
+
+    err = inflateInit2(&stream, MAX_WBITS + 16);
+    if (err != Z_OK)
+        return err;
+
+    err = inflate(&stream, Z_FINISH);
+    if (err != Z_STREAM_END) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "error zlib %s avail_in:%i avail_out:%i\n", stream.msg,
+                        stream.avail_in, stream.avail_out);
+        inflateEnd(&stream);
+        return err;
+    }
+    *destLen = stream.total_out;
+    err = inflateEnd(&stream);
+    return err;
+}
+#ifdef GZIP_ENABLED
+static int zip_compress(unsigned char **out, size_t *out_len,
+                   const char *in, size_t in_len)
+{
+  struct z_stream_s *stream = NULL;
+  size_t out_size;
+  off_t offset;
+  int err;
+  *out = NULL;
+  stream = calloc(1, sizeof(struct z_stream_s) );
+  stream->zalloc = Z_NULL;
+  stream->zfree = Z_NULL;
+  stream->opaque = NULL;
+  stream->next_in = (unsigned char*) in;
+  stream->avail_in = in_len;
+  
+  out_size = in_len / 2;
+  if (out_size < 1024) out_size = 1024;
+  *out = calloc(1, out_size);
+  stream->next_out = *out;
+  stream->avail_out = out_size;
+  err = deflateInit2(stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, MAX_WBITS + 16, 8, Z_DEFAULT_STRATEGY);
+  if (err != Z_OK) {
+    printf("Z");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error from deflateInit2: %d  %s version: %s\n", err
+                                , stream->msg?stream->msg:"<no message>", ZLIB_VERSION);
+    goto err;
+  }
+  
+  while (1) {
+    switch (deflate(stream, Z_FINISH))
+      {
+      case Z_STREAM_END:
+        goto done;
+      case Z_OK:
+        if (stream->avail_out >= stream->avail_in+16) {
+            break;
+        } else {
+        }
+      case Z_BUF_ERROR:
+        offset = stream->next_out - ((unsigned char*)*out);
+        out_size *= 2;
+        *out = realloc(*out, out_size);
+        stream->next_out = *out + offset;
+        stream->avail_out = out_size - offset;
+        break;
+      default:
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Gzip compression didn't finish: %s",
+               stream->msg ? stream->msg : "<no message>");
+        goto err;
+      }
+  }
+ done:
+  *out_len = stream->total_out;
+  if (deflateEnd(stream)!=Z_OK) {
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error freeing gzip structures");
+    goto err;
+  }
+  free(stream);
+
+  return 0;
+ err:
+  if (stream) {
+    deflateEnd(stream);
+    free(stream);
+  }
+  if (*out) {
+    free(*out);
+  }
+  return -1;
+}
+#endif /* GZIP_ENABLED */
+#endif /* GUNZIP_ENABLED */
 /* vim: set ts=4 sw=4 et tw=130: */

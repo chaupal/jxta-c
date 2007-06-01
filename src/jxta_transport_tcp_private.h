@@ -51,11 +51,17 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tcp_private.h,v 1.6 2005/04/06 21:59:25 bondolo Exp $
+ * $Id: jxta_transport_tcp_private.h,v 1.11 2005/09/13 16:26:02 slowhog Exp $
  */
 
 #ifndef __JXTA_TRANSPORT_TCP_PRIVATE_H__
 #define __JXTA_TRANSPORT_TCP_PRIVATE_H__
+
+#include <apr_network_io.h>
+
+#include "jxta_types.h"
+#include "jxta_endpoint_address.h"
+#include "jxta_endpoint_service.h"
 
 #define SEND_BUFFER_SIZE	(64 * 1024)
 #define RECV_BUFFER_SIZE	(64 * 1024)
@@ -63,93 +69,46 @@
 #define CONNECTION_TIMEOUT	(1 * 1000 * 1000)
 #define MAX_ACCEPT_COUNT_BACKLOG	50
 
-#include "jxta_types.h"
-#include "jxta_endpoint_address.h"
-#include "jxta_endpoint_service.h"
-#include "apr_network_io.h"
-
 #ifdef __cplusplus
 extern "C" {
 #if 0
 }
 #endif
 #endif
-
 typedef struct _jxta_transport_tcp Jxta_transport_tcp;
 typedef struct _tcp_messenger TcpMessenger;
+typedef struct _jxta_transport_tcp_connection Jxta_transport_tcp_connection;
 
-#include "jxta_transport_tcp_connection.h"
-
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-TcpMessenger *get_tcp_messenger(Jxta_transport_tcp *tp, Jxta_transport_tcp_connection *conn, Jxta_endpoint_address* addr, const char *ipaddr, apr_port_t port);
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-Jxta_boolean tcp_messenger_start(TcpMessenger *mes);
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
 Jxta_transport_tcp *jxta_transport_tcp_new_instance(void);
 
+TcpMessenger *get_tcp_messenger(Jxta_transport_tcp * tp, Jxta_transport_tcp_connection * conn, Jxta_endpoint_address * addr);
 
+Jxta_status jxta_transport_tcp_remove_messenger(Jxta_transport_tcp * tp, Jxta_endpoint_address * addr);
 
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-Jxta_status jxta_transport_tcp_remove_messenger(Jxta_transport_tcp *tp, const char *ipaddr, apr_port_t port);
+Jxta_endpoint_service *jxta_transport_tcp_get_endpoint_service(Jxta_transport_tcp * tp);
 
+const char *jxta_transport_tcp_local_ipaddr_cstr(Jxta_transport_tcp * me);
 
+char *jxta_transport_tcp_get_local_ipaddr(Jxta_transport_tcp * tp);
 
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-Jxta_endpoint_service *jxta_transport_tcp_get_endpoint_service(Jxta_transport_tcp *tp);
+apr_port_t jxta_transport_tcp_get_local_port(Jxta_transport_tcp * tp);
 
+char *jxta_transport_tcp_get_peerid(Jxta_transport_tcp * tp);
 
+Jxta_endpoint_address *jxta_transport_tcp_get_public_addr(Jxta_transport_tcp * tp);
 
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-char *jxta_transport_tcp_get_local_ipaddr(Jxta_transport_tcp *tp);
+Jxta_boolean jxta_transport_tcp_get_allow_multicast(Jxta_transport_tcp * tp);
 
-
-
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-apr_port_t jxta_transport_tcp_get_local_port(Jxta_transport_tcp *tp);
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-char *jxta_transport_tcp_get_peerid(Jxta_transport_tcp *tp);
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-Jxta_endpoint_address *jxta_transport_tcp_get_public_addr(Jxta_transport_tcp *tp);
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-Jxta_boolean jxta_transport_tcp_get_allow_multicast(Jxta_transport_tcp *tp);
+void jxta_tcp_got_inbound_connection(Jxta_transport_tcp * me, Jxta_transport_tcp_connection * conn, 
+                                     Jxta_endpoint_address * addr);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
-#endif	/* __JXTA_TRANSPORT_TCP_PRIVATE_H__ */
+#endif /* __JXTA_TRANSPORT_TCP_PRIVATE_H__ */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

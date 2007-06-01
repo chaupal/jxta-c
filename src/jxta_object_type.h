@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object_type.h,v 1.5 2005/02/14 01:23:15 bondolo Exp $
+ * $Id: jxta_object_type.h,v 1.8 2005/06/16 23:11:45 slowhog Exp $
  */
 
 #ifndef JXTA_OBJECT_TYPE_H
@@ -65,10 +65,13 @@ extern "C" {
 #endif
 #endif
 /**
-    Change the following to <tt>#define NO_RUNTIME_TYPE_CHECK</tt> to disable the
-    runtime type checking of Jxta objects provided by the PTValid macro.
+*   Change the following to <tt>#define NO_RUNTIME_TYPE_CHECK</tt> to disable the
+*   runtime type checking of Jxta objects provided by the PTValid macro.
 **/
 #undef NO_RUNTIME_TYPE_CHECK
+/**
+* name2 is a macro for pasting strings together in the pre-processor.
+**/
 #ifndef name2
 #define _name2(a, b) a##b
 #define name2(a, b) _name2(a, b)
@@ -85,15 +88,24 @@ extern "C" {
  * "Extends" in order to derive from another struct; it can be replaced by
  * simply "type somename".
  */
+#ifndef NO_RUNTIME_TYPE_CHECK
 #define Extends(type) type name2(_jxta_base_, type); const char* thisType
+#else
+#define Extends(type) type name2(_jxta_base_, type);
+#endif
 /**
  * Use this macro to add the runtime type checking field without deriving from
  * anything.
- * This is provided for syntactic uniformity mostly and to ensure consistency
+ * 
+ * <p/>This is provided for syntactic uniformity mostly and to ensure consistency
  * with the runtime type checking macro (see PTValid). It expands as
  * "const char* thisType".
  */
+#ifndef NO_RUNTIME_TYPE_CHECK
 #define Extends_nothing const char* thisType
+#else
+#define Extends_nothing
+#endif
 /**
  * Checks that the two supplied strings (both reflecting a type name) are
  * identical. If not, aborts with a message emphasizing that a runtime
@@ -105,17 +117,18 @@ extern "C" {
  * @param file the source file in which the test is occuring.
  * @param file the source file line at which the test is occuring.
  * @return a pointer to the object. If object type does not match then function does not return.
- **/ extern void *jxta_assert_same_type(const void *object, const char *object_type, const char *want_type, const char *file, int line);
+ **/ JXTA_DECLARE(void *) jxta_assert_same_type(const void *object, const char *object_type, const char *want_type,
+                                                const char *file, int line);
 
 /**
  * This macro checks that the given object is of the given type.
  * Any object that has a pointer to a string version of the symbolic type name
  * located at the same offset than the "thisType" field of this type
- * will be deemed to be of that type. Objects that actualy are of the said type
+ * will be deemed to be of that type. Objects that acctualy are of the said type
  * will verify positively only if the thisType field was properly initialized.
  *
- * If the object does not meet these conditions, an error message is output and
- * excution is aborted.
+ * <p/>If the object does not meet these conditions, an error message is output 
+ * and excution is aborted.
  *
  * @param thing Pointer to the object which type is to be verified.
  * @param type The actual symbol for the type to be verified.
@@ -128,8 +141,19 @@ extern "C" {
 #define PTValid(thing, type) ((type*)(thing))
 #endif
 
+#ifndef NO_RUNTIME_TYPE_CHECK
+#define PTType(thing) (((type*) (thing))->thisType)
+#else
+#define PTType(thing) ""
+#endif
+
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTA_OBJECT_TYPE_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

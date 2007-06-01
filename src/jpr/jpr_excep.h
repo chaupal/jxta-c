@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_excep.h,v 1.2 2005/02/08 22:48:35 bondolo Exp $
+ * $Id: jpr_excep.h,v 1.4 2005/04/28 09:56:31 lankes Exp $
  */
 
 #ifndef JPR_EXCEP_H
@@ -74,12 +74,12 @@ typedef struct Jpr_JmpFrame {
     sigjmp_buf tctx;
 } Jpr_JmpFrame;
 
-extern void _jpr_threadPushCtx(Jpr_JmpFrame * frame, int nested_in_frame);
-extern void _jpr_threadPopCtx(void);
-extern int _jpr_threadPopAllFuncCtx(void);
-extern Jpr_JmpFrame *_jpr_threadRestoreCtx(int val);
+JPR_DECLARE(void) _jpr_threadPushCtx(Jpr_JmpFrame * frame, int nested_in_frame);
+JPR_DECLARE(void) _jpr_threadPopCtx(void);
+JPR_DECLARE(int) _jpr_threadPopAllFuncCtx(void);
+JPR_DECLARE(Jpr_JmpFrame *) _jpr_threadRestoreCtx(int val);
 
-extern Jpr_status jpr_lasterror_get(void);
+JPR_DECLARE(Jpr_status) jpr_lasterror_get(void);
 
 /*
  * These two macros must NEVER be collapsed into a single one because that
@@ -107,7 +107,7 @@ extern Jpr_status jpr_lasterror_get(void);
  * is made at poping any try block, thus protecting the ones created by
  * invoking code.
  */
-extern int _jpr_withinFuncTryBlk_;
+JPR_DECLARE_DATA int _jpr_withinFuncTryBlk_;
 
 /*
  * Add MayThrow to the list of arguments when invoking a function that

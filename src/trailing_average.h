@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: trailing_average.h,v 1.3 2002/03/19 01:05:12 ddoolin Exp $
+ * $Id: trailing_average.h,v 1.4 2005/06/16 23:11:55 slowhog Exp $
  */
 
 
@@ -60,30 +60,30 @@ extern "C" {
 #endif
 
 
-typedef struct _TrailingAverage TrailingAverage;
+    typedef struct _TrailingAverage TrailingAverage;
 
 /**
  * Create a new TrailingAverage structure for the number of seconds
  * specified by count.
  */
-TrailingAverage* trailing_average_new  (int count);
+    TrailingAverage *trailing_average_new(int count);
 
 /**
  * Free a TrailingAverage structure.
  */
-void             trailing_average_free (TrailingAverage *ta);
+    void trailing_average_free(TrailingAverage * ta);
 
 /**
  * Increment the count of things we are averaging for the current
  * instant in time.
  */
-void             trailing_average_inc  (TrailingAverage *ta);
+    void trailing_average_inc(TrailingAverage * ta);
 
 /**
  * Get the number of times trailing_average_inc has been called during
  * the last 'count' seconds.
  */
-int              trailing_average_get  (TrailingAverage *ta);
+    int trailing_average_get(TrailingAverage * ta);
 
 #ifdef __cplusplus
 }

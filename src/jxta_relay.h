@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_relay.h,v 1.3 2005/03/26 01:31:07 bondolo Exp $
+ * $Id: jxta_relay.h,v 1.5 2005/07/22 03:12:54 slowhog Exp $
  */
 
 #ifndef JXTA_RELAY_H__
@@ -63,10 +63,10 @@ extern "C" {
 }
 #endif
 #endif
-#define LEASE_REQUEST    "3600000"      /* 1 hour */
+#define LEASE_REQUEST    "3600000"  /* 1 hour */
 #define REQUEST_TIMEOUT  "120000,-1"
 #define LAZY_CLOSE       "keep,true"
-#define RELAY_LEASE_RENEWAL_DELAY ((Jxta_time_diff) 5 * 60 * 1000 * 1000)       /* 5 Minutes */
+#define RELAY_LEASE_RENEWAL_DELAY ((Jxta_time_diff) 5 * 60 * 1000 * 1000)   /* 5 Minutes */
 #define LEASE_REQUEST_TIME    ((Jxta_time_diff) 60 * 60 * 1000 * 1000)  /* 1 hour */
 #define RELAY_ADDRESS "EndpointService:jxta-NetGroup/uuid-DEADBEEFDEAFBABAFEEDBABE0000000F05"
 #define RELAY_LEASE_ELEMENT "relay:lease"
@@ -77,6 +77,12 @@ extern "C" {
 #define RELAY_RESPONSE_CONNECTED "connected"
 #define RELAY_RESPONSE_DISCONNECTED "disconnected"
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
 #endif /* JXTA_RELAY_H__  */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

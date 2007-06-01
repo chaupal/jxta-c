@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_hta.h,v 1.4 2005/02/02 02:58:28 exocetrick Exp $
+ * $Id: jxta_hta.h,v 1.8 2005/08/03 05:51:16 slowhog Exp $
  */
 
-   
+
 #ifndef JXTA_HTTPTRANSPORTADVERTISEMENT_H__
 #define JXTA_HTTPTRANSPORTADVERTISEMENT_H__
 
@@ -66,49 +66,50 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _jxta_HTTPTransportAdvertisement Jxta_HTTPTransportAdvertisement;
 
-Jxta_HTTPTransportAdvertisement * jxta_HTTPTransportAdvertisement_new(void);
-void jxta_HTTPTransportAdvertisement_set_handlers(Jxta_HTTPTransportAdvertisement *, XML_Parser, void *);
-Jxta_status jxta_HTTPTransportAdvertisement_get_xml(Jxta_HTTPTransportAdvertisement *,
-					       JString **);
-void jxta_HTTPTransportAdvertisement_parse_charbuffer(Jxta_HTTPTransportAdvertisement *, const char *, int len); 
-void jxta_HTTPTransportAdvertisement_parse_file(Jxta_HTTPTransportAdvertisement *, FILE * stream);
- 
-char * jxta_HTTPTransportAdvertisement_get_Jxta_HTTPTransportAdvertisement(Jxta_HTTPTransportAdvertisement *);
-void jxta_HTTPTransportAdvertisement_set_Jxta_HTTPTransportAdvertisement(Jxta_HTTPTransportAdvertisement *, char *);
- 
-JString * jxta_HTTPTransportAdvertisement_get_Protocol(Jxta_HTTPTransportAdvertisement *);
-void jxta_HTTPTransportAdvertisement_set_Protocol(Jxta_HTTPTransportAdvertisement *, JString *);
- 
-Jxta_in_addr jxta_HTTPTransportAdvertisement_get_InterfaceAddress(Jxta_HTTPTransportAdvertisement *);
-void jxta_HTTPTransportAdvertisement_set_InterfaceAddress(Jxta_HTTPTransportAdvertisement *, Jxta_in_addr);
- 
-JString * jxta_HTTPTransportAdvertisement_get_ConfigMode(Jxta_HTTPTransportAdvertisement *);
-void jxta_HTTPTransportAdvertisement_set_ConfigMode(Jxta_HTTPTransportAdvertisement *, JString *);
- 
-Jxta_port jxta_HTTPTransportAdvertisement_get_Port(Jxta_HTTPTransportAdvertisement *);
-    void jxta_HTTPTransportAdvertisement_set_Port(Jxta_HTTPTransportAdvertisement *, Jxta_port);
- 
-Jxta_vector * jxta_HTTPTransportAdvertisement_get_Router(Jxta_HTTPTransportAdvertisement *);
-void jxta_HTTPTransportAdvertisement_set_Router(Jxta_HTTPTransportAdvertisement *, Jxta_vector *);
- 
-JString * jxta_HTTPTransportAdvertisement_get_Proxy(Jxta_HTTPTransportAdvertisement *);
-void jxta_HTTPTransportAdvertisement_set_Proxy(Jxta_HTTPTransportAdvertisement *, JString *);
- 
-Jxta_boolean jxta_HTTPTransportAdvertisement_get_ProxyOff(Jxta_HTTPTransportAdvertisement *);
-void jxta_HTTPTransportAdvertisement_set_ProxyOff(Jxta_HTTPTransportAdvertisement *, Jxta_boolean);
- 
-JString * jxta_HTTPTransportAdvertisement_get_Server(Jxta_HTTPTransportAdvertisement *);
-void jxta_HTTPTransportAdvertisement_set_Server(Jxta_HTTPTransportAdvertisement *, JString *);
- 
-Jxta_boolean jxta_HTTPTransportAdvertisement_get_ServerOff(Jxta_HTTPTransportAdvertisement *);
-void jxta_HTTPTransportAdvertisement_set_ServerOff(Jxta_HTTPTransportAdvertisement *, Jxta_boolean);
- 
-Jxta_vector * jxta_HTTPTransportAdvertisement_get_indexes(void);
- 
-#endif /* JXTA_HTTPTRANSPORTADVERTISEMENT_H__  */
+JXTA_DECLARE(Jxta_HTTPTransportAdvertisement *) jxta_HTTPTransportAdvertisement_new(void);
+JXTA_DECLARE(void) jxta_HTTPTransportAdvertisement_set_handlers(Jxta_HTTPTransportAdvertisement *, XML_Parser, void *);
+JXTA_DECLARE(Jxta_status) jxta_HTTPTransportAdvertisement_get_xml(Jxta_HTTPTransportAdvertisement *, JString **);
+JXTA_DECLARE(void) jxta_HTTPTransportAdvertisement_parse_charbuffer(Jxta_HTTPTransportAdvertisement *, const char *, int len);
+JXTA_DECLARE(void) jxta_HTTPTransportAdvertisement_parse_file(Jxta_HTTPTransportAdvertisement *, FILE * stream);
+
+JXTA_DECLARE(char *) jxta_HTTPTransportAdvertisement_get_Jxta_HTTPTransportAdvertisement(Jxta_HTTPTransportAdvertisement *);
+JXTA_DECLARE(void) jxta_HTTPTransportAdvertisement_set_Jxta_HTTPTransportAdvertisement(Jxta_HTTPTransportAdvertisement *, char *);
+
+JXTA_DECLARE(JString *) jxta_HTTPTransportAdvertisement_get_Protocol(Jxta_HTTPTransportAdvertisement *);
+JXTA_DECLARE(void) jxta_HTTPTransportAdvertisement_set_Protocol(Jxta_HTTPTransportAdvertisement *, JString *);
+
+JXTA_DECLARE(Jxta_in_addr) jxta_HTTPTransportAdvertisement_get_InterfaceAddress(Jxta_HTTPTransportAdvertisement *);
+JXTA_DECLARE(void) jxta_HTTPTransportAdvertisement_set_InterfaceAddress(Jxta_HTTPTransportAdvertisement *, Jxta_in_addr);
+
+JXTA_DECLARE(JString *) jxta_HTTPTransportAdvertisement_get_ConfigMode(Jxta_HTTPTransportAdvertisement *);
+JXTA_DECLARE(void) jxta_HTTPTransportAdvertisement_set_ConfigMode(Jxta_HTTPTransportAdvertisement *, JString *);
+
+JXTA_DECLARE(Jxta_port) jxta_HTTPTransportAdvertisement_get_Port(Jxta_HTTPTransportAdvertisement *);
+JXTA_DECLARE(void) jxta_HTTPTransportAdvertisement_set_Port(Jxta_HTTPTransportAdvertisement *, Jxta_port);
+
+JXTA_DECLARE(JString *) jxta_HTTPTransportAdvertisement_get_Proxy(Jxta_HTTPTransportAdvertisement *);
+JXTA_DECLARE(void) jxta_HTTPTransportAdvertisement_set_Proxy(Jxta_HTTPTransportAdvertisement *, JString *);
+
+JXTA_DECLARE(Jxta_boolean) jxta_HTTPTransportAdvertisement_get_ProxyOff(Jxta_HTTPTransportAdvertisement *);
+JXTA_DECLARE(void) jxta_HTTPTransportAdvertisement_set_ProxyOff(Jxta_HTTPTransportAdvertisement *, Jxta_boolean);
+
+JXTA_DECLARE(JString *) jxta_HTTPTransportAdvertisement_get_Server(Jxta_HTTPTransportAdvertisement *);
+JXTA_DECLARE(void) jxta_HTTPTransportAdvertisement_set_Server(Jxta_HTTPTransportAdvertisement *, JString *);
+
+JXTA_DECLARE(Jxta_boolean) jxta_HTTPTransportAdvertisement_get_ServerOff(Jxta_HTTPTransportAdvertisement *);
+JXTA_DECLARE(void) jxta_HTTPTransportAdvertisement_set_ServerOff(Jxta_HTTPTransportAdvertisement *, Jxta_boolean);
+
+JXTA_DECLARE(Jxta_vector *) jxta_HTTPTransportAdvertisement_get_indexes(Jxta_advertisement *);
+
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
+#endif /* JXTA_HTTPTRANSPORTADVERTISEMENT_H__  */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object.h,v 1.6 2005/03/29 19:01:53 bondolo Exp $
+ * $Id: jxta_object.h,v 1.11 2005/07/28 00:23:36 slowhog Exp $
  */
 
 
@@ -68,6 +68,7 @@ extern "C" {
 }
 #endif
 #endif
+
 /**
  **     OBJECT MANAGEMENT
  **
@@ -104,7 +105,7 @@ extern "C" {
  ** is done by:
  ** <pre>
  **
- ** JXTA_OBJECT_INIT (&obj, free_function, free_function_cookie);
+ ** JXTA_OBJECT_INIT (&obj, free_dunction, free_dunction_cookie);
  **
  ** </pre>
  ** A pointer to the free function (of type JXTA_OBJECT_FREE_FUNC) must be provided
@@ -190,9 +191,15 @@ extern "C" {
  **     // When the object is no longer in use by B, do:
  **     JXTA_OBJECT_RELEASE (obj);
  ** }
-  **//**
+ **/
+
+/**
  * This is the begining of the public API of the object
- **/ typedef struct _jxta_object Jxta_object;
+ **/
+typedef struct _jxta_object Jxta_object;
+
+extern Jxta_status jxta_object_initialize(void);
+extern void jxta_object_terminate(void);
 
 /**
  * Prototype of the free function provided by the application. 
@@ -223,7 +230,7 @@ typedef void (*JXTA_OBJECT_FREE_FUNC) (Jxta_object * data);
  * };
  *
  * @param obj pointer to the object to initialize.
- * @param free pointer to the free function of the object.
+ * @param pf_free pointer to the free function of the object.
  * @param cookie is void* that is not intepreted by the object management,
  *        but can be used within the free function. That can be a pointer to 
  *        a pool, or whatever, or even be null.
@@ -232,7 +239,7 @@ typedef void (*JXTA_OBJECT_FREE_FUNC) (Jxta_object * data);
  * a bug in the calling code if a same object is being used before being
  * initialized.
  **/
-void *JXTA_OBJECT_INIT(void *obj, JXTA_OBJECT_FREE_FUNC free, void *cookie);
+JXTA_DECLARE(void *) JXTA_OBJECT_INIT(void *obj, JXTA_OBJECT_FREE_FUNC pf_free, void *cookie);
 
 /**
  * Initialize an object.
@@ -251,7 +258,7 @@ void *JXTA_OBJECT_INIT(void *obj, JXTA_OBJECT_FREE_FUNC free, void *cookie);
  *
  * @param obj pointer to the object to initialize.
  * @param flags Flags that will be set for the object.
- * @param free pointer to the free function of the object.
+ * @param pf_free pointer to the free function of the object.
  * @param cookie is void* that is not intepreted by the object management,
  *        but can be used within the free function. That can be a pointer to 
  *        a pool, or whatever, or even be null.
@@ -260,7 +267,7 @@ void *JXTA_OBJECT_INIT(void *obj, JXTA_OBJECT_FREE_FUNC free, void *cookie);
  * a bug in the calling code if a same object is being used before being
  * initialized.
  **/
-void *JXTA_OBJECT_INIT_FLAGS(void *obj, unsigned int flags, JXTA_OBJECT_FREE_FUNC free, void *cookie);
+JXTA_DECLARE(void *) JXTA_OBJECT_INIT_FLAGS(void *obj, unsigned int flags, JXTA_OBJECT_FREE_FUNC pf_free, void *cookie);
 
 /**
  * Share an object. 
@@ -270,7 +277,7 @@ void *JXTA_OBJECT_INIT_FLAGS(void *obj, unsigned int flags, JXTA_OBJECT_FREE_FUN
  * @return the shared object. Same value as obj if OBJ is a valid object
  *  otherwise NULL)
  **/
-Jxta_object *JXTA_OBJECT_SHARE(Jxta_object * obj);
+JXTA_DECLARE(Jxta_object *) JXTA_OBJECT_SHARE(Jxta_object * obj);
 
 /**
  * Release an object
@@ -281,7 +288,7 @@ Jxta_object *JXTA_OBJECT_SHARE(Jxta_object * obj);
  * @return The current refcount. A signed number to allow for easier
  * detection of underflow.
  **/
-int JXTA_OBJECT_RELEASE(void *obj);
+JXTA_DECLARE(int) JXTA_OBJECT_RELEASE(void *obj);
 
 /**
  * Check an object
@@ -290,7 +297,7 @@ int JXTA_OBJECT_RELEASE(void *obj);
  * @param obj object to check
  * @return  TRUE if the object is valid, otherwise FALSE.
  **/
-Jxta_boolean JXTA_OBJECT_CHECK_VALID(Jxta_object * obj);
+JXTA_DECLARE(Jxta_boolean) JXTA_OBJECT_CHECK_VALID(Jxta_object * obj);
 
 /**
  * Get the current refcount for an object. A signed number to allow for easier
@@ -299,7 +306,7 @@ Jxta_boolean JXTA_OBJECT_CHECK_VALID(Jxta_object * obj);
  * @param obj object to check
  * @return  The reference count
  **/
-int JXTA_OBJECT_GET_REFCOUNT(Jxta_object * obj);
+JXTA_DECLARE(int) JXTA_OBJECT_GET_REFCOUNT(Jxta_object * obj);
 
 /*
  * Jxta_object standard functions. Modules dealing with objects should
@@ -316,7 +323,7 @@ int JXTA_OBJECT_GET_REFCOUNT(Jxta_object * obj);
  * @param obj2 second object to compare.
  * @return TRUE if equivalent or FALSE if not.
  **/
-typedef Jxta_boolean(*Jxta_object_equals_func) (Jxta_object const *obj1, Jxta_object const *obj2);
+typedef Jxta_boolean(JXTA_STDCALL * Jxta_object_equals_func) (Jxta_object const *obj1, Jxta_object const *obj2);
 
 /**
  * Compares two objects of the same type and returns an int which
@@ -331,7 +338,7 @@ typedef Jxta_boolean(*Jxta_object_equals_func) (Jxta_object const *obj1, Jxta_ob
  * @param obj2 second object to compare.
  * @return -1 if obj1 < obj2, 0 for obj1 == obj2, 1 for obj1 > obj2
  **/
-typedef int (*Jxta_object_compare_func) (Jxta_object const *obj1, Jxta_object const *obj2);
+typedef int (JXTA_STDCALL * Jxta_object_compare_func) (Jxta_object const *obj1, Jxta_object const *obj2);
 
 /**
  * Calculates a hash value for the provided object. The value should be
@@ -342,18 +349,23 @@ typedef int (*Jxta_object_compare_func) (Jxta_object const *obj1, Jxta_object co
  * @param obj1 the object who's hash value is desired.
  * @return a hash value.
  **/
-typedef unsigned int (*Jxta_object_hash_func) (Jxta_object * obj);
+typedef unsigned int (JXTA_STDCALL * Jxta_object_hash_func) (Jxta_object * obj);
 
 /**
-*   Private implementation of Jxta_object is found in this file. Applications
-*   should not need to use depend upon the declarations found in this file.
-**/
+ *   Private implementation of Jxta_object is found in this file. Applications
+ *   should not need to use depend upon the declarations found in this file.
+ **/
 #include "jxta_object_priv.h"
 
 #define JXTA_OBJECT_HANDLE const Jxta_object _jxta_obj
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* __JXTA_OBJECT_H__ */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

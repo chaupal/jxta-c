@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_hashtable.h,v 1.6 2005/03/02 23:49:23 bondolo Exp $
+ * $Id: jxta_hashtable.h,v 1.8 2005/06/16 23:11:42 slowhog Exp $
  */
 
 
@@ -96,7 +96,7 @@ extern "C" {
  * reached, the table will not be enlarged. The size of the underlying table may be bigger, depending on the implementation.
  * @return A new hash table, or NULL if allocation failed.
  **/
-Jxta_hashtable *jxta_hashtable_new(size_t initial_size);
+JXTA_DECLARE(Jxta_hashtable *) jxta_hashtable_new(size_t initial_size);
 
 
 /**
@@ -115,7 +115,7 @@ Jxta_hashtable *jxta_hashtable_new(size_t initial_size);
  * concurrently.
  * @return A new hash table, or NULL if allocation failed.
  **/
-Jxta_hashtable *jxta_hashtable_new_0(size_t initial_size, Jxta_boolean synchronized);
+JXTA_DECLARE(Jxta_hashtable *) jxta_hashtable_new_0(size_t initial_size, Jxta_boolean synchronized);
 
 
 /**
@@ -128,7 +128,7 @@ Jxta_hashtable *jxta_hashtable_new_0(size_t initial_size, Jxta_boolean synchroni
  * @param value A pointer to a Jxta_object to be associated with the key
  * @return nothing. This method never fails.
  **/
-void jxta_hashtable_put(Jxta_hashtable * self, const void *key, size_t keySize, Jxta_object * value);
+JXTA_DECLARE(void) jxta_hashtable_put(Jxta_hashtable * self, const void *key, size_t keySize, Jxta_object * value);
 
 
 /**
@@ -142,7 +142,8 @@ void jxta_hashtable_put(Jxta_hashtable * self, const void *key, size_t keySize, 
  * @return Jxta_boolean TRUE if the item could be inserted, FALSE if there
  * was already an item registered under the given key.
  **/
-Jxta_boolean jxta_hashtable_putnoreplace(Jxta_hashtable * self, const void *key, size_t keySize, Jxta_object * value);
+JXTA_DECLARE(Jxta_boolean) jxta_hashtable_putnoreplace(Jxta_hashtable * self, const void *key, size_t keySize,
+                                                       Jxta_object * value);
 
 
 /**
@@ -160,7 +161,7 @@ Jxta_boolean jxta_hashtable_putnoreplace(Jxta_hashtable * self, const void *key,
  * @param value A pointer to a Jxta_object to be associated with the key
  * @return nothing. This method never fails.
  **/
-void
+JXTA_DECLARE(void)
 jxta_hashtable_replace(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object * value, Jxta_object ** old_value);
 
 
@@ -175,7 +176,7 @@ jxta_hashtable_replace(Jxta_hashtable * self, const void *key, size_t key_size, 
  * item is found the data at this address is not affected.
  * @return JXTA_SUCCESS if an item was found. An error otherwise.
  **/
-Jxta_status jxta_hashtable_get(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object ** found_value);
+JXTA_DECLARE(Jxta_status) jxta_hashtable_get(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object ** found_value);
 
 
 /**
@@ -191,7 +192,7 @@ Jxta_status jxta_hashtable_get(Jxta_hashtable * self, const void *key, size_t ke
  * @return JXTA_SUCCESS if an item was found and removed. An error
  * otherwise.
  **/
-Jxta_status jxta_hashtable_del(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object ** found_value);
+JXTA_DECLARE(Jxta_status) jxta_hashtable_del(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object ** found_value);
 
 
 /**
@@ -208,7 +209,7 @@ Jxta_status jxta_hashtable_del(Jxta_hashtable * self, const void *key, size_t ke
  * if the key was not found. JXTA_VIOLATION if the key was found associated to
  * a different value.
  **/
-Jxta_status jxta_hashtable_delcheck(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object * value);
+JXTA_DECLARE(Jxta_status) jxta_hashtable_delcheck(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object * value);
 
 
 /**
@@ -220,7 +221,7 @@ Jxta_status jxta_hashtable_delcheck(Jxta_hashtable * self, const void *key, size
  * @return Jxta_vector* a pointer to a vector of all the values, or NULL
  * if there is not enough memory to perform the operation.
  **/
-Jxta_vector *jxta_hashtable_values_get(Jxta_hashtable * self);
+JXTA_DECLARE(Jxta_vector *) jxta_hashtable_values_get(Jxta_hashtable * self);
 
 
 /**
@@ -242,7 +243,7 @@ Jxta_vector *jxta_hashtable_values_get(Jxta_hashtable * self);
  * @param self The hashtable onto which to apply the operation.
  * @return char** a pointer to a null terminated array of char**.
  **/
-char **jxta_hashtable_keys_get(Jxta_hashtable * self);
+JXTA_DECLARE(char **) jxta_hashtable_keys_get(Jxta_hashtable * self);
 
 
 /**
@@ -261,10 +262,18 @@ char **jxta_hashtable_keys_get(Jxta_hashtable * self);
  * always found at their direct hash slot. A value of 1 means that keys are always found at the first alternate location, etc.
  * A value of about 1 for an occupancy/size ratio of about 0.5 is the norm. If NULL then the value will not be stored.
  **/
-void
+JXTA_DECLARE(void)
 jxta_hashtable_stats(Jxta_hashtable * self, size_t * capacity, size_t * usage,
                      size_t * occupancy, size_t * max_occupancy, double *avg_hops);
+
+
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
 #endif /* JXTA_HASH_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

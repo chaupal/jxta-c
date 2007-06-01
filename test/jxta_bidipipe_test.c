@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bidipipe_test.c,v 1.3 2005/04/07 22:58:53 slowhog Exp $
+ * $Id: jxta_bidipipe_test.c,v 1.6 2005/05/20 04:44:31 slowhog Exp $
  */
 
 #include <apr_thread_proc.h>
@@ -87,8 +87,6 @@ void clt_listener_func(Jxta_object * obj, void *arg)
 
     printf("Server: \n");
     jxta_message_print(msg);
-
-    JXTA_OBJECT_RELEASE(obj);
 }
 
 void svr_listener_func(Jxta_object * obj, void *arg)
@@ -103,8 +101,6 @@ void svr_listener_func(Jxta_object * obj, void *arg)
 
     printf("Client: \n");
     jxta_message_print(msg);
-
-    JXTA_OBJECT_RELEASE(obj);
 }
 
 void * APR_THREAD_FUNC svr_thread_func(apr_thread_t * thread, void *arg)
@@ -207,6 +203,7 @@ int main(int argc, char *argv[])
     }
 
     jxta_pipe_adv_parse_file(adv, f);
+    fclose(f);
 
     res = discovery_service_publish(discovery, adv, DISC_ADV, 5L * 60L * 1000L, 5L * 60L * 1000L);
     if (JXTA_SUCCESS != res) {
@@ -245,6 +242,8 @@ int main(int argc, char *argv[])
         exit(-5);
     }
 
+    JXTA_OBJECT_RELEASE(adv);
+
     jxta_log_append(BIDITEST_LOG, JXTA_LOG_LEVEL_TRACE, "Wait 2 sec to see if connection can complete\n");
     apr_sleep(2L * 1000L * 1000L);
     jxta_log_append(BIDITEST_LOG, JXTA_LOG_LEVEL_TRACE, "Has handshake completed?\n");
@@ -264,7 +263,6 @@ int main(int argc, char *argv[])
         JXTA_OBJECT_RELEASE(el);
         JXTA_OBJECT_RELEASE(msg);
     }
-    JXTA_OBJECT_RELEASE(msg);
 
     jxta_log_append(BIDITEST_LOG, JXTA_LOG_LEVEL_TRACE, "Close bidipipe from client ...\n");
     jxta_bidipipe_close(clt);
@@ -293,6 +291,7 @@ int main(int argc, char *argv[])
     apr_pool_destroy(pool);
 
     jxta_log_file_close(log_f);
+    jxta_log_selector_delete(log_s);
     jxta_terminate();
 
     return 0;

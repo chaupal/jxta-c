@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tcp_multicast.h,v 1.2 2005/01/12 20:20:54 brent Exp $
+ * $Id: jxta_tcp_multicast.h,v 1.3 2005/06/16 23:11:53 slowhog Exp $
  */
 
 #ifndef __JXTA_TCP_MULTICAST_H__
@@ -68,7 +68,6 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _tcp_multicast TcpMulticast;
 
 
@@ -77,31 +76,36 @@ typedef struct _tcp_multicast TcpMulticast;
 /********************************************************************************/
 /*                                                                              */
 /********************************************************************************/
-TcpMulticast *tcp_multicast_new(Jxta_transport_tcp *tp, char *ipaddr, apr_port_t port, int packet_size);
+TcpMulticast *tcp_multicast_new(Jxta_transport_tcp * tp, char *ipaddr, apr_port_t port, int packet_size);
 
 
 
 /********************************************************************************/
 /*                                                                              */
 /********************************************************************************/
-Jxta_boolean tcp_multicast_start(TcpMulticast *tm);
+Jxta_boolean tcp_multicast_start(TcpMulticast * tm);
 
 
 
 /********************************************************************************/
 /*                                                                              */
 /********************************************************************************/
-void tcp_multicast_stop(TcpMulticast *tm);
+void tcp_multicast_stop(TcpMulticast * tm);
 
 
 
 /********************************************************************************/
 /*                                                                              */
 /********************************************************************************/
-Jxta_status tcp_multicast_propagate(TcpMulticast *tm, Jxta_message *msg, const char *service_name, const char *service_params);
+Jxta_status tcp_multicast_propagate(TcpMulticast * tm, Jxta_message * msg, const char *service_name, const char *service_params);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
-#endif	/* __JXTA_TCP_MULTICAST_H__ */
+#endif /* __JXTA_TCP_MULTICAST_H__ */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

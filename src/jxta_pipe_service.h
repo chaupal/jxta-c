@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_service.h,v 1.4 2005/03/26 00:32:03 bondolo Exp $
+ * $Id: jxta_pipe_service.h,v 1.7 2005/07/22 03:12:53 slowhog Exp $
  */
 
-   
+
 #ifndef __JXTA_PIPE_SERVICE_H__
 #define __JXTA_PIPE_SERVICE_H__
 
@@ -72,26 +72,19 @@ extern "C" {
 }
 #endif
 #endif
-
-  /****************************************************
-   ** Jxta_pipe_connect_event API
-   ****************************************************/
-
-  /**
-   ** The following is the predefined standard event types.
-   ** Specific pipe implementation can use types higher than
-   ** JXTA_INPUTPIPE_USER_BASE.
-   **/
-
-  #define JXTA_PIPE_CONNECT_EVENT_STANDARD_SERVICE_BASE 100
-  #define JXTA_PIPE_CONNECT_EVENT_USER_BASE             1000
-   
-  #define JXTA_PIPE_CONNECT_INCOMING_REQUEST (JXTA_PIPE_CONNECT_EVENT_STANDARD_SERVICE_BASE + 1)
-  #define JXTA_PIPE_CONNECTED (JXTA_PIPE_CONNECT_EVENT_STANDARD_SERVICE_BASE + 2)
-  #define JXTA_PIPE_CONNECTION_FAILED (JXTA_PIPE_CONNECT_EVENT_STANDARD_SERVICE_BASE + 3)
-
-
-  typedef struct _jxta_pipe_connect_event Jxta_pipe_connect_event;
+/****************************************************
+ ** Jxta_pipe_connect_event API
+ ****************************************************//**
+ ** The following is the predefined standard event types.
+ ** Specific pipe implementation can use types higher than
+ ** JXTA_INPUTPIPE_USER_BASE.
+ **/
+#define JXTA_PIPE_CONNECT_EVENT_STANDARD_SERVICE_BASE 100
+#define JXTA_PIPE_CONNECT_EVENT_USER_BASE             1000
+#define JXTA_PIPE_CONNECT_INCOMING_REQUEST (JXTA_PIPE_CONNECT_EVENT_STANDARD_SERVICE_BASE + 1)
+#define JXTA_PIPE_CONNECTED (JXTA_PIPE_CONNECT_EVENT_STANDARD_SERVICE_BASE + 2)
+#define JXTA_PIPE_CONNECTION_FAILED (JXTA_PIPE_CONNECT_EVENT_STANDARD_SERVICE_BASE + 3)
+typedef struct _jxta_pipe_connect_event Jxta_pipe_connect_event;
 
 
   /**
@@ -101,7 +94,7 @@ extern "C" {
    ** @param pipe an optional pointer to a pipe that can be added to the event
    ** @return a new Jxta_pipe_connect_event.
    **/
-  Jxta_pipe_connect_event* jxta_pipe_connect_event_new (int ev, Jxta_pipe* pipe);
+JXTA_DECLARE(Jxta_pipe_connect_event *) jxta_pipe_connect_event_new(int ev, Jxta_pipe * pipe);
 
   /**
    ** Return the event type of the event
@@ -109,7 +102,7 @@ extern "C" {
    ** @param ev type of the event
    ** @return the type of the event.
    **/
-  int  jxta_pipe_connect_event_get_event (Jxta_pipe_connect_event* self);
+JXTA_DECLARE(int) jxta_pipe_connect_event_get_event(Jxta_pipe_connect_event * self);
 
   /**
    ** Return the Jxta_pipe associated with the event (if any).
@@ -119,7 +112,7 @@ extern "C" {
    ** @return JXTA_SUCCESS when succesfull.
    **         JXTA_FAILED when the even was not associated to any pipe.
    **/
-  Jxta_status jxta_pipe_connect_event_get_pipe (Jxta_pipe_connect_event* self, Jxta_pipe** pipe);
+JXTA_DECLARE(Jxta_status) jxta_pipe_connect_event_get_pipe(Jxta_pipe_connect_event * self, Jxta_pipe ** pipe);
 
 
 
@@ -159,11 +152,9 @@ extern "C" {
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid
    **                          JXTA_NOTIMP when the pipe advertisement is for a unsupported type of pipe
    **/
-  Jxta_status jxta_pipe_service_timed_connect (Jxta_pipe_service* service,
-					       Jxta_pipe_adv*     adv,
-					       Jxta_time_diff     timeout,
-					       Jxta_vector*       peers,
-					       Jxta_pipe**        pipe);
+JXTA_DECLARE(Jxta_status) jxta_pipe_service_timed_connect(Jxta_pipe_service * service,
+                                                          Jxta_pipe_adv * adv,
+                                                          Jxta_time_diff timeout, Jxta_vector * peers, Jxta_pipe ** pipe);
 
   /**
    ** Try to asynchronously connect to the remote end of a pipe.
@@ -193,11 +184,9 @@ extern "C" {
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid
    **                          JXTA_NOTIMP when the pipe advertisement is for a unsupported type of pipe
    **/
-  Jxta_status jxta_pipe_service_connect (Jxta_pipe_service* service,
-					 Jxta_pipe_adv*     adv,
-					 Jxta_time_diff     timeout,
-					 Jxta_vector*       peers,
-					 Jxta_listener*     listener);
+JXTA_DECLARE(Jxta_status) jxta_pipe_service_connect(Jxta_pipe_service * service,
+                                                    Jxta_pipe_adv * adv,
+                                                    Jxta_time_diff timeout, Jxta_vector * peers, Jxta_listener * listener);
 
   /**
    ** Accept an incoming connection.
@@ -220,10 +209,8 @@ extern "C" {
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_BUSY when the pipe is already receiving messages.
    **/
-  Jxta_status jxta_pipe_service_timed_accept (Jxta_pipe_service* service,
-					      Jxta_pipe_adv*     adv,
-					      Jxta_time_diff     timeout,
-					      Jxta_pipe**        pipe);
+JXTA_DECLARE(Jxta_status) jxta_pipe_service_timed_accept(Jxta_pipe_service * service,
+                                                         Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_pipe ** pipe);
 
 
 
@@ -239,8 +226,7 @@ extern "C" {
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid
    **                          JXTA_NOTIMP when the pipe advertisement is for a unsupported type of pipe
    **/
-  Jxta_status jxta_pipe_service_deny (Jxta_pipe_service* service,
-				      Jxta_pipe_adv*     adv);
+JXTA_DECLARE(Jxta_status) jxta_pipe_service_deny(Jxta_pipe_service * service, Jxta_pipe_adv * adv);
 
 
   /**
@@ -261,9 +247,8 @@ extern "C" {
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_BUSY when the pipe is already accepting messages.
    **/
-  Jxta_status jxta_pipe_service_add_accept_listener (Jxta_pipe_service* service,
-						     Jxta_pipe_adv*     adv,
-						     Jxta_listener*     listener);
+JXTA_DECLARE(Jxta_status) jxta_pipe_service_add_accept_listener(Jxta_pipe_service * service,
+                                                                Jxta_pipe_adv * adv, Jxta_listener * listener);
 
   /**
    ** Remove a connection listener.
@@ -278,9 +263,8 @@ extern "C" {
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid
    **                          JXTA_NOTIMP when the pipe advertisement is for a unsupported type of pipe
    **/
-  Jxta_status jxta_pipe_service_remove_accept_listener (Jxta_pipe_service* service,
-							Jxta_pipe_adv*     adv,
-							Jxta_listener*     listener);
+JXTA_DECLARE(Jxta_status) jxta_pipe_service_remove_accept_listener(Jxta_pipe_service * service,
+                                                                   Jxta_pipe_adv * adv, Jxta_listener * listener);
 
 
   /**
@@ -303,9 +287,8 @@ extern "C" {
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_NOTIMP when the type_name is not a supported type of pipe.
    **/
-  Jxta_status jxta_pipe_service_lookup_impl (Jxta_pipe_service* service,
-					     const char* type_name,
-					     Jxta_pipe_service_impl** impl);
+JXTA_DECLARE(Jxta_status) jxta_pipe_service_lookup_impl(Jxta_pipe_service * service,
+                                                        const char *type_name, Jxta_pipe_service_impl ** impl);
 
   /**
    ** Add a new pipe implementation to the Pipe Service.
@@ -322,9 +305,8 @@ extern "C" {
    **                                    type of pipe.
    **                          JXTA_VIOLATION when adding an implementation is not authorized
    **/
-  Jxta_status jxta_pipe_service_add_impl (Jxta_pipe_service* service,
-					  const char* name,
-					  Jxta_pipe_service_impl* impl);
+JXTA_DECLARE(Jxta_status) jxta_pipe_service_add_impl(Jxta_pipe_service * service,
+                                                     const char *name, Jxta_pipe_service_impl * impl);
 
 
   /**
@@ -341,9 +323,8 @@ extern "C" {
    **                                    removed.
    **                          JXTA_VIOLATION when removing an implementation is not authorized
    **/
-  Jxta_status jxta_pipe_service_remove_impl (Jxta_pipe_service* service,
-					     const char* name,
-					     Jxta_pipe_service_impl* impl);
+JXTA_DECLARE(Jxta_status) jxta_pipe_service_remove_impl(Jxta_pipe_service * service,
+                                                        const char *name, Jxta_pipe_service_impl * impl);
 
 
   /**
@@ -355,8 +336,7 @@ extern "C" {
    ** @return an error status. JXTA_SUCCESS when successfull.
    **                          JXTA_NOMEM when the system is running out of memory.
    **/
-  Jxta_status jxta_pipe_service_get_resolver (Jxta_pipe_service* service,
-					      Jxta_pipe_resolver** resolver);
+JXTA_DECLARE(Jxta_status) jxta_pipe_service_get_resolver(Jxta_pipe_service * service, Jxta_pipe_resolver ** resolver);
 
   /**
    ** Set the default (peergroup) Pipe Resolver.
@@ -370,9 +350,8 @@ extern "C" {
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_VIOLATION when changing the default pipe is not authorized
    **/
-  Jxta_status jxta_pipe_service_set_resolver (Jxta_pipe_service* service,
-					      Jxta_pipe_resolver* jnew,
-					      Jxta_pipe_resolver** old);
+JXTA_DECLARE(Jxta_status) jxta_pipe_service_set_resolver(Jxta_pipe_service * service,
+                                                         Jxta_pipe_resolver * jnew, Jxta_pipe_resolver ** old);
 
 
 
@@ -391,8 +370,7 @@ extern "C" {
    **                          JXTA_VIOLATION when this pipe is not capable of getting an
    **                                         output pipe.
    **/
-  Jxta_status jxta_pipe_get_outputpipe (Jxta_pipe* pipe,
-					Jxta_outputpipe** op);
+JXTA_DECLARE(Jxta_status) jxta_pipe_get_outputpipe(Jxta_pipe * pipe, Jxta_outputpipe ** op);
 
 
   /**
@@ -406,9 +384,8 @@ extern "C" {
    **                          JXTA_VIOLATION when this pipe is not capable of getting an
    **                                         output pipe.
    **/
-  Jxta_status jxta_pipe_get_inputpipe (Jxta_pipe* pipe,
-				       Jxta_inputpipe** ip);
-				       
+JXTA_DECLARE(Jxta_status) jxta_pipe_get_inputpipe(Jxta_pipe * pipe, Jxta_inputpipe ** ip);
+
   /**
    ** Get the list of remote peers on the other end of the pipe
    ** Note that the number of remote peers varies depending on the type
@@ -420,8 +397,7 @@ extern "C" {
    ** @return an error status. JXTA_SUCCESS when successfull.
    **                          JXTA_NOMEM when the system is running out of memory.
    **/
-  Jxta_status jxta_pipe_get_remote_peers (Jxta_pipe* pipe,
-					  Jxta_vector** vector);
+JXTA_DECLARE(Jxta_status) jxta_pipe_get_remote_peers(Jxta_pipe * pipe, Jxta_vector ** vector);
 
 
   /***********************************************************************
@@ -434,14 +410,14 @@ extern "C" {
    ** JXTA_INPUTPIPE_USER_BASE.
    **/
 
-  #define JXTA_INPUTPIPE_STANDARD_SERVICE_BASE 100
-  #define JXTA_INPUTPIPE_USER_BASE             1000
-   
-  #define JXTA_INPUTPIPE_INCOMING_MESSAGE_EVENT (JXTA_INPUTPIPE_STANDARD_SERVICE_BASE + 1)
-  #define JXTA_INPUTPIPE_CLOSED                 (JXTA_INPUTPIPE_STANDARD_SERVICE_BASE + 2)
+#define JXTA_INPUTPIPE_STANDARD_SERVICE_BASE 100
+#define JXTA_INPUTPIPE_USER_BASE             1000
+
+#define JXTA_INPUTPIPE_INCOMING_MESSAGE_EVENT (JXTA_INPUTPIPE_STANDARD_SERVICE_BASE + 1)
+#define JXTA_INPUTPIPE_CLOSED                 (JXTA_INPUTPIPE_STANDARD_SERVICE_BASE + 2)
 
 
-  typedef struct _jxta_inputpipe_event Jxta_inputpipe_event;
+typedef struct _jxta_inputpipe_event Jxta_inputpipe_event;
 
   /**
    ** Create a Jxta_inputpipe_event
@@ -450,7 +426,7 @@ extern "C" {
    ** @param object an optional pointer to a object that can be added to the event
    ** @return a new Jxta_inputpipe_event.
    **/
-  Jxta_inputpipe_event* jxta_inputpipe_event_new (int ev, Jxta_object* object);
+JXTA_DECLARE(Jxta_inputpipe_event *) jxta_inputpipe_event_new(int ev, Jxta_object * object);
 
   /**
    ** Return the event type of the event
@@ -458,7 +434,7 @@ extern "C" {
    ** @param ev type of the event
    ** @return the type of the event.
    **/
-  int  jxta_inputpipe_event_get_event (Jxta_inputpipe_event* self);
+JXTA_DECLARE(int) jxta_inputpipe_event_get_event(Jxta_inputpipe_event * self);
 
   /**
    ** Return the Jxta_object associated with the event (if any).
@@ -468,7 +444,7 @@ extern "C" {
    ** @return JXTA_SUCCESS when succesfull.
    **         JXTA_FAILED when the even was not associated to any object.
    **/
-  Jxta_status jxta_inputpipe_event_get_object (Jxta_inputpipe_event* self, Jxta_object** object);
+JXTA_DECLARE(Jxta_status) jxta_inputpipe_event_get_object(Jxta_inputpipe_event * self, Jxta_object ** object);
 
   /**
    ** Block until a message is received.
@@ -483,9 +459,7 @@ extern "C" {
    **                          JXTA_TIMEOUT when the timeout has been reached and no
    **                                       message was received
    **/
-  Jxta_status jxta_inputpipe_timed_receive (Jxta_inputpipe* ip,
-					    Jxta_time_diff timeout,
-					    Jxta_message** msg);
+JXTA_DECLARE(Jxta_status) jxta_inputpipe_timed_receive(Jxta_inputpipe * ip, Jxta_time_diff timeout, Jxta_message ** msg);
 
   /**
    ** Add a receive listener to a pipe. The listener is invoked for each received
@@ -497,8 +471,7 @@ extern "C" {
    ** @return an error status. JXTA_SUCCESS when successfull.
    **                          JXTA_NOMEM when the system is running out of memory.
    **/
-  Jxta_status jxta_inputpipe_add_listener (Jxta_inputpipe* ip,
-					   Jxta_listener* listener);
+JXTA_DECLARE(Jxta_status) jxta_inputpipe_add_listener(Jxta_inputpipe * ip, Jxta_listener * listener);
 
   /**
    ** Remove a receive listener to a pipe.
@@ -509,8 +482,7 @@ extern "C" {
    ** @return an error status. JXTA_SUCCESS when successfull.
    **                          JXTA_INVALID_ARGUMENT when the listener is not valid.
    **/
-  Jxta_status jxta_inputpipe_remove_listener (Jxta_inputpipe* ip,
-					      Jxta_listener* listener);
+JXTA_DECLARE(Jxta_status) jxta_inputpipe_remove_listener(Jxta_inputpipe * ip, Jxta_listener * listener);
 
   /***********************************************************************
    **      Jxta_outpipe API
@@ -522,13 +494,13 @@ extern "C" {
    ** JXTA_OUTPIPE_USER_BASE.
    **/
 
-  #define JXTA_OUTPUTPIPE_STANDARD_SERVICE_BASE 100
-  #define JXTA_OUTPUTPIPE_USER_BASE             1000
-   
-  #define JXTA_OUTPUTPIPE_MESSAGE_SENT_EVENT (JXTA_OUTPUTPIPE_STANDARD_SERVICE_BASE + 1)
-  #define JXTA_OUTPUTPIPE_MESSAGE_FAILED_EVENT (JXTA_OUTPUTPIPE_STANDARD_SERVICE_BASE + 2)
+#define JXTA_OUTPUTPIPE_STANDARD_SERVICE_BASE 100
+#define JXTA_OUTPUTPIPE_USER_BASE             1000
 
-  typedef struct _jxta_outputpipe_event Jxta_outputpipe_event;
+#define JXTA_OUTPUTPIPE_MESSAGE_SENT_EVENT (JXTA_OUTPUTPIPE_STANDARD_SERVICE_BASE + 1)
+#define JXTA_OUTPUTPIPE_MESSAGE_FAILED_EVENT (JXTA_OUTPUTPIPE_STANDARD_SERVICE_BASE + 2)
+
+typedef struct _jxta_outputpipe_event Jxta_outputpipe_event;
 
   /**
    ** Create a Jxta_outputpipe_event
@@ -537,7 +509,7 @@ extern "C" {
    ** @param object an optional pointer to a object that can be added to the event
    ** @return a new Jxta_outputpipe_event.
    **/
-  Jxta_outputpipe_event* jxta_outputpipe_event_new (int ev, Jxta_object* object);
+JXTA_DECLARE(Jxta_outputpipe_event *) jxta_outputpipe_event_new(int ev, Jxta_object * object);
 
   /**
    ** Return the event type of the event
@@ -545,7 +517,7 @@ extern "C" {
    ** @param ev type of the event
    ** @return the type of the event.
    **/
-  int  jxta_outputpipe_event_get_event (Jxta_outputpipe_event* self);
+JXTA_DECLARE(int) jxta_outputpipe_event_get_event(Jxta_outputpipe_event * self);
 
   /**
    ** Return the Jxta_object associated with the event (if any).
@@ -555,7 +527,7 @@ extern "C" {
    ** @return JXTA_SUCCESS when succesfull.
    **         JXTA_FAILED when the even was not associated to any object.
    **/
-  Jxta_status jxta_outputpipe_event_get_object (Jxta_outputpipe_event* self, Jxta_object** object);
+JXTA_DECLARE(Jxta_status) jxta_outputpipe_event_get_object(Jxta_outputpipe_event * self, Jxta_object ** object);
 
 
   /**
@@ -568,8 +540,7 @@ extern "C" {
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_FAILED when the send failed.
    **/
-  Jxta_status jxta_outputpipe_send (Jxta_outputpipe* op,
-				    Jxta_message* msg);
+JXTA_DECLARE(Jxta_status) jxta_outputpipe_send(Jxta_outputpipe * op, Jxta_message * msg);
 
 
   /**
@@ -586,8 +557,7 @@ extern "C" {
    **                          JXTA_FAILED when the pipe service is not capable of throwing
    **                          Jxta_outpipe_event.
    **/
-  Jxta_status jxta_outputpipe_add_listener (Jxta_outputpipe* op,
-					    Jxta_listener* listener);
+JXTA_DECLARE(Jxta_status) jxta_outputpipe_add_listener(Jxta_outputpipe * op, Jxta_listener * listener);
 
   /**
    ** Remove a status listener to a pipe.
@@ -598,11 +568,15 @@ extern "C" {
    ** @return an error status. JXTA_SUCCESS when successfull.
    **                          JXTA_INVALID_ARGUMENT when the listener is not valid.
    **/
-  Jxta_status jxta_outputpipe_remove_listener (Jxta_outputpipe* op,
-					       Jxta_listener* listener);
+JXTA_DECLARE(Jxta_status) jxta_outputpipe_remove_listener(Jxta_outputpipe * op, Jxta_listener * listener);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /*__JXTA_PIPE_SERVICE_H__*/
+
+/* vi: set ts=4 sw=4 tw=130 et: */

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_private.h,v 1.18 2005/03/24 19:43:43 slowhog Exp $
+ * $Id: jxta_private.h,v 1.19 2005/06/16 23:11:48 slowhog Exp $
  **/
 #ifndef __JXTA_PRIVATE_H__
 #define __JXTA_PRIVATE_H__
@@ -65,18 +65,13 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _JxtaRelayService JxtaRelayService;
 
-JxtaRelayService*    jxta_relay_service_new     (apr_pool_t       *pool);
-void                 jxta_relay_service_fere    (JxtaRelayService *service);
-void                 jxta_relay_service_enqueue (JxtaRelayService *service,
-						 Jxta_message*      msg,
-						 apr_uuid_t       *destination);
+JxtaRelayService *jxta_relay_service_new(apr_pool_t * pool);
+void jxta_relay_service_fere(JxtaRelayService * service);
+void jxta_relay_service_enqueue(JxtaRelayService * service, Jxta_message * msg, apr_uuid_t * destination);
 
-Jxta_message*         jxta_relay_service_dequeue (JxtaRelayService *service,
-						 apr_uuid_t        *destination,
-						 Jxta_time         max_wait);
+Jxta_message *jxta_relay_service_dequeue(JxtaRelayService * service, apr_uuid_t * destination, Jxta_time max_wait);
 
 Jxta_status jxta_PG_module_initialize(void);
 void jxta_PG_module_terminate(void);

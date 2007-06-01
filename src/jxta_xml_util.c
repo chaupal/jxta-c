@@ -50,10 +50,12 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_xml_util.c,v 1.18 2005/01/12 22:37:45 bondolo Exp $
+ * $Id: jxta_xml_util.c,v 1.23 2005/09/14 05:00:09 slowhog Exp $
  */
 
 #include <stdlib.h>
+
+#include <apr_general.h>
 #include <apr_strings.h>
 
 #include "jxta_debug.h"
@@ -85,6 +87,9 @@
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+#if 0
+};
 #endif
 
 
@@ -120,206 +125,195 @@ extern "C" {
  *         it would be nice to do something intelligent with it rather 
  *         than relying on the underlying library to barf.  Or at least 
  *         catch the barf here.
- */ 
-void
-extract_ip_and_port(const char * string,
-		    int length,
-		    Jxta_in_addr * ip,
-		    Jxta_port    * port) {
+ */
+JXTA_DECLARE(void) extract_ip_and_port(const char *string, int length, Jxta_in_addr * ip, Jxta_port * port)
+{
 
-  /* for apr_strtoks */
-  char * state = NULL;
-  char * current_tok = NULL;
-  const char * DELIMITERS = ": \t\n";
-  /* This buffer MUST be initted to \0, 
-   * otherwise strtok will fail.  apr_strtok 
-   * will probably fail also, as it uses strchr
-   * to walk the buf.
-   */
-  char * temp = malloc (length + 1);
-  memset (temp, 0, length + 1);
-  /* char temp[128] = {0}; */ /* temporary for chasing mem leak. */
+    /* for apr_strtoks */
+    char *state = NULL;
+    char *current_tok = NULL;
+    const char *DELIMITERS = ": \t\n";
+    /* This buffer MUST be initted to \0, 
+     * otherwise strtok will fail.  apr_strtok 
+     * will probably fail also, as it uses strchr
+     * to walk the buf.
+     */
+    char *temp = (char *) malloc(length + 1);
+    memset(temp, 0, length + 1);
+    /* char temp[128] = {0}; *//* temporary for chasing mem leak. */
 
-  strncpy(temp,string,length);
-  JXTA_LOG("temp string copied extract_ip_and_port: %s\n",temp);
+    strncpy(temp, string, length);
+    JXTA_LOG("temp string copied extract_ip_and_port: %s\n", temp);
 
-  /* Can use strtok also. */
-  /*  current_tok = strtok(temp,DELIMITERS); */
-  current_tok = apr_strtok(temp,DELIMITERS,&state);
+    /* Can use strtok also. */
+    /*  current_tok = strtok(temp,DELIMITERS); */
+    current_tok = apr_strtok(temp, DELIMITERS, &state);
 
 
-  if (current_tok == NULL) {
-    /*  whoops empty line no data */
-    free (temp);
-    return;
-  }
-
+    if (current_tok == NULL) {
+        /*  whoops empty line no data */
+        free(temp);
+        return;
+    }
 #if DEBUG
-  JXTA_LOG("current_tok: %s, length: %d\n",current_tok,strlen(current_tok)); 
+    JXTA_LOG("current_tok: %s, length: %d\n", current_tok, strlen(current_tok));
 #endif
- *ip = apr_inet_addr(current_tok); 
+    *ip = apr_inet_addr(current_tok);
 
- /* ip = 0 indicates current_tok was invalid data.
-  * FIXME: Trap the error here, using whatever apr has 
-  * to deal with it.  We could just return since we are 
-  * are 0 for an uninitialized variable flag. Returning
-  * gets us out of the situation like "foo.bar.baz.foo:9700"
-  * which could correctly set the port number.
-  */
-  if (ip == 0) {
-    free (temp);
-    return;
-  }
+    /* ip = 0 indicates current_tok was invalid data.
+     * FIXME: Trap the error here, using whatever apr has 
+     * to deal with it.  We could just return since we are 
+     * are 0 for an uninitialized variable flag. Returning
+     * gets us out of the situation like "foo.bar.baz.foo:9700"
+     * which could correctly set the port number.
+     */
+    if (ip == 0) {
+        free(temp);
+        return;
+    }
 
 
-  /* strtok also works. */
-  /* current_tok = strtok(NULL,DELIMITERS);  */
-  current_tok = apr_strtok(NULL,DELIMITERS,&state);
+    /* strtok also works. */
+    /* current_tok = strtok(NULL,DELIMITERS);  */
+    current_tok = apr_strtok(NULL, DELIMITERS, &state);
 #if DEBUG
-  JXTA_LOG("current_tok: %s, length: %d\n",current_tok,strlen(current_tok)); 
+    JXTA_LOG("current_tok: %s, length: %d\n", current_tok, strlen(current_tok));
 #endif
-  /* Checking this value for error in c is a bitch.  The fastest
-   * way to make it robust is probably to write a set of functions
-   * to see how it acts on various platforms.  gnu recommends 
-   * using to strtol instead of atoi, which still is messy for 
-   * checking errors.
-   * TODO: See what MS recommends here, and how apr handles it.
-   */ 
- *port = atoi(current_tok); 
+    /* Checking this value for error in c is a bitch.  The fastest
+     * way to make it robust is probably to write a set of functions
+     * to see how it acts on various platforms.  gnu recommends 
+     * using to strtol instead of atoi, which still is messy for 
+     * checking errors.
+     * TODO: See what MS recommends here, and how apr handles it.
+     */
+    *port = atoi(current_tok);
 #if DEBUG
-  JXTA_LOG("port number as int: %d\n",*port);
+    JXTA_LOG("port number as int: %d\n", *port);
 #endif
-  free (temp);
+    free(temp);
 
 }
 
 
 /** API comments in header file. */
-void 
-extract_ip(const char * buf,
-           int buf_length,
-           Jxta_in_addr * ip_address) {
+JXTA_DECLARE(void) extract_ip(const char *buf, int buf_length, Jxta_in_addr * ip_address)
+{
 
-  /* for apr_strtoks */
-  char * state;
-  char * current_tok = NULL;
-  const char * DELIMITERS = ": \t\n";
-  /* This buffer MUST be initted to \0, 
-   * otherwise strtok will fail.  apr_strtok 
-   * will probably fail also, as it uses strchr
-   * to walk the buf.
-   */
-  char * temp = malloc (buf_length + 1);
-  memset (temp, 0, buf_length + 1);
+    /* for apr_strtoks */
+    char *state;
+    char *current_tok = NULL;
+    const char *DELIMITERS = ": \t\n";
+    /* This buffer MUST be initted to \0, 
+     * otherwise strtok will fail.  apr_strtok 
+     * will probably fail also, as it uses strchr
+     * to walk the buf.
+     */
+    char *temp = (char *) malloc(buf_length + 1);
+    memset(temp, 0, buf_length + 1);
 
-  strncpy(temp,buf,buf_length);
-  /* Can use strtok also. */
-  /*  current_tok = strtok(temp,DELIMITERS); */
-  current_tok = apr_strtok(temp,DELIMITERS,&state);
+    strncpy(temp, buf, buf_length);
+    /* Can use strtok also. */
+    /*  current_tok = strtok(temp,DELIMITERS); */
+    current_tok = apr_strtok(temp, DELIMITERS, &state);
 
-  if (current_tok == NULL) {
-    /*  whoops empty line no data */
-    free (temp);
-    return;
-  }
-
+    if (current_tok == NULL) {
+        /*  whoops empty line no data */
+        free(temp);
+        return;
+    }
 #if DEBUG
-  printf("current_tok: %s, length: %d\n",current_tok,strlen(current_tok)); 
+    printf("current_tok: %s, length: %d\n", current_tok, strlen(current_tok));
 #endif
- /* ip = 0 indicates current_tok was invalid data.
-  * FIXME: Trap the error here, using whatever apr has 
-  * to deal with it.  We could just return since we are 
-  * are 0 for an uninitialized variable flag. 
-  */
- *ip_address = apr_inet_addr(current_tok); 
- free (temp);
+    /* ip = 0 indicates current_tok was invalid data.
+     * FIXME: Trap the error here, using whatever apr has 
+     * to deal with it.  We could just return since we are 
+     * are 0 for an uninitialized variable flag. 
+     */
+    *ip_address = apr_inet_addr(current_tok);
+    free(temp);
 }
-
-
-
 
 /** API comments in header file. */
-void 
-extract_port               (const char * buf,
-                            int buf_length,
-                            Jxta_port * port) {
+JXTA_DECLARE(void) extract_port(const char *buf, int buf_length, Jxta_port * port)
+{
 
-  /* for apr_strtoks */
-  char * state;
-  char * current_tok = NULL;
-  const char * DELIMITERS = ": \t\n";
-  /* This buffer MUST be initted to \0, 
-   * otherwise strtok will fail.  apr_strtok 
-   * will probably fail also, as it uses strchr
-   * to walk the buf.
-   */
-  char * temp = malloc (buf_length + 1);
-  memset (temp, 0, buf_length + 1);
+    /* for apr_strtoks */
+    char *state;
+    char *current_tok = NULL;
+    const char *DELIMITERS = ": \t\n";
+    /* This buffer MUST be initted to \0, 
+     * otherwise strtok will fail.  apr_strtok 
+     * will probably fail also, as it uses strchr
+     * to walk the buf.
+     */
+    char *temp = (char *) malloc(buf_length + 1);
+    memset(temp, 0, buf_length + 1);
 
 #if DEBUG
-  printf("buf: %s, buf_length: %d\n",buf,buf_length);
+    printf("buf: %s, buf_length: %d\n", buf, buf_length);
 #endif
 
-  strncpy(temp,buf,buf_length);
-  /* Can use strtok also. */
-  /*  current_tok = strtok(temp,DELIMITERS); */
-  current_tok = apr_strtok(temp,DELIMITERS,&state);
+    strncpy(temp, buf, buf_length);
+    /* Can use strtok also. */
+    /*  current_tok = strtok(temp,DELIMITERS); */
+    current_tok = apr_strtok(temp, DELIMITERS, &state);
 
-  if (current_tok == NULL) {
-    /*  whoops empty line no data */
-    free (temp);
-    return;
-  }
+    if (current_tok == NULL) {
+        /*  whoops empty line no data */
+        free(temp);
+        return;
+    }
 #if DEBUG
-  printf("current_tok: %s, length: %d\n",current_tok,strlen(current_tok)); 
+    printf("current_tok: %s, length: %d\n", current_tok, strlen(current_tok));
 #endif
-  /* Checking this value for error in c is a bitch.  The fastest
-   * way to make it robust is probably to write a set of functions
-   * to see how it acts on various platforms.  gnu recommends 
-   * using to strtol instead of atoi, which still is messy for 
-   * checking errors.
-   * TODO: See what MS recommends here, and how apr handles it.
-   */ 
- *port = atoi(current_tok); 
+    /* Checking this value for error in c is a bitch.  The fastest
+     * way to make it robust is probably to write a set of functions
+     * to see how it acts on various platforms.  gnu recommends 
+     * using to strtol instead of atoi, which still is messy for 
+     * checking errors.
+     * TODO: See what MS recommends here, and how apr handles it.
+     */
+    *port = atoi(current_tok);
 #if DEBUG
-  printf("port number as int: %d\n",*port);
+    printf("port number as int: %d\n", *port);
 #endif
 
-  /* TODO: If we were *really* motivated, we could check the 
-   * value of the port number to make sure it was in range.
-   */
-  free (temp);
+    /* TODO: If we were *really* motivated, we could check the 
+     * value of the port number to make sure it was in range.
+     */
+    free(temp);
 }
-
 
 /** See header file for documentation. */
-void
-extract_char_data(const char * string,int strlength,char * tok) {
+JXTA_DECLARE(void) extract_char_data(const char *string, int strlength, char *tok)
+{
 
-   const char * tmp;
-   const char * start;
+    const char *tmp;
+    const char *start;
 
-   if (string == NULL) {
-     tok [0] = 0;
-     return;
-   }
+    if (string == NULL) {
+        tok[0] = 0;
+        return;
+    }
 
-   tmp = string;
-   /* Strip off any /t /n /r space from the begining of the value */
-   while (tmp && ((tmp - string) < strlength) && isspace(*tmp)) ++tmp;
+    tmp = string;
+    /* Strip off any /t /n /r space from the begining of the value */
+    while (tmp && ((tmp - string) < strlength) && isspace(*tmp))
+        ++tmp;
 
-   if ((tmp == NULL) || (*tmp == 0)) {
-     /* The value is empty */
-     tok[0] = 0;
-     return;
-   }
-   start = tmp;
+    if ((tmp == NULL) || (*tmp == 0)) {
+        /* The value is empty */
+        tok[0] = 0;
+        return;
+    }
+    start = tmp;
 
-   /* Get the end of the string value */
-   while (tmp && ((tmp - string) < strlength) && !isspace(*tmp) && (*tmp != 0)) ++tmp;
+    /* Get the end of the string value */
+    while (tmp && ((tmp - string) < strlength) && !isspace(*tmp) && (*tmp != 0))
+        ++tmp;
 
-   memcpy (tok, start, tmp - start);
-   tok[tmp - start] = 0;
+    memcpy(tok, start, tmp - start);
+    tok[tmp - start] = 0;
 }
 
 /**
@@ -331,84 +325,84 @@ extract_char_data(const char * string,int strlength,char * tok) {
 * @result JXTA_SUCCESS for success, JXTA_INVALID_ARGUMENT for bad params and
 *  (rarely) JXTA_NOMEM
 **/
-Jxta_status jxta_xml_util_decode_jstring( JString * src, JString** dest ) {
-  const char* srcbuf;
-  const char* startchunk;
-  
-  if( !JXTA_OBJECT_CHECK_VALID(src) )
-    return JXTA_INVALID_ARGUMENT;
-  
-  if( NULL == dest )
-    return JXTA_INVALID_ARGUMENT;
-    
-  srcbuf = jstring_get_string( src );
-  
-  if( NULL == srcbuf ) {
-    return JXTA_INVALID_ARGUMENT;
+JXTA_DECLARE(Jxta_status) jxta_xml_util_decode_jstring(JString * src, JString ** dest)
+{
+    const char *srcbuf;
+    const char *startchunk;
+
+    if (!JXTA_OBJECT_CHECK_VALID(src))
+        return JXTA_INVALID_ARGUMENT;
+
+    if (NULL == dest)
+        return JXTA_INVALID_ARGUMENT;
+
+    srcbuf = jstring_get_string(src);
+
+    if (NULL == srcbuf) {
+        return JXTA_INVALID_ARGUMENT;
     }
 
-  *dest = jstring_new_1( jstring_length(src) );
-  
-  if( *dest == NULL )
-    return JXTA_NOMEM;
+    *dest = jstring_new_1(jstring_length(src));
 
-  startchunk = srcbuf;
-  
-  do {
-    switch( *srcbuf ) {
-      case 0 : {
-         /* append any remaining part */
-        jstring_append_0( *dest, startchunk, srcbuf - startchunk );
-        return JXTA_SUCCESS;
-        }
-        
-      case '&' : {
-        const char* endchar = strchr( srcbuf + 1, ';' );
-        
-        if( NULL != endchar ) {
-            if( 0 == strncmp( "&amp;", srcbuf, endchar - srcbuf + 1) ) {
-              /* copy everything up to this char */
-              jstring_append_0( *dest, startchunk, srcbuf - startchunk );
+    if (*dest == NULL)
+        return JXTA_NOMEM;
 
-              /* append replacement */
-              jstring_append_0( *dest, "&", 1 );
-            } else if( 0 == strncmp( "&lt;", srcbuf, endchar - srcbuf + 1) ) {
-              /* copy everything up to this char */
-              jstring_append_0( *dest, startchunk, srcbuf - startchunk );
+    startchunk = srcbuf;
 
-              /* append replacement */
-              jstring_append_0( *dest, "<", 1 );
-            } else if( 0 == strncmp( "&gt;", srcbuf, endchar - srcbuf + 1) ) {
-              /* copy everything up to this char */
-              jstring_append_0( *dest, startchunk, srcbuf - startchunk );
-
-              /* append replacement */
-              jstring_append_0( *dest, ">", 1 );
-              }
+    do {
+        switch (*srcbuf) {
+        case 0:{
+                /* append any remaining part */
+                jstring_append_0(*dest, startchunk, srcbuf - startchunk);
+                return JXTA_SUCCESS;
             }
-          else {
-            /* FIXME 20020319 bondolo@jxta.org when we figure out what we are
-               doing with unicode we need to fix numeric character references here
-            */
+
+        case '&':{
+                const char *endchar = strchr(srcbuf + 1, ';');
+
+                if (NULL != endchar) {
+                    if (0 == strncmp("&amp;", srcbuf, endchar - srcbuf + 1)) {
+                        /* copy everything up to this char */
+                        jstring_append_0(*dest, startchunk, srcbuf - startchunk);
+
+                        /* append replacement */
+                        jstring_append_0(*dest, "&", 1);
+                    } else if (0 == strncmp("&lt;", srcbuf, endchar - srcbuf + 1)) {
+                        /* copy everything up to this char */
+                        jstring_append_0(*dest, startchunk, srcbuf - startchunk);
+
+                        /* append replacement */
+                        jstring_append_0(*dest, "<", 1);
+                    } else if (0 == strncmp("&gt;", srcbuf, endchar - srcbuf + 1)) {
+                        /* copy everything up to this char */
+                        jstring_append_0(*dest, startchunk, srcbuf - startchunk);
+
+                        /* append replacement */
+                        jstring_append_0(*dest, ">", 1);
+                    }
+                } else {
+                    /* FIXME 20020319 bondolo@jxta.org when we figure out what we are
+                       doing with unicode we need to fix numeric character references here
+                     */
+                    break;
+                }
+
+                /* next loop around we want to do one char past endchar */
+                srcbuf = endchar;
+                startchunk = srcbuf + 1;
+            }
             break;
-          }
 
-          /* next loop around we want to do one char past endchar */
-          srcbuf = endchar;
-          startchunk = srcbuf + 1;
+        default:
+            /* do nothing. */
+            break;
         }
-        break;
-        
-      default :
-        /* do nothing. */
-        break;
-      }
-    
-    srcbuf++;
-    } 
-  while( 1 );
 
-  return JXTA_SUCCESS;
+        srcbuf++;
+    }
+    while (1);
+
+    return JXTA_SUCCESS;
 }
 
 /**
@@ -420,84 +414,90 @@ Jxta_status jxta_xml_util_decode_jstring( JString * src, JString** dest ) {
 * @result JXTA_SUCCESS for success, JXTA_INVALID_ARGUMENT for bad params and
 *  (rarely) JXTA_NOMEM
 **/
-Jxta_status jxta_xml_util_encode_jstring( JString * src, JString** dest ) {
-  const char* srcbuf;
-  const char* startchunk;
-  
-  if( !JXTA_OBJECT_CHECK_VALID(src) )
-    return JXTA_INVALID_ARGUMENT;
-  
-  if( NULL == dest )
-    return JXTA_INVALID_ARGUMENT;
-    
-  srcbuf = jstring_get_string( src );
-  
-  if( NULL == srcbuf ) {
-    return JXTA_INVALID_ARGUMENT;
+JXTA_DECLARE(Jxta_status) jxta_xml_util_encode_jstring(JString * src, JString ** dest)
+{
+    const char *srcbuf;
+    const char *startchunk;
+
+    if (!JXTA_OBJECT_CHECK_VALID(src))
+        return JXTA_INVALID_ARGUMENT;
+
+    if (NULL == dest)
+        return JXTA_INVALID_ARGUMENT;
+
+    srcbuf = jstring_get_string(src);
+
+    if (NULL == srcbuf) {
+        return JXTA_INVALID_ARGUMENT;
     }
 
-  *dest = jstring_new_1( jstring_length(src) );
-  
-  if( *dest == NULL )
-    return JXTA_NOMEM;
+    *dest = jstring_new_1(jstring_length(src));
 
-  startchunk = srcbuf;
-  
-  do {
-    switch( *srcbuf ) {
-      case 0 : {
-         /* append any remaining part */
-        jstring_append_0( *dest, startchunk, srcbuf - startchunk );
-        return JXTA_SUCCESS;
+    if (*dest == NULL)
+        return JXTA_NOMEM;
+
+    startchunk = srcbuf;
+
+    do {
+        switch (*srcbuf) {
+        case 0:{
+                /* append any remaining part */
+                jstring_append_0(*dest, startchunk, srcbuf - startchunk);
+                return JXTA_SUCCESS;
+            }
+
+        case '<':{
+                /* copy everything up to this char */
+                jstring_append_0(*dest, startchunk, srcbuf - startchunk);
+                startchunk = srcbuf + 1;
+
+                /* append replacement */
+                jstring_append_0(*dest, "&lt;", 4);
+            }
+            break;
+
+            /* 
+               FIXME bondolo@jxta.org 20020410 this replacement should not
+               be necessary but was added for compatibility with the j2se
+               implementation.
+             */
+        case '>':{
+                /* copy everything up to this char */
+                jstring_append_0(*dest, startchunk, srcbuf - startchunk);
+                startchunk = srcbuf + 1;
+
+                /* append replacement */
+                jstring_append_0(*dest, "&gt;", 4);
+            }
+            break;
+
+        case '&':{
+                /* copy everything up to this char */
+                jstring_append_0(*dest, startchunk, srcbuf - startchunk);
+                startchunk = srcbuf + 1;
+
+                /* append replacement */
+                jstring_append_0(*dest, "&amp;", 5);
+            }
+            break;
+
+        default:
+            /* do nothing. */
+            break;
         }
-        
-      case '<' : {
-        /* copy everything up to this char */
-        jstring_append_0( *dest, startchunk, srcbuf - startchunk );
-        startchunk = srcbuf + 1;
 
-        /* append replacement */
-        jstring_append_0( *dest, "&lt;", 4 );
-        }
-        break;
-        
-      /* 
-         FIXME bondolo@jxta.org 20020410 this replacement should not
-         be necessary but was added for compatibility with the j2se
-         implementation.
-      */
-      case '>' : {
-        /* copy everything up to this char */
-        jstring_append_0( *dest, startchunk, srcbuf - startchunk );
-        startchunk = srcbuf + 1;
+        srcbuf++;
+    }
+    while (1);
 
-        /* append replacement */
-        jstring_append_0( *dest, "&gt;", 4 );
-        }
-        break;
-        
-      case '&' : {
-        /* copy everything up to this char */
-        jstring_append_0( *dest, startchunk, srcbuf - startchunk );
-        startchunk = srcbuf + 1;
-
-        /* append replacement */
-        jstring_append_0( *dest, "&amp;", 5 );
-        }
-        break;
-        
-      default :
-        /* do nothing. */
-        break;
-      }
-    
-    srcbuf++;
-    } 
-  while( 1 );
-
-  return JXTA_SUCCESS;
+    return JXTA_SUCCESS;
 }
 
+#if 0
+{
+#endif
 #ifdef __cplusplus
 }
 #endif
+
+/* vim: set ts=4 sw=4 et tw=130: */

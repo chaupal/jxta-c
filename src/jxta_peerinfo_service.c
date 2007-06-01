@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peerinfo_service.c,v 1.4 2005/01/12 22:37:41 bondolo Exp $
+ * $Id: jxta_peerinfo_service.c,v 1.5 2005/06/16 23:11:46 slowhog Exp $
  */
 
 #include "jxta_peerinfo_service_private.h"
@@ -59,12 +59,11 @@
  * The base peerinfo service ctor (not public: the only public way to make a
  * new pg is to instantiate one of the derived types).
  */
-void jxta_peerinfo_service_construct(Jxta_peerinfo_service* service,
-				     Jxta_peerinfo_service_methods* methods) {
+void jxta_peerinfo_service_construct(Jxta_peerinfo_service * service, Jxta_peerinfo_service_methods * methods)
+{
 
     PTValid(methods, Jxta_peerinfo_service_methods);
-    jxta_service_construct((Jxta_service*) service,
-			   (Jxta_service_methods*) methods);
+    jxta_service_construct((Jxta_service *) service, (Jxta_service_methods *) methods);
     service->thisType = "Jxta_peerinfo_service";
 }
 
@@ -72,8 +71,9 @@ void jxta_peerinfo_service_construct(Jxta_peerinfo_service* service,
  * The base rsesolver service dtor (Not public, not virtual. Only called by
  * subclassers). We just pass it along.
  */
-void jxta_peerinfo_service_destruct(Jxta_peerinfo_service* service) {
-    jxta_service_destruct((Jxta_service*) service);
+void jxta_peerinfo_service_destruct(Jxta_peerinfo_service * service)
+{
+    jxta_service_destruct((Jxta_service *) service);
 }
 
 /**
@@ -83,34 +83,27 @@ void jxta_peerinfo_service_destruct(Jxta_peerinfo_service* service) {
 
 
 Jxta_status
-peerinfo_service_get_remote_peerinfo(Jxta_peerinfo_service* service,
-                                            Jxta_id* peerid,
-                                            Jxta_peerinfo_listener* listener)
+peerinfo_service_get_remote_peerinfo(Jxta_peerinfo_service * service, Jxta_id * peerid, Jxta_peerinfo_listener * listener)
 {
     PTValid(service, Jxta_peerinfo_service);
     return VTBL->getRemotePeerInfo(service, peerid, listener);
 }
 
 
-Jxta_status
-peerinfo_service_get_local_peerinfo(Jxta_peerinfo_service* service, Jxta_id* peerid, Jxta_object ** adv )
-
+Jxta_status peerinfo_service_get_local_peerinfo(Jxta_peerinfo_service * service, Jxta_id * peerid, Jxta_object ** adv)
 {
     PTValid(service, Jxta_peerinfo_service);
     return VTBL->getLocalPeerInfo(service, peerid, adv);
 }
 
 
-Jxta_status
-peerinfo_service_get_my_peerinfo(Jxta_peerinfo_service* service, Jxta_object ** adv)
+Jxta_status peerinfo_service_get_my_peerinfo(Jxta_peerinfo_service * service, Jxta_object ** adv)
 {
     PTValid(service, Jxta_peerinfo_service);
     return VTBL->getPeerInfoService(service, adv);
 }
 
-Jxta_status
-peerinfo_service_flush_advertisement(Jxta_peerinfo_service* service,
-                                       Jxta_id* peerid)
+Jxta_status peerinfo_service_flush_advertisement(Jxta_peerinfo_service * service, Jxta_id * peerid)
 {
     PTValid(service, Jxta_peerinfo_service);
     return VTBL->flushPeerInfo(service, peerid);

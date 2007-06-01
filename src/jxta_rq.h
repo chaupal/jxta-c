@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rq.h,v 1.3 2005/01/12 21:46:59 bondolo Exp $
+ * $Id: jxta_rq.h,v 1.7 2005/08/03 05:51:18 slowhog Exp $
  */
 
-   
+
 #ifndef __ResolverQuery_H__
 #define __ResolverQuery_H__
 
@@ -66,14 +66,14 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _ResolverQuery ResolverQuery;
 
 /**
  * create a new ResolverQuery object
  * @return pointer to the resolver query object
  */
-ResolverQuery * jxta_resolver_query_new(void);
+JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new(void);
+
 /**
  * create a new ResolverQuery object with inital given values
  * @param handlername associated with the query
@@ -82,13 +82,14 @@ ResolverQuery * jxta_resolver_query_new(void);
  * @param src route route advertisement of the src peer
  * @return pointer to the resolver query object
  */
-ResolverQuery *jxta_resolver_query_new_1(JString *handlername, JString *query, Jxta_id *src_peerid, Jxta_RouteAdvertisement *route);
+JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new_1(JString * handlername, JString * query, Jxta_id * src_peerid,
+                                                        Jxta_RouteAdvertisement * route);
 
 /**
  * frees the ResolverQuery object
  * @param ResolverQuery the resolver query object to free
  */
-void jxta_resolver_query_free(ResolverQuery *ad);
+void jxta_resolver_query_free(ResolverQuery * ad);
 
 /**
  * @param ResolverQuery the resolver query object
@@ -97,7 +98,7 @@ void jxta_resolver_query_free(ResolverQuery *ad);
  * @param adv a pointer to the advertisement.
  * @return JString representaion of the advertisement
  */
-Jxta_status jxta_resolver_query_get_xml(ResolverQuery *adv, JString **document);
+JXTA_DECLARE(Jxta_status) jxta_resolver_query_get_xml(ResolverQuery * adv, JString ** document);
 
 /**
  * @param ResolverQuery the resolver query object
@@ -105,7 +106,7 @@ Jxta_status jxta_resolver_query_get_xml(ResolverQuery *adv, JString **document);
  * @param pointer to the buffer to parse
  * @param len length of the buffer
  */
-void jxta_resolver_query_parse_charbuffer(ResolverQuery *ad, const char *buf, int len);
+JXTA_DECLARE(void) jxta_resolver_query_parse_charbuffer(ResolverQuery * ad, const char *buf, int len);
 
 /**
  * @param ResolverQuery the resolver query object
@@ -113,7 +114,7 @@ void jxta_resolver_query_parse_charbuffer(ResolverQuery *ad, const char *buf, in
  * @param pointer to the FILE to parse
  * @param len length of the buffer
  */
-void jxta_resolver_query_parse_file(ResolverQuery *ad, FILE *stream);
+JXTA_DECLARE(void) jxta_resolver_query_parse_file(ResolverQuery * ad, FILE * stream);
 
 
 /**
@@ -121,42 +122,42 @@ void jxta_resolver_query_parse_file(ResolverQuery *ad, FILE *stream);
  * @param ResolverQuery the resolver query object
  * @return Jstring the credential
  */
-JString *jxta_resolver_query_get_credential(ResolverQuery *ad);
+JXTA_DECLARE(JString *) jxta_resolver_query_get_credential(ResolverQuery * ad);
 
 /**
  * set the message credential
  * @param ResolverQuery the resolver query object
  * @param Jstring the credential
  */
-void jxta_resolver_query_set_credential(ResolverQuery *ad, JString *credential);
+JXTA_DECLARE(void) jxta_resolver_query_set_credential(ResolverQuery * ad, JString * credential);
 
 /**
  * get the message source peer id
  * @param ResolverQuery the resolver query object
  * @param Jxta_id the peer's id
  */
-Jxta_id *jxta_resolver_query_get_src_peer_id(ResolverQuery *ad);
+JXTA_DECLARE(Jxta_id *) jxta_resolver_query_get_src_peer_id(ResolverQuery * ad);
 
 /**
  * set the message source peer id
  * @param ResolverQuery the resolver query object
  * @param Jxta_id the peer's id
  */
-void jxta_resolver_query_set_src_peer_id(ResolverQuery *ad, Jxta_id *id);
+JXTA_DECLARE(void) jxta_resolver_query_set_src_peer_id(ResolverQuery * ad, Jxta_id * id);
 
 /**
  * get the message source peer route
  * @param ResolverQuery the resolver query object
  * @param Jxta_RouteAdvertisement the peer's route
  */
-Jxta_RouteAdvertisement *jxta_resolver_query_get_src_peer_route(ResolverQuery *ad);
+JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_resolver_query_get_src_peer_route(ResolverQuery * ad);
 
 /**
  * set the message source peer route
  * @param ResolverQuery the resolver query object
  * @param Jxta_RouteAdvertisement the peer's src route
  */
-void jxta_resolver_query_set_src_peer_route(ResolverQuery *ad, Jxta_RouteAdvertisement *route);
+JXTA_DECLARE(void) jxta_resolver_query_set_src_peer_route(ResolverQuery * ad, Jxta_RouteAdvertisement * route);
 
 /**
  * get the message handlername
@@ -164,46 +165,61 @@ void jxta_resolver_query_set_src_peer_route(ResolverQuery *ad, Jxta_RouteAdverti
  * @param JString pointer to JString to retrun the handlername pointer
  */
 
-void
-jxta_resolver_query_get_handlername(ResolverQuery * ad, JString **str);
+JXTA_DECLARE(void) jxta_resolver_query_get_handlername(ResolverQuery * ad, JString ** str);
 
 /**
  * set the message HandlerName
  * @param ResolverQuery the resolver query object
  * @param Jstring the HandlerName
  */
- 
-void jxta_resolver_query_set_handlername(ResolverQuery *ad, JString *handlerName);
+
+JXTA_DECLARE(void) jxta_resolver_query_set_handlername(ResolverQuery * ad, JString * handlerName);
 
 /**
  * get the message QueryID
  * @param ResolverQuery the resolver query object
  * @return long QueryID
- */ 
-long jxta_resolver_query_get_queryid(ResolverQuery *ad);
+ */
+JXTA_DECLARE(long) jxta_resolver_query_get_queryid(ResolverQuery * ad);
 
 /**
  * get the message QueryID
  * @param ResolverQuery the resolver query object
  * @param long QueryID
  */
-void jxta_resolver_query_set_queryid(ResolverQuery *ad, long qid);
+JXTA_DECLARE(void) jxta_resolver_query_set_queryid(ResolverQuery * ad, long qid);
 
 /**
  * get the message Query
  * @param ResolverQuery the resolver query object
  * @return Jstring the Query
- */ 
-void jxta_resolver_query_get_query(ResolverQuery *ad, JString **query);
+ */
+JXTA_DECLARE(void) jxta_resolver_query_get_query(ResolverQuery * ad, JString ** query);
 
 /**
  * get the message Query
  * @param ResolverQuery the resolver query object
  * @param Jstring the Query
  */
- void jxta_resolver_query_set_query(ResolverQuery *ad, JString *query);
-  
-#endif /* __ResolverQuery_H__  */
+JXTA_DECLARE(void) jxta_resolver_query_set_query(ResolverQuery * ad, JString * query);
+
+ /**
+ *
+ */
+void jxta_resolver_query_set_hopcount(ResolverQuery * ad, int hopcount);
+
+ /**
+ *
+ */
+long jxta_resolver_query_get_hopcount(ResolverQuery * ad);
+
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
+#endif /* __ResolverQuery_H__  */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

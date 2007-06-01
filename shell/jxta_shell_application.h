@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_application.h,v 1.1 2004/12/05 02:16:40 slowhog Exp $
+ * $Id: jxta_shell_application.h,v 1.2 2005/08/24 01:21:20 slowhog Exp $
  */
 #ifndef __JXTA_SHELL_APPLICATION_H__
 #define  __JXTA_SHELL_APPLICATION_H__
@@ -68,8 +68,6 @@ extern "C" {
 #if 0
 }
 #endif
-
-
 typedef struct _jxta_shell_application JxtaShellApplication;
 
 
@@ -80,8 +78,7 @@ typedef struct _jxta_shell_application JxtaShellApplication;
  *        handles the data received on stdin
  * @param inputLine the data we received on stdin
  **/
-typedef void  (*shell_application_stdin)(Jxta_object *child, 
-                                          JString * inputLine);
+typedef void (*shell_application_stdin) (Jxta_object * child, JString * inputLine);
 
 /**
  * Prototype of the user function that  starts the actual application
@@ -89,15 +86,13 @@ typedef void  (*shell_application_stdin)(Jxta_object *child,
  * @param argv the number of arguments to pass
  * @param arg the list of arguments
  **/
-typedef void  (*shell_application_start) (Jxta_object *child,
-                                          int argv, 
-                                          char **arg);
+typedef void (*shell_application_start) (Jxta_object * child, int argv, char **arg);
 
 /**
  * Prototype of the user function that   prints the help information
  * @param child the  we want to print the help information for
  **/
-typedef void  (*shell_application_printHelp) (Jxta_object *child);
+typedef void (*shell_application_printHelp) (Jxta_object * child);
 
 /**
  *  Prototype of the user function that  this application calls if it 
@@ -106,8 +101,7 @@ typedef void  (*shell_application_printHelp) (Jxta_object *child);
  *        about the termination
  *  @param child the object that terminates
  **/
-typedef void  (*shell_application_terminate) (Jxta_object *parent,
-                                              Jxta_object *child);
+typedef void (*shell_application_terminate) (Jxta_object * parent, Jxta_object * child);
 
 
  /**
@@ -121,19 +115,17 @@ typedef void  (*shell_application_terminate) (Jxta_object *parent,
 * @param parent  the JxtaShellApplication that spawn this application
 * @param terminate the function to call if we are terminating
 */
-JxtaShellApplication * JxtaShellApplication_new(Jxta_PG * pg,
-                                               Jxta_listener* standout, 
-                                               JxtaShellEnvironment *env,
-                                               Jxta_object * parent,
-                                               shell_application_terminate terminate);
+JxtaShellApplication *JxtaShellApplication_new(Jxta_PG * pg,
+                                               Jxta_listener * standout,
+                                               JxtaShellEnvironment * env,
+                                               Jxta_object * parent, shell_application_terminate terminate);
 
 
-typedef JxtaShellApplication* (*shell_application_new) (Jxta_PG * pg,
-                                      Jxta_listener* standout,
-                                      JxtaShellEnvironment *env,
-                                      Jxta_object * parent,
-                                      shell_application_terminate terminate);
- 
+typedef JxtaShellApplication *(*shell_application_new) (Jxta_PG * pg,
+                                                        Jxta_listener * standout,
+                                                        JxtaShellEnvironment * env,
+                                                        Jxta_object * parent, shell_application_terminate terminate);
+
 /**
 * Starts the application
 * This class defers to its child
@@ -141,15 +133,13 @@ typedef JxtaShellApplication* (*shell_application_new) (Jxta_PG * pg,
 * @param argv the number of arguments
 * @param arg the argument array
 */
-void   JxtaShellApplication_start(JxtaShellApplication *app,
-                                   int argv, 
-                                   char **arg);
+void JxtaShellApplication_start(JxtaShellApplication * app, int argv, char **arg);
 
 /**
 *  Prints  the help information for this child
 * @param app the application we want to print help for
 */
-void JxtaShellApplication_printHelp(JxtaShellApplication *app);
+void JxtaShellApplication_printHelp(JxtaShellApplication * app);
 
 
 /** 
@@ -157,26 +147,26 @@ void JxtaShellApplication_printHelp(JxtaShellApplication *app);
 * listen, i.e.  where to send data to this application
 * @param app the application from which to get the  pipe
 */
-Jxta_listener * JxtaShellApplication_getSTDIN(JxtaShellApplication *app);
+Jxta_listener *JxtaShellApplication_getSTDIN(JxtaShellApplication * app);
 
 /**
 * Returns the environment that used by this application
 * @pram app the application from which to get the environment
 */
-JxtaShellEnvironment * JxtaShellApplication_getEnv(JxtaShellApplication *app);
+JxtaShellEnvironment *JxtaShellApplication_getEnv(JxtaShellApplication * app);
 
 /**
 *  Gets the peer group of this application
 *  @param app the application from which to get the peergroup
 */
-Jxta_PG * JxtaShellApplication_peergroup(JxtaShellApplication *app);
+Jxta_PG *JxtaShellApplication_peergroup(JxtaShellApplication * app);
 
 
 /**
 * Terminates this application
 * @param app  the application to terminate
 */
-void JxtaShellApplication_terminate(JxtaShellApplication *app);
+void JxtaShellApplication_terminate(JxtaShellApplication * app);
 
 /** 
 * Sets the function to use 
@@ -187,11 +177,10 @@ void JxtaShellApplication_terminate(JxtaShellApplication *app);
 * @param help the function that starts the processu
 * @param stdin the function that handles stdin
 */
-void JxtaShellApplication_setFunctions(JxtaShellApplication *app,
+void JxtaShellApplication_setFunctions(JxtaShellApplication * app,
                                        Jxta_object * child,
-                                   shell_application_printHelp help,
-                                   shell_application_start start,
-                                   shell_application_stdin standin);
+                                       shell_application_printHelp help,
+                                       shell_application_start start, shell_application_stdin standin);
 
 
 /**
@@ -200,8 +189,7 @@ void JxtaShellApplication_setFunctions(JxtaShellApplication *app,
 * @param inputLine the line to print
 * @return JXTA_SUCCESS if sucessfull, JXTA_INVALID_ARGUMENT otherwise
 */
-Jxta_status JxtaShellApplication_print(JxtaShellApplication *app,
-                                      JString * inputLine);
+Jxta_status JxtaShellApplication_print(JxtaShellApplication * app, JString * inputLine);
 
 /**
 * Prints information to the output of this application after 
@@ -210,8 +198,7 @@ Jxta_status JxtaShellApplication_print(JxtaShellApplication *app,
 * @param inputLine the line to print
 * @return JXTA_SUCCESS if sucessfull, JXTA_INVALID_ARGUMENT otherwise
 */
-Jxta_status JxtaShellApplication_println(JxtaShellApplication *app,
-                                        JString * inputLine);
+Jxta_status JxtaShellApplication_println(JxtaShellApplication * app, JString * inputLine);
 
 
 /**
@@ -219,16 +206,16 @@ Jxta_status JxtaShellApplication_println(JxtaShellApplication *app,
 * @param  obj the object that gets passed
 * @param arg the user pointer
 */
-void JxtaShellApplication_listenerFunction(Jxta_object* obj, void* arg);
+void JxtaShellApplication_listenerFunction(Jxta_object * obj, void *arg);
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
-
 #endif /* __JXTA_SHELL_APPLICATION_H__ */
 
-
-
-
+/* vim: set ts=4 sw=4 et tw=130 */

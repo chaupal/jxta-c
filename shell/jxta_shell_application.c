@@ -12,7 +12,7 @@
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- *
+ * 
  * 3. The end-user documentation included with the redistribution,
  *    if any, must include the following acknowledgment:
  *       "This product includes software developed by the
@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_application.c,v 1.4 2005/03/29 21:12:11 bondolo Exp $
+ * $Id: jxta_shell_application.c,v 1.7 2005/08/24 01:21:20 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -216,6 +216,7 @@ void JxtaShellApplication_terminate(JxtaShellApplication * app)
     if (app != NULL) {
         JString *prompt = jstring_new_2("JXTA>");
         JxtaShellApplication_print(app, prompt);
+        JXTA_OBJECT_RELEASE(prompt);
         app->terminate(app->parent, app->child);
         if (app->parent != 0) {
             JXTA_OBJECT_RELEASE(app->parent);
@@ -245,9 +246,7 @@ Jxta_status JxtaShellApplication_print(JxtaShellApplication * app, JString * inp
 
     if (app != NULL && app->standout != NULL && inputLine != NULL) {
         JXTA_OBJECT_CHECK_VALID(app->standout);
-        JXTA_OBJECT_SHARE(inputLine);
         result = jxta_listener_schedule_object(app->standout, (Jxta_object *) inputLine);
-        JXTA_OBJECT_RELEASE(inputLine);
     }
     return result;
 }
@@ -259,10 +258,8 @@ Jxta_status JxtaShellApplication_println(JxtaShellApplication * app, JString * i
 
     jstring_append_1(line, inputLine);
     jstring_append_2(line, "\n");
-    JXTA_OBJECT_SHARE(line);
     result = JxtaShellApplication_print(app, line);
     JXTA_OBJECT_RELEASE(line);
-    JXTA_OBJECT_RELEASE(inputLine);
     return result;
 }
 

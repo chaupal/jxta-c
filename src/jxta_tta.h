@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tta.h,v 1.4 2005/02/02 02:58:33 exocetrick Exp $
+ * $Id: jxta_tta.h,v 1.7 2005/08/03 05:51:21 slowhog Exp $
  */
 
-   
+
 #ifndef JXTA_TCPTRANSPORTADVERTISEMENT_H__
 #define JXTA_TCPTRANSPORTADVERTISEMENT_H__
 
@@ -65,56 +65,57 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _jxta_TCPTransportAdvertisement Jxta_TCPTransportAdvertisement;
 
-Jxta_TCPTransportAdvertisement * jxta_TCPTransportAdvertisement_new(void);
-void jxta_TCPTransportAdvertisement_set_handlers(Jxta_TCPTransportAdvertisement *, XML_Parser, void *);
-Jxta_status jxta_TCPTransportAdvertisement_get_xml(Jxta_TCPTransportAdvertisement *,
-					      JString **);
-void jxta_TCPTransportAdvertisement_parse_charbuffer(Jxta_TCPTransportAdvertisement *, const char *, int len); 
-void jxta_TCPTransportAdvertisement_parse_file(Jxta_TCPTransportAdvertisement *, FILE * stream);
- 
-char * jxta_TCPTransportAdvertisement_get_Jxta_TCPTransportAdvertisement(Jxta_TCPTransportAdvertisement *);
-void jxta_TCPTransportAdvertisement_set_Jxta_TCPTransportAdvertisement(Jxta_TCPTransportAdvertisement *, char *);
- 
-JString * jxta_TCPTransportAdvertisement_get_Protocol(Jxta_TCPTransportAdvertisement *);
-void jxta_TCPTransportAdvertisement_set_Protocol(Jxta_TCPTransportAdvertisement *, JString *);
- 
-Jxta_port jxta_TCPTransportAdvertisement_get_Port(Jxta_TCPTransportAdvertisement *);
-void jxta_TCPTransportAdvertisement_set_Port(Jxta_TCPTransportAdvertisement *, Jxta_port);
- 
-Jxta_boolean jxta_TCPTransportAdvertisement_get_MulticastOff(Jxta_TCPTransportAdvertisement *);
-void jxta_TCPTransportAdvertisement_set_MulticastOff(Jxta_TCPTransportAdvertisement *, Jxta_boolean);
+JXTA_DECLARE(Jxta_TCPTransportAdvertisement *) jxta_TCPTransportAdvertisement_new(void);
+JXTA_DECLARE(void) jxta_TCPTransportAdvertisement_set_handlers(Jxta_TCPTransportAdvertisement *, XML_Parser, void *);
+JXTA_DECLARE(Jxta_status) jxta_TCPTransportAdvertisement_get_xml(Jxta_TCPTransportAdvertisement *, JString **);
+JXTA_DECLARE(void) jxta_TCPTransportAdvertisement_parse_charbuffer(Jxta_TCPTransportAdvertisement *, const char *, int len);
+JXTA_DECLARE(void) jxta_TCPTransportAdvertisement_parse_file(Jxta_TCPTransportAdvertisement *, FILE * stream);
 
-Jxta_in_addr jxta_TCPTransportAdvertisement_get_MulticastAddr(Jxta_TCPTransportAdvertisement *);
-void jxta_TCPTransportAdvertisement_set_MulticastAddr(Jxta_TCPTransportAdvertisement *, Jxta_in_addr);
- 
-Jxta_port jxta_TCPTransportAdvertisement_get_MulticastPort(Jxta_TCPTransportAdvertisement *);
-void jxta_TCPTransportAdvertisement_set_MulticastPort(Jxta_TCPTransportAdvertisement *, Jxta_port);
- 
-int jxta_TCPTransportAdvertisement_get_MulticastSize(Jxta_TCPTransportAdvertisement *);
-void jxta_TCPTransportAdvertisement_set_MulticastSize(Jxta_TCPTransportAdvertisement *, int);
- 
-JString * jxta_TCPTransportAdvertisement_get_Server(Jxta_TCPTransportAdvertisement *);
-char * jxta_TCPTransportAdvertisement_get_Server_string(Jxta_TCPTransportAdvertisement *);
-void jxta_TCPTransportAdvertisement_set_Server(Jxta_TCPTransportAdvertisement *, JString *);
- 
-Jxta_in_addr jxta_TCPTransportAdvertisement_get_InterfaceAddress(Jxta_TCPTransportAdvertisement *);
-void jxta_TCPTransportAdvertisement_set_InterfaceAddress(Jxta_TCPTransportAdvertisement *, Jxta_in_addr);
- 
-JString * jxta_TCPTransportAdvertisement_get_ConfigMode(Jxta_TCPTransportAdvertisement *);
-char * jxta_TCPTransportAdvertisement_get_ConfigMode_string(Jxta_TCPTransportAdvertisement *);
-void jxta_TCPTransportAdvertisement_set_ConfigMode(Jxta_TCPTransportAdvertisement *, JString *);
+JXTA_DECLARE(JString *) jxta_TCPTransportAdvertisement_get_Protocol(Jxta_TCPTransportAdvertisement *);
+JXTA_DECLARE(char *) jxta_TCPTransportAdvertisement_get_Protocol_string(Jxta_advertisement * ad);
+JXTA_DECLARE(void) jxta_TCPTransportAdvertisement_set_Protocol(Jxta_TCPTransportAdvertisement *, JString *);
 
-Jxta_boolean jxta_TCPTransportAdvertisement_get_ServerOff(Jxta_TCPTransportAdvertisement *);
-void jxta_TCPTransportAdvertisement_set_ServerOff(Jxta_TCPTransportAdvertisement *, Jxta_boolean);
- 
-Jxta_boolean jxta_TCPTransportAdvertisement_get_ClientOff(Jxta_TCPTransportAdvertisement *);
-void jxta_TCPTransportAdvertisement_set_ClientOff(Jxta_TCPTransportAdvertisement *, Jxta_boolean);
+JXTA_DECLARE(Jxta_port) jxta_TCPTransportAdvertisement_get_Port(Jxta_TCPTransportAdvertisement *);
+JXTA_DECLARE(char *) jxta_TCPTransportAdvertisement_get_Port_string(Jxta_advertisement * ad);
+JXTA_DECLARE(void) jxta_TCPTransportAdvertisement_set_Port(Jxta_TCPTransportAdvertisement *, Jxta_port);
 
-Jxta_vector* jxta_TCPTransportAdvertisement_get_indexes(void);
+JXTA_DECLARE(Jxta_boolean) jxta_TCPTransportAdvertisement_get_MulticastOff(Jxta_TCPTransportAdvertisement *);
+JXTA_DECLARE(void) jxta_TCPTransportAdvertisement_set_MulticastOff(Jxta_TCPTransportAdvertisement *, Jxta_boolean);
+
+JXTA_DECLARE(Jxta_in_addr) jxta_TCPTransportAdvertisement_get_MulticastAddr(Jxta_TCPTransportAdvertisement *);
+JXTA_DECLARE(void) jxta_TCPTransportAdvertisement_set_MulticastAddr(Jxta_TCPTransportAdvertisement *, Jxta_in_addr);
+
+JXTA_DECLARE(Jxta_port) jxta_TCPTransportAdvertisement_get_MulticastPort(Jxta_TCPTransportAdvertisement *);
+JXTA_DECLARE(void) jxta_TCPTransportAdvertisement_set_MulticastPort(Jxta_TCPTransportAdvertisement *, Jxta_port);
+
+JXTA_DECLARE(int) jxta_TCPTransportAdvertisement_get_MulticastSize(Jxta_TCPTransportAdvertisement *);
+JXTA_DECLARE(void) jxta_TCPTransportAdvertisement_set_MulticastSize(Jxta_TCPTransportAdvertisement *, int);
+
+JXTA_DECLARE(JString *) jxta_TCPTransportAdvertisement_get_Server(Jxta_TCPTransportAdvertisement *);
+JXTA_DECLARE(char *) jxta_TCPTransportAdvertisement_get_Server_string(Jxta_TCPTransportAdvertisement *);
+JXTA_DECLARE(void) jxta_TCPTransportAdvertisement_set_Server(Jxta_TCPTransportAdvertisement *, JString *);
+
+JXTA_DECLARE(Jxta_in_addr) jxta_TCPTransportAdvertisement_get_InterfaceAddress(Jxta_TCPTransportAdvertisement *);
+JXTA_DECLARE(void) jxta_TCPTransportAdvertisement_set_InterfaceAddress(Jxta_TCPTransportAdvertisement *, Jxta_in_addr);
+
+JXTA_DECLARE(JString *) jxta_TCPTransportAdvertisement_get_ConfigMode(Jxta_TCPTransportAdvertisement *);
+JXTA_DECLARE(char *) jxta_TCPTransportAdvertisement_get_ConfigMode_string(Jxta_TCPTransportAdvertisement *);
+JXTA_DECLARE(void) jxta_TCPTransportAdvertisement_set_ConfigMode(Jxta_TCPTransportAdvertisement *, JString *);
+
+JXTA_DECLARE(Jxta_boolean) jxta_TCPTransportAdvertisement_get_ServerOff(Jxta_TCPTransportAdvertisement *);
+JXTA_DECLARE(void) jxta_TCPTransportAdvertisement_set_ServerOff(Jxta_TCPTransportAdvertisement *, Jxta_boolean);
+
+JXTA_DECLARE(Jxta_boolean) jxta_TCPTransportAdvertisement_get_ClientOff(Jxta_TCPTransportAdvertisement *);
+JXTA_DECLARE(void) jxta_TCPTransportAdvertisement_set_ClientOff(Jxta_TCPTransportAdvertisement *, Jxta_boolean);
+
+JXTA_DECLARE(Jxta_vector *) jxta_TCPTransportAdvertisement_get_indexes(Jxta_advertisement *);
+
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 

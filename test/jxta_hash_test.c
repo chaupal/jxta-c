@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_hash_test.c,v 1.11 2005/04/07 22:58:53 slowhog Exp $
+ * $Id: jxta_hash_test.c,v 1.12 2005/04/17 14:22:18 lankes Exp $
  */
 
 #include <stdio.h>
@@ -86,7 +86,7 @@ Num_val* num_val_new(int n) {
 }
 
 /* Get the undocumented debugging tool :-) */
-extern Jxta_status
+extern Jxta_status JXTA_STDCALL
 jxta_hashtable_stupid_lookup(Jxta_hashtable* this, const void* key,
 			     size_t key_size, Jxta_object** found_value);
 

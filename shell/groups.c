@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: groups.c,v 1.6 2005/03/22 03:49:58 bondolo Exp $
+ * $Id: groups.c,v 1.12 2005/08/31 23:30:31 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -123,16 +123,16 @@ void jxta_groups_start(Jxta_object * appl, int argv, char **arg)
             break;
         case 'p':
             pf = TRUE;
-            jstring_append_1(pid, JxtaShellGetopt_getOptionArgument(opt));
+            jstring_append_1(pid, JxtaShellGetopt_OptionArgument(opt));
             break;
         case 'n':
-            responses = strtol(jstring_get_string(JxtaShellGetopt_getOptionArgument(opt)), NULL, 0);
+            responses = strtol(jstring_get_string(JxtaShellGetopt_OptionArgument(opt)), NULL, 0);
             break;
         case 'a':
-            jstring_append_1(attr, JxtaShellGetopt_getOptionArgument(opt));
+            jstring_append_1(attr, JxtaShellGetopt_OptionArgument(opt));
             break;
         case 'v':
-            jstring_append_1(value, JxtaShellGetopt_getOptionArgument(opt));
+            jstring_append_1(value, JxtaShellGetopt_OptionArgument(opt));
             break;
         case 'h':
             jxta_groups_print_help(appl);
@@ -149,11 +149,17 @@ void jxta_groups_start(Jxta_object * appl, int argv, char **arg)
     JxtaShellGetopt_delete(opt);
     jxta_PG_get_discovery_service(group, &discovery);
     if (ff) {
+        JString *tmp_str = NULL;
+
         discovery_service_flush_advertisements(discovery, NULL, DISC_GROUP);
+        tmp_str = jstring_new_2("GroupAdvertisement");
+        JxtaShellEnvironment_delete_type(environment, tmp_str);
         JxtaShellApplication_terminate(app);
+        JXTA_OBJECT_RELEASE(tmp_str);
         JXTA_OBJECT_RELEASE(pid);
         JXTA_OBJECT_RELEASE(attr);
         JXTA_OBJECT_RELEASE(value);
+        JXTA_OBJECT_RELEASE(discovery);
         return;
     }
 
@@ -205,6 +211,7 @@ void jxta_groups_start(Jxta_object * appl, int argv, char **arg)
     JXTA_OBJECT_RELEASE(pid);
     JXTA_OBJECT_RELEASE(attr);
     JXTA_OBJECT_RELEASE(value);
+    JXTA_OBJECT_RELEASE(discovery);
 }
 
 void jxta_groups_print_help(Jxta_object * appl)
@@ -220,8 +227,9 @@ void jxta_groups_print_help(Jxta_object * appl)
     jstring_append_2(inputLine, "           [-f] flush peer advertisements\n");
     jstring_append_2(inputLine, "           [-h] print this information\n");
     if (app != 0) {
-        JXTA_OBJECT_SHARE(inputLine);
         JxtaShellApplication_print(app, inputLine);
     }
     JXTA_OBJECT_RELEASE(inputLine);
 }
+
+/* vim: set ts=4 sw=4 et tw=130: */

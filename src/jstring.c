@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jstring.c,v 1.58 2005/03/29 20:10:44 bondolo Exp $
+ * $Id: jstring.c,v 1.65 2005/07/22 03:12:49 slowhog Exp $
  */
 
 
@@ -87,17 +87,18 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include <ctype.h>              /* isspace */
+#include <ctype.h>  /* isspace */
 
 #include "jxta_errno.h"
 #include "jxta_debug.h"
 #include "jstring.h"
 
-
-/*************************************************************************
- **
- *************************************************************************/
-
+#ifdef __cplusplus
+extern "C" {
+#if 0
+}
+#endif
+#endif
 const size_t DEFAULTBUFSIZE = 128;
 
 /**
@@ -122,34 +123,20 @@ static void jstring_delete(Jxta_object * js);
  * @todo Find a way to make sure we get a '\0' in the 
  * correct place after realloc.
  */
-static void *resizeBuf(void *p, size_t size)
+static char *resizeBuf(char *p, size_t size)
 {
-
-    if (p == NULL)
-        return NULL;
-    else if (size == 0)
-        return NULL;
-    else if ((p = realloc(p, size)) == NULL)
-        return NULL;
-
-    return p;
+    return (char *) realloc(p, size);
 }
-
 
 static char *newCharBuf(size_t size)
 {
+    char *buf = (char *) calloc(size + 1, sizeof(char));
 
-    char *buf;
-    buf = (char *) malloc(size + 1);
-
-    memset(buf, 0x0, size + 1);
     return buf;
 }
 
-
 static void deleteCharBuf(char *buf, size_t size)
 {
-
     /**
      * Definitely shred going out.
      */
@@ -158,8 +145,6 @@ static void deleteCharBuf(char *buf, size_t size)
     free(buf);
 }
 
-
-
 /* Proposed changes: please comment
  * 1. ensure null termination on concat, appends, etc.
  * 2. remove null term check from get_string and get_charbuf_copy
@@ -167,15 +152,14 @@ static void deleteCharBuf(char *buf, size_t size)
  */
 
 
-JString *jstring_new_0()
+JXTA_DECLARE(JString *) jstring_new_0()
 {
     return jstring_new_1(DEFAULTBUFSIZE);
 }
 
 
-JString *jstring_new_1(size_t bufsize)
+JXTA_DECLARE(JString *) jstring_new_1(size_t bufsize)
 {
-
     JString *js;
 
     if (bufsize <= 0)
@@ -196,9 +180,8 @@ JString *jstring_new_1(size_t bufsize)
 }
 
 
-JString *jstring_new_2(const char *string)
+JXTA_DECLARE(JString *) jstring_new_2(const char *string)
 {
-
     JString *js;
     size_t length;
 
@@ -223,9 +206,8 @@ JString *jstring_new_2(const char *string)
     return js;
 }
 
-JString *jstring_new_3(Jxta_bytevector * bytes)
+JXTA_DECLARE(JString *) jstring_new_3(Jxta_bytevector * bytes)
 {
-
     JString *js;
     size_t length;
 
@@ -257,20 +239,19 @@ JString *jstring_new_3(Jxta_bytevector * bytes)
  *  buffer, when maybe it should clone the entire
  *  buffer using memset or whatever.
  */
-JString *jstring_clone(JString const *origstring)
+JXTA_DECLARE(JString *) jstring_clone(JString const *origstring)
 {
-
     JString *js = jstring_new_1(origstring->bufsize);
     jstring_append_2(js, jstring_get_string(origstring));
+
     return js;
 }
 
 
-void jstring_trim(JString * js)
+JXTA_DECLARE(void) jstring_trim(JString * js)
 {
-
     size_t len = js->length;
-    int st = 0;
+    unsigned int st = 0;
     char *val = js->string;
     /* strip out leading white-space */
     while ((st < len) && (isspace(js->string[st]))) {
@@ -288,30 +269,17 @@ void jstring_trim(JString * js)
         js->length = len - st;
         js->string[len - st] = 0;
     }
-
 }
 
-
-size_t jstring_length(JString const *js)
+JXTA_DECLARE(size_t) jstring_length(JString const *js)
 {
-
     return js->length;
 }
 
-
-/**
- * This method is useful for testing purposes.  In 
- * a different language, it would be "protected" 
- * instead of private.  It has no associated 
- * "set_bufsize", respecting privacy.
- */
-size_t jstring_get_bufsize(JString const *js)
+JXTA_DECLARE(size_t) jstring_capacity(JString const *js)
 {
-
     return js->bufsize;
 }
-
-
 
 static void jstring_delete(Jxta_object * obj)
 {
@@ -321,23 +289,21 @@ static void jstring_delete(Jxta_object * obj)
         return;
 
     deleteCharBuf(js->string, js->bufsize);
-    memset(js, 0x0, sizeof(JString));
+    memset(js, 0xdd, sizeof(JString));
     free(js);
 }
 
-
-
-void jstring_append_0(JString * js, char const *newstring, size_t length)
+JXTA_DECLARE(void) jstring_append_0(JString * js, char const *newstring, size_t length)
 {
-
     JXTA_OBJECT_CHECK_VALID(js);
 
     if (NULL == newstring) {
         JXTA_LOG("NULL string passed to append_0\n");
-        return;                 /* error */
+        return; /* error */
     }
 
-    while (js->bufsize <= (js->length + length)) {
+    /* ensure capacity +1 (for terminal \0) */
+    while (js->bufsize <= (js->length + length + 1)) {
         js->bufsize *= 2;
         js->string = resizeBuf(js->string, js->bufsize);
     }
@@ -349,42 +315,29 @@ void jstring_append_0(JString * js, char const *newstring, size_t length)
 
 }
 
-
-void jstring_append_1(JString * jsorig, JString * jsnew)
+JXTA_DECLARE(void) jstring_append_1(JString * jsorig, JString * jsnew)
 {
-
     JXTA_OBJECT_CHECK_VALID(jsorig);
-    /**
-     * @bug In Windows, if object (jsnew) is not initialized,
-     * JXTA_OBJECT_CHECK_VALID runs out the memory then crashes.
-     */
     JXTA_OBJECT_CHECK_VALID(jsnew);
 
     jstring_append_0(jsorig, jsnew->string, jsnew->length);
 }
 
-
-void jstring_append_2(JString * js, char const *string)
+JXTA_DECLARE(void) jstring_append_2(JString * js, char const *string)
 {
-    int length;
-
     JXTA_OBJECT_CHECK_VALID(js);
 
     if (NULL == string) {
         JXTA_LOG("NULL string passed to append_2\n");
-        return;                 /* error */
+        return; /* error */
     }
 
-    length = strlen(string);
-
-    jstring_append_0(js, string, length);
+    jstring_append_0(js, string, strlen(string));
 }
-
 
 /* ... are const char* */
 void jstring_concat(JString * js, int number, ...)
 {
-
     va_list argv;
     const char *s;
     int i;
@@ -397,18 +350,15 @@ void jstring_concat(JString * js, int number, ...)
     va_end(argv);
 
     /* Proposed change: ensure that char buf is null termed. */
-
 }
-
 
 /**
  * Write some more test code for this so that when the 
  * implementation changes, it can be verified.
  *
- * @todo Rename this to jstring_get_charbuf.
  * @todo Move null termination check elsewhere.
  */
-char const *jstring_get_string(JString const *js)
+JXTA_DECLARE(char const *) jstring_get_string(JString const *js)
 {
     /*  by const we mean that we wont change the contents. we wont. */
     JString *myjs = (JString *) js;
@@ -430,10 +380,8 @@ char const *jstring_get_string(JString const *js)
     return myjs->string;
 }
 
-
-Jxta_status jstring_reset(JString * js, char **buf)
+JXTA_DECLARE(Jxta_status) jstring_reset(JString * js, char **buf)
 {
-
     JString *myjs = (JString *) js;
 
     JXTA_OBJECT_CHECK_VALID(myjs);
@@ -457,26 +405,22 @@ Jxta_status jstring_reset(JString * js, char **buf)
     return JXTA_SUCCESS;
 }
 
-
-void jstring_print(JString const *js, PrintFunc printer, void *stream)
+JXTA_DECLARE(void) jstring_print(JString const *js, PrintFunc printer, void *stream)
 {
-
     printer(stream, "%s\n", jstring_get_string(js));
 }
 
-void jstring_send(JString const *js, SendFunc sender, void *stream, unsigned int flags)
+JXTA_DECLARE(void) jstring_send(JString const *js, SendFunc sender, void *stream, unsigned int flags)
 {
-
     sender(stream, js->string, js->length, flags);
 }
 
-void jstring_write(JString const *js, WriteFunc writer, void *stream)
+JXTA_DECLARE(void) jstring_write(JString const *js, WriteFunc writer, void *stream)
 {
-
     writer(stream, js->string, js->length);
 }
 
-int jstring_writefunc_appender(void *stream, const char *buf, size_t len, Jxta_status * res)
+JXTA_DECLARE(int) jstring_writefunc_appender(void *stream, const char *buf, size_t len, Jxta_status * res)
 {
     JString *string = (JString *) stream;
     Jxta_status status = JXTA_SUCCESS;
@@ -499,3 +443,10 @@ int jstring_writefunc_appender(void *stream, const char *buf, size_t len, Jxta_s
 
     return (JXTA_SUCCESS == status) ? len : -1;
 }
+
+#ifdef __cplusplus
+#if 0
+{
+#endif
+}
+#endif

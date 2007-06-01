@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_errno.h,v 1.2 2005/02/08 22:48:34 bondolo Exp $
+ * $Id: jpr_errno.h,v 1.3 2005/05/02 19:29:47 bondolo Exp $
  */
 
 #ifndef JPR_ERRNO_H
@@ -68,10 +68,10 @@
 extern "C" {
 #endif /* __cplusplus */
 
-#define JPR_SUCCESS (0)
-#define JPR_START_ERROR  (120000)
-#define JPR_START_USEERR (JPR_START_ERROR + 250)
-#define JPR_END_USEERR (620000)
+#define JPR_SUCCESS (0U)
+#define JPR_START_ERROR  (120000U)
+#define JPR_START_USEERR (JPR_START_ERROR + 250U)
+#define JPR_END_USEERR (620000U)
 
 #ifdef __cplusplus
 }

@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dr.h,v 1.3 2005/01/12 21:46:57 bondolo Exp $
+ * $Id: jxta_dr.h,v 1.7 2005/08/29 06:38:07 slowhog Exp $
  */
 
-   
+
 #ifndef __Jxta_DiscoveryResponse_H__
 #define __Jxta_DiscoveryResponse_H__
 
@@ -66,8 +66,6 @@ extern "C" {
 }
 #endif
 #endif
-
-
 typedef struct _Jxta_DiscoveryResponse Jxta_DiscoveryResponse;
 typedef struct _jxta_DiscoveryResponseElement Jxta_DiscoveryResponseElement;
 
@@ -76,9 +74,9 @@ typedef struct _jxta_DiscoveryResponseElement Jxta_DiscoveryResponseElement;
  */
 
 struct _jxta_DiscoveryResponseElement {
-	JXTA_OBJECT_HANDLE;
-	Jxta_expiration_time expiration;
-	JString * response;
+    JXTA_OBJECT_HANDLE;
+    Jxta_expiration_time expiration;
+    JString *response;
 };
 
 /**
@@ -88,15 +86,14 @@ struct _jxta_DiscoveryResponseElement {
  *
  * @return Pointer to discovery response.
  */
-Jxta_DiscoveryResponse * jxta_discovery_response_new(void);
+JXTA_DECLARE(Jxta_DiscoveryResponse *) jxta_discovery_response_new(void);
 
-Jxta_DiscoveryResponse * jxta_discovery_response_new_1(
-  			   short type, 
-			   char * attr, 
-			   char * value,
-			   int threshold,
-			   JString * peeradv,
-			   Jxta_vector * responses);
+JXTA_DECLARE(Jxta_DiscoveryResponse *) jxta_discovery_response_new_1(short type,
+                                                                     char *attr,
+                                                                     char *value,
+                                                                     int threshold, JString * peeradv, Jxta_vector * responses);
+
+
 /**
  * Delete a discovery response.
  *
@@ -117,7 +114,7 @@ void jxta_discovery_response_free(Jxta_DiscoveryResponse *);
  *
  * @return Jxta_status 
  */
-Jxta_status jxta_discovery_response_get_xml(Jxta_DiscoveryResponse *, JString **);
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_xml(Jxta_DiscoveryResponse *, JString **);
 
 
 /**
@@ -133,7 +130,7 @@ Jxta_status jxta_discovery_response_get_xml(Jxta_DiscoveryResponse *, JString **
  *
  * @return void Doesn't return anything.
  */
-void jxta_discovery_response_parse_charbuffer(Jxta_DiscoveryResponse *, const char *, int len); 
+JXTA_DECLARE(void) jxta_discovery_response_parse_charbuffer(Jxta_DiscoveryResponse *, const char *, int len);
 
 
 
@@ -148,7 +145,17 @@ void jxta_discovery_response_parse_charbuffer(Jxta_DiscoveryResponse *, const ch
  *
  * @return void Doesn't return anything.
  */
-void jxta_discovery_response_parse_file(Jxta_DiscoveryResponse *, FILE * stream);
+JXTA_DECLARE(void) jxta_discovery_response_parse_file(Jxta_DiscoveryResponse *, FILE * stream);
+
+/**
+ * Gets the query ID of the resolver query generates this discovery response.
+ *
+ * @param Jxta_DiscoveryResponse * a pointer to the discovery 
+ *        response.
+ *
+ * @return long set to value of the query ID.
+ */
+JXTA_DECLARE(long) jxta_discovery_response_get_query_id(Jxta_DiscoveryResponse *);
 
 /**
  * Gets the Type of the discovery response.
@@ -157,8 +164,8 @@ void jxta_discovery_response_parse_file(Jxta_DiscoveryResponse *, FILE * stream)
  *        response.
  *
  * @return short set to value of the type.
- */ 
-short jxta_discovery_response_get_type(Jxta_DiscoveryResponse *);
+ */
+JXTA_DECLARE(short) jxta_discovery_response_get_type(Jxta_DiscoveryResponse *);
 
 
 /**
@@ -169,9 +176,9 @@ short jxta_discovery_response_get_type(Jxta_DiscoveryResponse *);
  * @param char * containing the Type.
  *
  * @return Jxta_status JXTA_SUCCESS on success.
- */ 
-Jxta_status jxta_discovery_response_set_type(Jxta_DiscoveryResponse *, short type);
- 
+ */
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_set_type(Jxta_DiscoveryResponse *, short type);
+
 
 /**
  * Gets the Count of the discovery response.
@@ -180,8 +187,8 @@ Jxta_status jxta_discovery_response_set_type(Jxta_DiscoveryResponse *, short typ
  *        response.
  *
  * @return int containing the count.
- */ 
-int jxta_discovery_response_get_count(Jxta_DiscoveryResponse *);
+ */
+JXTA_DECLARE(int) jxta_discovery_response_get_count(Jxta_DiscoveryResponse *);
 
 
 /**
@@ -192,9 +199,9 @@ int jxta_discovery_response_get_count(Jxta_DiscoveryResponse *);
  * @param char * containing the Count.
  *
  * @return Jxta_status Doesn't return anything.
- */ 
-Jxta_status jxta_discovery_response_set_count(Jxta_DiscoveryResponse *, int count);
- 
+ */
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_set_count(Jxta_DiscoveryResponse *, int count);
+
 
 /**
  * Gets the peer advertisement of the discovery response.
@@ -203,9 +210,9 @@ Jxta_status jxta_discovery_response_set_count(Jxta_DiscoveryResponse *, int coun
  *        response.
  *
  * @return char * containing the peer advertisement.
- */ 
+ */
 /* FIXME: NEed to change this to Jxta_PA * */
-Jxta_status jxta_discovery_response_get_peeradv(Jxta_DiscoveryResponse *, JString **);
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_peeradv(Jxta_DiscoveryResponse *, JString **);
 
 
 /**
@@ -216,8 +223,8 @@ Jxta_status jxta_discovery_response_get_peeradv(Jxta_DiscoveryResponse *, JStrin
  * @param char * containing the peer advertisement.
  *
  * @return void Doesn't return anything.
- */ 
-Jxta_status jxta_discovery_response_set_peeradv(Jxta_DiscoveryResponse *, JString *);
+ */
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_set_peeradv(Jxta_DiscoveryResponse *, JString *);
 
 /**
  * Gets the peer advertisement object of the discovery response.
@@ -226,9 +233,9 @@ Jxta_status jxta_discovery_response_set_peeradv(Jxta_DiscoveryResponse *, JStrin
  *        response.
  *
  * @return Jxta_advertisement *  the peer advertisement.
- */ 
+ */
 /* FIXME: NEed to change this to Jxta_PA * */
-Jxta_status jxta_discovery_response_get_peer_advertisement(Jxta_DiscoveryResponse *, Jxta_advertisement **);
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_peer_advertisement(Jxta_DiscoveryResponse *, Jxta_advertisement **);
 
 
 /**
@@ -239,8 +246,8 @@ Jxta_status jxta_discovery_response_get_peer_advertisement(Jxta_DiscoveryRespons
  * @param Jxta_advertisement * the peer advertisement.
  *
  * @return void Doesn't return anything.
- */ 
-Jxta_status jxta_discovery_response_set_peer_advertisement(Jxta_DiscoveryResponse *, Jxta_advertisement *);
+ */
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_set_peer_advertisement(Jxta_DiscoveryResponse *, Jxta_advertisement *);
 
 
 /**
@@ -250,8 +257,8 @@ Jxta_status jxta_discovery_response_set_peer_advertisement(Jxta_DiscoveryRespons
  *        response.
  *
  * @return char * containing the Attr.
- */ 
-Jxta_status jxta_discovery_response_get_attr(Jxta_DiscoveryResponse *, JString **);
+ */
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_attr(Jxta_DiscoveryResponse *, JString **);
 
 
 /**
@@ -262,9 +269,9 @@ Jxta_status jxta_discovery_response_get_attr(Jxta_DiscoveryResponse *, JString *
  * @param char * containing the Attr.
  *
  * @return void Doesn't return anything.
- */ 
-Jxta_status jxta_discovery_response_set_attr(Jxta_DiscoveryResponse *, JString *);
- 
+ */
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_set_attr(Jxta_DiscoveryResponse *, JString *);
+
 
 /**
  * Gets the Value of the discovery response.
@@ -273,8 +280,8 @@ Jxta_status jxta_discovery_response_set_attr(Jxta_DiscoveryResponse *, JString *
  *        response.
  *
  * @return char * containing the Value.
- */ 
-Jxta_status jxta_discovery_response_get_value(Jxta_DiscoveryResponse *, JString **);
+ */
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_value(Jxta_DiscoveryResponse *, JString **);
 
 
 /**
@@ -285,9 +292,9 @@ Jxta_status jxta_discovery_response_get_value(Jxta_DiscoveryResponse *, JString 
  * @param char * containing the Value.
  *
  * @return void Doesn't return anything.
- */ 
-Jxta_status 
-jxta_discovery_response_set_value(Jxta_DiscoveryResponse *, JString *);
+ */
+JXTA_DECLARE(Jxta_status)
+    jxta_discovery_response_set_value(Jxta_DiscoveryResponse *, JString *);
 
 
 /**
@@ -298,9 +305,9 @@ jxta_discovery_response_set_value(Jxta_DiscoveryResponse *, JString *);
  * @param responses pointer to vector containing the responses
  *
  * @return Jxta_status 
- */ 
-Jxta_status 
-jxta_discovery_response_get_responses(Jxta_DiscoveryResponse * ad, Jxta_vector ** responses);
+ */
+JXTA_DECLARE(Jxta_status)
+    jxta_discovery_response_get_responses(Jxta_DiscoveryResponse * ad, Jxta_vector ** responses);
 
 
 /**
@@ -311,8 +318,8 @@ jxta_discovery_response_get_responses(Jxta_DiscoveryResponse * ad, Jxta_vector *
  * @param Jxta_vector * containing the Response.
  *
  * @return void Doesn't return anything.
- */ 
-void jxta_discovery_response_set_responses(Jxta_DiscoveryResponse *, Jxta_vector * response);
+ */
+JXTA_DECLARE(void) jxta_discovery_response_set_responses(Jxta_DiscoveryResponse *, Jxta_vector * response);
 
 /**
  * Gets the advertisements of the discovery response.
@@ -322,9 +329,9 @@ void jxta_discovery_response_set_responses(Jxta_DiscoveryResponse *, Jxta_vector
  * @param responses pointer to vector containing the responses
  *
  * @return Jxta_status 
- */ 
-Jxta_status 
-jxta_discovery_response_get_advertisements(Jxta_DiscoveryResponse * ad, Jxta_vector ** advertisements);
+ */
+JXTA_DECLARE(Jxta_status)
+    jxta_discovery_response_get_advertisements(Jxta_DiscoveryResponse * ad, Jxta_vector ** advertisements);
 
 
 /**
@@ -335,14 +342,14 @@ jxta_discovery_response_get_advertisements(Jxta_DiscoveryResponse * ad, Jxta_vec
  * @param Jxta_vector * containing the Response.
  *
  * @return void Doesn't return anything.
- */ 
-void jxta_discovery_response_set_advertisements(Jxta_DiscoveryResponse *, Jxta_vector * response);
+ */
+JXTA_DECLARE(void) jxta_discovery_response_set_advertisements(Jxta_DiscoveryResponse *, Jxta_vector * response);
 
 /**
  * Creates a new Discovery Response element
  * @return Jxta_DiscoveryResponseElement 
  */
-Jxta_DiscoveryResponseElement * jxta_discovery_response_new_element (void);
+JXTA_DECLARE(Jxta_DiscoveryResponseElement *) jxta_discovery_response_new_element(void);
 
 /**
  * Creates a new Discovery Response element
@@ -350,9 +357,15 @@ Jxta_DiscoveryResponseElement * jxta_discovery_response_new_element (void);
  * @param long the expiration time associated with the response
  * @return Jxta_DiscoveryResponseElement 
  */
-Jxta_DiscoveryResponseElement * jxta_discovery_response_new_element_1 (JString * response, Jxta_expiration_time expiration );
-
-#endif /* __Jxta_DiscoveryResponse_H__  */
+JXTA_DECLARE(Jxta_DiscoveryResponseElement *) jxta_discovery_response_new_element_1(JString * response,
+                                                                                    Jxta_expiration_time expiration);
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
+#endif /* __Jxta_DiscoveryResponse_H__  */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

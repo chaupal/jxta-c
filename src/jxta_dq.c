@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dq.c,v 1.35 2005/02/02 02:58:27 exocetrick Exp $
+ * $Id: jxta_dq.c,v 1.42 2005/08/18 19:01:50 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -63,6 +63,7 @@
 #include "jxta_xml_util.h"
 #include "jxta_advertisement.h"
 #include "jxta_discovery_service.h"
+#include "jxtaapr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -79,7 +80,8 @@ extern "C" {
     Threshold_,
     PeerAdv_,
     Attr_,
-    Value_
+    Value_,
+    ExtendedQuery_
 };
 
 
@@ -96,6 +98,7 @@ struct _Jxta_DiscoveryQuery {
     JString *PeerAdv;
     JString *Attr;
     JString *Value;
+    JString *ExtendedQuery;
 };
 
 
@@ -167,12 +170,22 @@ static void handleValue(void *userdata, const XML_Char * cd, int len)
     jstring_append_0((JString *) ad->Value, cd, len);
 }
 
-short jxta_discovery_query_get_type(Jxta_DiscoveryQuery * ad)
+static void handleExtendedQuery(void *userdata, const XML_Char * cd, int len)
+{
+
+    Jxta_DiscoveryQuery *ad = (Jxta_DiscoveryQuery *) userdata;
+    if (len != 0) {
+        jstring_append_0((JString *) ad->ExtendedQuery, cd, len);
+    }
+}
+
+
+JXTA_DECLARE(short) jxta_discovery_query_get_type(Jxta_DiscoveryQuery * ad)
 {
     return ad->Type;
 }
 
-Jxta_status jxta_discovery_query_set_type(Jxta_DiscoveryQuery * ad, short type)
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_set_type(Jxta_DiscoveryQuery * ad, short type)
 {
     if (type < DISC_PEER || type > DISC_ADV) {
         return JXTA_INVALID_ARGUMENT;
@@ -181,12 +194,12 @@ Jxta_status jxta_discovery_query_set_type(Jxta_DiscoveryQuery * ad, short type)
     return JXTA_SUCCESS;
 }
 
-int jxta_discovery_query_get_threshold(Jxta_DiscoveryQuery * ad)
+JXTA_DECLARE(int) jxta_discovery_query_get_threshold(Jxta_DiscoveryQuery * ad)
 {
     return ad->Threshold;
 }
 
-Jxta_status jxta_discovery_query_set_threshold(Jxta_DiscoveryQuery * ad, int threshold)
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_set_threshold(Jxta_DiscoveryQuery * ad, int threshold)
 {
     if (threshold < 0) {
         return JXTA_INVALID_ARGUMENT;
@@ -196,7 +209,7 @@ Jxta_status jxta_discovery_query_set_threshold(Jxta_DiscoveryQuery * ad, int thr
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_discovery_query_get_peeradv(Jxta_DiscoveryQuery * ad, JString ** padv)
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_peeradv(Jxta_DiscoveryQuery * ad, JString ** padv)
 {
     if (ad->PeerAdv) {
         jstring_trim(ad->PeerAdv);
@@ -206,7 +219,7 @@ Jxta_status jxta_discovery_query_get_peeradv(Jxta_DiscoveryQuery * ad, JString *
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_discovery_query_set_peeradv(Jxta_DiscoveryQuery * ad, JString * padv)
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_set_peeradv(Jxta_DiscoveryQuery * ad, JString * padv)
 {
     if (ad == NULL || padv == NULL) {
         return JXTA_INVALID_ARGUMENT;
@@ -223,7 +236,7 @@ Jxta_status jxta_discovery_query_set_peeradv(Jxta_DiscoveryQuery * ad, JString *
 /**
  * @todo return the appropriate status.
  */
-Jxta_status jxta_discovery_query_get_attr(Jxta_DiscoveryQuery * ad, JString ** attr)
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_attr(Jxta_DiscoveryQuery * ad, JString ** attr)
 {
     jstring_trim(ad->Attr);
     JXTA_OBJECT_SHARE(ad->Attr);
@@ -231,7 +244,7 @@ Jxta_status jxta_discovery_query_get_attr(Jxta_DiscoveryQuery * ad, JString ** a
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_discovery_query_set_attr(Jxta_DiscoveryQuery * ad, JString * attr)
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_set_attr(Jxta_DiscoveryQuery * ad, JString * attr)
 {
     if (ad == NULL || attr == NULL) {
         return JXTA_INVALID_ARGUMENT;
@@ -245,15 +258,17 @@ Jxta_status jxta_discovery_query_set_attr(Jxta_DiscoveryQuery * ad, JString * at
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_discovery_query_get_value(Jxta_DiscoveryQuery * ad, JString ** value)
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_value(Jxta_DiscoveryQuery * ad, JString ** value)
 {
+    if (ad->Value == NULL)
+        return JXTA_FAILED;
     jstring_trim(ad->Value);
     JXTA_OBJECT_SHARE(ad->Value);
     *value = ad->Value;
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_discovery_query_set_value(Jxta_DiscoveryQuery * ad, JString * value)
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_set_value(Jxta_DiscoveryQuery * ad, JString * value)
 {
     if (ad == NULL) {
         return JXTA_INVALID_ARGUMENT;
@@ -267,6 +282,22 @@ Jxta_status jxta_discovery_query_set_value(Jxta_DiscoveryQuery * ad, JString * v
     return JXTA_SUCCESS;
 }
 
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_extended_query(Jxta_DiscoveryQuery * ad, JString ** value)
+{
+    if (ad->ExtendedQuery) {
+        jstring_trim(ad->ExtendedQuery);
+        JXTA_OBJECT_SHARE(ad->ExtendedQuery);
+    }
+    *value = ad->ExtendedQuery;
+    return JXTA_SUCCESS;
+}
+
+Jxta_status jxta_discovery_query_set_extended_query(Jxta_DiscoveryQuery * ad, JString * query)
+{
+    ad->ExtendedQuery = query;
+    return JXTA_SUCCESS;
+}
+
 
 /** Now, build an array of the keyword structs.  Since
  * a top-level, or null state may be of interest, 
@@ -276,39 +307,39 @@ Jxta_status jxta_discovery_query_set_value(Jxta_DiscoveryQuery * ad, JString * v
  * on the value in the char * kwd.
  */
 static const Kwdtab Jxta_DiscoveryQuery_tags[] = {
-    {"Null", Null_, NULL, NULL},
-    {"jxta:DiscoveryQuery", Jxta_DiscoveryQuery_, *handleJxta_DiscoveryQuery, NULL},
-    {"Type", Type_, *handleType, NULL},
-    {"Threshold", Threshold_, *handleThreshold, NULL},
-    {"PeerAdv", PeerAdv_, *handlePeerAdv, NULL},
-    {"Attr", Attr_, *handleAttr, NULL},
-    {"Value", Value_, *handleValue, NULL},
-    {NULL, 0, 0, NULL}
+    {"Null", Null_, NULL, NULL, NULL},
+    {"jxta:DiscoveryQuery", Jxta_DiscoveryQuery_, *handleJxta_DiscoveryQuery, NULL, NULL},
+    {"Type", Type_, *handleType, NULL, NULL},
+    {"Threshold", Threshold_, *handleThreshold, NULL, NULL},
+    {"PeerAdv", PeerAdv_, *handlePeerAdv, NULL, NULL},
+    {"Attr", Attr_, *handleAttr, NULL, NULL},
+    {"Value", Value_, *handleValue, NULL, NULL},
+    {"ExtendedQuery", ExtendedQuery_, *handleExtendedQuery, NULL, NULL},
+    {NULL, 0, 0, NULL, NULL}
 };
 
 
 
-Jxta_status jxta_discovery_query_get_xml( /*Jxta_advertisement * ad */ Jxta_DiscoveryQuery * adv, JString ** document)
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_xml(Jxta_DiscoveryQuery * adv, JString ** document)
 {
 
-    /*   Jxta_DiscoveryQuery * adv = (Jxta_DiscoveryQuery*)ad; */
+
     JString *doc;
     JString *tmps = NULL;
     Jxta_status status;
 
-    char *buf = malloc(128);
-    memset(buf, 0, 128);
+    char *buf = calloc(1, 128);
 
     doc = jstring_new_2("<?xml version=\"1.0\"?>\n");
     jstring_append_2(doc, "<!DOCTYPE jxta:DiscoveryQuery>");
     jstring_append_2(doc, "<jxta:DiscoveryQuery>\n");
 
-    sprintf(buf, "%d\n", adv->Type);
+    apr_snprintf(buf, 128, "%d\n", adv->Type);
     jstring_append_2(doc, "<Type>");
     jstring_append_2(doc, buf);
     jstring_append_2(doc, "</Type>\n");
 
-    sprintf(buf, "%d\n", adv->Threshold);
+    apr_snprintf(buf, 128, "%d\n", adv->Threshold);
     jstring_append_2(doc, "<Threshold>");
     jstring_append_2(doc, buf);
     jstring_append_2(doc, "</Threshold>\n");
@@ -328,18 +359,29 @@ Jxta_status jxta_discovery_query_get_xml( /*Jxta_advertisement * ad */ Jxta_Disc
         jstring_append_2(doc, "</PeerAdv>\n");
     }
 
-    if (jstring_length(adv->Attr) > 0) {
+    if (NULL != adv->Attr && jstring_length(adv->Attr) > 0) {
         jstring_append_2(doc, "<Attr>");
         jstring_append_1(doc, adv->Attr);
         jstring_append_2(doc, "</Attr>\n");
     }
 
-    if (jstring_length(adv->Value) > 0) {
+    if (NULL != adv->Value && jstring_length(adv->Value) > 0) {
         jstring_append_2(doc, "<Value>");
         jstring_append_1(doc, adv->Value);
         jstring_append_2(doc, "</Value>\n");
     }
-
+    if (NULL != adv->ExtendedQuery && jstring_length(adv->ExtendedQuery) > 0) {
+        jstring_append_2(doc, "<ExtendedQuery>");
+        status = jxta_xml_util_encode_jstring(adv->ExtendedQuery, &tmps);
+        if (status != JXTA_SUCCESS) {
+            JXTA_LOG("error encoding the Extended query, retrun status :%d\n", status);
+            JXTA_OBJECT_RELEASE(doc);
+            return status;
+        }
+        jstring_append_1(doc, tmps);
+        JXTA_OBJECT_RELEASE(tmps);
+        jstring_append_2(doc, "</ExtendedQuery>");
+    }
     jstring_append_2(doc, "</jxta:DiscoveryQuery>\n");
 
     *document = doc;
@@ -355,7 +397,7 @@ Jxta_status jxta_discovery_query_get_xml( /*Jxta_advertisement * ad */ Jxta_Disc
  * just in case there is a segfault (not that 
  * that would ever happen, but in case it ever did.)
  */
-Jxta_DiscoveryQuery *jxta_discovery_query_new(void)
+JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new(void)
 {
 
     Jxta_DiscoveryQuery *ad;
@@ -372,7 +414,7 @@ Jxta_DiscoveryQuery *jxta_discovery_query_new(void)
     ad->PeerAdv = jstring_new_0();
     ad->Attr = jstring_new_0();
     ad->Value = jstring_new_0();
-
+    ad->ExtendedQuery = jstring_new_0();
     return ad;
 }
 
@@ -382,7 +424,8 @@ Jxta_DiscoveryQuery *jxta_discovery_query_new(void)
  * just in case there is a segfault (not that 
  * that would ever happen, but in case it ever did.)
  */
-Jxta_DiscoveryQuery *jxta_discovery_query_new_1(short type, const char *attr, const char *value, int threshold, JString * peeradv)
+JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new_1(short type, const char *attr, const char *value, int threshold,
+                                                               JString * peeradv)
 {
 
 
@@ -401,7 +444,30 @@ Jxta_DiscoveryQuery *jxta_discovery_query_new_1(short type, const char *attr, co
     JXTA_OBJECT_SHARE(peeradv);
     ad->Attr = jstring_new_2(attr);
     ad->Value = jstring_new_2(value);
+    ad->ExtendedQuery = NULL;
+    return ad;
+}
 
+JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new_2(const char *query, int threshold, JString * peeradv)
+{
+
+
+    Jxta_DiscoveryQuery *ad;
+    ad = (Jxta_DiscoveryQuery *) malloc(sizeof(Jxta_DiscoveryQuery));
+    memset(ad, 0xda, sizeof(Jxta_DiscoveryQuery));
+
+    jxta_advertisement_initialize((Jxta_advertisement *) ad,
+                                  "jxta:DiscoveryQuery",
+                                  Jxta_DiscoveryQuery_tags,
+                                  jxta_discovery_query_get_xml, NULL, NULL, (FreeFunc) jxta_discovery_query_free);
+
+    ad->Type = DISC_ADV;
+    ad->Threshold = threshold;
+    ad->PeerAdv = peeradv;
+    JXTA_OBJECT_SHARE(peeradv);
+    ad->ExtendedQuery = jstring_new_2(query);
+    ad->Attr = NULL;
+    ad->Value = NULL;
     return ad;
 }
 
@@ -418,13 +484,15 @@ void jxta_discovery_query_free(Jxta_DiscoveryQuery * ad)
         JXTA_OBJECT_RELEASE(ad->Attr);
     if (ad->Value != NULL)
         JXTA_OBJECT_RELEASE(ad->Value);
+    if (ad->ExtendedQuery != NULL)
+        JXTA_OBJECT_RELEASE(ad->ExtendedQuery);
     JXTA_OBJECT_RELEASE(ad->PeerAdv);
     jxta_advertisement_delete((Jxta_advertisement *) ad);
     memset(ad, 0xdd, sizeof(Jxta_DiscoveryQuery));
     free(ad);
 }
 
-Jxta_status jxta_discovery_query_parse_charbuffer(Jxta_DiscoveryQuery * ad, const char *buf, int len)
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_parse_charbuffer(Jxta_DiscoveryQuery * ad, const char *buf, int len)
 {
 
     jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
@@ -432,7 +500,7 @@ Jxta_status jxta_discovery_query_parse_charbuffer(Jxta_DiscoveryQuery * ad, cons
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_discovery_query_parse_file(Jxta_DiscoveryQuery * ad, FILE * stream)
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_parse_file(Jxta_DiscoveryQuery * ad, FILE * stream)
 {
 
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
@@ -441,5 +509,10 @@ Jxta_status jxta_discovery_query_parse_file(Jxta_DiscoveryQuery * ad, FILE * str
 }
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
+/* vi: set ts=4 sw=4 tw=130 et: */

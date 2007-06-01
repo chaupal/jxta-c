@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_membership_service_private.h,v 1.5 2005/01/10 17:19:22 brent Exp $
+ * $Id: jxta_membership_service_private.h,v 1.6 2005/06/16 23:11:44 slowhog Exp $
  */
 
 
@@ -74,57 +74,53 @@ extern "C" {
 }
 #endif
 #endif
+struct _jxta_membership_service {
+    Extends(Jxta_service);
 
-    struct _jxta_membership_service {
-        Extends(Jxta_service);
+};
 
-    };
+typedef struct _jxta_membership_service_methods Jxta_membership_service_methods;
 
-    typedef struct _jxta_membership_service_methods Jxta_membership_service_methods;
+struct _jxta_membership_service_methods {
 
-    struct _jxta_membership_service_methods {
+    Extends(Jxta_service_methods);
 
-        Extends(Jxta_service_methods);
+    /* membership methods */
 
-        /* membership methods */
+    Jxta_status(*membership_apply) (Jxta_membership_service * self,
+                                    Jxta_credential * authCred, Jxta_membership_authenticator ** auth);
 
-        Jxta_status (*membership_apply)(    Jxta_membership_service* self,
-                                            Jxta_credential* authCred,
-                                            Jxta_membership_authenticator** auth );
+    Jxta_status(*membership_join) (Jxta_membership_service * self,
+                                   Jxta_membership_authenticator * auth, Jxta_credential ** newcred);
 
-        Jxta_status (*membership_join)( Jxta_membership_service* self,
-                                        Jxta_membership_authenticator* auth,
-                                        Jxta_credential** newcred );
+    Jxta_status(*membership_resign) (Jxta_membership_service * self);
 
-        Jxta_status (*membership_resign)( Jxta_membership_service* self );
+    Jxta_status(*membership_currentcreds) (Jxta_membership_service * self, Jxta_vector ** creds);
 
-        Jxta_status (*membership_currentcreds)( Jxta_membership_service* self,
-                                                Jxta_vector** creds );
+    Jxta_status(*membership_makecred) (Jxta_membership_service * self, JString * somecred, Jxta_credential ** cred);
 
-        Jxta_status (*membership_makecred)( Jxta_membership_service* self,
-                                            JString* somecred,
-                                            Jxta_credential** cred );
-
-    };
+};
 
     /**
      * The base peerinfo service ctor (not public: the only public way to make a
      * new pg is to instantiate one of the derived types).
      */
-    extern void
-        jxta_membership_service_construct(Jxta_membership_service* service,
-                                          Jxta_membership_service_methods* methods);
+extern void jxta_membership_service_construct(Jxta_membership_service * service, Jxta_membership_service_methods * methods);
 
     /**
      * The base rsesolver service dtor (Not public, not virtual. Only called by
      * subclassers). We just pass it along.
      */
-    extern void
-        jxta_membership_service_destruct(Jxta_membership_service* service);
+extern void jxta_membership_service_destruct(Jxta_membership_service * service);
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* _JXTA_MEMBERSHIP_SERVICE_PRIVATE_H_ */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

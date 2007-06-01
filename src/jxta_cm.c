@@ -9,7 +9,7 @@
  *    notice, this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
+ *    notice, this list of conditions and the following disclaimer in 
  *    the documentation and/or other materials provided with the
  *    distribution.
  *
@@ -50,12 +50,16 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cm.c,v 1.62 2005/03/29 21:12:12 bondolo Exp $
+ * $Id: jxta_cm.c,v 1.96 2005/09/01 17:58:09 exocetrick Exp $
  */
 
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#include <apu.h>
+#include <apr_pools.h>
+#include <apr_dbd.h>
 
 #ifdef WIN32
 #include <direct.h>     /* for _mkdir */
@@ -63,8 +67,8 @@
 #include "config.h"
 #endif
 
-#include <apr_dbm.h>
-
+/* #include <apr_dbm.h> */
+#include <sqlite3.h>
 #include "jxtaapr.h"
 
 #include "jxta_errno.h"
@@ -72,18 +76,20 @@
 #include "jxta_object.h"
 #include "jxta_hashtable.h"
 #include "jxta_advertisement.h"
+#include "jxta_discovery_service.h"
 #include "jstring.h"
 #include "jxta_id.h"
 #include "jxta_cm.h"
 #include "jxta_srdi.h"
 #include "jxta_log.h"
+#include "jxta_sql.h"
+#include "jxta_proffer.h"
 
 #ifdef WIN32
 #define DBTYPE "SDBM"   /* defined for other platform in config.h */
 #endif
 
 static const char *__log_cat = "CM";
-
 /*
  * Hashtables want a value to be associated with keys.
  * In one instance we do not need any, so we just use one instance
@@ -108,11 +114,25 @@ static Dummy_object *dummy_object_new(void)
 
 typedef struct {
     JXTA_OBJECT_HANDLE;
-    apr_dbm_t *data;
-    apr_dbm_t *exp;
     Jxta_hashtable *secondary_keys;
     char *name;
 } Folder;
+
+
+/* 
+ * This is a folder definition that is required for the SQL backend
+ * using the apr_dbd.h generic SQL database API.
+*/
+typedef struct {
+    JXTA_OBJECT_HANDLE;
+    const char *name;
+    Jxta_hashtable *secondary_keys;
+    apr_pool_t *pool;
+    apr_dbd_t *sql;
+    apr_dbd_driver_t *driver;
+    int rv;
+} GroupDB;
+
 
 struct _jxta_cm {
     JXTA_OBJECT_HANDLE;
@@ -123,66 +143,260 @@ struct _jxta_cm {
     Dummy_object *dummy_object;
     Jxta_hashtable *srdi_delta;
     Jxta_boolean record_delta;
+    Jxta_PID *localPeerId;
+    GroupDB *groupDB;
 };
+
+/*
+ * a sql column value
+*/
+
+typedef struct {
+    JXTA_OBJECT_HANDLE;
+    char *value;
+    char *name;
+} Jxta_sql_col;
+
+
+/*
+ * result set of a sql query
+*/
+
+typedef struct {
+    JXTA_OBJECT_HANDLE;
+    Jxta_sql_col **columns;
+} Jxta_sql_row;
+
+
+static JString *jPeerNs;
+static JString *jGroupNs;
+static JString *jInt64_for_format;
+static JString *fmtTime;
+
+static Jxta_boolean dbd_initialized = FALSE;
+static apr_pool_t *apr_dbd_init_pool = NULL;
+
+/*
+ * table used for secondary indexing of advertisements
+*/
+static const char *jxta_elemTable = CM_TBL_ELEM_ATTRIBUTES;
+static const char *jxta_elemTable_fields[][2] = {
+    {CM_COL_NameSpace, SQL_VARCHAR_128}
+    , {CM_COL_AdvId, SQL_VARCHAR_128}
+    , {CM_COL_Name, SQL_VARCHAR_64}
+    , {CM_COL_Value, SQL_VARCHAR_4K}
+    , {CM_COL_TimeOut, SQL_VARCHAR_64}
+    , {CM_COL_TimeOutForOthers, SQL_VARCHAR_64}
+    , {NULL, NULL}
+};
+
+/*
+ * table used by the SRDI for distributed hash table
+*/
+static const char *jxta_srdiTable = CM_TBL_SRDI;
+static const char *jxta_srdiTable_fields[][2] = {
+    {CM_COL_NameSpace, SQL_VARCHAR_128}
+    , {CM_COL_Handler, SQL_VARCHAR_64}
+    , {CM_COL_Peerid, SQL_VARCHAR_128}
+    , {CM_COL_AdvId, SQL_VARCHAR_128}
+    , {CM_COL_Name, SQL_VARCHAR_64}
+    , {CM_COL_Value, SQL_VARCHAR_4K}
+    , {CM_COL_TimeOut, SQL_VARCHAR_64}
+    , {CM_COL_TimeOutForOthers, SQL_VARCHAR_64}
+    , {NULL, NULL}
+};
+
+/*
+ * table used by the SRDI for replica table entries
+*/
+static const char *jxta_replicaTable = CM_TBL_REPLICA;
+static const char *jxta_replicaTable_fields[][2] = {
+    {CM_COL_NameSpace, SQL_VARCHAR_128}
+    , {CM_COL_Handler, SQL_VARCHAR_64}
+    , {CM_COL_Peerid, SQL_VARCHAR_128}
+    , {CM_COL_AdvId, SQL_VARCHAR_128}
+    , {CM_COL_Name, SQL_VARCHAR_64}
+    , {CM_COL_Value, SQL_VARCHAR_4K}
+    , {CM_COL_TimeOut, SQL_VARCHAR_64}
+    , {CM_COL_TimeOutForOthers, SQL_VARCHAR_64}
+    , {NULL, NULL}
+};
+
+/*
+ * table for all advertisements
+*/
+static const char *jxta_advTable = CM_TBL_ADVERTISEMENTS;
+static const char *jxta_advTable_fields[][2] = {
+    {CM_COL_NameSpace, SQL_VARCHAR_128}
+    , {CM_COL_AdvType, SQL_VARCHAR_128}
+    , {CM_COL_Advert, SQL_VARCHAR_16K}
+    , {CM_COL_AdvId, SQL_VARCHAR_128}
+    , {CM_COL_TimeOut, SQL_VARCHAR_64}
+    , {CM_COL_TimeOutForOthers, SQL_VARCHAR_64}
+    , {NULL, NULL}
+};
+
+
+static apr_status_t init_group_dbd(GroupDB * group);
+
+static apr_status_t cm_sql_create_table(GroupDB * groupDB, const char *table, const char *columns[]);
+
+static int cm_sql_create_index(GroupDB * groupDB, const char *table, const char *field);
+
+static int cm_sql_drop_table(GroupDB * groupDB, char *table);
+
+static Jxta_status
+cm_sql_save_advertisement(GroupDB * groupDB, const char *key, Jxta_advertisement * adv, Jxta_expiration_time timeOutForMe,
+                          Jxta_expiration_time timeOutForOthers);
+
+static Jxta_status
+cm_sql_save_srdi(GroupDB * groupDB, JString * Handler, JString * Peerid, JString * NameSpace, JString * Key, JString * Attribute,
+                 JString * Value, Jxta_expiration_time timeOutForMe, Jxta_boolean repica);
+
+static Jxta_status cm_sql_remove_advertisement(GroupDB * groupDB, const char *nameSpace, const char *key);
+
+static Jxta_status
+cm_sql_update_item(GroupDB * groupDB, const char *table, JString * jNameSpace, JString * jKey, JString * jElemAttr,
+                   JString * jVal, Jxta_expiration_time timeOutForMe);
+
+static Jxta_status
+cm_sql_update_srdi(GroupDB * groupDB, const char *table, JString * jHandler, JString * jPeerid, JString * jKey,
+                   JString * jAttribute, JString * jValue, Jxta_expiration_time timeOutForMe);
+
+static Jxta_status
+cm_sql_select(GroupDB * groupDB, apr_pool_t * pool, const char *table, apr_dbd_results_t ** res, JString * columns,
+              JString * where);
+
+static Jxta_status cm_sql_select_join(GroupDB * groupDB, apr_pool_t * pool, apr_dbd_results_t ** res, JString * where);
+
+static Jxta_status
+cm_sql_insert_item(GroupDB * groupDB, const char *table, const char *nameSpace, const char *key, const char *elemAttr,
+                   const char *val, Jxta_expiration_time timeOutForMe, Jxta_expiration_time timeOutForOthers);
+
+static Jxta_status cm_sql_delete_item(GroupDB * groupDB, const char *table, const char *advId);
+
+static Jxta_status cm_sql_delete_with_where(GroupDB * groupDB, const char *table, JString * where);
+
+static Jxta_status cm_sql_remove_expired_records(GroupDB * groupDB, const char *folder_name);
+
+static Jxta_status
+cm_sql_found(GroupDB * groupDB, const char *table, const char *nameSpace, const char *advId, const char *elemAttr,
+             Jxta_expiration_time * exp);
+
+static Jxta_status cm_sql_table_found(GroupDB * groupDB, const char *table);
+
+static Jxta_status cm_sql_index_found(GroupDB * groupDB, const char *index);
+
+static char **cm_sql_get_primary_keys(Jxta_cm * self, char *folder_name, const char *tableName, JString * jWhere, int row_max);
+
+static Jxta_status
+cm_sql_srdi_found(GroupDB * groupDB, const char *table, JString * NameSpace, JString * Handler, JString * Peerid, JString * Key,
+                  JString * Attribute);
+
+static void cm_sql_correct_space(const char *folder_name, JString * where);
+
+Jxta_boolean jxta_sql_escape_and_wc_value(JString * jStr, Jxta_boolean replace);
+
 
 /* Destroy the cm and free all allocated memory */
 static void cm_free(Jxta_object * cm)
 {
     Jxta_cm *self = (Jxta_cm *) cm;
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "CM free\n");
-    JXTA_OBJECT_RELEASE(self->folders);
+
+    apr_thread_mutex_lock(self->mutex);
+    if (self->folders) {
+        JXTA_OBJECT_RELEASE(self->folders);
+    }
     JXTA_OBJECT_RELEASE(self->srdi_delta);
     JXTA_OBJECT_RELEASE(self->dummy_object);
     free(self->root);
+
+    if (self->groupDB != NULL) {
+        JXTA_OBJECT_RELEASE(self->groupDB);
+    }
+    apr_thread_mutex_unlock(self->mutex);
     apr_thread_mutex_destroy(self->mutex);
     apr_pool_destroy(self->pool);
-
     /* Free the object itself */
     free(self);
 }
 
-/* Create a new Cm Structure */
-Jxta_cm *jxta_cm_new(const char *home_directory, Jxta_id * group_id)
+static void groupDB_free(Jxta_object * obj)
 {
-    Jxta_status res;
+    GroupDB *gdb = (GroupDB *) obj;
+    if (gdb->secondary_keys != NULL)
+        JXTA_OBJECT_RELEASE(gdb->secondary_keys);
+    apr_dbd_close(gdb->driver, gdb->sql);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "%s is closed\n", gdb->name);
+    if (gdb->name != NULL)
+        free((void *) gdb->name);
+    if (gdb->secondary_keys != NULL)
+        JXTA_OBJECT_RELEASE(gdb->secondary_keys);
+    apr_pool_destroy(gdb->pool);
+    free(gdb);
+}
+
+
+/* Create a new Cm Structure */
+JXTA_DECLARE(Jxta_cm *) jxta_cm_new(const char *home_directory, Jxta_id * group_id, Jxta_PID * localPeerId)
+{
+    GroupDB *groupDB;
+    const char *dbExt = ".sqdb";
+    apr_status_t res;
     JString *group_id_s = NULL;
-    Jxta_cm *self = (Jxta_cm *) malloc(sizeof(Jxta_cm));
-    memset(self, 0, sizeof(*self));
+    Jxta_cm *self = (Jxta_cm *) calloc(1, sizeof(Jxta_cm));
+    int root_len;
+    int name_len;
+    if (jPeerNs == NULL) {
+        jPeerNs = jstring_new_2("jxta:PA");
+        jGroupNs = jstring_new_2("jxta:PGA");
+
+        /* this is for formatted strings */
+        jInt64_for_format = jstring_new_2("%");
+        fmtTime = jstring_new_2("exp Time ");
+        jstring_append_2(jInt64_for_format, APR_INT64_T_FMT);
+        jstring_append_1(fmtTime, jInt64_for_format);
+        jstring_append_2(fmtTime, "\n");
+    }
 
     JXTA_OBJECT_INIT(self, cm_free, 0);
     jxta_id_get_uniqueportion(group_id, &group_id_s);
 
     /* If there is an apr api for this, maybe we should use it */
 #ifdef WIN32
-    printf("CM home_directory: %s\n", home_directory);
     _mkdir(home_directory);
 #else
     mkdir(home_directory, 0755);
 #endif
-    self->root = malloc(strlen(home_directory) + jstring_length(group_id_s)
-                        + 2);
+    root_len = strlen(home_directory) + jstring_length(group_id_s) + 2;
+    self->root = calloc(1, root_len);
 #ifdef WIN32
-    sprintf(self->root, "%s\\%s", home_directory, (char *) jstring_get_string(group_id_s));
-    printf("CM home_directory: %s\n", self->root);
+    apr_snprintf(self->root, root_len, "%s\\%s", home_directory, (char *) jstring_get_string(group_id_s));
 #else
-    sprintf(self->root, "%s/%s", home_directory, (char *) jstring_get_string(group_id_s));
+    apr_snprintf(self->root, root_len, "%s/%s", home_directory, (char *) jstring_get_string(group_id_s));
 #endif
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "CM home_directory: %s\n", self->root);
 
     self->folders = jxta_hashtable_new_0(3, FALSE);
-    self->srdi_delta = jxta_hashtable_new_0(3, FALSE);
-    self->record_delta = FALSE;
+    self->srdi_delta = jxta_hashtable_new_0(3, TRUE);
+    self->record_delta = TRUE;
+    self->localPeerId = localPeerId;
     res = apr_pool_create(&self->pool, NULL);
-    if (res != JXTA_SUCCESS) {
+
+    if (res != APR_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create apr_pool: %d\n", res);
         /* Free the memory that has been already allocated */
         free(self->root);
         free(self);
         return NULL;
     }
 
+
     /* Create the mutex */
     res = apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED,        /* nested */
                                   self->pool);
-    if (res != JXTA_SUCCESS) {
+    if (res != APR_SUCCESS) {
         /* Free the memory that has been already allocated */
         apr_pool_destroy(self->pool);
         free(self->root);
@@ -192,518 +406,1157 @@ Jxta_cm *jxta_cm_new(const char *home_directory, Jxta_id * group_id)
 
     self->dummy_object = dummy_object_new();
 
+    /* create a db structure for the group */
+    groupDB = calloc(1, sizeof(GroupDB));
+
+    JXTA_OBJECT_INIT(groupDB, groupDB_free, 0);
+
+    name_len = strlen(self->root) + strlen(dbExt) + 2;
+    groupDB->name = calloc(1, name_len);
+    apr_snprintf((void *) groupDB->name, name_len, "%s%s", self->root, dbExt);
+
+    res = apr_pool_create(&groupDB->pool, NULL);
+
+    if (res != APR_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create apr_pool: %d\n", res);
+        apr_pool_destroy((void *) self->pool);
+        free((void *) groupDB->name);
+        free(self->root);
+        free(self);
+        return NULL;
+    }
+
+    /* each group has it's own database */
+    res = init_group_dbd(groupDB);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "%s is initialized\n", groupDB->name);
+
+    if (res != APR_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed to open dbd database: %s with error %ld\n", groupDB->name, res);
+        JXTA_OBJECT_RELEASE(self);
+        self = NULL;
+    } else {
+        self->groupDB = groupDB;
+    }
     JXTA_OBJECT_RELEASE(group_id_s);
     return self;
 }
 
+/*
+ * intitialize a SQL database and create the tables and indexes
+*/
+static apr_status_t init_group_dbd(GroupDB * group)
+{
+    apr_status_t rv;
+    Jxta_status status = JXTA_SUCCESS;
+
+    const char *driver = "sqlite3";
+
+    if (!dbd_initialized) {
+        rv = apr_pool_create(&apr_dbd_init_pool, NULL);
+
+        if (rv != APR_SUCCESS) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create apr_pool initializing the dbd interface: %d\n",
+                            rv);
+            return rv;
+        }
+        apr_dbd_init(apr_dbd_init_pool);
+        dbd_initialized = TRUE;
+    }
+    rv = apr_dbd_get_driver(group->pool, driver, &group->driver);
+    status = rv;
+
+    switch (rv) {
+    case APR_SUCCESS:
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Loaded %s driver OK.\n", driver);
+        break;
+    case APR_EDSOOPEN:
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed to load driver file apr_dbd_%s.so\n", driver);
+        goto finish;
+    case APR_ESYMNOTFOUND:
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed to load driver apr_dbd_%s_driver.\n", driver);
+        goto finish;
+    case APR_ENOTIMPL:
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "No driver available for %s.\n", driver);
+        goto finish;
+    default:   /* it's a bug if none of the above happen */
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Internal error loading %s.\n", driver);
+        goto finish;
+    }
+    rv = apr_dbd_open(group->driver, group->pool, group->name, &group->sql);
+
+    switch (rv) {
+    case APR_SUCCESS:
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Opened %s[%s] OK\n", driver, group->name);
+        break;
+    case APR_EGENERAL:
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed to open %s[%s]\n", driver, group->name);
+        goto finish;
+    default:   /* it's a bug if none of the above happen */
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Internal error opening %s[%s]\n", driver, group->name);
+        goto finish;
+    }
+
+    /** create tables for the advertisements, indexes and srdi 
+    * 
+    **/
+    rv = cm_sql_create_table(group, jxta_elemTable, jxta_elemTable_fields[0]);
+    if (rv != APR_SUCCESS)
+        goto finish;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Element table created \n");
+    rv = cm_sql_create_table(group, jxta_advTable, jxta_advTable_fields[0]);
+    if (rv != APR_SUCCESS)
+        goto finish;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Advertisement table created\n", driver, group->name);
+    rv = cm_sql_create_table(group, jxta_srdiTable, jxta_srdiTable_fields[0]);
+    if (rv != APR_SUCCESS)
+        goto finish;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "SRDI table created\n", driver, group->name);
+
+    rv = cm_sql_create_table(group, jxta_replicaTable, jxta_replicaTable_fields[0]);
+    if (rv != APR_SUCCESS)
+        goto finish;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Replica table created\n", driver, group->name);
+
+    /* create indexes */
+/*    rv = cm_sql_create_index(group, jxta_elemTable, CM_COL_NameSpace ) ;
+    if (rv != APR_SUCCESS) return rv;
+*/
+
+  finish:
+    if (rv != APR_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "something happened creating tables db return %i\n", rv);
+    }
+    return rv;
+}
 
 static void folder_free(Jxta_object * f)
 {
     Folder *folder = (Folder *) f;
     JXTA_OBJECT_RELEASE(folder->secondary_keys);
-    apr_dbm_close(folder->data);
-    apr_dbm_close(folder->exp);
+    free(folder->name);
     free(folder);
 }
 
-static Jxta_status folder_remove_advertisement(Folder * folder, char *primary_key, size_t key_size)
+static Jxta_status folder_remove_expired_records(Jxta_cm * self, Folder * folder)
 {
-    apr_datum_t key;
-    Jxta_vector *all_attribs;
-    size_t sz;
-    size_t sz2;
-    size_t i;
-    size_t j;
-
-    all_attribs = jxta_hashtable_values_get(folder->secondary_keys);
-    sz = jxta_vector_size(all_attribs);
-    for (i = 0; i < sz; i++) {
-        Jxta_hashtable *vals_hashtbl;
-        Jxta_vector *all_values;
-
-        jxta_vector_get_object_at(all_attribs, (Jxta_object **) & vals_hashtbl, i);
-        all_values = jxta_hashtable_values_get(vals_hashtbl);
-        JXTA_OBJECT_RELEASE(vals_hashtbl);
-        sz2 = jxta_vector_size(all_values);
-        for (j = 0; j < sz2; j++) {
-            Jxta_hashtable *all_primaries;
-            jxta_vector_get_object_at(all_values, (Jxta_object **) & all_primaries, j);
-            jxta_hashtable_del(all_primaries, primary_key, key_size, NULL);
-            JXTA_OBJECT_RELEASE(all_primaries);
-        }
-        JXTA_OBJECT_RELEASE(all_values);
-    }
-    JXTA_OBJECT_RELEASE(all_attribs);
-
-    key.dptr = primary_key;
-    key.dsize = key_size;
-
-    apr_dbm_delete(folder->data, key);
-    apr_dbm_delete(folder->exp, key);
-
-    return JXTA_SUCCESS;
-}
-
-static Jxta_status folder_remove_expired_records(Folder * folder)
-{
-    apr_datum_t key;
-    apr_datum_t data;
-    Jxta_expiration_time exp[2];
     Jxta_status status;
+    GroupDB *groupDB = self->groupDB;
 
-    apr_dbm_firstkey(folder->exp, &key);
-    while (key.dptr != NULL) {
-        status = apr_dbm_fetch(folder->exp, key, &data);
+    status = cm_sql_remove_expired_records(groupDB, folder->name);
 
-        if (data.dptr == NULL)
-            status = JXTA_ITEM_NOTFOUND;
-
-        if (status == JXTA_SUCCESS) {
-#ifndef WIN32
-            sscanf(data.dptr, "%lld %lld", exp, exp + 1);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "expiration time retreived %lld %lld\n", exp[0], exp[1]);
-#else
-            sscanf(data.dptr, "%I64d %I64d", exp, exp + 1);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "expiration time retreived %I64d %I64d\n", exp[0], exp[1]);
-#endif
-        }
-
-        if (exp[0] < jpr_time_now()) {
-            folder_remove_advertisement(folder, key.dptr, key.dsize);
-        }
-
-        apr_dbm_nextkey(folder->exp, &key);
-    }
-
-    return JXTA_SUCCESS;
+    return status;
 }
 
 /* remove an advertisement given the group_id, type and advertisement name */
-Jxta_status jxta_cm_remove_advertisement(Jxta_cm * self, char *folder_name, char *primary_key)
+JXTA_DECLARE(Jxta_status) jxta_cm_remove_advertisement(Jxta_cm * self, const char *folder_name, char *primary_key)
 {
     Folder *folder;
     Jxta_status status;
-
+    GroupDB *groupDB = self->groupDB;
+    JString *where = jstring_new_0();
+    JString *jKey = jstring_new_2(primary_key);
     apr_thread_mutex_lock(self->mutex);
 
-    status = jxta_hashtable_get(self->folders, folder_name, strlen(folder_name), (Jxta_object **) & folder);
+    status = jxta_hashtable_get(self->folders, folder_name, (size_t) strlen(folder_name), (Jxta_object **) & folder);
+
     if (status != JXTA_SUCCESS) {
         apr_thread_mutex_unlock(self->mutex);
+        JXTA_OBJECT_RELEASE(where);
+        JXTA_OBJECT_RELEASE(jKey);
         return status;
     }
 
-    folder_remove_advertisement(folder, primary_key, strlen(primary_key));
+    apr_thread_mutex_unlock(self->mutex);
+    jstring_append_2(where, SQL_WHERE);
+    jstring_append_2(where, CM_COL_AdvId);
+    jstring_append_2(where, SQL_EQUAL);
+    SQL_VALUE(where, jKey);
+
+    jstring_append_2(where, SQL_AND);
+    cm_sql_correct_space(folder_name, where);
+
+
+    /* remove the advertismeent and all it's indexes */
+
+    cm_sql_delete_with_where(groupDB, CM_TBL_ADVERTISEMENTS, where);
+
+    cm_sql_delete_with_where(groupDB, CM_TBL_ELEM_ATTRIBUTES, where);
+
+    cm_sql_delete_with_where(groupDB, CM_TBL_SRDI, where);
+
 
     JXTA_OBJECT_RELEASE(folder);
-
-    apr_thread_mutex_unlock(self->mutex);
+    JXTA_OBJECT_RELEASE(where);
+    JXTA_OBJECT_RELEASE(jKey);
     return JXTA_SUCCESS;
 }
 
 /* return a pointer to all advertisements in folder folder_name */
 /* a NULL pointer means the end of the list */
-char **jxta_cm_get_primary_keys(Jxta_cm * self, char *folder_name)
+JXTA_DECLARE(char **) jxta_cm_get_primary_keys(Jxta_cm * self, char *folder_name)
 {
-    Folder *folder;
-    Jxta_status status;
+    return cm_sql_get_primary_keys(self, folder_name, CM_TBL_ADVERTISEMENTS, NULL, -1);
+}
+
+static char **cm_sql_get_primary_keys(Jxta_cm * self, char *folder_name, const char *tableName, JString * jWhere, int row_max)
+{
     size_t nb_keys;
-    char **result;
-    apr_datum_t key;
+    char **result = NULL;
+    GroupDB *groupDB = self->groupDB;
+    apr_pool_t *pool = NULL;
+    apr_status_t aprs;
+    apr_dbd_results_t *res = NULL;
+    apr_dbd_row_t *row;
+    const char *entry;
+    int rv = 0;
+    int n, i;
 
-    apr_thread_mutex_lock(self->mutex);
+    JString *where = jstring_new_0();
+    JString *columns = jstring_new_0();
+    jstring_append_2(columns, CM_COL_AdvId);
 
-    status = jxta_hashtable_get(self->folders, folder_name, strlen(folder_name), (Jxta_object **) & folder);
-    if (status != JXTA_SUCCESS) {
-        apr_thread_mutex_unlock(self->mutex);
-        return NULL;
+    /**
+    *  not checking the Peers and Groups is legacy 
+    *  Since the current implementation groups queries 
+    *  by groups, peers and advertisements the newer convention
+    *  of creating name spaces for each type of advertisement 
+    *  isn't implemented yet in the older publishing and queries
+    **/
+    aprs = apr_pool_create(&pool, NULL);
+    if (aprs != APR_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create apr_pool: %d\n", aprs);
+        goto finish;
+    }
+    cm_sql_correct_space(folder_name, where);
+
+
+    if (jWhere != NULL) {
+        jstring_append_2(where, SQL_AND);
+        jstring_append_1(where, jWhere);
     }
 
-    nb_keys = 0;
-    apr_dbm_firstkey(folder->data, &key);
-    while (key.dptr != NULL) {
-        apr_dbm_nextkey(folder->data, &key);
-        ++nb_keys;
-    }
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "NB Keys : %d\n", nb_keys);
+    rv = cm_sql_select(groupDB, pool, tableName, &res, columns, where);
 
+    if (rv) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "jxta_cm_get_primary_keys Select failed: %s %i \n %s   %s\n",
+                        apr_dbd_error(groupDB->driver, groupDB->sql, rv), rv, jstring_get_string(columns)
+                        , jstring_get_string(where));
+        goto finish;
+    }
+    nb_keys = apr_dbd_num_tuples((apr_dbd_driver_t *) groupDB->driver, res);
+    if (nb_keys == 0)
+        goto finish;
     result = (char **) malloc(sizeof(char *) * (nb_keys + 1));
-
-    nb_keys = 0;
-    apr_dbm_firstkey(folder->data, &key);
-    while (key.dptr != NULL) {
-        char *tmp;
-        tmp = (char *) malloc(key.dsize + 1);
-        memcpy(tmp, key.dptr, key.dsize);
-        tmp[key.dsize] = '\0';
-        result[nb_keys++] = tmp;
-        apr_dbm_nextkey(folder->data, &key);
+    i = 0;
+    for (rv = apr_dbd_get_row(groupDB->driver, pool, res, &row, -1);
+         rv == 0 && (i < row_max || row_max == -1); i++, rv = apr_dbd_get_row(groupDB->driver, pool, res, &row, -1)) {
+        int column_count = apr_dbd_num_cols(groupDB->driver, res);
+        for (n = 0; n < column_count; ++n) {
+            entry = apr_dbd_get_entry(groupDB->driver, row, n);
+            if (entry == NULL) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "(null) in entry from get_primary_keys");
+            } else {
+                char *tmp;
+                int len = strlen(entry);
+                tmp = malloc(len + 1);
+                memcpy(tmp, entry, len + 1);
+                result[i] = tmp;
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "key: %s \n", result[i]);
+            }
+        }
     }
-    result[nb_keys] = NULL;
 
-    JXTA_OBJECT_RELEASE(folder);
+    result[i] = NULL;
 
-    apr_thread_mutex_unlock(self->mutex);
+  finish:
+    if (NULL != pool)
+        apr_pool_destroy(pool);
 
+    JXTA_OBJECT_RELEASE(where);
+    JXTA_OBJECT_RELEASE(columns);
     return result;
 }
 
 static void
-secondary_indexing(Jxta_cm * self, Folder * folder, Jxta_advertisement * adv, apr_datum_t key, Jxta_expiration_time exp)
+secondary_indexing(Jxta_cm * self, Folder * folder, Jxta_advertisement * adv, const char *key, Jxta_expiration_time exp,
+                   Jxta_expiration_time exp_others)
 {
-    const char **secondaries;
-    const char **sec_k;
-    Jxta_vector *sv = NULL;
+    unsigned int i = 0;
+    Jxta_status status = JXTA_SUCCESS;
+    JString *jns = jstring_new_0();
     JString *jval = NULL;
     JString *jskey = NULL;
+    JString *jPkey = jstring_new_2(key);
+    GroupDB *groupDB = self->groupDB;
+    char *full_index_name;
+    const char *documentName = jxta_advertisement_get_document_name(adv);
     Jxta_SRDIEntryElement *entry = NULL;
     Jxta_vector *delta_entries = NULL;
+    Jxta_vector *sv = NULL;
+    jstring_append_2(jns, documentName);
+
     sv = jxta_advertisement_get_indexes(adv);
-    if (sv != NULL) {
-        jxta_cm_create_adv_indexes(self, folder->name, sv);
-        JXTA_OBJECT_RELEASE(sv);
-    }
-    secondaries = jxta_advertisement_get_tagnames(adv);
-    sec_k = secondaries;
-    while ((secondaries != NULL) && (*sec_k != 0)) {
-        char *val;
-        Jxta_hashtable *val_tbl;
-        Jxta_hashtable *prim_tbl;
-        if (jxta_hashtable_get(folder->secondary_keys, *sec_k, strlen(*sec_k), (Jxta_object **) & val_tbl) != JXTA_SUCCESS) {
-            ++sec_k;
+
+    for (i = 0; sv != NULL && i < jxta_vector_size(sv); i++) {
+        char *val = NULL;
+        Jxta_index *ji = NULL;
+        status = jxta_vector_get_object_at(sv, (Jxta_object **) & ji, i);
+        if (status == JXTA_SUCCESS) {
+            char *element = NULL;
+            char *attrib = NULL;
+            int len = 0;
+
+            element = (char *) jstring_get_string(ji->element);
+            if (ji->attribute != NULL) {
+                attrib = (char *) jstring_get_string(ji->attribute);
+                len = strlen(attrib) + strlen(element) + 2;
+                full_index_name = calloc(1, len);
+                apr_snprintf(full_index_name, len, "%s %s", element, attrib);
+            } else {
+                len = strlen(element) + 1;
+                full_index_name = calloc(1, len);
+                apr_snprintf(full_index_name, len, "%s", element);
+            }
+        } else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "secondary_indexing return from get vector %i\n", (int) status);
             continue;
         }
-        val = jxta_advertisement_get_string(adv, *sec_k);
-
+        val = jxta_advertisement_get_string(adv, ji);
         if (val == NULL) {
-            JXTA_OBJECT_RELEASE(val_tbl);
-            ++sec_k;
+            JXTA_OBJECT_RELEASE(ji);
+            free(full_index_name);
             continue;
         }
 
-        if (jxta_hashtable_get(val_tbl, val, strlen(val), (Jxta_object **) & prim_tbl) != JXTA_SUCCESS) {
-            /* first time we see that value, add a list for it */
-            prim_tbl = jxta_hashtable_new_0(1, FALSE);
-            jxta_hashtable_put(val_tbl, val, strlen(val), (Jxta_object *) prim_tbl);
-        }
+        jval = jstring_new_2(val);
+        jskey = jstring_new_2(full_index_name);
+        JXTA_OBJECT_RELEASE(ji);
+
+        cm_sql_insert_item(groupDB, CM_TBL_ELEM_ATTRIBUTES, documentName, key, full_index_name, val, exp, exp_others);
+
+        free(full_index_name);
 
         /* Publish SRDI delta */
         if (exp > 0 && self->record_delta) {
-            jval = jstring_new_2(val);
-            jskey = jstring_new_2(*sec_k);
-            entry = jxta_srdi_new_element_1(jskey, jval, exp - jpr_time_now());
+            entry = jxta_srdi_new_element_2(jskey, jval, jns, jPkey, exp);
             if (entry != NULL) {
-#ifndef WIN32
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "add SRDI delta entry: SKey:%s Val:%s exp:%lld\n",
-                                jstring_get_string(jskey), jstring_get_string(jval), (exp - jpr_time_now()));
-#else
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "add SRDI delta entry: SKey:%s Val:%s exp:%I64d\n",
-                                jstring_get_string(jskey), jstring_get_string(jval), (exp - jpr_time_now()));
-#endif
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "add SRDI delta entry: SKey:%s Val:%s\n",
+                                jstring_get_string(jskey), jstring_get_string(jval));
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, jstring_get_string(fmtTime), exp);
+                apr_thread_mutex_lock(self->mutex);
                 if (jxta_hashtable_get
-                    (self->srdi_delta, folder->name, strlen(folder->name), (Jxta_object **) & delta_entries) != JXTA_SUCCESS) {
+                    (self->srdi_delta, folder->name, (size_t) strlen(folder->name),
+                     (Jxta_object **) & delta_entries) != JXTA_SUCCESS) {
                     /* first time we see that value, add a list for it */
                     delta_entries = jxta_vector_new(0);
                     jxta_hashtable_put(self->srdi_delta, folder->name, strlen(folder->name), (Jxta_object *) delta_entries);
                 }
-                jxta_vector_add_object_last(delta_entries, (Jxta_object *) entry);
-                JXTA_OBJECT_RELEASE(entry);
-                entry = NULL;
+                status = jxta_vector_add_object_last(delta_entries, (Jxta_object *) entry);
+                apr_thread_mutex_unlock(self->mutex);
                 JXTA_OBJECT_RELEASE(delta_entries);
+                JXTA_OBJECT_RELEASE(entry);
             }
-            JXTA_OBJECT_RELEASE(jval);
-            JXTA_OBJECT_RELEASE(jskey);
         }
-        ++sec_k;
+        JXTA_OBJECT_RELEASE(jval);
+        JXTA_OBJECT_RELEASE(jskey);
         free(val);
-        JXTA_OBJECT_RELEASE(val_tbl);
-        jxta_hashtable_put(prim_tbl, key.dptr, key.dsize, (Jxta_object *) self->dummy_object);
-        JXTA_OBJECT_RELEASE(prim_tbl);
     }
-    free(secondaries);
-    secondaries = NULL;
+    if (sv != NULL) {
+        JXTA_OBJECT_RELEASE(sv);
+    }
+    JXTA_OBJECT_RELEASE(jns);
+    JXTA_OBJECT_RELEASE(jPkey);
 }
 
 static void folder_reindex(Jxta_cm * self, Folder * folder)
 {
-    apr_datum_t key;
+    char **keys = NULL;
+    JString *jAdv = NULL;
+    char *sAdv = NULL;
+    int i;
+    Jxta_expiration_time exp;
 
-    apr_dbm_firstkey(folder->data, &key);
-    while (key.dptr != NULL) {
-        apr_datum_t data;
+    cm_sql_delete_with_where(self->groupDB, CM_TBL_SRDI, NULL);
+
+    cm_sql_delete_with_where(self->groupDB, CM_TBL_ELEM_ATTRIBUTES, NULL);
+
+    keys = jxta_cm_get_primary_keys(self, (char *) folder->name);
+
+    for (i = 0; keys != NULL && keys[i] != NULL; i++) {
         Jxta_vector *content;
         Jxta_advertisement *adv = jxta_advertisement_new();
-        char *primary_key;
 
-        primary_key = malloc(key.dsize + 1);
-        memcpy(primary_key, key.dptr, key.dsize);
-        primary_key[key.dsize] = '\0';
+        jxta_cm_restore_bytes(self, (char *) folder->name, keys[i], &jAdv);
 
-
-        if ((apr_dbm_fetch(folder->data, key, &data) != JXTA_SUCCESS)
-            || (data.dptr == NULL)) {
-            free(primary_key);
-            apr_dbm_nextkey(folder->data, &key);
-            continue;
-        }
-
-        jxta_advertisement_parse_charbuffer(adv, data.dptr, data.dsize);
+        sAdv = (char *) jstring_get_string(jAdv);
+        jxta_advertisement_parse_charbuffer(adv, sAdv, strlen(sAdv));
         jxta_advertisement_get_advs(adv, &content);
-        JXTA_OBJECT_RELEASE(adv);
-
-        if (content == NULL) {
-            free(primary_key);
-            apr_dbm_nextkey(folder->data, &key);
+        jxta_cm_get_expiration_time(self, (char *) folder->name, keys[i], &exp);
+        JXTA_OBJECT_RELEASE(jAdv);
+        if (NULL == content) {
+            JXTA_OBJECT_RELEASE(adv);
+            free(keys[i]);
             continue;
         }
         if (jxta_vector_size(content) == 0) {
-            free(primary_key);
-            JXTA_OBJECT_RELEASE(content);
-            apr_dbm_nextkey(folder->data, &key);
+            JXTA_OBJECT_RELEASE(adv);
+            free(keys[i]);
             continue;
         }
 
         /* Reuse variable adv for the single contained advertisement */
-        jxta_vector_get_object_at(content, (Jxta_object **) & adv, 0);
+        jxta_vector_get_object_at(content, (Jxta_object **) & adv, (unsigned int) 0);
         JXTA_OBJECT_RELEASE(content);
 
-        secondary_indexing(self, folder, adv, key, 0);
+
+        secondary_indexing(self, folder, adv, keys[i], exp, exp);
+
+        free(keys[i]);
 
         JXTA_OBJECT_RELEASE(adv);
-        apr_dbm_nextkey(folder->data, &key);
-        free(primary_key);
+    }
+    if (keys != NULL) {
+        free(keys);
     }
 }
 
-
 /* save advertisement */
-Jxta_status
-jxta_cm_save(Jxta_cm * self, char *folder_name, char *primary_key,
+JXTA_DECLARE(Jxta_status)
+    jxta_cm_save(Jxta_cm * self, const char *folder_name, char *primary_key,
              Jxta_advertisement * adv, Jxta_expiration_time timeOutForMe, Jxta_expiration_time timeOutForOthers)
 {
     Folder *folder;
     Jxta_status status;
-    Jxta_expiration_time exp[2];
-    apr_datum_t key;
-    apr_datum_t data;
-    JString *xml;
-    char buff[256];
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Saving primary key: %s\n", primary_key);
-    jxta_advertisement_get_xml(adv, &xml);
-    if (xml == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Not saved 1\n");
-        return JXTA_FAILED;
-    }
+    const char *name = jxta_advertisement_get_document_name(adv);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "%s primary key: %s\n", name, primary_key);
 
     apr_thread_mutex_lock(self->mutex);
 
-    status = jxta_hashtable_get(self->folders, folder_name, strlen(folder_name), (Jxta_object **) & folder);
+    status = jxta_hashtable_get(self->folders, folder_name, (size_t) strlen(folder_name), (Jxta_object **) & folder);
     if (status != JXTA_SUCCESS) {
         apr_thread_mutex_unlock(self->mutex);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Not saved 2\n");
         return status;
     }
 
-    key.dptr = primary_key;
-    key.dsize = strlen(primary_key);
+    apr_thread_mutex_unlock(self->mutex);
 
-    status = apr_dbm_fetch(folder->exp, key, &data);
 
-    if (data.dptr == NULL)
-        status = JXTA_ITEM_NOTFOUND;
-
-    if (status == JXTA_SUCCESS) {
-
-#ifndef WIN32
-        sscanf(data.dptr, "%lld %lld", exp, exp + 1);
-#else
-        sscanf(data.dptr, "%I64d %I64d", exp, exp + 1);
-#endif /* WIN32 */
-
-        if (jpr_time_now() + timeOutForMe > exp[0])
-            exp[0] = jpr_time_now() + timeOutForMe;
-        exp[1] = timeOutForOthers;
-
-        /*
-           apr_dbm_delete(folder->exp, key);
-         */
-    } else {
-        exp[0] = jpr_time_now() + timeOutForMe;
-        exp[1] = timeOutForOthers;
-    }
-
-    /*
-       apr_dbm_delete(folder->data, key);
-     */
-    data.dptr = (char *) jstring_get_string(xml);
-    data.dsize = jstring_length(xml);
-
-    status = apr_dbm_store(folder->data, key, data);
-    JXTA_OBJECT_RELEASE(xml);
-
-    if (status != JXTA_SUCCESS) {
-        JXTA_OBJECT_RELEASE(folder);
-        apr_thread_mutex_unlock(self->mutex);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Not saved 3 (%d)\n", status);
-        return status;
-    }
-#ifndef WIN32
-    sprintf(buff, "%lld %lld", exp[0], exp[1]);
-#else
-    sprintf(buff, "%I64d %I64d", exp[0], exp[1]);
-#endif
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "expiration save time %s\n", buff);
-    data.dptr = buff;
-    data.dsize = strlen(buff) + 1;
-
-    status = apr_dbm_store(folder->exp, key, data);
-
-    if (status != JXTA_SUCCESS) {
-        apr_dbm_delete(folder->data, key);
-        JXTA_OBJECT_RELEASE(folder);
-        apr_thread_mutex_unlock(self->mutex);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Not saved 4\n");
-        return status;
-    }
-
+    status = cm_sql_save_advertisement(self->groupDB, primary_key, adv, timeOutForMe, timeOutForOthers);
     /*
      * Do secondary indexing now.
      */
-    secondary_indexing(self, folder, adv, key, exp[0]);
+    secondary_indexing(self, folder, adv, primary_key, timeOutForMe, timeOutForOthers);
+
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Saved\n");
     JXTA_OBJECT_RELEASE(folder);
-    apr_thread_mutex_unlock(self->mutex);
     return JXTA_SUCCESS;
+}
+
+/* save srdi entry */
+
+JXTA_DECLARE(Jxta_status)
+    jxta_cm_save_srdi(Jxta_cm * self, JString * handler, JString * peerid, JString * primaryKey, Jxta_SRDIEntryElement * entry)
+{
+    Jxta_status status;
+    if (primaryKey) {
+    }
+    status =
+        cm_sql_save_srdi(self->groupDB, handler, peerid, entry->nameSpace, entry->advId, entry->key, entry->value,
+                         entry->expiration, FALSE);
+    return status;
+}
+
+/* save srdi entry in the replica table */
+
+JXTA_DECLARE(Jxta_status)
+    jxta_cm_save_replica(Jxta_cm * self, JString * handler, JString * peerid, JString * primaryKey, Jxta_SRDIEntryElement * entry)
+{
+    Jxta_status status;
+    if (primaryKey) {
+    }
+    status =
+        cm_sql_save_srdi(self->groupDB, handler, peerid, entry->nameSpace, entry->advId, entry->key, entry->value,
+                         entry->expiration, TRUE);
+    return status;
 }
 
 /* search for advertisements with specific (attribute,value) pairs */
 /* a NULL pointer means the end of the list */
 
-char **jxta_cm_search(Jxta_cm * self, char *folder_name, const char *attribute, const char *value, int n_adv)
+JXTA_DECLARE(char **) jxta_cm_search(Jxta_cm * self, char *folder_name, const char *attribute, const char *value, int n_adv)
 {
-    Folder *folder;
-    Jxta_status status;
-    Jxta_hashtable *values_hashtbl;
-    Jxta_hashtable *primaries_hashtbl;
+
     char **all_primaries;
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Search folder:%s Attr:%s Val:%s\n", folder_name, attribute, value);
-    apr_thread_mutex_lock(self->mutex);
+    JString *where = jstring_new_0();
+    JString *jAttr = jstring_new_2(attribute);
+    JString *jVal = jstring_new_2(value);
 
-    status = jxta_hashtable_get(self->folders, folder_name, strlen(folder_name), (Jxta_object **) & folder);
+    jstring_append_2(where, CM_COL_Name);
+    jstring_append_2(where, SQL_EQUAL);
+    SQL_VALUE(where, jAttr);
 
-    if (status != JXTA_SUCCESS) {
-        apr_thread_mutex_unlock(self->mutex);
-        return NULL;
+    jstring_append_2(where, SQL_AND);
+    jstring_append_2(where, CM_COL_Value);
+    if (jxta_sql_escape_and_wc_value(jVal, TRUE)) {
+        jstring_append_2(where, SQL_LIKE);
+    } else {
+        jstring_append_2(where, SQL_EQUAL);
     }
+    SQL_VALUE(where, jVal);
+    jstring_append_2(where, SQL_GROUP);
+    jstring_append_2(where, CM_COL_AdvId);
 
-    status = jxta_hashtable_get(folder->secondary_keys, attribute, strlen(attribute), (Jxta_object **) & values_hashtbl);
 
-    JXTA_OBJECT_RELEASE(folder);
-    if (status != JXTA_SUCCESS) {
-        apr_thread_mutex_unlock(self->mutex);
-        return NULL;
+    all_primaries = cm_sql_get_primary_keys(self, folder_name, CM_TBL_ELEM_ATTRIBUTES, where, n_adv);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "got a query for attr - %s  val - %s \n", attribute, value);
+    JXTA_OBJECT_RELEASE(where);
+    JXTA_OBJECT_RELEASE(jAttr);
+    JXTA_OBJECT_RELEASE(jVal);
+
+    return all_primaries;
+}
+
+/* search for advertisements with specific (attribute,value) pairs */
+/* a NULL pointer means the end of the list */
+
+JXTA_DECLARE(char **) jxta_cm_search_srdi(Jxta_cm * self, char *folder_name, const char *attribute, const char *value, int n_adv)
+{
+
+    char **all_primaries;
+
+    JString *where = jstring_new_0();
+    JString *jAttr = jstring_new_2(attribute);
+    JString *jVal = jstring_new_2(value);
+
+    jstring_append_2(where, CM_COL_Name);
+    jstring_append_2(where, SQL_EQUAL);
+    SQL_VALUE(where, jAttr);
+
+    jstring_append_2(where, SQL_AND);
+    jstring_append_2(where, CM_COL_Value);
+    if (jxta_sql_escape_and_wc_value(jVal, TRUE)) {
+        jstring_append_2(where, SQL_LIKE);
+    } else {
+        jstring_append_2(where, SQL_EQUAL);
     }
-    status = jxta_hashtable_get(values_hashtbl, value, strlen(value), (Jxta_object **) & primaries_hashtbl);
+    SQL_VALUE(where, jVal);
+    jstring_append_2(where, SQL_GROUP);
+    jstring_append_2(where, CM_COL_AdvId);
 
-    JXTA_OBJECT_RELEASE(values_hashtbl);
 
-    if (status != JXTA_SUCCESS) {
-        apr_thread_mutex_unlock(self->mutex);
-        return NULL;
-    }
-    all_primaries = jxta_hashtable_keys_get(primaries_hashtbl);
-    JXTA_OBJECT_RELEASE(primaries_hashtbl);
-    apr_thread_mutex_unlock(self->mutex);
+    all_primaries = cm_sql_get_primary_keys(self, folder_name, CM_TBL_SRDI, where, n_adv);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "got a query for attr - %s  val - %s \n", attribute, value);
+    JXTA_OBJECT_RELEASE(where);
+    JXTA_OBJECT_RELEASE(jAttr);
+    JXTA_OBJECT_RELEASE(jVal);
+
     return all_primaries;
 }
 
 
-/* restore the original advertisement from the cache */
-Jxta_status jxta_cm_restore_bytes(Jxta_cm * self, char *folder_name, char *primary_key, JString ** bytes)
+JXTA_DECLARE(Jxta_advertisement **) jxta_cm_sql_query(Jxta_cm * self, const char *folder_name, JString * where)
 {
-    Folder *folder;
+
+    Jxta_advertisement **results = NULL;
+    Jxta_status status = JXTA_SUCCESS;
+    GroupDB *groupDB = self->groupDB;
+    Jxta_advertisement *newAdv = NULL;
+    Jxta_vector *res_vect;
+    Jxta_object *res_adv;
+    apr_pool_t *pool = NULL;
+    apr_status_t aprs;
+    apr_dbd_results_t *res = NULL;
+    apr_dbd_row_t *row = NULL;
+    const char *entry;
+    int nTuples, i, rv;
+    JString *columns = jstring_new_0();
+    if (folder_name) {
+    }
+    jstring_append_2(columns, CM_COL_Advert);
+
+    aprs = apr_pool_create(&pool, NULL);
+    if (aprs != APR_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create apr_pool: %d\n", aprs);
+        goto finish;
+    }
+
+    rv = cm_sql_select_join(groupDB, pool, &res, where);
+
+    if (rv) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "jxta_cm_sql_query Select failed: %s %i\n",
+                        apr_dbd_error(groupDB->driver, groupDB->sql, rv), rv);
+        goto finish;
+    }
+    nTuples = apr_dbd_num_tuples(groupDB->driver, res);
+    if (nTuples == 0)
+        goto finish;
+    results = (Jxta_advertisement **) malloc(sizeof(Jxta_advertisement *) * (nTuples + 1));
+    i = 0;
+    for (rv = apr_dbd_get_row(groupDB->driver, pool, res, &row, -1);
+         rv == 0; rv = apr_dbd_get_row(groupDB->driver, pool, res, &row, -1)) {
+        char *advId;
+        advId = apr_dbd_get_entry(groupDB->driver, row, 0);
+        entry = apr_dbd_get_entry(groupDB->driver, row, 1);
+        if (entry == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "(null) in entry from jxta_cm_sql_query");
+            continue;
+        } else {
+            char *tmp;
+            int len;
+            res_vect = NULL;
+            res_adv = NULL;
+            len = strlen(entry);
+            tmp = malloc(len + 1);
+            memcpy(tmp, entry, len + 1);
+            newAdv = jxta_advertisement_new();
+            status = jxta_advertisement_parse_charbuffer(newAdv, tmp, len);
+            jxta_advertisement_get_advs(newAdv, &res_vect);
+            free(tmp);
+            JXTA_OBJECT_RELEASE(newAdv);
+            if (res_vect == NULL) {
+                continue;
+            }
+            if (jxta_vector_size(res_vect) != 0) {
+                Jxta_advertisement *res_adv;
+                jxta_vector_get_object_at(res_vect, (Jxta_object **) & res_adv, (unsigned int) 0);
+                jxta_advertisement_set_local_id_string(res_adv, advId);
+                JXTA_OBJECT_SHARE(res_adv);
+                results[i++] = res_adv;
+            }
+            JXTA_OBJECT_RELEASE(res_vect);
+        }
+    }
+    if (results != NULL) {
+        results[i] = NULL;
+    }
+
+  finish:
+    JXTA_OBJECT_RELEASE(columns);
+    apr_pool_destroy(pool);
+
+    return results;
+}
+
+static Jxta_object **cm_build_advertisements(GroupDB * groupDB, apr_pool_t * pool, apr_dbd_results_t * res)
+{
+    const char *name;
+    const char *value;
+    const char *peerid;
+    const char *nameSpace;
+    const char *advid;
+    const char *tmpid;
+    const char *tmpPid;
+    int nTuples, i, rv;
+    Jxta_object **results;
+    Jxta_object **ret;
+    apr_dbd_row_t *row = NULL;
+    Jxta_ProfferAdvertisement *profferAdv = NULL;
+    /**
+    *    Column Order
+    *    ------------
+    *    Peerid
+    *    AdvId
+    *    Name
+    *    Value
+    *    NameSpace
+    **/
+    nTuples = apr_dbd_num_tuples(groupDB->driver, res);
+    if (nTuples == 0)
+        return NULL;
+    ret = calloc((nTuples + 1), sizeof(JString *) + sizeof(Jxta_ProfferAdvertisement *));
+    results = ret;
+    i = 0;
+    for (rv = apr_dbd_get_row(groupDB->driver, pool, res, &row, -1);
+         rv == 0; rv = apr_dbd_get_row(groupDB->driver, pool, res, &row, -1)) {
+        peerid = apr_dbd_get_entry(groupDB->driver, row, 0);
+        if (peerid == NULL) {
+            continue;
+        }
+        advid = apr_dbd_get_entry(groupDB->driver, row, 1);
+        if (advid == NULL) {
+            continue;
+        }
+        name = apr_dbd_get_entry(groupDB->driver, row, 2);
+        if (name == NULL) {
+            continue;
+        }
+        value = apr_dbd_get_entry(groupDB->driver, row, 3);
+        if (value == NULL) {
+            continue;
+        }
+        nameSpace = apr_dbd_get_entry(groupDB->driver, row, 4);
+        if (nameSpace == NULL) {
+            continue;
+        }
+        if (profferAdv == NULL) {
+            profferAdv = jxta_ProfferAdvertisement_new();
+            jxta_proffer_adv_set_nameSpace(profferAdv, nameSpace);
+            jxta_proffer_adv_set_advId(profferAdv, advid);
+            jxta_proffer_adv_set_peerId(profferAdv, peerid);
+        }
+        tmpid = jxta_proffer_adv_get_advId(profferAdv);
+        tmpPid = jxta_proffer_adv_get_peerId(profferAdv);
+        if (!strcmp(tmpPid, peerid) && !strcmp(tmpid, advid)) {
+            jxta_proffer_adv_add_item(profferAdv, name, value);
+        } else {
+            *(results++) = JXTA_OBJECT_SHARE(profferAdv);
+            *(results++) = (Jxta_object *) jstring_new_2(peerid);
+            JXTA_OBJECT_RELEASE(profferAdv);
+            profferAdv = jxta_ProfferAdvertisement_new();
+            jxta_proffer_adv_set_nameSpace(profferAdv, nameSpace);
+            jxta_proffer_adv_set_advId(profferAdv, advid);
+            jxta_proffer_adv_set_peerId(profferAdv, peerid);
+            jxta_proffer_adv_add_item(profferAdv, name, value);
+        }
+
+    }
+    if (profferAdv != NULL) {
+        *(results++) = JXTA_OBJECT_SHARE(profferAdv);
+        *(results++) = (Jxta_object *) jstring_new_2(peerid);
+        JXTA_OBJECT_RELEASE(profferAdv);
+    }
+    *(results) = NULL;
+    return ret;
+}
+
+
+JXTA_DECLARE(Jxta_object **) jxta_cm_sql_query_srdi(Jxta_cm * self, const char *folder_name, JString * where)
+{
+
+    GroupDB *groupDB = self->groupDB;
+    JString *whereClone = jstring_clone(where);
+    apr_pool_t *pool = NULL;
+    apr_status_t aprs;
+    apr_dbd_results_t *res = NULL;
+    Jxta_object **adds = NULL;
+    int rv;
+    JString *columns = jstring_new_0();
+    if (folder_name) {
+    }
+    aprs = apr_pool_create(&pool, NULL);
+    if (aprs != APR_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create apr_pool: %d\n", aprs);
+        goto finish;
+    }
+
+    jstring_append_2(columns, CM_COL_Peerid);
+    jstring_append_2(columns, SQL_COMMA);
+    jstring_append_2(columns, CM_COL_AdvId);
+    jstring_append_2(columns, SQL_COMMA);
+    jstring_append_2(columns, CM_COL_Name);
+    jstring_append_2(columns, SQL_COMMA);
+    jstring_append_2(columns, CM_COL_Value);
+    jstring_append_2(columns, SQL_COMMA);
+    jstring_append_2(columns, CM_COL_NameSpace);
+    jstring_append_2(whereClone, SQL_ORDER);
+    jstring_append_2(whereClone, CM_COL_AdvId);
+    jstring_append_2(whereClone, SQL_COMMA);
+    jstring_append_2(whereClone, CM_COL_Peerid);
+
+    rv = cm_sql_select(groupDB, pool, CM_TBL_SRDI_SRC, &res, columns, whereClone);
+
+    if (rv) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "jxta_cm_sql_query_srdi Select failed: %s %i\n",
+                        apr_dbd_error(groupDB->driver, groupDB->sql, rv), rv);
+        goto finish;
+    }
+
+    adds = cm_build_advertisements(groupDB, pool, res);
+
+  finish:
+    if (NULL != pool)
+        apr_pool_destroy(pool);
+    JXTA_OBJECT_RELEASE(columns);
+    JXTA_OBJECT_RELEASE(whereClone);
+    return adds;
+}
+
+JXTA_DECLARE(Jxta_vector *) jxta_cm_query_replica(Jxta_cm * self, JString * nameSpace, Jxta_vector * queries)
+{
     Jxta_status status;
-    apr_datum_t key;
-    apr_datum_t data;
-
-    apr_thread_mutex_lock(self->mutex);
-
-    status = jxta_hashtable_get(self->folders, folder_name, strlen(folder_name), (Jxta_object **) & folder);
-    if (status != JXTA_SUCCESS) {
-        apr_thread_mutex_unlock(self->mutex);
-        return status;
+    GroupDB *groupDB;
+    JString *jWhere;
+    apr_pool_t *pool = NULL;
+    apr_status_t aprs;
+    JString *jNsWhere;
+    JString *jNs;
+    Jxta_hashtable *andHash = NULL;
+    Jxta_hashtable *peersHash = NULL;
+    apr_dbd_results_t *res = NULL;
+    Jxta_object **adds = NULL;
+    Jxta_object **saveAdds = NULL;
+    Jxta_vector *ret = NULL;
+    int rv;
+    unsigned int i;
+    JString *jColumns;
+    const char *peerId;
+    const char *elemSQL;
+    JString *jPeerId = NULL;
+    jColumns = jstring_new_0();
+    jNs = jstring_clone(nameSpace);
+    jWhere = jstring_new_0();
+    jNsWhere = jstring_new_0();
+    groupDB = self->groupDB;
+    jstring_append_2(jColumns, CM_COL_Peerid);
+    jstring_append_2(jColumns, SQL_COMMA);
+    jstring_append_2(jColumns, CM_COL_AdvId);
+    jstring_append_2(jColumns, SQL_COMMA);
+    jstring_append_2(jColumns, CM_COL_Name);
+    jstring_append_2(jColumns, SQL_COMMA);
+    jstring_append_2(jColumns, CM_COL_Value);
+    jstring_append_2(jColumns, SQL_COMMA);
+    jstring_append_2(jColumns, CM_COL_NameSpace);
+    jstring_append_2(jNsWhere, CM_COL_SRC);
+    jstring_append_2(jNsWhere, SQL_DOT);
+    jstring_append_2(jNsWhere, CM_COL_NameSpace);
+    if (jxta_sql_escape_and_wc_value(jNs, TRUE)) {
+        jstring_append_2(jNsWhere, SQL_LIKE);
+    } else {
+        jstring_append_2(jNsWhere, SQL_EQUAL);
+    }
+    SQL_VALUE(jNsWhere, jNs);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "query with %i sub queries\n", jxta_vector_size(queries));
+    aprs = apr_pool_create(&pool, NULL);
+    if (aprs != APR_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create apr_pool: %d\n", aprs);
+        goto finish;
     }
 
-    key.dptr = primary_key;
-    key.dsize = strlen(primary_key);
-    status = apr_dbm_fetch(folder->data, key, &data);
-    JXTA_OBJECT_RELEASE(folder);
+    for (i = 0; i < jxta_vector_size(queries); i++) {
+        Jxta_query_element *elem;
+        const char *bool;
+        status = jxta_vector_get_object_at(queries, (Jxta_object **) & elem, i);
+        bool = jstring_get_string(elem->jBoolean);
+        elemSQL = jstring_get_string(elem->jSQL);
+        JXTA_OBJECT_RELEASE(elem);
+        jstring_reset(jWhere, NULL);
+        jstring_append_1(jWhere, jNsWhere);
+        jstring_append_2(jWhere, SQL_AND);
+        jstring_append_2(jWhere, elemSQL);
+        jstring_append_2(jWhere, SQL_ORDER);
+        jstring_append_2(jWhere, CM_COL_AdvId);
+        jstring_append_2(jWhere, SQL_COMMA);
+        jstring_append_2(jWhere, CM_COL_Peerid);
 
-    if (data.dptr == NULL)
-        status = JXTA_ITEM_NOTFOUND;
+        rv = cm_sql_select(groupDB, pool, CM_TBL_REPLICA_SRC, &res, jColumns, jWhere);
 
-    if (status == JXTA_SUCCESS) {
-        *bytes = jstring_new_1(data.dsize);
-        jstring_append_0(*bytes, data.dptr, data.dsize);
+        if (rv) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "jxta_cm_sql_query_replica Select failed: %s %i\n",
+                            apr_dbd_error(groupDB->driver, groupDB->sql, rv), rv);
+            goto finish;
+        }
+
+        adds = cm_build_advertisements(groupDB, pool, res);
+        if (NULL == adds)
+            continue;
+
+        if (NULL == peersHash) {
+            peersHash = jxta_hashtable_new(1);
+        }
+        saveAdds = adds;
+        if (!strcmp(bool, SQL_OR)) {
+            while (NULL != adds && *adds) {
+                peerId = jstring_get_string((JString *) * (adds + 1));
+                if (jxta_hashtable_get(peersHash, peerId, strlen(peerId), (Jxta_object **) & jPeerId) != JXTA_SUCCESS) {
+                    jxta_hashtable_put(peersHash, peerId, strlen(peerId),
+                                       (Jxta_object *) jstring_clone((JString *) * (adds + 1)));
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Added to the peersHash: %s\n", peerId);
+                } else {
+                    JXTA_OBJECT_RELEASE(jPeerId);
+                    jPeerId = NULL;
+                }
+                JXTA_OBJECT_RELEASE(*adds);
+                JXTA_OBJECT_RELEASE(*(adds + 1));
+                adds += 2;
+            }
+        } else {
+            Jxta_vector *peersV = jxta_vector_new(1);
+            if (NULL == andHash) {
+                andHash = jxta_hashtable_new(1);
+            }
+            saveAdds = adds;
+            while (NULL != adds && *adds) {
+                jxta_vector_add_object_first(peersV, (Jxta_object *) jstring_clone((JString *) * (adds + 1)));
+                JXTA_OBJECT_RELEASE(*adds);
+                JXTA_OBJECT_RELEASE(*(adds + 1));
+                adds += 2;
+            }
+            jxta_hashtable_put(andHash, elemSQL, strlen(elemSQL), (Jxta_object *) peersV);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Added to the andHash:%i %s\n", jxta_vector_size(peersV), elemSQL);
+        }
+        free(saveAdds);
+    }
+    if (NULL != andHash) {
+        Jxta_vector *results;
+        unsigned int j;
+        Jxta_vector *finalResult;
+        int leastPopular = 0;
+        results = jxta_hashtable_values_get(andHash);
+        finalResult = jxta_vector_new(1);
+        for (j = 0; j < jxta_vector_size(results); j++) {
+            Jxta_vector *result = NULL;
+            int size = 0;
+            status = jxta_vector_get_object_at(results, (Jxta_object **) & result, j);
+            if (status != JXTA_SUCCESS) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error returning result from the results vector : %i \n",
+                                status);
+                if (result != NULL)
+                    JXTA_OBJECT_RELEASE(result);
+                continue;
+            }
+            size = jxta_vector_size(result);
+            if (leastPopular == 0) {
+                leastPopular = size;
+                jxta_vector_add_object_first(finalResult, (Jxta_object *) result);
+            } else if (size > leastPopular) {
+                JXTA_OBJECT_RELEASE(result);
+            } else if (size == leastPopular) {
+                jxta_vector_add_object_first(finalResult, (Jxta_object *) result);
+            } else if (size < leastPopular) {
+                jxta_vector_clear(finalResult);
+                jxta_vector_add_object_first(finalResult, (Jxta_object *) result);
+            }
+        }
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Final result:%i items\n", jxta_vector_size(finalResult));
+        for (j = 0; j < jxta_vector_size(finalResult); j++) {
+            Jxta_vector *peerEntries;
+            unsigned int x;
+            jxta_vector_get_object_at(finalResult, (Jxta_object **) & peerEntries, j);
+            for (x = 0; x < jxta_vector_size(peerEntries); x++) {
+                JString *peer;
+                const char *tmpPeer;
+                status = jxta_vector_get_object_at(peerEntries, (Jxta_object **) & peer, x);
+                if (JXTA_SUCCESS != status) {
+                    if (NULL != peer)
+                        JXTA_OBJECT_RELEASE(peer);
+                    peer = NULL;
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,
+                                    "Error returning result from the finalResults vector : %i \n", status);
+                    continue;
+                }
+                if (peersHash == NULL) {
+                    peersHash = jxta_hashtable_new(jxta_vector_size(peerEntries));
+                }
+                tmpPeer = jstring_get_string(peer);
+                if (jxta_hashtable_get(peersHash, tmpPeer, strlen(tmpPeer), (Jxta_object **) & peer) != JXTA_SUCCESS) {
+                    jxta_hashtable_put(peersHash, tmpPeer, strlen(tmpPeer), (Jxta_object *) jstring_clone(peer));
+                }
+                JXTA_OBJECT_RELEASE(peer);
+                peer = NULL;
+            }
+        }
+    }
+    if (NULL != peersHash) {
+        ret = jxta_hashtable_values_get(peersHash);
+    } else {
+        ret = NULL;
     }
 
-    apr_thread_mutex_unlock(self->mutex);
+  finish:
+    JXTA_OBJECT_RELEASE(jColumns);
+    JXTA_OBJECT_RELEASE(jNs);
+    JXTA_OBJECT_RELEASE(jNsWhere);
+    JXTA_OBJECT_RELEASE(jWhere);
+    if (NULL != andHash) {
+        JXTA_OBJECT_RELEASE(andHash);
+    }
+    if (NULL != peersHash) {
+        JXTA_OBJECT_RELEASE(peersHash);
+    }
+    if (NULL != pool)
+        apr_pool_destroy(pool);
+
+    return ret;
+}
+
+/* restore the original advertisement from the cache */
+JXTA_DECLARE(Jxta_status) jxta_cm_restore_bytes(Jxta_cm * self, char *folder_name, char *primary_key, JString ** bytes)
+{
+    Jxta_status status = JXTA_ITEM_NOTFOUND;
+
+    GroupDB *groupDB = self->groupDB;
+    JString *where = jstring_new_0();
+    JString *columns = jstring_new_0();
+    JString *jKey = jstring_new_2(primary_key);
+    JString *jFolder = jstring_new_2(folder_name);
+    apr_pool_t *pool = NULL;
+    apr_status_t aprs;
+    apr_dbd_results_t *res = NULL;
+    apr_dbd_row_t *row;
+    const char *entry;
+    int rv = 0;
+
+
+    jstring_append_2(columns, CM_COL_Advert);
+
+    jstring_append_2(where, CM_COL_AdvId);
+    jstring_append_2(where, SQL_EQUAL);
+    SQL_VALUE(where, jKey);
+
+    if (!strcmp(folder_name, "Peers")) {
+        jstring_append_2(where, SQL_AND);
+        jstring_append_2(where, CM_COL_NameSpace);
+        jstring_append_2(where, SQL_EQUAL);
+        SQL_VALUE(where, jPeerNs);
+        jstring_append_2(where, SQL_OR);
+        jstring_append_2(where, CM_COL_NameSpace);
+        jstring_append_2(where, SQL_EQUAL);
+        SQL_VALUE(where, jFolder);
+    } else if (!strcmp(folder_name, "Groups")) {
+        jstring_append_2(where, SQL_AND);
+        jstring_append_2(where, CM_COL_NameSpace);
+        jstring_append_2(where, SQL_EQUAL);
+        SQL_VALUE(where, jGroupNs);
+        jstring_append_2(where, SQL_OR);
+        jstring_append_2(where, CM_COL_NameSpace);
+        jstring_append_2(where, SQL_EQUAL);
+        SQL_VALUE(where, jFolder);
+    } else {
+        jstring_append_2(where, SQL_AND);
+        jstring_append_2(where, CM_COL_NameSpace);
+        jstring_append_2(where, SQL_NOT_EQUAL);
+        SQL_VALUE(where, jGroupNs);
+        jstring_append_2(where, SQL_AND);
+        jstring_append_2(where, CM_COL_NameSpace);
+        jstring_append_2(where, SQL_NOT_EQUAL);
+        SQL_VALUE(where, jPeerNs);
+    }
+
+
+    aprs = apr_pool_create(&pool, NULL);
+    if (aprs != APR_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create apr_pool: %d\n", aprs);
+        goto finish;
+    }
+
+    rv = cm_sql_select(groupDB, pool, CM_TBL_ADVERTISEMENTS, &res, columns, where);
+
+    if (rv) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "jxta_cm_restore_bytes Select failed: %s %i\n",
+                        apr_dbd_error(groupDB->driver, groupDB->sql, rv), rv);
+        goto finish;
+    }
+    rv = apr_dbd_get_row(groupDB->driver, pool, res, &row, -1);
+
+    if (rv == 0) {
+        entry = apr_dbd_get_entry(groupDB->driver, row, 0);
+        if (entry != NULL) {
+            *bytes = jstring_new_0();
+            jstring_append_2(*bytes, entry);
+            status = JXTA_SUCCESS;
+        }
+    }
+
+  finish:
+    if (NULL != pool)
+        apr_pool_destroy(pool);
+
+    JXTA_OBJECT_RELEASE(columns);
+    JXTA_OBJECT_RELEASE(where);
+    JXTA_OBJECT_RELEASE(jKey);
+    JXTA_OBJECT_RELEASE(jFolder);
     return status;
 }
 
-/* Get the expiration time of an advertisement */
-Jxta_status jxta_cm_get_expiration_time(Jxta_cm * self, char *folder_name, char *primary_key, Jxta_expiration_time * time)
+static Jxta_status cm_get_time(Jxta_cm * self, const char *folder_name, const char *primary_key, Jxta_expiration_time * time,
+                               const char *time_name)
 {
     Folder *folder;
     Jxta_status status;
-    apr_datum_t data;
-    apr_datum_t key;
     Jxta_expiration_time exp[2];
+    apr_pool_t *pool = NULL;
+    apr_status_t aprs;
+    int rv;
+    GroupDB *groupDB = self->groupDB;
+    apr_dbd_results_t *res = NULL;
+    apr_dbd_row_t *row;
+    const char *entry = NULL;
+    JString *columns = jstring_new_0();
+    JString *where = jstring_new_0();
+    JString *jKey = jstring_new_0();
+    jstring_append_2(jKey, primary_key);
 
     apr_thread_mutex_lock(self->mutex);
 
-    status = jxta_hashtable_get(self->folders, folder_name, strlen(folder_name), (Jxta_object **) & folder);
+    status = jxta_hashtable_get(self->folders, folder_name, (size_t) strlen(folder_name), (Jxta_object **) & folder);
     if (status != JXTA_SUCCESS) {
         apr_thread_mutex_unlock(self->mutex);
         return status;
     }
 
-    key.dptr = primary_key;
-    key.dsize = strlen(primary_key);
+    apr_thread_mutex_unlock(self->mutex);
 
-    /*
-     * Note: the db is supposed to own the buffer that it returns. we have
-     * to copy it and must not free it.
-     */
+    aprs = apr_pool_create(&pool, NULL);
+    if (aprs != APR_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create apr_pool: %d\n", aprs);
+        goto finish;
+    }
 
-    status = apr_dbm_fetch(folder->exp, key, &data);
+    jstring_append_2(columns, time_name);
+    jstring_append_2(where, CM_COL_AdvId);
+    jstring_append_2(where, SQL_EQUAL);
+    SQL_VALUE(where, jKey);
+
+    rv = cm_sql_select(groupDB, pool, CM_TBL_ADVERTISEMENTS, &res, columns, where);
+
+    if (rv) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "jxta_cm_get_expiration_time Select failed: %s %i\n",
+                        apr_dbd_error(groupDB->driver, groupDB->sql, rv), rv);
+        goto finish;
+    }
+    rv = apr_dbd_get_row(groupDB->driver, pool, res, &row, -1);
+
+    if (rv == 0) {
+        entry = apr_dbd_get_entry(groupDB->driver, row, 0);
+    }
+
 
     JXTA_OBJECT_RELEASE(folder);
 
-    apr_thread_mutex_unlock(self->mutex);
 
-    if (data.dptr == NULL)
+    if (entry == NULL)
         status = JXTA_ITEM_NOTFOUND;
 
     if (status == JXTA_SUCCESS) {
 
-#ifndef WIN32
-        sscanf(data.dptr, "%lld %lld", &exp[0], &exp[1]);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "expiration time retreived %lld %lld\n", exp[0], exp[1]);
-#else
-        sscanf(data.dptr, "%I64d %I64d", &exp[0], &exp[1]);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "expiration time retreived %I64d %I64d\n", exp[0], exp[1]);
-#endif
+        sscanf(entry, jstring_get_string(jInt64_for_format), &exp[0]);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "expiration time retreived \n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, jstring_get_string(fmtTime), exp[0]);
         *time = exp[0];
     }
 
+
+  finish:
+    if (NULL != pool)
+        apr_pool_destroy(pool);
+    JXTA_OBJECT_RELEASE(columns);
+    JXTA_OBJECT_RELEASE(where);
+    JXTA_OBJECT_RELEASE(jKey);
+
     return status;
 }
 
+JXTA_DECLARE(Jxta_status) jxta_cm_get_others_time(Jxta_cm * self, char *folder_name, char *primary_key,
+                                                  Jxta_expiration_time * time)
+{
+    return cm_get_time(self, folder_name, primary_key, time, CM_COL_TimeOutForOthers);
+}
+
+/* Get the expiration time of an advertisement */
+JXTA_DECLARE(Jxta_status) jxta_cm_get_expiration_time(Jxta_cm * self, char *folder_name, char *primary_key,
+                                                      Jxta_expiration_time * time)
+{
+    return cm_get_time(self, folder_name, primary_key, time, CM_COL_TimeOut);
+}
+
 /* delete files where the expiration time is less than curr_expiration */
-Jxta_status jxta_cm_remove_expired_records(Jxta_cm * self)
+JXTA_DECLARE(Jxta_status) jxta_cm_remove_expired_records(Jxta_cm * self)
 {
     Jxta_vector *all_folders;
     int cnt, i;
@@ -718,11 +1571,12 @@ Jxta_status jxta_cm_remove_expired_records(Jxta_cm * self)
         apr_thread_mutex_unlock(self->mutex);
         return JXTA_NOMEM;
     }
+    apr_thread_mutex_unlock(self->mutex);
 
     cnt = jxta_vector_size(all_folders);
     for (i = 0; i < cnt; i++) {
         jxta_vector_get_object_at(all_folders, (Jxta_object **) & folder, i);
-        rt = folder_remove_expired_records(folder);
+        rt = folder_remove_expired_records(self, folder);
         if (JXTA_SUCCESS != rt) {
             latched_rt = rt;
             /* return rt */ ;
@@ -731,24 +1585,23 @@ Jxta_status jxta_cm_remove_expired_records(Jxta_cm * self)
     }
     JXTA_OBJECT_RELEASE(all_folders);
 
-    apr_thread_mutex_unlock(self->mutex);
     return latched_rt;
 }
 
 /* create a folder with type <type> and index keywords <keys> */
-Jxta_status jxta_cm_create_folder(Jxta_cm * self, char *folder_name, const char *keys[])
+JXTA_DECLARE(Jxta_status) jxta_cm_create_folder(Jxta_cm * self, char *folder_name, const char *keys[])
 {
 /*    const char **p; */
-    Jxta_status status;
-    char *full_name;
-    Folder *folder;
+
+
+    Folder *folder = NULL;
     Jxta_vector *iv = NULL;
 
     apr_thread_mutex_lock(self->mutex);
 
-    if (jxta_hashtable_get(self->folders, folder_name, strlen(folder_name), (Jxta_object **) & folder) == JXTA_SUCCESS) {
-
-        JXTA_OBJECT_RELEASE(folder);
+    if (jxta_hashtable_get(self->folders, folder_name, (size_t) strlen(folder_name), (Jxta_object **) & folder) == JXTA_SUCCESS) {
+        if (folder)
+            JXTA_OBJECT_RELEASE(folder);
         apr_thread_mutex_unlock(self->mutex);
         return JXTA_SUCCESS;
     }
@@ -757,47 +1610,7 @@ Jxta_status jxta_cm_create_folder(Jxta_cm * self, char *folder_name, const char 
     memset(folder, 0, sizeof(*folder));
     JXTA_OBJECT_INIT(folder, folder_free, 0);
 
-    full_name = malloc(strlen(self->root) + strlen(folder_name) + 6);
-
-    if (full_name == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Out of memory");
-        return JXTA_NOMEM;
-    }
-
-    sprintf(full_name, "%s_%s", self->root, folder_name);
-    status =
-        apr_dbm_open_ex(&(folder->data), DBTYPE, full_name,
-                        APR_DBM_RWCREATE, APR_UREAD | APR_UWRITE | APR_GREAD | APR_WREAD, self->pool);
-
-    if (status != JXTA_SUCCESS) {
-        status =
-            apr_dbm_open_ex(&(folder->data), DBTYPE, full_name,
-                            APR_DBM_RWTRUNC, APR_UREAD | APR_UWRITE | APR_GREAD | APR_WREAD, self->pool);
-    }
-
-    if (status != JXTA_SUCCESS) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to open folder: %s with error %ld\n", full_name, status);
-        return status;
-    }
-
-    strcat(full_name, "_exp");
-    status =
-        apr_dbm_open_ex(&(folder->exp), DBTYPE, full_name,
-                        APR_DBM_RWCREATE, APR_UREAD | APR_UWRITE | APR_GREAD | APR_WREAD, self->pool);
-    if (status != JXTA_SUCCESS) {
-        status =
-            apr_dbm_open_ex(&(folder->exp), DBTYPE, full_name,
-                            APR_DBM_RWTRUNC, APR_UREAD | APR_UWRITE | APR_GREAD | APR_WREAD, self->pool);
-    }
-
-    if (status != JXTA_SUCCESS) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to open folder: %s with error %ld\n", full_name, status);
-        return status;
-    }
-
-    free(full_name);
-
-    folder->name = folder_name;
+    folder->name = strdup(folder_name);
 
     jxta_hashtable_put(self->folders, folder_name, strlen(folder_name), (Jxta_object *) folder);
 
@@ -807,24 +1620,26 @@ Jxta_status jxta_cm_create_folder(Jxta_cm * self, char *folder_name, const char 
         JXTA_OBJECT_RELEASE(iv);
     }
 
-    folder_reindex(self, folder);
+    apr_thread_mutex_unlock(self->mutex);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Removing expired %s Advertisements \n", folder_name);
+
+    folder_remove_expired_records(self, folder);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Removing expired %s Advertisements - Done \n", folder_name);
+
 
     JXTA_OBJECT_RELEASE(folder);
-
-
-    apr_thread_mutex_unlock(self->mutex);
-
 
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_cm_create_adv_indexes(Jxta_cm * self, char *folder_name, Jxta_vector * jv)
+JXTA_DECLARE(Jxta_status) jxta_cm_create_adv_indexes(Jxta_cm * self, char *folder_name, Jxta_vector * jv)
 {
-    int i = 0;
+    unsigned int i = 0;
     Folder *folder = NULL;
     Jxta_status status = 0;
 
-    if (jxta_hashtable_get(self->folders, folder_name, strlen(folder_name), (Jxta_object **) & folder) != JXTA_SUCCESS) {
+    if (jxta_hashtable_get(self->folders, folder_name, (size_t) strlen(folder_name), (Jxta_object **) & folder) != JXTA_SUCCESS) {
 
         JXTA_OBJECT_RELEASE(folder);
         return !JXTA_SUCCESS;
@@ -834,10 +1649,12 @@ Jxta_status jxta_cm_create_adv_indexes(Jxta_cm * self, char *folder_name, Jxta_v
         folder->secondary_keys = jxta_hashtable_new_0(4, FALSE);
     }
 
+
     for (; i < jxta_vector_size(jv); i++) {
         Jxta_index *ji;
         char *attributeName;
         char *full_index_name;
+        int len;
         status = jxta_vector_get_object_at(jv, (Jxta_object **) & ji, i);
         if (status == JXTA_SUCCESS) {
             if (ji->element != NULL) {
@@ -845,11 +1662,13 @@ Jxta_status jxta_cm_create_adv_indexes(Jxta_cm * self, char *folder_name, Jxta_v
                 Jxta_hashtable *attrib = NULL;
                 if (ji->attribute != NULL) {
                     attributeName = (char *) jstring_get_string(ji->attribute);
-                    full_index_name = malloc(strlen(attributeName) + strlen(element) + 6);
-                    sprintf(full_index_name, "%s_%s", element, attributeName);
+                    len = strlen(attributeName) + strlen(element) + 6;
+                    full_index_name = calloc(1, len);
+                    apr_snprintf(full_index_name, len, "%s %s", element, attributeName);
                 } else {
-                    full_index_name = malloc(strlen(element) + 6);
-                    sprintf(full_index_name, "%s", element);
+                    len = strlen(element) + 6;
+                    full_index_name = calloc(1, len);
+                    apr_snprintf(full_index_name, len, "%s", element);
                 }
                 attrib = jxta_hashtable_new_0(1, FALSE);
                 jxta_hashtable_putnoreplace(folder->secondary_keys,
@@ -859,15 +1678,17 @@ Jxta_status jxta_cm_create_adv_indexes(Jxta_cm * self, char *folder_name, Jxta_v
                 free(full_index_name);
             }
         }
-        JXTA_OBJECT_RELEASE(ji);
+        JXTA_OBJECT_RELEASE((Jxta_object *) ji);
+
     }
+    JXTA_OBJECT_RELEASE(folder);
     return JXTA_SUCCESS;
 }
 
 /*
  * hash a document
  */
-unsigned long jxta_cm_hash(const char *key, size_t ksz)
+JXTA_DECLARE(unsigned long) jxta_cm_hash(const char *key, size_t ksz)
 {
     const unsigned char *s = (const unsigned char *) key;
     unsigned long hash = 0;
@@ -888,14 +1709,12 @@ unsigned long jxta_cm_hash(const char *key, size_t ksz)
  * The cm will be freed automatically when group stoping realy works
  */
 
-
-
-
-
-void jxta_cm_close(Jxta_cm * self)
+JXTA_DECLARE(void) jxta_cm_close(Jxta_cm * self)
 {
+    GroupDB *groupDB = self->groupDB;
     apr_thread_mutex_lock(self->mutex);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "cm_close\n");
+    JXTA_OBJECT_RELEASE(groupDB);
     JXTA_OBJECT_RELEASE(self->folders);
     self->folders = NULL;
     apr_thread_mutex_unlock(self->mutex);
@@ -904,19 +1723,19 @@ void jxta_cm_close(Jxta_cm * self)
 /*
  * obtain all CM SRDI delta entries for a particular folder
  */
-Jxta_vector *jxta_cm_get_srdi_delta_entries(Jxta_cm * self, JString * folder_name)
+JXTA_DECLARE(Jxta_vector *) jxta_cm_get_srdi_delta_entries(Jxta_cm * self, JString * folder_name)
 {
 
     Jxta_vector *delta_entries = NULL;
-
+/*    if (TRUE) return; */
     apr_thread_mutex_lock(self->mutex);
-    if (jxta_hashtable_del
-        (self->srdi_delta, jstring_get_string(folder_name),
-         strlen(jstring_get_string(folder_name)), (Jxta_object **) & delta_entries) != JXTA_SUCCESS) {
+    if (jxta_hashtable_del(self->srdi_delta, jstring_get_string(folder_name), (size_t) strlen(jstring_get_string(folder_name))
+                           , (Jxta_object **) & delta_entries) != JXTA_SUCCESS) {
         apr_thread_mutex_unlock(self->mutex);
+        if (NULL != delta_entries)
+            JXTA_OBJECT_RELEASE(delta_entries);
         return NULL;
     }
-
     apr_thread_mutex_unlock(self->mutex);
     return delta_entries;
 }
@@ -924,142 +1743,111 @@ Jxta_vector *jxta_cm_get_srdi_delta_entries(Jxta_cm * self, JString * folder_nam
 /*
  * obtain all CM SRDI entries for a particular folder
  */
-Jxta_vector *jxta_cm_get_srdi_entries(Jxta_cm * self, JString * folder_name)
+JXTA_DECLARE(Jxta_vector *) jxta_cm_get_srdi_entries(Jxta_cm * self, JString * folder_name)
 {
+    size_t nb_keys;
+    GroupDB *groupDB = self->groupDB;
+    apr_pool_t *pool = NULL;
+    apr_status_t aprs;
+    apr_dbd_results_t *res = NULL;
+    apr_dbd_row_t *row;
+    JString *jAdvId;
+    JString *jKey;
+    JString *jVal;
+    JString *jNameSpace;
+    JString *columns = jstring_new_0();
 
-    Jxta_status status;
-    Folder *folder;
-    char **keys = NULL;
-    JString *skey = NULL;
-    JString *sval = NULL;
-    Jxta_expiration_time exp;
-    Jxta_SRDIEntryElement *entry = NULL;
-    char **values = NULL;
-    char **pkeys = NULL;
-    int i = 0;
-    int j = 0;
-    int k = 0;
-    Jxta_hashtable *hash_val;
-    Jxta_hashtable *values_hashtbl = NULL;
+    Jxta_expiration_time exp = 10;
     Jxta_vector *entries = jxta_vector_new(0);
+    JString *jFormatTime = jstring_new_0();
+    JString *where = jstring_new_0();
+    Jxta_SRDIEntryElement *element = NULL;
+    const char *cFolder_name;
+    const char *entry;
+    int rv = 0;
+    int n, i;
+    cFolder_name = jstring_get_string(folder_name);
 
-    apr_thread_mutex_lock(self->mutex);
-    self->record_delta = TRUE;
-    status = jxta_hashtable_get(self->folders,
-                                jstring_get_string(folder_name),
-                                strlen(jstring_get_string(folder_name)), (Jxta_object **) & folder);
+    jstring_append_2(jFormatTime, "Exp Time ");
+    jstring_append_1(jFormatTime, jInt64_for_format);
+    jstring_append_2(jFormatTime, "\n");
 
-    if (status != JXTA_SUCCESS) {
-        apr_thread_mutex_unlock(self->mutex);
-        JXTA_OBJECT_RELEASE(entries);
-        return NULL;
+    aprs = apr_pool_create(&pool, NULL);
+    if (aprs != APR_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create apr_pool: %d\n", aprs);
+        goto finish;
     }
 
-    keys = jxta_hashtable_keys_get(folder->secondary_keys);
-    if (keys == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "No CM SRDI items found for type: %s\n", jstring_get_string(folder_name));
-        JXTA_OBJECT_RELEASE(folder);
-        apr_thread_mutex_unlock(self->mutex);
-        JXTA_OBJECT_RELEASE(entries);
-        return NULL;
+
+    cm_sql_correct_space(jstring_get_string(folder_name), where);
+
+    jstring_append_2(columns, CM_COL_AdvId);
+    jstring_append_2(columns, SQL_COMMA);
+    jstring_append_2(columns, CM_COL_NameSpace);
+    jstring_append_2(columns, SQL_COMMA);
+    jstring_append_2(columns, CM_COL_Name);
+    jstring_append_2(columns, SQL_COMMA);
+    jstring_append_2(columns, CM_COL_Value);
+    jstring_append_2(columns, SQL_COMMA);
+    jstring_append_2(columns, CM_COL_TimeOutForOthers);
+
+    rv = cm_sql_select(groupDB, pool, CM_TBL_ELEM_ATTRIBUTES, &res, columns, where);
+
+    if (rv) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "jxta_cm_get_srdi_entries Select failed: %s %i \n %s   \n",
+                        apr_dbd_error(groupDB->driver, groupDB->sql, rv), rv, jstring_get_string(columns));
+        goto finish;
     }
+    nb_keys = apr_dbd_num_tuples((apr_dbd_driver_t *) groupDB->driver, res);
+    if (nb_keys == 0)
+        goto finish;
+    i = 0;
+    for (rv = apr_dbd_get_row(groupDB->driver, pool, res, &row, -1);
+         rv == 0; i++, rv = apr_dbd_get_row(groupDB->driver, pool, res, &row, -1)) {
+        int column_count = apr_dbd_num_cols(groupDB->driver, res);
+        jKey = jstring_new_0();
+        jVal = jstring_new_0();
+        jNameSpace = jstring_new_0();
+        jAdvId = jstring_new_0();
+        for (n = 0; n < column_count; ++n) {
+            entry = apr_dbd_get_entry(groupDB->driver, row, n);
+            if (entry == NULL) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "(null) in entry from get_srdi_entries");
+            } else {
+                switch (n) {
+                case 0:        /* advid */
+                    jstring_append_2(jAdvId, entry);
+                    break;
+                case 1:        /* Name Space */
+                    jstring_append_2(jNameSpace, entry);
+                    break;
+                case 2:        /* Name */
+                    jstring_append_2(jKey, entry);
 
-    while (keys[i]) {
-        status = jxta_hashtable_get(folder->secondary_keys, keys[i], strlen(keys[i]), (Jxta_object **) & values_hashtbl);
-
-        if (status != JXTA_SUCCESS) {
-            JXTA_OBJECT_RELEASE(folder);
-            free(keys);
-            apr_thread_mutex_unlock(self->mutex);
-            JXTA_OBJECT_RELEASE(entries);
-            return NULL;
-        }
-
-        values = jxta_hashtable_keys_get(values_hashtbl);
-        j = 0;
-        while (values[j]) {
-
-            /*
-             * get the expiration using the unique UUID portion
-             */
-            jxta_hashtable_get(values_hashtbl, values[j], strlen(values[j]), (Jxta_object **) & hash_val);
-
-            pkeys = jxta_hashtable_keys_get(hash_val);
-            JXTA_OBJECT_RELEASE(hash_val);
-
-            /*
-             * FIXME:20040614 tra
-             * we pick up the first entry for this value
-             * we may want to take the MAX or MIN of all the values
-             */
-            if (pkeys[0] != NULL) {
-                status = jxta_cm_get_expiration_time(self, (char *)
-                                                     jstring_get_string(folder_name), pkeys[0], &exp);
-
-                if (pkeys != NULL) {
-                    k = 0;
-                    while (pkeys[k]) {
-                        free(pkeys[k]);
-                        k++;
-                    }
-                    free(pkeys);
-                    pkeys = NULL;
+                    break;
+                case 3:        /* Value */
+                    jstring_append_2(jVal, entry);
+                    break;
+                case 4:        /* Time out */
+                    sscanf(entry, jstring_get_string(jInt64_for_format), &exp);
+                    break;
                 }
-
-                if (status != JXTA_SUCCESS) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Could not find expiration for %s\n", values[j]);
-                    j++;
-                    continue;
-                }
             }
-
-            if (exp - jpr_time_now() < 0) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Expired entry\n");
-                j++;
-                continue;
-            }
-
-            skey = jstring_new_2(keys[i]);
-            sval = jstring_new_2(values[j]);
-            entry = jxta_srdi_new_element_1(skey, sval, exp - jpr_time_now());
-
-            if (entry != NULL) {
-#ifndef WIN32
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "add SRDI entry: SKey:%s Val:%s exp:%lld\n",
-                                jstring_get_string(skey), jstring_get_string(sval), (exp - jpr_time_now()));
-#else
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "add SRDI entry: SKey:%s Val:%s exp:%I64d\n",
-                                jstring_get_string(skey), jstring_get_string(sval), (exp - jpr_time_now()));
-#endif
-                jxta_vector_add_object_last(entries, (Jxta_object *) entry);
-                JXTA_OBJECT_RELEASE(entry);
-            }
-            JXTA_OBJECT_RELEASE(skey);
-            JXTA_OBJECT_RELEASE(sval);
-            j++;
         }
-
-        k = 0;
-        while (values[k]) {
-            free(values[k]);
-            k++;
-        }
-        free(values);
-        values = NULL;
-        JXTA_OBJECT_RELEASE(values_hashtbl);
-        i++;
+        element = jxta_srdi_new_element_2(jKey, jVal, jNameSpace, jAdvId, exp);
+        jxta_vector_add_object_last(entries, (Jxta_object *) element);
+        JXTA_OBJECT_RELEASE(jAdvId);
+        JXTA_OBJECT_RELEASE(element);
+        JXTA_OBJECT_RELEASE(jKey);
+        JXTA_OBJECT_RELEASE(jVal);
+        JXTA_OBJECT_RELEASE(jNameSpace);
     }
-
-    apr_thread_mutex_unlock(self->mutex);
-    k = 0;
-    while (keys[k]) {
-        free(keys[k]);
-        k++;
-    }
-    free(keys);
-    keys = NULL;
-    JXTA_OBJECT_RELEASE(folder);
-
+  finish:
+    if (NULL != pool)
+        apr_pool_destroy(pool);
+    JXTA_OBJECT_RELEASE(columns);
+    JXTA_OBJECT_RELEASE(where);
+    JXTA_OBJECT_RELEASE(jFormatTime);
     if (jxta_vector_size(entries) > 0) {
         return entries;
     } else {
@@ -1068,5 +1856,1134 @@ Jxta_vector *jxta_cm_get_srdi_entries(Jxta_cm * self, JString * folder_name)
     }
 }
 
+static apr_status_t cm_sql_create_table(GroupDB * groupDB, const char *table, const char *columns[])
+{
+    int rv = 0;
+    int nrows;
+    Jxta_status status;
+    JString *cmd;
 
-/* vim: set sw=4 ts=4 et tw=130: */
+    status = cm_sql_table_found(groupDB, table);
+    if (status == JXTA_SUCCESS)
+        return APR_SUCCESS;
+
+    cmd = jstring_new_0();
+    jstring_append_2(cmd, SQL_CREATE_TABLE);
+    jstring_append_2(cmd, table);
+    jstring_append_2(cmd, SQL_LEFT_PAREN);
+    while (*columns) {
+        jstring_append_2(cmd, *columns++);
+        jstring_append_2(cmd, " ");
+        jstring_append_2(cmd, *columns++);
+        if (*columns == NULL)
+            break;
+        jstring_append_2(cmd, SQL_COMMA);
+    }
+    jstring_append_2(cmd, SQL_RIGHT_PAREN);
+    jstring_append_2(cmd, SQL_END_SEMI);
+
+    rv = apr_dbd_query(groupDB->driver, groupDB->sql, &nrows, jstring_get_string(cmd));
+
+    if (rv != APR_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Couldn't create %s  rc=%i\n", table, rv);
+    }
+    JXTA_OBJECT_RELEASE(cmd);
+    return rv;
+}
+
+static Jxta_status cm_sql_table_found(GroupDB * groupDB, const char *table)
+{
+
+    int rv = 0;
+    Jxta_status status = JXTA_ITEM_NOTFOUND;
+    JString *where = jstring_new_0();
+    JString *columns = jstring_new_0();
+    JString *statement = jstring_new_0();
+    JString *jTable = jstring_new_2(table);
+    JString *jType = jstring_new_2(SQL_COLUMN_Type_table);
+    apr_dbd_results_t *res = NULL;
+    apr_pool_t *pool = NULL;
+    apr_status_t aprs;
+
+    jstring_append_2(columns, SQL_COLUMN_Name);
+
+    jstring_append_2(where, SQL_COLUMN_Name);
+    jstring_append_2(where, SQL_EQUAL);
+    SQL_VALUE(where, jTable);
+    jstring_append_2(where, SQL_AND);
+    jstring_append_2(where, SQL_COLUMN_Type);
+    jstring_append_2(where, SQL_EQUAL);
+    SQL_VALUE(where, jType);
+
+    aprs = apr_pool_create(&pool, NULL);
+    if (aprs != APR_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create apr_pool: %d\n", aprs);
+        status = JXTA_FAILED;
+        goto finish;
+    }
+
+    rv = cm_sql_select(groupDB, pool, SQL_TBL_MASTER, &res, columns, where);
+
+
+    if (rv) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "cm_sql_table_found Select failed: %s %i\n",
+                        apr_dbd_error(groupDB->driver, groupDB->sql, rv), rv);
+        status = JXTA_FAILED;
+        goto finish;
+    }
+    if (apr_dbd_num_tuples(groupDB->driver, res) > 0) {
+        status = JXTA_SUCCESS;
+    }
+  finish:
+    if (NULL != pool)
+        apr_pool_destroy(pool);
+    JXTA_OBJECT_RELEASE(statement);
+    JXTA_OBJECT_RELEASE(columns);
+    JXTA_OBJECT_RELEASE(jTable);
+    JXTA_OBJECT_RELEASE(jType);
+    JXTA_OBJECT_RELEASE(where);
+    return status;
+
+}
+static int cm_sql_create_index(GroupDB * groupDB, const char *table, const char *field)
+{
+    int nrows;
+    int ret;
+    Jxta_status status;
+    JString *cmd;
+    JString *jIdx = jstring_new_0();
+
+    jstring_append_2(jIdx, table);
+    jstring_append_2(jIdx, field);
+
+    status = cm_sql_index_found(groupDB, jstring_get_string(jIdx));
+    JXTA_OBJECT_RELEASE(jIdx);
+
+    if (status == JXTA_SUCCESS) {
+        return APR_SUCCESS;
+    }
+    cmd = jstring_new_0();
+
+    jstring_append_2(cmd, SQL_CREATE_INDEX);
+    jstring_append_2(cmd, table);
+    jstring_append_2(cmd, field);
+    jstring_append_2(cmd, SQL_INDEX_ON);
+    jstring_append_2(cmd, table);
+    jstring_append_2(cmd, SQL_LEFT_PAREN);
+    jstring_append_2(cmd, field);
+    jstring_append_2(cmd, SQL_RIGHT_PAREN);
+    jstring_append_2(cmd, SQL_END_SEMI);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "%s \n", jstring_get_string(cmd));
+
+
+    ret = apr_dbd_query(groupDB->driver, groupDB->sql, &nrows, jstring_get_string(cmd));
+
+
+    JXTA_OBJECT_RELEASE(cmd);
+    return ret;
+}
+
+static Jxta_status cm_sql_index_found(GroupDB * groupDB, const char *index)
+{
+
+    int rv = 0;
+    Jxta_status status = JXTA_ITEM_NOTFOUND;
+    JString *where = jstring_new_0();
+    JString *columns = jstring_new_0();
+    JString *statement = jstring_new_0();
+    JString *jIndex = jstring_new_2(index);
+    JString *jType = jstring_new_2(SQL_COLUMN_Type_index);
+    apr_dbd_results_t *res = NULL;
+    apr_pool_t *pool = NULL;
+    apr_status_t aprs;
+
+    jstring_append_2(columns, SQL_COLUMN_Name);
+
+    jstring_append_2(where, SQL_COLUMN_Name);
+    jstring_append_2(where, SQL_EQUAL);
+    SQL_VALUE(where, jIndex);
+    jstring_append_2(where, SQL_AND);
+    jstring_append_2(where, SQL_COLUMN_Type);
+    jstring_append_2(where, SQL_EQUAL);
+    SQL_VALUE(where, jType);
+
+    aprs = apr_pool_create(&pool, NULL);
+    if (aprs != APR_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create apr_pool: %d\n", aprs);
+        status = JXTA_FAILED;
+        goto finish;
+    }
+
+    rv = cm_sql_select(groupDB, pool, SQL_TBL_MASTER, &res, columns, where);
+
+
+    if (rv) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "cm_sql_table_found Select failed: %s %i\n",
+                        apr_dbd_error(groupDB->driver, groupDB->sql, rv), rv);
+        status = JXTA_FAILED;
+        goto finish;
+    }
+    if (apr_dbd_num_tuples(groupDB->driver, res) > 0) {
+        status = JXTA_SUCCESS;
+    }
+
+  finish:
+    if (NULL != pool)
+        apr_pool_destroy(pool);
+    JXTA_OBJECT_RELEASE(statement);
+    JXTA_OBJECT_RELEASE(columns);
+    JXTA_OBJECT_RELEASE(jIndex);
+    JXTA_OBJECT_RELEASE(jType);
+    JXTA_OBJECT_RELEASE(where);
+    return status;
+
+}
+static int cm_sql_drop_table(GroupDB * groupDB, char *table)
+{
+    int rv = 0;
+    int nrows;
+    JString *statement = jstring_new_2(SQL_DROP_TABLE);
+    jstring_append_2(statement, table);
+
+
+    rv = apr_dbd_query(groupDB->driver, groupDB->sql, &nrows, jstring_get_string(statement));
+
+
+    JXTA_OBJECT_RELEASE(statement);
+
+    return rv;
+}
+
+#ifdef WIN32
+/* VC7 supports only abs and labs. */
+static __int64 llabs(__int64 llval)
+{
+    if (llval >= 0)
+        return llval;
+
+    return -llval;
+}
+#endif
+
+static Jxta_status
+cm_sql_update_advertisement(GroupDB * groupDB, JString * jNameSpace, JString * jKey, JString * jXml,
+                            Jxta_expiration_time timeOutForMe, Jxta_expiration_time timeOutForOthers)
+{
+
+    int nrows = 0, rv = 0;
+    Jxta_status status = JXTA_SUCCESS;
+    char aTime[64];
+    const char *sqlCmd = NULL;
+    JString *update_sql = jstring_new_0();
+
+    jstring_append_2(update_sql, SQL_UPDATE);
+    jstring_append_2(update_sql, CM_TBL_ADVERTISEMENTS);
+    jstring_append_2(update_sql, SQL_SET);
+    jstring_append_2(update_sql, CM_COL_Advert);
+    jstring_append_2(update_sql, SQL_EQUAL);
+    SQL_VALUE(update_sql, jXml);
+    jstring_append_2(update_sql, SQL_COMMA);
+    jstring_append_2(update_sql, CM_COL_TimeOut);
+    jstring_append_2(update_sql, SQL_EQUAL);
+    memset(aTime, 0, 64);
+    if ((apr_snprintf((char *) &aTime[0], 64, jstring_get_string(jInt64_for_format), llabs(jpr_time_now() + timeOutForMe))) != 0) {
+        jstring_append_2(update_sql, &aTime[0]);
+    } else {
+        jstring_append_2(update_sql, "0");
+    }
+    jstring_append_2(update_sql, SQL_COMMA);
+    jstring_append_2(update_sql, CM_COL_TimeOutForOthers);
+    jstring_append_2(update_sql, SQL_EQUAL);
+
+    if ((apr_snprintf((char *) &aTime[0], 64, jstring_get_string(jInt64_for_format), timeOutForOthers)) != 0) {
+
+        jstring_append_2(update_sql, &aTime[0]);
+    } else {
+        jstring_append_2(update_sql, "0");
+    }
+
+    jstring_append_2(update_sql, SQL_WHERE);
+    jstring_append_2(update_sql, CM_COL_AdvId);
+    jstring_append_2(update_sql, SQL_EQUAL);
+    SQL_VALUE(update_sql, jKey);
+    jstring_append_2(update_sql, SQL_AND);
+    jstring_append_2(update_sql, CM_COL_NameSpace);
+    jstring_append_2(update_sql, SQL_EQUAL);
+    SQL_VALUE(update_sql, jNameSpace);
+
+    /* jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "----- update : %s \n", jstring_get_string(update_sql)); */
+
+    sqlCmd = jstring_get_string(update_sql);
+    rv = apr_dbd_query(groupDB->driver, groupDB->sql, &nrows, sqlCmd);
+
+    status = (Jxta_status) rv;
+    JXTA_OBJECT_RELEASE(update_sql);
+    return status;
+
+}
+static Jxta_status
+cm_sql_save_advertisement(GroupDB * groupDB, const char *key, Jxta_advertisement * adv, Jxta_expiration_time timeOutForMe,
+                          Jxta_expiration_time timeOutForOthers)
+{
+
+    int nrows;
+    int rv = 0;
+    Jxta_status status = JXTA_SUCCESS;
+    const char *nameSpace = jxta_advertisement_get_document_name(adv);
+    const char *documentName = jxta_advertisement_get_document_name(adv);
+    JString *jXml;
+    JString *sqlval = jstring_new_0();
+    JString *insert_sql = jstring_new_0();
+    JString *jTime = jstring_new_0();
+    JString *jNameSpace = jstring_new_2(nameSpace);
+    JString *jAdvType = jstring_new_2(documentName);
+    Jxta_expiration_time lifetime = 0;
+    Jxta_expiration_time expTime = 0;
+    char aTime[64];
+    JString *jKey = jstring_new_2(key);
+
+
+    jstring_append_2(sqlval, SQL_LEFT_PAREN);
+    SQL_VALUE(sqlval, jNameSpace);
+    jstring_append_2(sqlval, SQL_COMMA);
+    SQL_VALUE(sqlval, jAdvType);
+    jstring_append_2(sqlval, SQL_COMMA);
+    jxta_advertisement_get_xml(adv, &jXml);
+    if (jXml == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Advertisement Not saved \n");
+        status = JXTA_FAILED;
+        goto finish;
+    }
+    SQL_VALUE(sqlval, jXml);
+    jstring_append_2(sqlval, SQL_COMMA);
+    SQL_VALUE(sqlval, jKey);
+    jstring_append_2(sqlval, SQL_COMMA);
+    memset(aTime, 0, 64);
+    if ((apr_snprintf((char *) &aTime[0], 64, jstring_get_string(jInt64_for_format), llabs((jpr_time_now() + timeOutForMe)))) !=
+        0) {
+        jstring_append_2(sqlval, &aTime[0]);
+    } else {
+        status = JXTA_FAILED;
+        goto finish;
+    }
+    memset(aTime, 0, 64);
+    jstring_append_2(sqlval, SQL_COMMA);
+    if ((apr_snprintf((char *) &aTime[0], 64, jstring_get_string(jInt64_for_format), timeOutForOthers)) != 0) {
+        jstring_append_2(sqlval, &aTime[0]);
+    } else {
+        status = JXTA_FAILED;
+        goto finish;
+    }
+
+    jstring_append_2(sqlval, SQL_RIGHT_PAREN);
+
+    status = cm_sql_found(groupDB, CM_TBL_ADVERTISEMENTS, nameSpace, jstring_get_string(jKey), NULL, &lifetime);
+
+    if (status == JXTA_SUCCESS) {
+        if (timeOutForMe > lifetime) {
+            lifetime = timeOutForMe;
+        }
+        expTime = timeOutForOthers;
+        if (expTime > lifetime) {
+            expTime = lifetime;
+        }
+        status = cm_sql_update_advertisement(groupDB, jNameSpace, jKey, jXml, lifetime, expTime);
+        goto finish;
+    } else if (status == JXTA_ITEM_NOTFOUND) {
+        jstring_append_2(insert_sql, SQL_INSERT_INTO);
+        jstring_append_2(insert_sql, CM_TBL_ADVERTISEMENTS);
+        jstring_append_2(insert_sql, SQL_VALUES);
+    } else {
+        goto finish;
+    }
+
+    jstring_append_1(insert_sql, sqlval);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Save Adv: %s \n", jstring_get_string(insert_sql));
+
+    rv = apr_dbd_query(groupDB->driver, groupDB->sql, &nrows, jstring_get_string(insert_sql));
+
+    status = (Jxta_status) rv;
+  finish:
+
+    if (status != JXTA_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Couldn't save advertisement %s  rc=%i\n",
+                        jstring_get_string(insert_sql), rv);
+    }
+
+    JXTA_OBJECT_RELEASE(jKey);
+    JXTA_OBJECT_RELEASE(jXml);
+    JXTA_OBJECT_RELEASE(sqlval);
+    JXTA_OBJECT_RELEASE(insert_sql);
+    JXTA_OBJECT_RELEASE(jTime);
+    JXTA_OBJECT_RELEASE(jNameSpace);
+    JXTA_OBJECT_RELEASE(jAdvType);
+    return status;
+}
+
+static Jxta_status
+cm_sql_save_srdi(GroupDB * groupDB, JString * Handler, JString * Peerid, JString * NameSpace, JString * Key, JString * Attribute,
+                 JString * Value, Jxta_expiration_time timeOutForMe, Jxta_boolean replica)
+{
+
+    int nrows;
+    int rv = 0;
+    const char *tableName;
+    JString *jNameSpace = NULL;
+    JString *jHandler = NULL;
+    JString *jPeerid = NULL;
+    JString *jKey;
+    JString *jAttribute = jstring_clone(Attribute);
+    JString *jValue = jstring_clone(Value);
+    Jxta_status status = JXTA_SUCCESS;
+    JString *insert_sql = jstring_new_0();
+    JString *sqlval = jstring_new_0();
+    JString *jTime = jstring_new_0();
+    char aTime[64];
+    if (Handler != NULL) {
+        jHandler = jstring_clone(Handler);
+    } else {
+        jHandler = jstring_new_2("NoHandler");
+    }
+    if (Peerid != NULL) {
+        jPeerid = jstring_clone(Peerid);
+    } else {
+        jPeerid = jstring_new_2("NoPeerid");
+    }
+    if (NameSpace != NULL) {
+        /* assume the best */
+        if (!strcmp(jstring_get_string(NameSpace), "Peers")) {
+            jNameSpace = jstring_new_2("jxta:PA");
+        } else if (!strcmp(jstring_get_string(NameSpace), "Groups")) {
+            jNameSpace = jstring_new_2("jxta:PGA");
+        } else {
+            jNameSpace = jstring_clone(NameSpace);
+        }
+    } else {
+        jNameSpace = jstring_new_2("ADV");
+    }
+    if (Key != NULL) {
+        jKey = jstring_clone(Key);
+    } else {
+        jKey = jstring_new_2("NoKEY");
+    }
+    jstring_append_2(sqlval, SQL_LEFT_PAREN);
+    SQL_VALUE(sqlval, jNameSpace);
+    jstring_append_2(sqlval, SQL_COMMA);
+    SQL_VALUE(sqlval, jHandler);
+    jstring_append_2(sqlval, SQL_COMMA);
+    SQL_VALUE(sqlval, jPeerid);
+    jstring_append_2(sqlval, SQL_COMMA);
+    SQL_VALUE(sqlval, jKey);
+    jstring_append_2(sqlval, SQL_COMMA);
+    SQL_VALUE(sqlval, jAttribute);
+    jstring_append_2(sqlval, SQL_COMMA);
+    SQL_VALUE(sqlval, jValue);
+    jstring_append_2(sqlval, SQL_COMMA);
+    memset(aTime, 0, 64);
+    if ((apr_snprintf((char *) &aTime[0], 64, jstring_get_string(jInt64_for_format), llabs((jpr_time_now() + timeOutForMe)))) !=
+        0) {
+        jstring_append_2(sqlval, &aTime[0]);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,
+                        "Unable to format time for me and current time - set to default timeout \n");
+        apr_snprintf((char *) &aTime[0], 64, jstring_get_string(jInt64_for_format), llabs((jpr_time_now() + DEFAULT_EXPIRATION)));
+    }
+    jstring_append_2(sqlval, SQL_COMMA);
+    memset(aTime, 0, 64);
+    if ((apr_snprintf((char *) &aTime[0], 64, jstring_get_string(jInt64_for_format), timeOutForMe)) != 0) {
+        jstring_append_2(sqlval, &aTime[0]);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to format time for me - set to default timeout \n");
+        apr_snprintf((char *) &aTime[0], 64, jstring_get_string(jInt64_for_format), DEFAULT_EXPIRATION);
+    }
+
+    jstring_append_2(sqlval, SQL_RIGHT_PAREN);
+    if (replica) {
+        tableName = CM_TBL_REPLICA;
+    } else {
+        tableName = CM_TBL_SRDI;
+    }
+    status = cm_sql_srdi_found(groupDB, tableName, jNameSpace, jHandler, jPeerid, jKey, jAttribute);
+
+    if (status == JXTA_SUCCESS) {
+        status = cm_sql_update_srdi(groupDB, tableName, jHandler, jPeerid, jKey, jAttribute, jValue, timeOutForMe);
+        goto finish;
+    } else if (status == JXTA_ITEM_NOTFOUND) {
+        jstring_append_2(insert_sql, SQL_INSERT_INTO);
+        jstring_append_2(insert_sql, tableName);
+        jstring_append_2(insert_sql, SQL_VALUES);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Error searching for srdi entry %i \n", status);
+        goto finish;
+    }
+
+    jstring_append_1(insert_sql, sqlval);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Save srdi: %s \n", jstring_get_string(insert_sql));
+    rv = apr_dbd_query(groupDB->driver, groupDB->sql, &nrows, jstring_get_string(insert_sql));
+
+    status = (Jxta_status) rv;
+  finish:
+
+    if (status != JXTA_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to save srdi entry %s  rc=%i\n", jstring_get_string(insert_sql),
+                        rv);
+    }
+    JXTA_OBJECT_RELEASE(jNameSpace);
+    JXTA_OBJECT_RELEASE(jHandler);
+    JXTA_OBJECT_RELEASE(jPeerid);
+    JXTA_OBJECT_RELEASE(jKey);
+    JXTA_OBJECT_RELEASE(jAttribute);
+    JXTA_OBJECT_RELEASE(jValue);
+
+    JXTA_OBJECT_RELEASE(sqlval);
+    JXTA_OBJECT_RELEASE(insert_sql);
+    JXTA_OBJECT_RELEASE(jTime);
+    return status;
+}
+
+
+static Jxta_status cm_sql_remove_advertisement(GroupDB * groupDB, const char *nameSpace, const char *key)
+{
+
+    Jxta_status status = JXTA_SUCCESS;
+    JString *where = jstring_new_0();
+    JString *jKey = jstring_new_0();
+    jstring_append_2(jKey, key);
+    jstring_append_2(where, SQL_WHERE);
+
+    cm_sql_correct_space(nameSpace, where);
+
+    jstring_append_2(where, SQL_AND);
+    jstring_append_2(where, CM_COL_AdvId);
+    jstring_append_2(where, SQL_EQUAL);
+    SQL_VALUE(where, jKey);
+
+
+    status = cm_sql_delete_with_where(groupDB, CM_TBL_ELEM_ATTRIBUTES, where);
+    if (status != JXTA_SUCCESS)
+        goto finish;
+    status = cm_sql_delete_with_where(groupDB, CM_TBL_ADVERTISEMENTS, where);
+    if (status != JXTA_SUCCESS)
+        goto finish;
+    status = cm_sql_delete_with_where(groupDB, CM_TBL_SRDI, where);
+    if (status != JXTA_SUCCESS)
+        goto finish;
+
+  finish:
+    if (status != JXTA_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to remove Advertisement rc=%i \n %s \n", status,
+                        jstring_get_string(where));
+    }
+    JXTA_OBJECT_RELEASE(where);
+    JXTA_OBJECT_RELEASE(jKey);
+    return status;
+
+}
+static Jxta_status
+cm_sql_update_item(GroupDB * groupDB, const char *table, JString * jNameSpace, JString * jKey, JString * jElemAttr,
+                   JString * jVal, Jxta_expiration_time timeOutForMe)
+{
+
+    int nrows = 0;
+    int rv = 0;
+    const char *sqlCmd = NULL;
+    Jxta_status status;
+    char aTime[64];
+    JString *update_sql = jstring_new_0();
+    jstring_append_2(update_sql, SQL_UPDATE);
+    jstring_append_2(update_sql, table);
+    jstring_append_2(update_sql, SQL_SET);
+    jstring_append_2(update_sql, CM_COL_Value);
+    jstring_append_2(update_sql, SQL_EQUAL);
+    SQL_VALUE(update_sql, jVal);
+    jstring_append_2(update_sql, SQL_COMMA);
+    jstring_append_2(update_sql, CM_COL_TimeOut);
+    jstring_append_2(update_sql, SQL_EQUAL);
+    memset(aTime, 0, 64);
+    if ((apr_snprintf((char *) &aTime[0], 64, jstring_get_string(jInt64_for_format), llabs(jpr_time_now() + timeOutForMe))) != 0) {
+        jstring_append_2(update_sql, &aTime[0]);
+    } else {
+        jstring_append_2(update_sql, "0");
+    }
+    jstring_append_2(update_sql, SQL_WHERE);
+    jstring_append_2(update_sql, CM_COL_AdvId);
+    jstring_append_2(update_sql, SQL_EQUAL);
+    SQL_VALUE(update_sql, jKey);
+    jstring_append_2(update_sql, SQL_AND);
+    jstring_append_2(update_sql, CM_COL_NameSpace);
+    jstring_append_2(update_sql, SQL_EQUAL);
+    SQL_VALUE(update_sql, jNameSpace);
+    jstring_append_2(update_sql, SQL_AND);
+    jstring_append_2(update_sql, CM_COL_Name);
+    jstring_append_2(update_sql, SQL_EQUAL);
+    SQL_VALUE(update_sql, jElemAttr);
+    jstring_append_2(update_sql, SQL_END_SEMI);
+    sqlCmd = jstring_get_string(update_sql);
+    rv = apr_dbd_query(groupDB->driver, groupDB->sql, &nrows, sqlCmd);
+
+    status = (Jxta_status) rv;
+    if (status != JXTA_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Couldn't update rc=%i \n %s \n", rv, jstring_get_string(update_sql));
+    }
+
+
+    JXTA_OBJECT_RELEASE(update_sql);
+    return status;
+}
+
+static Jxta_status
+cm_sql_update_srdi(GroupDB * groupDB, const char *table, JString * jHandler, JString * jPeerid, JString * jKey,
+                   JString * jAttribute, JString * jValue, Jxta_expiration_time timeOutForMe)
+{
+
+    int nrows;
+    int rv;
+    Jxta_status status;
+    JString *update_sql = jstring_new_0();
+    char aTime[64];
+    jstring_append_2(update_sql, SQL_UPDATE);
+    jstring_append_2(update_sql, table);
+    jstring_append_2(update_sql, SQL_SET);
+    jstring_append_2(update_sql, CM_COL_Value);
+    jstring_append_2(update_sql, SQL_EQUAL);
+    SQL_VALUE(update_sql, jValue);
+    jstring_append_2(update_sql, SQL_COMMA);
+    jstring_append_2(update_sql, CM_COL_TimeOut);
+    jstring_append_2(update_sql, SQL_EQUAL);
+    memset(aTime, 0, 64);
+    if ((apr_snprintf((char *) &aTime[0], 64, jstring_get_string(jInt64_for_format), llabs(jpr_time_now() + timeOutForMe))) != 0) {
+        jstring_append_2(update_sql, &aTime[0]);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to format time for me - set to default timeout \n");
+        apr_snprintf((char *) &aTime[0], 64, jstring_get_string(jInt64_for_format), llabs(jpr_time_now() + DEFAULT_EXPIRATION));
+    }
+
+    jstring_append_2(update_sql, SQL_WHERE);
+    jstring_append_2(update_sql, CM_COL_AdvId);
+    jstring_append_2(update_sql, SQL_EQUAL);
+    SQL_VALUE(update_sql, jKey);
+    jstring_append_2(update_sql, SQL_AND);
+    jstring_append_2(update_sql, CM_COL_Handler);
+    jstring_append_2(update_sql, SQL_EQUAL);
+    SQL_VALUE(update_sql, jHandler);
+    jstring_append_2(update_sql, SQL_AND);
+    jstring_append_2(update_sql, CM_COL_Name);
+    jstring_append_2(update_sql, SQL_EQUAL);
+    SQL_VALUE(update_sql, jAttribute);
+    jstring_append_2(update_sql, SQL_AND);
+    jstring_append_2(update_sql, CM_COL_Peerid);
+    jstring_append_2(update_sql, SQL_EQUAL);
+    SQL_VALUE(update_sql, jPeerid);
+    jstring_append_2(update_sql, SQL_END_SEMI);
+
+    rv = apr_dbd_query(groupDB->driver, groupDB->sql, &nrows, jstring_get_string(update_sql));
+
+    status = (Jxta_status) rv;
+    if (status != JXTA_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Couldn't update rc=%i\n %s \n", rv, jstring_get_string(update_sql));
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "updated - %s \n", jstring_get_string(update_sql));
+    }
+
+
+    JXTA_OBJECT_RELEASE(update_sql);
+    return rv;
+}
+static Jxta_status
+cm_sql_insert_item(GroupDB * groupDB, const char *table, const char *nameSpace, const char *key, const char *elemAttr,
+                   const char *val, Jxta_expiration_time timeOutForMe, Jxta_expiration_time timeOutForOthers)
+{
+
+    int nrows;
+    int rv = 0;
+    Jxta_status status = JXTA_FAILED;
+    JString *insert_sql = jstring_new_0();
+    JString *jKey = jstring_new_2(key);
+    JString *jNameSpace = jstring_new_2(nameSpace);
+    JString *jElemAttr = jstring_new_2(elemAttr);
+    JString *jVal = jstring_new_2(val);
+    JString *jTime = jstring_new_0();
+    JString *jTimeOthers = jstring_new_0();
+    Jxta_expiration_time expTime = 0;
+    char aTime[64];
+    status = cm_sql_found(groupDB, table, nameSpace, jstring_get_string(jKey), elemAttr, &expTime);
+
+    if (status == JXTA_SUCCESS) {
+        if (timeOutForMe > expTime) {
+            expTime = timeOutForMe;
+        }
+        status = cm_sql_update_item(groupDB, table, jNameSpace, jKey, jElemAttr, jVal, expTime);
+        goto finish;
+    } else if (status == JXTA_ITEM_NOTFOUND) {
+        jstring_append_2(insert_sql, SQL_INSERT_INTO);
+        jstring_append_2(insert_sql, table);
+        jstring_append_2(insert_sql, SQL_VALUES);
+    } else {
+        goto finish;
+    }
+    jstring_append_2(insert_sql, SQL_LEFT_PAREN);
+    SQL_VALUE(insert_sql, jNameSpace);
+    jstring_append_2(insert_sql, SQL_COMMA);
+    SQL_VALUE(insert_sql, jKey);
+    jstring_append_2(insert_sql, SQL_COMMA);
+    SQL_VALUE(insert_sql, jElemAttr);
+    jstring_append_2(insert_sql, SQL_COMMA);
+    SQL_VALUE(insert_sql, jVal);
+    jstring_append_2(insert_sql, SQL_COMMA);
+    memset(aTime, 0, 64);
+    if ((apr_snprintf((char *) &aTime[0], 64, jstring_get_string(jInt64_for_format), llabs(jpr_time_now() + timeOutForMe))) != 0) {
+        jstring_append_2(insert_sql, &aTime[0]);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to format time for me - set to default timeout \n");
+        apr_snprintf((char *) &aTime[0], 64, jstring_get_string(jInt64_for_format), llabs(jpr_time_now() + DEFAULT_EXPIRATION));
+    }
+    jstring_append_2(insert_sql, SQL_COMMA);
+    memset(aTime, 0, 64);
+    if ((apr_snprintf((char *) &aTime[0], 64, jstring_get_string(jInt64_for_format), llabs(timeOutForOthers))) != 0) {
+        jstring_append_2(insert_sql, &aTime[0]);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to format time for others - set to default timeout \n");
+        apr_snprintf((char *) &aTime[0], 64, jstring_get_string(jInt64_for_format), llabs(DEFAULT_EXPIRATION));
+    }
+    jstring_append_2(insert_sql, SQL_RIGHT_PAREN);
+
+    rv = apr_dbd_query(groupDB->driver, groupDB->sql, &nrows, jstring_get_string(insert_sql));
+
+
+    status = (Jxta_status) rv;
+
+  finish:
+    if (status != JXTA_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Couldn't insert %s  rc=%i\n", jstring_get_string(insert_sql), rv);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Saved %s  rc=%i\n", jstring_get_string(insert_sql), rv);
+    }
+    JXTA_OBJECT_RELEASE(insert_sql);
+    JXTA_OBJECT_RELEASE(jKey);
+    JXTA_OBJECT_RELEASE(jNameSpace);
+    JXTA_OBJECT_RELEASE(jElemAttr);
+    JXTA_OBJECT_RELEASE(jVal);
+    JXTA_OBJECT_RELEASE(jTime);
+    JXTA_OBJECT_RELEASE(jTimeOthers);
+    return status;
+}
+
+static Jxta_status cm_sql_delete_item(GroupDB * groupDB, const char *table, const char *advId)
+{
+
+    Jxta_status status;
+    int rv = 0;
+    int nrows = 0;
+    JString *statement = jstring_new_0();
+    JString *jAdvId = jstring_new_0();
+    jstring_append_2(jAdvId, advId);
+    jstring_append_2(statement, SQL_DELETE);
+    jstring_append_2(statement, table);
+    jstring_append_2(statement, SQL_WHERE);
+    jstring_append_2(statement, CM_COL_AdvId);
+    jstring_append_2(statement, SQL_EQUAL);
+    SQL_VALUE(statement, jAdvId);
+
+    rv = apr_dbd_query(groupDB->driver, groupDB->sql, &nrows, jstring_get_string(statement));
+
+    status = (Jxta_status) rv;
+    if (status != JXTA_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Couldn't delete %s  rc=%i\n", jstring_get_string(statement), rv);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "deleted %i  %s\n", nrows, jstring_get_string(statement));
+    }
+    JXTA_OBJECT_RELEASE(statement);
+    JXTA_OBJECT_RELEASE(jAdvId);
+    return status;
+}
+
+static Jxta_status cm_sql_delete_with_where(GroupDB * groupDB, const char *table, JString * where)
+{
+
+    int rv = 0;
+    int nrows = 0;
+    Jxta_status status;
+    JString *statement = jstring_new_0();
+    jstring_append_2(statement, SQL_DELETE);
+    jstring_append_2(statement, table);
+    if (where != NULL) {
+        jstring_append_1(statement, where);
+    }
+
+    rv = apr_dbd_query(groupDB->driver, groupDB->sql, &nrows, jstring_get_string(statement));
+
+    status = (Jxta_status) rv;
+    if (status != JXTA_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Couldn't delete rc=%i\n %s \n", rv, jstring_get_string(statement));
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "deleted %i rows  %s\n", nrows, jstring_get_string(statement));
+    }
+    JXTA_OBJECT_RELEASE(statement);
+    return status;
+
+}
+static Jxta_status cm_sql_remove_expired_records(GroupDB * groupDB, const char *folder_name)
+{
+    Jxta_status status = JXTA_SUCCESS;
+    Jxta_expiration_time tNow = jpr_time_now();
+    char aTime[64];
+    JString *jTime = jstring_new_0();
+    JString *where = jstring_new_0();
+    jstring_append_2(where, SQL_WHERE);
+
+    cm_sql_correct_space(folder_name, where);
+
+
+    jstring_append_2(where, SQL_AND);
+    jstring_append_2(where, CM_COL_TimeOut);
+    jstring_append_2(where, SQL_LESS_THAN);
+    memset(aTime, 0, 64);
+    if ((apr_snprintf((char *) aTime, 64, jstring_get_string(jInt64_for_format), tNow)) != 0) {
+        jstring_append_2(where, &aTime[0]);
+    } else {
+        status = JXTA_FAILED;
+        goto finish;
+    }
+    status = cm_sql_delete_with_where(groupDB, CM_TBL_ELEM_ATTRIBUTES, where);
+    if (status != JXTA_SUCCESS)
+        goto finish;
+    status = cm_sql_delete_with_where(groupDB, CM_TBL_SRDI, where);
+    if (status != JXTA_SUCCESS)
+        goto finish;
+    status = cm_sql_delete_with_where(groupDB, CM_TBL_ADVERTISEMENTS, where);
+    if (status != JXTA_SUCCESS)
+        goto finish;
+
+  finish:
+    if (status != JXTA_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Couldn't delete rc=%i\n %i \n", status, jstring_get_string(where));
+    }
+    JXTA_OBJECT_RELEASE(where);
+    JXTA_OBJECT_RELEASE(jTime);
+    return status;
+}
+static Jxta_status
+cm_sql_found(GroupDB * groupDB, const char *table, const char *nameSpace, const char *advId, const char *elemAttr,
+             Jxta_expiration_time * exp)
+{
+
+    int rv = 0;
+    Jxta_status status = JXTA_ITEM_NOTFOUND;
+    JString *where = jstring_new_0();
+    JString *columns = jstring_new_0();
+    JString *jNameSpace = jstring_new_2(nameSpace);
+    JString *jAdvId = jstring_new_2(advId);
+    JString *jElemAttr = NULL;
+    JString *statement = jstring_new_0();
+    Jpr_absolute_time expTemp;
+    apr_dbd_results_t *res = NULL;
+    apr_dbd_row_t *row = NULL;
+    apr_pool_t *pool = NULL;
+    apr_status_t aprs;
+    const char *entry;
+
+
+    jstring_append_2(columns, CM_COL_TimeOut);
+
+    jstring_append_2(where, CM_COL_NameSpace);
+    jstring_append_2(where, SQL_EQUAL);
+    SQL_VALUE(where, jNameSpace);
+    jstring_append_2(where, SQL_AND);
+    jstring_append_2(where, CM_COL_AdvId);
+    jstring_append_2(where, SQL_EQUAL);
+    SQL_VALUE(where, jAdvId);
+    if (elemAttr != NULL) {
+        jElemAttr = jstring_new_2(elemAttr);
+        jstring_append_2(where, SQL_AND);
+        jstring_append_2(where, CM_COL_Name);
+        jstring_append_2(where, SQL_EQUAL);
+        SQL_VALUE(where, jElemAttr);
+    }
+
+    aprs = apr_pool_create(&pool, NULL);
+    if (aprs != APR_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create apr_pool: %d\n", aprs);
+        status = JXTA_FAILED;
+        goto finish;
+    }
+
+    rv = cm_sql_select(groupDB, pool, table, &res, columns, where);
+
+
+    if (rv) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "cm_sql_found Select failed: %s %i\n",
+                        apr_dbd_error(groupDB->driver, groupDB->sql, rv), rv);
+        status = JXTA_FAILED;
+        goto finish;
+    }
+    for (rv = apr_dbd_get_row(groupDB->driver, pool, res, &row, -1);
+         rv == 0; rv = apr_dbd_get_row(groupDB->driver, pool, res, &row, -1)) {
+        entry = apr_dbd_get_entry(groupDB->driver, row, 0);
+        if (entry == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "(null) entry in cm_sql_found	");
+        } else {
+            sscanf(entry, jstring_get_string(jInt64_for_format), &expTemp);
+            if (expTemp < jpr_time_now()) {
+                *exp = 0;
+            } else {
+                *exp = (expTemp - jpr_time_now());
+            }
+        }
+        status = JXTA_SUCCESS;
+    }
+  finish:
+    if (NULL != pool)
+        apr_pool_destroy(pool);
+    JXTA_OBJECT_RELEASE(statement);
+    JXTA_OBJECT_RELEASE(columns);
+    JXTA_OBJECT_RELEASE(jNameSpace);
+    JXTA_OBJECT_RELEASE(jAdvId);
+    if (jElemAttr != NULL) {
+        JXTA_OBJECT_RELEASE(jElemAttr);
+    }
+    JXTA_OBJECT_RELEASE(where);
+    return status;
+
+}
+static Jxta_status
+cm_sql_srdi_found(GroupDB * groupDB, const char *table, JString * NameSpace, JString * Handler, JString * Peerid, JString * Key,
+                  JString * Attribute)
+{
+    int rv = 0;
+    int n;
+    Jxta_status status = JXTA_ITEM_NOTFOUND;
+    JString *where = jstring_new_0();
+    JString *columns = jstring_new_0();
+    JString *jNameSpace = jstring_clone(NameSpace);
+    JString *jHandler = jstring_clone(Handler);
+    JString *jPeerid = jstring_clone(Peerid);
+    JString *jAdvId = jstring_clone(Key);
+    JString *jElemAttr = jstring_clone(Attribute);
+    JString *statement = jstring_new_0();
+    apr_dbd_results_t *res = NULL;
+    apr_dbd_row_t *row = NULL;
+    apr_pool_t *pool = NULL;
+    apr_status_t aprs;
+    const char *entry;
+
+
+    jstring_append_2(columns, CM_COL_AdvId);
+
+    jstring_append_2(where, CM_COL_NameSpace);
+    jstring_append_2(where, SQL_EQUAL);
+    SQL_VALUE(where, jNameSpace);
+    jstring_append_2(where, SQL_AND);
+    jstring_append_2(where, CM_COL_Handler);
+    jstring_append_2(where, SQL_EQUAL);
+    SQL_VALUE(where, jHandler);
+    jstring_append_2(where, SQL_AND);
+    jstring_append_2(where, CM_COL_Peerid);
+    jstring_append_2(where, SQL_EQUAL);
+    SQL_VALUE(where, jPeerid);
+    jstring_append_2(where, SQL_AND);
+    jstring_append_2(where, CM_COL_AdvId);
+    jstring_append_2(where, SQL_EQUAL);
+    SQL_VALUE(where, jAdvId);
+    jstring_append_2(where, SQL_AND);
+    jstring_append_2(where, CM_COL_Name);
+    jstring_append_2(where, SQL_EQUAL);
+    SQL_VALUE(where, jElemAttr);
+
+    aprs = apr_pool_create(&pool, NULL);
+    if (aprs != APR_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create apr_pool: %d\n", aprs);
+        status = JXTA_FAILED;
+        goto finish;
+    }
+
+    rv = cm_sql_select(groupDB, pool, table, &res, columns, where);
+
+
+    if (rv) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "cm_sql_srdi_found Select failed: %s %i\n",
+                        apr_dbd_error(groupDB->driver, groupDB->sql, rv), rv);
+        status = JXTA_FAILED;
+        goto finish;
+    }
+    for (rv = apr_dbd_get_row(groupDB->driver, pool, res, &row, -1);
+         rv == 0; rv = apr_dbd_get_row(groupDB->driver, pool, res, &row, -1)) {
+        int column_count = apr_dbd_num_cols(groupDB->driver, res);
+        status = JXTA_SUCCESS;
+        for (n = 0; n < column_count; ++n) {
+            entry = apr_dbd_get_entry(groupDB->driver, row, n);
+            if (entry == NULL) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "(null) entry in cm_sql_found	");
+            }
+        }
+    }
+  finish:
+    if (NULL != pool)
+        apr_pool_destroy(pool);
+    JXTA_OBJECT_RELEASE(statement);
+    JXTA_OBJECT_RELEASE(columns);
+    JXTA_OBJECT_RELEASE(jNameSpace);
+    JXTA_OBJECT_RELEASE(jHandler);
+    JXTA_OBJECT_RELEASE(jPeerid);
+    JXTA_OBJECT_RELEASE(jAdvId);
+    JXTA_OBJECT_RELEASE(jElemAttr);
+    JXTA_OBJECT_RELEASE(where);
+    return status;
+
+}
+
+static Jxta_status
+cm_sql_select(GroupDB * groupDB, apr_pool_t * pool, const char *table, apr_dbd_results_t ** res, JString * columns,
+              JString * where)
+{
+
+    int rv = 0;
+    Jxta_status status;
+    JString *statement = jstring_new_0();
+    jstring_append_2(statement, SQL_SELECT);
+    if (columns != NULL) {
+        jstring_append_1(statement, columns);
+    } else {
+        jstring_append_2(statement, " * ");
+    }
+    jstring_append_2(statement, SQL_FROM);
+    jstring_append_2(statement, table);
+
+    if (where != NULL && jstring_length(where) > 0) {
+        jstring_append_2(statement, SQL_WHERE);
+        jstring_append_1(statement, where);
+    }
+
+    jstring_append_2(statement, SQL_END_SEMI);
+
+
+    rv = apr_dbd_select(groupDB->driver, pool, groupDB->sql, res, jstring_get_string(statement), 0);
+    if (rv == 0) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "%i tuples %s\n", apr_dbd_num_tuples(groupDB->driver, *res),
+                        jstring_get_string(statement));
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "error cm_sql_select %i   %s\n", rv, jstring_get_string(statement));
+    }
+
+    status = rv;
+    JXTA_OBJECT_RELEASE(statement);
+    return status;
+}
+
+static Jxta_status cm_sql_select_join(GroupDB * groupDB, apr_pool_t * pool, apr_dbd_results_t ** res, JString * where)
+{
+
+    int rv = 0;
+    Jxta_status status;
+    JString *statement = jstring_new_0();
+    jstring_append_2(statement, SQL_SELECT);
+    jstring_append_2(statement, CM_COL_SRC);
+    jstring_append_2(statement, SQL_DOT);
+    jstring_append_2(statement, CM_COL_AdvId);
+    jstring_append_2(statement, SQL_COMMA);
+    jstring_append_2(statement, CM_COL_Advert);
+    jstring_append_2(statement, SQL_FROM);
+    jstring_append_2(statement, CM_TBL_ELEM_ATTRIBUTES_SRC);
+    jstring_append_2(statement, SQL_JOIN);
+    jstring_append_2(statement, CM_TBL_ADVERTISEMENTS_JOIN);
+    jstring_append_2(statement, SQL_ON);
+    jstring_append_2(statement, CM_COL_SRC);
+    jstring_append_2(statement, SQL_DOT);
+    jstring_append_2(statement, CM_COL_AdvId);
+    jstring_append_2(statement, SQL_EQUAL);
+    jstring_append_2(statement, CM_COL_JOIN);
+    jstring_append_2(statement, SQL_DOT);
+    jstring_append_2(statement, CM_COL_AdvId);
+
+    if (where != NULL && jstring_length(where) > 0) {
+        jstring_append_2(statement, SQL_WHERE);
+        jstring_append_1(statement, where);
+    }
+    jstring_append_2(statement, SQL_GROUP);
+    jstring_append_2(statement, CM_COL_Advert);
+    jstring_append_2(statement, SQL_END_SEMI);
+
+
+    rv = apr_dbd_select(groupDB->driver, pool, groupDB->sql, res, jstring_get_string(statement), 0);
+    if (rv == 0) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "%i tuples %s\n", apr_dbd_num_tuples(groupDB->driver, *res),
+                        jstring_get_string(statement));
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "error cm_sql_select %i   %s\n", rv, jstring_get_string(statement));
+    }
+
+    status = rv;
+    JXTA_OBJECT_RELEASE(statement);
+    return status;
+}
+static void cm_sql_correct_space(const char *folder_name, JString * where)
+{
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "looking for space %s\n", folder_name);
+
+    if (!strcmp(folder_name, "Peers")) {
+        jstring_append_2(where, CM_COL_NameSpace);
+        jstring_append_2(where, SQL_EQUAL);
+        SQL_VALUE(where, jPeerNs);
+    } else if (!strcmp(folder_name, "Groups")) {
+        jstring_append_2(where, CM_COL_NameSpace);
+        jstring_append_2(where, SQL_EQUAL);
+        SQL_VALUE(where, jGroupNs);
+    } else {
+        jstring_append_2(where, CM_COL_NameSpace);
+        jstring_append_2(where, SQL_NOT_EQUAL);
+        SQL_VALUE(where, jGroupNs);
+        jstring_append_2(where, SQL_AND);
+        jstring_append_2(where, CM_COL_NameSpace);
+        jstring_append_2(where, SQL_NOT_EQUAL);
+        SQL_VALUE(where, jPeerNs);
+    }
+}
+
+Jxta_boolean jxta_sql_escape_and_wc_value(JString * jStr, Jxta_boolean replace)
+{
+
+    Jxta_boolean wc = FALSE;
+    Jxta_boolean change = FALSE;
+    char *bufpt;
+    int i, j, n, c;
+    char *arg;
+    if (jstring_length(jStr) == 0)
+        return FALSE;
+    arg = (char *) jstring_get_string(jStr);
+    for (i = n = 0; (c = arg[i]) != 0; i++) {
+        if (c == '\'') {
+            change = TRUE;
+            n++;
+        }
+        if ((c == '*') || (c == '?'))
+            wc = TRUE;
+    }
+    if (replace == TRUE && wc == TRUE)
+        change = TRUE;
+    if (change == FALSE)
+        return FALSE;
+    n += i;
+    bufpt = malloc(n + 1);
+    if (bufpt == 0)
+        return -1;
+    memset(bufpt, '\0', n);
+
+    j = 0;
+    for (i = 0; (c = arg[i]) != 0; i++) {
+        bufpt[j++] = c;
+        if (replace) {
+            if (c == '*')
+                bufpt[j - 1] = '%';
+            if (c == '?')
+                bufpt[j - 1] = '_';
+        }
+        if (c == '\'')
+            bufpt[j++] = c;
+    }
+    bufpt[j] = 0;
+    jstring_reset(jStr, NULL);
+    jstring_append_2(jStr, bufpt);
+    free(bufpt);
+    return wc;
+}
+
+/* vi: set ts=4 sw=4 tw=130 et: */

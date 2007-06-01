@@ -50,10 +50,11 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peer.c,v 1.12 2005/03/03 05:10:29 bondolo Exp $
+ * $Id: jxta_peer.c,v 1.17 2005/07/22 03:12:52 slowhog Exp $
  */
 
 #include "jxtaapr.h"
+#include "jxta_types.h"
 #include "jxta_peer.h"
 #include "jxta_service.h"
 #include "jxta_peer_private.h"
@@ -99,7 +100,7 @@ static void peer_entry_delete(Jxta_object * addr)
 /**
 * For calling by sub-classes
 **/
-_jxta_peer_entry *peer_entry_construct(_jxta_peer_entry * self)
+_jxta_peer_entry *JXTA_STDCALL peer_entry_construct(_jxta_peer_entry * self)
 {
     apr_status_t res;
 
@@ -107,7 +108,7 @@ _jxta_peer_entry *peer_entry_construct(_jxta_peer_entry * self)
     apr_pool_create(&self->pool, NULL);
 
     /* Create the mutex */
-    res = apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED,        /* nested */
+    res = apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED,    /* nested */
                                   self->pool);
     if (res != APR_SUCCESS) {
         /* Free the memory that has been already allocated */
@@ -124,7 +125,7 @@ _jxta_peer_entry *peer_entry_construct(_jxta_peer_entry * self)
     return self;
 }
 
-void peer_entry_destruct(_jxta_peer_entry * self)
+void JXTA_STDCALL peer_entry_destruct(_jxta_peer_entry * self)
 {
 
     if (self->address) {
@@ -143,12 +144,12 @@ void peer_entry_destruct(_jxta_peer_entry * self)
     self->thisType = NULL;
 }
 
-Jxta_peer *jxta_peer_new()
+JXTA_DECLARE(Jxta_peer *) jxta_peer_new()
 {
     return (Jxta_peer *) peer_entry_new();
 }
 
-Jxta_status jxta_peer_get_adv(Jxta_peer * p, Jxta_PA ** ret)
+JXTA_DECLARE(Jxta_status) jxta_peer_get_adv(Jxta_peer * p, Jxta_PA ** ret)
 {
     _jxta_peer_entry *peer = PTValid(p, _jxta_peer_entry);
 
@@ -165,7 +166,7 @@ Jxta_status jxta_peer_get_adv(Jxta_peer * p, Jxta_PA ** ret)
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_peer_get_peerid(Jxta_peer * p, Jxta_id ** ret)
+JXTA_DECLARE(Jxta_status) jxta_peer_get_peerid(Jxta_peer * p, Jxta_id ** ret)
 {
     _jxta_peer_entry *peer = PTValid(p, _jxta_peer_entry);
 
@@ -182,7 +183,7 @@ Jxta_status jxta_peer_get_peerid(Jxta_peer * p, Jxta_id ** ret)
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_peer_get_address(Jxta_peer * p, Jxta_endpoint_address ** ret)
+JXTA_DECLARE(Jxta_status) jxta_peer_get_address(Jxta_peer * p, Jxta_endpoint_address ** ret)
 {
     _jxta_peer_entry *peer = PTValid(p, _jxta_peer_entry);
 
@@ -200,7 +201,7 @@ Jxta_status jxta_peer_get_address(Jxta_peer * p, Jxta_endpoint_address ** ret)
 }
 
 
-Jxta_status jxta_peer_set_adv(Jxta_peer * p, Jxta_PA * val)
+JXTA_DECLARE(Jxta_status) jxta_peer_set_adv(Jxta_peer * p, Jxta_PA * val)
 {
     _jxta_peer_entry *peer = PTValid(p, _jxta_peer_entry);
 
@@ -219,7 +220,7 @@ Jxta_status jxta_peer_set_adv(Jxta_peer * p, Jxta_PA * val)
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_peer_set_peerid(Jxta_peer * p, Jxta_id * val)
+JXTA_DECLARE(Jxta_status) jxta_peer_set_peerid(Jxta_peer * p, Jxta_id * val)
 {
     _jxta_peer_entry *peer = PTValid(p, _jxta_peer_entry);
 
@@ -239,7 +240,7 @@ Jxta_status jxta_peer_set_peerid(Jxta_peer * p, Jxta_id * val)
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_peer_set_address(Jxta_peer * p, Jxta_endpoint_address * val)
+JXTA_DECLARE(Jxta_status) jxta_peer_set_address(Jxta_peer * p, Jxta_endpoint_address * val)
 {
     _jxta_peer_entry *peer = PTValid(p, _jxta_peer_entry);
 
@@ -259,7 +260,7 @@ Jxta_status jxta_peer_set_address(Jxta_peer * p, Jxta_endpoint_address * val)
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_peer_lock(Jxta_peer * p)
+Jxta_status JXTA_STDCALL jxta_peer_lock(Jxta_peer * p)
 {
     _jxta_peer_entry *peer = PTValid(p, _jxta_peer_entry);
 
@@ -268,7 +269,7 @@ Jxta_status jxta_peer_lock(Jxta_peer * p)
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_peer_unlock(Jxta_peer * p)
+Jxta_status JXTA_STDCALL jxta_peer_unlock(Jxta_peer * p)
 {
     _jxta_peer_entry *peer = PTValid(p, _jxta_peer_entry);
 
@@ -277,35 +278,35 @@ Jxta_status jxta_peer_unlock(Jxta_peer * p)
     return JXTA_SUCCESS;
 }
 
-Jxta_endpoint_address const * jxta_peer_get_address_priv(Jxta_peer * p)
+Jxta_endpoint_address *JXTA_STDCALL jxta_peer_get_address_priv(Jxta_peer * p)
 {
     _jxta_peer_entry *peer = (_jxta_peer_entry *) p;
-    
+
     return peer->address;
 }
 
-Jxta_id * jxta_peer_get_peerid_priv(Jxta_peer * p)
+Jxta_id *JXTA_STDCALL jxta_peer_get_peerid_priv(Jxta_peer * p)
 {
     _jxta_peer_entry *peer = (_jxta_peer_entry *) p;
-    
+
     return peer->peerid;
 }
 
-Jxta_PA * jxta_peer_get_adv_priv(Jxta_peer * p)
+Jxta_PA *JXTA_STDCALL jxta_peer_get_adv_priv(Jxta_peer * p)
 {
     _jxta_peer_entry *peer = (_jxta_peer_entry *) p;
-    
+
     return peer->adv;
 }
 
-Jxta_time jxta_peer_get_expires(Jxta_peer * p)
+Jxta_time JXTA_STDCALL jxta_peer_get_expires(Jxta_peer * p)
 {
     _jxta_peer_entry *peer = PTValid(p, _jxta_peer_entry);
 
     return peer->expires;
 }
 
-Jxta_status jxta_peer_set_expires(Jxta_peer * p, Jxta_time expires)
+Jxta_status JXTA_STDCALL jxta_peer_set_expires(Jxta_peer * p, Jxta_time expires)
 {
     _jxta_peer_entry *peer = PTValid(p, _jxta_peer_entry);
 
@@ -314,7 +315,7 @@ Jxta_status jxta_peer_set_expires(Jxta_peer * p, Jxta_time expires)
     return JXTA_SUCCESS;
 }
 
-Jxta_time jxta_rdv_service_peer_get_expires(Jxta_service * rdv, Jxta_peer * p)
+JXTA_DECLARE(Jxta_time) jxta_rdv_service_peer_get_expires(Jxta_service * rdv, Jxta_peer * p)
 {
     return jxta_peer_get_expires(p);
 }

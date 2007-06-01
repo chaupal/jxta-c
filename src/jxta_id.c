@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_id.c,v 1.14 2005/02/17 04:51:27 bondolo Exp $
+ * $Id: jxta_id.c,v 1.16 2005/07/22 03:12:51 slowhog Exp $
  */
 
 
@@ -93,7 +93,7 @@ static JXTAIDFormat *idformats[] = {
     **
     ** @return string containing the name of the default id format.
     *************************************************************************/
-char const *jxta_id_get_default_id_format(void)
+JXTA_DECLARE(char const *) jxta_id_get_default_id_format(void)
 {
     return newInstances->fmt;
 }
@@ -105,13 +105,13 @@ char const *jxta_id_get_default_id_format(void)
     ** @return NULL terminated array of string pointers containing the names
     ** of all of the id formats supported by this Jxta implementation.
     *************************************************************************/
-char const **jxta_id_get_id_formats(void)
+JXTA_DECLARE(char const **) jxta_id_get_id_formats(void)
 {
     static Jxta_boolean init = FALSE;
     static char const **formats;
     if (!init) {
         int eachFormat = 0;
-        formats = malloc(sizeof(idformats));    /* minor memory leak */
+        formats = (const char **) malloc(sizeof(idformats));    /* minor memory leak */
 
         while (NULL != idformats[eachFormat]) {
             formats[eachFormat] = idformats[eachFormat]->fmt;
@@ -124,7 +124,7 @@ char const **jxta_id_get_id_formats(void)
     return formats;
 }
 
-Jxta_status jxta_id_peergroupid_new_1(Jxta_id ** pg)
+JXTA_DECLARE(Jxta_status) jxta_id_peergroupid_new_1(Jxta_id ** pg)
 {
 
     if (NULL == pg)
@@ -133,7 +133,7 @@ Jxta_status jxta_id_peergroupid_new_1(Jxta_id ** pg)
     return (newInstances->fmt_newPeergroupid1) (pg);
 }
 
-Jxta_status jxta_id_peergroupid_new_2(Jxta_id ** pg, unsigned char const *seed, size_t len)
+JXTA_DECLARE(Jxta_status) jxta_id_peergroupid_new_2(Jxta_id ** pg, unsigned char const *seed, size_t len)
 {
 
     if (NULL == pg)
@@ -145,7 +145,7 @@ Jxta_status jxta_id_peergroupid_new_2(Jxta_id ** pg, unsigned char const *seed, 
     return (newInstances->fmt_newPeergroupid2) (pg, seed, len);
 }
 
-Jxta_status jxta_id_peerid_new_1(Jxta_id ** peerid, Jxta_id * pg)
+JXTA_DECLARE(Jxta_status) jxta_id_peerid_new_1(Jxta_id ** peerid, Jxta_id * pg)
 {
 
     if (NULL == peerid)
@@ -160,7 +160,7 @@ Jxta_status jxta_id_peerid_new_1(Jxta_id ** peerid, Jxta_id * pg)
         return (pg->formatter->fmt_newPeerid1) (peerid, pg);
 }
 
-Jxta_status jxta_id_peerid_new_2(Jxta_id ** peerid, Jxta_id * pg, unsigned char const *seed, size_t len)
+JXTA_DECLARE(Jxta_status) jxta_id_peerid_new_2(Jxta_id ** peerid, Jxta_id * pg, unsigned char const *seed, size_t len)
 {
 
     if (NULL == peerid)
@@ -178,7 +178,7 @@ Jxta_status jxta_id_peerid_new_2(Jxta_id ** peerid, Jxta_id * pg, unsigned char 
         return (pg->formatter->fmt_newPeerid2) (peerid, pg, seed, len);
 }
 
-Jxta_status jxta_id_codatid_new_1(Jxta_id ** codatid, Jxta_id * pg)
+JXTA_DECLARE(Jxta_status) jxta_id_codatid_new_1(Jxta_id ** codatid, Jxta_id * pg)
 {
 
     if (NULL == codatid)
@@ -193,7 +193,7 @@ Jxta_status jxta_id_codatid_new_1(Jxta_id ** codatid, Jxta_id * pg)
         return (pg->formatter->fmt_newCodatid1) (codatid, pg);
 }
 
-Jxta_status jxta_id_codatid_new_2(Jxta_id ** codatid, Jxta_id * pg, ReadFunc read_func, void *stream)
+JXTA_DECLARE(Jxta_status) jxta_id_codatid_new_2(Jxta_id ** codatid, Jxta_id * pg, ReadFunc read_func, void *stream)
 {
 
     if (NULL == codatid)
@@ -211,7 +211,7 @@ Jxta_status jxta_id_codatid_new_2(Jxta_id ** codatid, Jxta_id * pg, ReadFunc rea
         return (pg->formatter->fmt_newCodatid2) (codatid, pg, read_func, stream);
 }
 
-Jxta_status jxta_id_pipeid_new_1(Jxta_id ** pipeid, Jxta_id * pg)
+JXTA_DECLARE(Jxta_status) jxta_id_pipeid_new_1(Jxta_id ** pipeid, Jxta_id * pg)
 {
 
     if (NULL == pipeid)
@@ -226,7 +226,7 @@ Jxta_status jxta_id_pipeid_new_1(Jxta_id ** pipeid, Jxta_id * pg)
         return (pg->formatter->fmt_newPipeid1) (pipeid, pg);
 }
 
-Jxta_status jxta_id_pipeid_new_2(Jxta_id ** pipeid, Jxta_id * pg, unsigned char const *seed, size_t len)
+JXTA_DECLARE(Jxta_status) jxta_id_pipeid_new_2(Jxta_id ** pipeid, Jxta_id * pg, unsigned char const *seed, size_t len)
 {
 
     if (NULL == pipeid)
@@ -244,7 +244,7 @@ Jxta_status jxta_id_pipeid_new_2(Jxta_id ** pipeid, Jxta_id * pg, unsigned char 
         return (pg->formatter->fmt_newPipeid2) (pipeid, pg, seed, len);
 }
 
-Jxta_status jxta_id_moduleclassid_new_1(Jxta_id ** mcid)
+JXTA_DECLARE(Jxta_status) jxta_id_moduleclassid_new_1(Jxta_id ** mcid)
 {
 
     if (NULL == mcid)
@@ -253,7 +253,7 @@ Jxta_status jxta_id_moduleclassid_new_1(Jxta_id ** mcid)
     return (newInstances->fmt_newModuleclassid1) (mcid);
 }
 
-Jxta_status jxta_id_moduleclassid_new_2(Jxta_id ** mcid, Jxta_id * base)
+JXTA_DECLARE(Jxta_status) jxta_id_moduleclassid_new_2(Jxta_id ** mcid, Jxta_id * base)
 {
 
     if (NULL == mcid)
@@ -265,7 +265,7 @@ Jxta_status jxta_id_moduleclassid_new_2(Jxta_id ** mcid, Jxta_id * base)
     return (base->formatter->fmt_newModuleclassid2) (mcid, base);
 }
 
-Jxta_status jxta_id_modulespecid_new(Jxta_id ** msid, Jxta_id * mcid)
+JXTA_DECLARE(Jxta_status) jxta_id_modulespecid_new(Jxta_id ** msid, Jxta_id * mcid)
 {
 
     if (NULL == msid)
@@ -277,7 +277,7 @@ Jxta_status jxta_id_modulespecid_new(Jxta_id ** msid, Jxta_id * mcid)
     return (mcid->formatter->fmt_newModulespecid) (msid, mcid);
 }
 
-Jxta_status jxta_id_from_jstring(Jxta_id ** id, JString * jid)
+JXTA_DECLARE(Jxta_status) jxta_id_from_jstring(Jxta_id ** id, JString * jid)
 {
     Jxta_status err;
     char const *srcString = NULL;
@@ -294,7 +294,7 @@ Jxta_status jxta_id_from_jstring(Jxta_id ** id, JString * jid)
 
     /*  make a working copy in a char array. */
     /*  FIXME 20020126 bondolo@jxta.org we should be doing UTF8 decode and % chars here */
-    workingCopy = malloc(jstring_length(jid) + 1);
+    workingCopy = (char *) malloc(jstring_length(jid) + 1);
 
     if (NULL == workingCopy)
         return JXTA_NOMEM;
@@ -370,7 +370,7 @@ Jxta_status jxta_id_from_jstring(Jxta_id ** id, JString * jid)
     return err;
 }
 
-char const *jxta_id_get_idformat(Jxta_id * jid)
+JXTA_DECLARE(char const *) jxta_id_get_idformat(Jxta_id * jid)
 {
     if (!JXTA_OBJECT_CHECK_VALID(jid))
         return NULL;
@@ -378,7 +378,7 @@ char const *jxta_id_get_idformat(Jxta_id * jid)
     return (jid->formatter->fmt);
 }
 
-Jxta_status jxta_id_get_uniqueportion(Jxta_id * jid, JString ** string)
+JXTA_DECLARE(Jxta_status) jxta_id_get_uniqueportion(Jxta_id * jid, JString ** string)
 {
     if (NULL == string)
         return JXTA_INVALID_ARGUMENT;
@@ -389,7 +389,7 @@ Jxta_status jxta_id_get_uniqueportion(Jxta_id * jid, JString ** string)
     return (jid->formatter->fmt_getUniqueportion) (jid, string);
 }
 
-Jxta_status jxta_id_to_jstring(Jxta_id * jid, JString ** string)
+JXTA_DECLARE(Jxta_status) jxta_id_to_jstring(Jxta_id * jid, JString ** string)
 {
     static char const *prefix = "urn:jxta:";
     Jxta_status result = JXTA_SUCCESS;
@@ -424,7 +424,7 @@ Jxta_status jxta_id_to_jstring(Jxta_id * jid, JString ** string)
     return result;
 }
 
-Jxta_boolean jxta_id_equals(Jxta_id * jid1, Jxta_id * jid2)
+JXTA_DECLARE(Jxta_boolean) jxta_id_equals(Jxta_id * jid1, Jxta_id * jid2)
 {
     if (jid1 == jid2)
         return TRUE;
@@ -441,7 +441,7 @@ Jxta_boolean jxta_id_equals(Jxta_id * jid1, Jxta_id * jid2)
     return (jid1->formatter->fmt_equals) (jid1, jid2);
 }
 
-unsigned int jxta_id_hashcode(Jxta_id * jid)
+JXTA_DECLARE(unsigned int) jxta_id_hashcode(Jxta_id * jid)
 {
 
     if (!JXTA_OBJECT_CHECK_VALID(jid))

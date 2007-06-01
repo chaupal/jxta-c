@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_membership_service_null.c,v 1.10 2005/03/25 02:32:01 hamada Exp $
+ * $Id: jxta_membership_service_null.c,v 1.13 2005/08/03 05:51:16 slowhog Exp $
  */
 
-
+#include <assert.h>
 #include "jxtaapr.h"
 
 #include "jpr/jpr_excep_proto.h"
@@ -74,18 +74,17 @@ typedef struct {
 
     Extends(Jxta_membership_service);
 
-    Jxta_PG*                group;
+    Jxta_PG *group;
 
-    Jxta_id*                assigned_id;
+    Jxta_id *assigned_id;
 
-    Jxta_advertisement*     impl_adv;
+    Jxta_advertisement *impl_adv;
 
-    Jxta_vector *           creds;
+    Jxta_vector *creds;
 
-}
-Jxta_membership_service_null;
+} Jxta_membership_service_null;
 
-static Jxta_status resign( Jxta_membership_service* svc );
+static Jxta_status resign(Jxta_membership_service * svc);
 
 /*
  * module methods
@@ -102,10 +101,10 @@ static Jxta_status resign( Jxta_membership_service* svc );
  */
 
 Jxta_status
-jxta_membership_service_null_init(Jxta_module* membership, Jxta_PG* group,
-                                   Jxta_id* assigned_id, Jxta_advertisement* impl_adv) {
+jxta_membership_service_null_init(Jxta_module * membership, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
+{
 
-    Jxta_membership_service_null* self = (Jxta_membership_service_null*) membership;
+    Jxta_membership_service_null *self = (Jxta_membership_service_null *) membership;
 
     /* Test arguments first */
     if ((membership == NULL) || (group == NULL)) {
@@ -121,14 +120,14 @@ jxta_membership_service_null_init(Jxta_module* membership, Jxta_PG* group,
     }
 
     /* keep a reference to our group and impl adv */
-    
+
     if (impl_adv != NULL) {
         JXTA_OBJECT_SHARE(impl_adv);
     }
     self->group = group;
     self->impl_adv = impl_adv;
 
-    self->creds = jxta_vector_new( 5 );
+    self->creds = jxta_vector_new(5);
 
     return JXTA_SUCCESS;
 }
@@ -142,11 +141,11 @@ jxta_membership_service_null_init(Jxta_module* membership, Jxta_PG* group,
  * @param this a pointer to the instance of the Membership Service
  * @param argv a vector of string arguments.
  */
-static Jxta_status
-start(Jxta_module* self, char* argv[]) {
+static Jxta_status start(Jxta_module * self, const char *argv[])
+{
     /* easy as pai */
 
-    resign( (Jxta_membership_service*) self );
+    resign((Jxta_membership_service *) self);
 
     return JXTA_SUCCESS;
 }
@@ -158,8 +157,12 @@ start(Jxta_module* self, char* argv[]) {
  * @param service a pointer to the instance of the Membership Service
  * @return Jxta_status
  */
-static void
-stop (Jxta_module* membership) {
+static void stop(Jxta_module * membership)
+{
+    Jxta_membership_service_null *self = (Jxta_membership_service_null *) membership;
+
+    jxta_vector_clear(self->creds);
+
     JXTA_LOG("Stopped.\n");
     /* nothing special to stop */
 }
@@ -174,10 +177,10 @@ stop (Jxta_module* membership) {
  * @param service a pointer to the instance of the Membership Service
  * @return the advertisement.
  */
-static void
-get_mia(Jxta_service* membership, Jxta_advertisement** mia) {
+static void get_mia(Jxta_service * membership, Jxta_advertisement ** mia)
+{
 
-    Jxta_membership_service_null* self = (Jxta_membership_service_null*) membership;
+    Jxta_membership_service_null *self = (Jxta_membership_service_null *) membership;
     PTValid(self, Jxta_membership_service_null);
 
     JXTA_OBJECT_SHARE(self->impl_adv);
@@ -189,8 +192,8 @@ get_mia(Jxta_service* membership, Jxta_advertisement** mia) {
  *
  * @return this service object itself.
  */
-static void
-get_interface(Jxta_service* self, Jxta_service** svc) {
+static void get_interface(Jxta_service * self, Jxta_service ** svc)
+{
     PTValid(self, Jxta_membership_service_null);
 
     JXTA_OBJECT_SHARE(self);
@@ -202,43 +205,39 @@ get_interface(Jxta_service* self, Jxta_service** svc) {
  * Membership methods proper.
  */
 
-static Jxta_status
-apply(    Jxta_membership_service* self,
-          Jxta_credential* authcred,
-          Jxta_membership_authenticator** auth ) {
+static Jxta_status apply(Jxta_membership_service * self, Jxta_credential * authcred, Jxta_membership_authenticator ** auth)
+{
     return JXTA_NOTIMP;
 
 }
 
-static Jxta_status
-join( Jxta_membership_service* self,
-      Jxta_membership_authenticator* auth,
-      Jxta_credential** newcred ) {
+static Jxta_status join(Jxta_membership_service * self, Jxta_membership_authenticator * auth, Jxta_credential ** newcred)
+{
     return JXTA_NOTIMP;
 
 }
 
-static Jxta_status
-resign( Jxta_membership_service* svc ) {
-    Jxta_membership_service_null* self = (Jxta_membership_service_null*) svc;
-    Jxta_id * pg;
-    Jxta_id * peer;
+static Jxta_status resign(Jxta_membership_service * svc)
+{
+    Jxta_membership_service_null *self = (Jxta_membership_service_null *) svc;
+    Jxta_id *pg;
+    Jxta_id *peer;
     Jxta_object *cred;
-    JString * identity = jstring_new_0();
+    JString *identity = jstring_new_0();
 
     PTValid(self, Jxta_membership_service_null);
 
-    jxta_vector_clear( self->creds );
+    assert(0 == jxta_vector_size(self->creds));
 
-    jxta_PG_get_GID ( self->group, &pg );
+    jxta_PG_get_GID(self->group, &pg);
 
-    jxta_PG_get_PID ( self->group, &peer );
-    
-    jstring_append_2( identity, "nobody" );
+    jxta_PG_get_PID(self->group, &peer);
 
-    cred = (Jxta_object*) jxta_cred_null_new( (Jxta_service*) self, pg, peer, identity );
+    jstring_append_2(identity, "nobody");
+
+    cred = (Jxta_object *) jxta_cred_null_new((Jxta_service *) self, pg, peer, identity);
     if (NULL != cred) {
-        jxta_vector_add_object_last( self->creds, cred );
+        jxta_vector_add_object_last(self->creds, cred);
         JXTA_OBJECT_RELEASE(cred);
     }
 
@@ -249,25 +248,22 @@ resign( Jxta_membership_service* svc ) {
     return JXTA_SUCCESS;
 }
 
-static Jxta_status
-currentcreds( Jxta_membership_service* svc,
-              Jxta_vector** creds ) {
+static Jxta_status currentcreds(Jxta_membership_service * svc, Jxta_vector ** creds)
+{
 
-    Jxta_membership_service_null* self = (Jxta_membership_service_null*) svc;
+    Jxta_membership_service_null *self = (Jxta_membership_service_null *) svc;
 
-    if( NULL == creds )
+    if (NULL == creds)
         return JXTA_INVALID_ARGUMENT;
 
-    *creds = JXTA_OBJECT_SHARE( self->creds );
+    *creds = JXTA_OBJECT_SHARE(self->creds);
 
     return JXTA_SUCCESS;
 }
 
 
-static Jxta_status
-makecred( Jxta_membership_service* self,
-          JString* somecred,
-          Jxta_credential** cred ) {
+static Jxta_status makecred(Jxta_membership_service * self, JString * somecred, Jxta_credential ** cred)
+{
 
     return JXTA_NOTIMP;
 }
@@ -286,52 +282,48 @@ makecred( Jxta_membership_service* self,
 typedef Jxta_membership_service_methods Jxta_membership_service_null_methods;
 
 Jxta_membership_service_null_methods jxta_membership_service_null_methods = {
-            {
-                {
-                    "Jxta_module_methods",
-                    jxta_membership_service_null_init,
-                    jxta_module_init_e_impl,
-                    start,
-                    stop
-                },
-                "Jxta_service_methods",
-                get_mia,
-                get_interface
-            },
-            "Jxta_membership_service_methods",
-            apply,
-            join,
-            resign,
-            currentcreds,
-            makecred
-        };
+    {
+     {
+      "Jxta_module_methods",
+      jxta_membership_service_null_init,
+      jxta_module_init_e_impl,
+      start,
+      stop},
+     "Jxta_service_methods",
+     get_mia,
+     get_interface},
+    "Jxta_membership_service_methods",
+    apply,
+    join,
+    resign,
+    currentcreds,
+    makecred
+};
 
-void
-jxta_membership_service_null_construct(Jxta_membership_service_null* self,
-                                       Jxta_membership_service_null_methods* methods) {
+void jxta_membership_service_null_construct(Jxta_membership_service_null * self, Jxta_membership_service_null_methods * methods)
+{
     /*
      * we do not extend Jxta_Membership_service_methods; so the type string
      * is that of the base table
      */
     PTValid(methods, Jxta_membership_service_methods);
 
-    jxta_membership_service_construct((Jxta_membership_service*) self,
-                                      (Jxta_membership_service_methods*) methods);
+    jxta_membership_service_construct((Jxta_membership_service *) self, (Jxta_membership_service_methods *) methods);
 
     /* Set our rt type checking string */
     self->thisType = "Jxta_membership_service_null";
 }
 
-void jxta_membership_service_null_destruct(Jxta_membership_service_null* self) {
+void jxta_membership_service_null_destruct(Jxta_membership_service_null * self)
+{
     PTValid(self, Jxta_membership_service_null);
 
     /* release/free/destroy our own stuff */
-
     if (NULL != self->creds) {
-        JXTA_OBJECT_RELEASE (self->creds);
+        JXTA_OBJECT_RELEASE(self->creds);
     }
 
-    self->group = NULL; 
+    self->group = NULL;
 
     if (self->impl_adv) {
         JXTA_OBJECT_RELEASE(self->impl_adv);
@@ -342,7 +334,7 @@ void jxta_membership_service_null_destruct(Jxta_membership_service_null* self) {
     }
 
     /* call the base classe's dtor. */
-    jxta_membership_service_destruct((Jxta_membership_service*) self);
+    jxta_membership_service_destruct((Jxta_membership_service *) self);
 
     JXTA_LOG("Destruction finished\n");
 }
@@ -352,13 +344,13 @@ void jxta_membership_service_null_destruct(Jxta_membership_service_null* self) {
  * 
  * @param service a pointer to the instance of the Membership Service to free.
  */
-static void
-membership_free (Jxta_object* service) {
+static void membership_free(Jxta_object * service)
+{
     /* call the hierarchy of dtors */
-    jxta_membership_service_null_destruct((Jxta_membership_service_null*) service);
+    jxta_membership_service_null_destruct((Jxta_membership_service_null *) service);
 
     /* free the object itself */
-    free (service);
+    free(service);
 }
 
 
@@ -370,23 +362,22 @@ membership_free (Jxta_object* service) {
  * @return a non initialized instance of the Membership Service
  */
 
-Jxta_membership_service_null*
-jxta_membership_service_null_new_instance (void) {
+Jxta_membership_service_null *jxta_membership_service_null_new_instance(void)
+{
     /* Allocate an instance of this service */
-    Jxta_membership_service_null* self = (Jxta_membership_service_null*)
-                                         malloc (sizeof (Jxta_membership_service_null));
+    Jxta_membership_service_null *self = (Jxta_membership_service_null *)
+        malloc(sizeof(Jxta_membership_service_null));
 
     if (self == NULL) {
         return NULL;
     }
 
     /* Initialize the object */
-    memset (self, 0, sizeof (Jxta_membership_service_null));
-    JXTA_OBJECT_INIT (self, membership_free, 0);
+    memset(self, 0, sizeof(Jxta_membership_service_null));
+    JXTA_OBJECT_INIT(self, membership_free, 0);
 
     /* call the hierarchy of ctors */
-    jxta_membership_service_null_construct(self,
-                                           &jxta_membership_service_null_methods);
+    jxta_membership_service_null_construct(self, &jxta_membership_service_null_methods);
 
     /* return the new object */
     return self;

@@ -51,11 +51,35 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_types.h,v 1.6 2005/03/30 20:00:05 bondolo Exp $
+ * $Id: jpr_types.h,v 1.12 2005/09/03 02:02:37 slowhog Exp $
  */
 
 #ifndef JPR_TYPES_H
 #define JPR_TYPES_H
+
+#ifndef JPR_DECLARE
+#ifdef WIN32 
+#ifdef JPR_STATIC
+#define JPR_DECLARE(type) extern type __stdcall
+#define JPR_DECLARE_DATA  extern
+#else /* JXTA_STATIC */
+
+#ifdef JPR_EXPORTS
+#define JPR_DECLARE(type) __declspec(dllexport) type __stdcall
+#define JPR_DECLARE_DATA  extern __declspec(dllexport)
+#else
+#define JPR_DECLARE(type) __declspec(dllimport) type __stdcall
+#define JPR_DECLARE_DATA  extern __declspec(dllimport)
+#endif
+
+#endif /* JXTA_STATIC */
+
+#else /* WIN32 */
+#define JPR_DECLARE(type)  extern type
+#define JPR_DECLARE_DATA   extern
+#endif /* WIN32 */
+
+#endif /* JPR_DECLARE */
 
 /*
  * Note that this file does NOT include apr_ headers. apr_ headers must not
@@ -71,13 +95,27 @@ extern "C" {
 #endif
 #endif
 
+#ifdef WIN32
+#include <windows.h>
+#endif
+
+enum Jxta_booleans { JXTA_FALSE = 0, JXTA_TRUE = !JXTA_FALSE };
 
 #if !defined(FALSE) && !defined(TRUE)
-enum Jxta_booleans { FALSE = 0, TRUE = !FALSE };
 typedef enum Jxta_booleans Jpr_boolean;
 #else
 typedef unsigned int Jpr_boolean;
 #endif
+
+/* Remove define after clean up TRUE/FALSE from jxta-c codebase */
+#ifndef TRUE
+#define TRUE JXTA_TRUE
+#endif
+
+#ifndef FALSE
+#define FALSE JXTA_FALSE
+#endif
+
 /* 
  * These definitions are a bit light
  * we should duplicate apr's efforts at defining these
@@ -99,22 +137,25 @@ typedef unsigned short Jpr_port;
 typedef unsigned long Jpr_in_addr;
 
 #ifdef WIN32
-#include <windows.h>
 typedef __int64 Jpr_interval_time;
 typedef unsigned __int64 Jpr_absolute_time;
 #pragma warning ( once : 4115 )
 #define snprintf _snprintf
+#define JPR_ABS_TIME_FMT "%I64u"
+#define JPR_DIFF_TIME_FMT "%I64d"
 #else
 typedef long long Jpr_interval_time;
 typedef unsigned long long Jpr_absolute_time;
+#define JPR_ABS_TIME_FMT "%llu"
+#define JPR_DIFF_TIME_FMT "%lld"
 #endif
 
 typedef Jpr_interval_time Jpr_expiration_time;  /* duration expressed in milliseconds */
 
-extern const Jpr_interval_time JPR_INTERVAL_ONE_SECOND;
-extern const Jpr_interval_time JPR_INTERVAL_TIME_MAX;
-extern const Jpr_interval_time JPR_INTERVAL_TIME_MIN1;
-extern const Jpr_absolute_time JPR_ABSOLUTE_TIME_MAX;
+JPR_DECLARE_DATA const Jpr_interval_time JPR_INTERVAL_ONE_SECOND;
+JPR_DECLARE_DATA const Jpr_interval_time JPR_INTERVAL_TIME_MIN;
+JPR_DECLARE_DATA const Jpr_interval_time JPR_INTERVAL_TIME_MAX;
+JPR_DECLARE_DATA const Jpr_absolute_time JPR_ABSOLUTE_TIME_MAX;
 
 /*
  * Some opaque types that stand for the corresponding apr
@@ -128,7 +169,7 @@ typedef struct Jpr_hash Jpr_hash;
  * 
  * @return the absolute time in milliseconds since the epoch.
  */
-extern Jpr_absolute_time jpr_time_now(void);
+JPR_DECLARE(Jpr_absolute_time) jpr_time_now(void);
 
 /**
  * Define jpr_time_now in milliseconds to be consistent with 

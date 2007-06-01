@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_defloader_private.h,v 1.2 2002/03/02 18:33:36 jice Exp $
+ * $Id: jxta_defloader_private.h,v 1.3 2005/06/16 23:11:40 slowhog Exp $
  */
 
 #ifndef JXTA_DEFLOADER_PRIVATE_H
@@ -66,11 +66,15 @@ extern "C" {
 }
 #endif
 #endif
-
-extern Jxta_module* jxta_defloader_instantiate_e(const char* name, Throws);
+extern Jxta_module *jxta_defloader_instantiate_e(const char *name, Throws);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTA_DEFLOADER_PRIVATE_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_routea.h,v 1.4 2005/02/02 02:58:32 exocetrick Exp $
+ * $Id: jxta_routea.h,v 1.7 2005/08/03 05:51:18 slowhog Exp $
  */
 
-   
+
 #ifndef JXTA_ROUTEADVERTISEMENT_H__
 #define JXTA_ROUTEADVERTISEMENT_H__
 
@@ -67,10 +67,8 @@ extern "C" {
 }
 #endif
 #endif
-
 #define ROUTEADV_DEFAULT_LIFETIME   (Jxta_expiration_time)  (1000L * 60L * 15L)
 #define ROUTEADV_DEFAULT_EXPIRATION  (Jxta_expiration_time)  (1000L * 60L * 15L)
-
 typedef struct _jxta_RouteAdvertisement Jxta_RouteAdvertisement;
 
 /**
@@ -79,8 +77,8 @@ typedef struct _jxta_RouteAdvertisement Jxta_RouteAdvertisement;
  * @param void takes no arguments
  * @return pointer to route advertisement Jxta_RouteAdvertisement
  */
-Jxta_RouteAdvertisement* 
-jxta_RouteAdvertisement_new(void);
+JXTA_DECLARE(Jxta_RouteAdvertisement *)
+    jxta_RouteAdvertisement_new(void);
 
 /**
  * Constructs a representation of a route advertisement in
@@ -92,9 +90,8 @@ jxta_RouteAdvertisement_new(void);
  *
  * @return Jxta_status 
  */
-Jxta_status 
-jxta_RouteAdvertisement_get_xml(Jxta_RouteAdvertisement *,
-					    JString **);
+JXTA_DECLARE(Jxta_status)
+    jxta_RouteAdvertisement_get_xml(Jxta_RouteAdvertisement *, JString **);
 
 /**
  * Wrapper for jxta_advertisement_parse_charbuffer,
@@ -109,9 +106,7 @@ jxta_RouteAdvertisement_get_xml(Jxta_RouteAdvertisement *,
  *
  * @return void Doesn't return anything.
  */
-void 
-jxta_RouteAdvertisement_parse_charbuffer(Jxta_RouteAdvertisement *,
-					      const char *, int len); 
+JXTA_DECLARE(void) jxta_RouteAdvertisement_parse_charbuffer(Jxta_RouteAdvertisement *, const char *, int len);
 
 /**
  * Wrapper for jxta_advertisement_parse_file,
@@ -124,21 +119,17 @@ jxta_RouteAdvertisement_parse_charbuffer(Jxta_RouteAdvertisement *,
  *
  * @return void Doesn't return anything.
  */
-void 
-jxta_RouteAdvertisement_parse_file(Jxta_RouteAdvertisement *, FILE * stream);
- 
-/**
- * This function is an artifact of the generating script.
- */
-char* 
-jxta_RouteAdvertisement_get_Jxta_RouteAdvertisement(Jxta_RouteAdvertisement *);
+JXTA_DECLARE(void) jxta_RouteAdvertisement_parse_file(Jxta_RouteAdvertisement *, FILE * stream);
 
 /**
  * This function is an artifact of the generating script.
  */
-void 
-jxta_RouteAdvertisement_set_Jxta_RouteAdvertisement(Jxta_RouteAdvertisement *, 
-							 char *);
+JXTA_DECLARE(char *) jxta_RouteAdvertisement_get_Jxta_RouteAdvertisement(Jxta_RouteAdvertisement *);
+
+/**
+ * This function is an artifact of the generating script.
+ */
+JXTA_DECLARE(void) jxta_RouteAdvertisement_set_Jxta_RouteAdvertisement(Jxta_RouteAdvertisement *, char *);
   /**
    ** Return a vector of indexes to be applied to advertisement tags and attributes. 
    **
@@ -150,8 +141,8 @@ jxta_RouteAdvertisement_set_Jxta_RouteAdvertisement(Jxta_RouteAdvertisement *,
    **
   **/
 
-Jxta_vector *
-jxta_RouteAdvertisement_get_indexes(void);
+JXTA_DECLARE(Jxta_vector *)
+    jxta_RouteAdvertisement_get_indexes(Jxta_advertisement *);
 
 /**
  * Function gets the Destination AccessPoint Advertisement associated with the route 
@@ -162,8 +153,8 @@ jxta_RouteAdvertisement_get_indexes(void);
  * @return Jxta_AccessPointAdvertisement access point associated with the route 
  *         advertisement destination.
  */
-Jxta_AccessPointAdvertisement* 
-jxta_RouteAdvertisement_get_Dest(Jxta_RouteAdvertisement *);
+JXTA_DECLARE(Jxta_AccessPointAdvertisement *)
+    jxta_RouteAdvertisement_get_Dest(Jxta_RouteAdvertisement *);
 
 /**
  * Function sets the Destination AccessPoint Advertisement associated with the route 
@@ -174,9 +165,7 @@ jxta_RouteAdvertisement_get_Dest(Jxta_RouteAdvertisement *);
  *         advertisement destination.
  * @return void
  */
-void 
-jxta_RouteAdvertisement_set_Dest(Jxta_RouteAdvertisement*,
-				      Jxta_AccessPointAdvertisement*);
+JXTA_DECLARE(void) jxta_RouteAdvertisement_set_Dest(Jxta_RouteAdvertisement *, Jxta_AccessPointAdvertisement *);
 /**
  * Function gets the hops associated with the route 
  * advertisement.
@@ -188,8 +177,8 @@ jxta_RouteAdvertisement_set_Dest(Jxta_RouteAdvertisement*,
  *         advertisement destination.
  */
 
-Jxta_vector* 
-jxta_RouteAdvertisement_get_Hops(Jxta_RouteAdvertisement *);
+JXTA_DECLARE(Jxta_vector *)
+    jxta_RouteAdvertisement_get_Hops(Jxta_RouteAdvertisement *);
 
 /**
  * Function sets the hops associated with the route 
@@ -200,8 +189,7 @@ jxta_RouteAdvertisement_get_Hops(Jxta_RouteAdvertisement *);
  * @param vector of Jxta_AccessPointAdvertisement access point associated with each
  * hop of the route  advertisement.
  */
-void 
-jxta_RouteAdvertisement_set_Hops(Jxta_RouteAdvertisement *, Jxta_vector *);
+JXTA_DECLARE(void) jxta_RouteAdvertisement_set_Hops(Jxta_RouteAdvertisement *, Jxta_vector *);
 
 /**
  * Function sets the PID of the dest access point of the route 
@@ -212,8 +200,7 @@ jxta_RouteAdvertisement_set_Hops(Jxta_RouteAdvertisement *, Jxta_vector *);
  *
  * @return void
  */
-void
-jxta_RouteAdvertisement_set_DestPID(Jxta_RouteAdvertisement * ad, Jxta_id *id);
+JXTA_DECLARE(void) jxta_RouteAdvertisement_set_DestPID(Jxta_RouteAdvertisement * ad, Jxta_id * id);
 
 /**
  * Function gets the PID of the dest access point of the route 
@@ -224,8 +211,8 @@ jxta_RouteAdvertisement_set_DestPID(Jxta_RouteAdvertisement * ad, Jxta_id *id);
  *
  * @return void
  */
-Jxta_id *
-jxta_RouteAdvertisement_get_DestPID(Jxta_RouteAdvertisement * ad);
+JXTA_DECLARE(Jxta_id *)
+    jxta_RouteAdvertisement_get_DestPID(Jxta_RouteAdvertisement * ad);
 
 
 /**
@@ -237,12 +224,15 @@ jxta_RouteAdvertisement_get_DestPID(Jxta_RouteAdvertisement * ad);
  *
  * @return void
  */
-void
-jxta_RouteAdvertisement_add_first_hop(Jxta_RouteAdvertisement * ad, 
-				      Jxta_AccessPointAdvertisement* ap);
+JXTA_DECLARE(void) jxta_RouteAdvertisement_add_first_hop(Jxta_RouteAdvertisement * ad, Jxta_AccessPointAdvertisement * ap);
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 #endif /* JXTA_ROUTEADVERTISEMENT_H__  */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

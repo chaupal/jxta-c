@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: http_client_test.c,v 1.9 2005/04/07 01:08:38 slowhog Exp $
+ * $Id: http_client_test.c,v 1.11 2005/04/17 14:22:18 lankes Exp $
  */
 
 
@@ -65,17 +65,14 @@ int main (int argc, char** argv) {
   HttpClient     *con;
   HttpRequest    *req;
   HttpResponse   *res;
-
-    jxta_initialize();
-  
   /* char *content_length_header; */
   /* apr_ssize_t content_length; */
-
-  char buf[8192];
+  char           buf[8192];
   apr_ssize_t buf_size = 8192;
   int i;
 
-
+    jxta_initialize();
+  
   if (argc < 2) {
     printf("Usage: ./http_test <uri>\n");
     printf("HTTP example: ./http_client http://127.0.0.1:80/~user/index.html\n");
@@ -90,7 +87,7 @@ int main (int argc, char** argv) {
   con = http_client_new (NULL, 0, uri.hostname, uri.port, NULL );
   
 
-  if (APR_STATUS_IS_SUCCESS (http_client_connect (con))) {
+  if (APR_SUCCESS == http_client_connect (con)) {
 
     for (i = 0;  i < 5;  i++) {
 
@@ -108,7 +105,7 @@ int main (int argc, char** argv) {
       */
       if (http_response_get_status(res) == HTTP_NOT_CONNECTED) {
 	http_client_close (con);
-	if (APR_STATUS_IS_SUCCESS (http_client_connect (con))) {
+	if (APR_SUCCESS == http_client_connect (con)) {
 	  printf ("reconnected\n");
 	  continue;
 	} else {
@@ -120,7 +117,7 @@ int main (int argc, char** argv) {
 /*	printf ("Response Headers: %s\n", res->headers);
        	printf ("Response Content-Length: %d\n", res->content_length);
 */
-	while (APR_STATUS_IS_SUCCESS (http_response_read(res, buf, &buf_size))){
+	while (APR_SUCCESS ==http_response_read(res, buf, &buf_size)){
 	  
 	  printf ("Response read %d bytes\n", buf_size);
 	

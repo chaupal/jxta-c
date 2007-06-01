@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_service_private.h,v 1.7 2005/01/10 17:22:21 brent Exp $
+ * $Id: jxta_resolver_service_private.h,v 1.9 2005/06/16 23:11:50 slowhog Exp $
  */
 
 
@@ -74,7 +74,6 @@ extern "C" {
 }
 #endif
 #endif
-
 struct _jxta_resolver_service {
     Extends(Jxta_service);
 
@@ -87,31 +86,23 @@ struct _jxta_resolver_service_methods {
     Extends(Jxta_service_methods);
 
     /* resolver methods */
-    Jxta_status (*registerQueryHandler)(Jxta_resolver_service * service,
-				   JString* name,
-				   Jxta_listener * handler );
+    Jxta_status(*registerQueryHandler) (Jxta_resolver_service * service, JString * name, Jxta_listener * handler);
 
-    Jxta_status (*unregisterQueryHandler)(Jxta_resolver_service * service,
-				     JString* name);
+    Jxta_status(*unregisterQueryHandler) (Jxta_resolver_service * service, JString * name);
 
-    Jxta_status (*registerResponseHandler)(Jxta_resolver_service * service,
-				   JString* name,
-				   Jxta_listener * handler );
+    Jxta_status(*registerSrdiHandler) (Jxta_resolver_service * service, JString * name, Jxta_listener * handler);
 
-    Jxta_status (*unregisterResponseHandler)(Jxta_resolver_service * service,
-				     JString* name);
+    Jxta_status(*unregisterSrdiHandler) (Jxta_resolver_service * service, JString * name);
 
-    Jxta_status (*sendQuery)(Jxta_resolver_service* resolver, 
-			     ResolverQuery* query,
-			     Jxta_id* peerid);
+    Jxta_status(*registerResponseHandler) (Jxta_resolver_service * service, JString * name, Jxta_listener * handler);
 
-    Jxta_status (*sendResponse)(Jxta_resolver_service* resolver,
-				ResolverResponse* response,
-				Jxta_id* peerid);
+    Jxta_status(*unregisterResponseHandler) (Jxta_resolver_service * service, JString * name);
 
-    Jxta_status (*sendSrdi)(Jxta_resolver_service* resolver, 
-			     ResolverSrdi* message,
-			     Jxta_id* peerid);
+    Jxta_status(*sendQuery) (Jxta_resolver_service * resolver, ResolverQuery * query, Jxta_id * peerid);
+
+    Jxta_status(*sendResponse) (Jxta_resolver_service * resolver, ResolverResponse * response, Jxta_id * peerid);
+
+    Jxta_status(*sendSrdi) (Jxta_resolver_service * resolver, ResolverSrdi * message, Jxta_id * peerid);
 
 };
 
@@ -119,20 +110,22 @@ struct _jxta_resolver_service_methods {
  * The base resolver service ctor (not public: the only public way to make a
  * new pg is to instantiate one of the derived types).
  */
-extern void
-jxta_resolver_service_construct(Jxta_resolver_service* service,
-				Jxta_resolver_service_methods* methods);
+extern void jxta_resolver_service_construct(Jxta_resolver_service * service, Jxta_resolver_service_methods * methods);
 
 /**
  * The base rsesolver service dtor (Not public, not virtual. Only called by
  * subclassers). We just pass it along.
  */
-extern void
-jxta_resolver_service_destruct(Jxta_resolver_service* service);
+extern void jxta_resolver_service_destruct(Jxta_resolver_service * service);
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
-	
+
 #endif /* JXTA_RESOLVER_SERVICE_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

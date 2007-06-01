@@ -50,14 +50,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: msg_test.c,v 1.18 2005/03/22 16:23:47 bondolo Exp $
+ * $Id: msg_test.c,v 1.19 2005/05/24 16:53:34 bondolo Exp $
  */
 
-#define JXTA_LOG_ENABLE
-
 #include <stdio.h>
-#include "jxta.h"
-#include "jxta_errno.h"
+#include <string.h>
+
+#include <jxta.h>
+#include <jxta_errno.h>
 
 #include "unittest_jxta_func.h"
 
@@ -77,7 +77,7 @@
 * 
 * @return a Jxta_message_element that constitutes a signature
 */
-Jxta_message_element * createSignatureElement(){
+Jxta_message_element * createSignatureElement(void){
   unsigned char  *content;
   Jxta_message_element *sig = NULL;
 
@@ -291,7 +291,7 @@ test_jxta_message_element_new_2(void) {
   Jxta_boolean result = TRUE;
 
   /* First initialize the content */
-  content = (unsigned char*)malloc( sizeof(unsigned char) * 8);
+  content = (unsigned char*)calloc( 8, sizeof(unsigned char));
   if( content != NULL){
     content[0] = 0;
     content[1] = 255;
@@ -506,7 +506,7 @@ Common_Exit:
 /**
 * Write a test message
 */
-Jxta_message*  getTestMessage(){
+Jxta_message*  getTestMessage(void){
   Jxta_message* message = jxta_message_new();
   Jxta_message_element *sig = NULL,*el = NULL;
   Jxta_endpoint_address *endpoint = NULL;
@@ -594,10 +594,10 @@ Jxta_message*  getTestMessage(){
   }
 
   /* Add a  source element */
-  endpoint =jxta_endpoint_address_new2((char *)"protNameSource",
-                                       (char *)"protAddressSource",
-				       (char *)"serviceNameSource",
-                                       (char *)"serviceParamsSource");
+  endpoint =jxta_endpoint_address_new2("protNameSource",
+                                       "protAddressSource",
+				       "serviceNameSource",
+                                       "serviceParamsSource");
   if( endpoint == NULL){
     JXTA_OBJECT_RELEASE(message);
     message = NULL;
@@ -666,7 +666,7 @@ Jxta_boolean checkMessageCorrect(Jxta_message* message){
 
   /* Check the content of the elements with empty namespace */
   for( i = 0; i < 10; i++){
-    buffer = (char*)malloc( sizeof(char) * 100);
+    buffer = (char*)calloc( 100, sizeof(char) );
     buffer[0] = '\0';
     sprintf(buffer,"EmptyElement_%d",i);
     if( JXTA_SUCCESS != jxta_message_get_element_1(message, buffer,&el) ||
@@ -711,7 +711,7 @@ Jxta_boolean checkMessageCorrect(Jxta_message* message){
 
   /* Check the content of the elements with jxta namespace */
   for( i = 0; i < 10; i++){
-    buffer = (char*)malloc( sizeof(char) * 100);
+    buffer = (char*)calloc( 100, sizeof(char));
     buffer[0] = '\0';
     sprintf(buffer,"jxta:JxtaElement_%d",i);
     if( JXTA_SUCCESS != jxta_message_get_element_1(message, buffer,&el) ||
@@ -1106,6 +1106,3 @@ main(int argc, char ** argv) {
   return main_test_function(testfunc,argc,argv);
 }
 #endif
-
-
-

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peer.h,v 1.6 2005/01/18 20:26:11 bondolo Exp $
+ * $Id: jxta_peer.h,v 1.10 2005/06/16 23:11:46 slowhog Exp $
  */
 
 
@@ -61,6 +61,7 @@
 #include "jxta_id.h"
 #include "jxta_pa.h"
 #include "jxta_endpoint_address.h"
+#include "jxta_service.h"
 
 /**
  ** This file defines the JXTA jxta_peer_t object.
@@ -82,7 +83,7 @@ typedef struct _jxta_peer_entry Jxta_peer;
    * when it is no longer used.
    *
    ********/
-Jxta_peer *jxta_peer_new(void);
+JXTA_DECLARE(Jxta_peer *) jxta_peer_new(void);
 
  /*******
    * Get the PeerId of the peer
@@ -93,7 +94,7 @@ Jxta_peer *jxta_peer_new(void);
    * @returns JXTA_SUCCESS when succesfull, or JXTA_INVALID_ARGUMENT when no
    * peer id is associated to the given Jxta_peer.
    ********/
-Jxta_status jxta_peer_get_peerid(Jxta_peer * peer, Jxta_id ** id);
+JXTA_DECLARE(Jxta_status) jxta_peer_get_peerid(Jxta_peer * peer, Jxta_id ** id);
 
   /*******
    * Get the Peer Advertisement of the peer
@@ -105,7 +106,7 @@ Jxta_status jxta_peer_get_peerid(Jxta_peer * peer, Jxta_id ** id);
    * @returns JXTA_SUCCESS when succesfull, or JXTA_INVALID_ARGUMENT when no
    * Peer Advertisement is associated to the given Jxta_peer.
    ********/
-Jxta_status jxta_peer_get_adv(Jxta_peer * peer, Jxta_PA ** pa);
+JXTA_DECLARE(Jxta_status) jxta_peer_get_adv(Jxta_peer * peer, Jxta_PA ** pa);
 
   /*******
    * Get the Endpoint Address of the peer
@@ -117,7 +118,7 @@ Jxta_status jxta_peer_get_adv(Jxta_peer * peer, Jxta_PA ** pa);
    * @returns JXTA_SUCCESS when succesfull, or JXTA_INVALID_ARGUMENT when no
    * Jxta_endpoint_address is associated to the given Jxta_peer.
    ********/
-Jxta_status jxta_peer_get_address(Jxta_peer * peer, Jxta_endpoint_address ** addr);
+JXTA_DECLARE(Jxta_status) jxta_peer_get_address(Jxta_peer * peer, Jxta_endpoint_address ** addr);
 
   /*******
    * Set the PeerId of the peer
@@ -127,7 +128,7 @@ Jxta_status jxta_peer_get_address(Jxta_peer * peer, Jxta_endpoint_address ** add
    * is automatically shared by this call.
    * @return a status
    ********/
-Jxta_status jxta_peer_set_peerid(Jxta_peer * peer, Jxta_id * peerId);
+JXTA_DECLARE(Jxta_status) jxta_peer_set_peerid(Jxta_peer * peer, Jxta_id * peerId);
 
   /*******
    * Set the Peer Advertisement of the peer
@@ -137,7 +138,7 @@ Jxta_status jxta_peer_set_peerid(Jxta_peer * peer, Jxta_id * peerId);
    * is automatically shared by this call.
    * @return a status
    ********/
-Jxta_status jxta_peer_set_adv(Jxta_peer * peer, Jxta_PA * adv);
+JXTA_DECLARE(Jxta_status) jxta_peer_set_adv(Jxta_peer * peer, Jxta_PA * adv);
 
   /*******
    * Set the Endpoint Address of the peer
@@ -147,11 +148,21 @@ Jxta_status jxta_peer_set_adv(Jxta_peer * peer, Jxta_PA * adv);
    * is automatically shared by this call.
    * @return a status
    ********/
-Jxta_status jxta_peer_set_address(Jxta_peer * peer, Jxta_endpoint_address * addr);
+JXTA_DECLARE(Jxta_status) jxta_peer_set_address(Jxta_peer * peer, Jxta_endpoint_address * addr);
+
+  /**
+   * @todo Add documentation.
+   */
+JXTA_DECLARE(Jxta_time) jxta_rdv_service_peer_get_expires(Jxta_service * rdv, Jxta_peer * p);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 
 #endif /* __JXTA_PEER_H__ */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

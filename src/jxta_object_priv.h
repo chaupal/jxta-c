@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object_priv.h,v 1.6 2005/03/29 19:01:54 bondolo Exp $
+ * $Id: jxta_object_priv.h,v 1.10 2005/07/22 03:12:52 slowhog Exp $
  */
 
 
@@ -68,28 +68,28 @@ extern "C" {
  * Flag for rendering any object immutable. Refcount and ojbect freeing
  * is disabled for immutable objects. USE WITH CARE!
  **/
-#define JXTA_OBJECT_IMMUTABLE_FLAG (1 << 1)
+#define JXTA_OBJECT_IMMUTABLE_FLAG (1U << 1)
 /**
  * Flag for indicating whether object is constructed.
  **/
-#define JXTA_OBJECT_CONSTRUCTED    (1 << 2)
+#define JXTA_OBJECT_CONSTRUCTED    (1U << 2)
 /**
 * Flag for indicating if share/release should be logged for this
 * object.
 **/
-#define JXTA_OBJECT_SHARE_TRACK    (1 << 3)
+#define JXTA_OBJECT_SHARE_TRACK    (1U << 3)
 /**
 * Flag for indicating that the object is initialized if we are not
 * using JXTA_OBJECT_CHECK_INITIALIZED_ENABLE.
 **/
-#define JXTA_OBJECT_INITED_BIT    (1 << (sizeof(unsigned int) * CHAR_BIT - 1))
+#define JXTA_OBJECT_INITED_BIT    (1U << (sizeof(unsigned int) * CHAR_BIT - 1))
 /**
  * This is the configuration of the object. Each of the following
  * can independantely be set or not set.
  *
  * Those defines should probably be into a more generic configuration
  * file. To be fixed. lomax@jxta.org
-     **//**
+ **//**
  * This is used as a marker to see if an object has been initialized
  * or not. Any integer would work, but, in order to limit the risk
  * of a corruption of the data that might look fine, a "random" but yet
@@ -137,7 +137,7 @@ extern "C" {
 #ifdef JXTA_OBJECT_CHECK_INITIALIZED_ENABLE
     unsigned int _initialized;
 #endif
-    int _refCount;      /* signed int to better detect over-release */
+    int _refCount;              /* signed int to better detect over-release */
 };
 
 typedef struct _jxta_object _jxta_object;
@@ -217,16 +217,16 @@ void *JXTA_OBJECT_GET_FREECOOKIE(Jxta_object * x);
 #define JXTA_OBJECT_GET_FREECOOKIE(x)     (JXTA_OBJECT(x)->_freeCookie)
 
 #ifdef JXTA_OBJECT_CHECK_VALID_ENABLE
-Jxta_boolean _jxta_object_check_valid(Jxta_object * obj, const char *file, int line);
+JXTA_DECLARE(Jxta_boolean) _jxta_object_check_valid(Jxta_object * obj, const char *file, int line);
 #define JXTA_OBJECT_CHECK_VALID(obj) _jxta_object_check_valid( JXTA_OBJECT(obj), __FILE__, __LINE__ )
 #else
 #define JXTA_OBJECT_CHECK_VALID(obj) (TRUE)
 #endif
 
-extern void *_jxta_object_init(Jxta_object *, unsigned int flags, JXTA_OBJECT_FREE_FUNC, void *, const char *, int);
-extern void *_jxta_object_share(Jxta_object *, const char *, int);
-extern int _jxta_object_release(Jxta_object *, const char *, int);
-extern int _jxta_object_get_refcount(Jxta_object * obj);
+JXTA_DECLARE(void *) _jxta_object_init(Jxta_object *, unsigned int flags, JXTA_OBJECT_FREE_FUNC, void *, const char *, int);
+JXTA_DECLARE(void *) _jxta_object_share(Jxta_object *, const char *, int);
+JXTA_DECLARE(int) _jxta_object_release(Jxta_object *, const char *, int);
+JXTA_DECLARE(int) _jxta_object_get_refcount(Jxta_object * obj);
 
 #define JXTA_OBJECT_INIT(obj,free,cookie) _jxta_object_init (JXTA_OBJECT(obj), 0, free, cookie, __FILE__, __LINE__)
 
@@ -239,8 +239,13 @@ extern int _jxta_object_get_refcount(Jxta_object * obj);
 #define JXTA_OBJECT_GET_REFCOUNT(obj) _jxta_object_get_refcount (JXTA_OBJECT(obj))
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 
 #endif /* __JXTA_OBJECTPRIV_H__ */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

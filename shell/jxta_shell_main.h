@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_main.h,v 1.1 2004/12/05 02:16:41 slowhog Exp $
+ * $Id: jxta_shell_main.h,v 1.2 2005/08/24 01:21:21 slowhog Exp $
  */
 #ifndef __SHELL_MAIN_H__
 #define  __SHELL_MAIN_H__
@@ -67,7 +67,6 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _shell_startup_application ShellStartupApplication;
 
 /**
@@ -79,9 +78,8 @@ typedef struct _shell_startup_application ShellStartupApplication;
 * @param parent  the JxtaShellApplication that spawn this application
 * @param terminate the function to call if we are terminating
 */
-ShellStartupApplication * ShellStartupApplication_new(Jxta_PG * pg,
-                                                      Jxta_listener* standout, 
-                                      shell_application_terminate terminate);
+ShellStartupApplication *ShellStartupApplication_new(Jxta_PG * pg,
+                                                     Jxta_listener * standout, shell_application_terminate terminate);
 
 /**
  * Process the data that are send to this application
@@ -89,8 +87,7 @@ ShellStartupApplication * ShellStartupApplication_new(Jxta_PG * pg,
  *        handles the data received on stdin
  * @param inputLine the data we received on stdin
  **/
-void ShellStartupApplication_stdin(Jxta_object  *app, 
-                                   JString * inputLine);
+void ShellStartupApplication_stdin(Jxta_object * app, JString * inputLine);
 
 /**
  * Function that  starts the actual application
@@ -99,16 +96,14 @@ void ShellStartupApplication_stdin(Jxta_object  *app,
  * @param argv the number of arguments to pass
  * @param arg the list of arguments
  **/
-void   ShellStartupApplication_start(Jxta_object *parent,
-                                     int argv, 
-                                     char **arg);
+void ShellStartupApplication_start(Jxta_object * parent, int argv, char **arg);
 
 /**
  * Function that   prints the help information
  * @param child the class (derived from JxtaShellApplication) that 
  *        we want to print the help information for
  **/
-void   ShellStartupApplication_printHelp(Jxta_object *app);
+void ShellStartupApplication_printHelp(Jxta_object * app);
 
 
 /** 
@@ -118,8 +113,7 @@ void   ShellStartupApplication_printHelp(Jxta_object *app);
  *  @param child the class (derived from JxtaShellApplication) that
  *         terminates 
 */
-void ShellStartupApplication_mainFinished(Jxta_object * parent,
-                                          Jxta_object *child);
+void ShellStartupApplication_mainFinished(Jxta_object * parent, Jxta_object * child);
 
 /** 
 * The functions that gets clled if a spawned application finished
@@ -128,27 +122,24 @@ void ShellStartupApplication_mainFinished(Jxta_object * parent,
 *  @param child the class (derived from JxtaShellApplication) that
 *         terminates 
 */
-void ShellStartupApplication_spawnApplication_terminate(
-                                          Jxta_object * parent,
-                                          Jxta_object *child);
+void ShellStartupApplication_spawnApplication_terminate(Jxta_object * parent, Jxta_object * child);
 
 /**
 * Instantiates the application with the indicated name
 * @param parent The parent JxtaShellApplication of this  object - the one providing STDIN and STDOUT
 * @param parentObject 
 * @param app the name of the application to start
-*/ 
-JxtaShellApplication * ShellStartupApplication_loadApplication(
-				 JxtaShellApplication * parent,
-                                 Jxta_object * parentObject,
-                                 char * app);
+*/
+JxtaShellApplication *ShellStartupApplication_loadApplication(JxtaShellApplication * parent,
+                                                              Jxta_object * parentObject, char *app);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
-
 #endif /* __SHELL_MAIN_H__ */
 
-
-
+/* vim: set ts=4 sw=4 et tw=130 */

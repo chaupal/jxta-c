@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_address.h,v 1.9 2005/04/07 05:05:30 bondolo Exp $
+ * $Id: jxta_endpoint_address.h,v 1.14 2005/07/26 01:30:59 slowhog Exp $
  */
 
 
@@ -60,9 +60,6 @@
 
 #include "jxta_object.h"
 #include "jstring.h"
-
-/* #include "jxta_types.h" */
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -76,7 +73,7 @@ extern "C" {
  **
  ** This is a Jxta_object: JXTA_OBJECT_SHARE and JXTA_OBJECT_RELEASE
  ** must be used when necessary.
- **/ typedef struct _jxta_endpoint_address Jxta_endpoint_address;
+ **/ typedef const struct _jxta_endpoint_address Jxta_endpoint_address;
 
 
 /**
@@ -89,7 +86,7 @@ extern "C" {
  ** @return an Jxta_endpoint_address* pointing to the new Jxta_endpoint_addres.
  ** NULL is returned when the URI was incorrect.
  **/
-Jxta_endpoint_address *jxta_endpoint_address_new(const char *s);
+JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new(const char *s);
 
 /**
  ** Creates a new Jxta_endpoint_address of a URI.
@@ -101,7 +98,7 @@ Jxta_endpoint_address *jxta_endpoint_address_new(const char *s);
  ** @return an Jxta_endpoint_address* pointing to the new Jxta_endpoint_addres.
  ** NULL is returned when the URI was incorrect.
  **/
-Jxta_endpoint_address *jxta_endpoint_address_new1(JString * s);
+JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new1(JString * s);
 
 /**
  ** Creates a new Jxta_endpoint_address.
@@ -116,9 +113,9 @@ Jxta_endpoint_address *jxta_endpoint_address_new1(JString * s);
  ** @return an Jxta_endpoint_address* pointing to the new Jxta_endpoint_address.
  ** NULL is returned when the URI was incorrect.
  **/
-Jxta_endpoint_address *jxta_endpoint_address_new2(const char *protocol_name,
-                                                  const char *protocol_address,
-                                                  const char *service_name, const char *service_params);
+JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new2(const char *protocol_name,
+                                                                 const char *protocol_address,
+                                                                 const char *service_name, const char *service_params);
 
 /**
  ** Get the protocol name.
@@ -130,7 +127,7 @@ Jxta_endpoint_address *jxta_endpoint_address_new2(const char *protocol_name,
  ** @param addr pointer to a Jxta_endpoint_address.
  ** @returns a pointer to a string containing the protocol name.
  **/
-const char *jxta_endpoint_address_get_protocol_name(const Jxta_endpoint_address * addr);
+JXTA_DECLARE(const char *) jxta_endpoint_address_get_protocol_name(Jxta_endpoint_address * addr);
 
 /**
  ** Get the address.
@@ -142,7 +139,7 @@ const char *jxta_endpoint_address_get_protocol_name(const Jxta_endpoint_address 
  ** @param addr pointer to a Jxta_endpoint_address.
  ** @returns a pointer to a string containing the protocol address.
  **/
-const char *jxta_endpoint_address_get_protocol_address(const Jxta_endpoint_address * addr);
+JXTA_DECLARE(const char *) jxta_endpoint_address_get_protocol_address(Jxta_endpoint_address * addr);
 
 /**
  ** Get the service name
@@ -154,7 +151,7 @@ const char *jxta_endpoint_address_get_protocol_address(const Jxta_endpoint_addre
  ** @param addr pointer to a Jxta_endpoint_address.
  ** @returns a pointer to a string containing the name of the service or NULL
  **/
-const char *jxta_endpoint_address_get_service_name(const Jxta_endpoint_address * addr);
+JXTA_DECLARE(const char *) jxta_endpoint_address_get_service_name(Jxta_endpoint_address * addr);
 
 /**
  ** Get the service parameter
@@ -166,7 +163,7 @@ const char *jxta_endpoint_address_get_service_name(const Jxta_endpoint_address *
  ** @param addr pointer to a Jxta_endpoint_address.
  ** @returns a pointer to a string containing the service parameter or NULL
  **/
-const char *jxta_endpoint_address_get_service_params(const Jxta_endpoint_address * addr);
+JXTA_DECLARE(const char *) jxta_endpoint_address_get_service_params(Jxta_endpoint_address * addr);
 
 /**
  ** Returns the length of the endpoint address expressed as a UTF-8 URI string
@@ -174,7 +171,7 @@ const char *jxta_endpoint_address_get_service_params(const Jxta_endpoint_address
  ** @param addr pointer to a Jxta_endpoint_address.
  ** @returns the length of the Jxta_endpoint_address.
  **/
-size_t jxta_endpoint_address_size(const Jxta_endpoint_address * addr);
+JXTA_DECLARE(size_t) jxta_endpoint_address_size(Jxta_endpoint_address * addr);
 
 /**
  ** Returns a newly created null terminated string that contains the URI
@@ -184,7 +181,7 @@ size_t jxta_endpoint_address_size(const Jxta_endpoint_address * addr);
  ** @param addr pointer to a Jxta_endpoint_address.
  ** @returns a pointer to a string containing the URI.
  **/
-char *jxta_endpoint_address_to_string(const Jxta_endpoint_address * addr);
+JXTA_DECLARE(char *) jxta_endpoint_address_to_string(Jxta_endpoint_address * addr);
 
 /**
  ** Checks of two Jxta_endpoint_address refers to the same Endpoint Address.
@@ -193,7 +190,16 @@ char *jxta_endpoint_address_to_string(const Jxta_endpoint_address * addr);
  ** @param addr2 pointer to a Jxta_endpoint_address
  ** @return TRUE if the two Jxta_endpoint_address are equal, FALSE otherwise.
  **/
-Jxta_boolean jxta_endpoint_address_equals(const Jxta_endpoint_address * addr1, const Jxta_endpoint_address * addr2);
+JXTA_DECLARE(Jxta_boolean) jxta_endpoint_address_equals(Jxta_endpoint_address * addr1, Jxta_endpoint_address * addr2);
+
+/**
+ ** Get the transport protocol portion of an endpoint address as a NULL-terminate string. The caller is responsible to call free()
+ ** function on the returned string.
+ **
+ ** @param me pointer to a Jxta_endpoint_address
+ ** @return A pointer to a NULL terminate string containe protocol portion.
+ **/
+JXTA_DECLARE(char *) jxta_endpoint_address_get_transport_addr(Jxta_endpoint_address * me);
 
 
 #ifdef __cplusplus
@@ -204,3 +210,5 @@ Jxta_boolean jxta_endpoint_address_equals(const Jxta_endpoint_address * addr1, c
 #endif
 
 #endif /* JXTA_ENDPOINT_ADDRESS_H */
+
+/* vim: set ts=4 sw=4 tw=130 et: */

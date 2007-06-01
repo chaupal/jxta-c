@@ -50,12 +50,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta.c,v 1.6 2005/04/07 22:35:05 slowhog Exp $
+ * $Id: jxta.c,v 1.11 2005/06/16 23:11:39 slowhog Exp $
  */
 
 #include <apr_general.h>
 #include "jpr/jpr_core.h"
+#include "jxta.h"
 #include "jxta_log.h"
+#include "jxta_private.h"
 
 /**
  * Briefly, touching jxta jxta touches apr, which requires a call
@@ -63,19 +65,33 @@
  */
 
 static unsigned int _jxta_initialized = 0;
+#ifdef WIN32
+static int _targc = 0;
+static char **_targv = NULL;
+#endif
 
 /**
  * @todo Add initialization code.
  */
-void jxta_initialize(void)
+JXTA_DECLARE(void) jxta_initialize(void)
 {
-    if (_jxta_initialized) {
-        _jxta_initialized++;
+    if (_jxta_initialized++) {
         return;
     }
+#ifdef WIN32
+    if (_targc != __argc)
+        _targc = __argc;
 
+    if (_targv != __argv)
+        _targv = __argv;
+
+    apr_app_initialize(&_targc, &_targv, NULL);
+#else
     apr_initialize();
+#endif
+
     jpr_initialize();
+    jxta_object_initialize();
     jxta_log_initialize();
     jxta_PG_module_initialize();
 }
@@ -84,7 +100,7 @@ void jxta_initialize(void)
 /**
  * @todo Add termination code.
  */
-void jxta_terminate(void)
+JXTA_DECLARE(void) jxta_terminate(void)
 {
     if (!_jxta_initialized) {
         return;
@@ -97,6 +113,7 @@ void jxta_terminate(void)
 
     jxta_PG_module_terminate();
     jxta_log_terminate();
+    jxta_object_terminate();
     jpr_terminate();
     apr_terminate();
 }

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_vector.h,v 1.4 2005/04/07 01:32:52 bondolo Exp $
+ * $Id: jxta_vector.h,v 1.9 2005/08/31 22:50:16 bondolo Exp $
  */
 
 
@@ -96,7 +96,7 @@ extern "C" {
  ** @return a new vector, or NULL if allocation failed.
  *************************************************************************/
 
-Jxta_vector *jxta_vector_new(unsigned int initialSize);
+JXTA_DECLARE(Jxta_vector *) jxta_vector_new(unsigned int initialSize);
 
 
 /************************************************************************
@@ -107,12 +107,12 @@ Jxta_vector *jxta_vector_new(unsigned int initialSize);
  **
  ** @param vector a pointer to the vector to use.
  ** @param object a pointer to the Jxta_object to add.
- ** @index where to add the object.
+ ** @param at_index where to add the object.
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
 
-Jxta_status jxta_vector_add_object_at(Jxta_vector * vector, Jxta_object * object, unsigned int index);
+JXTA_DECLARE(Jxta_status) jxta_vector_add_object_at(Jxta_vector * vector, Jxta_object * object, unsigned int at_index);
 
 
 
@@ -128,7 +128,7 @@ Jxta_status jxta_vector_add_object_at(Jxta_vector * vector, Jxta_object * object
  ** otherwise.
  *************************************************************************/
 
-Jxta_status jxta_vector_add_object_first(Jxta_vector * vector, Jxta_object * object);
+JXTA_DECLARE(Jxta_status) jxta_vector_add_object_first(Jxta_vector * vector, Jxta_object * object);
 
 
 /************************************************************************
@@ -142,7 +142,7 @@ Jxta_status jxta_vector_add_object_first(Jxta_vector * vector, Jxta_object * obj
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status jxta_vector_add_object_last(Jxta_vector * vector, Jxta_object * object);
+JXTA_DECLARE(Jxta_status) jxta_vector_add_object_last(Jxta_vector * vector, Jxta_object * object);
 
 
 /************************************************************************
@@ -154,11 +154,24 @@ Jxta_status jxta_vector_add_object_last(Jxta_vector * vector, Jxta_object * obje
  ** @param vector a pointer to the vector to use.
  ** @param object a pointer to a Jxta_object pointer which will contain the
  ** the object.
- ** @index index of the object.
+ ** @param at_index index of the object.
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status jxta_vector_get_object_at(Jxta_vector * vector, Jxta_object ** objectPt, unsigned int index);
+JXTA_DECLARE(Jxta_status) jxta_vector_get_object_at(Jxta_vector * vector, Jxta_object ** objectPt, unsigned int at_index);
+
+/************************************************************************
+ ** Remove all the objects in the vector with the same value(pointer).  
+ ** The objects removed are automatically released.
+ **
+ ** The size of the vector is decreased.
+ **
+ ** @param me a pointer to the vector to use.
+ ** @param object a pointer to the Jxta_object to be removed
+ ** @return -1 if arguments are invalid, number of objects been removed
+ ** otherwise.
+ *************************************************************************/
+JXTA_DECLARE(int) jxta_vector_remove_object(Jxta_vector * me, Jxta_object * object);
 
 
 /************************************************************************
@@ -174,11 +187,11 @@ Jxta_status jxta_vector_get_object_at(Jxta_vector * vector, Jxta_object ** objec
  ** @param vector a pointer to the vector to use.
  ** @param object a pointer to a Jxta_object pointer which will contain the
  ** the removed object.
- ** @index index of the object.
+ ** @param at_index index of the object.
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status jxta_vector_remove_object_at(Jxta_vector * vector, Jxta_object ** objectPt, unsigned int index);
+JXTA_DECLARE(Jxta_status) jxta_vector_remove_object_at(Jxta_vector * vector, Jxta_object ** objectPt, unsigned int at_index);
 
 
 /************************************************************************
@@ -187,7 +200,7 @@ Jxta_status jxta_vector_remove_object_at(Jxta_vector * vector, Jxta_object ** ob
  ** @param vector a pointer to the vector to use.
  ** @return the number of objects in the vector.
  *************************************************************************/
-unsigned int jxta_vector_size(Jxta_vector * vector);
+JXTA_DECLARE(unsigned int) jxta_vector_size(Jxta_vector * vector);
 
 
 /************************************************************************
@@ -201,14 +214,15 @@ unsigned int jxta_vector_size(Jxta_vector * vector);
  ** @param source a pointer to the original vector
  ** @param dest a pointer to a Jxta_vector pointer which will contain the
  ** the cloned vector.
- ** @index index start index
- ** @length number of objects, starting at the given index to clone. if 
+ ** @param at_index index start index
+ ** @param length number of objects, starting at the given index to clone. if 
  **  length is larger than the available number of elements, then only the
  **  available elements will be returned. (INT_MAX will get all elements).
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status jxta_vector_clone(Jxta_vector * source, Jxta_vector ** dest, unsigned int index, unsigned int length);
+JXTA_DECLARE(Jxta_status) jxta_vector_clone(Jxta_vector * source, Jxta_vector ** dest, unsigned int at_index,
+                                            unsigned int length);
 
 
 /*************************************************************************
@@ -219,7 +233,7 @@ Jxta_status jxta_vector_clone(Jxta_vector * source, Jxta_vector ** dest, unsigne
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  ************************************************************************/
-Jxta_status jxta_vector_clear(Jxta_vector * vector);
+JXTA_DECLARE(Jxta_status) jxta_vector_clear(Jxta_vector * vector);
 
 /*************************************************************************
  ** Sorts a vector using the provided comparator function.
@@ -232,8 +246,19 @@ Jxta_status jxta_vector_clear(Jxta_vector * vector);
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  ************************************************************************/
-Jxta_status jxta_vector_qsort(Jxta_vector * vector, Jxta_object_compare_func * func);
+JXTA_DECLARE(Jxta_status) jxta_vector_qsort(Jxta_vector * vector, Jxta_object_compare_func * func);
 
+/*************************************************************************
+ ** Shuffles a vector. The elements in the vector will re-arranged in
+ ** a pseudo random order.
+ **
+ ** <p/>This function assumes that srand() has been called with good seed
+ ** material. See <http://benpfaff.org/writings/clc/random-seed.html> for good
+ ** suggestions.
+ **
+ ** @param vector   the vector to shuffle.
+ ************************************************************************/
+JXTA_DECLARE(void) jxta_vector_shuffle(Jxta_vector * vector);
 
 #ifdef __cplusplus
 #if 0

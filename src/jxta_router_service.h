@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_router_service.h,v 1.1 2004/12/05 02:17:19 slowhog Exp $
+ * $Id: jxta_router_service.h,v 1.2 2005/06/16 23:11:51 slowhog Exp $
  */
 
 
@@ -67,11 +67,15 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _jxta_router_client Jxta_router_client;
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTA_ROUTER_CLIENT_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

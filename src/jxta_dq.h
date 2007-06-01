@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dq.h,v 1.3 2005/01/12 21:46:57 bondolo Exp $
+ * $Id: jxta_dq.h,v 1.7 2005/08/03 05:51:15 slowhog Exp $
  */
 
-   
+
 #ifndef __Jxta_DiscoveryQuery_H__
 #define __Jxta_DiscoveryQuery_H__
 
@@ -67,7 +67,6 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _Jxta_DiscoveryQuery Jxta_DiscoveryQuery;
 
 
@@ -78,14 +77,13 @@ typedef struct _Jxta_DiscoveryQuery Jxta_DiscoveryQuery;
  *
  * @return Pointer to discovery query advertisement.
  */
-Jxta_DiscoveryQuery * jxta_discovery_query_new(void);
+JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new(void);
 
-Jxta_DiscoveryQuery * jxta_discovery_query_new_1(short type, 
-			   const char * attr, 
-			   const char * value,
-			   int threshold,
-			   JString * peeradv);
+JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new_1(short type,
+                                                               const char *attr,
+                                                               const char *value, int threshold, JString * peeradv);
 
+JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new_2(const char *query, int threshold, JString * peeradv);
 /**
  * Delete a discovery query advertisement.
  *
@@ -106,7 +104,7 @@ void jxta_discovery_query_free(Jxta_DiscoveryQuery *);
  *
  * @return Jxta_status 
  */
-Jxta_status jxta_discovery_query_get_xml(/*Jxta_advertisement **/ Jxta_DiscoveryQuery * adv, JString **);
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_xml( /*Jxta_advertisement * */ Jxta_DiscoveryQuery * adv, JString **);
 
 
 /**
@@ -122,8 +120,8 @@ Jxta_status jxta_discovery_query_get_xml(/*Jxta_advertisement **/ Jxta_Discovery
  *
  * @return void Doesn't return anything.
  */
-Jxta_status
-jxta_discovery_query_parse_charbuffer(Jxta_DiscoveryQuery *, const char *, int len); 
+JXTA_DECLARE(Jxta_status)
+    jxta_discovery_query_parse_charbuffer(Jxta_DiscoveryQuery *, const char *, int len);
 
 
 /**
@@ -137,7 +135,7 @@ jxta_discovery_query_parse_charbuffer(Jxta_DiscoveryQuery *, const char *, int l
  *
  * @return void Doesn't return anything.
  */
-Jxta_status jxta_discovery_query_parse_file(Jxta_DiscoveryQuery *, FILE * stream);
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_parse_file(Jxta_DiscoveryQuery *, FILE * stream);
 
 /**
  * Gets the Type of the discovery query advertisement.
@@ -146,9 +144,8 @@ Jxta_status jxta_discovery_query_parse_file(Jxta_DiscoveryQuery *, FILE * stream
  *        query advertisement.
  *
  * @return char * containing the type.
- */ 
-short 
-jxta_discovery_query_get_type(Jxta_DiscoveryQuery *);
+ */
+JXTA_DECLARE(short) jxta_discovery_query_get_type(Jxta_DiscoveryQuery *);
 
 
 /**
@@ -159,9 +156,9 @@ jxta_discovery_query_get_type(Jxta_DiscoveryQuery *);
  * @param char * containing the Type.
  *
  * @return void Doesn't return anything.
- */ 
-Jxta_status jxta_discovery_query_set_type(Jxta_DiscoveryQuery *, short );
- 
+ */
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_set_type(Jxta_DiscoveryQuery *, short);
+
 
 /**
  * Gets the Threshold of the discovery query advertisement.
@@ -170,12 +167,12 @@ Jxta_status jxta_discovery_query_set_type(Jxta_DiscoveryQuery *, short );
  *        query advertisement.
  *
  * @return char * containing the Threshold.
- */ 
-int  jxta_discovery_query_get_threshold(Jxta_DiscoveryQuery *);
+ */
+JXTA_DECLARE(int) jxta_discovery_query_get_threshold(Jxta_DiscoveryQuery *);
 
 
-Jxta_status jxta_discovery_query_set_threshold(Jxta_DiscoveryQuery *, int );
- 
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_set_threshold(Jxta_DiscoveryQuery *, int);
+
 
 /**
  * Gets the peer advertisement of the discovery query advertisement.
@@ -184,9 +181,9 @@ Jxta_status jxta_discovery_query_set_threshold(Jxta_DiscoveryQuery *, int );
  *        query advertisement.
  *
  * @return char * containing the peer advertisement.
- */ 
-Jxta_status 
-jxta_discovery_query_get_peeradv(Jxta_DiscoveryQuery * ad, JString ** padv );
+ */
+JXTA_DECLARE(Jxta_status)
+    jxta_discovery_query_get_peeradv(Jxta_DiscoveryQuery * ad, JString ** padv);
 
 
 /**
@@ -197,9 +194,9 @@ jxta_discovery_query_get_peeradv(Jxta_DiscoveryQuery * ad, JString ** padv );
  * @param char * containing the peer advertisement.
  *
  * @return void Doesn't return anything.
- */ 
-Jxta_status jxta_discovery_query_set_peeradv(Jxta_DiscoveryQuery *, JString *);
- 
+ */
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_set_peeradv(Jxta_DiscoveryQuery *, JString *);
+
 
 /**
  * Gets the Attr of the discovery query advertisement.
@@ -208,8 +205,8 @@ Jxta_status jxta_discovery_query_set_peeradv(Jxta_DiscoveryQuery *, JString *);
  *        query advertisement.
  *
  * @return char * containing the Attr.
- */ 
-Jxta_status jxta_discovery_query_get_attr(Jxta_DiscoveryQuery *, JString ** );
+ */
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_attr(Jxta_DiscoveryQuery *, JString **);
 
 
 /**
@@ -220,20 +217,8 @@ Jxta_status jxta_discovery_query_get_attr(Jxta_DiscoveryQuery *, JString ** );
  * @param char * containing the Attr.
  *
  * @return void Doesn't return anything.
- */ 
-Jxta_status jxta_discovery_query_set_attr(Jxta_DiscoveryQuery *, JString *);
- 
-
-/**
- * Sets the Value of the discovery query advertisement.
- *
- * @param Jxta_DiscoveryQuery * a pointer to the discovery 
- *        query advertisement.
- * @param char * containing the Value.
- *
- * @return void Doesn't return anything.
- */ 
-Jxta_status jxta_discovery_query_get_value(Jxta_DiscoveryQuery *, JString **);
+ */
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_set_attr(Jxta_DiscoveryQuery *, JString *);
 
 
 /**
@@ -244,11 +229,30 @@ Jxta_status jxta_discovery_query_get_value(Jxta_DiscoveryQuery *, JString **);
  * @param char * containing the Value.
  *
  * @return void Doesn't return anything.
- */ 
-Jxta_status jxta_discovery_query_set_value(Jxta_DiscoveryQuery *, JString *);
+ */
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_value(Jxta_DiscoveryQuery *, JString **);
 
 
-#endif /* __Jxta_DiscoveryQuery_H__  */
+/**
+ * Sets the Value of the discovery query advertisement.
+ *
+ * @param Jxta_DiscoveryQuery * a pointer to the discovery 
+ *        query advertisement.
+ * @param char * containing the Value.
+ *
+ * @return void Doesn't return anything.
+ */
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_set_value(Jxta_DiscoveryQuery *, JString *);
+
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_extended_query(Jxta_DiscoveryQuery * ad, JString ** value);
+
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
+#endif /* __Jxta_DiscoveryQuery_H__  */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

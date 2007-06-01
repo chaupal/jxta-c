@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pga.h,v 1.4 2005/02/02 02:58:29 exocetrick Exp $
+ * $Id: jxta_pga.h,v 1.7 2005/08/03 05:51:17 slowhog Exp $
  */
 
-   
+
 #ifndef JXTA_PGA_H__
 #define JXTA_PGA_H__
 
@@ -68,7 +68,6 @@ extern "C" {
 #if 0
 }
 #endif
-
 typedef struct _jxta_PGA Jxta_PGA;
 
 /**
@@ -78,7 +77,7 @@ typedef struct _jxta_PGA Jxta_PGA;
  *
  * @return Jxta_PGA * peer group advertisement pointer.
  */
-Jxta_PGA * jxta_PGA_new(void);
+JXTA_DECLARE(Jxta_PGA *) jxta_PGA_new(void);
 
 
 /**
@@ -90,7 +89,7 @@ Jxta_PGA * jxta_PGA_new(void);
  *
  * @return void Doesn't return anything.
  */
-Jxta_status jxta_PGA_get_xml(Jxta_PGA *ad, JString **string);
+JXTA_DECLARE(Jxta_status) jxta_PGA_get_xml(Jxta_PGA * ad, JString ** string);
 
 
 /**
@@ -106,7 +105,7 @@ Jxta_status jxta_PGA_get_xml(Jxta_PGA *ad, JString **string);
  *
  * @return void Doesn't return anything.
  */
-void jxta_PGA_parse_charbuffer(Jxta_PGA *ad, const char *buf, int len); 
+JXTA_DECLARE(void) jxta_PGA_parse_charbuffer(Jxta_PGA * ad, const char *buf, int len);
 
 
 /**
@@ -120,21 +119,21 @@ void jxta_PGA_parse_charbuffer(Jxta_PGA *ad, const char *buf, int len);
  *
  * @return void Doesn't return anything.
  */
-void jxta_PGA_parse_file(Jxta_PGA *ad, FILE * stream);
- 
-
-/**
- * This function is an artifact of the generating script.
- */
-char * jxta_PGA_get_Jxta_PGA(Jxta_PGA *ad);
+JXTA_DECLARE(void) jxta_PGA_parse_file(Jxta_PGA * ad, FILE * stream);
 
 
 /**
  * This function is an artifact of the generating script.
  */
-void jxta_PGA_set_Jxta_PGA(Jxta_PGA *ad, char *name);
+JXTA_DECLARE(char *) jxta_PGA_get_Jxta_PGA(Jxta_PGA * ad);
 
- 
+
+/**
+ * This function is an artifact of the generating script.
+ */
+JXTA_DECLARE(void) jxta_PGA_set_Jxta_PGA(Jxta_PGA * ad, char *name);
+
+
 /**
  * Function gets the Jxta_id associated with the peer 
  * group advertisement.
@@ -143,7 +142,7 @@ void jxta_PGA_set_Jxta_PGA(Jxta_PGA *ad, char *name);
  *
  * @return Jxta_id Jxta_id associated with peer group advertisement.
  */
-Jxta_id * jxta_PGA_get_GID(Jxta_PGA *ad);
+JXTA_DECLARE(Jxta_id *) jxta_PGA_get_GID(Jxta_PGA * ad);
 
 /**
  * Sets a Jxta_id associated with a peer group advertisement.
@@ -153,8 +152,8 @@ Jxta_id * jxta_PGA_get_GID(Jxta_PGA *ad);
  *
  * @return void Doesn't return anything.
  */
-void jxta_PGA_set_GID(Jxta_PGA *ad, Jxta_id *id);
- 
+JXTA_DECLARE(void) jxta_PGA_set_GID(Jxta_PGA * ad, Jxta_id * id);
+
 /**
  * Function gets the Jxta_id associated with the peer 
  * group advertisement module services.
@@ -164,7 +163,7 @@ void jxta_PGA_set_GID(Jxta_PGA *ad, Jxta_id *id);
  * @return Jxta_id Jxta_id associated with peer group advertisement
  * module services.
  */
-Jxta_id * jxta_PGA_get_MSID(Jxta_PGA *ad);
+JXTA_DECLARE(Jxta_id *) jxta_PGA_get_MSID(Jxta_PGA * ad);
 
 /**
  * Sets a Jxta_id associated with a peer group advertisement
@@ -176,8 +175,8 @@ Jxta_id * jxta_PGA_get_MSID(Jxta_PGA *ad);
  *
  * @return void Doesn't return anything.
  */
-void jxta_PGA_set_MSID(Jxta_PGA *ad, Jxta_id *id);
- 
+JXTA_DECLARE(void) jxta_PGA_set_MSID(Jxta_PGA * ad, Jxta_id * id);
+
 /**
  * Gets the name of the peer group.
  *
@@ -185,7 +184,7 @@ void jxta_PGA_set_MSID(Jxta_PGA *ad, Jxta_id *id);
  *
  * @return JString * containing peer group name.
  */
-JString * jxta_PGA_get_Name(Jxta_PGA *ad);
+JXTA_DECLARE(JString *) jxta_PGA_get_Name(Jxta_PGA * ad);
 
 
 /**
@@ -196,8 +195,8 @@ JString * jxta_PGA_get_Name(Jxta_PGA *ad);
  *
  * @return void Doesn't return anything.
  */
-void jxta_PGA_set_Name(Jxta_PGA *ad, JString *name);
- 
+JXTA_DECLARE(void) jxta_PGA_set_Name(Jxta_PGA * ad, JString * name);
+
 
 /**
  * Gets the peer group description.
@@ -206,7 +205,7 @@ void jxta_PGA_set_Name(Jxta_PGA *ad, JString *name);
  *
  * @return JString * peer group description.
  */
-JString * jxta_PGA_get_Desc(Jxta_PGA *ad);
+JXTA_DECLARE(JString *) jxta_PGA_get_Desc(Jxta_PGA * ad);
 
 /**
  * Sets the peer group name.
@@ -216,7 +215,7 @@ JString * jxta_PGA_get_Desc(Jxta_PGA *ad);
  *
  * return void Doesn't return anything.
  */
-void jxta_PGA_set_Desc(Jxta_PGA *ad, JString *desc);
+JXTA_DECLARE(void) jxta_PGA_set_Desc(Jxta_PGA * ad, JString * desc);
 
   /**
    ** Return a vector of indexes to be applied to advertisement tags and attributes. 
@@ -229,13 +228,18 @@ void jxta_PGA_set_Desc(Jxta_PGA *ad, JString *desc);
    **
   **/
 
-Jxta_vector * jxta_PGA_get_indexes(void);
+JXTA_DECLARE(Jxta_vector *) jxta_PGA_get_indexes(Jxta_advertisement *);
 
- 
- 
- 
+
+
+
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTA_PGA_H__  */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

@@ -50,17 +50,31 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object.c,v 1.32 2005/03/30 00:49:08 slowhog Exp $
+ * $Id: jxta_object.c,v 1.45 2005/08/18 19:01:50 slowhog Exp $
  */
 
 static const char *__log_cat = "OBJECT";
+
+#include <stdlib.h>
 
 #include "jxtaapr.h"
 
 #include "jxta_log.h"
 #include "jxta_object.h"
+#include "jxtaapr.h"
 
 #define MAX_REF_COUNT 10000
+
+#ifndef JXTA_OBJECT_TRACKING_ENABLE
+#define JXTA_OBJECT_TRACKING_ENABLE 0
+#endif
+
+/**
+ * Change the following line to <tt>#define INVALID_IS_FATAL</tt>
+ *
+ * This will force immediate failure for all detected bad objects.
+ **/
+#undef INVALID_IS_FATAL
 
 /**
  * Forward definition. Makes compilers happier.
@@ -98,7 +112,7 @@ void start_kdb_server(void);
 
 static apr_thread_mutex_t *jxta_object_mutex = NULL;
 static apr_pool_t *jxta_object_pool = NULL;
-static Jxta_boolean jxta_object_initialized = FALSE;
+static unsigned int jxta_object_initialized = 0;
 
 /**
  * Initialize the global mutex. Since we do want this module
@@ -113,40 +127,58 @@ static Jxta_boolean jxta_object_initialized = FALSE;
  * jice@jxta.org - 20020204 : Actualy, the POSIX way is to use thread-once
  * because static initialization order is practicaly impossible to control.
  **/
-void jxta_object_initialize(void)
+Jxta_status jxta_object_initialize(void)
 {
     apr_status_t res;
 
-    if (jxta_object_initialized) {
-        /* Already initialized. Nothing to do. */
-        return;
+    if (jxta_object_initialized++) {
+        return JXTA_SUCCESS;
     }
 
     /* Initialize the global mutex. */
     res = apr_pool_create(&jxta_object_pool, NULL);
     if (res != APR_SUCCESS) {
+        jxta_object_initialized = 0;
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Cannot allocate pool for jxta_object_mutex\n");
-        return;
+        return res;
     }
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, FILEANDLINE "Allocated pool fot jxta_object_mutex\n");
 
     /* Create the mutex */
     res = apr_thread_mutex_create(&jxta_object_mutex, APR_THREAD_MUTEX_NESTED, jxta_object_pool);
     if (res != APR_SUCCESS) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Cannot jxta_object_mutex\n");
-        return;
+        apr_pool_destroy(jxta_object_pool);
+        jxta_object_initialized = 0;
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Cannot create jxta_object_mutex\n");
+        return res;
     }
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, FILEANDLINE "Allocated the global jxta_object_mutex\n");
 
-    if (jxta_object_initialized) {
-        /* This should not be the case */
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "jxta_object_initialized invoked concurrently !!!\n");
-    }
 #ifdef KDB_SERVER
     start_kdb_server();
 #endif
 
-    jxta_object_initialized = TRUE;
+    return JXTA_SUCCESS;
+}
+
+void jxta_object_terminate(void)
+{
+    if (!jxta_object_initialized) {
+        return;
+    }
+
+    jxta_object_initialized--;
+    if (jxta_object_initialized) {
+        return;
+    }
+
+    /* Destroy the mutex */
+    apr_thread_mutex_destroy(jxta_object_mutex);
+
+    /* Destroy the global apr pool. */
+    apr_pool_destroy(jxta_object_pool);
+
+    jxta_object_initialized = FALSE;
 }
 
 /**
@@ -156,7 +188,6 @@ static void jxta_object_mutexGet(void)
 {
     apr_status_t res;
 
-    jxta_object_initialize();
     res = apr_thread_mutex_lock(jxta_object_mutex);
     if (res != APR_SUCCESS) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Error getting jxta_object_mutex\n");
@@ -170,7 +201,6 @@ static void jxta_object_mutexRel(void)
 {
     apr_status_t res;
 
-    jxta_object_initialize();
     res = apr_thread_mutex_unlock(jxta_object_mutex);
     if (res != APR_SUCCESS) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Error getting jxta_object_mutex\n");
@@ -197,7 +227,7 @@ static int jxta_object_decrement_refcount(Jxta_object * obj)
     return count;
 }
 
-int _jxta_object_get_refcount(Jxta_object * obj)
+JXTA_DECLARE(int) _jxta_object_get_refcount(Jxta_object * obj)
 {
     int count;
 
@@ -214,12 +244,16 @@ static void jxta_object_set_refcount(Jxta_object * obj, int count)
     jxta_object_mutexRel();
 }
 
-Jxta_boolean _jxta_object_check_valid(Jxta_object * obj, const char *file, int line)
+JXTA_DECLARE(Jxta_boolean) _jxta_object_check_valid(Jxta_object * obj, const char *file, int line)
 {
     Jxta_boolean res;
 
     if (obj == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "from [%s:%d] *********** Object is NULL\n", file, line);
+#ifdef INVALID_IS_FATAL
+        abort();
+        /* NOTREACHED */
+#endif
         return FALSE;
     }
     jxta_object_mutexGet();
@@ -233,6 +267,10 @@ Jxta_boolean _jxta_object_check_valid(Jxta_object * obj, const char *file, int l
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,
                         FILEANDLINE "from [%s:%d] *********** Object [%p] is not valid (ref count is %d)\n", file, line, obj,
                         obj->_refCount);
+#ifdef INVALID_IS_FATAL
+        abort();
+        /* NOTREACHED */
+#endif
     }
 
   Common_Exit:
@@ -254,22 +292,34 @@ void jxta_object_freemenot(Jxta_object * addr)
     JXTA_OBJECT_SHARE(addr);
 }
 
-static Jxta_boolean jxta_object_check_initialized(Jxta_object * obj, const char *file, int line)
+static Jxta_boolean jxta_object_check_initialized(Jxta_object * obj, const char *file, const int line)
 {
     if (NULL == obj) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "from [%s:%d] *********** Object is NULL\n", file, line);
+#ifdef INVALID_IS_FATAL
+        abort();
+        /* NOTREACHED */
+#endif
         return FALSE;
     }
 
     if (0 == (obj->_bitset & JXTA_OBJECT_INITED_BIT)) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "from [%s:%d] *********** Object [%p] not initialized\n",
                         file, line, obj);
+#ifdef INVALID_IS_FATAL
+        abort();
+        /* NOTREACHED */
+#endif
         return FALSE;
     }
 #ifdef JXTA_OBJECT_CHECK_INITIALIZED_ENABLE
     if (obj->_initialized != JXTA_OBJECT_MAGIC_NUMBER) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "from [%s:%d] *********** Object [%p] not initialized\n",
                         file, line, obj);
+#ifdef INVALID_IS_FATAL
+        abort();
+        /* NOTREACHED */
+#endif
         return FALSE;
     }
 #endif
@@ -281,12 +331,20 @@ static Jxta_boolean jxta_object_check_uninitialized(Jxta_object * obj, const cha
 {
     if (NULL == obj) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "from [%s:%d] *********** Object is NULL\n", file, line);
+#ifdef INVALID_IS_FATAL
+        abort();
+        /* NOTREACHED */
+#endif
         return FALSE;
     }
 #ifdef JXTA_OBJECT_CHECK_INITIALIZED_ENABLE
     if (obj->_initialized == JXTA_OBJECT_MAGIC_NUMBER) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "from [%s:%d] *********** Object [%p] already initialized\n",
                         file, line, obj);
+#ifdef INVALID_IS_FATAL
+        abort();
+        /* NOTREACHED */
+#endif
         return FALSE;
     }
 #endif
@@ -294,7 +352,7 @@ static Jxta_boolean jxta_object_check_uninitialized(Jxta_object * obj, const cha
     return TRUE;
 }
 
-static Jxta_object *jxta_object_set_initialized(Jxta_object * obj, const char *file, int line)
+static Jxta_object *jxta_object_set_initialized(Jxta_object * obj, const char *file, const int line)
 {
     if (NULL == obj) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "from [%s:%d] *********** Object is NULL\n", file, line);
@@ -308,10 +366,14 @@ static Jxta_object *jxta_object_set_initialized(Jxta_object * obj, const char *f
     return obj;
 }
 
-static Jxta_object *jxta_object_set_uninitialized(Jxta_object * obj, const char *file, int line)
+static Jxta_object *jxta_object_set_uninitialized(Jxta_object * obj, const char *file, const int line)
 {
     if (NULL == obj) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "from [%s:%d] *********** Object is NULL\n", file, line);
+#ifdef INVALID_IS_FATAL
+        abort();
+        /* NOTREACHED */
+#endif
     } else {
         obj->_bitset &= ~JXTA_OBJECT_INITED_BIT;
 #ifdef JXTA_OBJECT_CHECK_INITIALIZED_ENABLE
@@ -327,17 +389,21 @@ static void count_freed(Jxta_object *);
 static void count_init(Jxta_object *);
 #endif
 
-void *_jxta_object_init(Jxta_object * obj, unsigned int flags, JXTA_OBJECT_FREE_FUNC freefunc, void *cookie, const char *file,
-                        int line)
+JXTA_DECLARE(void *) _jxta_object_init(Jxta_object * obj, unsigned int flags, JXTA_OBJECT_FREE_FUNC freefunc, void *cookie,
+                                       const char *file, int line)
 {
 #ifdef JXTA_OBJECT_TRACKER
-    char *pt = malloc(strlen(file) + 20);
-    sprintf(pt, "%s:%d", file, line);
+    int len = strlen(file) + 20;
+    char *pt = calloc(len, sizeof(char));
+    apr_snprintf(pt, len, "%s:%d", file, line);
 #endif
 
     jxta_object_check_uninitialized(obj, file, line);
 
     obj->_bitset = flags;
+#if JXTA_OBJECT_TRACKING_ENABLE
+    obj->_bitset |= JXTA_OBJECT_SHARE_TRACK;
+#endif
     obj->_free = freefunc;
     obj->_freeCookie = cookie;
 #ifdef JXTA_OBJECT_TRACKER
@@ -347,11 +413,14 @@ void *_jxta_object_init(Jxta_object * obj, unsigned int flags, JXTA_OBJECT_FREE_
     obj->_refCount = 1;
 
     jxta_object_set_initialized(obj, file, line);
+    if (0 != (obj->_bitset & JXTA_OBJECT_SHARE_TRACK)) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "[%s:%d] INIT obj[%p]\n", file, line, obj);
+    }
 
     return obj;
 }
 
-void *_jxta_object_share(Jxta_object * obj, const char *file, int line)
+JXTA_DECLARE(void *) _jxta_object_share(Jxta_object * obj, const char *file, int line)
 {
     jxta_object_mutexGet();
 
@@ -365,7 +434,7 @@ void *_jxta_object_share(Jxta_object * obj, const char *file, int line)
         }
 
         if (0 != (obj->_bitset & JXTA_OBJECT_SHARE_TRACK)) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "[%s:%d] SHARE obj[%p]=%d\n", file, line, obj, newRefCount);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "[%s:%d] SHARE obj[%p]=%d\n", file, line, obj, newRefCount);
         }
     }
 
@@ -374,7 +443,7 @@ void *_jxta_object_share(Jxta_object * obj, const char *file, int line)
     return obj;
 }
 
-int _jxta_object_release(Jxta_object * obj, const char *file, int line)
+JXTA_DECLARE(int) _jxta_object_release(Jxta_object * obj, const char *file, int line)
 {
     int newRefCount = -1;
 
@@ -396,7 +465,7 @@ int _jxta_object_release(Jxta_object * obj, const char *file, int line)
         }
 
         if (0 != (obj->_bitset & JXTA_OBJECT_SHARE_TRACK)) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "[%s:%d] RELEASE obj[%p]=%d\n", file, line, obj, newRefCount);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "[%s:%d] RELEASE obj[%p]=%d\n", file, line, obj, newRefCount);
         }
     }
 
@@ -545,7 +614,6 @@ void _print_object_table(void)
 
 #ifdef KDB_SERVER
 
-#include "jpr/jpr_thread.h"
 #include "jpr/jpr_excep.h"
 
 #define KDB_SERVER_HOST  "127.0.0.1"
@@ -564,23 +632,27 @@ static void *APR_THREAD_FUNC kdb_server_main(apr_thread_t * thread, void *arg)
 
     status = apr_sockaddr_info_get(&sockaddr, KDB_SERVER_HOST, APR_INET, KDB_SERVER_PORT, SOCK_STREAM, pool);
 
-    if (APR_STATUS_IS_SUCCESS(status)) {
+    if (APR_SUCCESS == status) {
 
-        status = apr_socket_create(&socket, APR_INET, SOCK_STREAM, pool);
+#if CHECK_APR_VERSION(1, 0, 0)
+        status = apr_socket_create(&socket, APR_INET, SOCK_STREAM, APR_PROTO_TCP, pool);
+#else
+        status = apr_socket_create_ex(&socket, APR_INET, SOCK_STREAM, APR_PROTO_TCP, pool);
+#endif
 
         apr_setsocketopt(socket, APR_SO_REUSEADDR, 1);
 
-        if (APR_STATUS_IS_SUCCESS(status)) {
+        if (APR_SUCCESS == status) {
 
             status = apr_bind(socket, sockaddr);
-            if (APR_STATUS_IS_SUCCESS(status)) {
+            if (APR_SUCCESS == status) {
                 status = apr_listen(socket, 50);
-                if (APR_STATUS_IS_SUCCESS(status)) {
+                if (APR_SUCCESS == status) {
 
                     for (;;) {
                         printf("KDB Server: listening on 127.0.0.1 port 10000\n");
                         status = apr_accept(&sock_in, socket, pool);
-                        if (APR_STATUS_IS_SUCCESS(status)) {
+                        if (APR_SUCCESS == status) {
 #ifdef JXTA_OBJECT_TRACKER
                             _print_object_table();
 #endif
@@ -611,9 +683,13 @@ void start_kdb_server(void)
 
     apr_thread_create(&thread, NULL,    /* no attr */
                       kdb_server_main, (void *) NULL, pool);
+
+    apr_thread_detach(thread);
 #else
 
     printf("************* Cannot start KDB server: JXTA_OBJECT_TRACKER is not enabled\n");
 #endif
 }
 #endif
+
+/* vi: set ts=4 sw=4 tw=130 et: */

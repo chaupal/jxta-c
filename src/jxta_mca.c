@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_mca.c,v 1.18 2005/02/02 02:58:28 exocetrick Exp $
+ * $Id: jxta_mca.c,v 1.23 2005/08/03 05:51:16 slowhog Exp $
  */
 
 
@@ -93,10 +93,10 @@ extern "C" {
      */
     struct _MCA {
         Jxta_advertisement jxta_advertisement;
-        char * MCA;
-        char * MCID;
-        char * Name;
-        char * Desc;
+        char *MCA;
+        char *MCID;
+        char *Name;
+        char *Desc;
     };
 
 
@@ -105,25 +105,23 @@ extern "C" {
      * tag name.
      */
     static void
-    handleMCA(void * userdata, const XML_Char * cd, int len) {
+     handleMCA(void *userdata, const XML_Char * cd, int len) {
         /* MCA * ad = (MCA*)userdata; */
         JXTA_LOG("In MCA element\n");
-    }
-
-    static void
-    handleMCID(void * userdata, const XML_Char * cd, int len) {
+    } static void
+     handleMCID(void *userdata, const XML_Char * cd, int len) {
         /* MCA * ad = (MCA*)userdata; */
         JXTA_LOG("In MCID element\n");
     }
 
     static void
-    handleName(void * userdata, const XML_Char * cd, int len) {
+     handleName(void *userdata, const XML_Char * cd, int len) {
         /* MCA * ad = (MCA*)userdata; */
         JXTA_LOG("In Name element\n");
     }
 
     static void
-    handleDesc(void * userdata, const XML_Char * cd, int len) {
+     handleDesc(void *userdata, const XML_Char * cd, int len) {
         /* MCA * ad = (MCA*)userdata; */
         JXTA_LOG("In Desc element\n");
     }
@@ -134,40 +132,36 @@ extern "C" {
     /** The get/set functions represent the public
      * interface to the ad class, that is, the API.
      */
-    char *
-    MCA_get_MCA(MCA * ad) {
+    JXTA_DECLARE(char *) MCA_get_MCA(MCA * ad) {
         return NULL;
     }
 
-    void
-    MCA_set_MCA(MCA * ad, char * name) {
+    JXTA_DECLARE(void)
+     MCA_set_MCA(MCA * ad, char *name) {
     }
 
-    char *
-    MCA_get_MCID(MCA * ad) {
+    JXTA_DECLARE(char *) MCA_get_MCID(MCA * ad) {
         return NULL;
     }
 
-    void
-    MCA_set_MCID(MCA * ad, char * name) {
+    JXTA_DECLARE(void)
+     MCA_set_MCID(MCA * ad, char *name) {
     }
 
-    char *
-    MCA_get_Name(MCA * ad) {
+    JXTA_DECLARE(char *) MCA_get_Name(MCA * ad) {
         return NULL;
     }
 
-    void
-    MCA_set_Name(MCA * ad, char * name) {
+    JXTA_DECLARE(void)
+     MCA_set_Name(MCA * ad, char *name) {
     }
 
-    char *
-    MCA_get_Desc(MCA * ad) {
+    JXTA_DECLARE(char *) MCA_get_Desc(MCA * ad) {
         return NULL;
     }
 
-    void
-    MCA_set_Desc(MCA * ad, char * name) {
+    JXTA_DECLARE(void)
+     MCA_set_Desc(MCA * ad, char *name) {
     }
 
     /** Now, build an array of the keyword structs.  Since
@@ -177,30 +171,28 @@ extern "C" {
      * Later, the stream will be dispatched to the handler based
      * on the value in the char * kwd.
      */
-    const static Kwdtab MCA_tags[] = {
-                                         {"Null",Null_, NULL,      NULL
-                                         },
-                                         {"jxta:MCA", MCA_, *handleMCA, NULL},
-                                         {"MCID",MCID_,*handleMCID,NULL},
-                                         {"Name",Name_,*handleName,NULL},
-                                         {"Desc",Desc_,*handleDesc,NULL},
-                                         {NULL,  0,     0,         NULL}
-                                     };
+    static const Kwdtab MCA_tags[] = {
+        {"Null", Null_, NULL, NULL, NULL},
+        {"jxta:MCA", MCA_, *handleMCA, NULL, NULL},
+        {"MCID", MCID_, *handleMCID, NULL, NULL},
+        {"Name", Name_, *handleName, NULL, NULL},
+        {"Desc", Desc_, *handleDesc, NULL, NULL},
+        {NULL, 0, 0, NULL, NULL}
+    };
 
 
     /**
      * @todo  Return an appropriate value.
      */
-    Jxta_status
-    MCA_get_xml(MCA * ad, JString ** string) {
+    JXTA_DECLARE(Jxta_status) MCA_get_xml(MCA * ad, JString ** string) {
 
         /*
-         printer(stream,"<MCA>\n");
-         printer(stream,"<MCID>%s</MCID>\n",MCA_get_MCID(ad));
-         printer(stream,"<Name>%s</Name>\n",MCA_get_Name(ad));
-         printer(stream,"<Desc>%s</Desc>\n",MCA_get_Desc(ad));
-         printer(stream,"</MCA>\n");
-        */
+           printer(stream,"<MCA>\n");
+           printer(stream,"<MCID>%s</MCID>\n",MCA_get_MCID(ad));
+           printer(stream,"<Name>%s</Name>\n",MCA_get_Name(ad));
+           printer(stream,"<Desc>%s</Desc>\n",MCA_get_Desc(ad));
+           printer(stream,"</MCA>\n");
+         */
         return JXTA_NOTIMP;
 
     }
@@ -212,23 +204,17 @@ extern "C" {
      * just in case there is a segfault (not that 
      * that would ever happen, but in case it ever did.)
      */
-    MCA *
-    MCA_new() {
+    JXTA_DECLARE(MCA *) MCA_new() {
 
-        MCA * ad;
-        ad = (MCA *) malloc (sizeof (MCA));
-        memset (ad, 0xda, sizeof (MCA));
+        MCA *ad;
+        ad = (MCA *) malloc(sizeof(MCA));
+        memset(ad, 0xda, sizeof(MCA));
 
 
-        jxta_advertisement_initialize((Jxta_advertisement*)ad,
-                                      "jxta:MCA",
-                                      MCA_tags,
-                                      (JxtaAdvertisementGetXMLFunc)MCA_get_xml,
+        jxta_advertisement_initialize((Jxta_advertisement *) ad, "jxta:MCA", MCA_tags, (JxtaAdvertisementGetXMLFunc) MCA_get_xml,
                                       /* XXX Fixme MCA_get_MCID is not implemented nor has the correct sig.
-                                         when it is fixed this needs to be corrected.  it's NULL for now*/
-                                      NULL,
-				      (JxtaAdvertisementGetIndexFunc)MCA_get_indexes,
-                                      (FreeFunc)MCA_delete);
+                                         when it is fixed this needs to be corrected.  it's NULL for now */
+                                      NULL, (JxtaAdvertisementGetIndexFunc) MCA_get_indexes, (FreeFunc) MCA_delete);
 
         return ad;
     }
@@ -240,51 +226,47 @@ extern "C" {
      * after it was freed...
      */
     void
-    MCA_delete (MCA * ad) {
+     MCA_delete(MCA * ad) {
         /* Fill in the required freeing functions here. */
 
-        memset (ad, 0xdd, sizeof (MCA));
-        free (ad);
+        memset(ad, 0xdd, sizeof(MCA));
+        free(ad);
     }
 
-    void
-    MCA_parse_charbuffer(MCA * ad, const char * buf, int len) {
+    JXTA_DECLARE(void)
+     MCA_parse_charbuffer(MCA * ad, const char *buf, int len) {
 
-        jxta_advertisement_parse_charbuffer((Jxta_advertisement*)ad,buf,len);
+        jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
     }
 
+    JXTA_DECLARE(void)
+     MCA_parse_file(MCA * ad, FILE * stream) {
 
-
-    void
-    MCA_parse_file(MCA * ad, FILE * stream) {
-
-        jxta_advertisement_parse_file((Jxta_advertisement*)ad, stream);
+        jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
     }
-    
-Jxta_vector * 
-    MCA_get_indexes(void) {
-        const char * idx[][2] = { 
-				{ "Name", NULL },
-				{ NULL, NULL } 
-				};
-    return jxta_advertisement_return_indexes(idx);
-}
 
+    JXTA_DECLARE(Jxta_vector *) MCA_get_indexes(Jxta_advertisement * dummy) {
+        const char *idx[][2] = {
+            {"Name", NULL},
+            {NULL, NULL}
+        };
+        return jxta_advertisement_return_indexes(idx[0]);
+    }
 
 #ifdef STANDALONE
     int
-    main (int argc, char **argv) {
-        MCA * ad;
+     main(int argc, char **argv) {
+        MCA *ad;
         FILE *testfile;
 
-        if(argc != 2) {
+        if (argc != 2) {
             printf("usage: ad <filename>\n");
             return -1;
         }
 
         ad = MCA_new();
 
-        testfile = fopen (argv[1], "r");
+        testfile = fopen(argv[1], "r");
         MCA_parse_file(ad, testfile);
         fclose(testfile);
 

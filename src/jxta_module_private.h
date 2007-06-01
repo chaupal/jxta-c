@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_module_private.h,v 1.19 2005/03/25 23:39:44 bondolo Exp $
+ * $Id: jxta_module_private.h,v 1.20 2005/06/16 23:11:44 slowhog Exp $
  */
 
 #ifndef JXTA_MODULE_PRIVATE_H
@@ -87,7 +87,7 @@ extern "C" {
  * string "Jxta_module_methods".
  */ struct _jxta_module_methods {
 
-    Extends_nothing;    /* could extend Jxta_object but that'd be overkill */
+    Extends_nothing;            /* could extend Jxta_object but that'd be overkill */
 
     /* An implementation of Jxta_module_init */
     Jxta_status(*init) (Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv);
@@ -128,7 +128,7 @@ typedef struct _jxta_module _jxta_module;
  * @param methods The module's set of methods.
  * @return the constructed object or NULL if the construction failed.
  */
-extern _jxta_module *jxta_module_construct(_jxta_module * self, Jxta_module_methods const * methods);
+extern _jxta_module *jxta_module_construct(_jxta_module * self, Jxta_module_methods const *methods);
 
 /**
  * The base class dtor (Not public, not virtual. Only called by subclassers).
@@ -163,7 +163,12 @@ extern void jxta_module_init_e_impl(Jxta_module * module, Jxta_PG * group, Jxta_
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTA_SERVICE_PRIVATE_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

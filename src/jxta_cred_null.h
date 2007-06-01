@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cred_null.h,v 1.4 2005/01/12 21:46:56 bondolo Exp $
+ * $Id: jxta_cred_null.h,v 1.5 2005/06/16 23:11:40 slowhog Exp $
  */
 
 
@@ -69,9 +69,9 @@ extern "C" {
     /* use the jxta_cred interfaces */
     typedef const struct _jxta_cred_null jxta_cred_null;
 
-    jxta_cred_null * jxta_cred_null_new( Jxta_service* service, Jxta_id* pg, Jxta_id* peer, JString* identity );
+    jxta_cred_null *jxta_cred_null_new(Jxta_service * service, Jxta_id * pg, Jxta_id * peer, JString * identity);
 
-#endif /* __Jxta_CredNull_H__  */
+#endif                          /* __Jxta_CredNull_H__  */
 #ifdef __cplusplus
 }
 #endif

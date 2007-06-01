@@ -1,16 +1,7 @@
 
-AM_CFLAGS = -DSTANDALONE               \
-         -Wall                      \
-         -pedantic                  \
-         -Wno-long-long             \
-         -Wstrict-prototypes        \
-         -Wwrite-strings            \
-         -Wpointer-arith            \
-         -g
+AM_CFLAGS = -DSTANDALONE -DTARGET_ARCH_OS_PLATFORM=\"$(target)\" -Wall -W -pedantic -Wno-long-long -Wstrict-prototypes -Wwrite-strings -Wpointer-arith
 
-AM_CPPFLAGS =  -I$(PREFIX)/include  \
-            -I../src                \
-            @APR_CPPFLAGS@
+AM_CPPFLAGS =  -I../src @APR_CPPFLAGS@ @XML2_CPPFLAGS@ @SQLITE_CPPFLAGS@ 
 
 bin_PROGRAMS = tutorial0 tutorial1 tutorial2 whisp
 		      
@@ -19,13 +10,13 @@ bin_PROGRAMS = tutorial0 tutorial1 tutorial2 whisp
 #		tutorial1
 
 LDADD = @APR_LIBS@                  \
+        @XML2_LIBS@                 \
+        @SQLITE_LIBS@               \
 	-L../src/                   \
 	-L../src/.libs              \
 	-L../src/jpr                \
 	-L../src/jpr/.libs          \
 	  -lpthread                 \
-          -lapr-0                   \
-          -laprutil-0               \
           -ljpr                     \
           -ljxta
 

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_errno.h,v 1.2 2005/01/10 17:19:26 brent Exp $
+ * $Id: jxta_errno.h,v 1.4 2005/06/16 23:11:42 slowhog Exp $
  */
 
 #ifndef JXTA_ERRNO_H
@@ -73,22 +73,17 @@ extern "C" {
 #if 0
 }
 #endif
-#endif /* __cplusplus */
-
+#endif                          /* __cplusplus */
 #define JXTA_SUCCESS ((Jxta_status) JPR_SUCCESS)
 #define JXTA_START_ERROR  ((Jxta_status) JPR_START_ERROR)
 #define JXTA_START_USEERR ((Jxta_status) JPR_START_USEERR)
 #define JXTA_END_USEERR ((Jxta_status) JPR_END_USEERR)
-
 /*
  * The very first error number we need, of course :-)
  */
 #define JXTA_NOTIMP ((Jxta_status) JXTA_START_ERROR + 0)
-
 /*
  * And then litany of usual suspects.
- * Note: not sure we should ever return JXTA_NOMEM; but I've seen code
- * detecting out of memory (and returning null and the like).
  */
 #define JXTA_INVALID_ARGUMENT ((Jxta_status) JXTA_START_ERROR + 1)
 #define JXTA_ITEM_NOTFOUND ((Jxta_status) JXTA_START_ERROR + 2)
@@ -102,9 +97,13 @@ extern "C" {
 #define JXTA_ITEM_EXISTS ((Jxta_status) JXTA_START_ERROR + 10)
 #define JXTA_NOT_CONFIGURED ((Jxta_status) JXTA_START_ERROR + 11)
 #define JXTA_UNREACHABLE_DEST ((Jxta_status) JXTA_START_ERROR + 12)
-
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
-#endif  /* ! JXTA_ERRNO_H */
+#endif /* ! JXTA_ERRNO_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

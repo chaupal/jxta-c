@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: chat.c,v 1.28 2005/04/07 22:58:52 slowhog Exp $
+ * $Id: chat.c,v 1.31 2005/05/11 05:51:24 slowhog Exp $
  */
 
 
@@ -69,7 +69,6 @@
 #include <apr_general.h>
 
 #include "jxta_debug.h"
-#include "jpr/jpr_thread.h"
 #include "jxta_peergroup.h"
 #include "jxta_listener.h"
 #include "jxta_endpoint_service.h"
@@ -212,8 +211,6 @@ message_listener (Jxta_object* obj, void* arg) {
   Jxta_message* msg = (Jxta_message*) obj;
 
   processIncomingMessage (msg);
-
-  JXTA_OBJECT_RELEASE (msg);
 }
 
 
@@ -336,6 +333,11 @@ chat_run (int argc, char **argv) {
 
   adv = jxta_pipe_adv_new();
   file = fopen (DEFAULT_ADV_FILENAME, "r");
+  if (file == NULL)
+  {
+    printf("Cannot open %s\n", DEFAULT_ADV_FILENAME);
+    return FALSE;
+  }
   jxta_pipe_adv_parse_file (adv, file);
   fclose(file);
   

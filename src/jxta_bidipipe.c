@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bidipipe.c,v 1.6 2005/03/26 00:17:10 bondolo Exp $
+ * $Id: jxta_bidipipe.c,v 1.15 2005/08/03 05:51:14 slowhog Exp $
  */
 
 #include <stdlib.h>
@@ -80,20 +80,20 @@
 /* Helper macros to track mutext lock */
 #if 0
 #ifdef jpr_thread_mutex_lock
-#undef jpe_thread_mutex_lock
+#undef jpr_thread_mutex_lock
 #endif
 #define jpr_thread_mutex_lock(x) \
-    printf(">> Trying to lock mutex at %s %d, TID: %lX, Mutex: %X\n", __FILE__, __LINE__, apr_os_thread_current(), x); \
+    printf(">> Trying to lock mutex at %s %d, TID: %p, Mutex: %p\n", __FILE__, __LINE__, apr_os_thread_current(), x); \
     apr_thread_mutex_lock(x); \
-    printf(">> Mutex locked at %s %d, TID: %lX, Mutex: %X\n", __FILE__, __LINE__, apr_os_thread_current(), x) 
+    printf(">> Mutex locked at %s %d, TID: %p, Mutex: %p\n", __FILE__, __LINE__, apr_os_thread_current(), x)
 
 #ifdef jpr_thread_mutex_unlock
-#undef jpe_thread_mutex_unlock
+#undef jpr_thread_mutex_unlock
 #endif
 #define jpr_thread_mutex_unlock(x) \
-    printf(">> Trying to unlock mutex at %s %d, TID: %lX, Mutex: %X\n", __FILE__, __LINE__, apr_os_thread_current(), x); \
+    printf(">> Trying to unlock mutex at %s %d, TID: %p, Mutex: %p\n", __FILE__, __LINE__, apr_os_thread_current(), x); \
     apr_thread_mutex_unlock(x) ;\
-    printf(">> Mutex unlocked at %s %d, TID: %lX, Mutex: %X\n", __FILE__, __LINE__, apr_os_thread_current(), x)
+    printf(">> Mutex unlocked at %s %d, TID: %p, Mutex: %p\n", __FILE__, __LINE__, apr_os_thread_current(), x)
 #endif
 
 struct Jxta_bidipipe {
@@ -163,6 +163,7 @@ static Jxta_status construct_open_message(Jxta_bidipipe * self, Jxta_message ** 
     *msg = jxta_message_new();
     if (NULL == *msg) {
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_ERROR, "Out of memory\n");
+        JXTA_OBJECT_RELEASE(peer_adv);
         return JXTA_NOMEM;
     }
 
@@ -207,12 +208,12 @@ static Jxta_status handle_open_message(Jxta_bidipipe * self, Jxta_message * msg)
     }
 
     val = jxta_message_element_get_value(e);
+    JXTA_OBJECT_RELEASE(e);
     s = jstring_new_3(val);
     JXTA_OBJECT_RELEASE(val);
 
     if (NULL == s) {
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_ERROR, "Out of memory\n");
-        JXTA_OBJECT_RELEASE(e);
         return JXTA_NOMEM;
     }
 
@@ -220,45 +221,49 @@ static Jxta_status handle_open_message(Jxta_bidipipe * self, Jxta_message * msg)
     if (NULL == pipe_adv) {
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_ERROR, "Out of memory\n");
         JXTA_OBJECT_RELEASE(s);
-        JXTA_OBJECT_RELEASE(e);
         return JXTA_NOMEM;
     }
 
     jxta_pipe_adv_parse_charbuffer(pipe_adv, jstring_get_string(s), jstring_length(s));
     JXTA_OBJECT_RELEASE(s);
-    JXTA_OBJECT_RELEASE(e);
 
     rv = jxta_message_get_element_2(msg, JXTA_BIDIPIPE_NAMESPACE, JXTA_BIDIPIPE_REMPEER_TAG, &e);
     if (JXTA_SUCCESS != rv) {
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_INFO, "Invalid response message received, discard message\n");
+        JXTA_OBJECT_RELEASE(pipe_adv);
         return rv;
     }
 
     val = jxta_message_element_get_value(e);
+    JXTA_OBJECT_RELEASE(e);
     s = jstring_new_3(val);
     JXTA_OBJECT_RELEASE(val);
 
     if (NULL == s) {
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_ERROR, "Out of memory\n");
-        JXTA_OBJECT_RELEASE(e);
+        JXTA_OBJECT_RELEASE(pipe_adv);
         return JXTA_NOMEM;
     }
 
     peer_adv = jxta_PA_new();
     if (NULL == peer_adv) {
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_ERROR, "Out of memory\n");
+        JXTA_OBJECT_RELEASE(pipe_adv);
         JXTA_OBJECT_RELEASE(s);
-        JXTA_OBJECT_RELEASE(e);
         return JXTA_NOMEM;
     }
 
     jxta_PA_parse_charbuffer(peer_adv, jstring_get_string(s), jstring_length(s));
     JXTA_OBJECT_RELEASE(s);
-    JXTA_OBJECT_RELEASE(e);
 
     peer_id = jxta_PA_get_PID(peer_adv);
     jxta_id_get_uniqueportion(peer_id, &s);
     self->ep_addr = jxta_endpoint_address_new2("jxta", jstring_get_string(s), "PipeService", jxta_pipe_adv_get_Id(pipe_adv));
+
+    JXTA_OBJECT_RELEASE(peer_adv);
+    JXTA_OBJECT_RELEASE(peer_id);
+    JXTA_OBJECT_RELEASE(s);
+    JXTA_OBJECT_RELEASE(pipe_adv);
 
     return JXTA_SUCCESS;
 }
@@ -279,6 +284,7 @@ static Jxta_status construct_response_message(Jxta_bidipipe * self, Jxta_message
     *msg = jxta_message_new();
     if (NULL == *msg) {
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_ERROR, "Out of memory\n");
+        JXTA_OBJECT_RELEASE(peer_adv);
         return JXTA_NOMEM;
     }
 
@@ -319,12 +325,12 @@ static Jxta_status handle_response_message(Jxta_bidipipe * self, Jxta_message * 
     }
 
     val = jxta_message_element_get_value(e);
+    JXTA_OBJECT_RELEASE(e);
     s = jstring_new_3(val);
     JXTA_OBJECT_RELEASE(val);
 
     if (NULL == s) {
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_ERROR, "Out of memory\n");
-        JXTA_OBJECT_RELEASE(e);
         return JXTA_NOMEM;
     }
 
@@ -332,45 +338,49 @@ static Jxta_status handle_response_message(Jxta_bidipipe * self, Jxta_message * 
     if (NULL == pipe_adv) {
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_ERROR, "Out of memory\n");
         JXTA_OBJECT_RELEASE(s);
-        JXTA_OBJECT_RELEASE(e);
         return JXTA_NOMEM;
     }
 
     jxta_pipe_adv_parse_charbuffer(pipe_adv, jstring_get_string(s), jstring_length(s));
     JXTA_OBJECT_RELEASE(s);
-    JXTA_OBJECT_RELEASE(e);
 
     rv = jxta_message_get_element_2(msg, JXTA_BIDIPIPE_NAMESPACE, JXTA_BIDIPIPE_REMPEER_TAG, &e);
     if (JXTA_SUCCESS != rv) {
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_INFO, "Invalid response message received, discard message\n");
+        JXTA_OBJECT_RELEASE(pipe_adv);
         return rv;
     }
 
     val = jxta_message_element_get_value(e);
+    JXTA_OBJECT_RELEASE(e);
     s = jstring_new_3(val);
     JXTA_OBJECT_RELEASE(val);
 
     if (NULL == s) {
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_ERROR, "Out of memory\n");
-        JXTA_OBJECT_RELEASE(e);
+        JXTA_OBJECT_RELEASE(pipe_adv);
         return JXTA_NOMEM;
     }
 
     peer_adv = jxta_PA_new();
     if (NULL == peer_adv) {
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_ERROR, "Out of memory\n");
+        JXTA_OBJECT_RELEASE(pipe_adv);
         JXTA_OBJECT_RELEASE(s);
-        JXTA_OBJECT_RELEASE(e);
         return JXTA_NOMEM;
     }
 
     jxta_PA_parse_charbuffer(peer_adv, jstring_get_string(s), jstring_length(s));
     JXTA_OBJECT_RELEASE(s);
-    JXTA_OBJECT_RELEASE(e);
 
     peer_id = jxta_PA_get_PID(peer_adv);
     jxta_id_get_uniqueportion(peer_id, &s);
     self->ep_addr = jxta_endpoint_address_new2("jxta", jstring_get_string(s), "PipeService", jxta_pipe_adv_get_Id(pipe_adv));
+
+    JXTA_OBJECT_RELEASE(peer_adv);
+    JXTA_OBJECT_RELEASE(peer_id);
+    JXTA_OBJECT_RELEASE(s);
+    JXTA_OBJECT_RELEASE(pipe_adv);
 
     return JXTA_SUCCESS;
 }
@@ -426,7 +436,6 @@ static void bidipipe_input_listener(Jxta_object * obj, void *arg)
             rv = close_pipes(self);
             jpr_thread_mutex_unlock(self->mutex);
             JXTA_OBJECT_RELEASE(e);
-            JXTA_OBJECT_RELEASE(obj);
             return;
         }
         jpr_thread_mutex_unlock(self->mutex);
@@ -460,6 +469,7 @@ static void bidipipe_input_listener(Jxta_object * obj, void *arg)
         }
         if (JXTA_SUCCESS == rv) {
             rv = jxta_endpoint_service_send(self->group, self->ep_svc, open_msg, self->ep_addr);
+            JXTA_OBJECT_RELEASE(open_msg);
         }
         if (JXTA_SUCCESS == rv) {
             self->state = JXTA_BIDIPIPE_CONNECTED;
@@ -485,8 +495,6 @@ static void bidipipe_input_listener(Jxta_object * obj, void *arg)
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_ERROR, "Invalid state, is this a bug?\n");
         break;
     }
-
-    JXTA_OBJECT_RELEASE(obj);
 }
 
 static Jxta_status construct_input_pipe(Jxta_bidipipe * self, Jxta_pipe_adv * local_adv)
@@ -529,12 +537,12 @@ static Jxta_status construct_input_pipe(Jxta_bidipipe * self, Jxta_pipe_adv * lo
     return JXTA_SUCCESS;
 }
 
-Jxta_bidipipe *jxta_bidipipe_new(Jxta_PG * pg)
+JXTA_DECLARE(Jxta_bidipipe *) jxta_bidipipe_new(Jxta_PG * pg)
 {
     Jpr_status rv;
     Jxta_bidipipe *self = NULL;
 
-    self = calloc(1, sizeof(Jxta_bidipipe));
+    self = (Jxta_bidipipe *) calloc(1, sizeof(Jxta_bidipipe));
 
     if (NULL == self) {
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_WARNING, "Out of memory\n");
@@ -592,6 +600,7 @@ Jxta_status jxta_bidipipe_delete(Jxta_bidipipe * self)
         return JXTA_INVALID_ARGUMENT;
     }
 
+    jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_DEBUG, "freeing Bidipipe[%p] ...\n", self);
     jpr_thread_mutex_lock(self->mutex);
 
     if (JXTA_BIDIPIPE_CLOSED != self->state) {
@@ -599,6 +608,7 @@ Jxta_status jxta_bidipipe_delete(Jxta_bidipipe * self)
                         "Bidipipe is still connected when delete, close connection ...\n");
         rv = jxta_bidipipe_close(self);
         if (JXTA_SUCCESS != rv) {
+            jpr_thread_mutex_unlock(self->mutex);
             return rv;
         }
     }
@@ -606,6 +616,7 @@ Jxta_status jxta_bidipipe_delete(Jxta_bidipipe * self)
     JXTA_OBJECT_RELEASE(self->i_listener);
     self->i_listener = NULL;
 
+    jpr_thread_mutex_unlock(self->mutex);
     apr_thread_cond_destroy(self->cond);
     jpr_thread_mutex_destroy(self->mutex);
     jpr_thread_mutex_destroy(self->cond_mutex);
@@ -617,7 +628,8 @@ Jxta_status jxta_bidipipe_delete(Jxta_bidipipe * self)
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_bidipipe_connect(Jxta_bidipipe * self, Jxta_pipe_adv * remote_adv, Jxta_listener * listener, Jxta_time_diff timeout)
+JXTA_DECLARE(Jxta_status) jxta_bidipipe_connect(Jxta_bidipipe * self, Jxta_pipe_adv * remote_adv, Jxta_listener * listener,
+                                                Jxta_time_diff timeout)
 {
     Jxta_status rv;
     Jxta_pipe_service *ps;
@@ -627,9 +639,10 @@ Jxta_status jxta_bidipipe_connect(Jxta_bidipipe * self, Jxta_pipe_adv * remote_a
     Jxta_outputpipe *o_pipe;
     Jxta_time now;
 
-    now = apr_time_now(); /* microsec, not millisec was used in pipe_timed_connect as queue_dequeue_1 */
+    now = apr_time_now();   /* microsec, not millisec was used in pipe_timed_connect as queue_dequeue_1 */
     jpr_thread_mutex_lock(self->mutex);
     if (JXTA_BIDIPIPE_CLOSED != self->state) {
+        jpr_thread_mutex_unlock(self->mutex);
         return JXTA_VIOLATION;
     }
     self->state = JXTA_BIDIPIPE_CONNECTING;
@@ -695,23 +708,26 @@ Jxta_status jxta_bidipipe_connect(Jxta_bidipipe * self, Jxta_pipe_adv * remote_a
 
     rv = jxta_outputpipe_send(o_pipe, msg);
 
+    JXTA_OBJECT_RELEASE(local_adv);
     JXTA_OBJECT_RELEASE(o_pipe);
     JXTA_OBJECT_RELEASE(msg);
 
     /* Wait for response message until timeout reached, at least 1 ms */
     timeout -= (apr_time_now() - now);
-    if (timeout < 1000) timeout = 1000;
+    if (timeout < 1000)
+        timeout = 1000;
     jpr_thread_mutex_lock(self->cond_mutex);
     jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_DEBUG, "Waiting confirmation of bidipipe connection ...\n");
     rv = apr_thread_cond_timedwait(self->cond, self->cond_mutex, now);
     jpr_thread_mutex_unlock(self->cond_mutex);
 
-    if (APR_TIMEUP == rv) rv = JXTA_TIMEOUT;
+    if (APR_TIMEUP == rv)
+        rv = JXTA_TIMEOUT;
 
     return rv;
 }
 
-Jxta_status jxta_bidipipe_close(Jxta_bidipipe * self)
+JXTA_DECLARE(Jxta_status) jxta_bidipipe_close(Jxta_bidipipe * self)
 {
     Jxta_status rv;
     Jxta_message *msg;
@@ -770,18 +786,19 @@ Jxta_status jxta_bidipipe_close(Jxta_bidipipe * self)
         return rv;
     }
 
-    jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_TRACE, "Close pipes for %X ...\n", self);
+    jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_TRACE, "Close pipes of bidipipe[%p] ...\n", self);
     rv = close_pipes(self);
-    jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_TRACE, "Pipes for %X closed\n", self);
+    jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_TRACE, "Pipes of bidipipe[%p] closed\n", self);
     return rv;
 }
 
-Jxta_status jxta_bidipipe_accept(Jxta_bidipipe * self, Jxta_pipe_adv * local_adv, Jxta_listener * listener)
+JXTA_DECLARE(Jxta_status) jxta_bidipipe_accept(Jxta_bidipipe * self, Jxta_pipe_adv * local_adv, Jxta_listener * listener)
 {
     Jxta_status rv;
 
     jpr_thread_mutex_lock(self->mutex);
     if (JXTA_BIDIPIPE_CLOSED != self->state) {
+        jpr_thread_mutex_unlock(self->mutex);
         return JXTA_VIOLATION;
     }
     self->state = JXTA_BIDIPIPE_ACCEPTING;
@@ -806,23 +823,23 @@ Jxta_status jxta_bidipipe_accept(Jxta_bidipipe * self, Jxta_pipe_adv * local_adv
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_bidipipe_send(Jxta_bidipipe * self, Jxta_message * msg)
+JXTA_DECLARE(Jxta_status) jxta_bidipipe_send(Jxta_bidipipe * self, Jxta_message * msg)
 {
     if (JXTA_BIDIPIPE_CONNECTED != self->state) {
-        jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_WARNING, 
-                "Trying to send message while bidipipe is not connected, current state:%d\n", self->state);
+        jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_WARNING,
+                        "Trying to send message while bidipipe is not connected, current state:%d\n", self->state);
         return JXTA_VIOLATION;
     }
 
     return jxta_endpoint_service_send(self->group, self->ep_svc, msg, self->ep_addr);
 }
 
-Jxta_bidipipe_state jxta_bidipipe_get_state(Jxta_bidipipe * self)
+JXTA_DECLARE(Jxta_bidipipe_state) jxta_bidipipe_get_state(Jxta_bidipipe * self)
 {
-    return self->state;
+    return (Jxta_bidipipe_state) self->state;
 }
 
-Jxta_pipe_adv* jxta_bidipipe_get_pipe_adv(Jxta_bidipipe * self)
+JXTA_DECLARE(Jxta_pipe_adv *) jxta_bidipipe_get_pipe_adv(Jxta_bidipipe * self)
 {
     if (NULL != self->i_pipe_adv) {
         JXTA_OBJECT_SHARE(self->i_pipe_adv);
@@ -830,4 +847,5 @@ Jxta_pipe_adv* jxta_bidipipe_get_pipe_adv(Jxta_bidipipe * self)
 
     return self->i_pipe_adv;
 }
-/* vi: set sw=4 ts=4 et wm=130: */
+
+/* vi: set sw=4 ts=4 et tw=130: */

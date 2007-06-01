@@ -51,38 +51,44 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object_type.c,v 1.6 2005/02/14 01:23:15 bondolo Exp $
+ * $Id: jxta_object_type.c,v 1.10 2005/06/16 23:11:45 slowhog Exp $
  */
 
-#include "jxta_debug.h"
-#include "jxta_object_type.h"
+static const char *__log_cat = "OBJECT";
 
 #include <string.h>
 #include <stdlib.h>
 
-void *jxta_assert_same_type( const void *object, const char *object_type, const char *want_type, const char *file, int line)
+#include "jxta_log.h"
+#include "jxta_object_type.h"
+
+JXTA_DECLARE(void *) jxta_assert_same_type(const void *object, const char *object_type, const char *want_type, const char *file,
+                                           int line)
 {
     if (object == NULL) {
-        JXTA_LOG("Runtime error @ %s:%d -- Using NULL Object [%p]\n", file, line, object);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_FATAL, FILEANDLINE "Using NULL Object [%p] @ [%s:%d] \n", object, file, line);
         abort();
     }
 
     if (object_type == NULL) {
-        JXTA_LOG("Runtime error @ %s:%d -- Using Object [%p] of unknown (uninitialized?) type\n", file, line, object);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_FATAL,
+                        FILEANDLINE "Using Object [%p] of unknown (uninitialized?) type @ [%s:%d] \n", object, file, line);
         abort();
     }
 
     if (want_type == NULL) {
-        JXTA_LOG("Runtime error @ %s:%d -- Using Object [%p] of type <%.30s>, but tested against NULL type\n", file, line, object,
-                 object_type);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_FATAL,
+                        FILEANDLINE "Using Object [%p] of type <%.30s>, but tested against NULL type @ [%s:%d] \n", object,
+                        object_type, file, line);
         abort();
     }
 
     if (strcmp(object_type, want_type)) {
-        JXTA_LOG("Runtime error @ %s:%d -- Using Object [%p] of type <%.30s> where <%.30s> was expected\n", file, line, object,
-                 object_type, want_type);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_FATAL,
+                        FILEANDLINE "Using Object [%p] of type <%.30s> where <%.30s> was expected @ [%s:%d]\n", object,
+                        object_type, want_type, file, line);
         abort();
     }
 
-    return (void*) object;
+    return (void *) object;
 }

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr.c,v 1.1 2005/03/24 19:40:21 slowhog Exp $
+ * $Id: jpr.c,v 1.4 2005/04/30 04:34:50 slowhog Exp $
  */
 
 #include <apr_general.h>
@@ -63,12 +63,11 @@
 apr_pool_t *_jpr_global_pool = NULL;
 static unsigned int _jpr_initialized = 0;
 
-Jpr_status jpr_initialize(void)
+JPR_DECLARE(Jpr_status) jpr_initialize(void)
 {
     apr_status_t rv;
 
-    if (_jpr_initialized) {
-        _jpr_initialized++;
+    if (_jpr_initialized++) {
         return APR_SUCCESS;
     }
 
@@ -81,10 +80,6 @@ Jpr_status jpr_initialize(void)
         rv = jpr_excep_initialize();
     }
 
-    if (APR_SUCCESS == rv) {
-        rv = jpr_thread_delay_initialize();
-    }
-
     if (APR_SUCCESS != rv) {
         _jpr_initialized = 0;
     }
@@ -92,7 +87,7 @@ Jpr_status jpr_initialize(void)
     return rv;
 }
 
-void jpr_terminate(void)
+JPR_DECLARE(void) jpr_terminate(void)
 {
     if (!_jpr_initialized) {
         return;
@@ -103,7 +98,6 @@ void jpr_terminate(void)
         return;
     }
 
-    jpr_thread_delay_terminate();
     jpr_excep_terminate();
 
     apr_pool_destroy(_jpr_global_pool);

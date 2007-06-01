@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bytevector.h,v 1.4 2005/01/28 02:22:45 slowhog Exp $
+ * $Id: jxta_bytevector.h,v 1.8 2005/06/16 23:11:40 slowhog Exp $
  */
 
 
@@ -93,11 +93,11 @@ extern "C" {
  **
  ** @return a new vector, or NULL if allocation failed.
  *************************************************************************/
-Jxta_bytevector *jxta_bytevector_new_0(void);
+JXTA_DECLARE(Jxta_bytevector *) jxta_bytevector_new_0(void);
 
 /************************************************************************
  ** Allocates a new Vector. The vector is allocated and is initialized
- ** (ready to use). No need to apply JXTA_OBJECT_INIT, because new does it.
+ ** (ready to use).
  ** The initial capacity of the vector is set by initialSize. If that value is
  ** 0, then a default size is used.
  **
@@ -107,7 +107,7 @@ Jxta_bytevector *jxta_bytevector_new_0(void);
  ** @param initialSize is the initial size of the vector. 0 means default.
  ** @return a new vector, or NULL if allocation failed.
  *************************************************************************/
-Jxta_bytevector *jxta_bytevector_new_1(size_t initialSize);
+JXTA_DECLARE(Jxta_bytevector *) jxta_bytevector_new_1(size_t initialSize);
 
 /************************************************************************
  ** Allocates a new Vector initialized with the provided pointer. No need 
@@ -123,7 +123,7 @@ Jxta_bytevector *jxta_bytevector_new_1(size_t initialSize);
  ** @param initalCapacity is the initial capacity of the byte vector.
  ** @return a new vector, or NULL if allocation failed.
  *************************************************************************/
-Jxta_bytevector *jxta_bytevector_new_2(unsigned char *initialPtr, size_t initialSize, size_t initalCapacity);
+JXTA_DECLARE(Jxta_bytevector *) jxta_bytevector_new_2(unsigned char *initialPtr, size_t initialSize, size_t initalCapacity);
 
 /************************************************************************
  ** Causes the vector to be synchronized.
@@ -133,7 +133,7 @@ Jxta_bytevector *jxta_bytevector_new_2(unsigned char *initialPtr, size_t initial
  ** otherwise.
  *************************************************************************/
 
-Jxta_status jxta_bytevector_set_synchronized(Jxta_bytevector * vector);
+JXTA_DECLARE(Jxta_status) jxta_bytevector_set_synchronized(Jxta_bytevector * vector);
 
 /*************************************************************************
  ** Removes all of the elements from a vector. The initial capacity of the
@@ -144,7 +144,7 @@ Jxta_status jxta_bytevector_set_synchronized(Jxta_bytevector * vector);
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  ************************************************************************/
-Jxta_status jxta_bytevector_clear(Jxta_bytevector * vector, size_t initialSize);
+JXTA_DECLARE(Jxta_status) jxta_bytevector_clear(Jxta_bytevector * vector, size_t initialSize);
 
 
 /************************************************************************
@@ -153,11 +153,11 @@ Jxta_status jxta_bytevector_clear(Jxta_bytevector * vector, size_t initialSize);
  **
  ** @param vector a pointer to the vector to use.
  ** @param byte the byte to add.
- ** @index where to add the byte.
+ ** @param index where to add the byte.
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status jxta_bytevector_add_byte_at(Jxta_bytevector * vector, unsigned char byte, unsigned int index);
+JXTA_DECLARE(Jxta_status) jxta_bytevector_add_byte_at(Jxta_bytevector * vector, unsigned char byte, unsigned int at_index);
 
 
 /************************************************************************
@@ -169,7 +169,7 @@ Jxta_status jxta_bytevector_add_byte_at(Jxta_bytevector * vector, unsigned char 
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status jxta_bytevector_add_byte_first(Jxta_bytevector * vector, unsigned char byte);
+JXTA_DECLARE(Jxta_status) jxta_bytevector_add_byte_first(Jxta_bytevector * vector, unsigned char byte);
 
 
 /************************************************************************
@@ -183,7 +183,7 @@ Jxta_status jxta_bytevector_add_byte_first(Jxta_bytevector * vector, unsigned ch
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status jxta_bytevector_add_byte_last(Jxta_bytevector * vector, unsigned char byte);
+JXTA_DECLARE(Jxta_status) jxta_bytevector_add_byte_last(Jxta_bytevector * vector, unsigned char byte);
 
 
 /************************************************************************
@@ -193,12 +193,13 @@ Jxta_status jxta_bytevector_add_byte_last(Jxta_bytevector * vector, unsigned cha
  ** @param vector a pointer to the vector to use.
  ** @param bytes the bytes to add. If NULL then the vector is filled with
  ** '0' bytes.
- ** @param index where to add the bytes.
+ ** @param at_index where to add the bytes.
  ** @param length number of bytes to add
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status jxta_bytevector_add_bytes_at(Jxta_bytevector * vector, unsigned char const *bytes, unsigned int index, size_t length);
+JXTA_DECLARE(Jxta_status) jxta_bytevector_add_bytes_at(Jxta_bytevector * vector, unsigned char const *bytes,
+                                                       unsigned int at_index, size_t length);
 
 
 /************************************************************************
@@ -208,11 +209,12 @@ Jxta_status jxta_bytevector_add_bytes_at(Jxta_bytevector * vector, unsigned char
  **
  ** @param vector a pointer to the vector to use.
  ** @param bytes the bytevector to add.
- ** @param index where to add the byte.
+ ** @param at_index where to add the byte.
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status jxta_bytevector_add_bytevector_at(Jxta_bytevector * vector, Jxta_bytevector * bytes, unsigned int index);
+JXTA_DECLARE(Jxta_status) jxta_bytevector_add_bytevector_at(Jxta_bytevector * vector, Jxta_bytevector * bytes,
+                                                            unsigned int at_index);
 
 
 /************************************************************************
@@ -222,12 +224,12 @@ Jxta_status jxta_bytevector_add_bytevector_at(Jxta_bytevector * vector, Jxta_byt
  **
  ** @param vector a pointer to the vector to use.
  ** @param bytes the bytevector to add.
- ** @param index where to add the byte.
+ ** @param dstindex where to add the byte.
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status
-jxta_bytevector_add_partial_bytevector_at(Jxta_bytevector * vector,
+JXTA_DECLARE(Jxta_status)
+    jxta_bytevector_add_partial_bytevector_at(Jxta_bytevector * vector,
                                           Jxta_bytevector * bytes, unsigned int srcIndex, size_t length, unsigned int dstindex);
 
 /************************************************************************
@@ -239,12 +241,12 @@ jxta_bytevector_add_partial_bytevector_at(Jxta_bytevector * vector,
  ** @param func function to call to read bytes.
  ** @param stream parameter to pass to the read function.
  ** @param length number of bytes to read.
- ** @index where to add the byte.
+ ** @param at_index where to add the byte.
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status
-jxta_bytevector_add_from_stream_at(Jxta_bytevector * vector, ReadFunc func, void *stream, size_t length, unsigned int index);
+JXTA_DECLARE(Jxta_status)
+    jxta_bytevector_add_from_stream_at(Jxta_bytevector * vector, ReadFunc func, void *stream, size_t length, unsigned int at_index);
 
 /************************************************************************
  ** Get the byte which is at the given index. 
@@ -253,11 +255,11 @@ jxta_bytevector_add_from_stream_at(Jxta_bytevector * vector, ReadFunc func, void
  ** @param vector a pointer to the vector to use.
  ** @param object a pointer to a Jxta_object pointer which will contain the
  ** the object.
- ** @param index index of the object.
+ ** @param at_index index of the object.
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status jxta_bytevector_get_byte_at(Jxta_bytevector * vector, unsigned char *byte, unsigned int index);
+JXTA_DECLARE(Jxta_status) jxta_bytevector_get_byte_at(Jxta_bytevector * vector, unsigned char *byte, unsigned int at_index);
 
 
 /************************************************************************
@@ -265,33 +267,34 @@ Jxta_status jxta_bytevector_get_byte_at(Jxta_bytevector * vector, unsigned char 
  ** it. The bytes are not removed from the vector.
  **
  ** @param vector a pointer to the vector to use.
- ** @param object a pointer to a Jxta_object pointer which will contain the
- ** the object.
- ** @index index of the first byte to clone.
- ** @index length maximum length to copy. The returned byte vector may be
- ** shorter than this length. INT_MAX will always copy the whole vector.
- ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
- ** otherwise.
- *************************************************************************/
-Jxta_status jxta_bytevector_get_bytes_at(Jxta_bytevector * vector, unsigned char *dest, unsigned int index, size_t length);
-
-Jxta_status jxta_bytevector_get_bytes_at_1(Jxta_bytevector * vector, unsigned char *dest, unsigned int index, size_t * length);
-
-/************************************************************************
- ** Makes a clone of the specified portion of the byte vector and returns
- ** it. The bytes are not removed from the vector.
- **
- ** @param vector a pointer to the vector to use.
- ** @param object a pointer to a Jxta_object pointer which will contain the
- ** the object.
+ ** @param dest a pointer to a byte array which will contain the result.
  ** @param index index of the first byte to clone.
  ** @param length maximum length to copy. The returned byte vector may be
  ** shorter than this length. INT_MAX will always copy the whole vector.
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status
-jxta_bytevector_get_bytevector_at(Jxta_bytevector * vector, Jxta_bytevector ** dest, unsigned int index, size_t length);
+JXTA_DECLARE(Jxta_status) jxta_bytevector_get_bytes_at(Jxta_bytevector * vector, unsigned char *dest, unsigned int at_index,
+                                                       size_t length);
+
+JXTA_DECLARE(Jxta_status) jxta_bytevector_get_bytes_at_1(Jxta_bytevector * vector, unsigned char *dest, unsigned int at_index,
+                                                         size_t * length);
+
+/************************************************************************
+ ** Makes a clone of the specified portion of the byte vector and returns
+ ** it. The bytes are not removed from the vector.
+ **
+ ** @param vector a pointer to the vector to use.
+ ** @param object a pointer to a Jxta_object pointer which will contain the
+ ** the object.
+ ** @param at_index index of the first byte to clone.
+ ** @param length maximum length to copy. The returned byte vector may be
+ ** shorter than this length. INT_MAX will always copy the whole vector.
+ ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
+ ** otherwise.
+ *************************************************************************/
+JXTA_DECLARE(Jxta_status)
+    jxta_bytevector_get_bytevector_at(Jxta_bytevector * vector, Jxta_bytevector ** dest, unsigned int at_index, size_t length);
 
 /************************************************************************
  ** Writes the byte vector to a stream.
@@ -299,13 +302,14 @@ jxta_bytevector_get_bytevector_at(Jxta_bytevector * vector, Jxta_bytevector ** d
  ** @param vector a pointer to the vector to write.
  ** @param write function to call.
  ** @param stream stream parameter to pass to write
- ** @param index index of the first byte to clone.
+ ** @param at_index index of the first byte to clone.
  ** @param length maximum length to write. The number of bytes written may be
  ** shorter than this length. INT_MAX will always copy the whole vector.
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise. Also returns errors as received from func.
  *************************************************************************/
-Jxta_status jxta_bytevector_write(Jxta_bytevector * vector, WriteFunc func, void *stream, unsigned int index, size_t length);
+JXTA_DECLARE(Jxta_status) jxta_bytevector_write(Jxta_bytevector * vector, WriteFunc func, void *stream, unsigned int at_index,
+                                                size_t length);
 
 /************************************************************************
  ** Remove the byte which is at the given index.
@@ -313,11 +317,11 @@ Jxta_status jxta_bytevector_write(Jxta_bytevector * vector, WriteFunc func, void
  ** The size of the vector is decreased.
  **
  ** @param vector a pointer to the vector to use.
- ** @param index index of the object.
+ ** @param at_index index of the object.
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status jxta_bytevector_remove_byte_at(Jxta_bytevector * vector, unsigned int index);
+JXTA_DECLARE(Jxta_status) jxta_bytevector_remove_byte_at(Jxta_bytevector * vector, unsigned int at_index);
 
 
 /************************************************************************
@@ -326,11 +330,11 @@ Jxta_status jxta_bytevector_remove_byte_at(Jxta_bytevector * vector, unsigned in
  ** The size of the vector is decreased by length
  **
  ** @param vector a pointer to the vector to use.
- ** @param index index of the object.
+ ** @param at_index index of the object.
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status jxta_bytevector_remove_bytes_at(Jxta_bytevector * vector, unsigned int index, size_t length);
+JXTA_DECLARE(Jxta_status) jxta_bytevector_remove_bytes_at(Jxta_bytevector * vector, unsigned int at_index, size_t length);
 
 
 /************************************************************************
@@ -339,7 +343,7 @@ Jxta_status jxta_bytevector_remove_bytes_at(Jxta_bytevector * vector, unsigned i
  ** @param vector a pointer to the vector to use.
  ** @return the number of objects in the vector.
  *************************************************************************/
-size_t jxta_bytevector_size(Jxta_bytevector * vector);
+JXTA_DECLARE(size_t) jxta_bytevector_size(Jxta_bytevector * vector);
 
 /************************************************************************
  ** Returns true if the two vectors are equivalent.
@@ -347,7 +351,7 @@ size_t jxta_bytevector_size(Jxta_bytevector * vector);
  ** @param vector a pointer to the vector to use.
  ** @return true if the vectors are equivalent.
  *************************************************************************/
-Jxta_boolean jxta_bytevector_equals(Jxta_bytevector * vector1, Jxta_bytevector * vector2);
+JXTA_DECLARE(Jxta_boolean) jxta_bytevector_equals(Jxta_bytevector * vector1, Jxta_bytevector * vector2);
 
 /************************************************************************
  ** Returns a hashcode for the vector.
@@ -355,7 +359,7 @@ Jxta_boolean jxta_bytevector_equals(Jxta_bytevector * vector1, Jxta_bytevector *
  ** @param vector a pointer to the vector to use.
  ** @return the hashcode for this vector or '0' if the object is invalid.
  *************************************************************************/
-unsigned int jxta_bytevector_hashcode(Jxta_bytevector * vector);
+JXTA_DECLARE(unsigned int) jxta_bytevector_hashcode(Jxta_bytevector * vector);
 
 
 #ifdef __cplusplus

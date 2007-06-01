@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_apr_wrapper.h,v 1.3 2005/02/24 21:13:26 slowhog Exp $
+ * $Id: jpr_apr_wrapper.h,v 1.6 2005/07/21 23:02:22 slowhog Exp $
  */
 
 #ifndef __JPR_APR_WRAPPER_H__
@@ -60,6 +60,21 @@
 #include "apr_version.h"
 #include "apr_thread_mutex.h"
 #include "apr_general.h"
+#include "jpr_types.h"
+#include "apr_time.h"
+
+
+
+
+
+#ifdef __cplusplus
+extern "C" {
+#if 0
+}
+#endif
+#endif
+
+
 
 #define CHECK_APR_VERSION(major, minor, patch) \
 	(APR_MAJOR_VERSION > (major) || \
@@ -85,7 +100,17 @@ typedef struct apr_thread_mutex_t jpr_thread_mutex_t;
 
 #endif /* JPR_HAS_THREADS */
 
-const char *jpr_inet_ntop(int af, const void *src, char *dst, apr_size_t size);
+JPR_DECLARE(const char *) jpr_inet_ntop(int af, const void *src, char *dst, apr_size_t size);
+
+
+#ifdef __cplusplus
+#if 0
+{
+#endif
+}
+#endif
+
+
 
 #endif /* __JPR_APR_WRAPPER_H__ */
 

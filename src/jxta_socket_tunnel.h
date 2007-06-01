@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_socket_tunnel.h,v 1.1 2005/01/29 02:01:36 slowhog Exp $
+ * $Id: jxta_socket_tunnel.h,v 1.5 2005/08/03 05:51:19 slowhog Exp $
  */
 
 #ifndef __JXTA_SOCKET_TUNNEL_H__
@@ -71,23 +71,25 @@ typedef struct Jxta_socket_tunnel Jxta_socket_tunnel;
  * addr_spec: protocol://addr:port. for example,
  * tcp://192.168.2.100:1234, supported protocols are tcp, udp
  */
-Jxta_status jxta_socket_tunnel_create(Jxta_PG * group, const char *addr_spec, Jxta_socket_tunnel ** newobj);
+JXTA_DECLARE(Jxta_status) jxta_socket_tunnel_create(Jxta_PG * group, const char *addr_spec, Jxta_socket_tunnel ** newobj);
 
 Jxta_status jxta_socket_tunnel_delete(Jxta_socket_tunnel * self);
 
-Jxta_status jxta_socket_tunnel_establish(Jxta_socket_tunnel * self, Jxta_pipe_adv * remote_adv);
+JXTA_DECLARE(Jxta_status) jxta_socket_tunnel_establish(Jxta_socket_tunnel * self, Jxta_pipe_adv * remote_adv);
 
-Jxta_status jxta_socket_tunnel_accept(Jxta_socket_tunnel * self, Jxta_pipe_adv * local_adv);
+JXTA_DECLARE(Jxta_status) jxta_socket_tunnel_accept(Jxta_socket_tunnel * self, Jxta_pipe_adv * local_adv);
 
-Jxta_status jxta_socket_tunnel_teardown(Jxta_socket_tunnel * self);
+JXTA_DECLARE(Jxta_status) jxta_socket_tunnel_teardown(Jxta_socket_tunnel * self);
 
-Jxta_boolean jxta_socket_tunnel_is_established(Jxta_socket_tunnel * self);
+JXTA_DECLARE(Jxta_boolean) jxta_socket_tunnel_is_established(Jxta_socket_tunnel * self);
 
-#if 0                           /* to cheat indent */
+JXTA_DECLARE(char *) jxta_socket_tunnel_addr_get(Jxta_socket_tunnel * self);
+
+#if 0   /* to cheat indent */
 {
 #endif
 #ifdef __cplusplus
-}                               /* extern "C" */
+}   /* extern "C" */
 #endif
 #endif /* __JXTA_SOCKET_TUNNEL_H__ */
-/* vi: set sw=4 ts=4 et wm=130: */
+/* vi: set sw=4 ts=4 et tw=130: */

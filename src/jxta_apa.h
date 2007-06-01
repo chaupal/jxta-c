@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_apa.h,v 1.4 2005/02/02 03:17:32 exocetrick Exp $
+ * $Id: jxta_apa.h,v 1.7 2005/08/03 05:51:14 slowhog Exp $
  */
 
-   
+
 #ifndef JXTA_ACCESSPOINTADVERTISEMENT_H__
 #define JXTA_ACCESSPOINTADVERTISEMENT_H__
 
@@ -65,29 +65,32 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _jxta_AccessPointAdvertisement Jxta_AccessPointAdvertisement;
 
-Jxta_AccessPointAdvertisement * jxta_AccessPointAdvertisement_new(void);
-void jxta_AccessPointAdvertisement_set_handlers(Jxta_AccessPointAdvertisement *, XML_Parser, void *);
-Jxta_status jxta_AccessPointAdvertisement_get_xml(Jxta_AccessPointAdvertisement *,
-					       JString **);
-void jxta_AccessPointAdvertisement_parse_charbuffer(Jxta_AccessPointAdvertisement *, const char *, int len); 
-void jxta_AccessPointAdvertisement_parse_file(Jxta_AccessPointAdvertisement *, FILE * stream);
- 
-char * jxta_AccessPointAdvertisement_get_Jxta_AccessPointAdvertisement(Jxta_AccessPointAdvertisement *);
-void jxta_AccessPointAdvertisement_set_Jxta_AccessPointAdvertisement(Jxta_AccessPointAdvertisement *, char *);
- 
-Jxta_id * jxta_AccessPointAdvertisement_get_PID(Jxta_AccessPointAdvertisement *);
-void jxta_AccessPointAdvertisement_set_PID(Jxta_AccessPointAdvertisement *, Jxta_id *);
+JXTA_DECLARE(Jxta_AccessPointAdvertisement *) jxta_AccessPointAdvertisement_new(void);
+JXTA_DECLARE(void) jxta_AccessPointAdvertisement_set_handlers(Jxta_AccessPointAdvertisement *, XML_Parser, void *);
+JXTA_DECLARE(Jxta_status) jxta_AccessPointAdvertisement_get_xml(Jxta_AccessPointAdvertisement *, JString **);
+JXTA_DECLARE(void) jxta_AccessPointAdvertisement_parse_charbuffer(Jxta_AccessPointAdvertisement *, const char *, int len);
+JXTA_DECLARE(void) jxta_AccessPointAdvertisement_parse_file(Jxta_AccessPointAdvertisement *, FILE * stream);
 
-Jxta_vector * jxta_AccessPointAdvertisement_get_EndpointAddresses(Jxta_AccessPointAdvertisement *);
-void jxta_AccessPointAdvertisement_set_EndpointAddresses(Jxta_AccessPointAdvertisement *, Jxta_vector *);
+JXTA_DECLARE(char *) jxta_AccessPointAdvertisement_get_Jxta_AccessPointAdvertisement(Jxta_AccessPointAdvertisement *);
+JXTA_DECLARE(void) jxta_AccessPointAdvertisement_set_Jxta_AccessPointAdvertisement(Jxta_AccessPointAdvertisement *, char *);
+
+JXTA_DECLARE(Jxta_id *) jxta_AccessPointAdvertisement_get_PID(Jxta_AccessPointAdvertisement *);
+JXTA_DECLARE(void) jxta_AccessPointAdvertisement_set_PID(Jxta_AccessPointAdvertisement *, Jxta_id *);
+
+JXTA_DECLARE(Jxta_vector *) jxta_AccessPointAdvertisement_get_EndpointAddresses(Jxta_AccessPointAdvertisement *);
+JXTA_DECLARE(void) jxta_AccessPointAdvertisement_set_EndpointAddresses(Jxta_AccessPointAdvertisement *, Jxta_vector *);
  
-Jxta_vector * jxta_AccessPointAdvertisement_get_indexes(void);
+JXTA_DECLARE(Jxta_vector *) jxta_AccessPointAdvertisement_get_indexes(Jxta_advertisement *);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTA_ACCESSPOINTDVERTISEMENT_H__  */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

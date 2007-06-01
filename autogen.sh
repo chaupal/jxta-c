@@ -6,9 +6,11 @@ RECOMMENDED_AUTOMAKE_VER=1.7
 REQUIRED_AUTOMAKE_VER=1.7
 RECOMMENDED_LIBTOOL_VER=1.4.3
 REQUIRED_LIBTOOL_VER=1.3.5
+RECOMMENDED_GCC_VER=4.0
+REQUIRED_GCC_VER=3.3
 
 AM_PROGS="automake-1.7 automake-1.8 automake-1.9 automake"
-AC_PROGS="autoconf2.50 autoconf"
+AC_PROGS="autoconf-2.5x autoconf"
 
 # compare 2 versions 
 # return true if $1 is later than $2
@@ -37,17 +39,19 @@ ver_check() {
     vc_min_ver=$3
     vc_result=1
 
-    echo "checking if $vc_prog >= $vc_r_ver ..."
-    vc_prog_ver=`$vc_prog --version | head -n 1 | \
-                           sed 's/^.*[ \t]\([0-9.]*\).*$/\1/'`
-    if ver_compare $vc_prog_ver $vc_r_ver; then
-        echo "found $vc_prog_ver"
+    echo "Checking if $vc_prog >= $vc_r_ver ..."
+    vc_prog_ver=`$vc_prog --version 2> /dev/null | head -n 1 | \
+                           sed 's/^[^0-9]*[ \t-]\([0-9.]\{1,\}\).*$/\1/'`
+    echo " Program: \"$vc_prog\" Version \"$vc_prog_ver\""
+    if [ -z "$vc_prog_ver" ]; then    
+        echo " ERROR: $vc_prog not installed."
+    elif ver_compare $vc_prog_ver $vc_r_ver; then
         vc_result=0
     elif [ -n "$vc_min_ver" ] && ver_compare $vc_prog_ver $vc_min_ver; then
-        echo "found $vc_prog_ver is OK, but $vc_r_ver is recommended"
+        echo " $vc_prog_ver is OK, but $vc_r_ver is recommended"
         vc_result=0
     else
-        echo "ERROR: too old (found version $vc_prog_version)"
+        echo " ERROR: too old (found version $vc_prog_version)"
     fi
     return $vc_result
 }
@@ -70,9 +74,7 @@ prog_pick() {
     done
     if [ "$vc_result" != 0 ]; then
         echo ""
-        echo "*ERROR*: You must have $prog >= $3 installed"
-        echo "  to build jxta-c."
-        echo ""
+        echo "ERROR: You must have $prog >= $3 installed to build jxta-c."
     fi
     return $vc_result
 }
@@ -87,8 +89,14 @@ AUTOHEADER=`echo $AUTOCONF | sed s/autoconf/autoheader/`
 
 #ver_check autoconf $RECOMMENDED_AUTOCONF_VER $REQUIRED_AUTOCONF_VER || DIE=1
 #ver_check automake $RECOMMENDED_AUTOMAKE_VER $REQUIRED_AUTOMAKE_VER || DIE=1
+if [ -n "$CC" ] ; then
+    ver_check "$CC" $RECOMMENDED_GCC_VER $REQUIRED_GCC_VER || DIE=1
+else
+    ver_check gcc $RECOMMENDED_GCC_VER $REQUIRED_GCC_VER || DIE=1
+fi
 
 if [ "$DIE" -eq 1 ]; then
+    echo "ERROR: required programs not installed."
     exit 1
 fi
 

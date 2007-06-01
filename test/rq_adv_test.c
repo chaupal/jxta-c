@@ -50,10 +50,11 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rq_adv_test.c,v 1.12 2005/04/07 22:58:56 slowhog Exp $
+ * $Id: rq_adv_test.c,v 1.13 2005/04/17 14:22:19 lankes Exp $
  */
 
 #include <stdio.h>
+#include "jxta.h"
 #include "jxta_rq.h"
 #include "jstring.h"
 

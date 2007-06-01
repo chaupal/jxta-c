@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_xml_util.h,v 1.2 2005/01/10 17:23:46 brent Exp $
+ * $Id: jxta_xml_util.h,v 1.5 2005/09/14 05:00:09 slowhog Exp $
  */
 
 /** The utility functions in this file could be implemented 
@@ -61,12 +61,11 @@
 #include "jxta_types.h"
 #include "jstring.h"
 
-
 #ifdef __cplusplus
 extern "C" {
-#if 0
-}
 #endif
+#if 0
+};
 #endif
 
 /** Single call to extract an ip address and port number from 
@@ -101,11 +100,8 @@ extern "C" {
  *         it would be nice to do something intelligent with it rather 
  *         than relying on the underlying library to barf.  Or at least 
  *         catch the barf here.
- */ 
-void extract_ip_and_port        (const char * buf,
-                                 int buf_length,
-	                         Jxta_in_addr * ip_address,
-			         Jxta_port    * port_number);
+ */
+JXTA_DECLARE(void) extract_ip_and_port(const char *buf, int buf_length, Jxta_in_addr * ip_address, Jxta_port * port_number);
 
 /** Single call to extract an ip address from 
  *  a character buffer. 
@@ -135,10 +131,8 @@ void extract_ip_and_port        (const char * buf,
  *         than relying on the underlying library to barf.  Or at least 
  *         catch the barf here.
  * 
- */ 
-void extract_ip                 (const char * buf,
-                                 int buf_length,
-		                 Jxta_in_addr * ip_address);
+ */
+JXTA_DECLARE(void) extract_ip(const char *buf, int buf_length, Jxta_in_addr * ip_address);
 
 /** Single call to extract a port number from 
  *  a character buffer. 
@@ -167,10 +161,8 @@ void extract_ip                 (const char * buf,
  *         it would be nice to do something intelligent with it rather 
  *         than relying on the underlying library to barf.  Or at least 
  *         catch the barf here.
- */ 
-void extract_port               (const char * buf,
-                                 int buf_length,
-		                 Jxta_port * port);
+ */
+JXTA_DECLARE(void) extract_port(const char *buf, int buf_length, Jxta_port * port);
 
 /** Function invokes apr_strtok to eliminate whitespace and 
  *  grab a token, primarily useful for grabbing a string 
@@ -186,9 +178,7 @@ void extract_port               (const char * buf,
  *
  * @return tok the character data snipped out. 
  */
-void extract_char_data          (const char * string,
-				 int strlength,
-				 char * tok);
+JXTA_DECLARE(void) extract_char_data(const char *string, int strlength, char *tok);
 
 /**
 *  Removes escapes from the contents of a JString that has been passed as XML
@@ -199,7 +189,7 @@ void extract_char_data          (const char * string,
 * @result JXTA_SUCCESS for success, JXTA_INVALID_ARGUMENT for bad params and
 *  (rarely) JXTA_NOMEM
 **/
-Jxta_status jxta_xml_util_decode_jstring( JString * src, JString** dest );
+JXTA_DECLARE(Jxta_status) jxta_xml_util_decode_jstring(JString * src, JString ** dest);
 
 /**
 *   Escapes the contents of a JString to make it suitable for passing as xml
@@ -210,8 +200,13 @@ Jxta_status jxta_xml_util_decode_jstring( JString * src, JString** dest );
 * @result JXTA_SUCCESS for success, JXTA_INVALID_ARGUMENT for bad params and
 *  (rarely) JXTA_NOMEM
 **/
-Jxta_status jxta_xml_util_encode_jstring( JString * src, JString** dest );
- 
+JXTA_DECLARE(Jxta_status) jxta_xml_util_encode_jstring(JString * src, JString ** dest);
+
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
+/* vi: set ts=4 sw=4 tw=130 et: */

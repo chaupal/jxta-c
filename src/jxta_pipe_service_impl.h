@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_service_impl.h,v 1.5 2005/03/26 00:32:03 bondolo Exp $
+ * $Id: jxta_pipe_service_impl.h,v 1.7 2005/06/16 23:11:47 slowhog Exp $
  */
 
-   
+
 #ifndef __JXTA_PIPE_SERVICE_IMPL_H__
 #define __JXTA_PIPE_SERVICE_IMPL_H__
 
@@ -73,33 +73,31 @@ extern "C" {
 }
 #endif
 #endif
-
 /**
    ** Type of an instance of a pipe
    ** A Jxta_pipe is a Jxta_object.
-   **/
-  typedef struct _jxta_pipe Jxta_pipe;
+   **/ typedef struct _jxta_pipe Jxta_pipe;
 
 
   /**
    ** Type of an input pipe
    **/
-  typedef struct _jxta_inputpipe Jxta_inputpipe;
+typedef struct _jxta_inputpipe Jxta_inputpipe;
 
   /**
    ** Type of an output pipe
    **/
-  typedef struct _jxta_outputpipe Jxta_outputpipe;
+typedef struct _jxta_outputpipe Jxta_outputpipe;
 
   /**
    ** Type of a Pipe Resolver
    **/
-  typedef struct _jxta_pipe_resolver Jxta_pipe_resolver;
+typedef struct _jxta_pipe_resolver Jxta_pipe_resolver;
 
   /**
    ** Type of a Pipe Service Implementation
    **/
-  typedef struct _jxta_pipe_service_impl Jxta_pipe_service_impl;
+typedef struct _jxta_pipe_service_impl Jxta_pipe_service_impl;
 
 
 
@@ -107,125 +105,88 @@ extern "C" {
    ** Type of the JXTA Pipe Service.
    ** A Jxta_pipe_service is a Jxta_object.
    **/
-  typedef struct _jxta_pipe_service Jxta_pipe_service;
+typedef struct _jxta_pipe_service Jxta_pipe_service;
 
-  struct _jxta_pipe_service_impl {
-
-    JXTA_OBJECT_HANDLE;
-
-    char* (*get_name) (Jxta_pipe_service_impl* service);
-
-    Jxta_status (*timed_connect) (Jxta_pipe_service_impl* service,
-				  Jxta_pipe_adv*     adv,
-				  Jxta_time_diff          timeout,
-				  Jxta_vector*       peers,
-				  Jxta_pipe**        pipe);
-
-    Jxta_status (*connect) (Jxta_pipe_service_impl* service,
-			    Jxta_pipe_adv*     adv,
-			    Jxta_time_diff          timeout,
-			    Jxta_vector*       peers,
-			    Jxta_listener*     listener);
-
-    Jxta_status (*timed_accept) (Jxta_pipe_service_impl* service,
-				 Jxta_pipe_adv*     adv,
-				 Jxta_time_diff          timeout,
-				 Jxta_pipe**        pipe);
-
-
-    Jxta_status (*deny) (Jxta_pipe_service_impl* service,
-			 Jxta_pipe_adv*     adv);
-
-    Jxta_status (*add_accept_listener) (Jxta_pipe_service_impl* service,
-					Jxta_pipe_adv*     adv,
-					Jxta_listener*     listener);
-    
-    Jxta_status (*remove_accept_listener) (Jxta_pipe_service_impl* service,
-					   Jxta_pipe_adv*     adv,
-					   Jxta_listener*     listener);
-
-    Jxta_status (*get_pipe_resolver) (Jxta_pipe_service_impl* service,
-				      Jxta_pipe_resolver** resolver);
-    
-    Jxta_status (*set_pipe_resolver) (Jxta_pipe_service_impl* service,
-				      Jxta_pipe_resolver* jnew,
-				      Jxta_pipe_resolver** old);
-  };
-
-
-
-  struct _jxta_pipe_resolver {
+struct _jxta_pipe_service_impl {
 
     JXTA_OBJECT_HANDLE;
 
-    Jxta_status (*local_resolve) (Jxta_pipe_resolver* resolver,
-				  Jxta_pipe_adv* adv,
-				  Jxta_vector** peers);
+    char *(*get_name) (Jxta_pipe_service_impl * service);
 
-    Jxta_status (*timed_remote_resolve) (Jxta_pipe_resolver* resolver,
-					 Jxta_pipe_adv* adv,
-					 Jxta_time_diff timeout,
-					 Jxta_peer* dest,
-					 Jxta_vector** peers);
+     Jxta_status(*timed_connect) (Jxta_pipe_service_impl * service,
+                                  Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_vector * peers, Jxta_pipe ** pipe);
 
-    Jxta_status (*remote_resolve) (Jxta_pipe_resolver* resolver,
-				   Jxta_pipe_adv* adv,
-				   Jxta_time_diff timeout,
-				   Jxta_peer* dest,
-				   Jxta_listener* listener);
+     Jxta_status(*connect) (Jxta_pipe_service_impl * service,
+                            Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_vector * peers, Jxta_listener * listener);
 
-    Jxta_status (*send_srdi) (Jxta_pipe_resolver* resolver,
-				   Jxta_pipe_adv* adv,
-				   Jxta_id* dest,
-				   Jxta_boolean adding);
-  };
+     Jxta_status(*timed_accept) (Jxta_pipe_service_impl * service,
+                                 Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_pipe ** pipe);
 
 
-  struct _jxta_pipe {
-    
-    JXTA_OBJECT_HANDLE;
+     Jxta_status(*deny) (Jxta_pipe_service_impl * service, Jxta_pipe_adv * adv);
 
-    Jxta_status (*get_outputpipe) (Jxta_pipe* pipe,
-				   Jxta_outputpipe** op);
+     Jxta_status(*add_accept_listener) (Jxta_pipe_service_impl * service, Jxta_pipe_adv * adv, Jxta_listener * listener);
 
+     Jxta_status(*remove_accept_listener) (Jxta_pipe_service_impl * service, Jxta_pipe_adv * adv, Jxta_listener * listener);
 
-    Jxta_status (*get_inputpipe) (Jxta_pipe* pipe,
-				  Jxta_inputpipe** ip);
-				       
-    Jxta_status (*get_remote_peers) (Jxta_pipe* pipe,
-				     Jxta_vector** vector);
-  };
+     Jxta_status(*get_pipe_resolver) (Jxta_pipe_service_impl * service, Jxta_pipe_resolver ** resolver);
+
+     Jxta_status(*set_pipe_resolver) (Jxta_pipe_service_impl * service, Jxta_pipe_resolver * jnew, Jxta_pipe_resolver ** old);
+};
 
 
-  struct _jxta_inputpipe {
+
+struct _jxta_pipe_resolver {
 
     JXTA_OBJECT_HANDLE;
 
-    Jxta_status (*timed_receive) (Jxta_inputpipe* ip,
-				  Jxta_time_diff timeout,
-				  Jxta_message** msg);
+    Jxta_status(*local_resolve) (Jxta_pipe_resolver * resolver, Jxta_pipe_adv * adv, Jxta_vector ** peers);
 
-    Jxta_status (*add_listener) (Jxta_inputpipe* ip,
-				 Jxta_listener* listener);
+    Jxta_status(*timed_remote_resolve) (Jxta_pipe_resolver * resolver,
+                                        Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_peer * dest, Jxta_vector ** peers);
 
-    Jxta_status (*remove_listener) (Jxta_inputpipe* ip,
-				    Jxta_listener* listener);
-  };
+    Jxta_status(*remote_resolve) (Jxta_pipe_resolver * resolver,
+                                  Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_peer * dest, Jxta_listener * listener);
+
+    Jxta_status(*send_srdi) (Jxta_pipe_resolver * resolver, Jxta_pipe_adv * adv, Jxta_id * dest, Jxta_boolean adding);
+};
 
 
-  struct _jxta_outputpipe {
+struct _jxta_pipe {
 
     JXTA_OBJECT_HANDLE;
 
-    Jxta_status (*send) (Jxta_outputpipe* op,
-			 Jxta_message* msg);
+    Jxta_status(*get_outputpipe) (Jxta_pipe * pipe, Jxta_outputpipe ** op);
 
-    Jxta_status (*add_listener) (Jxta_outputpipe* op,
-				 Jxta_listener* listener);
 
-    Jxta_status (*remove_listener) (Jxta_outputpipe* op,
-				    Jxta_listener* listener);
-  };
+    Jxta_status(*get_inputpipe) (Jxta_pipe * pipe, Jxta_inputpipe ** ip);
+
+    Jxta_status(*get_remote_peers) (Jxta_pipe * pipe, Jxta_vector ** vector);
+};
+
+
+struct _jxta_inputpipe {
+
+    JXTA_OBJECT_HANDLE;
+
+    Jxta_status(*timed_receive) (Jxta_inputpipe * ip, Jxta_time_diff timeout, Jxta_message ** msg);
+
+    Jxta_status(*add_listener) (Jxta_inputpipe * ip, Jxta_listener * listener);
+
+    Jxta_status(*remove_listener) (Jxta_inputpipe * ip, Jxta_listener * listener);
+};
+
+
+struct _jxta_outputpipe {
+
+    JXTA_OBJECT_HANDLE;
+
+    Jxta_status(*send) (Jxta_outputpipe * op, Jxta_message * msg);
+
+    Jxta_status(*add_listener) (Jxta_outputpipe * op, Jxta_listener * listener);
+
+    Jxta_status(*remove_listener) (Jxta_outputpipe * op, Jxta_listener * listener);
+};
 
   /****************************************************
    ** Jxta_pipe_resolver_event API
@@ -237,13 +198,13 @@ extern "C" {
    ** JXTA_PIPE_RESOLVER_BASE.
    **/
 
-  #define JXTA_PIPE_RESOLVER_EVENT_STANDARD_SERVICE_BASE 100
-  #define JXTA_PIPE_RESOLVER_EVENT_USER_BASE             1000
-   
-  #define JXTA_PIPE_RESOLVER_RESOLVED (JXTA_PIPE_RESOLVER_EVENT_STANDARD_SERVICE_BASE + 1)
-  #define JXTA_PIPE_RESOLVER_TIMEOUT  (JXTA_PIPE_RESOLVER_EVENT_STANDARD_SERVICE_BASE + 2)
+#define JXTA_PIPE_RESOLVER_EVENT_STANDARD_SERVICE_BASE 100
+#define JXTA_PIPE_RESOLVER_EVENT_USER_BASE             1000
 
-  typedef struct _jxta_pipe_resolver_event Jxta_pipe_resolver_event;
+#define JXTA_PIPE_RESOLVER_RESOLVED (JXTA_PIPE_RESOLVER_EVENT_STANDARD_SERVICE_BASE + 1)
+#define JXTA_PIPE_RESOLVER_TIMEOUT  (JXTA_PIPE_RESOLVER_EVENT_STANDARD_SERVICE_BASE + 2)
+
+typedef struct _jxta_pipe_resolver_event Jxta_pipe_resolver_event;
 
 
   /**
@@ -255,7 +216,7 @@ extern "C" {
    ** been found.
    ** @return a new Jxta_pipe_resolver_event.
    **/
-  Jxta_pipe_resolver_event* jxta_pipe_resolver_event_new (int ev, Jxta_pipe_adv* adv, Jxta_vector* peers);
+Jxta_pipe_resolver_event *jxta_pipe_resolver_event_new(int ev, Jxta_pipe_adv * adv, Jxta_vector * peers);
 
   /**
    ** Return the event type of the event
@@ -263,7 +224,7 @@ extern "C" {
    ** @param ev type of the event
    ** @return the type of the event.
    **/
-  int  jxta_pipe_resolver_event_get_event (Jxta_pipe_resolver_event* self);
+int jxta_pipe_resolver_event_get_event(Jxta_pipe_resolver_event * self);
 
   /**
    ** Return the Jxta_pipe associated with the event (if any).
@@ -273,7 +234,7 @@ extern "C" {
    ** @return JXTA_SUCCESS when succesfull.
    **         JXTA_FAILED when the event was not associated to any pipe.
    **/
-  Jxta_status jxta_pipe_resolver_event_get_peers (Jxta_pipe_resolver_event* self, Jxta_vector** peers);
+Jxta_status jxta_pipe_resolver_event_get_peers(Jxta_pipe_resolver_event * self, Jxta_vector ** peers);
 
   /**
    ** Return the Jxta_pipe_adv associated with the event (if any).
@@ -283,7 +244,7 @@ extern "C" {
    ** @return JXTA_SUCCESS when succesfull.
    **         JXTA_FAILED when the event was not associated to any advertisement.
    **/
-  Jxta_status jxta_pipe_resolver_event_get_adv (Jxta_pipe_resolver_event* self, Jxta_pipe_adv** adv);
+Jxta_status jxta_pipe_resolver_event_get_adv(Jxta_pipe_resolver_event * self, Jxta_pipe_adv ** adv);
 
   /**
    ** Query the Pipe Service Resolver for a particular pipe adverisement. The
@@ -300,9 +261,7 @@ extern "C" {
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid.
    **                          JXTA_FAILED when there is no local listener.
    **/
-  Jxta_status jxta_pipe_resolver_local_resolve(Jxta_pipe_resolver* resolver,
-						Jxta_pipe_adv* adv,
-						Jxta_vector** peers);
+Jxta_status jxta_pipe_resolver_local_resolve(Jxta_pipe_resolver * resolver, Jxta_pipe_adv * adv, Jxta_vector ** peers);
 
   /**
    ** Remote query the Pipe Service Resolver for a particular pipe adverisement. The
@@ -324,11 +283,9 @@ extern "C" {
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid.
    **                          JXTA_TIMEOUT when the pipe could not be resolved.
    **/
-  Jxta_status jxta_pipe_resolver_timed_remote_resolve(Jxta_pipe_resolver* resolver,
-						       Jxta_pipe_adv* adv,
-						       Jxta_time_diff timeout,
-						       Jxta_peer* dest,
-						       Jxta_vector** peers);
+Jxta_status jxta_pipe_resolver_timed_remote_resolve(Jxta_pipe_resolver * resolver,
+                                                    Jxta_pipe_adv * adv,
+                                                    Jxta_time_diff timeout, Jxta_peer * dest, Jxta_vector ** peers);
 
   /**
    ** Remote query the Pipe Service Resolver for a particular pipe adverisement. The
@@ -349,11 +306,9 @@ extern "C" {
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid.
    **/
-  Jxta_status jxta_pipe_resolver_remote_resolve(Jxta_pipe_resolver* resolver,
-						 Jxta_pipe_adv* adv,
-						 Jxta_time_diff timeout,
-						 Jxta_peer* dest,
-						 Jxta_listener* listener);
+Jxta_status jxta_pipe_resolver_remote_resolve(Jxta_pipe_resolver * resolver,
+                                              Jxta_pipe_adv * adv,
+                                              Jxta_time_diff timeout, Jxta_peer * dest, Jxta_listener * listener);
 
 
   /**
@@ -367,10 +322,8 @@ extern "C" {
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid.
    **/
-  Jxta_status jxta_pipe_resolver_send_srdi_message(Jxta_pipe_resolver* resolver,
-						 Jxta_pipe_adv* adv,
-						 Jxta_id* dest,
-						 Jxta_boolean adding);
+Jxta_status jxta_pipe_resolver_send_srdi_message(Jxta_pipe_resolver * resolver,
+                                                 Jxta_pipe_adv * adv, Jxta_id * dest, Jxta_boolean adding);
 
   /**
    ** Get the name of the pipe implementation.
@@ -380,7 +333,7 @@ extern "C" {
    ** @param service instance of the Pipe Service Impl
    ** @return the name of the Pipe Service Impl.
    **/
-  char* jxta_pipe_service_impl_get_name (Jxta_pipe_service_impl* service);
+char *jxta_pipe_service_impl_get_name(Jxta_pipe_service_impl * service);
 
 
   /**
@@ -402,11 +355,9 @@ extern "C" {
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid
    **                          JXTA_NOTIMP when the pipe advertisement is for a unsupported type of pipe
    **/
-  Jxta_status jxta_pipe_service_impl_timed_connect (Jxta_pipe_service_impl* service,
-						    Jxta_pipe_adv*     adv,
-						    Jxta_time_diff          timeout,
-						    Jxta_vector*       peers,
-						    Jxta_pipe**        pipe);
+Jxta_status jxta_pipe_service_impl_timed_connect(Jxta_pipe_service_impl * service,
+                                                 Jxta_pipe_adv * adv,
+                                                 Jxta_time_diff timeout, Jxta_vector * peers, Jxta_pipe ** pipe);
 
   /**
    ** Deny incoming connection requests.
@@ -420,8 +371,7 @@ extern "C" {
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid
    **                          JXTA_NOTIMP when the pipe advertisement is for a unsupported type of pipe
    **/
-  Jxta_status jxta_pipe_service_impl_deny (Jxta_pipe_service_impl* service,
-					   Jxta_pipe_adv*     adv);
+Jxta_status jxta_pipe_service_impl_deny(Jxta_pipe_service_impl * service, Jxta_pipe_adv * adv);
 
   /**
    ** Try to asynchronously connect to the remote end of a pipe.
@@ -450,11 +400,9 @@ extern "C" {
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid
    **                          JXTA_NOTIMP when the pipe advertisement is for a unsupported type of pipe
    **/
-  Jxta_status jxta_pipe_service_impl_connect (Jxta_pipe_service_impl* service,
-					      Jxta_pipe_adv*     adv,
-					      Jxta_time_diff          timeout,
-					      Jxta_vector*       peers,
-					      Jxta_listener*     listener);
+Jxta_status jxta_pipe_service_impl_connect(Jxta_pipe_service_impl * service,
+                                           Jxta_pipe_adv * adv,
+                                           Jxta_time_diff timeout, Jxta_vector * peers, Jxta_listener * listener);
 
   /**
    ** Accept an incoming connection.
@@ -477,10 +425,8 @@ extern "C" {
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_BUSY when the pipe is already receiving messages.
    **/
-  Jxta_status jxta_pipe_service_impl_timed_accept (Jxta_pipe_service_impl* service,
-						   Jxta_pipe_adv*     adv,
-						   Jxta_time_diff          timeout,
-						   Jxta_pipe**        pipe);
+Jxta_status jxta_pipe_service_impl_timed_accept(Jxta_pipe_service_impl * service,
+                                                Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_pipe ** pipe);
 
 
   /**
@@ -501,9 +447,8 @@ extern "C" {
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_BUSY when the pipe is already accepting messages.
    **/
-  Jxta_status jxta_pipe_service_impl_add_accept_listener (Jxta_pipe_service_impl* service,
-							  Jxta_pipe_adv*     adv,
-							  Jxta_listener*     listener);
+Jxta_status jxta_pipe_service_impl_add_accept_listener(Jxta_pipe_service_impl * service,
+                                                       Jxta_pipe_adv * adv, Jxta_listener * listener);
 
   /**
    ** Remove a connection listener.
@@ -518,10 +463,9 @@ extern "C" {
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid
    **                          JXTA_NOTIMP when the pipe advertisement is for a unsupported type of pipe
    **/
-  Jxta_status jxta_pipe_service_impl_remove_accept_listener (Jxta_pipe_service_impl* service,
-							     Jxta_pipe_adv*     adv,
-							     Jxta_listener*     listener);
- 
+Jxta_status jxta_pipe_service_impl_remove_accept_listener(Jxta_pipe_service_impl * service,
+                                                          Jxta_pipe_adv * adv, Jxta_listener * listener);
+
   /**
    ** Get the default (peergroup) Pipe Resolver.
    ** 
@@ -531,8 +475,7 @@ extern "C" {
    ** @return an error status. JXTA_SUCCESS when successfull.
    **                          JXTA_NOMEM when the system is running out of memory.
    **/
-  Jxta_status jxta_pipe_service_impl_get_pipe_resolver (Jxta_pipe_service_impl* service,
-							Jxta_pipe_resolver** resolver);
+Jxta_status jxta_pipe_service_impl_get_pipe_resolver(Jxta_pipe_service_impl * service, Jxta_pipe_resolver ** resolver);
 
   /**
    ** Set the default (peergroup) Pipe Resolver.
@@ -546,9 +489,8 @@ extern "C" {
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_VIOLATION when changing the default pipe is not authorized
    **/
-  Jxta_status jxta_pipe_service_impl_set_pipe_resolver (Jxta_pipe_service_impl* service,
-							Jxta_pipe_resolver* jnew,
-							Jxta_pipe_resolver** old);
+Jxta_status jxta_pipe_service_impl_set_pipe_resolver(Jxta_pipe_service_impl * service,
+                                                     Jxta_pipe_resolver * jnew, Jxta_pipe_resolver ** old);
 
 
 
@@ -556,9 +498,10 @@ extern "C" {
 #endif
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
-
-
-
+/* vim: set ts=4 sw=4 tw=130 et: */

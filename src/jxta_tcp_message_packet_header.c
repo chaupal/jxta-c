@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tcp_message_packet_header.c,v 1.3 2005/01/12 22:37:43 bondolo Exp $
+ * $Id: jxta_tcp_message_packet_header.c,v 1.10 2005/07/22 03:12:55 slowhog Exp $
  */
 
 #include <stdlib.h>
@@ -63,175 +63,200 @@
 #include "jxta_debug.h"
 #include "jxta_errno.h"
 #include "jxta_tcp_message_packet_header.h"
+#include "jxta_log.h"
 
+#define MESSAGE_PACKET_HEADER_COUNT     3
 
-#define MESSAGE_PACKET_HEADER_COUNT		3
-
-typedef unsigned char		BYTE;
-typedef unsigned short int	BYTE_2;
+typedef unsigned char BYTE;
+typedef unsigned short int BYTE_2;
 
 typedef struct _message_packet_header {
-	BYTE *name;
-	BYTE name_size;		/* 1 byte */
-	BYTE *value;
-	BYTE_2 value_size;	/* 2 bytes */
+    BYTE *name;
+    BYTE name_size;             /* 1 byte */
+    BYTE *value;
+    BYTE_2 value_size;          /* 2 bytes */
 } MessagePacketHeader;
 
-const char *MESSAGE_PACKET_HEADER[MESSAGE_PACKET_HEADER_COUNT] = {"content-type", "content-length", "srcEA"};
+const char *MESSAGE_PACKET_HEADER[MESSAGE_PACKET_HEADER_COUNT] = { "content-type", "content-length", "srcEA" };
+const char *__log_cat = "TCP_MSG_PKT";
 
-Jxta_status message_packet_header_read(ReadFunc read_func, void *stream, JXTA_LONG_LONG *msg_size, Jxta_boolean is_multicast, char *src_addr) {
-	MessagePacketHeader header[MESSAGE_PACKET_HEADER_COUNT];		/* for extra if there exists content-coding */
-	Jxta_boolean saw_empty, saw_length, saw_type, saw_srcEA;
-	int i, length_index = -1, srcEA_index = -1;
-	int header_count;
+Jxta_status JXTA_STDCALL message_packet_header_read(ReadFunc read_func, void *stream, JXTA_LONG_LONG * msg_size,
+                                                    Jxta_boolean is_multicast, char **src_addr)
+{
+    MessagePacketHeader header[MESSAGE_PACKET_HEADER_COUNT];    /* for extra if there exists content-coding */
+    Jxta_boolean saw_empty, saw_length, saw_type, saw_srcEA;
+    int i, length_index = -1, srcEA_index = -1;
+    int header_count;
 
-	Jxta_status res;
-	
-	header_count = is_multicast == TRUE ? 3 : 2;
-		
-	saw_empty = FALSE;
-	saw_length = FALSE;
-	saw_type = FALSE;
-	saw_srcEA = FALSE;
-	i = 0;
+    Jxta_status res;
 
-	do {
-		BYTE header_name_length;
-		/* read header name size */
-		res = read_func(stream, (char *)&header_name_length, 1);
-		if(res != JXTA_SUCCESS)
-			return JXTA_IOERR;	/* socket receiving error */
+    header_count = is_multicast ? 3 : 2;
 
-		if(header_name_length == 0) {
-			if(saw_type == TRUE && saw_length == TRUE) {
-				if(header_count == 2)
-					saw_empty = TRUE;
-				else if(header_count == 3 && saw_srcEA == TRUE)
-					saw_empty = TRUE;
-			}
-		} else {
-			header[i].name_size = header_name_length;
-			header[i].name = (BYTE *)malloc(header[i].name_size + 1);
-			if(header[i].name == NULL) {
-				JXTA_LOG("Error header name malloc()\n");
-				return JXTA_FAILED;
-			}
-			
-			/* read header name */
-			res = read_func(stream, (char *)header[i].name, header[i].name_size);
-			if(res != JXTA_SUCCESS)
-				return JXTA_FAILED;
-			
-			header[i].name[header[i].name_size] = '\0';
+    saw_empty = FALSE;
+    saw_length = FALSE;
+    saw_type = FALSE;
+    saw_srcEA = FALSE;
+    i = 0;
 
-			if(apr_strnatcasecmp((char *)header[i].name, MESSAGE_PACKET_HEADER[0]) == 0) {	/* content-type */
-				if(saw_type == TRUE) {
-					JXTA_LOG("Duplicate content-type header\n");
-					return JXTA_FAILED;
-				}
-				saw_type = TRUE;
-			}
-			if(apr_strnatcasecmp((char *)header[i].name, MESSAGE_PACKET_HEADER[1]) == 0) {	/* content-length */
-				if(saw_length == TRUE) {
-					JXTA_LOG("Duplicate content-length header\n");
-					return JXTA_FAILED;
-				}
-				saw_length = TRUE;
-				length_index = i;
-			}
-			if(apr_strnatcasecmp((char *)header[i].name, MESSAGE_PACKET_HEADER[2]) == 0) {	/* srcEA */
-				if(saw_srcEA == TRUE) {
-					JXTA_LOG("Duplicate srcEA header\n");
-					return JXTA_FAILED;
-				}
-				saw_srcEA = TRUE;
-				srcEA_index = i;
-			}
+    do {
+        BYTE header_name_length;
+        /* read header name size */
+        res = read_func(stream, (char *) &header_name_length, 1);
+        if (res != JXTA_SUCCESS) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Error during read_func() \n");
+            return JXTA_IOERR;  /* socket receiving error */
+        }
+        if (header_name_length == 0) {
+            if (saw_type && saw_length) {
+                if (header_count == 2)
+                    saw_empty = TRUE;
+                else if (header_count == 3 && saw_srcEA)
+                    saw_empty = TRUE;
+            }
+        } else {
+            header[i].name_size = header_name_length;
+            header[i].name = (BYTE *) malloc(header[i].name_size + 1);
+            if (header[i].name == NULL) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error header name malloc()\n");
+                return JXTA_FAILED;
+            }
+
+            /* read header name */
+            res = read_func(stream, (char *) header[i].name, header[i].name_size);
+            if (res != JXTA_SUCCESS) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Error during read_func() \n");
+                return JXTA_FAILED;
+            }
+            header[i].name[header[i].name_size] = '\0';
+
+            if (apr_strnatcasecmp((char *) header[i].name, MESSAGE_PACKET_HEADER[0]) == 0) {    /* content-type */
+                if (saw_type) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Duplicate content-type header\n");
+                    return JXTA_FAILED;
+                }
+                saw_type = TRUE;
+            }
+            if (apr_strnatcasecmp((char *) header[i].name, MESSAGE_PACKET_HEADER[1]) == 0) {    /* content-length */
+                if (saw_length) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Duplicate content-length header\n");
+                    return JXTA_FAILED;
+                }
+                saw_length = TRUE;
+                length_index = i;
+            }
+            if (apr_strnatcasecmp((char *) header[i].name, MESSAGE_PACKET_HEADER[2]) == 0) {    /* srcEA */
+                if (saw_srcEA) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Duplicate srcEA header\n");
+                    return JXTA_FAILED;
+                }
+                saw_srcEA = TRUE;
+                srcEA_index = i;
+            }
 
 
-			/* read header body size */
-			res = read_func(stream, (char *)&header[i].value_size, 2);
-			if(res != JXTA_SUCCESS)
-				return JXTA_FAILED;
-			
-			header[i].value_size = ntohs(header[i].value_size);
-			header[i].value = (BYTE *)malloc(header[i].value_size);
-			if(header[i].value == NULL) {
-				JXTA_LOG("Error header body malloc()\n");
-				return JXTA_FAILED;
-			}
-			/* read header body value */
-			res = read_func(stream, (char *)header[i].value, header[i].value_size);
-			if(res != JXTA_SUCCESS)
-				return JXTA_FAILED;
+            /* read header body size */
+            res = read_func(stream, (char *) &header[i].value_size, 2);
+            if (res != JXTA_SUCCESS) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Error during read_func() \n");
+                return JXTA_FAILED;
+            }
+            header[i].value_size = ntohs(header[i].value_size);
+            header[i].value = (BYTE *) malloc(header[i].value_size + 1);
+            if (header[i].value == NULL) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error header body malloc()\n");
+                return JXTA_FAILED;
+            }
+            /* read header body value */
+            res = read_func(stream, (char *) header[i].value, header[i].value_size);
+            if (res != JXTA_SUCCESS) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Error during read_func() \n");
+                return JXTA_FAILED;
+            }
+            header[i].value[header[i].value_size] = '\0';
 
-			if(i == srcEA_index)
-				src_addr = strdup((char*)header[i].value);
-	
-			if(++ i > header_count)
-			       return JXTA_FAILED;
-		}
-	} while(saw_empty != TRUE);
+            if (i == srcEA_index) {
+                if (NULL != src_addr) {
+                    *src_addr = strdup((char *) header[i].value);
+                }
+            }
 
-	/* get message size */
-	for(i = 0, *msg_size = 0; i < 8; i ++)
-		*msg_size |= ((JXTA_LONG_LONG)(header[length_index].value[i] & 0xFF)) << ((7 - i) * 8L);
+            i++;
+            if (i > header_count) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error i:%i > header count:%i\n", i, header_count);
+                for (i = 0; i < header_count; i++) {
+                    if (header[i].name != NULL)
+                        free(header[i].name);
+                    if (header[i].value != NULL)
+                        free(header[i].value);
+                }
+                return JXTA_FAILED;
+            }
+        }
+    } while (!saw_empty);
 
-	/* free */
-	for(i = 0; i < header_count; i ++) {
-		if(header[i].name != NULL)
-			free(header[i].name);
-		if(header[i].value != NULL)
-			free(header[i].value);
-	}
+    /* get message size */
+    for (i = 0, *msg_size = 0; i < 8; i++)
+        *msg_size |= ((JXTA_LONG_LONG) (header[length_index].value[i] & 0xFF)) << ((7 - i) * 8L);
 
-	return JXTA_SUCCESS;
+    /* free */
+    for (i = 0; i < header_count; i++) {
+        if (header[i].name != NULL)
+            free(header[i].name);
+        if (header[i].value != NULL)
+            free(header[i].value);
+    }
+
+    return JXTA_SUCCESS;
 }
 
-Jxta_status message_packet_header_write(WriteFunc write_func, void *stream, JXTA_LONG_LONG msg_size, Jxta_boolean is_multicast, char *src_addr) {
-	MessagePacketHeader header[MESSAGE_PACKET_HEADER_COUNT];
-	BYTE empty_header = 0;
-	int i;
-	int header_count;
+Jxta_status JXTA_STDCALL message_packet_header_write(WriteFunc write_func, void *stream, JXTA_LONG_LONG msg_size,
+                                                     Jxta_boolean is_multicast, char *src_addr)
+{
+    MessagePacketHeader header[MESSAGE_PACKET_HEADER_COUNT];
+    BYTE empty_header = 0;
+    int i;
+    int header_count;
 
-	header_count = is_multicast == TRUE ? 3 : 2;
+    header_count = is_multicast ? 3 : 2;
 
-	/* write message header */
-	for(i = 0; i < header_count; i ++) {
-		header[i].name = (BYTE *)strdup(MESSAGE_PACKET_HEADER[i]);
-		header[i].name_size = strlen((char *)header[i].name);
+    /* write message header */
+    for (i = 0; i < header_count; i++) {
+        header[i].name = (BYTE *) strdup(MESSAGE_PACKET_HEADER[i]);
+        header[i].name_size = strlen((char *) header[i].name);
 
-		if(apr_strnatcasecmp((char*)header[i].name, "content-type") == 0) {
-			header[i].value = (BYTE *)strdup(APP_MSG);	/* "application/x-jxta-msg" */
-			header[i].value_size = strlen((char*)header[i].value);
-		} else if(apr_strnatcasecmp((char*)header[i].name, "content-length") == 0) {
-			int j;
-			header[i].value = (BYTE *)malloc(8);
-			for(j = 0; j < 8; j ++) {
-				header[i].value[j] = (BYTE)(msg_size >> ((7 - j) * 8L));	/* JXTA_LONG_LONG to bytes */
-			}
-			header[i].value_size = 8;
-		} else if(apr_strnatcasecmp((char*)header[i].name, "srcEA") == 0) {
-			header[i].value = (BYTE *)strdup(src_addr);
-			header[i].value_size = strlen((char*)header[i].value);
-		}
+        if (apr_strnatcasecmp((char *) header[i].name, "content-type") == 0) {
+            header[i].value = (BYTE *) strdup(APP_MSG); /* "application/x-jxta-msg" */
+            header[i].value_size = strlen((char *) header[i].value);
+        } else if (apr_strnatcasecmp((char *) header[i].name, "content-length") == 0) {
+            int j;
+            header[i].value = (BYTE *) malloc(8);
+            for (j = 0; j < 8; j++) {
+                header[i].value[j] = (BYTE) (msg_size >> ((7 - j) * 8L));   /* JXTA_LONG_LONG to bytes */
+            }
+            header[i].value_size = 8;
+        } else if (apr_strnatcasecmp((char *) header[i].name, "srcEA") == 0) {
+            header[i].value = (BYTE *) strdup(src_addr);
+            header[i].value_size = strlen((char *) header[i].value);
+        }
 
-		header[i].value_size = htons(header[i].value_size);
+        header[i].value_size = htons(header[i].value_size);
 
-		write_func(stream, (char*)&header[i].name_size, sizeof(header[i].name_size));	/* size = 1 */
-		write_func(stream, (char*)header[i].name, header[i].name_size);
-		write_func(stream, (char*)&header[i].value_size, sizeof(header[i].value_size));	/* size = 2 */
-		write_func(stream, (char*)header[i].value, ntohs(header[i].value_size));
-	}
+        write_func(stream, (char *) &header[i].name_size, sizeof(header[i].name_size)); /* size = 1 */
+        write_func(stream, (char *) header[i].name, header[i].name_size);
+        write_func(stream, (char *) &header[i].value_size, sizeof(header[i].value_size));   /* size = 2 */
+        write_func(stream, (char *) header[i].value, ntohs(header[i].value_size));
+    }
 
-	write_func(stream, (char *)&empty_header, 1);
-	
-	for(i = 0; i < header_count; i ++) {
-		if(header[i].name)
-			free(header[i].name);
-		if(header[i].value)
-			free(header[i].value);
-	}
+    write_func(stream, (char *) &empty_header, 1);
 
-	return JXTA_SUCCESS;
+    for (i = 0; i < header_count; i++) {
+        if (header[i].name)
+            free(header[i].name);
+        if (header[i].value)
+            free(header[i].value);
+    }
+
+    return JXTA_SUCCESS;
 }
+
+/* vi: set ts=4 sw=4 tw=130 et: */

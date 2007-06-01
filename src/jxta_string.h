@@ -50,13 +50,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_string.h,v 1.1 2004/12/05 02:17:22 slowhog Exp $
+ * $Id: jxta_string.h,v 1.3 2005/06/16 23:11:52 slowhog Exp $
  */
 
 #ifndef _JXTA_STRING_H_
-
 #define _JXTA_STRING_H_
 
-char* jxta_strconcat (const char* s1, ...);
+#include "jxta_types.h"
+
+JXTA_DECLARE(char *) jxta_strconcat(const char *s1, ...);
 
 #endif

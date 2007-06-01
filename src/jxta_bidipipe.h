@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bidipipe.h,v 1.3 2005/03/26 00:17:10 bondolo Exp $
+ * $Id: jxta_bidipipe.h,v 1.7 2005/08/03 05:51:14 slowhog Exp $
  */
 
 #ifndef __JXTA_BIDIPIPE_H__
@@ -80,24 +80,25 @@ enum Jxta_bidipipe_states {
 
 typedef enum Jxta_bidipipe_states Jxta_bidipipe_state;
 
-Jxta_bidipipe *jxta_bidipipe_new(Jxta_PG * pg);
+JXTA_DECLARE(Jxta_bidipipe *) jxta_bidipipe_new(Jxta_PG * pg);
 Jxta_status jxta_bidipipe_delete(Jxta_bidipipe * self);
 
-Jxta_status jxta_bidipipe_connect(Jxta_bidipipe * self, Jxta_pipe_adv * remote_adv, Jxta_listener * listener, Jxta_time_diff timeout);
-Jxta_status jxta_bidipipe_close(Jxta_bidipipe * self);
+JXTA_DECLARE(Jxta_status) jxta_bidipipe_connect(Jxta_bidipipe * self, Jxta_pipe_adv * remote_adv, Jxta_listener * listener,
+                                                Jxta_time_diff timeout);
+JXTA_DECLARE(Jxta_status) jxta_bidipipe_close(Jxta_bidipipe * self);
 
-Jxta_status jxta_bidipipe_accept(Jxta_bidipipe * self, Jxta_pipe_adv * local_adv, Jxta_listener * listener);
+JXTA_DECLARE(Jxta_status) jxta_bidipipe_accept(Jxta_bidipipe * self, Jxta_pipe_adv * local_adv, Jxta_listener * listener);
 
-Jxta_status jxta_bidipipe_send(Jxta_bidipipe * self, Jxta_message * msg);
+JXTA_DECLARE(Jxta_status) jxta_bidipipe_send(Jxta_bidipipe * self, Jxta_message * msg);
 
-Jxta_bidipipe_state jxta_bidipipe_get_state(Jxta_bidipipe * self);
-Jxta_pipe_adv* jxta_bidipipe_get_pipe_adv(Jxta_bidipipe * self);
+JXTA_DECLARE(Jxta_bidipipe_state) jxta_bidipipe_get_state(Jxta_bidipipe * self);
+JXTA_DECLARE(Jxta_pipe_adv *) jxta_bidipipe_get_pipe_adv(Jxta_bidipipe * self);
 
-#if 0                           /* to cheat indent */
+#if 0   /* to cheat indent */
 {
 #endif
 #ifdef __cplusplus
-}                               /* extern "C" */
+}   /* extern "C" */
 #endif
 #endif /* __JXTA_BIDIPIPE_H__ */
 /* vi: set sw=4 ts=4 et wm=130: */

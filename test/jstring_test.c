@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jstring_test.c,v 1.21 2005/03/22 16:23:45 bondolo Exp $
+ * $Id: jstring_test.c,v 1.22 2005/05/18 23:24:40 slowhog Exp $
  */
 
 
@@ -501,7 +501,7 @@ test_jstring_write(void) {
   stream.buffer = buffer;
   stream.position = 0;
   buffer[0] = '\0';
-  jstring_send(js,writeFunction,(void*)(&stream),1);
+  jstring_write(js,writeFunction,(void*)(&stream));
   JXTA_OBJECT_RELEASE(js);
   if( 0 != strcmp(  "yahoo!",buffer) ){
     return FALSE;

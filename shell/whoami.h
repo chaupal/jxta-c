@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: whoami.h,v 1.1 2004/12/05 02:16:46 slowhog Exp $
+ * $Id: whoami.h,v 1.2 2005/08/24 01:21:23 slowhog Exp $
  */
 #ifndef __JXTA_SHELL_WHOAMI_H__
 #define __JXTA_SHELL_WHOAMI_H__
@@ -69,30 +69,24 @@ extern "C" {
 }
 #endif
 #endif
+JxtaShellApplication *jxta_whoami_new(Jxta_PG * pg,
+                                      Jxta_listener * standout,
+                                      JxtaShellEnvironment * env, Jxta_object * parent, shell_application_terminate terminate);
 
+void jxta_whoami_process_input(Jxta_object * app, JString * inputLine);
 
+void jxta_whoami_start(Jxta_object * app, int argv, char **arg);
 
-JxtaShellApplication * jxta_whoami_new(Jxta_PG * pg,
-                                       Jxta_listener* standout,
-                                       JxtaShellEnvironment *env,
-                                       Jxta_object * parent,
-                                       shell_application_terminate terminate);
-
-void  jxta_whoami_process_input(Jxta_object *app,
-                                JString * inputLine);
-
-void jxta_whoami_start(Jxta_object *app,
-                       int argv, char **arg);
-
-void jxta_whoami_print_help(Jxta_object *app);
+void jxta_whoami_print_help(Jxta_object * app);
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
-
-
 #endif /*__JXTA_SHELL_WHOAMI_H__ */
 
-
+/* vim: set ts=4 sw=4 et tw=130 */

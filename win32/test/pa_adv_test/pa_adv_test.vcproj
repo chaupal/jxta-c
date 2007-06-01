@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioProject
+	ProjectType="Visual C++"
+	Version="7.10"
+	Name="pa_adv_test"
+	ProjectGUID="{2E0AEEAA-4244-4FDF-BA3F-8EE297778319}"
+	SccProjectName=""
+	SccLocalPath="">
+	<Platforms>
+		<Platform
+			Name="Win32"/>
+	</Platforms>
+	<Configurations>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory=".\Release"
+			IntermediateDirectory=".\Release"
+			ConfigurationType="1"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="FALSE"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="0"
+				FavorSizeOrSpeed="1"
+				AdditionalIncludeDirectories="..\..\..\src,$(APACHE2)\include"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;STANDALONE"
+				StringPooling="FALSE"
+				ExceptionHandling="FALSE"
+				RuntimeLibrary="2"
+				BufferSecurityCheck="FALSE"
+				EnableFunctionLevelLinking="FALSE"
+				UsePrecompiledHeader="0"
+				PrecompiledHeaderFile=".\Release/pa_adv_test.pch"
+				AssemblerListingLocation=".\Release/"
+				ObjectFile=".\Release/"
+				ProgramDataBaseFileName=".\Release/"
+				WarningLevel="3"
+				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
+				DebugInformationFormat="0"
+				CompileAs="0"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="libapr-1.lib libaprutil-1.lib"
+				OutputFile=".\Release/pa_adv_test.exe"
+				LinkIncremental="1"
+				SuppressStartupBanner="TRUE"
+				AdditionalLibraryDirectories="&quot;$(APACHE2)\lib&quot;"
+				IgnoreDefaultLibraryNames=""
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile=".\Release/pa_adv_test.pdb"
+				SubSystem="1"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"
+				TypeLibraryName=".\Release/pa_adv_test.tlb"
+				HeaderFileName=""/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				Description="Copy DLLs"
+				CommandLine="copy &quot;$(OPENSSL)\bin\*.dll&quot; $(ConfigurationName)
+copy &quot;$(APACHE2)\bin\*.dll&quot; $(ConfigurationName)
+copy &quot;$(ZLIB)\bin\*.dll&quot;  $(ConfigurationName)
+copy &quot;$(SQLITE3)\bin\*.dll&quot;  $(ConfigurationName)
+copy &quot;$(XML2)\bin\*.dll&quot;  $(ConfigurationName)
+copy &quot;$(SolutionDir)jxta\jxtadll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)
+copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)
+"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+		</Configuration>
+		<Configuration
+			Name="Debug|Win32"
+			OutputDirectory=".\Debug"
+			IntermediateDirectory=".\Debug"
+			ConfigurationType="1"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="FALSE"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				FavorSizeOrSpeed="0"
+				AdditionalIncludeDirectories="..\..\..\src,$(APACHE2)\include"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;STANDALONE"
+				StringPooling="FALSE"
+				MinimalRebuild="TRUE"
+				ExceptionHandling="FALSE"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="3"
+				UsePrecompiledHeader="0"
+				PrecompiledHeaderFile=".\Debug/pa_adv_test.pch"
+				AssemblerListingLocation=".\Debug/"
+				ObjectFile=".\Debug/"
+				ProgramDataBaseFileName=".\Debug/"
+				WarningLevel="3"
+				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
+				DebugInformationFormat="3"
+				CompileAs="0"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="libapr-1.lib libaprutil-1.lib"
+				OutputFile=".\Debug/pa_adv_test.exe"
+				LinkIncremental="1"
+				SuppressStartupBanner="TRUE"
+				AdditionalLibraryDirectories="&quot;$(APACHE2)\lib&quot;"
+				IgnoreDefaultLibraryNames="MSVCRT.lib"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile=".\Debug/pa_adv_test.pdb"
+				SubSystem="1"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"
+				TypeLibraryName=".\Debug/pa_adv_test.tlb"
+				HeaderFileName=""/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				Description="Copy DLLs"
+				CommandLine="copy &quot;$(OPENSSL)\bin\*.dll&quot; $(ConfigurationName)
+copy &quot;$(APACHE2)\bin\*.dll&quot; $(ConfigurationName)
+copy &quot;$(ZLIB)\bin\*.dll&quot;  $(ConfigurationName)
+copy &quot;$(SQLITE3)\bin\*.dll&quot;  $(ConfigurationName)
+copy &quot;$(XML2)\bin\*.dll&quot;  $(ConfigurationName)
+copy &quot;$(SolutionDir)jxta\jxtadll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)
+copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)
+"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_DEBUG"
+				Culture="1033"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+		</Configuration>
+	</Configurations>
+	<References>
+	</References>
+	<Files>
+		<Filter
+			Name="Source Files"
+			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
+			<File
+				RelativePath="..\..\..\test\pa_adv_test.c">
+			</File>
+		</Filter>
+		<Filter
+			Name="Header Files"
+			Filter="h;hpp;hxx;hm;inl">
+			<File
+				RelativePath="..\..\..\include\jpr\jpr_errno.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\jpr\jpr_excep.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\jpr\jpr_excep_proto.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\jpr\jpr_setjmp.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\jpr\jpr_thread.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\jpr\jpr_threadonce.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\jpr\jpr_types.h">
+			</File>
+		</Filter>
+		<Filter
+			Name="Resource Files"
+			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
+		</Filter>
+	</Files>
+	<Globals>
+	</Globals>
+</VisualStudioProject>

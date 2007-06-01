@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rsrdi.h,v 1.3 2005/01/12 21:47:00 bondolo Exp $
+ * $Id: jxta_rsrdi.h,v 1.5 2005/08/03 05:51:19 slowhog Exp $
  */
 
-   
+
 #ifndef __ResolverSrdi_H__
 #define __ResolverSrdi_H__
 
@@ -65,21 +65,21 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _ResolverSrdi ResolverSrdi;
 
 /**
  * create a new ResolverSrdi object
  * @return pointer to the resolver srdi object
  */
-ResolverSrdi * jxta_resolver_srdi_new(void);
+JXTA_DECLARE(ResolverSrdi *) jxta_resolver_srdi_new(void);
+
 /**
  * create a new ResolverSrdi object with inital given values
  * @param handlername associated with the message
  * @param message
  * @return pointer to the resolver message object
  */
-ResolverSrdi * jxta_resolver_srdi_new_1(JString *, JString *, Jxta_id *);
+JXTA_DECLARE(ResolverSrdi *) jxta_resolver_srdi_new_1(JString *, JString *, Jxta_id *);
 
 /**
  * frees the ResolverSrdi object
@@ -102,7 +102,7 @@ Jxta_status jxta_resolver_srdi_get_xml(ResolverSrdi *, JString **);
  * @param pointer to the buffer to parse
  * @param len length of the buffer
  */
-void jxta_resolver_srdi_parse_charbuffer(ResolverSrdi *, const char *, int len);
+JXTA_DECLARE(void) jxta_resolver_srdi_parse_charbuffer(ResolverSrdi *, const char *, int len);
 
 /**
  * @param ResolverSrdi the resolver message object
@@ -110,7 +110,7 @@ void jxta_resolver_srdi_parse_charbuffer(ResolverSrdi *, const char *, int len);
  * @param pointer to the FILE to parse
  * @param len length of the buffer
  */
-void jxta_resolver_srdi_parse_file(ResolverSrdi *, FILE * stream);
+JXTA_DECLARE(void) jxta_resolver_srdi_parse_file(ResolverSrdi *, FILE * stream);
 
 
 /**
@@ -118,14 +118,14 @@ void jxta_resolver_srdi_parse_file(ResolverSrdi *, FILE * stream);
  * @param ResolverSrdi the resolver message object
  * @return Jstring the credential
  */
-JString * jxta_resolver_srdi_get_credential(ResolverSrdi *);
+JXTA_DECLARE(JString *) jxta_resolver_srdi_get_credential(ResolverSrdi *);
 
 /**
  * set the message credential
  * @param ResolverSrdi the resolver message object
  * @param Jstring the credential
  */
-void jxta_resolver_srdi_set_credential(ResolverSrdi *, JString *);
+JXTA_DECLARE(void) jxta_resolver_srdi_set_credential(ResolverSrdi *, JString *);
 
 /**
  * get the message handlername
@@ -133,32 +133,37 @@ void jxta_resolver_srdi_set_credential(ResolverSrdi *, JString *);
  * @param JString pointer to JString to retrun the handlername pointer
  */
 
-void
-jxta_resolver_srdi_get_handlername(ResolverSrdi *, JString ** str);
+JXTA_DECLARE(void) jxta_resolver_srdi_get_handlername(ResolverSrdi *, JString ** str);
 
 /**
  * set the message HandlerName
  * @param ResolverSrdi the resolver message object
  * @param Jstring the HandlerName
  */
- 
-void jxta_resolver_srdi_set_handlername(ResolverSrdi *, JString *);
+
+JXTA_DECLARE(void) jxta_resolver_srdi_set_handlername(ResolverSrdi *, JString *);
 
 /**
  * get the message payload
  * @param ResolverSrdi the resolver message object
  * @return Jstring the Payload
- */ 
-void jxta_resolver_srdi_get_payload(ResolverSrdi *, JString **);
+ */
+JXTA_DECLARE(void) jxta_resolver_srdi_get_payload(ResolverSrdi *, JString **);
 
 /**
  * get the message payload
  * @param ResolverSrdi the resolver message object
  * @param Jstring the Payload
  */
- void jxta_resolver_srdi_set_payload(ResolverSrdi *, JString *);
-  
-#endif /* __ResolverSrdi_H__  */
+JXTA_DECLARE(void) jxta_resolver_srdi_set_payload(ResolverSrdi *, JString *);
+
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
+#endif /* __ResolverSrdi_H__  */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta.h,v 1.6 2005/02/10 00:06:20 bondolo Exp $
+ * $Id: jxta.h,v 1.9 2005/07/22 03:12:49 slowhog Exp $
  */
 
 #ifndef __JXTA_H__
@@ -75,9 +75,8 @@
 #include "jxta_pga.h"
 #include "jdlist.h"
 #include "jxta_listener.h"
-#include "jxta_message.h"       /* Definition of JXTA message */
-#include "jxta_endpoint_service.h"      /* Definition of JXTA Endpoint Service */
-
+#include "jxta_message.h"   /* Definition of JXTA message */
+#include "jxta_endpoint_service.h"  /* Definition of JXTA Endpoint Service */
 
 #ifdef __cplusplus
 extern "C" {
@@ -87,15 +86,20 @@ extern "C" {
 #endif
 /**
  * @todo Add documentation.
- */ void jxta_initialize(void);
+ */ JXTA_DECLARE(void) jxta_initialize(void);
 
 /**
  * @todo Add documentation.
  */
-void jxta_terminate(void);
+JXTA_DECLARE(void) jxta_terminate(void);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* __JXTA_H__ */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

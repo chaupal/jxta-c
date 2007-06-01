@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: join.h,v 1.1 2004/12/05 02:16:39 slowhog Exp $
+ * $Id: join.h,v 1.2 2005/08/24 01:21:20 slowhog Exp $
  */
 #ifndef __JXTA_SHELL_JOIN_H__
 #define __JXTA_SHELL_JOIN_H__
@@ -69,30 +69,24 @@ extern "C" {
 }
 #endif
 #endif
+JxtaShellApplication *jxta_join_new(Jxta_PG * pg,
+                                    Jxta_listener * standout,
+                                    JxtaShellEnvironment * env, Jxta_object * parent, shell_application_terminate terminate);
 
+void jxta_join_process_input(Jxta_object * app, JString * inputLine);
 
+void jxta_join_start(Jxta_object * app, int argv, char **arg);
 
-JxtaShellApplication * jxta_join_new(Jxta_PG * pg,
-                                       Jxta_listener* standout,
-                                       JxtaShellEnvironment *env,
-                                       Jxta_object * parent,
-                                       shell_application_terminate terminate);
-
-void  jxta_join_process_input(Jxta_object *app,
-                                JString * inputLine);
-
-void jxta_join_start(Jxta_object *app,
-                       int argv, char **arg);
-
-void jxta_join_print_help(Jxta_object *app);
+void jxta_join_print_help(Jxta_object * app);
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
-
-
 #endif /*__JXTA_SHELL_JOIN_H__ */
 
-
+/* vim: set ts=4 sw=4 et tw=130 */

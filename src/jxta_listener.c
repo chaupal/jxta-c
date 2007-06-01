@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_listener.c,v 1.25 2005/04/02 05:49:05 slowhog Exp $
+ * $Id: jxta_listener.c,v 1.36 2005/07/22 03:12:51 slowhog Exp $
  */
 
 #include <stdlib.h>
@@ -79,8 +79,8 @@ struct _jxta_listener {
     int maxNbOfInvoke;
     int maxQueueSize;
     Jxta_boolean started;
-    int nbOfThreads;
-    int nbOfBusyThreads;
+    volatile int nbOfThreads;
+    volatile int nbOfBusyThreads;
     Queue *queue;
     apr_thread_mutex_t *mutex;
     apr_pool_t *pool;
@@ -89,10 +89,12 @@ struct _jxta_listener {
 
 static const Jxta_time_diff WAITING_DELAY = 5 * 60 * 1000 * 1000;
 
-static void _listener_stop(Jxta_listener *self)
+static void _listener_stop(Jxta_listener * self)
 {
     int i;
 
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Stopping listener [%p], signal %u working threads\n", self,
+                    self->nbOfThreads);
     self->started = FALSE;
 
     /* To awake all waiting threads */
@@ -101,9 +103,13 @@ static void _listener_stop(Jxta_listener *self)
     }
 
     apr_thread_mutex_unlock(self->mutex);
-	while (self->nbOfThreads > 0) {
-		apr_sleep(20 * 1000); /* 20 ms */
-	}
+    /* Busy thread will stop once it finish processing */
+    while (self->nbOfThreads > self->nbOfBusyThreads) {
+        apr_sleep(20 * 1000);   /* 20 ms */
+    }
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,
+                    "There is(are) %d worker thread(s) for listener[%p] still busy, will be stopped shortly\n",
+                    self->nbOfBusyThreads, self);
     apr_thread_mutex_lock(self->mutex);
 }
 
@@ -136,11 +142,23 @@ static void jxta_listener_free(Jxta_object * listener)
         _listener_stop(self);
     }
 
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Waiting %d worker thread(s) for listener[%p] to stop ...\n",
+                    self->nbOfThreads, self);
+    apr_thread_mutex_unlock(self->mutex);
+    while (self->nbOfThreads > 0) {
+        apr_sleep(20 * 1000);   /* 20 ms */
+    }
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "All worker threads for listener[%p] have been stopped\n", self);
+    apr_thread_mutex_lock(self->mutex);
+
     /* Release all the object contained in the listener */
     if (self->queue != NULL) {
         queue_free(self->queue);
         self->queue = NULL;
     }
+
+    apr_thread_mutex_unlock(self->mutex);
+    apr_thread_mutex_destroy(self->mutex);
     /* Free the pool containing the mutex */
     apr_pool_destroy(self->pool);
     /* Free the object itself */
@@ -167,7 +185,7 @@ static void jxta_listener_free(Jxta_object * listener)
  ** @returns a new Jxta_listener or NULL if the system runs out of memory.
  *************************************************************************/
 
-Jxta_listener *jxta_listener_new(Jxta_listener_func func, void *arg, int maxNbOfInvoke, int maxQueueSize)
+JXTA_DECLARE(Jxta_listener *) jxta_listener_new(Jxta_listener_func func, void *arg, int maxNbOfInvoke, int maxQueueSize)
 {
 
     apr_status_t res;
@@ -193,7 +211,7 @@ Jxta_listener *jxta_listener_new(Jxta_listener_func func, void *arg, int maxNbOf
         return NULL;
     }
     /* Create the mutex */
-    res = apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED,        /* nested */
+    res = apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED,    /* nested */
                                   self->pool);
     if (res != APR_SUCCESS) {
         /* Free the memory that has been already allocated */
@@ -224,7 +242,7 @@ Jxta_listener *jxta_listener_new(Jxta_listener_func func, void *arg, int maxNbOf
  **
  ** @param listener a pointer to the listener to use.
  *************************************************************************/
-void jxta_listener_start(Jxta_listener * self)
+JXTA_DECLARE(void) jxta_listener_start(Jxta_listener * self)
 {
 
     JXTA_OBJECT_CHECK_VALID(self);
@@ -246,7 +264,7 @@ void jxta_listener_start(Jxta_listener * self)
  ** @param listener a pointer to the listener to use.
  *************************************************************************/
 
-void jxta_listener_stop(Jxta_listener * self)
+JXTA_DECLARE(void) jxta_listener_stop(Jxta_listener * self)
 {
     JXTA_OBJECT_CHECK_VALID(self);
 
@@ -261,7 +279,7 @@ void jxta_listener_stop(Jxta_listener * self)
 }
 
 
-static void * APR_THREAD_FUNC listener_thread_main(apr_thread_t * thread, void *arg)
+static void *APR_THREAD_FUNC listener_thread_main(apr_thread_t * thread, void *arg)
 {
     Jxta_listener *self = (Jxta_listener *) arg;
     Jxta_status rv;
@@ -269,30 +287,27 @@ static void * APR_THREAD_FUNC listener_thread_main(apr_thread_t * thread, void *
     JXTA_OBJECT_CHECK_VALID(self);
 
     while (self->started) {
-
         Jxta_object *obj = NULL;
-
         JXTA_OBJECT_CHECK_VALID(self);
-
-        rv = queue_dequeue_1(self->queue, &obj, WAITING_DELAY);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Dequeue a message [%p], queue size left %d\n", obj,
-                        queue_size(self->queue));
-
-        JXTA_OBJECT_CHECK_VALID(self);
+        rv = queue_dequeue_1(self->queue, (void **) &obj, WAITING_DELAY);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Dequeue a message[%p] for listener[%p], queue size left %d\n", obj,
+                        self, queue_size(self->queue));
 
         if (JXTA_TIMEOUT == rv) {
             /* A timeout has triggered. Exit this thread */
             break;
         }
 
-        JXTA_OBJECT_CHECK_VALID(obj);
-
         apr_thread_mutex_lock(self->mutex);
         if (!self->started) {
             apr_thread_mutex_unlock(self->mutex);
-            JXTA_OBJECT_RELEASE(obj);
+            if (NULL != obj) {
+                JXTA_OBJECT_RELEASE(obj);
+            }
             break;
         }
+
+        JXTA_OBJECT_CHECK_VALID(self);
 
         ++self->nbOfBusyThreads;
         apr_thread_mutex_unlock(self->mutex);
@@ -300,6 +315,8 @@ static void * APR_THREAD_FUNC listener_thread_main(apr_thread_t * thread, void *
         /* Invoke the handler */
 
         self->func(obj, self->arg);
+        if (NULL != obj)
+            JXTA_OBJECT_RELEASE(obj);
 
         apr_thread_mutex_lock(self->mutex);
         --self->nbOfBusyThreads;
@@ -307,9 +324,10 @@ static void * APR_THREAD_FUNC listener_thread_main(apr_thread_t * thread, void *
     }
     apr_thread_mutex_lock(self->mutex);
     --self->nbOfThreads;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Listener[%p] thread stopped, number of alive threads: %d\n", self,
+                    self->nbOfThreads);
     apr_thread_mutex_unlock(self->mutex);
 
-    JXTA_OBJECT_RELEASE(self);
     apr_thread_exit(thread, 0);
     return NULL;
 }
@@ -323,11 +341,11 @@ static void create_listener_thread(Jxta_listener * self)
 
     apr_thread_mutex_lock(self->mutex);
 
-    JXTA_OBJECT_SHARE(self);
     self->nbOfThreads++;
     apr_thread_create(&thread, NULL,    /* no attr */
                       listener_thread_main, (void *) self, (apr_pool_t *) self->pool);
 
+    apr_thread_detach(thread);
 
     apr_thread_mutex_unlock(self->mutex);
 }
@@ -344,31 +362,39 @@ static void create_listener_thread(Jxta_listener * self)
  ** otherwise.
  *************************************************************************/
 
-Jxta_status jxta_listener_schedule_object(Jxta_listener * self, Jxta_object * object)
+JXTA_DECLARE(Jxta_status) jxta_listener_schedule_object(Jxta_listener * self, Jxta_object * object)
 {
+    int size;
+    Jxta_status rv = JXTA_SUCCESS;
 
     JXTA_OBJECT_CHECK_VALID(self);
-    JXTA_OBJECT_CHECK_VALID(object);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Schedule event\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Schedule event for listener[%p]\n", self);
 
     apr_thread_mutex_lock(self->mutex);
 
     JXTA_OBJECT_CHECK_VALID(self);
-    JXTA_OBJECT_CHECK_VALID(object);
+
+    if (0 >= self->maxQueueSize) {
+        rv = jxta_listener_process_object(self, object);
+        apr_thread_mutex_unlock(self->mutex);
+        return rv;
+    }
 
     if (!self->started) {
         /* Do nothing */
         apr_thread_mutex_unlock(self->mutex);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Listener is stopped: event discarded\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Listener[%p] is stopped: event discarded\n", self);
         return JXTA_SUCCESS;
     }
+
     if (self->func != NULL) {
         if (self->nbOfBusyThreads == self->nbOfThreads) {
             if (self->nbOfThreads < self->maxNbOfInvoke) {
                 /* We can create a new listener thread */
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Create additional listener thread to existing %d ones\n",
-                                self->nbOfThreads);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,
+                                "Create additional worker thread for listener[%p] to existing %d ones\n",
+                                self, self->nbOfThreads);
                 create_listener_thread(self);
             }
         }
@@ -379,12 +405,12 @@ Jxta_status jxta_listener_schedule_object(Jxta_listener * self, Jxta_object * ob
    ** reached, remove the oldest element of the queue, and queue the new element.
    **/
 
-    JXTA_OBJECT_CHECK_VALID(object);
+    if (NULL != object)
+        JXTA_OBJECT_SHARE(object);
 
-    JXTA_OBJECT_SHARE(object);
-
-    queue_enqueue(self->queue, (void *) object);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Enqueued message [%p], queue size %d\n", object, queue_size(self->queue));
+    size = queue_enqueue(self->queue, (void *) object);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Enqueued message[%p] for listener[%p], queue size %d\n", object, self,
+                    size);
 
     JXTA_OBJECT_CHECK_VALID(self);
 
@@ -406,25 +432,25 @@ Jxta_status jxta_listener_schedule_object(Jxta_listener * self, Jxta_object * ob
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status jxta_listener_process_object(Jxta_listener * self, Jxta_object * object)
+JXTA_DECLARE(Jxta_status) jxta_listener_process_object(Jxta_listener * self, Jxta_object * object)
 {
 
     JXTA_OBJECT_CHECK_VALID(self);
     JXTA_OBJECT_CHECK_VALID(object);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Process event\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Listener[%p] is processing event\n", self);
 
     apr_thread_mutex_lock(self->mutex);
     if (!self->started) {
         /* Do nothing */
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Listener is stoped: event discarded\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Listener[%p] is stoped: event discarded\n", self);
         apr_thread_mutex_unlock(self->mutex);
         return JXTA_SUCCESS;
     }
 
     if (self->func) {
         apr_thread_mutex_unlock(self->mutex);
-        self->func((void *) object, self->arg);
+        self->func(object, self->arg);
     } else {
         JXTA_OBJECT_SHARE(object);
         queue_enqueue(self->queue, (void *) object);
@@ -439,13 +465,13 @@ Jxta_status jxta_listener_process_object(Jxta_listener * self, Jxta_object * obj
  ** @param listener a pointer to the listener to use.
  ** @return the number of object that are currentley in the queue.
  *************************************************************************/
-int jxta_listener_queue_size(Jxta_listener * self)
+JXTA_DECLARE(int) jxta_listener_queue_size(Jxta_listener * self)
 {
     return queue_size(self->queue);
 }
 
 
-Jxta_status jxta_listener_wait_for_event(Jxta_listener * self, Jxta_time_diff timeout, Jxta_object ** obj)
+JXTA_DECLARE(Jxta_status) jxta_listener_wait_for_event(Jxta_listener * self, Jxta_time_diff timeout, Jxta_object ** obj)
 {
     Jxta_status rv;
 
@@ -456,7 +482,7 @@ Jxta_status jxta_listener_wait_for_event(Jxta_listener * self, Jxta_time_diff ti
         return JXTA_BUSY;
     }
 
-    rv = queue_dequeue_1(self->queue, obj, timeout);
+    rv = queue_dequeue_1(self->queue, (void **) obj, timeout);
 
     JXTA_OBJECT_CHECK_VALID(self);
 

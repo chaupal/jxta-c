@@ -51,17 +51,21 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_incoming_unicast_server.c,v 1.13 2005/04/01 22:29:00 slowhog Exp $
+ * $Id: jxta_incoming_unicast_server.c,v 1.25 2005/09/13 16:26:02 slowhog Exp $
  */
 
-#include "jxta_incoming_unicast_server.h"
-#include "apr.h"
-#include "apr_network_io.h"
-#include "apr_thread_proc.h"
-#include "jxta_errno.h"
-#include "jxta_debug.h"
-
 static const char *__log_cat = "TCP_UNICAST";
+
+#include <apr.h>
+#include <apr_network_io.h>
+#include <apr_thread_proc.h>
+
+#include "jpr/jpr_apr_wrapper.h"
+
+#include "jxta_errno.h"
+#include "jxta_log.h"
+#include "jxta_transport_tcp_connection.h"
+#include "jxta_incoming_unicast_server.h"
 
 struct _incoming_unicast_server {
     JXTA_OBJECT_HANDLE;
@@ -72,13 +76,13 @@ struct _incoming_unicast_server {
     char *ipaddr;
     apr_port_t port;
 
-    Jxta_boolean connected;
+    volatile Jxta_boolean connected;
     apr_pool_t *pool;
     apr_thread_t *tid;
 };
 
 static void unicast_free(Jxta_object * obj);
-static void *APR_THREAD_FUNC incoming_unicast_server_body(apr_thread_t * tid, void *arg);
+static void *APR_THREAD_FUNC unicast_accept_thread(apr_thread_t * tid, void *arg);
 
 IncomingUnicastServer *jxta_incoming_unicast_server_new(Jxta_transport_tcp * tp, char *ipaddr, apr_port_t port)
 {
@@ -86,14 +90,13 @@ IncomingUnicastServer *jxta_incoming_unicast_server_new(Jxta_transport_tcp * tp,
     apr_status_t status;
 
     /* create object */
-    self = (IncomingUnicastServer *) malloc(sizeof(IncomingUnicastServer));
+    self = (IncomingUnicastServer *) calloc(1, sizeof(IncomingUnicastServer));
     if (self == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed malloc()\n");
         return NULL;
     }
 
     /* initialize it */
-    memset(self, 0, sizeof(IncomingUnicastServer));
     JXTA_OBJECT_INIT(self, unicast_free, NULL);
 
     /* setting */
@@ -108,7 +111,7 @@ IncomingUnicastServer *jxta_incoming_unicast_server_new(Jxta_transport_tcp * tp,
 
     /* apr setting */
     status = apr_pool_create(&self->pool, NULL);
-    if (!APR_STATUS_IS_SUCCESS(status)) {
+    if (APR_SUCCESS != status) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to create apr pool\n");
         /* Free the memory that has been already allocated */
         free(self);
@@ -121,10 +124,10 @@ IncomingUnicastServer *jxta_incoming_unicast_server_new(Jxta_transport_tcp * tp,
        self->port, 0, self->pool);
      */
     status = apr_sockaddr_info_get(&self->srv_interface, APR_ANYADDR, APR_INET, self->port, 0, self->pool);
-    if (!APR_STATUS_IS_SUCCESS(status)) {
+    if (APR_SUCCESS != status) {
         char msg[256];
         apr_strerror(status, msg, sizeof(msg));
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "%s\n", msg);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Socket addr info failed : %s\n", msg);
         apr_pool_destroy(self->pool);
         free(self);
         return NULL;
@@ -157,46 +160,58 @@ Jxta_boolean jxta_incoming_unicast_server_start(IncomingUnicastServer * ius)
 
     JXTA_OBJECT_CHECK_VALID(self);
     /* check if already started */
-    if (self->srv_socket != NULL || self->connected == TRUE)
+    if (self->srv_socket != NULL || self->connected)
         return FALSE;
 
     self->connected = FALSE;
 
     /* server socket create */
-    status = apr_socket_create(&self->srv_socket, APR_INET, SOCK_STREAM, self->pool);
-    if (!APR_STATUS_IS_SUCCESS(status)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to create server socket\n");
+#if CHECK_APR_VERSION(1, 0, 0)
+    status = apr_socket_create(&self->srv_socket, APR_INET, SOCK_STREAM, APR_PROTO_TCP, self->pool);
+#else
+    status = apr_socket_create_ex(&self->srv_socket, APR_INET, SOCK_STREAM, APR_PROTO_TCP, self->pool);
+#endif
+    if (APR_SUCCESS != status) {
+        char msg[256];
+        apr_strerror(status, msg, sizeof(msg));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed create server socket : %s\n", msg);
         return FALSE;
     }
 
     /* REUSEADDR: this may help in case of the port is in TIME_WAIT */
     status = apr_socket_opt_set(self->srv_socket, APR_SO_REUSEADDR, 1);
-    if (!APR_STATUS_IS_SUCCESS(status)) {
+    if (APR_SUCCESS != status) {
         char msg[256];
         apr_strerror(status, msg, sizeof(msg));
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "%s\n", msg);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed setting options : %s\n", msg);
         return FALSE;
     }
 
     /* bind */
     status = apr_socket_bind(self->srv_socket, self->srv_interface);
-    if (!APR_STATUS_IS_SUCCESS(status)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to bind socket\n");
+    if (APR_SUCCESS != status) {
+        char msg[256];
+        apr_strerror(status, msg, sizeof(msg));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed to bind socket : %s\n", msg);
         return FALSE;
     }
 
     /* listen */
     status = apr_socket_listen(self->srv_socket, MAX_ACCEPT_COUNT_BACKLOG);
-    if (!APR_STATUS_IS_SUCCESS(status)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to listen\n");
+    if (APR_SUCCESS != status) {
+        char msg[256];
+        apr_strerror(status, msg, sizeof(msg));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed to listen on socket : %s\n", msg);
         return FALSE;
     }
 
     /* thread create */
-    status = apr_thread_create(&self->tid, NULL, incoming_unicast_server_body, (void *) self, self->pool);
+    status = apr_thread_create(&self->tid, NULL, unicast_accept_thread, (void *) self, self->pool);
 
-    if (!APR_STATUS_IS_SUCCESS(status)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to start thread\n");
+    if (APR_SUCCESS != status) {
+        char msg[256];
+        apr_strerror(status, msg, sizeof(msg));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed to start thread for socket : %s\n", msg);
         self->connected = FALSE;
         return FALSE;
     }
@@ -222,71 +237,83 @@ void jxta_incoming_unicast_server_stop(IncomingUnicastServer * ius)
     }
 }
 
-static void *APR_THREAD_FUNC incoming_unicast_server_body(apr_thread_t * tid, void *arg)
+static void *APR_THREAD_FUNC unicast_accept_thread(apr_thread_t * tid, void *arg)
 {
     IncomingUnicastServer *self = (IncomingUnicastServer *) arg;
-    Jxta_transport_tcp_connection *conn;
-    Jxta_endpoint_address *dest;
-    TcpMessenger *messenger;
-    char *ipaddr;
-    apr_port_t port;
-    apr_socket_t *input_socket;
     apr_status_t status;
-    char *protocol_name, *protocol_address;
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Unicast incoming accept thread started.\n");
 
     JXTA_OBJECT_CHECK_VALID(self);
     self->connected = TRUE;
 
     while (self->connected) {
+        Jxta_transport_tcp_connection *conn;
+        Jxta_endpoint_address *dest;
+        TcpMessenger *messenger;
+        apr_socket_t *input_socket = NULL;
+
         status = apr_socket_accept(&input_socket, self->srv_socket, self->pool);
-        if (!APR_STATUS_IS_SUCCESS(status)) {
+        if (APR_SUCCESS != status) {
             char msg[256];
             apr_strerror(status, msg, sizeof(msg));
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "%s\n", msg);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Accept failed : %s\n", msg);
             input_socket = NULL;
             continue;
         }
 
         conn = jxta_transport_tcp_connection_new_2(self->tp, input_socket);
         if (conn == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed creating connection. Closing socket.\n");
+            apr_socket_shutdown(input_socket, APR_SHUTDOWN_READWRITE);
             apr_socket_close(input_socket);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "connection is null, so socket is closed\n");
             continue;
         }
 
         JXTA_OBJECT_CHECK_VALID(conn);
 
-        ipaddr = jxta_transport_tcp_connection_get_ipaddr(conn);
-        port = jxta_transport_tcp_connection_get_port(conn);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "ip=%s, port=%d\n", ipaddr, port);
-        protocol_name = strdup("tcp");
-        protocol_address = (char *) malloc(1024);       /* should be large enough */
-        sprintf(protocol_address, "%s:%d", ipaddr, port);
-        dest = jxta_endpoint_address_new2(protocol_name, protocol_address, NULL, NULL);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Incoming connection [%p] from %s:%d\n", conn,
+                        jxta_transport_tcp_connection_get_ipaddr(conn), jxta_transport_tcp_connection_get_port(conn));
 
-        messenger = get_tcp_messenger(self->tp, conn, dest, ipaddr, port);
+        if (JXTA_SUCCESS != status) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Start connection [%p] failed. Closing socket.\n", conn);
+            JXTA_OBJECT_RELEASE(conn);
+            apr_socket_shutdown(input_socket, APR_SHUTDOWN_READWRITE);
+            apr_socket_close(input_socket);
+            input_socket = NULL;
+            continue;
+        }
 
-        JXTA_OBJECT_CHECK_VALID(messenger);
-        tcp_messenger_start(messenger);
-        free(protocol_address);
-        free(protocol_name);
+        dest = jxta_transport_tcp_connection_get_destaddr(conn);
+        jxta_tcp_got_inbound_connection(self->tp, conn, dest);
         JXTA_OBJECT_RELEASE(dest);
-        JXTA_OBJECT_RELEASE(messenger);
-        free(ipaddr);
+        JXTA_OBJECT_RELEASE(conn);
         input_socket = NULL;
     }
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Unicast incoming accept thread stopped.\n");
+
+    apr_thread_exit(tid, APR_SUCCESS);
+
+    /* NOTREACHED */
     return NULL;
 }
 
 apr_port_t jxta_incoming_unicast_server_get_local_port(IncomingUnicastServer * ius)
 {
     IncomingUnicastServer *self = ius;
+
+    JXTA_OBJECT_CHECK_VALID(self);
+
     return self->port;
 }
 
-char *jxta_incoming_unicast_server_get_local_interface(IncomingUnicastServer * ius)
+const char *jxta_incoming_unicast_server_get_local_interface(IncomingUnicastServer * ius)
 {
     IncomingUnicastServer *self = ius;
+
+    JXTA_OBJECT_CHECK_VALID(self);
+
     return self->ipaddr;
 }
 

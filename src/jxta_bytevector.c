@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bytevector.c,v 1.13 2005/01/28 02:22:45 slowhog Exp $
+ * $Id: jxta_bytevector.c,v 1.19 2005/09/12 07:02:43 slowhog Exp $
  */
 
 #include <stdlib.h>
@@ -101,24 +101,13 @@ static void jxta_bytevector_free(Jxta_object * vector)
     if (NULL == self)
         return;
 
-    /*
-     * We need to take the lock in order to make sure that nobody
-     * else is using the vector. However, since we are destroying
-     * the object, there is no need to unlock. In other words, since
-     * jxta_bytevector_free is not a public API, if the vector has been
-     * properly shared, there should not be any external code that still
-     * has a reference on this vector. So things should be safe.
-     */
-    if (NULL != self->usr.mutex)
-        apr_thread_mutex_lock(self->usr.mutex);
-
     /* Free the contents */
     free(self->usr.content);
 
     /* Free the pool containing the mutex */
     if (NULL != self->usr.mutex) {
+        apr_thread_mutex_destroy(self->usr.mutex);
         apr_pool_destroy(self->usr.jpr_pool);
-        self->usr.mutex = NULL;
     }
 
     /* Free the object itself */
@@ -128,7 +117,7 @@ static void jxta_bytevector_free(Jxta_object * vector)
 /************************************************************************
  **
  *************************************************************************/
-Jxta_bytevector *jxta_bytevector_new_0(void)
+JXTA_DECLARE(Jxta_bytevector *) jxta_bytevector_new_0(void)
 {
 
     return jxta_bytevector_new_1(INDEX_DEFAULT_SIZE);
@@ -137,7 +126,7 @@ Jxta_bytevector *jxta_bytevector_new_0(void)
 /************************************************************************
  **
  *************************************************************************/
-Jxta_bytevector *jxta_bytevector_new_1(size_t initialSize)
+JXTA_DECLARE(Jxta_bytevector *) jxta_bytevector_new_1(size_t initialSize)
 {
 
     Jxta_bytevector_mutable *self;
@@ -165,7 +154,7 @@ Jxta_bytevector *jxta_bytevector_new_1(size_t initialSize)
 /************************************************************************
  **
  *************************************************************************/
-Jxta_bytevector *jxta_bytevector_new_2(unsigned char *initialPtr, size_t initialSize, size_t initialCapacity)
+JXTA_DECLARE(Jxta_bytevector *) jxta_bytevector_new_2(unsigned char *initialPtr, size_t initialSize, size_t initialCapacity)
 {
 
     Jxta_bytevector_mutable *self;
@@ -175,12 +164,7 @@ Jxta_bytevector *jxta_bytevector_new_2(unsigned char *initialPtr, size_t initial
         return NULL;
     }
 
-    if (initialSize < 0) {
-        JXTA_LOG("Capacity must not be less than zero");
-        return NULL;
-    }
-
-    if (initialCapacity <= 0) {
+    if (initialCapacity == 0) {
         JXTA_LOG("Capacity must be greater than zero");
         return NULL;
     }
@@ -208,7 +192,7 @@ Jxta_bytevector *jxta_bytevector_new_2(unsigned char *initialPtr, size_t initial
    *  is a test. If we don't get a good pointer back, we don't continue.
    **/
     if (initialCapacity > initialSize) {
-        initialPtr = realloc(initialPtr, initialCapacity);
+        initialPtr = (unsigned char *) realloc(initialPtr, initialCapacity);
 
         if (NULL == initialPtr) {
             JXTA_LOG("realloc failed, probably not a malloc ptr.");
@@ -230,7 +214,7 @@ Jxta_bytevector *jxta_bytevector_new_2(unsigned char *initialPtr, size_t initial
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_bytevector_set_synchronized(Jxta_bytevector * vector)
+JXTA_DECLARE(Jxta_status) jxta_bytevector_set_synchronized(Jxta_bytevector * vector)
 {
 
     Jxta_bytevector_mutable *self = (Jxta_bytevector_mutable *) vector;
@@ -269,7 +253,7 @@ Jxta_status jxta_bytevector_set_synchronized(Jxta_bytevector * vector)
 /************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_bytevector_clear(Jxta_bytevector * vector, size_t initialSize)
+JXTA_DECLARE(Jxta_status) jxta_bytevector_clear(Jxta_bytevector * vector, size_t initialSize)
 {
 
     Jxta_bytevector_mutable *self = (Jxta_bytevector_mutable *) vector;
@@ -293,8 +277,6 @@ Jxta_status jxta_bytevector_clear(Jxta_bytevector * vector, size_t initialSize)
     self->usr.content = NULL;
     self->usr.capacity = 0;
     self->usr.size = 0;
-    self->usr.jpr_pool = NULL;
-    self->usr.mutex = NULL;
 
     res = ensure_capacity(self, initialSize);
 
@@ -347,7 +329,7 @@ static Jxta_status ensure_capacity(Jxta_bytevector_mutable * vector, size_t requ
 /************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_bytevector_add_byte_at(Jxta_bytevector * vector, unsigned char byte, unsigned int index)
+JXTA_DECLARE(Jxta_status) jxta_bytevector_add_byte_at(Jxta_bytevector * vector, unsigned char byte, unsigned int at_index)
 {
 
     Jxta_status err;
@@ -357,14 +339,14 @@ Jxta_status jxta_bytevector_add_byte_at(Jxta_bytevector * vector, unsigned char 
         return JXTA_INVALID_ARGUMENT;
     }
 
-    err = jxta_bytevector_add_bytes_at(vector, &byte, index, sizeof(_byte_t));
+    err = jxta_bytevector_add_bytes_at(vector, &byte, at_index, sizeof(_byte_t));
     return err;
 }
 
 /************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_bytevector_add_byte_first(Jxta_bytevector * vector, unsigned char byte)
+JXTA_DECLARE(Jxta_status) jxta_bytevector_add_byte_first(Jxta_bytevector * vector, unsigned char byte)
 {
 
     return jxta_bytevector_add_byte_at(vector, byte, 0);
@@ -374,7 +356,7 @@ Jxta_status jxta_bytevector_add_byte_first(Jxta_bytevector * vector, unsigned ch
 /************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_bytevector_add_byte_last(Jxta_bytevector * vector, unsigned char byte)
+JXTA_DECLARE(Jxta_status) jxta_bytevector_add_byte_last(Jxta_bytevector * vector, unsigned char byte)
 {
     Jxta_status err;
 
@@ -395,7 +377,8 @@ Jxta_status jxta_bytevector_add_byte_last(Jxta_bytevector * vector, unsigned cha
 /************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_bytevector_add_bytes_at(Jxta_bytevector * vector, unsigned char const *bytes, unsigned int index, size_t length)
+JXTA_DECLARE(Jxta_status) jxta_bytevector_add_bytes_at(Jxta_bytevector * vector, unsigned char const *bytes,
+                                                       unsigned int at_index, size_t length)
 {
 
     Jxta_bytevector_mutable *self = (Jxta_bytevector_mutable *) vector;
@@ -406,16 +389,11 @@ Jxta_status jxta_bytevector_add_bytes_at(Jxta_bytevector * vector, unsigned char
         return JXTA_INVALID_ARGUMENT;
     }
 
-    if (length < 0) {
-        JXTA_LOG("length (%d)is invalid\n", length);
-        return JXTA_INVALID_ARGUMENT;
-    }
-
     if (NULL != self->usr.mutex)
         apr_thread_mutex_lock(self->usr.mutex);
 
-    if (index > self->usr.size) {
-        JXTA_LOG("index %d is out of bounds (size of vector= %d)\n", index, self->usr.size);
+    if (at_index > self->usr.size) {
+        JXTA_LOG("index %d is out of bounds (size of vector= %d)\n", at_index, self->usr.size);
         res = JXTA_INVALID_ARGUMENT;
         goto Common_Exit;
     }
@@ -427,14 +405,14 @@ Jxta_status jxta_bytevector_add_bytes_at(Jxta_bytevector * vector, unsigned char
     }
 
     if (self->usr.size >= length)
-        memmove(self->usr.content + (ptrdiff_t) (index + length),
-                self->usr.content + (ptrdiff_t) index, (self->usr.size - index) * sizeof(_byte_t));
+        memmove(self->usr.content + (ptrdiff_t) (at_index + length),
+                self->usr.content + (ptrdiff_t) at_index, (self->usr.size - at_index) * sizeof(_byte_t));
 
 
     if (NULL != bytes) {
-        memmove(self->usr.content + (ptrdiff_t) (index * sizeof(_byte_t)), bytes, length * sizeof(_byte_t));
+        memmove(self->usr.content + (ptrdiff_t) (at_index * sizeof(_byte_t)), bytes, length * sizeof(_byte_t));
     } else {
-        memset(self->usr.content + (ptrdiff_t) (index * sizeof(_byte_t)), 0, length * sizeof(_byte_t));
+        memset(self->usr.content + (ptrdiff_t) (at_index * sizeof(_byte_t)), 0, length * sizeof(_byte_t));
     }
 
     /* Increase the size */
@@ -452,7 +430,8 @@ Jxta_status jxta_bytevector_add_bytes_at(Jxta_bytevector * vector, unsigned char
 /************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_bytevector_add_bytevector_at(Jxta_bytevector * vector, Jxta_bytevector * bytes, unsigned int dstindex)
+JXTA_DECLARE(Jxta_status) jxta_bytevector_add_bytevector_at(Jxta_bytevector * vector, Jxta_bytevector * bytes,
+                                                            unsigned int dstindex)
 {
     Jxta_status err;
 
@@ -488,8 +467,8 @@ Jxta_status jxta_bytevector_add_bytevector_at(Jxta_bytevector * vector, Jxta_byt
 /************************************************************************
  **
  *************************************************************************/
-Jxta_status
-jxta_bytevector_add_partial_bytevector_at(Jxta_bytevector * vector,
+JXTA_DECLARE(Jxta_status)
+    jxta_bytevector_add_partial_bytevector_at(Jxta_bytevector * vector,
                                           Jxta_bytevector * bytes, unsigned int srcIndex, size_t length, unsigned int dstindex)
 {
     Jxta_status err;
@@ -535,8 +514,8 @@ jxta_bytevector_add_partial_bytevector_at(Jxta_bytevector * vector,
 /************************************************************************
  **
  *************************************************************************/
-Jxta_status
-jxta_bytevector_add_from_stream_at(Jxta_bytevector * vector, ReadFunc func, void *stream, size_t length, unsigned int index)
+JXTA_DECLARE(Jxta_status)
+    jxta_bytevector_add_from_stream_at(Jxta_bytevector * vector, ReadFunc func, void *stream, size_t length, unsigned int at_index)
 {
     Jxta_status err = JXTA_SUCCESS;
 
@@ -555,15 +534,15 @@ jxta_bytevector_add_from_stream_at(Jxta_bytevector * vector, ReadFunc func, void
     if (NULL != self->usr.mutex)
         apr_thread_mutex_lock(self->usr.mutex);
 
-    err = jxta_bytevector_add_bytes_at(self, NULL, index, length);
+    err = jxta_bytevector_add_bytes_at(self, NULL, at_index, length);
 
     if (JXTA_SUCCESS != err)
         goto Common_Exit;
 
-    err = (func) (stream, (char *) (self->usr.content + (ptrdiff_t) index), length);
+    err = (func) (stream, (char *) (self->usr.content + (ptrdiff_t) at_index), length);
 
     if (JXTA_SUCCESS != err) {
-        Jxta_status res = jxta_bytevector_remove_bytes_at(self, index, length);
+        Jxta_status res = jxta_bytevector_remove_bytes_at(self, at_index, length);
         if (JXTA_SUCCESS == res)
             JXTA_LOG("Vector is probably corrupted.");
         goto Common_Exit;
@@ -579,21 +558,23 @@ jxta_bytevector_add_from_stream_at(Jxta_bytevector * vector, ReadFunc func, void
 /************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_bytevector_get_byte_at(Jxta_bytevector * vector, unsigned char *byte, unsigned int index)
+JXTA_DECLARE(Jxta_status) jxta_bytevector_get_byte_at(Jxta_bytevector * vector, unsigned char *byte, unsigned int at_index)
 {
 
-    return jxta_bytevector_get_bytes_at(vector, byte, index, 1);
+    return jxta_bytevector_get_bytes_at(vector, byte, at_index, 1);
 }
 
-Jxta_status jxta_bytevector_get_bytes_at(Jxta_bytevector * vector, unsigned char *bytes, unsigned int index, size_t length)
+JXTA_DECLARE(Jxta_status) jxta_bytevector_get_bytes_at(Jxta_bytevector * vector, unsigned char *bytes, unsigned int at_index,
+                                                       size_t length)
 {
-    return jxta_bytevector_get_bytes_at_1(vector, bytes, index, &length);
+    return jxta_bytevector_get_bytes_at_1(vector, bytes, at_index, &length);
 }
 
 /************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_bytevector_get_bytes_at_1(Jxta_bytevector * vector, unsigned char *bytes, unsigned int index, size_t * length)
+JXTA_DECLARE(Jxta_status) jxta_bytevector_get_bytes_at_1(Jxta_bytevector * vector, unsigned char *bytes, unsigned int at_index,
+                                                         size_t * length)
 {
 
     if (!JXTA_OBJECT_CHECK_VALID(vector)) {
@@ -609,16 +590,16 @@ Jxta_status jxta_bytevector_get_bytes_at_1(Jxta_bytevector * vector, unsigned ch
     if (NULL != vector->usr.mutex)
         apr_thread_mutex_lock(vector->usr.mutex);
 
-    if (index >= vector->usr.size) {
+    if (at_index >= vector->usr.size) {
         if (NULL != vector->usr.mutex)
             apr_thread_mutex_unlock(vector->usr.mutex);
         JXTA_LOG("Invalid argument\n");
         return JXTA_INVALID_ARGUMENT;
     }
 
-    *length = (vector->usr.size - index) > *length ? *length : (vector->usr.size - index);
+    *length = (vector->usr.size - at_index) > *length ? *length : (vector->usr.size - at_index);
 
-    memmove(bytes, (vector->usr.content + (ptrdiff_t) index), *length);
+    memmove(bytes, (vector->usr.content + (ptrdiff_t) at_index), *length);
 
     if (NULL != vector->usr.mutex)
         apr_thread_mutex_unlock(vector->usr.mutex);
@@ -628,8 +609,8 @@ Jxta_status jxta_bytevector_get_bytes_at_1(Jxta_bytevector * vector, unsigned ch
 /************************************************************************
  **
  *************************************************************************/
-Jxta_status
-jxta_bytevector_get_bytevector_at(Jxta_bytevector * source, Jxta_bytevector ** dest, unsigned int index, size_t length)
+JXTA_DECLARE(Jxta_status)
+    jxta_bytevector_get_bytevector_at(Jxta_bytevector * source, Jxta_bytevector ** dest, unsigned int at_index, size_t length)
 {
 
     Jxta_status err;
@@ -647,13 +628,13 @@ jxta_bytevector_get_bytevector_at(Jxta_bytevector * source, Jxta_bytevector ** d
     if (NULL != source->usr.mutex)
         apr_thread_mutex_lock(source->usr.mutex);
 
-    if (index >= source->usr.size) {
+    if (at_index >= source->usr.size) {
         JXTA_LOG("Invalid argument\n");
         err = JXTA_INVALID_ARGUMENT;
         goto Common_Exit;
     }
 
-    length = (source->usr.size - index) > length ? length : (source->usr.size - index);
+    length = (source->usr.size - at_index) > length ? length : (source->usr.size - at_index);
 
     /* Create a new vector */
     *dest = jxta_bytevector_new_1(length);
@@ -662,7 +643,7 @@ jxta_bytevector_get_bytevector_at(Jxta_bytevector * source, Jxta_bytevector ** d
         goto Common_Exit;
     }
 
-    err = jxta_bytevector_add_bytes_at(*dest, source->usr.content + (ptrdiff_t) index, 0, length);
+    err = jxta_bytevector_add_bytes_at(*dest, source->usr.content + (ptrdiff_t) at_index, 0, length);
 
   Common_Exit:
     if (NULL != source->usr.mutex)
@@ -674,7 +655,8 @@ jxta_bytevector_get_bytevector_at(Jxta_bytevector * source, Jxta_bytevector ** d
 /************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_bytevector_write(Jxta_bytevector * vector, WriteFunc func, void *stream, unsigned int index, size_t length)
+JXTA_DECLARE(Jxta_status) jxta_bytevector_write(Jxta_bytevector * vector, WriteFunc func, void *stream, unsigned int at_index,
+                                                size_t length)
 {
 
     Jxta_status err;
@@ -692,15 +674,15 @@ Jxta_status jxta_bytevector_write(Jxta_bytevector * vector, WriteFunc func, void
     if (NULL != vector->usr.mutex)
         apr_thread_mutex_lock(vector->usr.mutex);
 
-    if (index >= vector->usr.size) {
+    if (at_index >= vector->usr.size) {
         JXTA_LOG("Invalid argument\n");
         err = JXTA_INVALID_ARGUMENT;
         goto Common_Exit;
     }
 
-    length = (vector->usr.size - index) > length ? length : (vector->usr.size - index);
+    length = (vector->usr.size - at_index) > length ? length : (vector->usr.size - at_index);
 
-    err = (func) (stream, (char *) (vector->usr.content + (ptrdiff_t) index), length);
+    err = (func) (stream, (char *) (vector->usr.content + (ptrdiff_t) at_index), length);
 
   Common_Exit:
     if (NULL != vector->usr.mutex)
@@ -712,16 +694,16 @@ Jxta_status jxta_bytevector_write(Jxta_bytevector * vector, WriteFunc func, void
 /************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_bytevector_remove_byte_at(Jxta_bytevector * vector, unsigned int index)
+JXTA_DECLARE(Jxta_status) jxta_bytevector_remove_byte_at(Jxta_bytevector * vector, unsigned int at_index)
 {
 
-    return jxta_bytevector_remove_bytes_at(vector, index, 1);
+    return jxta_bytevector_remove_bytes_at(vector, at_index, 1);
 }
 
 /************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_bytevector_remove_bytes_at(Jxta_bytevector * vector, unsigned int index, size_t length)
+JXTA_DECLARE(Jxta_status) jxta_bytevector_remove_bytes_at(Jxta_bytevector * vector, unsigned int at_index, size_t length)
 {
 
     Jxta_bytevector_mutable *self = (Jxta_bytevector_mutable *) vector;
@@ -734,17 +716,17 @@ Jxta_status jxta_bytevector_remove_bytes_at(Jxta_bytevector * vector, unsigned i
     if (NULL != self->usr.mutex)
         apr_thread_mutex_lock(self->usr.mutex);
 
-    if (index >= self->usr.size) {
+    if (at_index >= self->usr.size) {
         if (NULL != self->usr.mutex)
             apr_thread_mutex_unlock(self->usr.mutex);
         JXTA_LOG("Invalid argument\n");
         return JXTA_INVALID_ARGUMENT;
     }
 
-    length = (self->usr.size - index) > length ? length : (self->usr.size - index);
+    length = (self->usr.size - at_index) > length ? length : (self->usr.size - at_index);
 
-    memmove(self->usr.content + (ptrdiff_t) index,
-            self->usr.content + (ptrdiff_t) (index + length), self->usr.size - index - length);
+    memmove(self->usr.content + (ptrdiff_t) at_index,
+            self->usr.content + (ptrdiff_t) (at_index + length), self->usr.size - at_index - length);
 
     self->usr.size -= length;
 
@@ -757,7 +739,7 @@ Jxta_status jxta_bytevector_remove_bytes_at(Jxta_bytevector * vector, unsigned i
 /************************************************************************
  **
  *************************************************************************/
-size_t jxta_bytevector_size(Jxta_bytevector * vector)
+JXTA_DECLARE(size_t) jxta_bytevector_size(Jxta_bytevector * vector)
 {
 
     size_t size;
@@ -781,7 +763,7 @@ size_t jxta_bytevector_size(Jxta_bytevector * vector)
 /************************************************************************
  **
  *************************************************************************/
-Jxta_boolean jxta_bytevector_equals(Jxta_bytevector * vector1, Jxta_bytevector * vector2)
+JXTA_DECLARE(Jxta_boolean) jxta_bytevector_equals(Jxta_bytevector * vector1, Jxta_bytevector * vector2)
 {
 
     Jxta_boolean result;
@@ -826,7 +808,7 @@ Jxta_boolean jxta_bytevector_equals(Jxta_bytevector * vector1, Jxta_bytevector *
 /************************************************************************
  **
  *************************************************************************/
-unsigned int jxta_bytevector_hashcode(Jxta_bytevector * vector)
+JXTA_DECLARE(unsigned int) jxta_bytevector_hashcode(Jxta_bytevector * vector)
 {
 
     unsigned int hashcode;

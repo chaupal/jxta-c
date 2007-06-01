@@ -50,17 +50,20 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http_client.c,v 1.15 2005/03/30 02:22:52 slowhog Exp $
+ * $Id: jxta_transport_http_client.c,v 1.23 2005/08/18 19:01:51 slowhog Exp $
  */
+
+static const char *__log_cat = "HTTP_CLIENT";
 
 #include <stdio.h>
 
+#include "jpr/jpr_apr_wrapper.h"
 #include "jxta_debug.h"
 #include "jxta_errno.h"
 #include "jxta_string.h"
 #include "jxta_transport_http_client.h"
+#include "jxtaapr.h"
 
-static const char *__log_cat = "HTTP_CLIENT";
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
@@ -100,16 +103,15 @@ struct _HttpResponse {
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-HttpClient *http_client_new(const char *proxy_host, Jxta_port proxy_port, const char *host, Jxta_port port, char *useInterface)
+JXTA_DECLARE(HttpClient *) http_client_new(const char *proxy_host, Jxta_port proxy_port, const char *host, Jxta_port port,
+                                           char *useInterface)
 {
     apr_status_t status;
 
-    HttpClient *con = (HttpClient *) malloc(sizeof(HttpClient));
+    HttpClient *con = (HttpClient *) calloc(1, sizeof(HttpClient));
 
     if (NULL == con)
         return NULL;
-
-    memset(con, 0, sizeof(HttpClient));
 
     apr_pool_create(&con->pool, 0);
     con->proxy_host = proxy_host ? strdup(proxy_host) : NULL;
@@ -118,19 +120,19 @@ HttpClient *http_client_new(const char *proxy_host, Jxta_port proxy_port, const 
     con->port = (apr_port_t) port;
     con->useInterface = useInterface ? strdup(useInterface) : strdup(APR_ANYADDR);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Create new client %s %d\n", con->host, con->port);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Create new client %s:%d\n", con->host, con->port);
 
     if (con->proxy_host)
         status = apr_sockaddr_info_get(&con->sockaddr, con->proxy_host, APR_INET, con->proxy_port, 0, con->pool);
     else {
         status = apr_sockaddr_info_get(&con->sockaddr, con->host, APR_INET, con->port, 0, con->pool);
     }
-    if (!APR_STATUS_IS_SUCCESS(status))
+    if (APR_SUCCESS != status)
         goto Error_Exit;
 
     status = apr_sockaddr_info_get(&con->intfaddr, con->useInterface, APR_INET, 0, 0, con->pool);
 
-    if (!APR_STATUS_IS_SUCCESS(status))
+    if (APR_SUCCESS != status)
         goto Error_Exit;
 
 
@@ -150,10 +152,11 @@ HttpClient *http_client_new(const char *proxy_host, Jxta_port proxy_port, const 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-Jxta_status http_client_connect(HttpClient * con)
+JXTA_DECLARE(Jxta_status) http_client_connect(HttpClient * con)
 {
-
     apr_status_t status;
+    apr_sockaddr_t *sa;
+    char *addr;
 
     if (con == NULL)
         return JXTA_FAILED;
@@ -166,41 +169,50 @@ Jxta_status http_client_connect(HttpClient * con)
                         con->useInterface);
     }
 
-    status = apr_socket_create(&con->socket, APR_INET, SOCK_STREAM, con->pool);
+#if CHECK_APR_VERSION(1, 0, 0)
+    status = apr_socket_create(&con->socket, APR_INET, SOCK_STREAM, APR_PROTO_TCP, con->pool);
+#else
+    status = apr_socket_create_ex(&con->socket, APR_INET, SOCK_STREAM, APR_PROTO_TCP, con->pool);
+#endif
 
-    if (!APR_STATUS_IS_SUCCESS(status)) {
+    if (APR_SUCCESS != status) {
         char msg[256];
         apr_strerror(status, msg, sizeof(msg));
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "socket create failed : %s\n", msg);
         goto Common_Exit;
     }
 
-    status = apr_bind(con->socket, con->intfaddr);
+    status = apr_socket_bind(con->socket, con->intfaddr);
 
-    if (!APR_STATUS_IS_SUCCESS(status)) {
+    if (APR_SUCCESS != status) {
         char msg[256];
         apr_strerror(status, msg, sizeof(msg));
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "socket bind failed : %s\n", msg);
         goto Common_Exit;
     }
 
-    status = apr_connect(con->socket, con->sockaddr);
+    status = apr_socket_connect(con->socket, con->sockaddr);
 
-    if (!APR_STATUS_IS_SUCCESS(status)) {
+    if (APR_SUCCESS != status) {
         char msg[256];
         apr_strerror(status, msg, sizeof(msg));
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "socket connect failed : %s\n", msg);
         http_client_close(con);
+    } else {
+        apr_socket_addr_get(&sa, APR_LOCAL, con->socket);
+        apr_sockaddr_ip_get(&addr, sa);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "connected to %s:%d on intf %s:%u\n", con->host, con->port,
+                        addr, sa->port);
     }
 
   Common_Exit:
-    return APR_STATUS_IS_SUCCESS(status) ? JXTA_SUCCESS : JXTA_FAILED;
+    return APR_SUCCESS == status ? JXTA_SUCCESS : JXTA_FAILED;
 }
 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-void http_client_close(HttpClient * con)
+JXTA_DECLARE(void) http_client_close(HttpClient * con)
 {
     if (con->socket) {
         apr_socket_shutdown(con->socket, APR_SHUTDOWN_READWRITE);
@@ -247,35 +259,38 @@ void http_request_free(void *addr)
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-HttpRequest *http_client_start_request(HttpClient * con, const char *method, const char *uri, const char *body)
+JXTA_DECLARE(HttpRequest *) http_client_start_request(HttpClient * con, const char *method, const char *uri, const char *body)
 {
     Jxta_status res;
-    HttpRequest *req = (HttpRequest *) malloc(sizeof(HttpRequest));
+    HttpRequest *req = (HttpRequest *) calloc(1, sizeof(HttpRequest));
     char s[1024];               /* Should be large enough */
 
-    memset(req, 0, sizeof(HttpRequest));
+    if (NULL == req) {
+        return NULL;
+    }
 
     if (con->proxy_host)
-        sprintf(s, "%s http://%s:%d%s HTTP/1.0\r\n", method, con->host, con->port, uri);
+        apr_snprintf(s, sizeof(s), "%s http://%s:%d%s HTTP/1.0\r\n", method, con->host, con->port, uri);
     else
-        sprintf(s, "%s %s HTTP/1.0\r\n", method, uri);
+        apr_snprintf(s, sizeof(s), "%s %s HTTP/1.0\r\n", method, uri);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "request: %s\n", s);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "request: %s\n", s);
 
     req->con = con;
 
     res = http_request_write(req, s, strlen(s));
     if (res != JXTA_SUCCESS) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Connection failure need to re-open connection\n");
+        free(req);
         return NULL;
     }
 
     if (body) {
-        sprintf(s, "%lu", strlen(body));
+        apr_snprintf(s, sizeof(s), "%d", strlen(body));
         http_request_set_header(req, "Content-Length", s);
     }
 
-    sprintf(s, "%s:%d", con->host, con->port);
+    apr_snprintf(s, sizeof(s), "%s:%d", con->host, con->port);
     http_request_set_header(req, "Host", s);
     http_request_set_header(req, "Connection", "Keep-Alive");
 
@@ -290,27 +305,27 @@ HttpRequest *http_client_start_request(HttpClient * con, const char *method, con
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-Jxta_status http_request_set_header(HttpRequest * req, const char *name, const char *value)
+JXTA_DECLARE(Jxta_status) http_request_set_header(HttpRequest * req, const char *name, const char *value)
 {
-    char *s = malloc(1024);     /* Should be large enough */
+    char *s = (char *) malloc(1024);    /* Should be large enough */
     apr_status_t res;
 
-    sprintf(s, "%s: %s\r\n", name, value);
+    apr_snprintf(s, 1024, "%s: %s\r\n", name, value);
     res = http_request_write(req, s, strlen(s));
     free(s);
-    return APR_STATUS_IS_SUCCESS(res) ? JXTA_SUCCESS : JXTA_FAILED;
+    return APR_SUCCESS == res ? JXTA_SUCCESS : JXTA_FAILED;
 }
 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-Jxta_status http_request_write(HttpRequest * req, const char *buf, size_t size)
+JXTA_DECLARE(Jxta_status) http_request_write(HttpRequest * req, const char *buf, size_t size)
 {
     apr_status_t status = APR_SUCCESS;
     apr_size_t written = size;
 
     while (size > 0) {
-        status = apr_send(req->con->socket, buf, &written);
+        status = apr_socket_send(req->con->socket, buf, &written);
         if (written > 0) {
             buf += written;
             size -= written;
@@ -320,7 +335,7 @@ Jxta_status http_request_write(HttpRequest * req, const char *buf, size_t size)
         }
     }
 
-    return APR_STATUS_IS_SUCCESS(status) ? JXTA_SUCCESS : JXTA_FAILED;
+    return APR_SUCCESS == status ? JXTA_SUCCESS : JXTA_FAILED;
 }
 
 /******************************************************************************/
@@ -334,7 +349,7 @@ void http_response_parse(HttpResponse * res, char *line)
     res->protocol = apr_strtok(line, " ", &state);
 
     if (res->protocol != NULL) {
-        pt = malloc(strlen(res->protocol) + 1);
+        pt = (char *) malloc(strlen(res->protocol) + 1);
         strcpy(pt, res->protocol);
         res->protocol = pt;
         *(state - 1) = ' ';
@@ -350,7 +365,7 @@ void http_response_parse(HttpResponse * res, char *line)
 
         res->status_msg = apr_strtok(NULL, " ", &state);
         if (res->status_msg != NULL) {
-            pt = malloc(strlen(res->status_msg) + 1);
+            pt = (char *) malloc(strlen(res->status_msg) + 1);
             strcpy(pt, res->status_msg);
             res->status_msg = pt;
             *(state - 1) = ' ';
@@ -383,20 +398,19 @@ void http_response_free(void *addr)
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-HttpResponse *http_request_done(HttpRequest * req)
+JXTA_DECLARE(HttpResponse *) http_request_done(HttpRequest * req)
 {
 
     HttpResponse *res = (HttpResponse *) malloc(sizeof(HttpResponse));
     apr_ssize_t header_buf_size = 8192;
-    char *header_buf = malloc(header_buf_size * sizeof(char) + 1);
+    char *header_buf = (char *) malloc(header_buf_size * sizeof(char) + 1);
     apr_size_t read = header_buf_size;
     apr_size_t total_read = 0;
-    apr_size_t pos = 0;
+    apr_size_t i, pos = 0;
     int past_header = 0;
     int count_cr = 0;
     int count_lf = 0;
     char *pt;
-    int i;
 
     memset(res, 0, sizeof(HttpResponse));
 
@@ -410,7 +424,7 @@ HttpResponse *http_request_done(HttpRequest * req)
 
     while (!past_header) {
 
-        if (apr_recv(req->con->socket, header_buf + total_read, &read) == 0) {
+        if (apr_socket_recv(req->con->socket, header_buf + total_read, &read) == 0) {
             header_buf_size -= read;
             total_read += read;
 
@@ -459,11 +473,8 @@ HttpResponse *http_request_done(HttpRequest * req)
 
 
     if (past_header) {
-
-        res->headers = header_buf;
-        i = 0;
-        while (i++ < pos) {
-            *res->headers++ = tolower(*res->headers);
+        for (i = 0; i < pos; i++) {
+            header_buf[i] = tolower(header_buf[i]);
         }
 
         res->headers = header_buf;
@@ -504,7 +515,7 @@ HttpResponse *http_request_done(HttpRequest * req)
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-int http_get_content_length(HttpResponse * res)
+JXTA_DECLARE(int) http_get_content_length(HttpResponse * res)
 {
     return (res->content_length + res->data_buf_size);
 }
@@ -512,7 +523,7 @@ int http_get_content_length(HttpResponse * res)
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-char *http_response_get_header(HttpResponse * res, const char *name)
+JXTA_DECLARE(char *) http_response_get_header(HttpResponse * res, const char *name)
 {
     char *line = strstr(res->headers, name);
     char *c;
@@ -534,7 +545,7 @@ char *http_response_get_header(HttpResponse * res, const char *name)
                     } else {
                         /* if not */
                         apr_ssize_t value_size = c - line;
-                        char *value = malloc(value_size + 1);
+                        char *value = (char *) malloc(value_size + 1);
 
                         strncpy(value, line + strlen(name) + 2, value_size);
 
@@ -551,7 +562,7 @@ char *http_response_get_header(HttpResponse * res, const char *name)
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-int http_response_get_status(HttpResponse * res)
+JXTA_DECLARE(int) http_response_get_status(HttpResponse * res)
 {
     return res->status;
 }
@@ -559,7 +570,7 @@ int http_response_get_status(HttpResponse * res)
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-char *http_response_get_status_message(HttpResponse * res)
+JXTA_DECLARE(char *) http_response_get_status_message(HttpResponse * res)
 {
     return res->status_msg;
 }
@@ -567,7 +578,7 @@ char *http_response_get_status_message(HttpResponse * res)
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-Jxta_status http_response_read(HttpResponse * res, char *buf, size_t * size)
+JXTA_DECLARE(Jxta_status) http_response_read(HttpResponse * res, char *buf, size_t * size)
 {
     apr_status_t status = APR_SUCCESS;
 
@@ -593,10 +604,10 @@ Jxta_status http_response_read(HttpResponse * res, char *buf, size_t * size)
         /* if server didn't provide content-length, just read till close */
         if (res->content_length == -1)
             read = *size;
-        else                    /* or minimum of what was requested or content-length */
+        else    /* or minimum of what was requested or content-length */
             read = (*size > res->content_length ? res->content_length : *size);
 
-        status = apr_recv(res->con->socket, buf, &read);
+        status = apr_socket_recv(res->con->socket, buf, &read);
 
         if (read > 0) {
 
@@ -607,13 +618,13 @@ Jxta_status http_response_read(HttpResponse * res, char *buf, size_t * size)
         }
     }
 
-    return APR_STATUS_IS_SUCCESS(status) ? JXTA_SUCCESS : JXTA_FAILED;
+    return APR_SUCCESS == status ? JXTA_SUCCESS : JXTA_FAILED;
 }
 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-Jxta_status http_response_read_n(HttpResponse * res, char *buf, size_t n)
+JXTA_DECLARE(Jxta_status) http_response_read_n(HttpResponse * res, char *buf, size_t n)
 {
     apr_size_t bytesread;
     int offset;
@@ -621,8 +632,8 @@ Jxta_status http_response_read_n(HttpResponse * res, char *buf, size_t n)
 
     for (bytesread = n, offset = 0; n > 0;) {
         status = http_response_read(res, buf + offset, &bytesread);
-        if (!APR_STATUS_IS_SUCCESS(status)) {
-            return APR_STATUS_IS_SUCCESS(status) ? JXTA_SUCCESS : JXTA_FAILED;
+        if (APR_SUCCESS != status) {
+            return APR_SUCCESS == status ? JXTA_SUCCESS : JXTA_FAILED;
         }
         offset += bytesread;
         n -= bytesread;
@@ -634,7 +645,7 @@ Jxta_status http_response_read_n(HttpResponse * res, char *buf, size_t n)
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-char *http_response_read_fully(HttpResponse * res)
+JXTA_DECLARE(char *) http_response_read_fully(HttpResponse * res)
 {
     apr_size_t buf_size;
     char *buf = NULL;
@@ -656,7 +667,7 @@ char *http_response_read_fully(HttpResponse * res)
 
     remain = buf_size;
 
-    while ((remain > 0) && APR_STATUS_IS_SUCCESS(http_response_read(res, buf + read, &remain))) {
+    while ((remain > 0) && APR_SUCCESS == http_response_read(res, buf + read, &remain)) {
         read += remain;
         remain = buf_size - read;
     }
@@ -669,12 +680,12 @@ char *http_response_read_fully(HttpResponse * res)
 /******************************************************************************/
 void http_buffer_display(char *msgbuf, size_t size)
 {
-    int i;
+    unsigned int i;
 
     for (i = 0; i < size; ++i) {
         if ((msgbuf[i] < 32) && (msgbuf[i] != '\n') && (msgbuf[i] != '\r') && (msgbuf[i] != '\t')) {
             char buf[10];
-            sprintf(buf, "\\%d", msgbuf[i]);
+            apr_snprintf(buf, sizeof(buf),"\\%d", msgbuf[i]);
             fwrite(buf, strlen(buf), 1, stderr);
             fwrite(" ", 1, 1, stderr);
         } else {

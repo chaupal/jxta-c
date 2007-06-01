@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cred_priv.h,v 1.5 2005/01/12 21:46:56 bondolo Exp $
+ * $Id: jxta_cred_priv.h,v 1.6 2005/06/16 23:11:40 slowhog Exp $
  */
 
 
@@ -65,33 +65,33 @@
 extern "C" {
 #endif
 
-    struct _Jxta_cred_vtable  {
-        char const *    type;
+    struct _Jxta_cred_vtable {
+        char const *type;
 
-        Jxta_status (*cred_getpeergroup)( Jxta_credential* cred, Jxta_id** pg );
+         Jxta_status(*cred_getpeergroup) (Jxta_credential * cred, Jxta_id ** pg);
 
-        Jxta_status (*cred_getpeer)( Jxta_credential* cred, Jxta_id** peer );
+         Jxta_status(*cred_getpeer) (Jxta_credential * cred, Jxta_id ** peer);
 
-        Jxta_status (*cred_getsource)( Jxta_credential* cred, Jxta_service** service );
+         Jxta_status(*cred_getsource) (Jxta_credential * cred, Jxta_service ** service);
 
-        Jxta_status (*cred_getxml)( Jxta_credential* cred, Jxta_write_func func, void* stream );
+         Jxta_status(*cred_getxml) (Jxta_credential * cred, Jxta_write_func func, void *stream);
 
-        Jxta_status (*cred_getxml_1)( Jxta_credential* cred, Jxta_write_func func, void* stream );
+         Jxta_status(*cred_getxml_1) (Jxta_credential * cred, Jxta_write_func func, void *stream);
     };
 
     typedef struct _Jxta_cred_vtable const Jxta_cred_vtable;
 
     struct _Jxta_credential {
         JXTA_OBJECT_HANDLE;
-        Jxta_cred_vtable * credfuncs;
+        Jxta_cred_vtable *credfuncs;
 
         /*  cred implementations will add local stuff to this. */
     };
-    
+
     typedef struct _Jxta_credential Jxta_credential_mutable;
 
 
-#endif /* __Jxta_CredPriv_H__  */
+#endif                          /* __Jxta_CredPriv_H__  */
 #ifdef __cplusplus
 }
 #endif

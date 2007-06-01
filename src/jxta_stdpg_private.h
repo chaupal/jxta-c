@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_stdpg_private.h,v 1.5 2005/01/10 17:23:43 brent Exp $
+ * $Id: jxta_stdpg_private.h,v 1.8 2005/06/16 23:11:52 slowhog Exp $
  */
 
 #ifndef JXTA_STDPG_PRIVATE_H
@@ -67,49 +67,46 @@ extern "C" {
 }
 #endif
 #endif
-
 /*
  * Note: Jxta_stdpg does not normaly need to be public, unless the
  * group has some extra features available to applications. That's why
  * there is no separate incomplete type declaration in a public
  * header file. Here we only export this type to subclassers.
- */
-
-typedef struct _jxta_stdpg Jxta_stdpg;
+ */ typedef struct _jxta_stdpg Jxta_stdpg;
 struct _jxta_stdpg {
 
     Extends(Jxta_PG);
 
     /* Add data members here */
 
-    Jxta_advertisement* impl_adv;
-    Jxta_PG* home_group;
-    Jxta_PA* config_adv;
-    Jxta_PA* peer_adv;
-    Jxta_PGA* group_adv;
-    JString* name;
-    JString* desc;
+    Jxta_advertisement *impl_adv;
+    Jxta_PG *home_group;
+    Jxta_PA *config_adv;
+    Jxta_PA *peer_adv;
+    Jxta_PGA *group_adv;
+    JString *name;
+    JString *desc;
 
-    Jxta_vector* resource_groups;
+    Jxta_vector *resource_groups;
 
     /*
      * Shortcuts to well known services.
      */
-    Jxta_endpoint_service*   endpoint;
-    Jxta_resolver_service*   resolver;
-    Jxta_discovery_service*  discovery;
-    Jxta_pipe_service*       pipe;
-    Jxta_membership_service* membership;
-    Jxta_rdv_service*        rendezvous;
-    Jxta_peerinfo_service*   peerinfo;
+    Jxta_endpoint_service *endpoint;
+    Jxta_resolver_service *resolver;
+    Jxta_discovery_service *discovery;
+    Jxta_pipe_service *pipe;
+    Jxta_membership_service *membership;
+    Jxta_rdv_service *rendezvous;
+    Jxta_peerinfo_service *peerinfo;
+    Jxta_srdi_service *srdi;
 
     /*
      * The table of all services (not in use yet).
      */
-    Jxta_hashtable*          services;
+    Jxta_hashtable *services;
 
 };
-
 
 /*
  * We do not need to subtype the base methods table, we're not adding to it.
@@ -124,7 +121,7 @@ typedef Jxta_PG_methods Jxta_stdpg_methods;
  * export our methods table to subclassers so that they can copy it
  * at run-time if usefull.
  */
-extern Jxta_stdpg_methods jxta_stdpg_methods;
+extern const Jxta_stdpg_methods jxta_stdpg_methods;
 
 /*
  * export some "protected" methods to subclassers...
@@ -133,13 +130,12 @@ extern Jxta_stdpg_methods jxta_stdpg_methods;
 /*
  * the constructor
  */
-extern void jxta_stdpg_construct(Jxta_stdpg* self,
-				 Jxta_stdpg_methods* methods);
+extern void jxta_stdpg_construct(Jxta_stdpg * self, Jxta_stdpg_methods const *methods);
 
 /*
  * the destructor
  */
-extern void jxta_stdpg_destruct(Jxta_stdpg* self);
+extern void jxta_stdpg_destruct(Jxta_stdpg * self);
 
 /*
  * This routine inits the group but not its modules.
@@ -147,9 +143,7 @@ extern void jxta_stdpg_destruct(Jxta_stdpg* self);
  * need a finer grain control on the init sequence: specifically, they may
  * need to init additional services before the lot of them are started.
  */
-void jxta_stdpg_init_group(Jxta_module* self, Jxta_PG* group,
-			   Jxta_id* assigned_id,
-			   Jxta_advertisement* impl_adv);
+void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv);
 
 /*
  * This routine just init the modules.
@@ -159,7 +153,7 @@ void jxta_stdpg_init_group(Jxta_module* self, Jxta_PG* group,
  *
  * Exception-throwing variant.
  */
-void jxta_stdpg_init_modules_e(Jxta_module* self, Throws);
+void jxta_stdpg_init_modules_e(Jxta_module * self, Throws);
 
 /*
  * This routine just init the modules.
@@ -169,7 +163,7 @@ void jxta_stdpg_init_modules_e(Jxta_module* self, Throws);
  *
  * Error-returning variant.
  */
-Jxta_status jxta_stdpg_init_modules(Jxta_module* self);
+Jxta_status jxta_stdpg_init_modules(Jxta_module * self);
 
 /*
  * start the modules. This is not part of the public API, this is
@@ -177,11 +171,16 @@ Jxta_status jxta_stdpg_init_modules(Jxta_module* self);
  * specifically, the opportunity to init additional services before starting
  * ours, and then, their own.
  */
-void jxta_stdpg_start_modules(Jxta_module* self);
+void jxta_stdpg_start_modules(Jxta_module * self);
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTA_STDPG_PRIVATE_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

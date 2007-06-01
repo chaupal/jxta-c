@@ -15,6 +15,7 @@
  */
 
 #include <apr.h>
+#include <apr_strings.h>
 
 #if APR_HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -33,6 +34,8 @@
 #include <errno.h>
 #endif
 #include <stdio.h>
+
+#include "jpr_apr_wrapper.h"
 
 #ifndef IN6ADDRSZ
 #define IN6ADDRSZ   16
@@ -68,15 +71,15 @@ static const char *inet_ntop6 __P((const unsigned char *src, char *dst, apr_size
  * author:
  *	Paul Vixie, 1996.
  */
-const char *
+JPR_DECLARE(const char *)
 jpr_inet_ntop(int af, const void *src, char *dst, apr_size_t size)
 {
 	switch (af) {
 	case AF_INET:
-		return (inet_ntop4(src, dst, size));
+		return (inet_ntop4((const unsigned char *)src, dst, size));
 #if APR_HAVE_IPV6
 	case AF_INET6:
-		return (inet_ntop6(src, dst, size));
+		return (inet_ntop6((const unsigned char *)src, dst, size));
 #endif
 	default:
 		errno = EAFNOSUPPORT;
@@ -97,7 +100,7 @@ jpr_inet_ntop(int af, const void *src, char *dst, apr_size_t size)
  *	Paul Vixie, 1996.
  */
 static const char *
-inet_ntop4(const unsigned char *src, char *dst, apr_size_t size)
+__P(inet_ntop4(const unsigned char *src, char *dst, apr_size_t size))
 {
 	const apr_size_t MIN_SIZE = 16; /* space for 255.255.255.255\0 */
 	int n = 0;
@@ -135,7 +138,7 @@ inet_ntop4(const unsigned char *src, char *dst, apr_size_t size)
  *	Paul Vixie, 1996.
  */
 static const char *
-inet_ntop6(const unsigned char *src, char *dst, apr_size_t size)
+__P(inet_ntop6(const unsigned char *src, char *dst, apr_size_t size))
 {
     /*
      * Note that int32_t and int16_t need only be "at least" large enough
@@ -240,4 +243,5 @@ inet_ntop6(const unsigned char *src, char *dst, apr_size_t size)
     strcpy(dst, tmp);
     return (dst);
 }
+
 #endif

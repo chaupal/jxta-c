@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_relaya.h,v 1.4 2005/02/02 02:58:31 exocetrick Exp $
+ * $Id: jxta_relaya.h,v 1.7 2005/08/03 05:51:18 slowhog Exp $
  */
 
-   
+
 #ifndef JXTA_RELAYADVERTISEMENT_H__
 #define JXTA_RELAYADVERTISEMENT_H__
 
@@ -65,37 +65,41 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _jxta_RelayAdvertisement Jxta_RelayAdvertisement;
 
-Jxta_RelayAdvertisement * jxta_RelayAdvertisement_new(void);
-void jxta_RelayAdvertisement_set_handlers(Jxta_RelayAdvertisement *, XML_Parser, void *);
-Jxta_status jxta_RelayAdvertisement_get_xml(Jxta_RelayAdvertisement *,
-					       JString **);
-void jxta_RelayAdvertisement_parse_charbuffer(Jxta_RelayAdvertisement *, const char *, int len); 
-void jxta_RelayAdvertisement_parse_file(Jxta_RelayAdvertisement *, FILE * stream);
- 
-char * jxta_RelayAdvertisement_get_Jxta_RelayAdvertisement(Jxta_RelayAdvertisement *);
-void jxta_RelayAdvertisement_set_Jxta_RelayAdvertisement(Jxta_RelayAdvertisement *, char *);
- 
-JString * jxta_RelayAdvertisement_get_IsClient(Jxta_RelayAdvertisement *);
-void jxta_RelayAdvertisement_set_IsClient(Jxta_RelayAdvertisement *, JString *);
+JXTA_DECLARE(Jxta_RelayAdvertisement *) jxta_RelayAdvertisement_new(void);
+JXTA_DECLARE(void) jxta_RelayAdvertisement_set_handlers(Jxta_RelayAdvertisement *, XML_Parser, void *);
+JXTA_DECLARE(Jxta_status) jxta_RelayAdvertisement_get_xml(Jxta_RelayAdvertisement *, JString **);
+JXTA_DECLARE(void) jxta_RelayAdvertisement_parse_charbuffer(Jxta_RelayAdvertisement *, const char *, int len);
+JXTA_DECLARE(void) jxta_RelayAdvertisement_parse_file(Jxta_RelayAdvertisement *, FILE * stream);
 
-JString * jxta_RelayAdvertisement_get_IsServer(Jxta_RelayAdvertisement *);
-void jxta_RelayAdvertisement_set_IsServer(Jxta_RelayAdvertisement *, JString *);
- 
-Jxta_vector * jxta_RelayAdvertisement_get_HttpRelay(Jxta_RelayAdvertisement *);
-void jxta_RelayAdvertisement_set_HttpRelay(Jxta_RelayAdvertisement *, Jxta_vector *);
+JXTA_DECLARE(char *) jxta_RelayAdvertisement_get_Jxta_RelayAdvertisement(Jxta_RelayAdvertisement *);
+JXTA_DECLARE(void) jxta_RelayAdvertisement_set_Jxta_RelayAdvertisement(Jxta_RelayAdvertisement *, char *);
 
-Jxta_vector * jxta_RelayAdvertisement_get_TcpRelay(Jxta_RelayAdvertisement *);
-void jxta_RelayAdvertisement_set_TcpRelay(Jxta_RelayAdvertisement *, Jxta_vector *);
+JXTA_DECLARE(JString *) jxta_RelayAdvertisement_get_IsClient(Jxta_RelayAdvertisement *);
+JXTA_DECLARE(void) jxta_RelayAdvertisement_set_IsClient(Jxta_RelayAdvertisement *, JString *);
 
-void httpRelay_printer(Jxta_RelayAdvertisement *,  JString *);
-void tcpRelay_printer(Jxta_RelayAdvertisement *,  JString *);
+JXTA_DECLARE(JString *) jxta_RelayAdvertisement_get_IsServer(Jxta_RelayAdvertisement *);
+JXTA_DECLARE(void) jxta_RelayAdvertisement_set_IsServer(Jxta_RelayAdvertisement *, JString *);
 
-Jxta_vector * jxta_RelayAdvertisement_get_indexes(void); 
+JXTA_DECLARE(Jxta_vector *) jxta_RelayAdvertisement_get_HttpRelay(Jxta_RelayAdvertisement *);
+JXTA_DECLARE(void) jxta_RelayAdvertisement_set_HttpRelay(Jxta_RelayAdvertisement *, Jxta_vector *);
+
+JXTA_DECLARE(Jxta_vector *) jxta_RelayAdvertisement_get_TcpRelay(Jxta_RelayAdvertisement *);
+JXTA_DECLARE(void) jxta_RelayAdvertisement_set_TcpRelay(Jxta_RelayAdvertisement *, Jxta_vector *);
+
+JXTA_DECLARE(void) httpRelay_printer(Jxta_RelayAdvertisement *, JString *);
+JXTA_DECLARE(void) tcpRelay_printer(Jxta_RelayAdvertisement *, JString *);
+
+JXTA_DECLARE(Jxta_vector *) jxta_RelayAdvertisement_get_indexes(Jxta_advertisement *);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
 #endif /* JXTA_RELAYADVERTISEMENT_H__  */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

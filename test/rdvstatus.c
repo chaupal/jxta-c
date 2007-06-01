@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rdvstatus.c,v 1.26 2005/04/07 22:58:55 slowhog Exp $
+ * $Id: rdvstatus.c,v 1.27 2005/04/14 21:10:51 bondolo Exp $
  */
 
 
@@ -69,7 +69,6 @@
 #include <apr_general.h>
 #include <apr_thread_proc.h>
 
-#include "jpr/jpr_thread.h"
 #include "jxta_peergroup.h"
 
 
@@ -196,7 +195,7 @@ rdvstatus_run (int argc, char** argv) {
 
   for (;;) {
     /* Wait a bit */
-    jpr_thread_delay ((Jpr_interval_time) WAIT_TIME);
+    apr_sleep ((Jpr_interval_time) WAIT_TIME);
     if (!display_peers (rdv)) {
       return FALSE;
     }

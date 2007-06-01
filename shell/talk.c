@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: talk.c,v 1.12 2005/03/28 19:30:12 bondolo Exp $
+ * $Id: talk.c,v 1.17 2005/08/30 17:27:20 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -60,15 +60,12 @@
 #include <apr_general.h>
 #include "apr_time.h"
 
-#include "jpr/jpr_thread.h"
-
 #include "jxta.h"
 #include "jxta_shell_application.h"
 #include "jxta_peergroup.h"
 
 #include "jxta_shell_getopt.h"
 
-#include "jxta_debug.h"
 #include "jxta_listener.h"
 #include "jxta_endpoint_service.h"
 #include "jxta_vector.h"
@@ -90,7 +87,6 @@ static const char *MYGROUPNAME = "NetPeerGroup";
 #define TALK_ADVERTISEMENT_LIFETIME (Jxta_expiration_time) (24L* 60L * 60L * 1000L)
 static Jxta_PG *group;
 static JxtaShellEnvironment *environment;
-static JString *env_type = NULL;
 static Jxta_discovery_service *discovery = NULL;
 static Jxta_pipe_service *pipe_service = NULL;
 static JString *peerName = NULL;
@@ -127,7 +123,6 @@ JxtaShellApplication *talk_new(Jxta_PG * pg,
     listeners = jxta_hashtable_new(0);
 
     environment = env;
-    env_type = jstring_new_2("PeerAdvertisement");
     return app;
 }
 
@@ -187,6 +182,11 @@ void talk_start(Jxta_object * appl, int argv, const char **arg)
 
     JxtaShellGetopt_delete(opt);
     JxtaShellApplication_terminate(appl);
+
+    JXTA_OBJECT_RELEASE(discovery);
+    JXTA_OBJECT_RELEASE(pipe_service);
+    JXTA_OBJECT_RELEASE(peerName);
+    JXTA_OBJECT_RELEASE(listeners);
 }
 
 void talk_print_help(Jxta_object * appl)
@@ -198,7 +198,6 @@ void talk_print_help(Jxta_object * appl)
     jstring_append_2(inputLine, "           [-l local user] login for the local user\n");
     jstring_append_2(inputLine, "           [-r user name] register a new user\n");
     if (app != 0) {
-        JXTA_OBJECT_SHARE(inputLine);
         JxtaShellApplication_print(app, inputLine);
     }
     JXTA_OBJECT_RELEASE(inputLine);
@@ -207,12 +206,12 @@ void talk_print_help(Jxta_object * appl)
 static Jxta_pipe_adv *get_user_adv(char *userName, Jxta_time timeout)
 {
     char *talkUserName = malloc(50 + strlen(userName));
-    Jxta_listener *listener = jxta_listener_new(NULL, NULL, 1, 1);
     Jxta_status res;
     Jxta_DiscoveryResponseElement *element = NULL;
     Jxta_DiscoveryResponse *dr = NULL;
-    Jxta_pipe_adv *adv = jxta_pipe_adv_new();
+    Jxta_pipe_adv *adv = NULL;
     Jxta_vector *responses = NULL;
+    long query_id;
 
     sprintf(talkUserName, "JxtaTalkUserName.%s", userName);
 
@@ -222,20 +221,24 @@ static Jxta_pipe_adv *get_user_adv(char *userName, Jxta_time timeout)
     discovery_service_get_local_advertisements(discovery, DISC_ADV, "Name", talkUserName, &responses);
 
     if (responses == NULL) {
+        Jxta_listener *listener = jxta_listener_new(NULL, NULL, 1, 1);
 
         jxta_listener_start(listener);
-
-        discovery_service_get_remote_advertisements(discovery,
-                                                    NULL,
-                                                    DISC_ADV, "Name", talkUserName, 1, (Jxta_discovery_listener *) listener);
+        query_id = discovery_service_get_remote_advertisements(discovery,
+                                                               NULL,
+                                                               DISC_ADV, "Name", talkUserName, 1,
+                                                               (Jxta_discovery_listener *) listener);
 
         res = jxta_listener_wait_for_event(listener, timeout, (Jxta_object **) & dr);
-
         if (res != JXTA_SUCCESS) {
             printf("wait on listener failed\n");
             JXTA_OBJECT_RELEASE(listener);
             free(talkUserName);
             return NULL;
+        } else {
+            discovery_service_cancel_remote_query(discovery, query_id, NULL);
+            jxta_listener_stop(listener);
+            JXTA_OBJECT_RELEASE(listener);
         }
 
         jxta_discovery_response_get_responses(dr, &responses);
@@ -243,7 +246,6 @@ static Jxta_pipe_adv *get_user_adv(char *userName, Jxta_time timeout)
 
         if (responses == NULL) {
             printf("No responses\n");
-            JXTA_OBJECT_RELEASE(listener);
             free(talkUserName);
             return NULL;
         }
@@ -252,7 +254,6 @@ static Jxta_pipe_adv *get_user_adv(char *userName, Jxta_time timeout)
         if (res != JXTA_SUCCESS) {
             printf("get response failed\n");
             JXTA_OBJECT_RELEASE(responses);
-            JXTA_OBJECT_RELEASE(listener);
             free(talkUserName);
             return NULL;
         }
@@ -260,6 +261,7 @@ static Jxta_pipe_adv *get_user_adv(char *userName, Jxta_time timeout)
   /**
    ** Builds the advertisement.
    **/
+        adv = jxta_pipe_adv_new();
         jxta_pipe_adv_parse_charbuffer(adv, jstring_get_string(element->response), strlen(jstring_get_string(element->response)));
 
         JXTA_OBJECT_RELEASE(element);
@@ -362,6 +364,7 @@ static void create_user(const char *userName)
     JXTA_OBJECT_RELEASE(tmpString);
 
     res = discovery_service_publish(discovery, adv, DISC_ADV, TALK_ADVERTISEMENT_LIFETIME, TALK_ADVERTISEMENT_LIFETIME);
+    JXTA_OBJECT_RELEASE(adv);
 
     if (res != JXTA_SUCCESS) {
         printf("publish failed\n");
@@ -371,19 +374,17 @@ static void create_user(const char *userName)
      * wait for the SRDI index to be published
      */
     printf("(wait 20 sec for RDV SRDI indexing).\n");
-    jpr_thread_delay(20 * 1000 * 1000);
+    apr_sleep(20 * 1000 * 1000);
     printf("done.\n");
 }
 
 static void connect_to_user(const char *userName)
 {
     Jxta_pipe_adv *adv = NULL;
-    char *talkUserName = malloc(50 + strlen(userName));
     Jxta_status res;
     Jxta_pipe *pipe = NULL;
     Jxta_outputpipe *op = NULL;
 
-    sprintf(talkUserName, "JxtaTalkUserName.%s", userName);
     adv = get_user_adv(userName, DEFAULT_TIMEOUT);
 
     if (adv != NULL) {
@@ -403,6 +404,7 @@ static void connect_to_user(const char *userName)
         }
 
         process_user_input(op, userName);
+        JXTA_OBJECT_RELEASE(op);
         JXTA_OBJECT_RELEASE(adv);
     } else {
         printf("Cannot retrieve advertisement for %s\n", userName);
@@ -416,10 +418,6 @@ static void send_message(Jxta_outputpipe * op, const char *userName, const char 
     Jxta_message_element *el = NULL;
     char *pt = NULL;
     Jxta_status res;
-
-    /*
-       JXTA_LOG ("Send message to [%s] msg=[%s]\n", userName, userMessage);
-     */
 
     JXTA_OBJECT_CHECK_VALID(op);
 
@@ -506,10 +504,17 @@ static void processIncomingMessage(Jxta_message * msg)
         printf("CHAT MESSAGE from %s :\n", senderName == NULL ? "Unknown" : jstring_get_string(senderName));
         printf("%s\n", jstring_get_string(message));
         printf("##############################################################\n\n");
-        fflush(stdout);
         JXTA_OBJECT_RELEASE(message);
     } else {
         printf("Received empty message\n");
+    }
+
+    fflush(stdout);
+    if (!groupname) {
+        JXTA_OBJECT_RELEASE(groupname);
+    }
+    if (!senderName) {
+        JXTA_OBJECT_RELEASE(senderName);
     }
 }
 
@@ -519,8 +524,6 @@ static void message_listener(Jxta_object * obj, void *arg)
 
     JXTA_OBJECT_CHECK_VALID(msg);
     processIncomingMessage(msg);
-
-    JXTA_OBJECT_RELEASE(msg);
 }
 
 
@@ -533,7 +536,7 @@ static char *get_user_string(void)
 
     if (fgets(pt, 8192, stdin) != NULL) {
         if (strlen(pt) > 1) {
-            pt[strlen(pt) - 1] = 0;     /* Strip off last /n */
+            pt[strlen(pt) - 1] = 0; /* Strip off last /n */
             return pt;
         }
     }
@@ -551,15 +554,16 @@ static void process_user_input(Jxta_outputpipe * pipe, const char *userName)
     printf("Welcome to JXTA-C Chat, %s\n", userName);
     printf("Type a '.' at begining of line to quit.\n");
     for (;;) {
-
         userMessage = get_user_string();
-        if (userMessage != NULL)
+        if (userMessage != NULL) {
             if (userMessage[0] == '.') {
                 free(userMessage);
                 break;
             }
-        if (userMessage != NULL) {
             send_message(pipe, userName, userMessage);
+            free(userMessage);
         }
     }
 }
+
+/* vim: set ts=4 sw=4 et tw=130: */

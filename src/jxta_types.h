@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_types.h,v 1.4 2005/03/23 19:31:38 bondolo Exp $
+ * $Id: jxta_types.h,v 1.7 2005/06/16 23:11:54 slowhog Exp $
  */
 
 #ifndef JXTA_TYPES_H
@@ -59,22 +59,49 @@
 #include <stddef.h>
 #include "jpr/jpr_types.h"
 
+#ifdef WIN32
+#define JXTA_STDCALL __stdcall
+#else
+#define JXTA_STDCALL
+#endif
+
+#ifndef JXTA_DECLARE
+#ifdef WIN32
+#ifdef JXTA_STATIC
+#define JXTA_DECLARE(type) extern type __stdcall
+#define JXTA_DECLARE_DATA  extern
+#else /* JXTA_STATIC */
+
+#ifdef JXTA_EXPORTS
+#define JXTA_DECLARE(type) __declspec(dllexport) type __stdcall
+#define JXTA_DECLARE_DATA  extern __declspec(dllexport)
+#else
+#define JXTA_DECLARE(type) __declspec(dllimport) type __stdcall
+#define JXTA_DECLARE_DATA  extern __declspec(dllimport)
+#endif
+
+#endif /* JXTA_STATIC */
+
+#else /* WIN32 */
+#define JXTA_DECLARE(type) extern type
+#define JXTA_DECLARE_DATA  extern
+#endif /* WIN32 */
+
+#endif /* JXTA_DECLARE */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 #if 0
 }
 #endif
-
 /**
  * JXTA public types from the Portable Runtime (JPR)
  *
  * They are renamed here do reflect that they are part of the JXTA API, 
  * although their true definition belongs in the jpr layer. Maybe we'll
  * eventually get rid of one or the other of the names.
- **/
- 
-typedef Jpr_boolean Jxta_boolean;
+ **/ typedef Jpr_boolean Jxta_boolean;
 typedef Jpr_status Jxta_status;
 
 /**
@@ -101,43 +128,31 @@ typedef Jpr_expiration_time Jxta_expiration_time;
 typedef Jpr_port Jxta_port;
 typedef Jpr_in_addr Jxta_in_addr;
 
- /**
- * A definition of boolean that looks like a fundamental type.
- * Hopefully all boolean definitions are the same.
- *
- * XXX bondolo Defining "boolean" this way is an incredibly bad idea.
- * not only will it cause any OS typedef of boolean to be replaced by
- * Jxta_boolean. There's of course no garauntee that they are AT ALL
- * compatible. I'm only guessing, but I assume it's a #define because 
- * if boolean is typedefed then typedef boolean Jxta_boolean would produce
- * an error. This should have been a clue....
- *
- * @deprecated Will be removed. Soon. DO NOT USE!
- */
-#ifndef boolean
-#define boolean Jxta_boolean
-#endif
-
 /**
   JXTA Standard callbacks
  **/
 
-typedef Jxta_status(*ReadFunc) (void *stream, char *buf, size_t len);
+typedef Jxta_status(JXTA_STDCALL * ReadFunc) (void *stream, char *buf, size_t len);
 
-typedef int (*Jxta_read_func) (void *stream, const char *buf, size_t len, Jxta_status * res);
+typedef int (JXTA_STDCALL * Jxta_read_func) (void *stream, const char *buf, size_t len, Jxta_status * res);
 
-typedef Jxta_status(*PrintFunc) (void *stream, const char *format, ...);
+typedef Jxta_status(JXTA_STDCALL * PrintFunc) (void *stream, const char *format, ...);
 
-typedef Jxta_status(*WriteFunc) (void *stream, const char *buf, size_t len);
+typedef Jxta_status(JXTA_STDCALL * WriteFunc) (void *stream, const char *buf, size_t len);
 
-typedef int (*Jxta_write_func) (void *stream, const char *buf, size_t len, Jxta_status * res);
+typedef int (JXTA_STDCALL * Jxta_write_func) (void *stream, const char *buf, size_t len, Jxta_status * res);
 
 /* Can't "write" to a SOCKET in Win32. */
-typedef Jxta_status(*SendFunc) (void *stream, const char *buf, size_t len, unsigned int flag);
+typedef Jxta_status(JXTA_STDCALL * SendFunc) (void *stream, const char *buf, size_t len, unsigned int flag);
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTATYPES_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

@@ -50,11 +50,11 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: tta_adv_test.c,v 1.11 2005/04/07 22:58:56 slowhog Exp $
+ * $Id: tta_adv_test.c,v 1.12 2005/04/17 14:22:20 lankes Exp $
  */
 
 #include <stdio.h>
-
+#include "jxta.h"
 #include "jxta_tta.h"
 
 Jxta_boolean

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: kdb.c,v 1.2 2004/12/05 02:16:42 slowhog Exp $
+ * $Id: kdb.c,v 1.4 2005/08/24 01:21:21 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -65,67 +65,62 @@
 
 #include "jxta_shell_getopt.h"
 
-static Jxta_PG * group;
-static JxtaShellEnvironment * environment;
+static Jxta_PG *group;
+static JxtaShellEnvironment *environment;
 
-JxtaShellApplication * jxta_kdb_new(Jxta_PG * pg,
-				    Jxta_listener* standout,
-				    JxtaShellEnvironment *env,
-				    Jxta_object * parent,
-				    shell_application_terminate terminate) {
-    JxtaShellApplication *app  =
-        JxtaShellApplication_new(pg,standout,env,parent,terminate);
-    if( app == 0)
+JxtaShellApplication *jxta_kdb_new(Jxta_PG * pg,
+                                   Jxta_listener * standout,
+                                   JxtaShellEnvironment * env, Jxta_object * parent, shell_application_terminate terminate)
+{
+    JxtaShellApplication *app = JxtaShellApplication_new(pg, standout, env, parent, terminate);
+    if (app == 0)
         return 0;
     JxtaShellApplication_setFunctions(app,
-                                      (Jxta_object*)app,
-                                      jxta_kdb_print_help,
-                                      jxta_kdb_start,
-                                      (shell_application_stdin)jxta_kdb_process_input);
+                                      (Jxta_object *) app,
+                                      jxta_kdb_print_help, jxta_kdb_start, (shell_application_stdin) jxta_kdb_process_input);
     group = pg;
     environment = env;
     return app;
 }
 
 
-void  jxta_kdb_process_input(Jxta_object * appl,
-			     JString * inputLine) {
+void jxta_kdb_process_input(Jxta_object * appl, JString * inputLine)
+{
 
-    JxtaShellApplication * app = (JxtaShellApplication*)appl;
+    JxtaShellApplication *app = (JxtaShellApplication *) appl;
     JxtaShellApplication_terminate(app);
 }
 
-#ifdef JXTA_OBJECT_TRACKER 
-extern void _print_object_table (void);
+#ifdef JXTA_OBJECT_TRACKER
+extern void _print_object_table(void);
 #endif
 
-void jxta_kdb_start(Jxta_object * appl,
-		    int argv,
-		    char **arg) {
+void jxta_kdb_start(Jxta_object * appl, int argv, char **arg)
+{
 
-  JxtaShellApplication * app = (JxtaShellApplication*)appl;
+    JxtaShellApplication *app = (JxtaShellApplication *) appl;
 
 #ifdef JXTA_OBJECT_TRACKER
     _print_object_table();
 #else
-    printf ("JXTA-C has not been compiled with JXTA_OBJECT_TRACKER defined\n");
+    printf("JXTA-C has not been compiled with JXTA_OBJECT_TRACKER defined\n");
 #endif
     JxtaShellApplication_terminate(app);
 }
 
-void jxta_kdb_print_help(Jxta_object *appl) {
+void jxta_kdb_print_help(Jxta_object * appl)
+{
 
-    JxtaShellApplication * app = (JxtaShellApplication*)appl;
-    JString * inputLine = jstring_new_2("kdb  - Runs the internal debugger.\n");
-    jstring_append_2(inputLine,"SYNOPSIS\n");
-    jstring_append_2(inputLine,"\tkdb\n\n");
-    jstring_append_2(inputLine,"DESCRIPTION\n");
-    jstring_append_2(inputLine,"'kdb' runs the JXTA-C internal debugger " );
-    jstring_append_2(inputLine,"OPTIONS\n");
+    JxtaShellApplication *app = (JxtaShellApplication *) appl;
+    JString *inputLine = jstring_new_2("kdb  - Runs the internal debugger.\n");
+    jstring_append_2(inputLine, "SYNOPSIS\n");
+    jstring_append_2(inputLine, "\tkdb\n\n");
+    jstring_append_2(inputLine, "DESCRIPTION\n");
+    jstring_append_2(inputLine, "'kdb' runs the JXTA-C internal debugger ");
+    jstring_append_2(inputLine, "OPTIONS\n");
 
-    if( app != NULL ) {
-        JXTA_OBJECT_SHARE(inputLine);
-        JxtaShellApplication_print(app,inputLine);
+    if (app != NULL) {
+        JxtaShellApplication_print(app, inputLine);
     }
     JXTA_OBJECT_RELEASE(inputLine);
 }

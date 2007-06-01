@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
+ * $Id: jxta_log.c,v 1.18 2005/08/03 05:51:16 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -41,7 +42,7 @@ static void *_jxta_log_user_data = NULL;
 static unsigned int _jxta_log_initialized = 0;
 static Jxta_log_selector *_jxta_log_default_selector;
 
-static char const * const _jxta_log_level_labels[JXTA_LOG_LEVEL_MAX] = {
+static char const *const _jxta_log_level_labels[JXTA_LOG_LEVEL_MAX] = {
     "fatal",
     "error",
     "warning",
@@ -51,13 +52,12 @@ static char const * const _jxta_log_level_labels[JXTA_LOG_LEVEL_MAX] = {
     "paranoid"
 };
 
-Jxta_status
-jxta_log_initialize()
+JXTA_DECLARE(Jxta_status)
+    jxta_log_initialize()
 {
     Jxta_status rv;
 
-    if (_jxta_log_initialized) {
-        _jxta_log_initialized++;
+    if (_jxta_log_initialized++) {
         return JXTA_SUCCESS;
     }
 
@@ -71,10 +71,10 @@ jxta_log_initialize()
         return rv;
     }
 
-    _jxta_log_default_selector = 
-        jxta_log_selector_new_and_set("*.warning-fatal", &rv);
+    _jxta_log_default_selector = jxta_log_selector_new_and_set("*.warning-fatal", &rv);
 
     if (NULL == _jxta_log_default_selector) {
+        apr_pool_destroy(_jxta_log_pool);
         _jxta_log_initialized = 0;
         return rv;
     }
@@ -82,8 +82,8 @@ jxta_log_initialize()
     return JXTA_SUCCESS;
 }
 
-void
-jxta_log_terminate()
+JXTA_DECLARE(void)
+    jxta_log_terminate()
 {
     if (!_jxta_log_initialized) {
         return;
@@ -94,22 +94,21 @@ jxta_log_terminate()
         return;
     }
 
+    jxta_log_using(NULL, NULL);
+    jxta_log_selector_delete(_jxta_log_default_selector);
     apr_pool_destroy(_jxta_log_pool);
     apr_pool_terminate();
     _jxta_log_pool = NULL;
-
-    jxta_log_selector_delete(_jxta_log_default_selector);
 }
 
-void
-jxta_log_using(Jxta_log_callback log_cb, void *user_data)
+JXTA_DECLARE(void)
+    jxta_log_using(Jxta_log_callback log_cb, void *user_data)
 {
     _jxta_log_func = log_cb;
     _jxta_log_user_data = user_data;
 }
 
-Jxta_status
-jxta_log_append(const char *cat, int level, const char *fmt, ...)
+Jxta_status jxta_log_append(const char *cat, int level, const char *fmt, ...)
 {
     Jxta_status rv;
     va_list ap;
@@ -118,22 +117,22 @@ jxta_log_append(const char *cat, int level, const char *fmt, ...)
 
     if (NULL != _jxta_log_func) {
         va_start(ap, fmt);
-        rv = (*_jxta_log_func)(_jxta_log_user_data, cat, level, fmt, ap);
+        rv = (*_jxta_log_func) (_jxta_log_user_data, cat, level, fmt, ap);
         va_end(ap);
     }
 
     return rv;
 }
 
-Jxta_status
-jxta_log_appendv(const char *cat, int level, const char *fmt, va_list ap )
+JXTA_DECLARE(Jxta_status)
+    jxta_log_appendv(const char *cat, int level, const char *fmt, va_list ap)
 {
     Jxta_status rv;
 
     rv = JXTA_SUCCESS;
 
     if (NULL != _jxta_log_func) {
-        rv = (*_jxta_log_func)(_jxta_log_user_data, cat, level, fmt, ap);
+        rv = (*_jxta_log_func) (_jxta_log_user_data, cat, level, fmt, ap);
     }
 
     return rv;
@@ -144,14 +143,14 @@ jxta_log_appendv(const char *cat, int level, const char *fmt, va_list ap )
  * Jxta_log_selector implementation
  **********************************************************************/
 
-static Jxta_status
-decode_level(const char* level, size_t size, Jxta_log_level* rv)
+static Jxta_status decode_level(const char *level, size_t size, Jxta_log_level * rv)
 {
     int i;
 
     for (i = JXTA_LOG_LEVEL_MIN; i < JXTA_LOG_LEVEL_MAX; i++) {
-        if ('\0' != _jxta_log_level_labels[i][size]) continue;
-        if (! strncasecmp(_jxta_log_level_labels[i], level, size)) {
+        if ('\0' != _jxta_log_level_labels[i][size])
+            continue;
+        if (!strncasecmp(_jxta_log_level_labels[i], level, size)) {
             break;
         }
     }
@@ -160,44 +159,44 @@ decode_level(const char* level, size_t size, Jxta_log_level* rv)
     return (JXTA_LOG_LEVEL_MAX == i) ? JXTA_INVALID_ARGUMENT : JXTA_SUCCESS;
 }
 
-static void
-free_categories(Jxta_log_selector *self)
+static void free_categories(Jxta_log_selector * self)
 {
     size_t i;
 
-    if (NULL == self->categories) return;
+    if (NULL == self->categories)
+        return;
 
     for (i = 0; i < self->category_count; i++) {
-        free((void*)self->categories[i]);
+        free((void *) self->categories[i]);
     }
-    free(self->categories);
+    free((void*) self->categories);
 
     self->categories = NULL;
     self->category_size = 0;
     self->category_count = 0;
 }
 
-static int
-locate_category(Jxta_log_selector *self, const char *cat, size_t size)
+static int locate_category(Jxta_log_selector * self, const char *cat, size_t size)
 {
     size_t i;
 
     if (0 == size) {
         for (i = 0; i < self->category_count; i++) {
-            if (! strcmp(cat, self->categories[i])) break;
+            if (!strcmp(cat, self->categories[i]))
+                break;
         }
     } else {
         for (i = 0; i < self->category_count; i++) {
-            if (! strncmp(cat, self->categories[i], size)) {
-                if ('\0' == self->categories[i][size]) break;
+            if (!strncmp(cat, self->categories[i], size)) {
+                if ('\0' == self->categories[i][size])
+                    break;
             }
         }
     }
     return i;
 }
 
-static Jxta_status 
-parse_level(Jxta_log_selector *self, const char* level, size_t size)
+static Jxta_status parse_level(Jxta_log_selector * self, const char *level, size_t size)
 {
     unsigned int revert_flag = 0;
     const char *p = NULL;
@@ -226,28 +225,31 @@ parse_level(Jxta_log_selector *self, const char* level, size_t size)
         return JXTA_SUCCESS;
     }
 
-	if ('!' == *p)
-	{
+    if ('!' == *p) {
         revert_flag = 1;
         for (++p; p < e && isspace(*p); ++p);
-	}
+    }
 
     in_range = 0;
     lb = ub = JXTA_LOG_LEVEL_INVALID;
 
     for (level = p; p < e; level = p) {
-        while (p < e && ',' != *p && '-' != *p && !isspace(*p)) ++p;
+        while (p < e && ',' != *p && '-' != *p && !isspace(*p))
+            ++p;
 
         s = p - level;
-        while (p < e && isspace(*p)) ++p;
+        while (p < e && isspace(*p))
+            ++p;
 
         rv = decode_level(level, s, &ub);
-        if (JXTA_SUCCESS != rv) return rv;
+        if (JXTA_SUCCESS != rv)
+            return rv;
 
         if (p >= e || ',' == *p) {
             for (++p; p < e && isspace(*p); ++p);
         } else if ('-' == *p) {
-            if (in_range) return JXTA_INVALID_ARGUMENT;
+            if (in_range)
+                return JXTA_INVALID_ARGUMENT;
             in_range = 1;
             lb = ub;
             for (++p; p < e && isspace(*p); ++p);
@@ -255,7 +257,7 @@ parse_level(Jxta_log_selector *self, const char* level, size_t size)
         }
 
         /* boundary level determined */
-        if (! in_range) {
+        if (!in_range) {
             flags |= 1 << ub;
         } else {
             if (lb > ub) {
@@ -270,16 +272,17 @@ parse_level(Jxta_log_selector *self, const char* level, size_t size)
         }
     }
 
-    if (in_range) return JXTA_INVALID_ARGUMENT;
+    if (in_range)
+        return JXTA_INVALID_ARGUMENT;
 
-	if (revert_flag) flags = ~flags;
+    if (revert_flag)
+        flags = ~flags;
     self->level_flags = flags & JXTA_LOG_LEVEL_MASK_ALL;
 
     return JXTA_SUCCESS;
 }
 
-static Jxta_status
-add_category(Jxta_log_selector *self, const char *cat)
+static Jxta_status add_category(Jxta_log_selector * self, const char *cat)
 {
     int i;
     void *p = NULL;
@@ -300,8 +303,7 @@ add_category(Jxta_log_selector *self, const char *cat)
     return JXTA_SUCCESS;
 }
 
-static Jxta_status
-parse_categories(Jxta_log_selector *self, const char* cat, size_t size)
+static Jxta_status parse_categories(Jxta_log_selector * self, const char *cat, size_t size)
 {
     const char *p = NULL;
     const char *e = cat + size;
@@ -328,16 +330,16 @@ parse_categories(Jxta_log_selector *self, const char* cat, size_t size)
         return JXTA_SUCCESS;
     }
 
-	if ('!' == *p)
-	{
+    if ('!' == *p) {
         self->negative_category_list = 1;
         for (++p; p < e && isspace(*p); ++p);
-	} else {
+    } else {
         self->negative_category_list = 0;
     }
 
     for (cat = p; p < e; cat = p) {
-        while (p < e && ',' != *p) ++p;
+        while (p < e && ',' != *p)
+            ++p;
         for (q = p - 1; isspace(*q); --q);
 
         size = q - cat + 1;
@@ -351,15 +353,16 @@ parse_categories(Jxta_log_selector *self, const char* cat, size_t size)
 
         if (',' == *p) {
             ++p;
-            while (p < e && isspace(*p)) ++p;
+            while (p < e && isspace(*p))
+                ++p;
         }
-	}
+    }
 
     return JXTA_SUCCESS;
 }
 
-Jxta_log_selector*
-jxta_log_selector_new()
+JXTA_DECLARE(Jxta_log_selector *)
+    jxta_log_selector_new()
 {
     Jxta_log_selector *self;
     Jpr_status rv;
@@ -367,8 +370,7 @@ jxta_log_selector_new()
     self = calloc(1, sizeof(Jxta_log_selector));
 
     if (NULL != self) {
-        rv = jpr_thread_mutex_create(&self->mutex, JPR_THREAD_MUTEX_NESTED,
-                                     _jxta_log_pool);
+        rv = jpr_thread_mutex_create(&self->mutex, JPR_THREAD_MUTEX_NESTED, _jxta_log_pool);
         if (JPR_SUCCESS != rv) {
             free(self);
             self = NULL;
@@ -378,13 +380,13 @@ jxta_log_selector_new()
     return self;
 }
 
-Jxta_log_selector*
-jxta_log_selector_new_and_set(const char *selector, Jxta_status *rv)
+JXTA_DECLARE(Jxta_log_selector *)
+    jxta_log_selector_new_and_set(const char *selector, Jxta_status * rv)
 {
     Jxta_log_selector *self;
 
     self = jxta_log_selector_new();
-    if (NULL ==self) {
+    if (NULL == self) {
         *rv = JXTA_NOMEM;
         return self;
     }
@@ -393,8 +395,8 @@ jxta_log_selector_new_and_set(const char *selector, Jxta_status *rv)
     return self;
 }
 
-void
-jxta_log_selector_delete(Jxta_log_selector *self)
+JXTA_DECLARE(void)
+    jxta_log_selector_delete(Jxta_log_selector * self)
 {
     if (NULL == self) {
         return;
@@ -402,12 +404,13 @@ jxta_log_selector_delete(Jxta_log_selector *self)
 
     jpr_thread_mutex_lock(self->mutex);
     free_categories(self);
+    jpr_thread_mutex_unlock(self->mutex);
     jpr_thread_mutex_destroy(self->mutex);
     free(self);
 }
 
-Jxta_status
-jxta_log_selector_add_category(Jxta_log_selector *self, const char *cat)
+JXTA_DECLARE(Jxta_status)
+    jxta_log_selector_add_category(Jxta_log_selector * self, const char *cat)
 {
     int i;
     void *p = NULL;
@@ -443,11 +446,11 @@ jxta_log_selector_add_category(Jxta_log_selector *self, const char *cat)
     return JXTA_SUCCESS;
 }
 
-Jxta_status
-jxta_log_selector_remove_category(Jxta_log_selector *self, const char *cat)
+JXTA_DECLARE(Jxta_status)
+    jxta_log_selector_remove_category(Jxta_log_selector * self, const char *cat)
 {
     int i;
-    
+
     if (NULL == self) {
         return JXTA_INVALID_ARGUMENT;
     }
@@ -460,19 +463,19 @@ jxta_log_selector_remove_category(Jxta_log_selector *self, const char *cat)
         return JXTA_SUCCESS;
     }
 
-    free((void*)self->categories[i]);
+    free((void *) self->categories[i]);
     self->category_count--;
     for (; i < self->category_count; i++) {
-        self->categories[i] = self->categories[i+1];
+        self->categories[i] = self->categories[i + 1];
     }
     self->categories[i] = NULL;
-    
+
     jpr_thread_mutex_unlock(self->mutex);
     return JXTA_SUCCESS;
 }
 
-Jxta_status
-jxta_log_selector_list_positive(Jxta_log_selector *self, Jxta_boolean positive)
+JXTA_DECLARE(Jxta_status)
+    jxta_log_selector_list_positive(Jxta_log_selector * self, Jxta_boolean positive)
 {
     if (NULL == self) {
         return JXTA_INVALID_ARGUMENT;
@@ -484,34 +487,34 @@ jxta_log_selector_list_positive(Jxta_log_selector *self, Jxta_boolean positive)
     return JXTA_SUCCESS;
 }
 
-Jxta_status
-jxta_log_selector_set_level_mask(Jxta_log_selector *self, unsigned int mask)
+JXTA_DECLARE(Jxta_status)
+    jxta_log_selector_set_level_mask(Jxta_log_selector * self, unsigned int mask)
 {
     if (NULL == self) {
         return JXTA_INVALID_ARGUMENT;
     }
-    
+
     jpr_thread_mutex_lock(self->mutex);
     self->level_flags |= mask;
     jpr_thread_mutex_unlock(self->mutex);
     return JXTA_SUCCESS;
 }
 
-Jxta_status 
-jxta_log_selector_clear_level_mask(Jxta_log_selector *self, unsigned int mask)
+JXTA_DECLARE(Jxta_status)
+    jxta_log_selector_clear_level_mask(Jxta_log_selector * self, unsigned int mask)
 {
     if (NULL == self) {
         return JXTA_INVALID_ARGUMENT;
     }
-    
+
     jpr_thread_mutex_lock(self->mutex);
     self->level_flags &= ~mask;
     jpr_thread_mutex_unlock(self->mutex);
     return JXTA_SUCCESS;
 }
 
-Jxta_status
-jxta_log_selector_set(Jxta_log_selector *self, const char *selector)
+JXTA_DECLARE(Jxta_status)
+    jxta_log_selector_set(Jxta_log_selector * self, const char *selector)
 {
     Jxta_status rv;
     const char *cat = NULL;
@@ -519,7 +522,7 @@ jxta_log_selector_set(Jxta_log_selector *self, const char *selector)
     const char *p = NULL;
     size_t len_cat = 0;
     size_t len_level = 0;
-    
+
     if (NULL == selector) {
         return JXTA_INVALID_ARGUMENT;
     }
@@ -556,17 +559,16 @@ jxta_log_selector_set(Jxta_log_selector *self, const char *selector)
         return rv;
     }
 
-    rv =  parse_level(self, level, len_level);
+    rv = parse_level(self, level, len_level);
     jpr_thread_mutex_unlock(self->mutex);
     return rv;
 }
 
-Jxta_boolean
-jxta_log_selector_is_selected(Jxta_log_selector *self, const char *cat,
-                             Jxta_log_level level)
+JXTA_DECLARE(Jxta_boolean)
+    jxta_log_selector_is_selected(Jxta_log_selector * self, const char *cat, Jxta_log_level level)
 {
     Jxta_boolean rv;
-    
+
     if (NULL == self) {
         return FALSE;
     }
@@ -583,8 +585,7 @@ jxta_log_selector_is_selected(Jxta_log_selector *self, const char *cat,
     }
 
     rv = (locate_category(self, cat, 0) == self->category_count) ?
-        ( (self->negative_category_list) ? TRUE : FALSE) :
-        ( (self->negative_category_list) ? FALSE : TRUE) ;
+        ((self->negative_category_list) ? TRUE : FALSE) : ((self->negative_category_list) ? FALSE : TRUE);
 
     jpr_thread_mutex_unlock(self->mutex);
     return rv;
@@ -594,8 +595,8 @@ jxta_log_selector_is_selected(Jxta_log_selector *self, const char *cat,
  * Jxta_log_file implementation
  **********************************************************************/
 
-Jxta_status
-jxta_log_file_open(Jxta_log_file **newf, const char *fname)
+JXTA_DECLARE(Jxta_status)
+    jxta_log_file_open(Jxta_log_file ** newf, const char *fname)
 {
     Jxta_log_file *self;
     Jxta_status rv;
@@ -606,16 +607,15 @@ jxta_log_file_open(Jxta_log_file **newf, const char *fname)
         return JXTA_NOMEM;
     }
 
-    rv = jpr_thread_mutex_create(&self->mutex, JPR_THREAD_MUTEX_NESTED,
-                                 _jxta_log_pool);
+    rv = jpr_thread_mutex_create(&self->mutex, JPR_THREAD_MUTEX_NESTED, _jxta_log_pool);
     if (JPR_SUCCESS != rv) {
         free(self);
         self = NULL;
         *newf = NULL;
-        return rv; /* really bad, should I cover it up with JXTA_FILED? */
+        return rv;  /* really bad, should I cover it up with JXTA_FILED? */
     }
 
-    if (! strcmp(fname, "-")) {
+    if (!strcmp(fname, "-")) {
         self->thefile = stdout;
     } else {
         self->thefile = fopen(fname, "a+");
@@ -630,26 +630,32 @@ jxta_log_file_open(Jxta_log_file **newf, const char *fname)
     return JXTA_SUCCESS;
 }
 
-Jxta_status
-jxta_log_file_close(Jxta_log_file *self)
+JXTA_DECLARE(Jxta_status)
+    jxta_log_file_close(Jxta_log_file * self)
 {
-    if (NULL == self) return JXTA_INVALID_ARGUMENT;
+    if (NULL == self)
+        return JXTA_INVALID_ARGUMENT;
+    if (self == _jxta_log_user_data) {
+        jxta_log_using(NULL, NULL);
+    }
 
     jpr_thread_mutex_lock(self->mutex);
 
     if (NULL != self->thefile && stdout != self->thefile) {
         fclose(self->thefile);
     }
-    
+
+    jpr_thread_mutex_unlock(self->mutex);
     jpr_thread_mutex_destroy(self->mutex);
+    free(self);
     return JXTA_SUCCESS;
 }
 
-Jxta_status
-jxta_log_file_attach_selector(Jxta_log_file *self, Jxta_log_selector *selector,
-                             Jxta_log_selector** orig_sel)
+JXTA_DECLARE(Jxta_status)
+    jxta_log_file_attach_selector(Jxta_log_file * self, Jxta_log_selector * selector, Jxta_log_selector ** orig_sel)
 {
-    if (NULL == self) return JXTA_INVALID_ARGUMENT;
+    if (NULL == self)
+        return JXTA_INVALID_ARGUMENT;
 
     jpr_thread_mutex_lock(self->mutex);
 
@@ -662,32 +668,42 @@ jxta_log_file_attach_selector(Jxta_log_file *self, Jxta_log_selector *selector,
     return JXTA_SUCCESS;
 }
 
-Jxta_status
-jxta_log_file_append(void *user_data, const char *cat,
-                    int level, const char *fmt, va_list ap)
+JXTA_DECLARE(Jxta_status)
+    jxta_log_file_append(void *user_data, const char *cat, int level, const char *fmt, va_list ap)
 {
     Jxta_log_file *self;
     Jxta_log_selector *sel;
     Jxta_status rv;
+    apr_time_exp_t tm;
+    char tm_str[16];
+    apr_size_t tm_str_sz;
 
-    if (NULL == user_data) return JXTA_INVALID_ARGUMENT;
+    if (NULL == user_data)
+        return JXTA_INVALID_ARGUMENT;
 
-    self = (Jxta_log_file*) user_data;
+    self = (Jxta_log_file *) user_data;
 
-    if (NULL == self->thefile) return JXTA_INVALID_ARGUMENT;
-    if (NULL == self->mutex) return JXTA_INVALID_ARGUMENT;
+    if (NULL == self->thefile)
+        return JXTA_INVALID_ARGUMENT;
+    if (NULL == self->mutex)
+        return JXTA_INVALID_ARGUMENT;
 
     jpr_thread_mutex_lock(self->mutex);
 
-    sel = (NULL == self->selector) ?
-        _jxta_log_default_selector : self->selector;
+    sel = (NULL == self->selector) ? _jxta_log_default_selector : self->selector;
 
-    if (! jxta_log_selector_is_selected(sel, cat, level)) {
+    if (!jxta_log_selector_is_selected(sel, cat, level)) {
         jpr_thread_mutex_unlock(self->mutex);
         return JXTA_SUCCESS;
     }
 
-    fprintf(self->thefile, "[%s]-%s-[TID: %X] - ", cat, _jxta_log_level_labels[level], apr_os_thread_current());
+    apr_time_exp_lt(&tm, apr_time_now());
+    apr_strftime(tm_str, &tm_str_sz, 32, "%m/%d %H:%M:%S", &tm);
+#ifdef WIN32
+    fprintf(self->thefile, "[%s]-%s-[%s][TID: %u] - ", cat, _jxta_log_level_labels[level], tm_str, GetCurrentThreadId());
+#else
+    fprintf(self->thefile, "[%s]-%s-[%s][TID: %p] - ", cat, _jxta_log_level_labels[level], tm_str, apr_os_thread_current());
+#endif
     rv = (vfprintf(self->thefile, fmt, ap) < 0) ? JXTA_FAILED : JXTA_SUCCESS;
     fflush(self->thefile);
 
@@ -695,4 +711,4 @@ jxta_log_file_append(void *user_data, const char *cat,
     return rv;
 }
 
-/* vi: set sw=4 ts=4 et: */
+/* vi: set sw=4 ts=4 tw=130 et: */

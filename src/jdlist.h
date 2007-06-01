@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jdlist.h,v 1.8 2005/01/10 17:22:18 brent Exp $
+ * $Id: jdlist.h,v 1.9 2005/06/16 23:11:38 slowhog Exp $
  */
 
 
@@ -67,18 +67,17 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _Dlist Dlist;
 
 struct _Dlist {
-  Dlist *flink;
-  Dlist *blink;
-  void  *val;
+    Dlist *flink;
+    Dlist *blink;
+    void *val;
 };
 
 
-typedef void  (*DlFreeFunc)(void *);
-typedef void  (*DLPRINTFUNC)(void *, void *user_data);
+typedef void (*DlFreeFunc) (void *);
+typedef void (*DLPRINTFUNC) (void *, void *user_data);
 
 
 /* Nil, first, next, and prev are macro expansions for list traversal 
@@ -98,7 +97,7 @@ typedef void  (*DLPRINTFUNC)(void *, void *user_data);
 
 /* These are the routines for manipluating lists */
 
-Dlist* dl_make(void);
+Dlist *dl_make(void);
 
  /*
   * Makes a new node, and inserts it before
@@ -106,26 +105,26 @@ Dlist* dl_make(void);
   * head of the list, the new node is 
   * inserted at the end of the list
   */
-void dl_insert_b(Dlist* /* node */, void* /* val */);
+void dl_insert_b(Dlist * /* node */ , void * /* val */ );
 
 #define dl_insert_a(n, val) dl_insert_b(n->flink, val)
 
 /*
  * Deletes and free's a node.
  */
-void dl_delete_node(Dlist* /* node */);
+void dl_delete_node(Dlist * /* node */ );
 
 /*
  * Deletes the entire list from existance.
  */
-void dl_delete_list(Dlist* /* head_node */);
+void dl_delete_list(Dlist * /* head_node */ );
 
 /*
  * Returns node->val (used to shut lint up).
  */
-void * dl_val(Dlist* /* node */);
+void *dl_val(Dlist * /* node */ );
 
-int dl_size(Dlist * /* list */);
+int dl_size(Dlist * /* list */ );
 
 #define dl_traverse(ptr, list) \
   for (ptr = dl_first(list); ptr != dl_nil(list); ptr = dl_next(ptr))
@@ -135,7 +134,12 @@ void dl_free(Dlist *, DlFreeFunc);
 void dl_print(Dlist *, DLPRINTFUNC, void *user_data);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* __JDLIST_H__ */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

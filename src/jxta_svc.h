@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_svc.h,v 1.3 2005/04/03 01:47:58 bondolo Exp $
+ * $Id: jxta_svc.h,v 1.6 2005/06/16 23:11:53 slowhog Exp $
  */
 
-   
+
 #ifndef Svc_H__
 #define Svc_H__
 
@@ -64,164 +64,138 @@
 #include "jxta_relaya.h"
 #include "jxta_routea.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #if 0
 }
 #endif
 #endif
-
 typedef struct _jxta_svc Jxta_svc;
 
-Jxta_svc * jxta_svc_new(void);
+JXTA_DECLARE(Jxta_svc *) jxta_svc_new(void);
 
-Jxta_status jxta_svc_get_xml(Jxta_svc *, JString **);
-void jxta_svc_parse_charbuffer(Jxta_svc *, const char *, int len); 
-void jxta_svc_parse_file(Jxta_svc *, FILE * stream);
- 
-char * jxta_svc_get_Svc(Jxta_svc *);
-void jxta_svc_set_Svc(Jxta_svc *, char *);
- 
-char * jxta_svc_get_Parm(Jxta_svc *);
-void jxta_svc_set_Parm(Jxta_svc *, char *);
+JXTA_DECLARE(Jxta_status) jxta_svc_get_xml(Jxta_svc *, JString **);
+JXTA_DECLARE(void) jxta_svc_parse_charbuffer(Jxta_svc *, const char *, int len);
+JXTA_DECLARE(void) jxta_svc_parse_file(Jxta_svc *, FILE * stream);
 
-/*
- * Unlike similar accessors in other advs, this one may return NULL if
- * there is no such element.
- */
-Jxta_id * jxta_svc_get_MCID(Jxta_svc *);
+JXTA_DECLARE(char *) jxta_svc_get_Svc(Jxta_svc *);
+JXTA_DECLARE(void) jxta_svc_set_Svc(Jxta_svc *, char *);
+
+JXTA_DECLARE(char *) jxta_svc_get_Parm(Jxta_svc *);
+JXTA_DECLARE(void) jxta_svc_set_Parm(Jxta_svc *, char *);
 
 /*
  * Unlike similar accessors in other advs, this one may return NULL if
  * there is no such element.
  */
-void jxta_svc_set_MCID(Jxta_svc *, Jxta_id *);
- 
-/*
- * Unlike similar accessors in other advs, this one may return NULL
- * if there was no Addr element instead of an empty vector. 
- */
-Jxta_vector* jxta_svc_get_Addr(Jxta_svc *);
+JXTA_DECLARE(Jxta_id *) jxta_svc_get_MCID(Jxta_svc *);
 
 /*
- * Unlike similar mutators in other advs, it is valid to pass NULL
- * instead of an empty vector.
+ * Unlike similar accessors in other advs, this one may return NULL if
+ * there is no such element.
  */
-void jxta_svc_set_Addr(Jxta_svc *, Jxta_vector *);
+JXTA_DECLARE(void) jxta_svc_set_MCID(Jxta_svc *, Jxta_id *);
 
 /*
  * Unlike similar accessors in other advs, this one may return NULL
  * if there was no IsClient  element instead of an empty vector. 
  */
-JString* jxta_svc_get_IsClient(Jxta_svc *);
+JXTA_DECLARE(JString *) jxta_svc_get_IsClient(Jxta_svc *);
 
 /*
  * Unlike similar mutators in other advs, it is valid to pass NULL
  * instead of an empty vector.
  */
-void jxta_svc_set_IsClient(Jxta_svc *, JString *);
+JXTA_DECLARE(void) jxta_svc_set_IsClient(Jxta_svc *, JString *);
 
 /*
  * Unlike similar accessors in other advs, this one may return NULL
  * if there was no IsServer  element instead of an empty vector. 
  */
-JString* jxta_svc_get_IsServer(Jxta_svc *);
+JXTA_DECLARE(JString *) jxta_svc_get_IsServer(Jxta_svc *);
 
 /*
  * Unlike similar mutators in other advs, it is valid to pass NULL
  * instead of an empty vector.
  */
-void jxta_svc_set_IsServer(Jxta_svc *, JString *);
-
-/*
- * Returns the value of the Rdv field. If the field is irrelevant to
- * that particular service it is FALSE.
- */
-Jxta_boolean jxta_svc_get_Rdv(Jxta_svc *);
-
-/*
- * Sets the value of the Rdv field.
- */
-void jxta_svc_set_Rdv(Jxta_svc *, Jxta_boolean);
+JXTA_DECLARE(void) jxta_svc_set_IsServer(Jxta_svc *, JString *);
 
 /*
  * Unlike similar accessors in other advs, this one may return NULL if
  * there is no such element.
  */
-Jxta_HTTPTransportAdvertisement * jxta_svc_get_HTTPTransportAdvertisement(Jxta_svc *);
- 
-/*
- * Unlike similar mutators in other advs, it is valid to pass NULL as a means
- * to remove the element.
- */
-void jxta_svc_set_HTTPTransportAdvertisement(Jxta_svc *,
-					Jxta_HTTPTransportAdvertisement *);
-
-/*
- * Unlike similar accessors in other advs, this one may return NULL if
- * there is no such element.
- */
-Jxta_RouteAdvertisement * jxta_svc_get_RouteAdvertisement(Jxta_svc *);
- 
-/*
- * Unlike similar mutators in other advs, it is valid to pass NULL as a means
- * to remove the element.
- */
-void jxta_svc_set_RouteAdvertisement(Jxta_svc *,
-				     Jxta_RouteAdvertisement *);
-
-/*
- * Unlike similar accessors in other advs, this one may return NULL if
- * there is no such element.
- */
-Jxta_TCPTransportAdvertisement * jxta_svc_get_TCPTransportAdvertisement(Jxta_svc *);
+JXTA_DECLARE(Jxta_HTTPTransportAdvertisement *) jxta_svc_get_HTTPTransportAdvertisement(Jxta_svc *);
 
 /*
  * Unlike similar mutators in other advs, it is valid to pass NULL as a means
  * to remove the element.
  */
-void jxta_svc_set_TCPTransportAdvertisement(Jxta_svc *,
-				       Jxta_TCPTransportAdvertisement *);
+JXTA_DECLARE(void) jxta_svc_set_HTTPTransportAdvertisement(Jxta_svc *, Jxta_HTTPTransportAdvertisement *);
 
 /*
  * Unlike similar accessors in other advs, this one may return NULL if
  * there is no such element.
  */
-Jxta_RdvConfigAdvertisement * jxta_svc_get_RdvConfig(Jxta_svc *);
+JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_svc_get_RouteAdvertisement(Jxta_svc *);
 
 /*
  * Unlike similar mutators in other advs, it is valid to pass NULL as a means
  * to remove the element.
  */
-void jxta_svc_set_RdvConfig(Jxta_svc *, Jxta_RdvConfigAdvertisement *);
+JXTA_DECLARE(void) jxta_svc_set_RouteAdvertisement(Jxta_svc *, Jxta_RouteAdvertisement *);
 
 /*
  * Unlike similar accessors in other advs, this one may return NULL if
  * there is no such element.
  */
-Jxta_RelayAdvertisement * jxta_svc_get_RelayAdvertisement(Jxta_svc *);
+JXTA_DECLARE(Jxta_TCPTransportAdvertisement *) jxta_svc_get_TCPTransportAdvertisement(Jxta_svc *);
 
 /*
  * Unlike similar mutators in other advs, it is valid to pass NULL as a means
  * to remove the element.
  */
-void jxta_svc_set_RelayAdvertisement(Jxta_svc *,
-				       Jxta_RelayAdvertisement *);
+JXTA_DECLARE(void) jxta_svc_set_TCPTransportAdvertisement(Jxta_svc *, Jxta_TCPTransportAdvertisement *);
 
 /*
  * Unlike similar accessors in other advs, this one may return NULL if
  * there is no such element.
  */
-JString* jxta_svc_get_RootCert(Jxta_svc *);
+JXTA_DECLARE(Jxta_RdvConfigAdvertisement *) jxta_svc_get_RdvConfig(Jxta_svc *);
+
+/*
+ * Unlike similar mutators in other advs, it is valid to pass NULL as a means
+ * to remove the element.
+ */
+JXTA_DECLARE(void) jxta_svc_set_RdvConfig(Jxta_svc *, Jxta_RdvConfigAdvertisement *);
+
+/*
+ * Unlike similar accessors in other advs, this one may return NULL if
+ * there is no such element.
+ */
+JXTA_DECLARE(Jxta_RelayAdvertisement *) jxta_svc_get_RelayAdvertisement(Jxta_svc *);
+
+/*
+ * Unlike similar mutators in other advs, it is valid to pass NULL as a means
+ * to remove the element.
+ */
+JXTA_DECLARE(void) jxta_svc_set_RelayAdvertisement(Jxta_svc *, Jxta_RelayAdvertisement *);
+
+/*
+ * Unlike similar accessors in other advs, this one may return NULL if
+ * there is no such element.
+ */
+JXTA_DECLARE(JString *) jxta_svc_get_RootCert(Jxta_svc *);
 
 /*
  * Unlike similar mutators in other advs, it is valid to pass NULL instead
  * of an empty JString.
  */
-void jxta_svc_set_RootCert(Jxta_svc *, JString*);
+JXTA_DECLARE(void) jxta_svc_set_RootCert(Jxta_svc *, JString *);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 

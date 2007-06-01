@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_service_private.h,v 1.16 2005/03/25 23:41:13 bondolo Exp $
+ * $Id: jxta_service_private.h,v 1.17 2005/04/10 00:25:59 bondolo Exp $
  */
 
 #ifndef JXTA_SERVICE_PRIVATE_H
@@ -76,7 +76,7 @@ extern "C" {
 #endif
 #endif
 /**
- * The set of methods that a Jxta_service must implement.
+ * The methods that a Jxta_service must implement.
  * All Jxta_service and derivates have a pointer to such an
  * object or a derivate.
  *
@@ -87,7 +87,7 @@ extern "C" {
  * block for Jxta_module_methods followed by the literal string
  * "Jxta_service_methods".
  * For example:
- *
+ * <pre>
  * Jxta_service_methods myMethods = {
  *   {
  *      "Jxta_module_methods",
@@ -100,7 +100,8 @@ extern "C" {
  *   jxta_service_get_MIA_impl,
  *   jxta_service_get_interface_impl
  * }
- */ struct _jxta_service_methods {
+ * </pre>
+ **/ struct _jxta_service_methods {
     Extends(Jxta_module_methods);
 
     /* An implementation of Jxta_service_get_MIA */
@@ -124,17 +125,17 @@ struct _jxta_service {
     Extends(_jxta_module);
 
     /**
-        Group context for this service instance.
+    *    Group context for this service instance.
     **/
     Jxta_PG *group;
 
     /**
-        Assigned ID of this service instance.
+    *   Assigned ID of this service instance.
     **/
     Jxta_id *assigned_id;
 
     /**
-        Impl advertisement for this instance.
+    *   Impl advertisement for this instance.
     **/
     Jxta_advertisement *impl_adv;
 };
@@ -150,17 +151,19 @@ typedef struct _jxta_service _jxta_service;
  * @param methods Pointer to the relevant Jxta_service_methods object.
  * @return the constructed object or NULL if the construction failed.
  */
-extern _jxta_service *jxta_service_construct(_jxta_service * svc, Jxta_service_methods const * methods);
+extern _jxta_service *jxta_service_construct(_jxta_service * svc, Jxta_service_methods const *methods);
 
 /**
  * The base service dtor (Not public, not virtual. Only called by subclassers).
+ *
+ * @param svc The Jxta_service object to destruct.
  */
 extern void jxta_service_destruct(_jxta_service * svc);
 
 /**
-* Initialize the service.
+*   Initialize the service.
 *
-*  @param svc The service instance being initialized.
+*   @param svc The service instance being initialized.
 *   @param group The peer group context for the service instance.
 *   @param assigned_id  The id assigned to this service instance.
 *   @param impl_adv The implementation advertisement for this service isntance, if any.S
@@ -169,58 +172,61 @@ extern void jxta_service_destruct(_jxta_service * svc);
 extern Jxta_status jxta_service_init(Jxta_service * svc, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv);
 
 /**
- * return this service's interface object
+ *  Return this service's interface object
  *
- * @param service return this service's interface object
- * @return this service's interface object/
+ *  @param service return this service's interface object
+ *  @return this service's interface object/
  **/
 extern void jxta_service_get_interface_impl(Jxta_service * svc, Jxta_service ** intf);
 
 /**
- * return the peer group object associated with this service.
+ *  Return the peer group object associated with this service.
  *
- * @return the peer group object associated with this service.
+ *  @return the peer group object associated with this service.
  **/
 extern void jxta_service_get_peergroup_impl(Jxta_service * svc, Jxta_PG ** pg);
 
 /**
- * Return the id associated with this service.
+ *  Return the id associated with this service.
  *
- * @return the id associated with this service.
+ *  @return the id associated with this service.
  **/
 extern void jxta_service_get_assigned_ID_impl(Jxta_service * svc, Jxta_id ** assignedID);
 
 /**
- * return the module implementation advertisement for this service
+ *  Return the module implementation advertisement for this service
  *
- * @return the module implementation advertisement for this service
+ *  @return the module implementation advertisement for this service
  **/
 extern void jxta_service_get_MIA_impl(Jxta_service * svc, Jxta_advertisement ** mia);
 
 /**
-    Gets the peer group object associated with this service without sharing it, dispatching or checking the object type.
-    
-    @return the peergroup object
+ *  Gets the peer group object associated with this service without sharing it, dispatching or checking the object type.
+ *    
+ *  @return the peergroup object
 **/
 extern Jxta_PG *jxta_service_get_peergroup_priv(_jxta_service * svc);
 
 /**
-    Gets the assigned id associated with this service without sharing it, dispatching or checking the object type.
-    
-    @return the assigned id object
+ *  Gets the assigned id associated with this service without sharing it, dispatching or checking the object type.
+ *    
+ *  @return the assigned id object
 **/
 extern Jxta_id *jxta_service_get_assigned_ID_priv(_jxta_service * svc);
 
 /**
-    Gets the MIA associated with this service without sharing it, dispatching or checking the object type.
-    
-    @return the MIA
+ *  Gets the MIA associated with this service without sharing it, dispatching or checking the object type.
+ *    
+ *  @return the MIA
 **/
 extern Jxta_advertisement *jxta_service_get_MIA_priv(_jxta_service * svc);
 
 #define JXTA_SERVICE_VTBL(self) (((_jxta_service_methods*)(((_jxta_module*) (self))->methods))
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 

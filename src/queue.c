@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: queue.c,v 1.16 2005/03/31 00:24:41 slowhog Exp $
+ * $Id: queue.c,v 1.20 2005/08/03 05:51:21 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -70,7 +70,8 @@ struct _Queue {
 };
 
 
-Queue *queue_new(apr_pool_t * pool) {
+Queue *queue_new(apr_pool_t * pool)
+{
     Queue *q = (Queue *) malloc(sizeof(Queue));
 
     q->list = dl_make();
@@ -83,7 +84,8 @@ Queue *queue_new(apr_pool_t * pool) {
     return q;
 }
 
-void queue_free(Queue * q) {
+void queue_free(Queue * q)
+{
     dl_free(q->list, NULL);
     apr_thread_mutex_destroy(q->mutex);
     apr_thread_cond_destroy(q->cond);
@@ -91,7 +93,8 @@ void queue_free(Queue * q) {
     free(q);
 }
 
-int queue_size(Queue * q) {
+int queue_size(Queue * q)
+{
     int size;
     apr_thread_mutex_lock(q->mutex);
     size = q->size;
@@ -99,26 +102,31 @@ int queue_size(Queue * q) {
     return size;
 }
 
-void queue_enqueue(Queue * q, void *item) {
+int queue_enqueue(Queue * q, void *item)
+{
+    int size;
+
     apr_thread_mutex_lock(q->mutex);
 
     dl_insert_b(q->list, item);
-    ++q->size;
+    size = ++q->size;
     apr_thread_cond_signal(q->cond);
 
     apr_thread_mutex_unlock(q->mutex);
+    return size;
 }
 
-void *queue_dequeue(Queue * q, apr_time_t max_timeout) {
+void *queue_dequeue(Queue * q, apr_time_t max_timeout)
+{
     void *obj;
 
     queue_dequeue_1(q, &obj, max_timeout);
     return obj;
 }
 
-Jxta_status queue_dequeue_1(Queue * q, void **obj, apr_time_t max_timeout) {
+Jxta_status queue_dequeue_1(Queue * q, void **obj, apr_time_t max_timeout)
+{
     Dlist *head;
-    void *val;
     /* apr_time_t time = apr_time_now (); */
     apr_time_t wakeup_time;
     apr_status_t status;
@@ -153,7 +161,8 @@ Jxta_status queue_dequeue_1(Queue * q, void **obj, apr_time_t max_timeout) {
 
 #ifdef STANDALONE
 
-void * APR_THREAD_FUNC dequeuer(apr_thread_t * t, void *arg) {
+void *APR_THREAD_FUNC dequeuer(apr_thread_t * t, void *arg)
+{
     Queue *q = arg;
 
     printf("Dequeued %s\n", (char *) queue_dequeue(q, 5000000));
@@ -161,7 +170,8 @@ void * APR_THREAD_FUNC dequeuer(apr_thread_t * t, void *arg) {
     return NULL;
 }
 
-void * APR_THREAD_FUNC enqueuer(apr_thread_t * thread, void *arg) {
+void *APR_THREAD_FUNC enqueuer(apr_thread_t * thread, void *arg)
+{
     Queue *q = arg;
 
     queue_enqueue(q, (void *) "something");
@@ -169,7 +179,8 @@ void * APR_THREAD_FUNC enqueuer(apr_thread_t * thread, void *arg) {
     return NULL;
 }
 
-void * APR_THREAD_FUNC waster(apr_thread_t * thread, void *arg) {
+void *APR_THREAD_FUNC waster(apr_thread_t * thread, void *arg)
+{
     apr_thread_mutex_t *mutex;
     apr_thread_cond_t *cond;
 
@@ -184,7 +195,8 @@ void * APR_THREAD_FUNC waster(apr_thread_t * thread, void *arg) {
 }
 
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     apr_thread_t *deq_thread;
     apr_thread_t *enq_thread;
     apr_thread_t *waster_thread;
@@ -198,7 +210,7 @@ int main(int argc, char **argv) {
     printf("starting...\n");
 
 
-    apr_thread_create(&deq_thread, NULL,        /* no attr */
+    apr_thread_create(&deq_thread, NULL,    /* no attr */
                       dequeuer, queue, pool);
 
     apr_thread_create(&enq_thread, NULL, enqueuer, queue, pool);

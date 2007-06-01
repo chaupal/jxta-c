@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_service.h,v 1.2 2005/01/10 17:19:27 brent Exp $
+ * $Id: jxta_resolver_service.h,v 1.6 2005/08/03 08:44:50 lankes Exp $
  */
 
 #ifndef JXTA_RESOLVER_SERVICE_H
@@ -122,8 +122,7 @@ extern "C" {
 }
 #endif
 #endif
-
-typedef struct _jxta_resolver_service  Jxta_resolver_service;
+typedef struct _jxta_resolver_service Jxta_resolver_service;
 
 /**
  * Registers a given Resolver Query Handler.
@@ -136,10 +135,7 @@ typedef struct _jxta_resolver_service  Jxta_resolver_service;
  * @see Jxta_status
  *
  */
-Jxta_status
-jxta_resolver_service_registerQueryHandler(Jxta_resolver_service * service,
-                                           JString* name,
-                                           Jxta_listener * handler);
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_registerQueryHandler(Jxta_resolver_service * service, JString * name, Jxta_listener * handler);
 
 /**
  * unregisters a given Resolver Query Handler.
@@ -149,10 +145,31 @@ jxta_resolver_service_registerQueryHandler(Jxta_resolver_service * service,
  * @return Jxta_status
  * @see Jxta_status
  *
- */    
-Jxta_status
-jxta_resolver_service_unregisterQueryHandler(Jxta_resolver_service * service,
-                                             JString* name);
+ */
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_unregisterQueryHandler(Jxta_resolver_service * service, JString * name);
+/**
+ * Registers a given Resolver Query Handler.
+ *
+ * @param service pointer to the Jxta_resolver_service
+ * @param name the name under which this handler is to be registered, typically
+ * jxta services utilize the module id as the name
+ * @param Jxta_listener handler the handler.
+ * @return Jxta_status
+ * @see Jxta_status
+ *
+ */
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_registerSrdiHandler(Jxta_resolver_service * service, JString * name, Jxta_listener * handler);
+
+/**
+ * unregisters a given Resolver Query Handler.
+ *
+ * @param service pointer to the Jxta_resolver_service
+ * @param name The name of the handler to unregister.
+ * @return Jxta_status
+ * @see Jxta_status
+ *
+ */
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_unregisterSrdiHandler(Jxta_resolver_service * service, JString * name);
 /**
  * Registers a given Resolver Response Handler.
  *
@@ -163,10 +180,7 @@ jxta_resolver_service_unregisterQueryHandler(Jxta_resolver_service * service,
  * @return Jxta_status
  * @see Jxta_status
  */
-Jxta_status
-jxta_resolver_service_registerResHandler(Jxta_resolver_service * service,
-                                         JString* name,
-                                         Jxta_listener * handler);
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_registerResHandler(Jxta_resolver_service * service, JString * name, Jxta_listener * handler);
 
 /**
  * unregisters a given Resolver Response Handler.
@@ -175,10 +189,8 @@ jxta_resolver_service_registerResHandler(Jxta_resolver_service * service,
  * @param name The name of the handler to unregister.
  * @return Jxta_status
  * @see Jxta_status
- */    
-Jxta_status
-jxta_resolver_service_unregisterResHandler(Jxta_resolver_service * service,
-                                        JString* name);
+ */
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_unregisterResHandler(Jxta_resolver_service * service, JString * name);
 
 /**
  * For Services that wish to implement a ResolverService Service they must
@@ -192,10 +204,7 @@ jxta_resolver_service_unregisterResHandler(Jxta_resolver_service * service,
  * @see Jxta_status
  */
 
-Jxta_status
-jxta_resolver_service_sendQuery(Jxta_resolver_service* service,
-                                ResolverQuery* query,
-                                Jxta_id* peerid);
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendQuery(Jxta_resolver_service * service, ResolverQuery * query, Jxta_id * peerid);
 
 /**
  * send a response to a peer
@@ -206,10 +215,7 @@ jxta_resolver_service_sendQuery(Jxta_resolver_service* service,
  * @return Jxta_status
  * @see Jxta_status
  */
-Jxta_status
-jxta_resolver_service_sendResponse(Jxta_resolver_service* service,
-                                   ResolverResponse* response,
-                                   Jxta_id* peerid);
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendResponse(Jxta_resolver_service * service, ResolverResponse * response, Jxta_id * peerid);
 /**
  * For Services that wish to implement a ResolverService Service they must
  * implement this interface Sends query to the specified address.
@@ -222,23 +228,15 @@ jxta_resolver_service_sendResponse(Jxta_resolver_service* service,
  * @see Jxta_status
  */
 
-Jxta_status
-jxta_resolver_service_sendSrdi(Jxta_resolver_service* service, 
-                               ResolverSrdi* message,
-                               Jxta_id* peerid);
-/**
- *
- * Create a new message id
- *
- * @param group id
- * @param pointer to a Jstring which conatin the new id
- * 
- * @return Jxta_status
- */
-Jxta_status message_id_new(Jxta_id* pgid, JString** sid);
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendSrdi(Jxta_resolver_service * service, ResolverSrdi * message, Jxta_id * peerid);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTA_RESOLVER_SERVICE_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_piperesolver_msg.h,v 1.4 2005/03/22 04:08:03 bondolo Exp $
+ * $Id: jxta_piperesolver_msg.h,v 1.6 2005/08/03 05:51:17 slowhog Exp $
  */
 
 #ifndef __Jxta_piperesolver_msg_H__
@@ -63,47 +63,47 @@
 extern "C" {
 #endif
 
-typedef struct _jxta_piperesolver_msg Jxta_piperesolver_msg;
-   
+    typedef struct _jxta_piperesolver_msg Jxta_piperesolver_msg;
+
 
 /** The get/set functions represent the public
  * interface to the ad class, that is, the API.
  */
-char * jxta_piperesolver_msg_get_PipeResolver(Jxta_piperesolver_msg * ad);
- 
-void jxta_piperesolver_msg_set_PipeResolver(Jxta_piperesolver_msg * ad, char * name);
+    JXTA_DECLARE(char *) jxta_piperesolver_msg_get_PipeResolver(Jxta_piperesolver_msg * ad);
 
-Jxta_id * jxta_piperesolver_msg_get_pipeid (Jxta_piperesolver_msg * ad);
+    JXTA_DECLARE(void) jxta_piperesolver_msg_set_PipeResolver(Jxta_piperesolver_msg * ad, char *name);
 
-char * jxta_piperesolver_msg_get_MsgType(Jxta_piperesolver_msg * ad);
- 
-Jxta_status jxta_piperesolver_msg_set_MsgType(Jxta_piperesolver_msg * ad, char* val);
+    JXTA_DECLARE(Jxta_id *) jxta_piperesolver_msg_get_pipeid(Jxta_piperesolver_msg * ad);
 
-char * jxta_piperesolver_msg_get_Type(Jxta_piperesolver_msg * ad);
- 
-Jxta_status jxta_piperesolver_msg_set_Type(Jxta_piperesolver_msg * ad, char * val);
- 
-char * jxta_piperesolver_msg_get_PipeId(Jxta_piperesolver_msg * ad);
+    JXTA_DECLARE(char *) jxta_piperesolver_msg_get_MsgType(Jxta_piperesolver_msg * ad);
 
-Jxta_status jxta_piperesolver_msg_set_PipeId(Jxta_piperesolver_msg * ad, char* val);
+    JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_set_MsgType(Jxta_piperesolver_msg * ad, char *val);
 
-Jxta_boolean jxta_piperesolver_msg_get_Found(Jxta_piperesolver_msg * ad);
+    JXTA_DECLARE(char *) jxta_piperesolver_msg_get_Type(Jxta_piperesolver_msg * ad);
 
-Jxta_status jxta_piperesolver_msg_set_Found(Jxta_piperesolver_msg * ad, Jxta_boolean val);
+    JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_set_Type(Jxta_piperesolver_msg * ad, char *val);
 
-Jxta_boolean jxta_piperesolver_msg_get_Cached(Jxta_piperesolver_msg * ad);
+    JXTA_DECLARE(char *) jxta_piperesolver_msg_get_PipeId(Jxta_piperesolver_msg * ad);
 
-Jxta_status jxta_piperesolver_msg_set_Cached(Jxta_piperesolver_msg * ad, Jxta_boolean val);
+    JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_set_PipeId(Jxta_piperesolver_msg * ad, char *val);
 
-char * jxta_piperesolver_msg_get_Peer(Jxta_piperesolver_msg * ad);
+    JXTA_DECLARE(Jxta_boolean) jxta_piperesolver_msg_get_Found(Jxta_piperesolver_msg * ad);
 
-Jxta_status jxta_piperesolver_msg_set_Peer(Jxta_piperesolver_msg * ad, char* val);
+    JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_set_Found(Jxta_piperesolver_msg * ad, Jxta_boolean val);
 
-void jxta_piperesolver_msg_get_PeerAdv(Jxta_piperesolver_msg * ad, JString** val);
+    JXTA_DECLARE(Jxta_boolean) jxta_piperesolver_msg_get_Cached(Jxta_piperesolver_msg * ad);
 
-Jxta_status jxta_piperesolver_msg_set_PeerAdv(Jxta_piperesolver_msg * ad, JString* val);
- 
-Jxta_status jxta_piperesolver_msg_get_xml(Jxta_piperesolver_msg * ad, JString** xml);
+    JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_set_Cached(Jxta_piperesolver_msg * ad, Jxta_boolean val);
+
+    JXTA_DECLARE(char *) jxta_piperesolver_msg_get_Peer(Jxta_piperesolver_msg * ad);
+
+    JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_set_Peer(Jxta_piperesolver_msg * ad, char *val);
+
+    JXTA_DECLARE(void) jxta_piperesolver_msg_get_PeerAdv(Jxta_piperesolver_msg * ad, JString ** val);
+
+    JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_set_PeerAdv(Jxta_piperesolver_msg * ad, JString * val);
+
+    JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_get_xml(Jxta_piperesolver_msg * ad, JString ** xml);
 
 /** Get a new instance of the ad. 
  * The memory gets shredded going in to 
@@ -111,13 +111,14 @@ Jxta_status jxta_piperesolver_msg_get_xml(Jxta_piperesolver_msg * ad, JString** 
  * just in case there is a segfault (not that 
  * that would ever happen, but in case it ever did.)
  */
-Jxta_piperesolver_msg * jxta_piperesolver_msg_new(void);
+    JXTA_DECLARE(Jxta_piperesolver_msg *) jxta_piperesolver_msg_new(void);
 
-void  jxta_piperesolver_msg_parse_charbuffer(Jxta_piperesolver_msg * ad, const char * buf, int len);
-  
-void jxta_piperesolver_msg_parse_file(Jxta_piperesolver_msg * ad, FILE * stream);
+    JXTA_DECLARE(void) jxta_piperesolver_msg_parse_charbuffer(Jxta_piperesolver_msg * ad, const char *buf, int len);
 
-#endif /* __Jxta_pipe_adv_H__  */
+    JXTA_DECLARE(void) jxta_piperesolver_msg_parse_file(Jxta_piperesolver_msg * ad, FILE * stream);
+
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* __Jxta_pipe_adv_H__  */

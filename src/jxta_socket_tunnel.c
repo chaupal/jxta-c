@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_socket_tunnel.c,v 1.9 2005/02/22 21:50:04 slowhog Exp $
+ * $Id: jxta_socket_tunnel.c,v 1.18 2005/08/03 05:51:19 slowhog Exp $
  */
 
 #include <ctype.h>
@@ -130,12 +130,12 @@ static Jxta_status decode_addr_spec(Jxta_socket_tunnel * self, const char *addr_
         --pe;
 
     len = pe - pb + 1;
-    /* a://b:c is at least 7 characters */
-    if (len < 7) {
+    /* a://b[:c] is at least 5 characters */
+    if (len < 5) {
         return JXTA_INVALID_ARGUMENT;
     }
 
-    p = malloc(sizeof(char) * (len + 1));
+    p = (char *) malloc(sizeof(char) * (len + 1));
     strncpy(p, pb, len);
     p[len] = '\0';
     pb = p;
@@ -168,16 +168,17 @@ static Jxta_status decode_addr_spec(Jxta_socket_tunnel * self, const char *addr_
 
     while ('\0' != *p && ':' != *p)
         ++p;
-    if ('\0' == *p) {
-        free((void *) pb);
-        return JXTA_INVALID_ARGUMENT;
+
+    if ('\0' == *p) {   /* port number is not specified, use any available port */
+        len = 0;
+    } else {
+        *p = '\0';
+        p++;
+        len = strtol(p, NULL, 10);
     }
-    *p = '\0';
-    p++;
-    len = strtol(p, NULL, 10);
 
     jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_DEBUG, "Tunnel protocol %s at address %s with port %ld(%s)\n",
-                    pb, pe, len, p);
+                    pb, pe, len, *p ? p : "not specified");
 
     rv = apr_sockaddr_info_get(&self->sockaddr, pe, proto_params[i][0], len, 0, self->pool);
     free((void *) pb);
@@ -198,6 +199,30 @@ static Jxta_status decode_addr_spec(Jxta_socket_tunnel * self, const char *addr_
         return rv;
     }
 
+    return rv;
+}
+
+static Jxta_status bind_socket(apr_socket_t * s, apr_sockaddr_t * addr)
+{
+    Jxta_status rv;
+    char *ip;
+    apr_sockaddr_t *sa;
+
+    apr_sockaddr_ip_get(&ip, addr);
+    jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_INFO, "Binding to socket %s:%ld\n", ip, addr->port);
+    rv = apr_socket_bind(s, addr);
+    if (APR_SUCCESS != rv) {
+        jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Bind to socket failed with error %ld\n", rv);
+        return rv;
+    }
+
+    if (0 == addr->port) {
+        rv = apr_socket_addr_get(&sa, APR_LOCAL, s);
+        if (APR_SUCCESS == rv) {
+            addr->port = sa->port;
+            jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_INFO, "Bind socket to port %ld\n", addr->port);
+        }
+    }
     return rv;
 }
 
@@ -231,13 +256,11 @@ static void listener_func(Jxta_object * obj, void *arg)
     rv = jxta_message_get_element_1(msg, "DATA", &el);
     if (JXTA_SUCCESS != rv || NULL == el) {
         jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Invalid message discard\n");
-        JXTA_OBJECT_RELEASE(obj);
         return;
     }
 
     data = jxta_message_element_get_value(el);
     JXTA_OBJECT_RELEASE(el);
-    JXTA_OBJECT_RELEASE(obj);
 
     if (NULL == data) {
         jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Failed to retrieve data from message\n");
@@ -255,7 +278,7 @@ static void listener_func(Jxta_object * obj, void *arg)
     if (self->o_buf_size < data_size) {
         if (NULL != self->o_buf)
             free(self->o_buf);
-        self->o_buf = malloc(sizeof(char) * data_size);
+        self->o_buf = (char *) malloc(sizeof(char) * data_size);
         if (NULL == self->o_buf) {
             jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Out of memory\n");
             self->o_buf_size = 0;
@@ -284,7 +307,7 @@ static void listener_func(Jxta_object * obj, void *arg)
             break;
         }
 
-        if (!APR_STATUS_IS_SUCCESS(rv)) {
+        if (APR_SUCCESS != rv) {
             jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Fail to send %ld bytes of data with error %ld\n",
                             size_to_send, rv);
         } else {
@@ -346,7 +369,7 @@ static Jxta_status pump_datagram_socket(Jxta_socket_tunnel * self)
         size = self->buf_size;
         from.salen = sizeof(from.sa);
         rv = apr_socket_recvfrom(&from, self->socket, 0, self->buf, &size);
-        if (!APR_STATUS_IS_SUCCESS(rv)) {
+        if (APR_SUCCESS != rv) {
             jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Recvfrom socket with error %ld\n", rv);
             /* FIXME: should we wait to retry or quit? */
             continue;
@@ -375,8 +398,9 @@ static Jxta_status pump_stream_socket(Jxta_socket_tunnel * self)
         recv_status = apr_socket_recv(self->data_socket, self->buf, &size);
         if (APR_EOF == recv_status) {
             jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_INFO, "Socket close detected\n");
-        } else if (!APR_STATUS_IS_SUCCESS(recv_status)) {
-            jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Receiving from socket with error %ld\n", recv_status);
+        } else if (APR_SUCCESS != recv_status) {
+            jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Receiving from socket with error %ld\n",
+                            recv_status);
             /* FIXME: should we wait to retry or quit? */
         }
         jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_TRACE, "%ld bytes was received from socket\n", size);
@@ -396,7 +420,6 @@ static void *APR_THREAD_FUNC pipe_accept_func(apr_thread_t * thread, void *arg)
 {
     Jxta_status rv = JXTA_SUCCESS;
     Jxta_socket_tunnel *self = (Jxta_socket_tunnel *) arg;
-    char *addr;
 
     jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_TRACE, "pipe accept thread started\n");
     jxta_listener_start(self->listener);
@@ -433,7 +456,7 @@ static void *APR_THREAD_FUNC pipe_accept_func(apr_thread_t * thread, void *arg)
                 break;
             }
             rv = apr_socket_connect(self->data_socket, self->sockaddr);
-            if (APR_STATUS_IS_SUCCESS(rv)) {
+            if (APR_SUCCESS == rv) {
                 rv = pump_stream_socket(self);
             } else {
                 jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Fail to connect server with  error %ld\n", rv);
@@ -443,14 +466,7 @@ static void *APR_THREAD_FUNC pipe_accept_func(apr_thread_t * thread, void *arg)
             self->data_socket = NULL;
             break;
         case SOCK_DGRAM:
-            apr_sockaddr_ip_get(&addr, self->sockaddr);
-            jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_INFO, "Bind to socket %s:%ld\n", addr, self->sockaddr->port);
-            rv = apr_socket_bind(self->socket, self->sockaddr);
-            if (!APR_STATUS_IS_SUCCESS(rv)) {
-                jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Bind to socket failed with error %ld\n", rv);
-            } else {
-                rv = pump_datagram_socket(self);
-            }
+            rv = pump_datagram_socket(self);
             break;
         }
     }
@@ -498,19 +514,9 @@ static void *APR_THREAD_FUNC socket_accept_func(apr_thread_t * thread, void *arg
 {
     Jxta_socket_tunnel *self = (Jxta_socket_tunnel *) arg;
     Jxta_status rv;
-    char *addr;
-
-    apr_sockaddr_ip_get(&addr, self->sockaddr);
-    jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_INFO, "Bind to socket %s:%ld\n", addr, self->sockaddr->port);
-    rv = apr_socket_bind(self->socket, self->sockaddr);
-    if (!APR_STATUS_IS_SUCCESS(rv)) {
-        jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Bind to socket failed with error %ld\n", rv);
-        apr_thread_exit(thread, rv);
-        return NULL;
-    }
 
     rv = apr_socket_listen(self->socket, 1);
-    if (!APR_STATUS_IS_SUCCESS(rv)) {
+    if (APR_SUCCESS != rv) {
         jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Failed to listen socket with error %ld\n", rv);
         apr_thread_exit(thread, rv);
         return NULL;
@@ -522,7 +528,7 @@ static void *APR_THREAD_FUNC socket_accept_func(apr_thread_t * thread, void *arg
         apr_thread_mutex_unlock(self->mutex);
         jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_TRACE, "Accepting socket connection ...\n");
         rv = apr_socket_accept(&self->data_socket, self->socket, self->pool);
-        if (!APR_STATUS_IS_SUCCESS(rv)) {
+        if (APR_SUCCESS != rv) {
             jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Failed to accept socket connection with error %ld\n",
                             rv);
             apr_thread_exit(thread, rv);
@@ -558,19 +564,19 @@ static void *APR_THREAD_FUNC socket_accept_func(apr_thread_t * thread, void *arg
     return NULL;
 }
 
-Jxta_status jxta_socket_tunnel_create(Jxta_PG * group, const char *addr_spec, Jxta_socket_tunnel ** newobj)
+JXTA_DECLARE(Jxta_status) jxta_socket_tunnel_create(Jxta_PG * group, const char *addr_spec, Jxta_socket_tunnel ** newobj)
 {
     Jxta_status rv;
     Jxta_socket_tunnel *self;
 
-    self = calloc(1, sizeof(Jxta_socket_tunnel));
+    self = (Jxta_socket_tunnel *) calloc(1, sizeof(Jxta_socket_tunnel));
     if (NULL == self) {
         jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Out of memory\n");
         return JXTA_NOMEM;
     }
 
     self->buf_size = DEFAULT_TUNNEL_BUFFER_SIZE;
-    self->buf = malloc(self->buf_size * sizeof(char));
+    self->buf = (char *) malloc(self->buf_size * sizeof(char));
     if (NULL == self->buf) {
         jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Out of memory\n");
         free(self);
@@ -585,7 +591,7 @@ Jxta_status jxta_socket_tunnel_create(Jxta_PG * group, const char *addr_spec, Jx
     }
 
     rv = apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED, self->pool);
-    if (!APR_STATUS_IS_SUCCESS(rv)) {
+    if (APR_SUCCESS != rv) {
         jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Failed to create mutex\n");
         free(self);
         return rv;
@@ -627,15 +633,16 @@ Jxta_status jxta_socket_tunnel_delete(Jxta_socket_tunnel * self)
     }
 
     rv = apr_socket_close(self->socket);
-    if (!APR_STATUS_IS_SUCCESS(rv)) {
+    if (APR_SUCCESS != rv) {
         jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Failed to close socket with error %ld\n", rv);
         return rv;
     }
     self->socket = NULL;
 
+    apr_thread_mutex_unlock(self->mutex);
     apr_thread_mutex_destroy(self->mutex);
     apr_pool_destroy(self->pool);
-    if (!APR_STATUS_IS_SUCCESS(rv)) {
+    if (APR_SUCCESS != rv) {
         jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Failed to detroy pool with error %ld\n", rv);
         return rv;
     }
@@ -645,7 +652,7 @@ Jxta_status jxta_socket_tunnel_delete(Jxta_socket_tunnel * self)
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_socket_tunnel_establish(Jxta_socket_tunnel * self, Jxta_pipe_adv * remote_adv)
+JXTA_DECLARE(Jxta_status) jxta_socket_tunnel_establish(Jxta_socket_tunnel * self, Jxta_pipe_adv * remote_adv)
 {
     Jxta_status rv;
 
@@ -672,18 +679,32 @@ Jxta_status jxta_socket_tunnel_establish(Jxta_socket_tunnel * self, Jxta_pipe_ad
 
     switch (proto_params[self->protocol][1]) {
     case SOCK_STREAM:
+        rv = bind_socket(self->socket, self->sockaddr);
+        if (APR_SUCCESS != rv) {
+            break;
+        }
         rv = apr_thread_create(&self->thread, NULL, socket_accept_func, self, self->pool);
+        if (APR_SUCCESS != rv) {
+            jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Fail to create socket thread with error %ld\n", rv);
+        }
         break;
     case SOCK_DGRAM:
+        if (0 == self->sockaddr->port) {
+            jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_ERROR, "UDP tunnel must assign a port number to send to\n");
+            rv = JXTA_INVALID_ARGUMENT;
+            break;
+        }
         rv = apr_thread_create(&self->thread, NULL, socket_dgram_func, self, self->pool);
+        if (APR_SUCCESS != rv) {
+            jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Fail to create socket thread with error %ld\n", rv);
+        }
         break;
     default:
         rv = JXTA_INVALID_ARGUMENT;
         break;
     }
 
-    if (!APR_STATUS_IS_SUCCESS(rv)) {
-        jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Fail to create socket thread with error %ld\n", rv);
+    if (APR_SUCCESS != rv) {
         JXTA_OBJECT_RELEASE(self->listener);
         self->listener = NULL;
     }
@@ -692,15 +713,35 @@ Jxta_status jxta_socket_tunnel_establish(Jxta_socket_tunnel * self, Jxta_pipe_ad
     return rv;
 }
 
-Jxta_status jxta_socket_tunnel_accept(Jxta_socket_tunnel * self, Jxta_pipe_adv * local_adv)
+JXTA_DECLARE(Jxta_status) jxta_socket_tunnel_accept(Jxta_socket_tunnel * self, Jxta_pipe_adv * local_adv)
 {
-    Jxta_status rv;
+    Jxta_status rv = JXTA_SUCCESS;
 
     apr_thread_mutex_lock(self->mutex);
     if (NULL != self->listener) {
         jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Try to use a busy tunnel\n");
         apr_thread_mutex_unlock(self->mutex);
         return JXTA_BUSY;
+    }
+
+    switch (proto_params[self->protocol][1]) {
+    case SOCK_STREAM:
+        if (0 == self->sockaddr->port) {
+            jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_ERROR, "TCP tunnel must assign a port number to connect to\n");
+            rv = JXTA_INVALID_ARGUMENT;
+        }
+        break;
+    case SOCK_DGRAM:
+        rv = bind_socket(self->socket, self->sockaddr);
+        break;
+    default:
+        rv = JXTA_INVALID_ARGUMENT;
+        break;
+    }
+
+    if (JXTA_SUCCESS != rv) {
+        apr_thread_mutex_unlock(self->mutex);
+        return rv;
     }
 
     self->mode = ACCEPTING;
@@ -717,7 +758,7 @@ Jxta_status jxta_socket_tunnel_accept(Jxta_socket_tunnel * self, Jxta_pipe_adv *
     self->stop = FALSE;
 
     rv = apr_thread_create(&self->thread, NULL, pipe_accept_func, self, self->pool);
-    if (!APR_STATUS_IS_SUCCESS(rv)) {
+    if (APR_SUCCESS != rv) {
         jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Fail to create pipe thread with error %ld\n", rv);
         JXTA_OBJECT_RELEASE(self->listener);
         self->listener = NULL;
@@ -727,7 +768,7 @@ Jxta_status jxta_socket_tunnel_accept(Jxta_socket_tunnel * self, Jxta_pipe_adv *
     return rv;
 }
 
-Jxta_status jxta_socket_tunnel_teardown(Jxta_socket_tunnel * self)
+JXTA_DECLARE(Jxta_status) jxta_socket_tunnel_teardown(Jxta_socket_tunnel * self)
 {
     Jxta_status rv;
     apr_status_t ts;
@@ -784,15 +825,28 @@ Jxta_status jxta_socket_tunnel_teardown(Jxta_socket_tunnel * self)
     return rv;
 }
 
-Jxta_boolean jxta_socket_tunnel_is_established(Jxta_socket_tunnel * self)
+JXTA_DECLARE(Jxta_boolean) jxta_socket_tunnel_is_established(Jxta_socket_tunnel * self)
 {
     return (NULL != self->listener);
 }
 
-#if 0                           /* to cheat indent */
+JXTA_DECLARE(char *) jxta_socket_tunnel_addr_get(Jxta_socket_tunnel * self)
+{
+    size_t len;
+    char *ip;
+    char *buf;
+
+    apr_sockaddr_ip_get(&ip, self->sockaddr);
+    len = 36 + strlen(protocols[self->protocol]) + strlen(ip);  /* 4 'proto://addr:port' + 32 for port */
+    buf = (char *) calloc(len + 1, sizeof(char));
+    snprintf(buf, len, "%s://%s:%u", protocols[self->protocol], ip, self->sockaddr->port);
+    return buf;
+}
+
+#if 0   /* to cheat indent */
 {
 #endif
 #ifdef __cplusplus
-}                               /* extern "C" */
+}   /* extern "C" */
 #endif
 /* vim: set sw=4 ts=4 et tw=130: */

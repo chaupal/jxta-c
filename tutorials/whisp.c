@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: whisp.c,v 1.8 2005/04/04 17:17:55 bondolo Exp $
+ * $Id: whisp.c,v 1.10 2005/09/07 22:21:09 slowhog Exp $
  */
 
 /*
@@ -484,16 +484,17 @@ unsigned read_user_input(JString * operands[2])
     /* find a command and up to two operands, bypassing all white space */
     rest = buffer;
     last = tokens;
-    do {
-        *last = strsep(&rest, " \t");
+    *last = strtok(buffer, " \t");
+    while (*last != NULL) {
         if (**last != '\0') {
             ++last;
             if (last >= &tokens[2]) {
-                tokens[2] = rest;
+                tokens[2] = tokens[1] + strlen(tokens[1]) + 1;
                 break;
             }
         }
-    } while (rest != NULL);
+        *last = strtok(NULL, " \t");
+    }
 
     if (NULL == tokens[0]) {
         return USER_ERROR;
@@ -1086,7 +1087,6 @@ int index_of_pipe_ad_with_name(JString * recipient)
 
 void rdv_event_received(Jxta_object * obj, void *arg)
 {
-
     Jxta_rdv_event *event = (Jxta_rdv_event *) obj;
 
     printf("\n  Received a Rendezvous Service Event: ");
@@ -1130,7 +1130,6 @@ void rdv_event_received(Jxta_object * obj, void *arg)
         printf("nature of event unknown!");
         break;
     }
-    JXTA_OBJECT_RELEASE(obj);
 
     printf("\n\n");
     print_prompt();
@@ -1216,9 +1215,6 @@ void discovery_response_received(Jxta_object * obj, void *arg)
         printf("\n\tUnrecognized ads received:\n");
     }
 
-    JXTA_OBJECT_RELEASE(obj);
-    /* don't release the newAds because we're keeping them and releasing them later */
-
     print_prompt();
 }
 
@@ -1244,8 +1240,6 @@ void pipe_accept_event_received(Jxta_object * obj, void *arg)
     } else {
         printf("\n  Apologies. Apparently we cannot receive messages.\n\n");
     }
-
-    JXTA_OBJECT_RELEASE(obj);
 
     print_prompt();
 }
@@ -1336,7 +1330,6 @@ void pipe_connect_event_received(Jxta_object * obj, void *arg)
     }
 
     JXTA_OBJECT_RELEASE(sendPipe);
-    JXTA_OBJECT_RELEASE(obj);
 
     JXTA_OBJECT_RELEASE(context->recipientPipeAd);
     JXTA_OBJECT_RELEASE(context->message);

@@ -51,44 +51,45 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_builtinmodules.c,v 1.13 2005/01/26 20:13:22 bondolo Exp $
+ * $Id: jxta_builtinmodules.c,v 1.16 2005/07/22 03:12:50 slowhog Exp $
  */
 
 #include <stddef.h>
- 
+
 #include "jxta_builtinmodules_private.h"
 
-extern void* jxta_endpoint_service_new_instance(void);
-extern void* jxta_rdv_service_new_instance(void);
-extern void* jxta_resolver_service_ref_new_instance(void);
-extern void* jxta_discovery_service_ref_new_instance(void);
-extern void* jxta_transport_http_new_instance(void);
-extern void* jxta_transport_tcp_new_instance(void);
-extern void* jxta_netpg_new_instance(void);
-extern void* jxta_stdpg_new_instance(void);
-extern void* jxta_router_client_new_instance(void);
-extern void* jxta_pipe_service_new_instance(void);
-extern void* jxta_membership_service_null_new_instance(void);
-extern void* jxta_peerinfo_service_new_instance(void);
-extern void* jxta_transport_relay_new_instance(void);
+extern void *jxta_endpoint_service_new_instance(void);
+extern void *jxta_rdv_service_new_instance(void);
+extern void *jxta_resolver_service_ref_new_instance(void);
+extern void *jxta_discovery_service_ref_new_instance(void);
+extern void *jxta_transport_http_new_instance(void);
+extern void *jxta_transport_tcp_new_instance(void);
+extern void *jxta_netpg_new_instance(void);
+extern void *jxta_stdpg_new_instance(void);
+extern void *jxta_router_client_new_instance(void);
+extern void *jxta_pipe_service_new_instance(void);
+extern void *jxta_membership_service_null_new_instance(void);
+extern void *jxta_peerinfo_service_new_instance(void);
+extern void *jxta_transport_relay_new_instance(void);
+extern void *jxta_srdi_service_ref_new_instance(void);
 
 /*
  * Placeholder for the real table, generated at link time (one day).
  */
 Jxta_builtinmodule_record jxta_builtinmodules_tbl[] = {
-    { "endpoint_service", jxta_endpoint_service_new_instance },
-    { "rdv_service", jxta_rdv_service_new_instance },
-    { "netpg", jxta_netpg_new_instance },
-    { "stdpg", jxta_stdpg_new_instance },
-    { "resolver_service_ref", jxta_resolver_service_ref_new_instance },
-    { "discovery_service_ref", jxta_discovery_service_ref_new_instance },
-    { "transport_http", jxta_transport_http_new_instance },
-    { "transport_tcp", jxta_transport_tcp_new_instance },
-    { "router_client", jxta_router_client_new_instance },
-    { "pipe_service", jxta_pipe_service_new_instance },
-    { "null_membership_service", jxta_membership_service_null_new_instance },
-    { "relay", jxta_transport_relay_new_instance },
+    {"endpoint_service", jxta_endpoint_service_new_instance},
+    {"rdv_service", jxta_rdv_service_new_instance},
+    {"netpg", jxta_netpg_new_instance},
+    {"stdpg", jxta_stdpg_new_instance},
+    {"resolver_service_ref", jxta_resolver_service_ref_new_instance},
+    {"discovery_service_ref", jxta_discovery_service_ref_new_instance},
+    {"transport_http", jxta_transport_http_new_instance},
+    {"transport_tcp", jxta_transport_tcp_new_instance},
+    {"router_client", jxta_router_client_new_instance},
+    {"pipe_service", jxta_pipe_service_new_instance},
+    {"null_membership_service", jxta_membership_service_null_new_instance},
+    {"relay", jxta_transport_relay_new_instance},
+    {"srdi_service_ref", jxta_srdi_service_ref_new_instance},
 /*  { "peerinfo_service", jxta_peerinfo_service_new_instance }, */
-    { NULL, NULL } /* must stay at the end */
+    {NULL, NULL}    /* must stay at the end */
 };
-

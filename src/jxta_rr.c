@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rr.c,v 1.38 2005/02/02 02:58:32 exocetrick Exp $
+ * $Id: jxta_rr.c,v 1.45 2005/08/18 19:01:51 slowhog Exp $
  */
 
 
@@ -75,7 +75,7 @@
 #include "jxta_rr.h"
 #include "jxta_xml_util.h"
 #include "jxta_advertisement.h"
-
+#include "jxtaapr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -101,11 +101,11 @@ extern "C" {
      */
     struct _ResolverResponse {
         Jxta_advertisement jxta_advertisement;
-        char    * ResolverResponse;
-        JString * Credential;
-        JString * HandlerName;
-        long      QueryID;
-        JString * Response;
+        char *ResolverResponse;
+        JString *Credential;
+        JString *HandlerName;
+        long QueryID;
+        JString *Response;
     };
 
 
@@ -114,34 +114,32 @@ extern "C" {
      * tag name.
      */
     static void
-    handleResolverResponse(void * userdata, const XML_Char * cd, int len) {
+     handleResolverResponse(void *userdata, const XML_Char * cd, int len) {
         /* ResolverResponse * ad = (ResolverResponse*)userdata; */
+    } static void
+     handleCredential(void *userdata, const XML_Char * cd, int len) {
+        ResolverResponse *ad = (ResolverResponse *) userdata;
+        jstring_append_0(ad->Credential, cd, len);
     }
 
     static void
-    handleCredential(void * userdata, const XML_Char * cd, int len) {
-        ResolverResponse * ad = (ResolverResponse*)userdata;
-        jstring_append_0(ad->Credential,cd,len);
+     handleHandlerName(void *userdata, const XML_Char * cd, int len) {
+        ResolverResponse *ad = (ResolverResponse *) userdata;
+        jstring_append_0(ad->HandlerName, cd, len);
     }
 
     static void
-    handleHandlerName(void * userdata, const XML_Char * cd, int len) {
-        ResolverResponse * ad = (ResolverResponse*)userdata;
-        jstring_append_0(ad->HandlerName,cd,len);
-    }
+     handleQueryID(void *userdata, const XML_Char * cd, int len) {
 
-    static void
-    handleQueryID(void * userdata, const XML_Char * cd, int len) {
-
-        ResolverResponse * ad = (ResolverResponse *)userdata;
+        ResolverResponse *ad = (ResolverResponse *) userdata;
         char *tok;
         /* XXXX hamada@jxta.org this can be cleaned up once parsing is corrected */
         if (len > 0) {
-            tok = malloc(len + 1);
+            tok = (char *) malloc(len + 1);
             memset(tok, 0, len + 1);
-            extract_char_data(cd,len,tok);
+            extract_char_data(cd, len, tok);
             if (*tok != '\0') {
-                ad->QueryID =(int) strtol(cd, NULL, 0);
+                ad->QueryID = (int) strtol(cd, NULL, 0);
             }
             free(tok);
         }
@@ -149,15 +147,15 @@ extern "C" {
 
 
     static void
-    handleResponse(void * userdata, const XML_Char * cd, int len) {
+     handleResponse(void *userdata, const XML_Char * cd, int len) {
 
-        ResolverResponse * ad = (ResolverResponse*)userdata;
-        jstring_append_0(ad->Response,(char *)cd,len);
+        ResolverResponse *ad = (ResolverResponse *) userdata;
+        jstring_append_0(ad->Response, (char *) cd, len);
     }
 
 
     static void
-    trim_elements( ResolverResponse * adv ) {
+     trim_elements(ResolverResponse * adv) {
         jstring_trim(adv->Credential);
         jstring_trim(adv->HandlerName);
         jstring_trim(adv->Response);
@@ -167,13 +165,13 @@ extern "C" {
     /** The get/set functions represent the public
      * interface to the ad class, that is, the API.
      */
-    Jxta_status
-    jxta_resolver_response_get_xml(ResolverResponse * adv,  JString** document) {
+    JXTA_DECLARE(Jxta_status)
+        jxta_resolver_response_get_xml(ResolverResponse * adv, JString ** document) {
 
-        JString * doc= NULL;
-        JString * tmps = NULL ;
+        JString *doc = NULL;
+        JString *tmps = NULL;
         Jxta_status status;
-        char * buf ;
+        char *buf;
 
         if (adv == NULL) {
             return JXTA_INVALID_ARGUMENT;
@@ -181,53 +179,52 @@ extern "C" {
 
         JXTA_OBJECT_CHECK_VALID(adv);
 
-        buf = malloc(128);
-        memset(buf, 0, 128);
+        buf = (char *) calloc(1, 128);
         trim_elements(adv);
         doc = jstring_new_2("<?xml version=\"1.0\"?>\n");
         jstring_append_2(doc, "<!DOCTYPE jxta:ResolverResponse>");
-        jstring_append_2(doc,"<jxta:ResolverResponse>\n");
+        jstring_append_2(doc, "<jxta:ResolverResponse>\n");
 
-        if (jstring_length(adv->Credential) != 0 ) {
-            jstring_append_2(doc,"<jxta:Cred>");
-            jstring_append_1(doc,adv->Credential);
-            jstring_append_2(doc,"</jxta:Cred>\n");
+        if (jstring_length(adv->Credential) != 0) {
+            jstring_append_2(doc, "<jxta:Cred>");
+            jstring_append_1(doc, adv->Credential);
+            jstring_append_2(doc, "</jxta:Cred>\n");
         }
 
-        jstring_append_2(doc,"<HandlerName>");
-        jstring_append_1(doc,adv->HandlerName);
-        jstring_append_2(doc,"</HandlerName>\n");
+        jstring_append_2(doc, "<HandlerName>");
+        jstring_append_1(doc, adv->HandlerName);
+        jstring_append_2(doc, "</HandlerName>\n");
 
-        sprintf(buf,"%ld\n",adv->QueryID);
-        jstring_append_2(doc,"<QueryID>");
-        jstring_append_2(doc,buf);
-        jstring_append_2(doc,"</QueryID>\n");
+        apr_snprintf(buf, 128, "%ld\n", adv->QueryID);
+        jstring_append_2(doc, "<QueryID>");
+        jstring_append_2(doc, buf);
+        jstring_append_2(doc, "</QueryID>\n");
         /* done with buf, free it */
         free(buf);
 
 
-        jstring_append_2(doc,"<Response>");
-        status = jxta_xml_util_encode_jstring(adv->Response,& tmps);
-        if (status != JXTA_SUCCESS ) {
-            JXTA_LOG("error encoding the response, retrun status :%d\n",status);
+        jstring_append_2(doc, "<Response>");
+        status = jxta_xml_util_encode_jstring(adv->Response, &tmps);
+        if (status != JXTA_SUCCESS) {
+            JXTA_LOG("error encoding the response, retrun status :%d\n", status);
             JXTA_OBJECT_RELEASE(doc);
             return status;
         }
         jstring_append_1(doc, tmps);
         JXTA_OBJECT_RELEASE(tmps);
-        jstring_append_2(doc,"</Response>\n");
+        jstring_append_2(doc, "</Response>\n");
 
 
 
-        jstring_append_2(doc,"</jxta:ResolverResponse>\n");
+        jstring_append_2(doc, "</jxta:ResolverResponse>\n");
 
         *document = doc;
 
         return JXTA_SUCCESS;
     }
 
-    JString *
-    jxta_resolver_response_get_credential(ResolverResponse * ad) {
+    JXTA_DECLARE(JString *)
+        jxta_resolver_response_get_credential(ResolverResponse * ad) {
         if (ad->Credential) {
             jstring_trim(ad->Credential);
             JXTA_OBJECT_SHARE(ad->Credential);
@@ -235,13 +232,13 @@ extern "C" {
         return ad->Credential;
     }
 
-    void
-    jxta_resolver_response_set_credential(ResolverResponse * ad, JString * credential) {
+    JXTA_DECLARE(void)
+        jxta_resolver_response_set_credential(ResolverResponse * ad, JString * credential) {
 
         if (ad == NULL) {
             return;
         }
-        if(ad->Credential) {
+        if (ad->Credential) {
             JXTA_OBJECT_RELEASE(ad->Credential);
             ad->Credential = NULL;
         }
@@ -249,22 +246,22 @@ extern "C" {
         ad->Credential = credential;
     }
 
-    void
-    jxta_resolver_response_get_handlername(ResolverResponse * ad, JString ** str) {
-        if( ad->HandlerName ) {
+    JXTA_DECLARE(void)
+     jxta_resolver_response_get_handlername(ResolverResponse * ad, JString ** str) {
+        if (ad->HandlerName) {
             jstring_trim(ad->HandlerName);
-            JXTA_OBJECT_SHARE( ad->HandlerName );
+            JXTA_OBJECT_SHARE(ad->HandlerName);
         }
         *str = ad->HandlerName;
     }
 
 
-    void
-    jxta_resolver_response_set_handlername(ResolverResponse * ad, JString * handlerName) {
+    JXTA_DECLARE(void)
+     jxta_resolver_response_set_handlername(ResolverResponse * ad, JString * handlerName) {
         if (ad == NULL) {
             return;
         }
-        if(ad->HandlerName) {
+        if (ad->HandlerName) {
             JXTA_OBJECT_RELEASE(ad->HandlerName);
             ad->HandlerName = NULL;
         }
@@ -272,27 +269,27 @@ extern "C" {
         ad->HandlerName = handlerName;
     }
 
-    long
-    jxta_resolver_response_get_queryid(ResolverResponse * ad) {
+    JXTA_DECLARE(long)
+     jxta_resolver_response_get_queryid(ResolverResponse * ad) {
         return ad->QueryID;
     }
 
-    void
-    jxta_resolver_response_set_queryid(ResolverResponse * ad, long  queryID) {
+    JXTA_DECLARE(void)
+        jxta_resolver_response_set_queryid(ResolverResponse * ad, long queryID) {
         ad->QueryID = queryID;
     }
 
-    void
-    jxta_resolver_response_get_response(ResolverResponse * ad, JString ** str) {
-        if( ad->Response ) {
+    JXTA_DECLARE(void)
+     jxta_resolver_response_get_response(ResolverResponse * ad, JString ** str) {
+        if (ad->Response) {
             jstring_trim(ad->Response);
-            JXTA_OBJECT_SHARE( ad->Response);
+            JXTA_OBJECT_SHARE(ad->Response);
         }
         *str = ad->Response;
     }
 
-    void
-    jxta_resolver_resposne_set_response(ResolverResponse * ad, JString * response) {
+    JXTA_DECLARE(void)
+     jxta_resolver_resposne_set_response(ResolverResponse * ad, JString * response) {
 
         if (ad == NULL) {
             return;
@@ -315,14 +312,14 @@ extern "C" {
      * Later, the stream will be dispatched to the handler based
      * on the value in the char * kwd.
      */
-    const static Kwdtab ResolverResponse_tags[] = {
-                {"Null",                 Null_,             NULL,                  NULL},
-                {"jxta:ResolverResponse",ResolverResponse_,*handleResolverResponse,NULL},
-                {"jxta:Cred",            Credential_,      *handleCredential,      NULL},
-                {"HandlerName",          HandlerName_,     *handleHandlerName,     NULL},
-                {"QueryID",              QueryID_,         *handleQueryID,         NULL},
-                {"Response",             Response_,        *handleResponse,        NULL},
-                {NULL,                   0,                0,                      NULL}
+    static const Kwdtab ResolverResponse_tags[] = {
+        {"Null", Null_, NULL, NULL, NULL},
+        {"jxta:ResolverResponse", ResolverResponse_, *handleResolverResponse, NULL, NULL},
+        {"jxta:Cred", Credential_, *handleCredential, NULL, NULL},
+        {"HandlerName", HandlerName_, *handleHandlerName, NULL, NULL},
+        {"QueryID", QueryID_, *handleQueryID, NULL, NULL},
+        {"Response", Response_, *handleResponse, NULL, NULL},
+        {NULL, 0, 0, NULL, NULL}
     };
 
 
@@ -332,49 +329,47 @@ extern "C" {
      * just in case there is a segfault (not that 
      * that would ever happen, but in case it ever did.)
      */
-    ResolverResponse *
-    jxta_resolver_response_new(void) {
+    JXTA_DECLARE(ResolverResponse *)
+        jxta_resolver_response_new(void) {
 
-        ResolverResponse * ad;
+        ResolverResponse *ad;
         ad = (ResolverResponse *) malloc(sizeof(ResolverResponse));
         memset(ad, 0xda, sizeof(ResolverResponse));
 
-        jxta_advertisement_initialize((Jxta_advertisement*)ad,
+        jxta_advertisement_initialize((Jxta_advertisement *) ad,
                                       "jxta:ResolverResponse",
                                       ResolverResponse_tags,
-                                      (JxtaAdvertisementGetXMLFunc)jxta_resolver_response_get_xml,
-                                      NULL, NULL, 
-                                      (FreeFunc)jxta_resolver_response_free);
+                                      (JxtaAdvertisementGetXMLFunc) jxta_resolver_response_get_xml,
+                                      NULL, NULL, (FreeFunc) jxta_resolver_response_free);
 
         /* Fill in the required initialization code here. */
-        ad->Response    = jstring_new_0();
-        ad->QueryID     = -1;
+        ad->Response = jstring_new_0();
+        ad->QueryID = -1;
         ad->HandlerName = jstring_new_0();
-        ad->Credential  = jstring_new_0();
+        ad->Credential = jstring_new_0();
 
         return ad;
     }
 
-    ResolverResponse *
-    jxta_resolver_response_new_1(JString * handlername, JString * response, long qid ) {
+    JXTA_DECLARE(ResolverResponse *)
+        jxta_resolver_response_new_1(JString * handlername, JString * response, long qid) {
 
-        ResolverResponse * ad;
+        ResolverResponse *ad;
         ad = (ResolverResponse *) malloc(sizeof(ResolverResponse));
         memset(ad, 0xda, sizeof(ResolverResponse));
-        jxta_advertisement_initialize((Jxta_advertisement*)ad,
+        jxta_advertisement_initialize((Jxta_advertisement *) ad,
                                       "jxta:ResolverResponse",
                                       ResolverResponse_tags,
-                                      (JxtaAdvertisementGetXMLFunc)jxta_resolver_response_get_xml,
-                                      NULL, NULL,
-                                      (FreeFunc)jxta_resolver_response_free);
+                                      (JxtaAdvertisementGetXMLFunc) jxta_resolver_response_get_xml,
+                                      NULL, NULL, (FreeFunc) jxta_resolver_response_free);
 
         /* Fill in the required initialization code here. */
-        ad->Credential  = jstring_new_0();
+        ad->Credential = jstring_new_0();
         JXTA_OBJECT_SHARE(handlername);
         ad->HandlerName = handlername;
-        ad->QueryID     = qid;
+        ad->QueryID = qid;
         JXTA_OBJECT_SHARE(response);
-        ad->Response    = response;
+        ad->Response = response;
         return ad;
     }
 
@@ -385,7 +380,7 @@ extern "C" {
      * after it was freed...
      */
     void
-    jxta_resolver_response_free(ResolverResponse * ad) {
+        jxta_resolver_response_free(ResolverResponse * ad) {
 
         if (ad->Credential) {
             JXTA_OBJECT_RELEASE(ad->Credential);
@@ -396,34 +391,33 @@ extern "C" {
         if (ad->Response) {
             JXTA_OBJECT_RELEASE(ad->Response);
         }
-	    jxta_advertisement_delete((Jxta_advertisement*)ad);
+        jxta_advertisement_delete((Jxta_advertisement *) ad);
         memset(ad, 0xdd, sizeof(ResolverResponse));
         free(ad);
     }
 
-    void
-    jxta_resolver_response_parse_charbuffer(ResolverResponse * ad, const char * buf,
-                                            int len) {
-        jxta_advertisement_parse_charbuffer((Jxta_advertisement*)ad,buf,len);
+    JXTA_DECLARE(void)
+     jxta_resolver_response_parse_charbuffer(ResolverResponse * ad, const char *buf, int len) {
+        jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
     }
 
 
 
-    void
-    jxta_resolver_response_parse_file(ResolverResponse * ad, FILE * stream) {
-        jxta_advertisement_parse_file((Jxta_advertisement*)ad, stream);
+    JXTA_DECLARE(void)
+     jxta_resolver_response_parse_file(ResolverResponse * ad, FILE * stream) {
+        jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
     }
 
 
 
 #ifdef STANDALONE
     int
-    main(int argc, char **argv) {
-        ResolverResponse * ad;
+     main(int argc, char **argv) {
+        ResolverResponse *ad;
         FILE *testfile;
-        JString * doc;
+        JString *doc;
 
-        if(argc != 2) {
+        if (argc != 2) {
             printf("usage: ad <filename>\n");
             return -1;
         }
@@ -433,8 +427,8 @@ extern "C" {
         testfile = fopen(argv[1], "r");
         jxta_resolver_response_parse_file(ad, testfile);
         fclose(testfile);
-        jxta_resolver_response_get_xml(ad, & doc);
-        fprintf(stdout,"%s\n",jstring_get_string(doc));
+        jxta_resolver_response_get_xml(ad, &doc);
+        fprintf(stdout, "%s\n", jstring_get_string(doc));
 
         /* ResolverResponse_print_xml(ad,fprintf,stdout); */
         jxta_resolver_response_free(ad);

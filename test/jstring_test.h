@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jstring_test.h,v 1.1 2004/12/05 02:17:34 slowhog Exp $
+ * $Id: jstring_test.h,v 1.2 2005/04/17 14:22:18 lankes Exp $
  */
 
 
@@ -77,14 +77,14 @@ extern "C" {
  * Test function used to check the 
  * jstring_send function
  */
-Jxta_status
+Jxta_status JXTA_STDCALL
 sendFunction(void *stream, const char *buf, size_t len, unsigned int flag);
 
 /**
  * Test function used to check the 
  * jstring_write function
  */
-Jxta_status
+Jxta_status JXTA_STDCALL
 writeFunction(void *stream, const char *buf, size_t len, unsigned int flag);
 
 

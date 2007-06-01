@@ -50,12 +50,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peer_private.h,v 1.7 2005/03/23 20:04:14 bondolo Exp $
+ * $Id: jxta_peer_private.h,v 1.13 2005/07/22 03:12:53 slowhog Exp $
  */
 
 
 #ifndef __JXTA_PEER_PRIVATE_H__
 #define __JXTA_PEER_PRIVATE_H__
+
+#include "jxtaapr.h"
 
 #include "jxta_peer.h"
 #include "jxta_object_type.h"
@@ -73,34 +75,34 @@ extern "C" {
 /**
 * The set of methods that a Peer_entry object must implement.
 **/ typedef struct Jxta_Peer_entry_methods {
-    Extends_nothing;    /* could extend Jxta_object but that'd be overkill */
+    Extends_nothing;            /* could extend Jxta_object but that'd be overkill */
 
-    Jxta_status(*jxta_peer_lock) (Jxta_peer * p);
+    Jxta_status(JXTA_STDCALL * jxta_peer_lock) (Jxta_peer * p);
 
-    Jxta_status(*jxta_peer_unlock) (Jxta_peer * p);
+    Jxta_status(JXTA_STDCALL * jxta_peer_unlock) (Jxta_peer * p);
 
-    Jxta_status(*jxta_peer_get_peerid) (Jxta_peer * peer, Jxta_id ** id);
+    Jxta_status(JXTA_STDCALL * jxta_peer_get_peerid) (Jxta_peer * peer, Jxta_id ** id);
 
-    Jxta_status(*jxta_peer_set_peerid) (Jxta_peer * peer, Jxta_id * peerId);
+    Jxta_status(JXTA_STDCALL * jxta_peer_set_peerid) (Jxta_peer * peer, Jxta_id * peerId);
 
-    Jxta_status(*jxta_peer_get_address) (Jxta_peer * peer, Jxta_endpoint_address ** addr);
+    Jxta_status(JXTA_STDCALL * jxta_peer_get_address) (Jxta_peer * peer, Jxta_endpoint_address ** addr);
 
-    Jxta_status(*jxta_peer_set_address) (Jxta_peer * peer, Jxta_endpoint_address * addr);
+    Jxta_status(JXTA_STDCALL * jxta_peer_set_address) (Jxta_peer * peer, Jxta_endpoint_address * addr);
 
-    Jxta_status(*jxta_peer_get_adv) (Jxta_peer * peer, Jxta_PA ** pa);
+    Jxta_status(JXTA_STDCALL * jxta_peer_get_adv) (Jxta_peer * peer, Jxta_PA ** pa);
 
-    Jxta_status(*jxta_peer_set_adv) (Jxta_peer * peer, Jxta_PA * adv);
+    Jxta_status(JXTA_STDCALL * jxta_peer_set_adv) (Jxta_peer * peer, Jxta_PA * adv);
 
-    Jxta_time(*jxta_peer_get_expires) (Jxta_peer * peer);
+    Jxta_time(JXTA_STDCALL * jxta_peer_get_expires) (Jxta_peer * peer);
 
-    Jxta_status(*jxta_peer_set_expires) (Jxta_peer * peer, Jxta_time expiry);
+    Jxta_status(JXTA_STDCALL * jxta_peer_set_expires) (Jxta_peer * peer, Jxta_time expiry);
 } Jxta_Peer_entry_methods;
 
 extern const Jxta_Peer_entry_methods JXTA_PEER_ENTRY_METHODS;
 
 struct _jxta_peer_entry {
     Extends(Jxta_object);       /* equivalent to JXTA_OBJECT_HANDLE; char* thisType. */
-    Jxta_Peer_entry_methods const *methods;     /* Pointer to the implementation set of methods. */
+    Jxta_Peer_entry_methods const *methods; /* Pointer to the implementation set of methods. */
 
     apr_thread_mutex_t *mutex;
     apr_pool_t *pool;
@@ -117,44 +119,49 @@ typedef struct _jxta_peer_entry _jxta_peer_entry;
  * The base rdv service ctor (not public: the only public way to make a new pg 
  * is to instantiate one of the derived types).
  */
-extern _jxta_peer_entry *peer_entry_construct(_jxta_peer_entry * peer);
+extern _jxta_peer_entry *JXTA_STDCALL peer_entry_construct(_jxta_peer_entry * peer);
 
 /**
  * The base peer dtor (Not public, not virtual. Only called by subclassers).
  * We just pass it along.
  */
-extern void peer_entry_destruct(_jxta_peer_entry * peer);
+extern void JXTA_STDCALL peer_entry_destruct(_jxta_peer_entry * peer);
 
 /**
  * Protected method for sub-classes.
  */
-extern Jxta_status jxta_peer_lock(Jxta_peer * p);
+extern Jxta_status JXTA_STDCALL jxta_peer_lock(Jxta_peer * p);
 
 /**
  * Protected method for sub-classes.
  */
-extern Jxta_status jxta_peer_unlock(Jxta_peer * p);
+extern Jxta_status JXTA_STDCALL jxta_peer_unlock(Jxta_peer * p);
 
-extern Jxta_endpoint_address const *jxta_peer_get_address_priv(Jxta_peer * p);
+extern Jxta_endpoint_address *JXTA_STDCALL jxta_peer_get_address_priv(Jxta_peer * p);
 
-extern Jxta_id *jxta_peer_get_peerid_priv(Jxta_peer * p);
+extern Jxta_id *JXTA_STDCALL jxta_peer_get_peerid_priv(Jxta_peer * p);
 
-extern Jxta_PA *jxta_peer_get_adv_priv(Jxta_peer * p);
-
-/**
- * Protected method for sub-classes.
- **/
-extern Jxta_time jxta_peer_get_expires(Jxta_peer * p);
+extern Jxta_PA *JXTA_STDCALL jxta_peer_get_adv_priv(Jxta_peer * p);
 
 /**
  * Protected method for sub-classes.
  **/
-extern Jxta_status jxta_peer_set_expires(Jxta_peer * p, Jxta_time expires);
+extern Jxta_time JXTA_STDCALL jxta_peer_get_expires(Jxta_peer * p);
+
+/**
+ * Protected method for sub-classes.
+ **/
+extern Jxta_status JXTA_STDCALL jxta_peer_set_expires(Jxta_peer * p, Jxta_time expires);
 
 
 #define PEER_ENTRY_VTBL(self) (((_jxta_peer_entry*) (self))->methods)
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 #endif /* __JXTA_PEER_PRIVATE_H__ */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

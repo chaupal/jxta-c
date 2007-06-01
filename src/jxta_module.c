@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_module.c,v 1.19 2005/03/25 23:39:44 bondolo Exp $
+ * $Id: jxta_module.c,v 1.22 2005/08/03 05:51:16 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -61,6 +61,7 @@
 #include "jpr/jpr_excep.h"
 
 #include "jxta_errno.h"
+#include "jxta_module.h"
 #include "jxta_module_private.h"
 
 
@@ -74,7 +75,7 @@
      * NB : jxta_object_init, not called from here; called directly
      * by the allocator, where the most derived type of the obj is known.
  */
-_jxta_module *jxta_module_construct(_jxta_module * module, Jxta_module_methods const * methods)
+_jxta_module *jxta_module_construct(_jxta_module * module, Jxta_module_methods const *methods)
 {
     _jxta_module *self = (_jxta_module *) module;
 
@@ -115,7 +116,8 @@ void jxta_module_destruct(Jxta_module * module)
  *
  * @since   JXTA 1.0
  */
-Jxta_status jxta_module_init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
+JXTA_DECLARE(Jxta_status) jxta_module_init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigned_id,
+                                           Jxta_advertisement * impl_adv)
 {
     _jxta_module *self = PTValid(module, _jxta_module);
 
@@ -143,7 +145,8 @@ Jxta_status jxta_module_init(Jxta_module * module, Jxta_PG * group, Jxta_id * as
  *
  * @since   JXTA 1.0
  */
-void jxta_module_init_e(Jxta_module * module, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv, Throws)
+JXTA_DECLARE(void) jxta_module_init_e(Jxta_module * module, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv,
+                                      Throws)
 {
     _jxta_module *self = PTValid(module, _jxta_module);
 
@@ -164,7 +167,7 @@ void jxta_module_init_e(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
  *  @return status indication. By convention 0 means that this Module
  *  started succesfully.
  */
-Jxta_status jxta_module_start(Jxta_module * module, char *args[])
+JXTA_DECLARE(Jxta_status) jxta_module_start(Jxta_module * module, const char *args[])
 {
     _jxta_module *self = PTValid(module, _jxta_module);
 
@@ -177,7 +180,7 @@ Jxta_status jxta_module_start(Jxta_module * module, char *args[])
  *  The Module cannot be forced to comply, but in the future
  *  we might be able to deny it access to anything after some timeout.
  */
-void jxta_module_stop(Jxta_module * module)
+JXTA_DECLARE(void) jxta_module_stop(Jxta_module * module)
 {
     _jxta_module *self = PTValid(module, _jxta_module);
 

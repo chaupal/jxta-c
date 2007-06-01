@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_tokenizer.h,v 1.1 2004/12/05 02:16:42 slowhog Exp $
+ * $Id: jxta_shell_tokenizer.h,v 1.2 2005/08/24 01:21:21 slowhog Exp $
  */
 #ifndef __JXTA_SHELL_TOKENIZER_H__
 #define  __JXTA_SHELL_TOKENIZER_H__
@@ -66,7 +66,6 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _jxta_shell_tokenizer JxtaShellTokenizer;
 
 
@@ -76,9 +75,7 @@ typedef struct _jxta_shell_tokenizer JxtaShellTokenizer;
 * @param delim the characters on which we split the line
 * @param returnDelim if 1 we do not return  delimiters, otherwise we do
 */
-JxtaShellTokenizer * JxtaShellTokenizer_new(const char *line,
-                                            const char *delim,
-                                            int returnDelim);
+JxtaShellTokenizer *JxtaShellTokenizer_new(const char *line, const char *delim, int returnDelim);
 
 /** 
 *  Returns 0 if we have more tokens to return and -1 otherwise
@@ -94,18 +91,22 @@ int JxtaShellTokenizer_hasMoreTokens(JxtaShellTokenizer * tok);
 *  @param opt the ShellTokenizer object to use 
 * @return  the next token or 0 if no more tokens are available
 */
-char * JxtaShellTokenizer_nextToken(JxtaShellTokenizer * tok);
+char *JxtaShellTokenizer_nextToken(JxtaShellTokenizer * tok);
 
 /**
 * Returns the number of tokens still available in this tokenizer
 *  @param opt the ShellTokenizer object to use 
 * @return the number of tokens still available in this tokenizer
-*/ 
+*/
 int JxtaShellTokenizer_countTokens(JxtaShellTokenizer * tok);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
-
 #endif /* __JXTA_SHELL_TOKENIZER_H__ */
+
+/* vim: set ts=4 sw=4 et tw=130 */

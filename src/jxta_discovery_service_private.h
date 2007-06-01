@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_discovery_service_private.h,v 1.11 2005/01/10 17:22:18 brent Exp $
+ * $Id: jxta_discovery_service_private.h,v 1.16 2005/08/29 22:49:04 slowhog Exp $
  */
 
 
@@ -59,6 +59,7 @@
 
 #include "jxta_discovery_service.h"
 #include "jxta_service_private.h"
+#include "jxta_query.h"
 
 /****************************************************************
  **
@@ -74,7 +75,6 @@ extern "C" {
 }
 #endif
 #endif
-
 struct _jxta_discovery_service {
     Extends(Jxta_service);
 
@@ -87,62 +87,60 @@ struct _jxta_discovery_service_methods {
     Extends(Jxta_service_methods);
 
     /* discovery methods */
-     long (*getRemoteAdv)(Jxta_discovery_service* self,
-                                            Jxta_id* peerid,
-                                            short type,
-                                            const char* attribute,
-                                            const char* value,
-                                            int threshold,
-                                            Jxta_discovery_listener* listener);
 
-					    
-     Jxta_status (*getLocalAdv)(Jxta_discovery_service* self,
-                                            short type,
-                                            const char* attribute,
-                                            const char* value,
-                                            Jxta_vector** advertisements);
-					    
-     Jxta_status (*publish)(Jxta_discovery_service* self,
-                     			     Jxta_advertisement* adv,
-					     short type,
-					     Jxta_expiration_time lifetime,
-					     Jxta_expiration_time lifetimeForOthers);
-					     
-     Jxta_status (*remotePublish)(Jxta_discovery_service* self,
-     					     Jxta_id* peerid,
-                     			     Jxta_advertisement* adv,
-					     short type,
-					     Jxta_expiration_time lifetimeForOthers);			    
-  
-     Jxta_status (*flush)(Jxta_discovery_service* self,
-                                             char * id,
-					     short type);
-					     
-     Jxta_status (*add_listener)(Jxta_discovery_service* self,
-                                             Jxta_discovery_listener* listener);
-					     
-     Jxta_status (*remove_listener)(Jxta_discovery_service* self,
-                                             Jxta_discovery_listener* listener);
+    long (*getRemoteAdv) (Jxta_discovery_service * self,
+                          Jxta_id * peerid,
+                          short type,
+                          const char *attribute, const char *value, int threshold, Jxta_discovery_listener * listener);
+
+    long (*getRemoteQuery) (Jxta_discovery_service * self,
+                            Jxta_id * peerid, const char *query, int threshold, Jxta_discovery_listener * listener);
+
+     Jxta_status(*cancelRemoteQuery) (Jxta_discovery_service * me, long query_id, Jxta_discovery_listener ** listener);
+
+     Jxta_status(*getLocalAdv) (Jxta_discovery_service * self,
+                                short type, const char *attribute, const char *value, Jxta_vector ** advertisements);
+
+     Jxta_status(*getLocalQuery) (Jxta_discovery_service * self, const char *query, Jxta_vector ** advertisements);
+
+     Jxta_status(*publish) (Jxta_discovery_service * self,
+                            Jxta_advertisement * adv,
+                            short type, Jxta_expiration_time lifetime, Jxta_expiration_time lifetimeForOthers);
+
+     Jxta_status(*remotePublish) (Jxta_discovery_service * self,
+                                  Jxta_id * peerid, Jxta_advertisement * adv, short type, Jxta_expiration_time lifetimeForOthers);
+
+     Jxta_status(*flush) (Jxta_discovery_service * self, char *id, short type);
+
+     Jxta_status(*add_listener) (Jxta_discovery_service * self, Jxta_discovery_listener * listener);
+
+     Jxta_status(*remove_listener) (Jxta_discovery_service * self, Jxta_discovery_listener * listener);
+
+     Jxta_status(*getLifetime) (Jxta_discovery_service * service, short type, Jxta_id * advId, Jxta_expiration_time * exp);
+
+     Jxta_status(*getExpiration) (Jxta_discovery_service * service, short type, Jxta_id * advId, Jxta_expiration_time * exp);
 };
 
 /**
  * The base discovery service ctor (not public: the only public way to make a
  * new pg is to instantiate one of the derived types).
  */
-extern void
-jxta_discovery_service_construct(Jxta_discovery_service* service,
-				Jxta_discovery_service_methods* methods);
+extern void jxta_discovery_service_construct(Jxta_discovery_service * service, Jxta_discovery_service_methods * methods);
 
 /**
  * The base rsesolver service dtor (Not public, not virtual. Only called by
  * subclassers). We just pass it along.
  */
-extern void
-jxta_discovery_service_destruct(Jxta_discovery_service* service);
+extern void jxta_discovery_service_destruct(Jxta_discovery_service * service);
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
-	
+
 #endif /* JXTA_DISCOVERY_SERVICE_PRIVATE_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_adv.h,v 1.5 2005/02/02 02:58:30 exocetrick Exp $
+ * $Id: jxta_pipe_adv.h,v 1.8 2005/08/03 05:51:17 slowhog Exp $
  */
 
 /************************************************************************
@@ -83,7 +83,7 @@ extern "C" {
    ** system is out of memory.
    **/
 
-Jxta_pipe_adv *jxta_pipe_adv_new(void);
+JXTA_DECLARE(Jxta_pipe_adv *) jxta_pipe_adv_new(void);
 
   /**
    ** Builds and returns the XML (wire format) of the pipe advertisement.
@@ -95,7 +95,7 @@ Jxta_pipe_adv *jxta_pipe_adv_new(void);
    **                   JXTA_INVALID_PARAMETER when an argument was invalid.
    **/
 
-Jxta_status jxta_pipe_adv_get_xml(Jxta_pipe_adv * adv, JString ** xml);
+JXTA_DECLARE(Jxta_status) jxta_pipe_adv_get_xml(Jxta_pipe_adv * adv, JString ** xml);
 
   /**
    ** Parse an XML (wire format) document containing a JXTA pipe advertisement from
@@ -109,7 +109,7 @@ Jxta_status jxta_pipe_adv_get_xml(Jxta_pipe_adv * adv, JString ** xml);
    **                   JXTA_INVALID_PARAMETER when an argument was invalid.
    **/
 
-void jxta_pipe_adv_parse_charbuffer(Jxta_pipe_adv *, const char *buffer, int len);
+JXTA_DECLARE(void) jxta_pipe_adv_parse_charbuffer(Jxta_pipe_adv *, const char *buffer, int len);
 
   /**
    ** Parse an XML (wire format) document containing a JXTA pipe advertisement from
@@ -122,7 +122,7 @@ void jxta_pipe_adv_parse_charbuffer(Jxta_pipe_adv *, const char *buffer, int len
    **                   JXTA_INVALID_PARAMETER when an argument was invalid.
    **/
 
-void jxta_pipe_adv_parse_file(Jxta_pipe_adv *, FILE * stream);
+JXTA_DECLARE(void) jxta_pipe_adv_parse_file(Jxta_pipe_adv *, FILE * stream);
 
   /**
    ** Gets the unique identifier of the Pipe Advertisement.
@@ -132,7 +132,7 @@ void jxta_pipe_adv_parse_file(Jxta_pipe_adv *, FILE * stream);
    ** of the returned string is the same as the advertisement object.
    **/
 
-const char *jxta_pipe_adv_get_Id(Jxta_pipe_adv * adv);
+JXTA_DECLARE(const char *) jxta_pipe_adv_get_Id(Jxta_pipe_adv * adv);
 
   /**
    ** Gets the unique identifier of the Pipe Advertisement.
@@ -141,7 +141,7 @@ const char *jxta_pipe_adv_get_Id(Jxta_pipe_adv * adv);
    ** @returns a pointer to a JString containing the identifier.
    **/
 
-Jxta_id *jxta_pipe_adv_get_pipeid(Jxta_pipe_adv * adv);
+JXTA_DECLARE(Jxta_id *) jxta_pipe_adv_get_pipeid(Jxta_pipe_adv * adv);
 
   /**
    ** Sets the unique identifier of the Pipe Advertisement.
@@ -153,7 +153,7 @@ Jxta_id *jxta_pipe_adv_get_pipeid(Jxta_pipe_adv * adv);
    **                   JXTA_INVALID_PARAMETER when an argument was invalid.
    **/
 
-Jxta_status jxta_pipe_adv_set_Id(Jxta_pipe_adv * adv, const char *id);
+JXTA_DECLARE(Jxta_status) jxta_pipe_adv_set_Id(Jxta_pipe_adv * adv, const char *id);
 
   /**
    ** Gets the type of the Pipe Advertisement.
@@ -163,7 +163,7 @@ Jxta_status jxta_pipe_adv_set_Id(Jxta_pipe_adv * adv, const char *id);
    ** of the returned string is the same as the advertisement object.
    **/
 
-const char *jxta_pipe_adv_get_Type(Jxta_pipe_adv * adv);
+JXTA_DECLARE(const char *) jxta_pipe_adv_get_Type(Jxta_pipe_adv * adv);
 
   /**
    ** Sets the type of the Pipe Advertisement.
@@ -176,7 +176,7 @@ const char *jxta_pipe_adv_get_Type(Jxta_pipe_adv * adv);
    **                   JXTA_INVALID_PARAMETER when an argument was invalid.
    **/
 
-Jxta_status jxta_pipe_adv_set_Type(Jxta_pipe_adv * adv, const char *type);
+JXTA_DECLARE(Jxta_status) jxta_pipe_adv_set_Type(Jxta_pipe_adv * adv, const char *type);
 
   /**
    ** Gets the name of the Pipe Advertisement.
@@ -186,7 +186,7 @@ Jxta_status jxta_pipe_adv_set_Type(Jxta_pipe_adv * adv, const char *type);
    ** of the returned string is the same as the advertisement object.
    **/
 
-const char *jxta_pipe_adv_get_Name(Jxta_pipe_adv * adv);
+JXTA_DECLARE(const char *) jxta_pipe_adv_get_Name(Jxta_pipe_adv * adv);
 
   /**
    ** Sets the name of the Pipe Advertisement.
@@ -198,7 +198,7 @@ const char *jxta_pipe_adv_get_Name(Jxta_pipe_adv * adv);
    **                   JXTA_INVALID_PARAMETER when an argument was invalid.
    **/
 
-Jxta_status jxta_pipe_adv_set_Name(Jxta_pipe_adv * adv, const char *name);
+JXTA_DECLARE(Jxta_status) jxta_pipe_adv_set_Name(Jxta_pipe_adv * adv, const char *name);
   /**
    ** Return a vector of indexes to be applied to advertisement tags and attributes. 
    **
@@ -209,8 +209,14 @@ Jxta_status jxta_pipe_adv_set_Name(Jxta_pipe_adv * adv, const char *name);
    ** @return Jxta_vector: return a vector of element/attribute pairs in Jxta_index struct.
    **
   **/
-  Jxta_vector * jxta_pipe_adv_get_indexes(void);
+JXTA_DECLARE(Jxta_vector *) jxta_pipe_adv_get_indexes(Jxta_advertisement *);
+
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 #endif /* __Jxta_pipe_adv_H__  */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

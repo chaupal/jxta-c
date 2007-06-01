@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cred.c,v 1.3 2005/01/12 21:46:56 bondolo Exp $
+ * $Id: jxta_cred.c,v 1.6 2005/07/22 03:12:50 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -63,79 +63,90 @@
 
 #ifdef __cplusplus
 extern "C" {
+#if 0
+}
 #endif
+#endif
+JXTA_DECLARE(Jxta_status) jxta_credential_get_xml(Jxta_advertisement * ad, Jxta_write_func func, void *stream)
+{
+    Jxta_credential_mutable *self = (Jxta_credential_mutable *) ad;
 
-    Jxta_status
-    jxta_credential_get_xml( Jxta_advertisement *ad , Jxta_write_func func, void* stream ) {
-        Jxta_credential_mutable* self = (Jxta_credential_mutable*) ad;
-        
-        if( !JXTA_OBJECT_CHECK_VALID(self) )
-            return JXTA_INVALID_ARGUMENT;
-            
-        return (self->credfuncs->cred_getxml)( self, func, stream );
-        }
+    if (!JXTA_OBJECT_CHECK_VALID(self))
+        return JXTA_INVALID_ARGUMENT;
 
-    Jxta_status
-    jxta_credential_get_xml_1( Jxta_advertisement *ad, Jxta_write_func func, void* stream ) {
-        Jxta_credential_mutable* self = (Jxta_credential_mutable*) ad;
-        
-        if( !JXTA_OBJECT_CHECK_VALID(self) )
-            return JXTA_INVALID_ARGUMENT;
-            
-        return (self->credfuncs->cred_getxml_1)( self, func, stream );
-        }
+    return (self->credfuncs->cred_getxml) (self, func, stream);
+}
 
-    Jxta_status
-    jxta_credential_parse_charbuffer( Jxta_credential *cred , const char * buff, int len ) {
-        Jxta_credential_mutable* self = (Jxta_credential_mutable*) cred;
-        
-        if( !JXTA_OBJECT_CHECK_VALID(self) )
-            return JXTA_INVALID_ARGUMENT;
-            
-        return JXTA_NOTIMP;
-        }
+JXTA_DECLARE(Jxta_status)
+    jxta_credential_get_xml_1(Jxta_advertisement * ad, Jxta_write_func func, void *stream)
+{
+    Jxta_credential_mutable *self = (Jxta_credential_mutable *) ad;
 
-    
-    Jxta_status
-    jxta_credential_parse_file( Jxta_credential * cred , FILE * stream ) {
-        Jxta_credential_mutable* self = (Jxta_credential_mutable*) cred;
-        
-        if( !JXTA_OBJECT_CHECK_VALID(self) )
-            return JXTA_INVALID_ARGUMENT;
-            
-        return JXTA_NOTIMP;
-        }
+    if (!JXTA_OBJECT_CHECK_VALID(self))
+        return JXTA_INVALID_ARGUMENT;
 
-    Jxta_status
-    jxta_credential_get_peergroupid( Jxta_credential * cred , Jxta_id** pg ) {
-        Jxta_credential_mutable* self = (Jxta_credential_mutable*) cred;
-        
-        if( !JXTA_OBJECT_CHECK_VALID(self) )
-            return JXTA_INVALID_ARGUMENT;
-        
-        return (self->credfuncs->cred_getpeergroup)( cred, pg );
-        }
+    return (self->credfuncs->cred_getxml_1) (self, func, stream);
+}
 
-    Jxta_status
-    jxta_credential_get_peerid( Jxta_credential * cred , Jxta_id** peer ) {
-        Jxta_credential_mutable* self = (Jxta_credential_mutable*) cred;
-        
-        if( !JXTA_OBJECT_CHECK_VALID(self) )
-            return JXTA_INVALID_ARGUMENT;
-            
-        return (self->credfuncs->cred_getpeer)( cred, peer );
-        }
+JXTA_DECLARE(Jxta_status)
+    jxta_credential_parse_charbuffer(Jxta_credential * cred, const char *buff, int len)
+{
+    Jxta_credential_mutable *self = (Jxta_credential_mutable *) cred;
 
-    Jxta_status
-    jxta_credential_get_source( Jxta_credential * cred, Jxta_service** svc ) {
-        Jxta_credential_mutable* self = (Jxta_credential_mutable*) cred;
-        
-        if( !JXTA_OBJECT_CHECK_VALID(self) )
-            return JXTA_INVALID_ARGUMENT;
-            
-        return (self->credfuncs->cred_getsource)( cred, svc );
-        }
+    if (!JXTA_OBJECT_CHECK_VALID(self))
+        return JXTA_INVALID_ARGUMENT;
+
+    return JXTA_NOTIMP;
+}
+
+
+JXTA_DECLARE(Jxta_status)
+    jxta_credential_parse_file(Jxta_credential * cred, FILE * stream)
+{
+    Jxta_credential_mutable *self = (Jxta_credential_mutable *) cred;
+
+    if (!JXTA_OBJECT_CHECK_VALID(self))
+        return JXTA_INVALID_ARGUMENT;
+
+    return JXTA_NOTIMP;
+}
+
+JXTA_DECLARE(Jxta_status)
+    jxta_credential_get_peergroupid(Jxta_credential * cred, Jxta_id ** pg)
+{
+    Jxta_credential_mutable *self = (Jxta_credential_mutable *) cred;
+
+    if (!JXTA_OBJECT_CHECK_VALID(self))
+        return JXTA_INVALID_ARGUMENT;
+
+    return (self->credfuncs->cred_getpeergroup) (cred, pg);
+}
+
+JXTA_DECLARE(Jxta_status)
+    jxta_credential_get_peerid(Jxta_credential * cred, Jxta_id ** peer)
+{
+    Jxta_credential_mutable *self = (Jxta_credential_mutable *) cred;
+
+    if (!JXTA_OBJECT_CHECK_VALID(self))
+        return JXTA_INVALID_ARGUMENT;
+
+    return (self->credfuncs->cred_getpeer) (cred, peer);
+}
+
+JXTA_DECLARE(Jxta_status)
+    jxta_credential_get_source(Jxta_credential * cred, Jxta_service ** svc)
+{
+    Jxta_credential_mutable *self = (Jxta_credential_mutable *) cred;
+
+    if (!JXTA_OBJECT_CHECK_VALID(self))
+        return JXTA_INVALID_ARGUMENT;
+
+    return (self->credfuncs->cred_getsource) (cred, svc);
+}
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif

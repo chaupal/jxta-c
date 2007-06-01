@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi.h,v 1.3 2005/01/12 21:47:00 bondolo Exp $
+ * $Id: jxta_srdi.h,v 1.8 2005/08/03 05:51:19 slowhog Exp $
  */
 
 
@@ -69,8 +69,6 @@ extern "C" {
 }
 #endif
 #endif
-
-
 typedef struct _Jxta_SRDIMessage Jxta_SRDIMessage;
 typedef struct _jxta_EntryElement Jxta_SRDIEntryElement;
 
@@ -81,8 +79,10 @@ typedef struct _jxta_EntryElement Jxta_SRDIEntryElement;
 struct _jxta_EntryElement {
     JXTA_OBJECT_HANDLE;
     Jxta_expiration_time expiration;
-    JString * key;
-    JString * value;
+    JString *key;
+    JString *value;
+    JString *nameSpace;
+    JString *advId;
 };
 
 /**
@@ -92,13 +92,9 @@ struct _jxta_EntryElement {
  *
  * @return Pointer to srdi message.
  */
-Jxta_SRDIMessage * jxta_srdi_message_new(void);
+JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new(void);
 
-Jxta_SRDIMessage * jxta_srdi_message_new_1(
-    int TTL,
-    Jxta_id * peerid,
-    char * primarykey,
-    Jxta_vector * entries);
+JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_1(int TTL, Jxta_id * peerid, char *primarykey, Jxta_vector * entries);
 /**
  * Delete a srdi message.
  *
@@ -119,7 +115,7 @@ void jxta_srdi_message_free(Jxta_SRDIMessage *);
  *
  * @return Jxta_status 
  */
-Jxta_status jxta_srdi_message_get_xml(Jxta_SRDIMessage *, JString **);
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_xml(Jxta_SRDIMessage *, JString **);
 
 
 /**
@@ -135,7 +131,7 @@ Jxta_status jxta_srdi_message_get_xml(Jxta_SRDIMessage *, JString **);
  *
  * @return void Doesn't return anything.
  */
-void jxta_srdi_message_parse_charbuffer(Jxta_SRDIMessage *, const char *, int len);
+JXTA_DECLARE(void) jxta_srdi_message_parse_charbuffer(Jxta_SRDIMessage *, const char *, int len);
 
 
 
@@ -150,7 +146,8 @@ void jxta_srdi_message_parse_charbuffer(Jxta_SRDIMessage *, const char *, int le
  *
  * @return void Doesn't return anything.
  */
-void jxta_srdi_message_parse_file(Jxta_SRDIMessage *, FILE * stream);
+
+JXTA_DECLARE(void) jxta_srdi_message_parse_file(Jxta_SRDIMessage *, FILE * stream);
 
 /**
  * Gets the ttl of the srdi message.
@@ -159,7 +156,7 @@ void jxta_srdi_message_parse_file(Jxta_SRDIMessage *, FILE * stream);
  *
  * @return short set to value of the type.
  */
-int jxta_srdi_message_get_ttl(Jxta_SRDIMessage *);
+JXTA_DECLARE(int) jxta_srdi_message_get_ttl(Jxta_SRDIMessage *);
 
 
 /**
@@ -169,7 +166,7 @@ int jxta_srdi_message_get_ttl(Jxta_SRDIMessage *);
  *
  * @return Jxta_status JXTA_SUCCESS on success.
  */
-Jxta_status jxta_srdi_message_decrement_ttl(Jxta_SRDIMessage *);
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_decrement_ttl(Jxta_SRDIMessage *);
 
 /**
  * Gets the peer advertisement of the srdi message.
@@ -186,7 +183,7 @@ Jxta_status jxta_srdi_message_decrement_ttl(Jxta_SRDIMessage *);
  *
  * @return char * containing the primary key.
  */
-Jxta_status jxta_srdi_message_get_primaryKey(Jxta_SRDIMessage *, JString **);
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_primaryKey(Jxta_SRDIMessage *, JString **);
 
 
 /**
@@ -197,7 +194,7 @@ Jxta_status jxta_srdi_message_get_primaryKey(Jxta_SRDIMessage *, JString **);
  *
  * @return void Doesn't return anything.
  */
-Jxta_status jxta_srdi_message_set_primaryKey(Jxta_SRDIMessage *, JString *);
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_set_primaryKey(Jxta_SRDIMessage *, JString *);
 
 /**
  * Gets the peerid of the srdi message.
@@ -206,7 +203,7 @@ Jxta_status jxta_srdi_message_set_primaryKey(Jxta_SRDIMessage *, JString *);
  *
  * @return char * containing the peerID.
  */
-Jxta_status jxta_srdi_message_get_peerID(Jxta_SRDIMessage *, Jxta_id **);
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_peerID(Jxta_SRDIMessage *, Jxta_id **);
 
 
 /**
@@ -217,7 +214,7 @@ Jxta_status jxta_srdi_message_get_peerID(Jxta_SRDIMessage *, Jxta_id **);
  *
  * @return void Doesn't return anything.
  */
-Jxta_status jxta_srdi_message_set_peerID(Jxta_SRDIMessage *, Jxta_id *);
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_set_peerID(Jxta_SRDIMessage *, Jxta_id *);
 
 
 /**
@@ -228,8 +225,8 @@ Jxta_status jxta_srdi_message_set_peerID(Jxta_SRDIMessage *, Jxta_id *);
  *
  * @return Jxta_status 
  */
-Jxta_status
-jxta_srdi_message_get_entries(Jxta_SRDIMessage * ad, Jxta_vector ** entries);
+JXTA_DECLARE(Jxta_status)
+    jxta_srdi_message_get_entries(Jxta_SRDIMessage * ad, Jxta_vector ** entries);
 
 
 /**
@@ -240,13 +237,13 @@ jxta_srdi_message_get_entries(Jxta_SRDIMessage * ad, Jxta_vector ** entries);
  *
  * @return void
  */
-void jxta_srdi_message_set_entries(Jxta_SRDIMessage *, Jxta_vector * entries);
+JXTA_DECLARE(void) jxta_srdi_message_set_entries(Jxta_SRDIMessage *, Jxta_vector * entries);
 
 /**
  * Creates a new SRDI entry element
  * @return Jxta_SRDIEntryElement 
  */
-Jxta_SRDIEntryElement * jxta_srdi_new_element(void);
+JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element(void);
 
 /**
  * Creates a new  entry element
@@ -255,10 +252,25 @@ Jxta_SRDIEntryElement * jxta_srdi_new_element(void);
  * @param long the expiration time associated with the entry
  * @return Jxta_SRDIEntryElement 
  */
-Jxta_SRDIEntryElement * jxta_srdi_new_element_1(JString * key, JString * value,
-						Jxta_expiration_time expiration);
+JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_1(JString * key, JString * value, JString * nameSpace,
+                                                              Jxta_expiration_time expiration);
+/**
+ * Creates a new  entry element
+ * @param JString secondary key
+ * @param JString value
+ * @param long the expiration time associated with the entry
+ * @return Jxta_SRDIEntryElement 
+ */
+JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_2(JString * key, JString * value, JString * nameSpace,
+                                                              JString * advId, Jxta_expiration_time expiration);
 
-#endif /* __Jxta_SRDIMessage_H__  */
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
+#endif /* __Jxta_SRDIMessage_H__  */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

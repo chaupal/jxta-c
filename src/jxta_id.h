@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_id.h,v 1.4 2005/03/01 23:27:43 bondolo Exp $
+ * $Id: jxta_id.h,v 1.7 2005/07/22 03:12:51 slowhog Exp $
  */
 
 #ifndef JXTAID_H
@@ -69,7 +69,9 @@ extern "C" {
 #endif
 /**
 * JXTA ID TYPES
-**//**
+**/
+
+/**
 * Jxta ids are opaque Jxta_objects. You can use JXTA_OBJECT_RELEASE to
 * free them.
 **/ typedef const struct _jxta_id Jxta_id;
@@ -91,40 +93,40 @@ typedef Jxta_id Jxta_MSID;
 * NULL because nullID is more symetric, has a printable representation
 * and reduces need for special handling code.
 **/
-extern Jxta_id *jxta_id_nullID;
+JXTA_DECLARE_DATA Jxta_id *jxta_id_nullID;
 
 /**
 * Id of the world peer group. A well known Jxta ID.
 **/
-extern Jxta_id *jxta_id_worldNetPeerGroupID;
+JXTA_DECLARE_DATA Jxta_id *jxta_id_worldNetPeerGroupID;
 
 /**
 * Id of the default network peer group. A well known Jxta ID.
 **/
-extern Jxta_id *jxta_id_defaultNetPeerGroupID;
+JXTA_DECLARE_DATA Jxta_id *jxta_id_defaultNetPeerGroupID;
 
 /**
 * A string containing the URI encoding scheme for Jxta Ids. "urn"
 **/
-extern const char *jxta_id_URIENCODINGNAME;
+JXTA_DECLARE_DATA const char *jxta_id_URIENCODINGNAME;
 
 /**
 * A string containing the URN name space used for Jxta Ids. "jxta"
 **/
-extern const char *jxta_id_URNNAMESPACE;
+JXTA_DECLARE_DATA const char *jxta_id_URNNAMESPACE;
 
 /**
 * names of the id format which will be used to construct new
 * Jxta ids.
 **/
-extern char const *jxta_id_DEFAULT_ID_FORMAT;
+JXTA_DECLARE_DATA char const *jxta_id_DEFAULT_ID_FORMAT;
 
 /**
 * names of all of the id formats which are supported by this
 * implementation as a NULL terminated array of string pointers.
 *
 **/
-extern char const *jxta_id_ID_FORMATS[];
+JXTA_DECLARE_DATA char const *jxta_id_ID_FORMATS[];
 
 
 /**
@@ -140,7 +142,7 @@ extern char const *jxta_id_ID_FORMATS[];
 *
 * @return string containing the name of the default id format.
 **/
-char const *jxta_id_get_default_id_format(void);
+JXTA_DECLARE(char const *) jxta_id_get_default_id_format(void);
 
 /**
 * Returns names of all of the id formats which are supported by this
@@ -149,7 +151,7 @@ char const *jxta_id_get_default_id_format(void);
 * @return NULL terminated array of string pointers containing the names
 * of all of the id formats supported by this Jxta implementation.
 **/
-char const **jxta_id_get_id_formats(void);
+JXTA_DECLARE(char const **) jxta_id_get_id_formats(void);
 
 
 /**
@@ -165,7 +167,7 @@ char const **jxta_id_get_id_formats(void);
 * @param pg where to store the new peer group id.
 * @return returns JXTA_SUCCESS if successful, otherwise (unlikely) errors.
 **/
-Jxta_status jxta_id_peergroupid_new_1(Jxta_id ** pg);
+JXTA_DECLARE(Jxta_status) jxta_id_peergroupid_new_1(Jxta_id ** pg);
 
 /**
 * Constructs a new peer group id of the default id format. This varient
@@ -178,7 +180,7 @@ Jxta_status jxta_id_peergroupid_new_1(Jxta_id ** pg);
 *  length and should be a pseudo-random/canonical value.
 * @return returns JXTA_SUCCESS if successful, otherwise (unlikely) errors.
 **/
-Jxta_status jxta_id_peergroupid_new_2(Jxta_id ** pg, unsigned char const *seed, size_t len);
+JXTA_DECLARE(Jxta_status) jxta_id_peergroupid_new_2(Jxta_id ** pg, unsigned char const *seed, size_t len);
 
 /**
 * Constructs a new random peer id in the peer group specified. The id
@@ -189,7 +191,7 @@ Jxta_status jxta_id_peergroupid_new_2(Jxta_id ** pg, unsigned char const *seed, 
 *  used for the peer id will also match the id format of this group id.
 * @return returns JXTA_SUCCESS if successful, otherwise (unlikely) errors.
 **/
-Jxta_status jxta_id_peerid_new_1(Jxta_id ** peerid, Jxta_id * pg);
+JXTA_DECLARE(Jxta_status) jxta_id_peerid_new_1(Jxta_id ** peerid, Jxta_id * pg);
 
 /**
 * Constructs a new peer id in the peer group specified. The id
@@ -205,7 +207,7 @@ Jxta_status jxta_id_peerid_new_1(Jxta_id ** peerid, Jxta_id * pg);
 *  length and should be a pseudo-random/canonical value.
 * @return returns JXTA_SUCCESS if successful, otherwise (unlikely) errors.
 **/
-Jxta_status jxta_id_peerid_new_2(Jxta_id ** peerid, Jxta_id * pg, unsigned char const *seed, size_t len);
+JXTA_DECLARE(Jxta_status) jxta_id_peerid_new_2(Jxta_id ** peerid, Jxta_id * pg, unsigned char const *seed, size_t len);
 
 /**
 * Constructs a new random codat id in the peer group specified. The id
@@ -218,7 +220,7 @@ Jxta_status jxta_id_peerid_new_2(Jxta_id ** peerid, Jxta_id * pg, unsigned char 
 *  used for the codat id will also match the id format of this group id.
 * @return returns JXTA_SUCCESS if successful, otherwise (unlikely) errors.
 **/
-Jxta_status jxta_id_codatid_new_1(Jxta_id ** codatid, Jxta_id * pg);
+JXTA_DECLARE(Jxta_status) jxta_id_codatid_new_1(Jxta_id ** codatid, Jxta_id * pg);
 
 /**
 * Constructs a new random codat id in the peer group specified. The id
@@ -234,7 +236,7 @@ Jxta_status jxta_id_codatid_new_1(Jxta_id ** codatid, Jxta_id * pg);
 * @param stream argument to be passed to read_func.
 * @return returns JXTA_SUCCESS if successful, otherwise errors.
 **/
-Jxta_status jxta_id_codatid_new_2(Jxta_id ** codatid, Jxta_id * pg, ReadFunc read_func, void *stream);
+JXTA_DECLARE(Jxta_status) jxta_id_codatid_new_2(Jxta_id ** codatid, Jxta_id * pg, ReadFunc read_func, void *stream);
 
 /**
 * Constructs a new random pipe id in the peer group specified. The id
@@ -245,7 +247,7 @@ Jxta_status jxta_id_codatid_new_2(Jxta_id ** codatid, Jxta_id * pg, ReadFunc rea
 *  used for the pipe id will also match the id format of this group id.
 * @return returns JXTA_SUCCESS if successful, otherwise (unlikely) errors.
 **/
-Jxta_status jxta_id_pipeid_new_1(Jxta_id ** pipeid, Jxta_id * pg);
+JXTA_DECLARE(Jxta_status) jxta_id_pipeid_new_1(Jxta_id ** pipeid, Jxta_id * pg);
 
 /**
 * Constructs a new pipe id in the peer group specified. The id will be 
@@ -261,7 +263,7 @@ Jxta_status jxta_id_pipeid_new_1(Jxta_id ** pipeid, Jxta_id * pg);
 *  length and should be a pseudo-random/canonical value.
 * @return returns JXTA_SUCCESS if successful, otherwise (unlikely) errors.
 **/
-Jxta_status jxta_id_pipeid_new_2(Jxta_id ** pipeid, Jxta_id * pg, unsigned char const *seed, size_t len);
+JXTA_DECLARE(Jxta_status) jxta_id_pipeid_new_2(Jxta_id ** pipeid, Jxta_id * pg, unsigned char const *seed, size_t len);
 
 /**
 * Constructs a new module class id. The id will be of the default id 
@@ -270,7 +272,7 @@ Jxta_status jxta_id_pipeid_new_2(Jxta_id ** pipeid, Jxta_id * pg, unsigned char 
 * @param mcid where to store the new module class id.
 * @return returns JXTA_SUCCESS if successful, otherwise (unlikely) errors.
 **/
-Jxta_status jxta_id_moduleclassid_new_1(Jxta_id ** mcid);
+JXTA_DECLARE(Jxta_status) jxta_id_moduleclassid_new_1(Jxta_id ** mcid);
 
 /**
 * Constructs a new module class id.  The id will be of the same id 
@@ -280,7 +282,7 @@ Jxta_status jxta_id_moduleclassid_new_1(Jxta_id ** mcid);
 * @param base a base module class id to use in the generation of this id.
 * @return returns JXTA_SUCCESS if successful, otherwise (unlikely) errors.
 **/
-Jxta_status jxta_id_moduleclassid_new_2(Jxta_id ** mcid, Jxta_id * base);
+JXTA_DECLARE(Jxta_status) jxta_id_moduleclassid_new_2(Jxta_id ** mcid, Jxta_id * base);
 
 /**
 * Constructs a new module spec id. The id will be of the same id 
@@ -290,7 +292,7 @@ Jxta_status jxta_id_moduleclassid_new_2(Jxta_id ** mcid, Jxta_id * base);
 * @param mcid the module spec id on which to base this spec id.
 * @return returns JXTA_SUCCESS if successful, otherwise (unlikely) errors.
 **/
-Jxta_status jxta_id_modulespecid_new(Jxta_id ** msid, Jxta_id * mcid);
+JXTA_DECLARE(Jxta_status) jxta_id_modulespecid_new(Jxta_id ** msid, Jxta_id * mcid);
 
 /**
 * Constructs a new jxta id from a jstring.
@@ -299,7 +301,7 @@ Jxta_status jxta_id_modulespecid_new(Jxta_id ** msid, Jxta_id * mcid);
 * @param jid  string containing the textual representation of the ID.
 * @return returns JXTA_SUCCESS if successful, otherwise errors.
 **/
-Jxta_status jxta_id_from_jstring(Jxta_id ** id, JString * jid);
+JXTA_DECLARE(Jxta_status) jxta_id_from_jstring(Jxta_id ** id, JString * jid);
 
 
 /**
@@ -316,7 +318,7 @@ Jxta_status jxta_id_from_jstring(Jxta_id ** id, JString * jid);
 ** @return pointer to the format of the provided id. If the id is invalid
 **  then NULL is returned.
 **/
-char const *jxta_id_get_idformat(Jxta_id * jid);
+JXTA_DECLARE(char const *) jxta_id_get_idformat(Jxta_id * jid);
 
 /**
 ** Returns the unique canonical portion of the provided id. this value
@@ -326,7 +328,7 @@ char const *jxta_id_get_idformat(Jxta_id * jid);
 ** @param jid  The id who's unique value is desired.
 ** @return returns JXTA_SUCCESS if successful, otherwise errors.
 **/
-Jxta_status jxta_id_get_uniqueportion(Jxta_id * jid, JString ** string);
+JXTA_DECLARE(Jxta_status) jxta_id_get_uniqueportion(Jxta_id * jid, JString ** string);
 
 /**
 ** Returns the URI presentation of the provided id. 
@@ -335,7 +337,7 @@ Jxta_status jxta_id_get_uniqueportion(Jxta_id * jid, JString ** string);
 ** @param jid  The id who's unique value is desired.
 ** @return returns JXTA_SUCCESS if successful, otherwise errors.
 **/
-Jxta_status jxta_id_to_jstring(Jxta_id * jid, JString ** string);
+JXTA_DECLARE(Jxta_status) jxta_id_to_jstring(Jxta_id * jid, JString ** string);
 
 /**
 ** Compares two ids for equality. Note that for programmatic reasons,
@@ -345,7 +347,7 @@ Jxta_status jxta_id_to_jstring(Jxta_id * jid, JString ** string);
 ** @param jid2  the other id to compare.
 ** @return returns TRUE if equivalent, otherwise false.
 **/
-Jxta_boolean jxta_id_equals(Jxta_id * jid1, Jxta_id * jid2);
+JXTA_DECLARE(Jxta_boolean) jxta_id_equals(Jxta_id * jid1, Jxta_id * jid2);
 
 /**
  ** Returns a hashcode for the id.
@@ -353,9 +355,14 @@ Jxta_boolean jxta_id_equals(Jxta_id * jid1, Jxta_id * jid2);
  ** @param jid a pointer to the id to use.
  ** @return the hashcode for this id or '0' if the object is invalid.
  **/
-unsigned int jxta_id_hashcode(Jxta_id * jid);
+JXTA_DECLARE(unsigned int) jxta_id_hashcode(Jxta_id * jid);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 #endif /* JXTA_ID_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

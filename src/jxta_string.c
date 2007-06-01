@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_string.c,v 1.3 2002/02/17 18:30:53 lomax Exp $
+ * $Id: jxta_string.c,v 1.4 2005/06/16 23:11:52 slowhog Exp $
  */
 
 #include <stdarg.h>
@@ -64,50 +64,50 @@
    Takes: at least one char* followed but a NULL arg terminator.
    Returns: a new char*.
  */
-char* jxta_strconcat (const char* s1, ...) {
-	va_list argv;
-	int n;
-	char* s;
-	char* news;
-	int offset;
+char *jxta_strconcat(const char *s1, ...)
+{
+    va_list argv;
+    int n;
+    char *s;
+    char *news;
+    int offset;
 
-	va_start(argv, s1);
-	for (n = strlen(s1); (s = va_arg(argv, char*)); n += strlen(s)) {
-	}
-	va_end(argv);
+    va_start(argv, s1);
+    for (n = strlen(s1); (s = va_arg(argv, char *)); n += strlen(s)) {
+    }
+    va_end(argv);
 
-	va_start(argv, s1);
-	news = (char*) malloc(n +1);
-	strcpy(news, s1);
-	for (offset = strlen(news);
-	     (s = va_arg(argv, char*));
-	     offset += strlen(s))
-		strcpy(news + offset, s);
-	va_end(argv);
+    va_start(argv, s1);
+    news = (char *) malloc(n + 1);
+    strcpy(news, s1);
+    for (offset = strlen(news); (s = va_arg(argv, char *)); offset += strlen(s))
+        strcpy(news + offset, s);
+    va_end(argv);
 
-	return news;
+    return news;
 }
 
 #ifdef STANDALONE
 
 #include <stdio.h>
 
-int main (void) {
-	char* s;
+int main(void)
+{
+    char *s;
 
-	s = jxta_strconcat("a", NULL);
-	printf("%s\n", s);
-	free(s);
+    s = jxta_strconcat("a", NULL);
+    printf("%s\n", s);
+    free(s);
 
-	s = jxta_strconcat("b", "c", NULL);
-	printf("%s\n", s);
-	free(s);
+    s = jxta_strconcat("b", "c", NULL);
+    printf("%s\n", s);
+    free(s);
 
-	s = jxta_strconcat("a", "b", "c", NULL, "d");
-	printf("%s\n", s);
-	free(s);
+    s = jxta_strconcat("a", "b", "c", NULL, "d");
+    printf("%s\n", s);
+    free(s);
 
-	return 0;
+    return 0;
 }
 
 #endif

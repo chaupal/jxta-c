@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_messenger.h,v 1.2 2005/01/10 17:23:41 brent Exp $
+ * $Id: jxta_endpoint_messenger.h,v 1.5 2005/06/16 23:11:41 slowhog Exp $
  */
 
 
@@ -69,22 +69,24 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _JxtaEndpointMessenger JxtaEndpointMessenger;
 
-struct _JxtaEndpointMessenger
-{
-  JXTA_OBJECT_HANDLE;
-  Jxta_endpoint_address *address;
-  Jxta_status status;
-  /* send is defined in winsock2.h. Sorry. */
-  void (*jxta_send)  (JxtaEndpointMessenger *, Jxta_message* );
+struct _JxtaEndpointMessenger {
+    JXTA_OBJECT_HANDLE;
+    Jxta_endpoint_address *address;
+
+     Jxta_status(*jxta_send) (JxtaEndpointMessenger *, Jxta_message *);
 };
 
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTA_ENDPOINT_MESSENGER_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

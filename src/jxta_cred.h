@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cred.h,v 1.2 2005/01/10 17:23:42 brent Exp $
+ * $Id: jxta_cred.h,v 1.4 2005/06/16 23:11:40 slowhog Exp $
  */
 
 
@@ -68,10 +68,9 @@ extern "C" {
 }
 #endif
 #endif
+typedef struct _Jxta_credential const Jxta_credential;
 
-    typedef struct _Jxta_credential const Jxta_credential;
-
-    /*typedef struct _Jxta_membership_service const Jxta_membership_service;*/
+    /*typedef struct _Jxta_membership_service const Jxta_membership_service; */
 
     /**
      * Constructs a representation of a credential in
@@ -84,8 +83,8 @@ extern "C" {
      *
      * @return Jxta_status 
      */
-    Jxta_status
-    jxta_credential_get_xml( Jxta_advertisement *ad , Jxta_write_func func, void* stream );
+JXTA_DECLARE(Jxta_status)
+    jxta_credential_get_xml(Jxta_advertisement * ad, Jxta_write_func func, void *stream);
 
     /**
      * Constructs a representation of a credential in
@@ -99,8 +98,8 @@ extern "C" {
      *
      * @return Jxta_status 
      */
-    Jxta_status
-    jxta_credential_get_xml_1( Jxta_advertisement *ad, Jxta_write_func func, void* stream );
+JXTA_DECLARE(Jxta_status)
+    jxta_credential_get_xml_1(Jxta_advertisement * ad, Jxta_write_func func, void *stream);
 
     /**
      * Wrapper for jxta_advertisement_parse_charbuffer,
@@ -115,8 +114,8 @@ extern "C" {
      *
      * @return void Doesn't return anything.
      */
-    Jxta_status
-    jxta_credential_parse_charbuffer( Jxta_credential *, const char *, int len );
+JXTA_DECLARE(Jxta_status)
+    jxta_credential_parse_charbuffer(Jxta_credential *, const char *, int len);
 
 
     /**
@@ -130,8 +129,8 @@ extern "C" {
      *
      * @return void Doesn't return anything.
      */
-    Jxta_status
-    jxta_credential_parse_file( Jxta_credential *, FILE * stream );
+JXTA_DECLARE(Jxta_status)
+    jxta_credential_parse_file(Jxta_credential *, FILE * stream);
 
     /**
      * Gets the peergroup id of the credential.
@@ -140,8 +139,8 @@ extern "C" {
      *
      * @return char * containing the type.
      */
-    Jxta_status
-    jxta_credential_get_peergroupid( Jxta_credential *, Jxta_id** pg );
+JXTA_DECLARE(Jxta_status)
+    jxta_credential_get_peergroupid(Jxta_credential *, Jxta_id ** pg);
 
     /**
      * Gets the peer id of the credential.
@@ -150,8 +149,8 @@ extern "C" {
      *
      * @return char * containing the type.
      */
-    Jxta_status
-    jxta_credential_get_peerid( Jxta_credential *, Jxta_id** peer );
+JXTA_DECLARE(Jxta_status)
+    jxta_credential_get_peerid(Jxta_credential *, Jxta_id ** peer);
 
     /**
      * Gets the service which issued this credential.
@@ -160,10 +159,16 @@ extern "C" {
      *
      * @return char * containing the type.
      */
-    Jxta_status
-    jxta_credential_get_source( Jxta_credential *, Jxta_service** svc );
+JXTA_DECLARE(Jxta_status)
+    jxta_credential_get_source(Jxta_credential *, Jxta_service ** svc);
 
-#endif /* __Jxta_Credential_H__  */
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
+#endif /* __Jxta_Credential_H__  */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

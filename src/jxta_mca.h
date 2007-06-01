@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_mca.h,v 1.3 2005/02/02 02:58:28 exocetrick Exp $
+ * $Id: jxta_mca.h,v 1.5 2005/08/03 05:51:16 slowhog Exp $
  */
 
-   
+
 #ifndef __MCA_H__
 #define __MCA_H__
 
@@ -66,36 +66,41 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _MCA MCA;
 
-    /*
-     * transition to new type naming style.
-     */
+/*
+ * transition to new type naming style.
+ */
 typedef struct _MCA Jxta_MCA;
 
-MCA * MCA_new(void);
-void MCA_set_handlers(MCA *, XML_Parser, void *);
+JXTA_DECLARE(MCA *) MCA_new(void);
+JXTA_DECLARE(void) MCA_set_handlers(MCA *, XML_Parser, void *);
 void MCA_delete(MCA *);
-Jxta_status MCA_get_xml(MCA *, JString **);
-void MCA_parse_charbuffer(MCA *, const char *, int len); 
-void MCA_parse_file(MCA *, FILE * stream);
- 
-char * MCA_get_MCA(MCA *);
-void MCA_set_MCA(MCA *, char *);
- 
-char * MCA_get_MCID(MCA *);
-void MCA_set_MCID(MCA *, char *);
- 
-char * MCA_get_Name(MCA *);
-void MCA_set_Name(MCA *, char *);
- 
-char * MCA_get_Desc(MCA *);
-void MCA_set_Desc(MCA *, char *);
- 
-Jxta_vector * MCA_get_indexes(void);
+JXTA_DECLARE(Jxta_status) MCA_get_xml(MCA *, JString **);
+JXTA_DECLARE(void) MCA_parse_charbuffer(MCA *, const char *, int len);
+JXTA_DECLARE(void) MCA_parse_file(MCA *, FILE * stream);
 
-#endif /* __MCA_H__  */
+JXTA_DECLARE(char *) MCA_get_MCA(MCA *);
+JXTA_DECLARE(void) MCA_set_MCA(MCA *, char *);
+
+JXTA_DECLARE(char *) MCA_get_MCID(MCA *);
+JXTA_DECLARE(void) MCA_set_MCID(MCA *, char *);
+
+JXTA_DECLARE(char *) MCA_get_Name(MCA *);
+JXTA_DECLARE(void) MCA_set_Name(MCA *, char *);
+
+JXTA_DECLARE(char *) MCA_get_Desc(MCA *);
+JXTA_DECLARE(void) MCA_set_Desc(MCA *, char *);
+
+JXTA_DECLARE(Jxta_vector *) MCA_get_indexes(Jxta_advertisement *);
+
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
+#endif /* __MCA_H__  */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_id_jxta.c,v 1.16 2005/01/10 17:19:22 brent Exp $
+ * $Id: jxta_id_jxta.c,v 1.18 2005/07/22 03:12:51 slowhog Exp $
  */
 
 
@@ -66,10 +66,9 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
-
 #if 0
 }
+#endif
 #endif
 
 #ifdef WIN32
@@ -79,23 +78,23 @@ extern "C" {
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static Jxta_id * translateToWellKnown( Jxta_id* jid );
-static Jxta_status newPeergroupid1( Jxta_id** pg );
-static Jxta_status newPeergroupid2( Jxta_id** pg, unsigned char const * seed, size_t len );
-static Jxta_status newPeerid1( Jxta_id** peer, Jxta_id* pg );
-static Jxta_status newPeerid2( Jxta_id** peer, Jxta_id* pg, unsigned char const * seed, size_t len );
-static Jxta_status newCodatid1( Jxta_id** codat, Jxta_id* pg );
-static Jxta_status newCodatid2( Jxta_id** codat, Jxta_id* pg, ReadFunc read_func, void* stream );
-static Jxta_status newPipeid1( Jxta_id** pipe, Jxta_id* pg );
-static Jxta_status newPipeid2( Jxta_id** pipe, Jxta_id* pg, unsigned char const * seed, size_t len );
-static Jxta_status newModuleclassid1( Jxta_id** mcid );
-static Jxta_status newModuleclassid2( Jxta_id** mcid, Jxta_id* base );
-static Jxta_status newModulespecid( Jxta_id** msid, Jxta_id* mcid );
-static Jxta_status newFromString( Jxta_id** id, JString* jid );
-static Jxta_status getUniqueportion( Jxta_id * jid, JString** uniq );
-static void doDelete( Jxta_object * jid );
-static Jxta_boolean equals( Jxta_id * jid1, Jxta_id * jid2 );
-static unsigned int hashcode (Jxta_id* id);
+static Jxta_id *translateToWellKnown(Jxta_id * jid);
+static Jxta_status newPeergroupid1(Jxta_id ** pg);
+static Jxta_status newPeergroupid2(Jxta_id ** pg, unsigned char const *seed, size_t len);
+static Jxta_status newPeerid1(Jxta_id ** peer, Jxta_id * pg);
+static Jxta_status newPeerid2(Jxta_id ** peer, Jxta_id * pg, unsigned char const *seed, size_t len);
+static Jxta_status newCodatid1(Jxta_id ** codat, Jxta_id * pg);
+static Jxta_status newCodatid2(Jxta_id ** codat, Jxta_id * pg, ReadFunc read_func, void *stream);
+static Jxta_status newPipeid1(Jxta_id ** pipe, Jxta_id * pg);
+static Jxta_status newPipeid2(Jxta_id ** pipe, Jxta_id * pg, unsigned char const *seed, size_t len);
+static Jxta_status newModuleclassid1(Jxta_id ** mcid);
+static Jxta_status newModuleclassid2(Jxta_id ** mcid, Jxta_id * base);
+static Jxta_status newModulespecid(Jxta_id ** msid, Jxta_id * mcid);
+static Jxta_status newFromString(Jxta_id ** id, JString * jid);
+static Jxta_status getUniqueportion(Jxta_id * jid, JString ** uniq);
+static void doDelete(Jxta_object * jid);
+static Jxta_boolean equals(Jxta_id * jid1, Jxta_id * jid2);
+static unsigned int hashcode(Jxta_id * id);
 
 /******************************************************************************/
 /*                                                                            */
@@ -103,48 +102,44 @@ static unsigned int hashcode (Jxta_id* id);
 extern JXTAIDFormat jxta_format;
 
 _jxta_id_jxta jxta_nullID = {
-                                {
-                                    JXTA_OBJECT_STATIC_INIT,
-                                    &jxta_format
-                                },
-                                "Null"
-                            };
+    {
+     JXTA_OBJECT_STATIC_INIT,
+     &jxta_format},
+    "Null"
+};
 
-Jxta_id * jxta_id_nullID = (Jxta_id *) &jxta_nullID;
+Jxta_id *jxta_id_nullID = (Jxta_id *) & jxta_nullID;
 
 _jxta_id_jxta jxta_worldNetPeerGroupID = {
-            {
-                JXTA_OBJECT_STATIC_INIT,
-                &jxta_format
-            },
-            "WorldGroup"
-        };
+    {
+     JXTA_OBJECT_STATIC_INIT,
+     &jxta_format},
+    "WorldGroup"
+};
 
-Jxta_id * jxta_id_worldNetPeerGroupID = (Jxta_id *) &jxta_worldNetPeerGroupID;
+Jxta_id *jxta_id_worldNetPeerGroupID = (Jxta_id *) & jxta_worldNetPeerGroupID;
 
 _jxta_id_jxta jxta_defaultNetPeerGroupID = {
-            {
-                JXTA_OBJECT_STATIC_INIT,
-                &jxta_format
-            },
-            "NetGroup"
-        };
+    {
+     JXTA_OBJECT_STATIC_INIT,
+     &jxta_format},
+    "NetGroup"
+};
 
-Jxta_id * jxta_id_defaultNetPeerGroupID = (Jxta_id *) &jxta_defaultNetPeerGroupID;
+Jxta_id *jxta_id_defaultNetPeerGroupID = (Jxta_id *) & jxta_defaultNetPeerGroupID;
 
-static _jxta_id_jxta * wellKnownIds[] =
-    { &jxta_nullID, &jxta_worldNetPeerGroupID, &jxta_defaultNetPeerGroupID, NULL };
+static _jxta_id_jxta *wellKnownIds[] = { &jxta_nullID, &jxta_worldNetPeerGroupID, &jxta_defaultNetPeerGroupID, NULL };
 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static Jxta_id *
-translateToWellKnown( Jxta_id* jid ) {
-    _jxta_id_jxta ** eachWellKnown = wellKnownIds;
+static Jxta_id *translateToWellKnown(Jxta_id * jid)
+{
+    _jxta_id_jxta **eachWellKnown = wellKnownIds;
 
-    while( NULL != *eachWellKnown ) {
-        if( equals( (Jxta_id*) *eachWellKnown, jid ) )
-            return (Jxta_id*) *eachWellKnown;
+    while (NULL != *eachWellKnown) {
+        if (equals((Jxta_id *) * eachWellKnown, jid))
+            return (Jxta_id *) * eachWellKnown;
 
         eachWellKnown++;
     }
@@ -155,138 +150,138 @@ translateToWellKnown( Jxta_id* jid ) {
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static Jxta_status
-newPeergroupid1( Jxta_id** pg ) {
+static Jxta_status newPeergroupid1(Jxta_id ** pg)
+{
     return JXTA_NOTIMP;
 }
 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static Jxta_status
-newPeergroupid2( Jxta_id** pg, unsigned char const * seed, size_t len  ) {
+static Jxta_status newPeergroupid2(Jxta_id ** pg, unsigned char const *seed, size_t len)
+{
     return JXTA_NOTIMP;
 }
 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static Jxta_status
-newPeerid1( Jxta_id** peerid, Jxta_id * pg ) {
+static Jxta_status newPeerid1(Jxta_id ** peerid, Jxta_id * pg)
+{
     return JXTA_NOTIMP;
 }
 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static Jxta_status
-newPeerid2( Jxta_id** peerid, Jxta_id * pg, unsigned char const * seed, size_t len ) {
+static Jxta_status newPeerid2(Jxta_id ** peerid, Jxta_id * pg, unsigned char const *seed, size_t len)
+{
     return JXTA_NOTIMP;
 }
 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static Jxta_status
-newCodatid1( Jxta_id** codat, Jxta_id * pg ) {
+static Jxta_status newCodatid1(Jxta_id ** codat, Jxta_id * pg)
+{
     return JXTA_NOTIMP;
 }
 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static Jxta_status
-newCodatid2( Jxta_id** codat, Jxta_id * pg, ReadFunc read_func, void* stream ) {
+static Jxta_status newCodatid2(Jxta_id ** codat, Jxta_id * pg, ReadFunc read_func, void *stream)
+{
     return JXTA_NOTIMP;
 }
 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static Jxta_status
-newPipeid1( Jxta_id** pipe, Jxta_id * pg ) {
+static Jxta_status newPipeid1(Jxta_id ** pipe, Jxta_id * pg)
+{
     return JXTA_NOTIMP;
 }
 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static Jxta_status
-newPipeid2( Jxta_id** pipe, Jxta_id * pg, unsigned char const * seed, size_t len ) {
+static Jxta_status newPipeid2(Jxta_id ** pipe, Jxta_id * pg, unsigned char const *seed, size_t len)
+{
     return JXTA_NOTIMP;
 }
 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static Jxta_status
-newModuleclassid1( Jxta_id** mcid ) {
+static Jxta_status newModuleclassid1(Jxta_id ** mcid)
+{
     return JXTA_NOTIMP;
 }
 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static Jxta_status
-newModuleclassid2( Jxta_id** mcid, Jxta_id * base ) {
+static Jxta_status newModuleclassid2(Jxta_id ** mcid, Jxta_id * base)
+{
     return JXTA_NOTIMP;
 }
 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static Jxta_status
-newModulespecid( Jxta_id** msid, Jxta_id * mcid ) {
+static Jxta_status newModulespecid(Jxta_id ** msid, Jxta_id * mcid)
+{
     return JXTA_NOTIMP;
 }
 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static Jxta_status
-newFromString( Jxta_id** id, JString * jid ) {
-    const char * unique;
+static Jxta_status newFromString(Jxta_id ** id, JString * jid)
+{
+    const char *unique;
     Jxta_status res;
 
     /*  alloc, smear and init   */
-    _jxta_id_jxta * me = malloc( sizeof( _jxta_id_jxta ) );
+    _jxta_id_jxta *me = (_jxta_id_jxta *) malloc(sizeof(_jxta_id_jxta));
 
-    if( NULL == me )
+    if (NULL == me)
         return JXTA_NOMEM;
 
-    memset( me, 0xdb, sizeof( _jxta_id_jxta ) );
+    memset(me, 0xdb, sizeof(_jxta_id_jxta));
 
     JXTA_OBJECT_INIT(me, doDelete, 0);
     me->common.formatter = &jxta_format;
 
     unique = jstring_get_string(jid);
-    if( NULL == unique ) {
+    if (NULL == unique) {
         res = JXTA_INVALID_ARGUMENT;
         goto Common_Exit;
     }
 
-    unique = strchr( unique, '-' );
-    if( NULL == unique ) {
+    unique = strchr(unique, '-');
+    if (NULL == unique) {
         res = JXTA_INVALID_ARGUMENT;
         goto Common_Exit;
     }
 
     unique++;
-    me->uniquevalue = strdup( unique );
+    me->uniquevalue = strdup(unique);
 
-    *id = translateToWellKnown( (Jxta_id*) me );
+    *id = translateToWellKnown((Jxta_id *) me);
 
     /*
      * Maybe '*id' is the same object as 'me', maybe not. In either case, we're
      * now returning a reference to result and not to 'me'.
      * If they're one and the same, the following operation has no effect.
      */
-    JXTA_OBJECT_SHARE( *id );
+    JXTA_OBJECT_SHARE(*id);
 
     res = JXTA_SUCCESS;
 
-Common_Exit:
-    JXTA_OBJECT_RELEASE( me );
+  Common_Exit:
+    JXTA_OBJECT_RELEASE(me);
 
     return res;
 }
@@ -294,17 +289,17 @@ Common_Exit:
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static Jxta_status
-getUniqueportion( Jxta_id * jid, JString ** string ) {
+static Jxta_status getUniqueportion(Jxta_id * jid, JString ** string)
+{
 
-    JString * result;
+    JString *result;
 
-    result = jstring_new_1( strlen(jxta_format.fmt) + 1 + strlen(((_jxta_id_jxta*)jid)->uniquevalue) );
+    result = jstring_new_1(strlen(jxta_format.fmt) + 1 + strlen(((_jxta_id_jxta *) jid)->uniquevalue));
 
     /*  unique value   */
-    jstring_append_2( result, jxta_format.fmt );
-    jstring_append_2( result, "-" );
-    jstring_append_2( result, ((_jxta_id_jxta*)jid)->uniquevalue );
+    jstring_append_2(result, jxta_format.fmt);
+    jstring_append_2(result, "-");
+    jstring_append_2(result, ((_jxta_id_jxta *) jid)->uniquevalue);
 
     *string = result;
 
@@ -314,26 +309,26 @@ getUniqueportion( Jxta_id * jid, JString ** string ) {
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static Jxta_boolean
-equals( Jxta_id * jid1, Jxta_id * jid2 ) {
-    _jxta_id_jxta* ujid1 = (_jxta_id_jxta*)jid1;
-    _jxta_id_jxta* ujid2 = (_jxta_id_jxta*)jid2;
+static Jxta_boolean equals(Jxta_id * jid1, Jxta_id * jid2)
+{
+    _jxta_id_jxta *ujid1 = (_jxta_id_jxta *) jid1;
+    _jxta_id_jxta *ujid2 = (_jxta_id_jxta *) jid2;
 
-    if( ujid1 == ujid2 )
+    if (ujid1 == ujid2)
         return TRUE;
 
-    if( !JXTA_OBJECT_CHECK_VALID (ujid1) )
+    if (!JXTA_OBJECT_CHECK_VALID(ujid1))
         return FALSE;
 
-    if( !JXTA_OBJECT_CHECK_VALID (ujid2) )
+    if (!JXTA_OBJECT_CHECK_VALID(ujid2))
         return FALSE;
 
-    if (ujid1->common.formatter != ujid2->common.formatter )
+    if (ujid1->common.formatter != ujid2->common.formatter)
         return FALSE;
 
     /* FIXME 20020327 bondolo@jxta.org : This needs to be case insensitive */
 
-    return (0 == strcmp( ujid1->uniquevalue, ujid2->uniquevalue) ) ? TRUE : FALSE;
+    return (0 == strcmp(ujid1->uniquevalue, ujid2->uniquevalue)) ? TRUE : FALSE;
 }
 
 /******************************************************************************/
@@ -341,32 +336,32 @@ equals( Jxta_id * jid1, Jxta_id * jid2 ) {
 /* a real delete method for the few possible cases were we do use dynamic IDs */
 /* of this format.                                                            */
 /******************************************************************************/
-static void
-doDelete( Jxta_object * jid ) {
-    _jxta_id_jxta* ujid = (_jxta_id_jxta*)jid;
+static void doDelete(Jxta_object * jid)
+{
+    _jxta_id_jxta *ujid = (_jxta_id_jxta *) jid;
 
-    if( NULL == jid )
+    if (NULL == jid)
         return;
 
-    free( (void*) ujid->uniquevalue );
+    free((void *) ujid->uniquevalue);
 
-    memset( (void*) jid, 0xdd, sizeof( _jxta_id_jxta ) );
+    memset((void *) jid, 0xdd, sizeof(_jxta_id_jxta));
 
-    free( (void*) jid );
+    free((void *) jid);
 }
 
 /************************************************************************
  **
  *************************************************************************/
-static unsigned int
-hashcode (Jxta_id* id) {
-    _jxta_id_jxta* ujid = (_jxta_id_jxta*)id;
+static unsigned int hashcode(Jxta_id * id)
+{
+    _jxta_id_jxta *ujid = (_jxta_id_jxta *) id;
     unsigned int code;
 
-    if( !JXTA_OBJECT_CHECK_VALID (ujid) )
+    if (!JXTA_OBJECT_CHECK_VALID(ujid))
         return 0;
 
-    code = jxta_objecthashtable_simplehash( ujid->uniquevalue, strlen(ujid->uniquevalue) );
+    code = jxta_objecthashtable_simplehash(ujid->uniquevalue, strlen(ujid->uniquevalue));
 
     return code;
 }
@@ -376,25 +371,28 @@ hashcode (Jxta_id* id) {
 /******************************************************************************/
 
 JXTAIDFormat jxta_format = {
-                               "jxta",
+    "jxta",
 
-                               newPeergroupid1,
-                               newPeergroupid2,
-                               newPeerid1,
-                               newPeerid2,
-                               newCodatid1,
-                               newCodatid2,
-                               newPipeid1,
-                               newPipeid2,
-                               newModuleclassid1,
-                               newModuleclassid2,
-                               newModulespecid,
-                               newFromString,
-                               getUniqueportion,
-                               equals,
-                               hashcode
-                           };
+    newPeergroupid1,
+    newPeergroupid2,
+    newPeerid1,
+    newPeerid2,
+    newCodatid1,
+    newCodatid2,
+    newPipeid1,
+    newPipeid2,
+    newModuleclassid1,
+    newModuleclassid2,
+    newModulespecid,
+    newFromString,
+    getUniqueportion,
+    equals,
+    hashcode
+};
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif

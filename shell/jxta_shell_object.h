@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_object.h,v 1.1 2004/12/05 02:16:42 slowhog Exp $
+ * $Id: jxta_shell_object.h,v 1.3 2005/08/24 01:21:21 slowhog Exp $
  */
 
 #ifndef __JXTA_SHELL_OBJECT_H__
@@ -68,7 +68,6 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _jxta_shell_object JxtaShellObject;
 
 /**
@@ -84,46 +83,49 @@ typedef struct _jxta_shell_object JxtaShellObject;
 *              and passed on as is. If not NULL it is expected that this object was
 *             properly shared by the calling function.
 */
-JxtaShellObject * JxtaShellObject_new(JString * name, Jxta_object * object, 
-                                      JString *type);
+JxtaShellObject *JxtaShellObject_new(JString * name, Jxta_object * object, JString * type);
 
 /**
 *  Gets the name of this JxtaShellObject. If the calling function is done with
 *  the JString object it should release it.
 *  @param obj the JxtaShellObject whose name to extract
 */
-JString * JxtaShellObject_name(JxtaShellObject * obj);
+JString *JxtaShellObject_name(JxtaShellObject * obj);
 
 /**
 *  Gets the object encapsulated by this JxtaShellObject. If the calling function is done with
 *  the object it should release it.
 *  @param obj the JxtaShellObject whose name to extract
 */
-Jxta_object * JxtaShellObject_object(JxtaShellObject * obj);
+Jxta_object *JxtaShellObject_object(JxtaShellObject * obj);
 
 /**
 *  Gets the type associated with  this JxtaShellObject. If the calling function is done with
 *  the JString and it is not NULL, it should release it.
 *  @param obj the JxtaShellObject whose name to extract
 */
-JString * JxtaShellObject_type(JxtaShellObject * obj);
+JString *JxtaShellObject_type(JxtaShellObject * obj);
 
 /**
 * Compares two JxtaShellObject types.
 * They are equal it the names are equal
 */
-Jxta_boolean JxtaShellObject_equals( Jxta_object* obj1, Jxta_object* obj2 );
+Jxta_boolean JXTA_STDCALL JxtaShellObject_equals(Jxta_object * obj1, Jxta_object * obj2);
 
 /**
 * Calculates the hash value of the object - it just calls the hash function
 * in jxta_objecthashtable.h with the correct size
 * @param obj the object for which to determine the hash value
 */
-unsigned int  JxtaShellObject_hashValue( Jxta_object* obj );
+unsigned int JXTA_STDCALL JxtaShellObject_hashValue(Jxta_object * obj);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
-
 #endif /* __JXTA_SHELL_OBJECT_H__ */
+
+/* vim: set ts=4 sw=4 et tw=130 */

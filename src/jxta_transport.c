@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport.c,v 1.11 2005/01/19 00:09:00 bondolo Exp $
+ * $Id: jxta_transport.c,v 1.13 2005/08/03 05:51:20 slowhog Exp $
  */
 
 #include "jxta_transport_private.h"
@@ -60,11 +60,11 @@
  * The base transport ctor (not public: the only public way to make a new transport
  * is to instantiate one of the derived types).
  */
-Jxta_transport *jxta_transport_construct(Jxta_transport * self, Jxta_transport_methods * methods)
+Jxta_transport *jxta_transport_construct(Jxta_transport * self, Jxta_transport_methods const *methods)
 {
 
     PTValid(methods, Jxta_transport_methods);
-    jxta_module_construct(self, (Jxta_module_methods *) methods);
+    jxta_module_construct(self, (Jxta_module_methods const *) methods);
 
     self->thisType = "Jxta_transport";
 
@@ -88,7 +88,7 @@ void jxta_transport_destruct(Jxta_transport * self)
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-JString *jxta_transport_name_get(Jxta_transport * self)
+JXTA_DECLARE(JString *) jxta_transport_name_get(Jxta_transport * self)
 {
     PTValid(self, Jxta_transport);
     return VTBL->name_get(self);
@@ -97,7 +97,7 @@ JString *jxta_transport_name_get(Jxta_transport * self)
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-Jxta_endpoint_address *jxta_transport_publicaddr_get(Jxta_transport * self)
+JXTA_DECLARE(Jxta_endpoint_address *) jxta_transport_publicaddr_get(Jxta_transport * self)
 {
     PTValid(self, Jxta_transport);
     return VTBL->publicaddr_get(self);
@@ -106,7 +106,7 @@ Jxta_endpoint_address *jxta_transport_publicaddr_get(Jxta_transport * self)
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-JxtaEndpointMessenger *jxta_transport_messenger_get(Jxta_transport * self, Jxta_endpoint_address * there)
+JXTA_DECLARE(JxtaEndpointMessenger *) jxta_transport_messenger_get(Jxta_transport * self, Jxta_endpoint_address * there)
 {
     PTValid(self, Jxta_transport);
     return VTBL->messenger_get(self, there);
@@ -115,7 +115,7 @@ JxtaEndpointMessenger *jxta_transport_messenger_get(Jxta_transport * self, Jxta_
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-Jxta_boolean jxta_transport_ping(Jxta_transport * self, Jxta_endpoint_address * there)
+JXTA_DECLARE(Jxta_boolean) jxta_transport_ping(Jxta_transport * self, Jxta_endpoint_address * there)
 {
     PTValid(self, Jxta_transport);
     return VTBL->ping(self, there);
@@ -124,7 +124,7 @@ Jxta_boolean jxta_transport_ping(Jxta_transport * self, Jxta_endpoint_address * 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-void jxta_transport_propagate(Jxta_transport * self, Jxta_message * msg, const char *service_name, const char *service_params)
+JXTA_DECLARE(void) jxta_transport_propagate(Jxta_transport * self, Jxta_message * msg, const char *service_name, const char *service_params)
 {
     PTValid(self, Jxta_transport);
     VTBL->propagate(self, msg, service_name, service_params);
@@ -133,7 +133,7 @@ void jxta_transport_propagate(Jxta_transport * self, Jxta_message * msg, const c
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-Jxta_boolean jxta_transport_allow_overload_p(Jxta_transport * self)
+JXTA_DECLARE(Jxta_boolean) jxta_transport_allow_overload_p(Jxta_transport * self)
 {
     PTValid(self, Jxta_transport);
     return VTBL->allow_overload_p(self);
@@ -142,7 +142,7 @@ Jxta_boolean jxta_transport_allow_overload_p(Jxta_transport * self)
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-Jxta_boolean jxta_transport_allow_routing_p(Jxta_transport * self)
+JXTA_DECLARE(Jxta_boolean) jxta_transport_allow_routing_p(Jxta_transport * self)
 {
     PTValid(self, Jxta_transport);
     return VTBL->allow_routing_p(self);
@@ -151,7 +151,7 @@ Jxta_boolean jxta_transport_allow_routing_p(Jxta_transport * self)
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-Jxta_boolean jxta_transport_connection_oriented_p(Jxta_transport * self)
+JXTA_DECLARE(Jxta_boolean) jxta_transport_connection_oriented_p(Jxta_transport * self)
 {
     PTValid(self, Jxta_transport);
     return VTBL->connection_oriented_p(self);

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_priv.h,v 1.1 2005/03/24 19:40:22 slowhog Exp $
+ * $Id: jpr_priv.h,v 1.2 2005/04/14 21:13:42 bondolo Exp $
  */
 
 
@@ -66,9 +66,6 @@ extern "C" {
 #endif
 
 extern apr_pool_t *_jpr_global_pool;
-
-apr_status_t jpr_thread_delay_initialize(void);
-void jpr_thread_delay_terminate(void);
 
 apr_status_t jpr_excep_initialize(void);
 void jpr_excep_terminate(void);

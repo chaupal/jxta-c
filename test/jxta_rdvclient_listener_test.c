@@ -50,16 +50,15 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdvclient_listener_test.c,v 1.3 2005/04/07 22:58:54 slowhog Exp $
+ * $Id: jxta_rdvclient_listener_test.c,v 1.5 2005/07/24 11:33:00 mathieu Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include <apr_general.h>
 #include "apr_time.h"
-
-#include "jpr/jpr_thread.h"
 
 #include "jxta.h"
 #include "jxta_debug.h"
@@ -69,9 +68,13 @@
 #include "jxta_endpoint_service.h"
 #include "jxta_rdv_service.h"
 
+#define DEBUG 1
 
-Jxta_pipe_service * pipe_service = NULL;
-Jxta_rdv_service  * rdv = NULL;
+#if DEBUG
+static Jxta_log_file *log_file;
+static Jxta_log_selector *log_selector;
+#endif
+
 
 static void rdvclient_rdv_listener (Jxta_object *obj, void *arg) {
   Jxta_status res = 0;
@@ -84,37 +87,57 @@ static void rdvclient_rdv_listener (Jxta_object *obj, void *arg) {
 
   switch (type) {
   case JXTA_RDV_CONNECTED:
+#if DEBUG
     printf ("Connected to rdv peer=%s\n",jstring_get_string(string));
+#endif
     break;
   case JXTA_RDV_FAILED:
+#if DEBUG
     printf ("Failed connection to rdv peer=%s\n",jstring_get_string(string));
+#endif
     break;
   case JXTA_RDV_DISCONNECTED:
+#if DEBUG
     printf ("Disconnect from rdv peer=%s\n",jstring_get_string(string));
+#endif
     break;
   case JXTA_RDV_RECONNECTED:
-    printf ("Reconnect from rdv peer%s\n",jstring_get_string(string));
+#if DEBUG
+    printf ("Reconnect from rdv peer=%s\n",jstring_get_string(string));
+#endif
     break;
   default: 
+#if DEBUG
     printf("Event not catched = %d\n", type);
+#endif
   }
 }
 
 int jxta_rdvclient_listener_run (int argc, char **argv) {
   Jxta_PG     * pg = NULL;
+  Jxta_rdv_service  * rdv = NULL;
   Jxta_listener* listener = NULL;
-  Jxta_status res = 0;
+  Jxta_status res = JXTA_SUCCESS;
 
   if (argc != 1) {
-    printf ("Syntax: jxta_rdvclient_listener\n");
+    printf ("Syntax: %s\n", argv[0]);
     exit (0);
   }
 
-  /** Start JXTA */
-  res = jxta_PG_new_netpg (&pg);
-  if (res != JXTA_SUCCESS) {
-    printf("jxta_PG_netpg_new failed with error: %ld\n", res);
+  /** Start log */
+#if DEBUG
+  log_selector = jxta_log_selector_new_and_set("*.*", &res);
+  if (NULL == log_selector || res != JXTA_SUCCESS) {
+    fprintf(stderr, "# Failed to init JXTA log selector.\n");
+    return JXTA_FAILED;
   }
+  jxta_log_file_open(&log_file, "jxta.log");
+  jxta_log_using(jxta_log_file_append, log_file);
+  jxta_log_file_attach_selector(log_file, log_selector, NULL);
+#endif
+
+  /** Start JXTA */
+  assert(jxta_PG_new_netpg (&pg) == JXTA_SUCCESS);
 
   /** Get useful services */
   jxta_PG_get_rendezvous_service (pg, &rdv);
@@ -126,13 +149,22 @@ int jxta_rdvclient_listener_run (int argc, char **argv) {
 				1);
   if (listener != NULL) {
     jxta_listener_start(listener);
-    res = jxta_rdv_service_add_event_listener (rdv, (char *) "test", NULL, listener);
+    res = jxta_rdv_service_add_event_listener (rdv, (char *) "test", (char *) "edge", listener);
     if (res != JXTA_SUCCESS) {
       printf("Failed to add an event listener to rdv events");
     }
   }
-  printf("wait for 10 sec for RDV event connection\n");
-  jpr_thread_delay ((Jpr_interval_time) 10 * 1000 * 1000);
+  printf("wait for 20 sec for RDV event connection\n");
+  apr_sleep (20 * 1000 * 1000);
+
+#if DEBUG
+  jxta_log_file_attach_selector(log_file, NULL, &log_selector);
+  jxta_log_selector_delete(log_selector);
+  jxta_log_file_close(log_file);
+#endif
+
+  jxta_module_stop((Jxta_module*) pg);
+  JXTA_OBJECT_RELEASE(pg);
 
   return 0;
 }

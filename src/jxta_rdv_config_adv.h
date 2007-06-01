@@ -50,13 +50,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_config_adv.h,v 1.4 2005/04/06 00:38:51 bondolo Exp $
+ * $Id: jxta_rdv_config_adv.h,v 1.11 2005/05/22 18:58:23 lankes Exp $
  */
 
 
 #ifndef JXTA_RDVCONFIGADVERTISEMENT_H__
 #define JXTA_RDVCONFIGADVERTISEMENT_H__
 
+#include "jxta_types.h"
 #include "jxta_advertisement.h"
 #include "jxta_endpoint_address.h"
 #include "jxta_vector.h"
@@ -69,47 +70,56 @@ extern "C" {
 #endif
 typedef struct _jxta_RdvConfigAdvertisement Jxta_RdvConfigAdvertisement;
 
-    enum RdvConfig_configurations {
-        adhoc,
-        edge,
-        rendezvous
-    };
-    
-typedef enum RdvConfig_configurations RdvConfig_configuration;  
+enum RdvConfig_configurations {
+    config_adhoc,
+    config_edge,
+    config_rendezvous
+};
 
-Jxta_RdvConfigAdvertisement *jxta_RdvConfigAdvertisement_new(void);
-void jxta_RdvConfigAdvertisement_set_handlers(Jxta_RdvConfigAdvertisement *, XML_Parser, void *);
-Jxta_status jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdvertisement *, JString **);
-void jxta_RdvConfigAdvertisement_parse_charbuffer(Jxta_RdvConfigAdvertisement *, const char *, int len);
-void jxta_RdvConfigAdvertisement_parse_file(Jxta_RdvConfigAdvertisement *, FILE * stream);
+typedef enum RdvConfig_configurations RdvConfig_configuration;
 
-RdvConfig_configuration jxta_RdvConfig_get_config(Jxta_RdvConfigAdvertisement *);
-void jxta_RdvConfig_set_config(Jxta_RdvConfigAdvertisement*, RdvConfig_configuration );
+JXTA_DECLARE(Jxta_RdvConfigAdvertisement *) jxta_RdvConfigAdvertisement_new(void);
+JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdvertisement *, JString **);
+JXTA_DECLARE(void) jxta_RdvConfigAdvertisement_parse_charbuffer(Jxta_RdvConfigAdvertisement *, const char *, size_t len);
+JXTA_DECLARE(void) jxta_RdvConfigAdvertisement_parse_file(Jxta_RdvConfigAdvertisement *, FILE * stream);
+JXTA_DECLARE(Jxta_vector *) jxta_RdvConfigAdvertisement_get_indexes(void);
 
-int jxta_RdvConfig_get_max_clients(Jxta_RdvConfigAdvertisement *);
-void jxta_RdvConfig_set_max_clients(Jxta_RdvConfigAdvertisement*, int );
+JXTA_DECLARE(RdvConfig_configuration) jxta_RdvConfig_get_config(Jxta_RdvConfigAdvertisement *);
+JXTA_DECLARE(void) jxta_RdvConfig_set_config(Jxta_RdvConfigAdvertisement *, RdvConfig_configuration);
 
-int jxta_RdvConfig_get_max_ttl(Jxta_RdvConfigAdvertisement *);
-void jxta_RdvConfig_set_max_ttl(Jxta_RdvConfigAdvertisement*, int );
+JXTA_DECLARE(int) jxta_RdvConfig_get_max_clients(Jxta_RdvConfigAdvertisement *);
+JXTA_DECLARE(void) jxta_RdvConfig_set_max_clients(Jxta_RdvConfigAdvertisement *, int);
 
-Jxta_time_diff jxta_RdvConfig_get_lease_duration(Jxta_RdvConfigAdvertisement *);
-void jxta_RdvConfig_set_lease_duration(Jxta_RdvConfigAdvertisement*, Jxta_time_diff );
+JXTA_DECLARE(int) jxta_RdvConfig_get_max_ttl(Jxta_RdvConfigAdvertisement *);
+JXTA_DECLARE(void) jxta_RdvConfig_set_max_ttl(Jxta_RdvConfigAdvertisement *, int);
 
-Jxta_time_diff jxta_RdvConfig_get_lease_margin(Jxta_RdvConfigAdvertisement *);
-void jxta_RdvConfig_set_lease_margin(Jxta_RdvConfigAdvertisement*, Jxta_time_diff );
+JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_lease_duration(Jxta_RdvConfigAdvertisement *);
+JXTA_DECLARE(void) jxta_RdvConfig_set_lease_duration(Jxta_RdvConfigAdvertisement *, Jxta_time_diff);
 
-Jxta_vector * jxta_RdvConfig_get_seeds(Jxta_RdvConfigAdvertisement *);
-void jxta_RdvConfig_add_seed(Jxta_RdvConfigAdvertisement*, Jxta_endpoint_address* );
+JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_lease_margin(Jxta_RdvConfigAdvertisement *);
+JXTA_DECLARE(void) jxta_RdvConfig_set_lease_margin(Jxta_RdvConfigAdvertisement *, Jxta_time_diff);
 
-Jxta_vector * jxta_RdvConfig_get_seeding(Jxta_RdvConfigAdvertisement *);
-void jxta_RdvConfig_add_seeding(Jxta_RdvConfigAdvertisement*, Jxta_endpoint_address* );
+JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_auto_rdv_interval(Jxta_RdvConfigAdvertisement * ad);
+JXTA_DECLARE(void) jxta_RdvConfig_set_auto_rdv_interval(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff auto_rdv_interval);
 
+JXTA_DECLARE(Jxta_vector *) jxta_RdvConfig_get_seeds(Jxta_RdvConfigAdvertisement *);
+JXTA_DECLARE(void) jxta_RdvConfig_add_seed(Jxta_RdvConfigAdvertisement *, Jxta_endpoint_address *);
 
-char *jxta_RdvConfigAdvertisement_get_Jxta_RdvConfigAdvertisement(Jxta_RdvConfigAdvertisement *);
-void jxta_RdvConfigAdvertisement_set_Jxta_RdvConfigAdvertisement(Jxta_RdvConfigAdvertisement *, char *);
+JXTA_DECLARE(Jxta_vector *) jxta_RdvConfig_get_seeding(Jxta_RdvConfigAdvertisement *);
+JXTA_DECLARE(void) jxta_RdvConfig_add_seeding(Jxta_RdvConfigAdvertisement *, Jxta_endpoint_address *);
 
-Jxta_vector *jxta_RdvConfigAdvertisement_get_indexes(void);
+JXTA_DECLARE(char *) jxta_RdvConfigAdvertisement_get_Jxta_RdvConfigAdvertisement(Jxta_RdvConfigAdvertisement *);
+JXTA_DECLARE(void) jxta_RdvConfigAdvertisement_set_Jxta_RdvConfigAdvertisement(Jxta_RdvConfigAdvertisement *, char *);
+
+/**
+*   For other advertisement types which want to parse RdvConfig as a sub-section.    
+**/
+void handleJxta_RdvConfigAdvertisement(void *userdata, const XML_Char * cd, int len);
+
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 

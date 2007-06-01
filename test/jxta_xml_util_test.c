@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_xml_util_test.c,v 1.8 2003/12/18 19:37:50 wiarda Exp $
+ * $Id: jxta_xml_util_test.c,v 1.9 2005/04/17 14:22:19 lankes Exp $
  */
 
 #include <stdio.h>
@@ -62,8 +62,10 @@
  * It will likely be a full days work to sort it out
  * among linux, solaris, win32, bsd etc.
  */
+#ifndef WIN32
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#endif
 #include <apr_want.h>
 #include <apr_network_io.h>
 

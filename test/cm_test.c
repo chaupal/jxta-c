@@ -12,8 +12,11 @@
  */
 int 
 test_cm_new() {
+  Jxta_id *peerid;
+  Jxta_cm * cm =NULL;
 
-  Jxta_cm * cm = jxta_cm_new("CM", jxta_id_worldNetPeerGroupID);
+  jxta_id_peerid_new_1(&peerid, jxta_id_worldNetPeerGroupID);
+  cm = jxta_cm_new("CM", jxta_id_worldNetPeerGroupID, peerid);
 
   JXTA_OBJECT_RELEASE(cm);
 
@@ -25,13 +28,19 @@ test_cm_new() {
 int
 test_cm_create_folder() {
 
-  Jxta_cm * cm = jxta_cm_new("CM", jxta_id_worldNetPeerGroupID);
+  Jxta_id *peerid;
+  Jxta_cm * cm = NULL;
   char * keys[][2] = { 
                  { "foo", NULL },
                  {  "bar", NULL },
                  {  "baz", NULL },
                  {  NULL, NULL}
                  };
+
+  jxta_id_peerid_new_1(&peerid, jxta_id_worldNetPeerGroupID);
+
+  cm = jxta_cm_new("CM", jxta_id_worldNetPeerGroupID, peerid);
+ 
 
   jxta_cm_create_folder(cm,"MyFolder",keys);
 

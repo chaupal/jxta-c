@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object_ptrwrapper.c,v 1.5 2005/01/10 17:23:41 brent Exp $
+ * $Id: jxta_object_ptrwrapper.c,v 1.7 2005/06/16 23:11:45 slowhog Exp $
  */
 
 #include <stdlib.h>
@@ -60,36 +60,31 @@
 #include "jxta_object_ptrwrapper.h"
 
 struct _JxtaObjectPtrWrapper {
-  JXTA_OBJECT_HANDLE;
-  struct {
-    void *  ptr;
-    }   usr;
-  };
+    JXTA_OBJECT_HANDLE;
+    struct {
+        void *ptr;
+    } usr;
+};
 
-JxtaObjectPtrWrapper
-jxta_object_ptrwrapper_new( void* ptr, Jxta_boolean callfree )
+JxtaObjectPtrWrapper jxta_object_ptrwrapper_new(void *ptr, Jxta_boolean callfree)
 {
-  struct _JxtaObjectPtrWrapper * wrapper = (struct _JxtaObjectPtrWrapper *) malloc (sizeof(struct _JxtaObjectPtrWrapper));
+    struct _JxtaObjectPtrWrapper *wrapper = (struct _JxtaObjectPtrWrapper *) malloc(sizeof(struct _JxtaObjectPtrWrapper));
 
-  if( NULL == wrapper )
-    return NULL;
+    if (NULL == wrapper)
+        return NULL;
 
-  memset ( wrapper, 0xda, sizeof(struct _JxtaObjectPtrWrapper) );
+    memset(wrapper, 0xda, sizeof(struct _JxtaObjectPtrWrapper));
 
-  JXTA_OBJECT_INIT ((void *) wrapper, 
-		    callfree ? free : NULL,
-		    ptr );
-  
-  wrapper->usr.ptr = ptr;
+    JXTA_OBJECT_INIT((void *) wrapper, callfree ? free : NULL, ptr);
 
-  return (JxtaObjectPtrWrapper) wrapper;
+    wrapper->usr.ptr = ptr;
+
+    return (JxtaObjectPtrWrapper) wrapper;
 }
 
-void *
-jxta_object_ptrwrapper_get_ptr( JxtaObjectPtrWrapper obj )
+void *jxta_object_ptrwrapper_get_ptr(JxtaObjectPtrWrapper obj)
 {
-struct _JxtaObjectPtrWrapper * wrapper = (struct _JxtaObjectPtrWrapper *) obj;
+    struct _JxtaObjectPtrWrapper *wrapper = (struct _JxtaObjectPtrWrapper *) obj;
 
-return wrapper->usr.ptr;
+    return wrapper->usr.ptr;
 }
-

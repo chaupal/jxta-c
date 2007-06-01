@@ -50,11 +50,11 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peerinfo_service.h,v 1.3 2005/01/12 21:46:58 bondolo Exp $
+ * $Id: jxta_peerinfo_service.h,v 1.4 2005/06/16 23:11:46 slowhog Exp $
  */
 
 
- 
+
 #ifndef JXTA_PEERINFO_SERVICE_H
 #define JXTA_PEERINFO_SERVICE_H
 
@@ -69,9 +69,7 @@ extern "C" {
 }
 #endif
 #endif
-
-
-typedef struct _jxta_peerinfo_service         Jxta_peerinfo_service;
+typedef struct _jxta_peerinfo_service Jxta_peerinfo_service;
 
 typedef struct _PeerinfoEvent PeerinfoEvent;
 typedef struct _Jxta_peerinfo_listener Jxta_peerinfo_listener;
@@ -83,9 +81,7 @@ typedef struct _Jxta_peerinfo_listener Jxta_peerinfo_listener;
  * @return  Jxta_status
  */
 Jxta_status
-peerinfo_service_get_remote_peerinfo(Jxta_peerinfo_service* service,
-                                            Jxta_id* peerid,
-                                            Jxta_peerinfo_listener* listener);
+peerinfo_service_get_remote_peerinfo(Jxta_peerinfo_service * service, Jxta_id * peerid, Jxta_peerinfo_listener * listener);
 
 /**
  * Get a PeerInfo from local cache.
@@ -95,10 +91,7 @@ peerinfo_service_get_remote_peerinfo(Jxta_peerinfo_service* service,
  * @return  Jxta_status
  */
 
-Jxta_status
-peerinfo_service_get_local_peerinfo(Jxta_peerinfo_service* service, 
-                                    Jxta_id* peerid, 
-                                    Jxta_object ** adv );
+Jxta_status peerinfo_service_get_local_peerinfo(Jxta_peerinfo_service * service, Jxta_id * peerid, Jxta_object ** adv);
 
 /**
  * Retrieve this peer's PeerInfo Advertisement
@@ -106,8 +99,7 @@ peerinfo_service_get_local_peerinfo(Jxta_peerinfo_service* service,
  * @return Jxta_status
  * @see Jxta_status
  */
-Jxta_status
-peerinfo_service_get_my_peerinfo(Jxta_peerinfo_service* service, Jxta_object ** adv );
+Jxta_status peerinfo_service_get_my_peerinfo(Jxta_peerinfo_service * service, Jxta_object ** adv);
 
 /**
  * flush s stored Document
@@ -116,9 +108,7 @@ peerinfo_service_get_my_peerinfo(Jxta_peerinfo_service* service, Jxta_object ** 
  * @return Jxta_status
  * @see Jxta_status
  */
-Jxta_status
-peerinfo_service_flush_advertisement(Jxta_peerinfo_service* service,
-                                       Jxta_id* peerid);
+Jxta_status peerinfo_service_flush_advertisement(Jxta_peerinfo_service * service, Jxta_id * peerid);
 
 /**
  * register a peerinfo listener, to notified on peerinfo events
@@ -127,9 +117,7 @@ peerinfo_service_flush_advertisement(Jxta_peerinfo_service* service,
  * @return Jxta_status
  * @see Jxta_status
  */
-Jxta_status
-peerinfo_service_add_peerinfo_listener(Jxta_peerinfo_service* service,
-                                         Jxta_peerinfo_listener* listener);
+Jxta_status peerinfo_service_add_peerinfo_listener(Jxta_peerinfo_service * service, Jxta_peerinfo_listener * listener);
 
 /**
  * remove a peerinfo listener
@@ -138,11 +126,14 @@ peerinfo_service_add_peerinfo_listener(Jxta_peerinfo_service* service,
  * @return Jxta_status
  * @see Jxta_status
  */
-Jxta_status
-peerinfo_service_remove_peerinfo_listener(Jxta_peerinfo_service* service,
-                                            Jxta_peerinfo_listener* listener);
+Jxta_status peerinfo_service_remove_peerinfo_listener(Jxta_peerinfo_service * service, Jxta_peerinfo_listener * listener);
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif
+
+/* vi: set ts=4 sw=4 tw=130 et: */

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: talk.h,v 1.2 2005/03/28 19:30:12 bondolo Exp $
+ * $Id: talk.h,v 1.3 2005/08/24 01:21:23 slowhog Exp $
  */
 #ifndef __JXTA_SHELL_TALK_H__
 #define __JXTA_SHELL_TALK_H__
@@ -82,9 +82,12 @@ void talk_print_help(Jxta_object * app);
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
-
-
 #endif /*__JXTA_SHELL_TESTAPPLICATION_H__ */
+
+/* vim: set ts=4 sw=4 et tw=130 */

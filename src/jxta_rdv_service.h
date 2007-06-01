@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service.h,v 1.11 2005/02/26 01:52:33 slowhog Exp $
+ * $Id: jxta_rdv_service.h,v 1.17 2005/08/31 06:19:41 slowhog Exp $
  */
 
 #ifndef __JXTA_RDV_SERVICE_H__
@@ -61,6 +61,7 @@
 #include "jxta_endpoint_address.h"
 #include "jxta_message.h"
 #include "jxta_peer.h"
+#include "jxta_rdv_config_adv.h"
 
 /**
  *
@@ -92,10 +93,10 @@ typedef enum Jxta_Rendezvous_event_types {
     JXTA_RDV_BECAME_EDGE = 9,
     JXTA_RDV_BECAME_RDV = 10,
 
-    /* @deprecated To be removed very soon */
+    /** @deprecated To be removed very soon **/
     JXTA_RDV_LEASE_REQUEST = 11,
 
-    /* @deprecated To be removed very soon */
+    /** @deprecated To be removed very soon **/
     JXTA_RDV_LEASE_GRANTED = 12
 } Jxta_Rendezvous_event_type;
 
@@ -120,37 +121,40 @@ typedef Jxta_listener Jxta_rdv_event_listener;
      *
      * @return a non initialized instance of the Rendezvous Service
      **/
-Jxta_rdv_service *jxta_rdv_service_new(void);
+JXTA_DECLARE(Jxta_rdv_service *) jxta_rdv_service_new(void);
 
     /**
      * Add a peer to the list of peers that the Rendezvous Service will
      * try to connect to.
+     *
+     *  @deprecated How peers get added as Rendezvous or clients is implementation dependent.
+     *
      * @param rdv a pointer to the instance of the Rendezvous Service
      * @param peer a pointer to the peer to add
      * @return error code.
      **/
 
-Jxta_status jxta_rdv_service_add_peer(Jxta_rdv_service * rdv, Jxta_peer * peer);
+JXTA_DECLARE(Jxta_status) jxta_rdv_service_add_peer(Jxta_rdv_service * rdv, Jxta_peer * peer);
 
 
     /**
      * Add a peer to the list of seed peers that the Rendezvous Service will
      * try to connect to.
+     *
      * @param rdv a pointer to the instance of the Rendezvous Service
      * @param peer a pointer to the peer to add
      * @return error code.
      **/
-
-Jxta_status jxta_rdv_service_add_seed(Jxta_rdv_service * rdv, Jxta_peer * peer);
+JXTA_DECLARE(Jxta_status) jxta_rdv_service_add_seed(Jxta_rdv_service * rdv, Jxta_peer * peer);
 
     /**
      * Get the list of peers used by the Rendezvous Service with their status.
      * 
-     * @param rdv a pointer to the instance of the Rendezvous Service
+     * @param rdv a pointer to the instance of the Rendezvous Servicec
      * @param peerlist the list of peers (Jxta_peer*)
      * @return error code.
      **/
-Jxta_status jxta_rdv_service_get_peers(Jxta_rdv_service * rdv, Jxta_vector ** peerlist);
+JXTA_DECLARE(Jxta_status) jxta_rdv_service_get_peers(Jxta_rdv_service * rdv, Jxta_vector ** peerlist);
 
     /**
      * Adds an Event listener that will receive rendezvous Service event, such
@@ -165,7 +169,8 @@ Jxta_status jxta_rdv_service_get_peers(Jxta_rdv_service * rdv, Jxta_vector ** pe
      * @param listener a pointer to an event listener. 
      * @return error code.
      **/
-Jxta_status jxta_rdv_service_add_event_listener(Jxta_rdv_service * rdv, const char *serviceName, const char *serviceParam, void *listener);
+JXTA_DECLARE(Jxta_status) jxta_rdv_service_add_event_listener(Jxta_rdv_service * rdv, const char *serviceName,
+                                                              const char *serviceParam, void *listener);
 
     /**
      * Removes an Event listener
@@ -177,7 +182,8 @@ Jxta_status jxta_rdv_service_add_event_listener(Jxta_rdv_service * rdv, const ch
      * serviceName.
      * @return error code.
      **/
-Jxta_status jxta_rdv_service_remove_event_listener(Jxta_rdv_service * rdv, const char *serviceName, const char *serviceParam);
+JXTA_DECLARE(Jxta_status) jxta_rdv_service_remove_event_listener(Jxta_rdv_service * rdv, const char *serviceName,
+                                                                 const char *serviceParam);
 
     /**
      * Test if the peer is a rendezvous peer for the given instance of rendezvous Service.
@@ -185,7 +191,7 @@ Jxta_status jxta_rdv_service_remove_event_listener(Jxta_rdv_service * rdv, const
      * @param rdv a pointer to the instance of the Rendezvous Service
      * @return TRUE if the peer is a rendezvous, FALSE otherwise.
      **/
-boolean jxta_rdv_service_is_rendezvous(Jxta_rdv_service * rdv);
+JXTA_DECLARE(Jxta_boolean) jxta_rdv_service_is_rendezvous(Jxta_rdv_service * rdv);
 
     /**
      * Adds an Propagation listener. The listener is invoked when there is a incoming
@@ -199,8 +205,8 @@ boolean jxta_rdv_service_is_rendezvous(Jxta_rdv_service * rdv);
      * @param listener a pointer to an Jxta_listener.
      * @return error code. Fails if there was already a listener for that address.
      **/
-Jxta_status jxta_rdv_service_add_propagate_listener(Jxta_rdv_service * rdv, char *serviceName, char *serviceParam,
-                                                    Jxta_listener * listener);
+JXTA_DECLARE(Jxta_status) jxta_rdv_service_add_propagate_listener(Jxta_rdv_service * rdv, const char *serviceName,
+                                                                  const char *serviceParam, Jxta_listener * listener);
 
     /**
      * Removes a Propagation listener.
@@ -213,8 +219,9 @@ Jxta_status jxta_rdv_service_add_propagate_listener(Jxta_rdv_service * rdv, char
      * @param listener a pointer to the listener to be removed.
      * @return error code. Fails if there was not already a listener for that address.
      **/
-Jxta_status jxta_rdv_service_remove_propagate_listener(Jxta_rdv_service * rdv,
-                                                       char *serviceName, char *serviceParam, Jxta_listener * listener);
+JXTA_DECLARE(Jxta_status) jxta_rdv_service_remove_propagate_listener(Jxta_rdv_service * rdv,
+                                                                     const char *serviceName, const char *serviceParam,
+                                                                     Jxta_listener * listener);
 
     /**
      * Propagates a message within the PeerGroup for which the instance of the 
@@ -229,26 +236,42 @@ Jxta_status jxta_rdv_service_remove_propagate_listener(Jxta_rdv_service * rdv,
      * @param ttl Maximum number of peers the propagated message can go through.
      * @return error code.
      **/
-Jxta_status jxta_rdv_service_propagate(Jxta_rdv_service * rdv, Jxta_message * msg, char *serviceName, char *serviceParam,
-                                       int ttl);
+JXTA_DECLARE(Jxta_status) jxta_rdv_service_propagate(Jxta_rdv_service * rdv, Jxta_message * msg, const char *serviceName,
+                                                     const char *serviceParam, int ttl);
+
+    /**
+     * Walk a message within the PeerGroup for which the instance of the 
+     * Rendezvous Service is running in.
+     *
+     * @param rdv a pointer to the instance of the Rendezvous Service
+     * @param msg the Jxta_message* to propagate.
+     * @param serviceName pointer to a string containing the name of the service 
+     * on which the listener is listening on.
+     * @param serviceParam pointer to a string containing the parameter associated
+     * to the serviceName.
+     * @return error code.
+     **/
+JXTA_DECLARE(Jxta_status) jxta_rdv_service_walk(Jxta_rdv_service * rdv, Jxta_message * msg, const char *serviceName,
+                                                const char *serviceParam);
 
     /**
      * Test if the given peer is connected
      *
+     *
      * @param rdv a pointer to the instance of the Rendezvous Service
      * @param peer a pointer to the Jxta_peer to test upon
-     * @return TRUE if the peer is connected
+     * @return TRUE if the peer is a connected, FALSE otherwise.
      **/
-boolean jxta_rdv_service_peer_is_connected(Jxta_rdv_service * rdv, Jxta_peer * peer);
+JXTA_DECLARE(Jxta_boolean) jxta_rdv_service_peer_is_connected(Jxta_rdv_service * rdv, Jxta_peer * peer);
 
     /**
      * Return the time in absolute milliseconds time at which the provided peer will expire if not renewed.
-     
+     *
      * @param rdv a pointer to the instance of the Rendezvous Service
      * @param peer a pointer to the Jxta_peer to test upon
      * @return the time in absolute milliseconds time at which the provided peer will expire if not renewed.
      **/
-Jxta_time jxta_rdv_service_peer_get_expires(Jxta_rdv_service * rdv, Jxta_peer * peer);
+JXTA_DECLARE(Jxta_time) jxta_rdv_service_peer_get_expires(Jxta_rdv_service * rdv, Jxta_peer * peer);
 
     /**
      * Test if the given peer is known to be a rendezvous
@@ -259,9 +282,50 @@ Jxta_time jxta_rdv_service_peer_get_expires(Jxta_rdv_service * rdv, Jxta_peer * 
      * @param peer a pointer to the Jxta_peer to test upon
      * @return TRUE if the peer is a rendezvous, FALSE otherwise.
      **/
-boolean jxta_rdv_service_peer_is_rdv(Jxta_rdv_service * rdv, Jxta_peer * peer);
+JXTA_DECLARE(Jxta_boolean) jxta_rdv_service_peer_is_rdv(Jxta_rdv_service * rdv, Jxta_peer * peer);
+
+    /**
+     * Returns the current rendezvous configuration of this peer within the
+     * current peer group.
+     *
+     * @param rdv a pointer to the instance of the Rendezvous Service
+     **/
+JXTA_DECLARE(RdvConfig_configuration) jxta_rdv_service_config(Jxta_rdv_service * rdv);
+
+    /**
+     * Adjusts the current rendezvous configuration of this peer within the 
+     * current peer group. The configuration change may happen asynchronously.
+     *
+     * @param rdv a pointer to the instance of the Rendezvous Service
+     * @param config The desired configuration.
+     **/
+JXTA_DECLARE(Jxta_status) jxta_rdv_service_set_config(Jxta_rdv_service * rdv, RdvConfig_configuration config);
+
+    /**
+     * Returns the interval at which this peer dynamically reconsiders its'
+     * rendezvous configuration within the current group.
+     *
+     * @param rdv a pointer to the instance of the Rendezvous Service
+     * @return The interval expressed as positive milliseconds or -1 if the peer
+     * is using a fixed configuration.
+     *
+     **/
+JXTA_DECLARE(Jxta_time_diff) jxta_rdv_service_auto_interval(Jxta_rdv_service * rdv);
+
+    /**
+     * Set the interval at which this peer dynamically reconsiders its'
+     * rendezvous configuration within the current group.
+     *
+     * @param rdv a pointer to the instance of the Rendezvous Service
+     * @param The interval expressed as positive milliseconds or -1 if the peer
+     * should maintain its' current configuration.
+     **/
+JXTA_DECLARE(void) jxta_rdv_service_set_auto_interval(Jxta_rdv_service * rdv, Jxta_time_diff interval);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 #endif

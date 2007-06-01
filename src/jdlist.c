@@ -51,24 +51,20 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jdlist.c,v 1.8 2005/02/16 23:26:47 bondolo Exp $
+ * $Id: jdlist.c,v 1.12 2005/09/03 02:02:36 slowhog Exp $
  */
 
 /* 
  * $Source: /cvs/jxta-c/src/jdlist.c,v $
- * $Revision: 1.8 $
- * $Date: 2005/02/16 23:26:47 $
- * $Author: bondolo $
+ * $Revision: 1.12 $
+ * $Date: 2005/09/03 02:02:36 $
+ * $Author: slowhog $
  */
 
-#include <stdio.h>    /* Basic includes and definitions */
+#include <stdio.h>  /* Basic includes and definitions */
 #include <stdlib.h>
 #include "jdlist.h"
 #include "jxta_object.h"
-
-#define TRUE 1
-#define FALSE 0
-
 
 /*---------------------------------------------------------------------*
  * PROCEDURES FOR MANIPULATING DOUBLY LINKED LISTS 
@@ -78,137 +74,133 @@
  *---------------------------------------------------------------------*/
 
 
-Dlist * dl_make()
+Dlist *dl_make()
 {
-  Dlist * d;
+    Dlist *d;
 
-  d = (Dlist *) malloc (sizeof (Dlist));
-  d->flink = d;
-  d->blink = d;
-  d->val = (void *) 0;
-  return d;
+    d = (Dlist *) malloc(sizeof(Dlist));
+    d->flink = d;
+    d->blink = d;
+    d->val = (void *) 0;
+    return d;
+}
+
+/* Inserts to the end of a list */
+void dl_insert_b(Dlist * node, void *val)
+{
+    Dlist *last_node, *new_node;
+
+    new_node = (Dlist *) malloc(sizeof(Dlist));
+    new_node->val = val;
+
+    last_node = node->blink;
+
+    node->blink = new_node;
+    last_node->flink = new_node;
+    new_node->blink = last_node;
+    new_node->flink = node;
 }
 
 
-void 
-dl_insert_b(Dlist * node, void * val)	/* Inserts to the end of a list */
+void dl_insert_list_b(Dlist * node, Dlist * list_to_insert)
 {
-  Dlist * last_node, *new;
+    Dlist *last_node, *f, *l;
 
-  new = (Dlist *) malloc (sizeof (Dlist));
-  new->val = val;
+    if (dl_empty(list_to_insert)) {
+        free(list_to_insert);
+        return;
+    }
+    f = list_to_insert->flink;
+    l = list_to_insert->blink;
+    last_node = node->blink;
 
-  last_node = node->blink;
-
-  node->blink = new;
-  last_node->flink = new;
-  new->blink = last_node;
-  new->flink = node;
-}
-
-
-void
-dl_insert_list_b(Dlist * node, Dlist* list_to_insert)
-{
-  Dlist * last_node, *f, *l;
-
-  if (dl_empty(list_to_insert)) {
+    node->blink = l;
+    last_node->flink = f;
+    f->blink = last_node;
+    l->flink = node;
     free(list_to_insert);
-    return;
-  }
-  f = list_to_insert->flink;
-  l = list_to_insert->blink;
-  last_node = node->blink;
-
-  node->blink = l;
-  last_node->flink = f;
-  f->blink = last_node;
-  l->flink = node;
-  free(list_to_insert);
 }
 
-
-void
-dl_delete_node(Dlist * item)		/* Deletes an arbitrary iterm */
+/* Deletes an arbitrary iterm */
+void dl_delete_node(Dlist * item)
 {
-  item->flink->blink = item->blink;
-  item->blink->flink = item->flink;
-  free(item);
+    item->flink->blink = item->blink;
+    item->blink->flink = item->flink;
+    free(item);
 }
 
 
 
 
 
-void *
-dl_val(Dlist * l)
+void *dl_val(Dlist * l)
 {
-  return l->val;
+    return l->val;
 }
 
 
-int
-dl_size(Dlist * l)
+int dl_size(Dlist * l)
 {
-  int i = 0;
-  Dlist * tmp;
+    int i = 0;
+    Dlist *tmp;
 
-  dl_traverse(tmp, l)
-      i++;
+    dl_traverse(tmp, l)
+        i++;
 
-  return i;
+    return i;
 }
 
 
 
 
-void
-dl_delete_list(Dlist * l)
+void dl_delete_list(Dlist * l)
 {
-  Dlist * d;
-  Dlist * next_node;
+    Dlist *d;
+    Dlist *next_node;
 
-  d = l->flink;
-  while(d != l) {
-    next_node = d->flink;
-    free(d);
-    d = next_node;
-  }
-  free(d);
-}
-
-
-
-void
-dl_free(Dlist * l, DlFreeFunc free_val) {
-  Dlist * d;
-  Dlist * next_node;
-
-  d = l->flink;
-  while(d != l) {
-    next_node = d->flink;
-    if (free_val != NULL) {
-      free_val(d->val);
-    } else {
-      JXTA_OBJECT_RELEASE( d->val);
+    d = l->flink;
+    while (d != l) {
+        next_node = d->flink;
+        free(d);
+        d = next_node;
     }
     free(d);
-    d = next_node;
-  }
-  free(d);
 }
 
 
-void
-dl_print(Dlist * l, DLPRINTFUNC printer, void * user_data) {
-  Dlist * d;
-  Dlist * next_node;
 
-  d = l->flink;
-  while(d != l) {
-    next_node = d->flink;
-    printer(d->val,user_data);
-    d = next_node;
-  }
+void dl_free(Dlist * l, DlFreeFunc free_val)
+{
+    Dlist *d;
+    Dlist *next_node;
+
+    d = l->flink;
+    while (d != l) {
+        next_node = d->flink;
+        if (free_val != NULL) {
+            free_val(d->val);
+        } else {
+            if (NULL != d->val)
+                JXTA_OBJECT_RELEASE(d->val);
+        }
+        free(d);
+        d = next_node;
+    }
+    free(d);
 }
 
+
+void dl_print(Dlist * l, DLPRINTFUNC printer, void *user_data)
+{
+    Dlist *d;
+    Dlist *next_node;
+
+    d = l->flink;
+    while (d != l) {
+        next_node = d->flink;
+        printer(d->val, user_data);
+        d = next_node;
+    }
+}
+
+/* vim: set ts=4 sw=4 tw=130 et: */

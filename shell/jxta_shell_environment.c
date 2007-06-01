@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_environment.c,v 1.2 2004/06/23 03:30:55 tra Exp $
+ * $Id: jxta_shell_environment.c,v 1.6 2005/08/24 01:31:11 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -64,9 +64,9 @@
 
 static int _jxta_shell_environement_counter = 0;
 
-struct _jxta_shell_environement{
-	JXTA_OBJECT_HANDLE;
-        Jxta_objecthashtable * list;
+struct _jxta_shell_environement {
+    JXTA_OBJECT_HANDLE;
+    Jxta_objecthashtable *list;
 };
 
 void JxtaShellEnvironment_free(Jxta_object * obj);
@@ -74,207 +74,254 @@ void JxtaShellEnvironment_free(Jxta_object * obj);
 /**
 *  Create a new name for the environment variable
 */
-JString * JxtaShellEnvironment_createName();
+JString *JxtaShellEnvironment_createName();
 
-JxtaShellEnvironment * JxtaShellEnvironment_new(JxtaShellEnvironment * parent)
+JxtaShellEnvironment *JxtaShellEnvironment_new(JxtaShellEnvironment * parent)
 {
-    JxtaShellEnvironment * env = 0;
-  
-    env = (JxtaShellEnvironment*)malloc(sizeof(JxtaShellEnvironment));  
+    JxtaShellEnvironment *env = 0;
 
-    if( env == NULL ) return NULL;
+    env = (JxtaShellEnvironment *) malloc(sizeof(JxtaShellEnvironment));
 
-    memset (env, 0, sizeof (JxtaShellEnvironment));
-    JXTA_OBJECT_INIT (env,JxtaShellEnvironment_free,0);
+    if (env == NULL)
+        return NULL;
 
-    env->list = jxta_objecthashtable_new(0,
-                                         JxtaShellObject_hashValue, 
-                                         JxtaShellObject_equals);
+    memset(env, 0, sizeof(JxtaShellEnvironment));
+    JXTA_OBJECT_INIT(env, JxtaShellEnvironment_free, 0);
 
-    if( parent != NULL){    /** add the parent data */
-	Jxta_vector *list = JxtaShellEnvironment_contains_values(parent);
-	JxtaShellObject *obj;
+    env->list = jxta_objecthashtable_new(0, JxtaShellObject_hashValue, JxtaShellObject_equals);
 
-	if( list != NULL){
-	    int i,max = jxta_vector_size (list);
+    if (parent != NULL) {   /** add the parent data */
+        Jxta_vector *list = JxtaShellEnvironment_contains_values(parent);
+        JxtaShellObject *obj;
 
-	    for(i = 0; i < max; i++){
-		obj = 0;
-		jxta_vector_get_object_at ( list, (Jxta_object**) &obj, i );
-		if( obj != 0)   {
-		    JxtaShellEnvironment_add_0(env,obj);
-		    JXTA_OBJECT_RELEASE(obj); 
-		}
-	    }
-    JXTA_OBJECT_RELEASE(list); list = NULL;
-	}
+        if (list != NULL) {
+            int i, max = jxta_vector_size(list);
+
+            for (i = 0; i < max; i++) {
+                obj = 0;
+                jxta_vector_get_object_at(list, (Jxta_object **) & obj, i);
+                if (obj != 0) {
+                    JxtaShellEnvironment_add_0(env, obj);
+                    JXTA_OBJECT_RELEASE(obj);
+                }
+            }
+            JXTA_OBJECT_RELEASE(list);
+            list = NULL;
+        }
     }
     return env;
 }
 
-void JxtaShellEnvironment_free(Jxta_object *obj){
-      JxtaShellEnvironment * app = (JxtaShellEnvironment*)obj;
-
-      if(app != NULL){
-        if( app->list != NULL) JXTA_OBJECT_RELEASE(app->list); 
-        free(app);
-      }
-}
-
-JString * JxtaShellEnvironment_createName(){
-  char result[100];
-  JString *name;
-  
-  result[0] = '\0';
-  sprintf(result,"Env-%d",_jxta_shell_environement_counter++);  
-  name = jstring_new_2( result);
-  return name;
-}
-
-void JxtaShellEnvironment_add_0(JxtaShellEnvironment * env, JxtaShellObject * obj){
-  if( env != 0 && env->list != 0){
-     JString * name =  JxtaShellObject_name(obj);   
-     jxta_objecthashtable_del(env->list, name, NULL);
-     if( name == 0) name = JxtaShellEnvironment_createName();
-     jxta_objecthashtable_put(env->list, (Jxta_object*)name,(Jxta_object*) obj);
-     JXTA_OBJECT_RELEASE(name); 
-  }
-}
-
-void JxtaShellEnvironment_add_1(JxtaShellEnvironment * env,Jxta_object * obj){   
-  JxtaShellEnvironment_add_2(env,0,obj);
-}
-
-
-void JxtaShellEnvironment_add_2(JxtaShellEnvironment * env,JString *name, Jxta_object * obj){
-   if( env != 0 && env->list != 0){
-      JString * key  = name;
-      JxtaShellObject *value;
-    
-       if( key == NULL) {
-	   key = JxtaShellEnvironment_createName(); /* gives us a share */
-	   if (key == 0) return;
-       } else {
-	   JXTA_OBJECT_SHARE(key); /* we need a share */
-       }
-
-       value = JxtaShellObject_new(key,obj,0); /* does not share for itself */
-       if( value == 0) {
-	   JXTA_OBJECT_RELEASE(key);
-	   return;
-       }
-       JXTA_OBJECT_SHARE(obj);  /* needs a share too */
-
-       JxtaShellEnvironment_add_0(env,value); 
-       JXTA_OBJECT_RELEASE(value);
-   }
-}
-
-
-JxtaShellObject * JxtaShellEnvironment_get(JxtaShellEnvironment * env,JString *name){
-  JxtaShellObject *found = 0;
-
-  if( env == 0 || env->list == 0 || name == 0) return found;
-
-  jxta_objecthashtable_get(env->list,(Jxta_object*)name,
-			   (Jxta_object**)&found);
-  return found;
-}
-
-void JxtaShellEnvironment_delete(JxtaShellEnvironment * env,JString *name)
+void JxtaShellEnvironment_free(Jxta_object * obj)
 {
-  if( env == 0 || env->list == 0 || name == 0) return;
+    JxtaShellEnvironment *app = (JxtaShellEnvironment *) obj;
 
-  jxta_objecthashtable_del(env->list,(Jxta_object*)name, NULL);
+    if (app != NULL) {
+        if (app->list != NULL)
+            JXTA_OBJECT_RELEASE(app->list);
+        free(app);
+    }
 }
 
-Jxta_boolean JxtaShellEnvironment_contains_key(JxtaShellEnvironment * env,JString *name){
-  Jxta_boolean result = FALSE;
+JString *JxtaShellEnvironment_createName()
+{
+    char result[100];
+    JString *name;
 
-  if( env != 0 && env->list != 0 && name != 0){
-     JxtaShellObject *found;
-
-     found = JxtaShellEnvironment_get(env,name);
-     if( found != 0) {
-         result = TRUE;
-         JXTA_OBJECT_RELEASE(found);
-     }
-  }
-
-  return result;
+    result[0] = '\0';
+    sprintf(result, "Env-%d", _jxta_shell_environement_counter++);
+    name = jstring_new_2(result);
+    return name;
 }
 
-Jxta_vector* JxtaShellEnvironment_contains_values(JxtaShellEnvironment * env){
-   Jxta_vector *list = 0;
- 
-   if( env != 0 && env->list != 0){   
-      list = jxta_objecthashtable_values_get(env->list);
-   }
-   return list;
+void JxtaShellEnvironment_add_0(JxtaShellEnvironment * env, JxtaShellObject * obj)
+{
+    if (env != 0 && env->list != 0) {
+        JString *name = JxtaShellObject_name(obj);
+        jxta_objecthashtable_del(env->list, name, NULL);
+        if (name == 0)
+            name = JxtaShellEnvironment_createName();
+        jxta_objecthashtable_put(env->list, (Jxta_object *) name, (Jxta_object *) obj);
+        JXTA_OBJECT_RELEASE(name);
+    }
 }
 
-Jxta_vector* JxtaShellEnvironment_get_of_type(JxtaShellEnvironment * env, JString* type ){
-   Jxta_vector *reslist = jxta_vector_new(0);
- 
-   if( env != NULL && env->list != NULL){   
-      int eachItem;
-      Jxta_vector *list = NULL;
+void JxtaShellEnvironment_add_1(JxtaShellEnvironment * env, Jxta_object * obj)
+{
+    JxtaShellEnvironment_add_2(env, 0, obj);
+}
 
-      list = jxta_objecthashtable_values_get(env->list);
-        for( eachItem = 0; eachItem < jxta_vector_size(list); eachItem++ ) {
-            JxtaShellObject * object = NULL;
-            
-            jxta_vector_get_object_at( list, (Jxta_object**) &object, eachItem );
-            
-            if( (NULL != object) ) {
-                JString * itsType = JxtaShellObject_type(object);
-                
-                if( 0 == strcmp( jstring_get_string(type), jstring_get_string(itsType) ) )
-                    jxta_vector_add_object_last( reslist, (Jxta_object*) object );
-                    
-                 JXTA_OBJECT_RELEASE(itsType); itsType = NULL;                    
-                 }
-            JXTA_OBJECT_RELEASE(object); object = NULL;                    
+
+void JxtaShellEnvironment_add_2(JxtaShellEnvironment * env, JString * name, Jxta_object * obj)
+{
+    if (env != 0 && env->list != 0) {
+        JString *key = name;
+        JxtaShellObject *value;
+
+        if (key == NULL) {
+            key = JxtaShellEnvironment_createName();    /* gives us a share */
+            if (key == 0)
+                return;
+        } else {
+            JXTA_OBJECT_SHARE(key); /* we need a share */
+        }
+
+        value = JxtaShellObject_new(key, obj, 0);   /* does not share for itself */
+        if (value == 0) {
+            JXTA_OBJECT_RELEASE(key);
+            return;
+        }
+        JXTA_OBJECT_SHARE(obj); /* needs a share too */
+
+        JxtaShellEnvironment_add_0(env, value);
+        JXTA_OBJECT_RELEASE(value);
+    }
+}
+
+
+JxtaShellObject *JxtaShellEnvironment_get(JxtaShellEnvironment * env, JString * name)
+{
+    JxtaShellObject *found = 0;
+
+    if (env == 0 || env->list == 0 || name == 0)
+        return found;
+
+    jxta_objecthashtable_get(env->list, (Jxta_object *) name, (Jxta_object **) & found);
+    return found;
+}
+
+void JxtaShellEnvironment_delete(JxtaShellEnvironment * env, JString * name)
+{
+    if (env == 0 || env->list == 0 || name == 0)
+        return;
+
+    jxta_objecthashtable_del(env->list, (Jxta_object *) name, NULL);
+}
+
+Jxta_boolean JxtaShellEnvironment_contains_key(JxtaShellEnvironment * env, JString * name)
+{
+    Jxta_boolean result = FALSE;
+
+    if (env != 0 && env->list != 0 && name != 0) {
+        JxtaShellObject *found;
+
+        found = JxtaShellEnvironment_get(env, name);
+        if (found != 0) {
+            result = TRUE;
+            JXTA_OBJECT_RELEASE(found);
+        }
+    }
+
+    return result;
+}
+
+Jxta_vector *JxtaShellEnvironment_contains_values(JxtaShellEnvironment * env)
+{
+    Jxta_vector *list = 0;
+
+    if (env != 0 && env->list != 0) {
+        list = jxta_objecthashtable_values_get(env->list);
+    }
+    return list;
+}
+
+void JxtaShellEnvironment_delete_type(JxtaShellEnvironment * env, JString * type)
+{
+    if (env != NULL && env->list != NULL) {
+        int eachItem;
+        Jxta_vector *list = NULL;
+
+        list = jxta_objecthashtable_values_get(env->list);
+        for (eachItem = 0; eachItem < jxta_vector_size(list); eachItem++) {
+            JxtaShellObject *object = NULL;
+
+            jxta_vector_get_object_at(list, (Jxta_object **) & object, eachItem);
+
+            if ((NULL != object)) {
+                JString *itsType = JxtaShellObject_type(object);
+
+                if (0 == strcmp(jstring_get_string(type), jstring_get_string(itsType))) {
+                    JString *itsName = JxtaShellObject_name(object);
+                    char *name_cstr = jstring_get_string(itsName);
+                    if (strcmp("currGroupAdv", name_cstr) != 0 && strcmp("thisPeer", name_cstr) != 0) {
+                        JxtaShellEnvironment_delete(env, itsName);
+                        JXTA_OBJECT_RELEASE(itsName);
+                    }
+                }
+                JXTA_OBJECT_RELEASE(itsType);
+                itsType = NULL;
             }
-     JXTA_OBJECT_RELEASE(list); list = NULL;                    
-   }
-   
-   return reslist;
+            JXTA_OBJECT_RELEASE(object);
+            object = NULL;
+        }
+        JXTA_OBJECT_RELEASE(list);
+        list = NULL;
+    }
+
 }
 
-Jxta_status JxtaShellEnvironment_set_current_group( JxtaShellEnvironment * env, Jxta_PG * pg ) {
-        Jxta_PGA* pga = NULL;
-        JString * name = NULL;
-        JString * type = NULL;
-        JxtaShellObject *var = NULL;
- 
-        jxta_PG_get_PGA( pg, &pga );
-        name = jstring_new_2( "currGroupAdv" );
-        type = jstring_new_2( "GroupAdvertisement" );
-        var = JxtaShellObject_new( name, (Jxta_object*) pga, type);
- 	    JXTA_OBJECT_RELEASE(name);
- 	    JXTA_OBJECT_RELEASE(type);
+Jxta_vector *JxtaShellEnvironment_get_of_type(JxtaShellEnvironment * env, JString * type)
+{
+    Jxta_vector *reslist = jxta_vector_new(0);
 
-        JxtaShellEnvironment_add_0(env,var); 
-        JXTA_OBJECT_RELEASE(var); /* release local */
-        JXTA_OBJECT_RELEASE(pga); pga = NULL;/* release local */
+    if (env != NULL && env->list != NULL) {
+        int eachItem;
+        Jxta_vector *list = NULL;
 
-        name = jstring_new_2( "currGroup" );
-        type = jstring_new_2( "Group" );
-        var = JxtaShellObject_new( name, (Jxta_object*) pg, type);
- 	    JXTA_OBJECT_RELEASE(name);
- 	    JXTA_OBJECT_RELEASE(type);
+        list = jxta_objecthashtable_values_get(env->list);
+        for (eachItem = 0; eachItem < jxta_vector_size(list); eachItem++) {
+            JxtaShellObject *object = NULL;
 
-        JxtaShellEnvironment_add_0(env,var); 
-        JXTA_OBJECT_RELEASE(var); /* release local */
-        
-        return JXTA_SUCCESS;
+            jxta_vector_get_object_at(list, (Jxta_object **) & object, eachItem);
+
+            if ((NULL != object)) {
+                JString *itsType = JxtaShellObject_type(object);
+
+                if (0 == strcmp(jstring_get_string(type), jstring_get_string(itsType)))
+                    jxta_vector_add_object_last(reslist, (Jxta_object *) object);
+
+                JXTA_OBJECT_RELEASE(itsType);
+                itsType = NULL;
+            }
+            JXTA_OBJECT_RELEASE(object);
+            object = NULL;
+        }
+        JXTA_OBJECT_RELEASE(list);
+        list = NULL;
+    }
+
+    return reslist;
 }
 
+Jxta_status JxtaShellEnvironment_set_current_group(JxtaShellEnvironment * env, Jxta_PG * pg)
+{
+    Jxta_PGA *pga = NULL;
+    JString *name = NULL;
+    JString *type = NULL;
+    JxtaShellObject *var = NULL;
 
+    jxta_PG_get_PGA(pg, &pga);
+    name = jstring_new_2("currGroupAdv");
+    type = jstring_new_2("GroupAdvertisement");
+    var = JxtaShellObject_new(name, (Jxta_object *) pga, type);
+    JXTA_OBJECT_RELEASE(name);
+    JXTA_OBJECT_RELEASE(type);
 
+    JxtaShellEnvironment_add_0(env, var);
+    JXTA_OBJECT_RELEASE(var);   /* release local */
+    JXTA_OBJECT_RELEASE(pga);
+    pga = NULL; /* release local */
 
+    name = jstring_new_2("currGroup");
+    type = jstring_new_2("Group");
+    var = JxtaShellObject_new(name, (Jxta_object *) pg, type);
+    JXTA_OBJECT_RELEASE(name);
+    JXTA_OBJECT_RELEASE(type);
 
+    JxtaShellEnvironment_add_0(env, var);
+    JXTA_OBJECT_RELEASE(var);   /* release local */
 
+    return JXTA_SUCCESS;
+}
 
-
+/* vi: set ts=4 sw=4 tw=130 et: */

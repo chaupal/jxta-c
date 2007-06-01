@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_core.h,v 1.1 2005/03/24 19:40:22 slowhog Exp $
+ * $Id: jpr_core.h,v 1.2 2005/04/16 13:27:12 lankes Exp $
  */
 
 
@@ -67,8 +67,8 @@ extern "C" {
 #endif
 #endif
 
-Jpr_status jpr_initialize(void);
-void jpr_terminate(void);
+JPR_DECLARE(Jpr_status) jpr_initialize(void);
+JPR_DECLARE(void) jpr_terminate(void);
 
 #ifdef __cplusplus
 #if 0

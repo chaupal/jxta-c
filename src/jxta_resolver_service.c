@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_service.c,v 1.13 2004/02/13 21:25:39 hamada Exp $
+ * $Id: jxta_resolver_service.c,v 1.16 2005/08/03 08:44:49 lankes Exp $
  */
 
 #include "jxta_resolver_service_private.h"
@@ -59,12 +59,11 @@
  * The base resolver service ctor (not public: the only public way to make a
  * new pg is to instantiate one of the derived types).
  */
-void jxta_resolver_service_construct(Jxta_resolver_service* service,
-                                     Jxta_resolver_service_methods* methods) {
+void jxta_resolver_service_construct(Jxta_resolver_service * service, Jxta_resolver_service_methods * methods)
+{
 
     PTValid(methods, Jxta_resolver_service_methods);
-    jxta_service_construct((Jxta_service*) service,
-                           (Jxta_service_methods*) methods);
+    jxta_service_construct((Jxta_service *) service, (Jxta_service_methods *) methods);
     service->thisType = "Jxta_resolver_service";
 }
 
@@ -72,8 +71,9 @@ void jxta_resolver_service_construct(Jxta_resolver_service* service,
  * The base rsesolver service dtor (Not public, not virtual. Only called by
  * subclassers). We just pass it along.
  */
-void jxta_resolver_service_destruct(Jxta_resolver_service* service) {
-    jxta_service_destruct((Jxta_service*) service);
+void jxta_resolver_service_destruct(Jxta_resolver_service * service)
+{
+    jxta_service_destruct((Jxta_service *) service);
 }
 
 /**
@@ -89,10 +89,8 @@ void jxta_resolver_service_destruct(Jxta_resolver_service* service) {
  * @return Jxta_status
  *
  */
-Jxta_status
-jxta_resolver_service_registerQueryHandler(Jxta_resolver_service * service,
-        JString* name,
-        Jxta_listener * handler ) {
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_registerQueryHandler(Jxta_resolver_service * service, JString * name, Jxta_listener * handler)
+{
     PTValid(service, Jxta_resolver_service);
     return VTBL->registerQueryHandler(service, name, handler);
 }
@@ -104,11 +102,37 @@ jxta_resolver_service_registerQueryHandler(Jxta_resolver_service * service,
   * @return error code
   *
   */
-Jxta_status
-jxta_resolver_service_unregisterQueryHandler(Jxta_resolver_service * service,
-        JString* name) {
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_unregisterQueryHandler(Jxta_resolver_service * service, JString * name)
+{
     PTValid(service, Jxta_resolver_service);
     return VTBL->unregisterQueryHandler(service, name);
+}
+
+/**
+ * Registers a given Resolver Srdi Handler.
+ *
+ * @param name The name under which this handler is to be registered.
+ * @param handler The handler.
+ * @return Jxta_status
+ *
+ */
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_registerSrdiHandler(Jxta_resolver_service * service, JString * name, Jxta_listener * handler)
+{
+    PTValid(service, Jxta_resolver_service);
+    return VTBL->registerSrdiHandler(service, name, handler);
+}
+
+/**
+  * unregisters a given Resolver Srdi Handler.
+  *
+  * @param name The name of the handler to unregister.
+  * @return error code
+  *
+  */
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_unregisterSrdiHandler(Jxta_resolver_service * service, JString * name)
+{
+    PTValid(service, Jxta_resolver_service);
+    return VTBL->unregisterSrdiHandler(service, name);
 }
 
 /**
@@ -119,10 +143,8 @@ jxta_resolver_service_unregisterQueryHandler(Jxta_resolver_service * service,
  * @return Jxta_status
  *
  */
-Jxta_status
-jxta_resolver_service_registerResHandler(Jxta_resolver_service * service,
-        JString* name,
-        Jxta_listener * handler ) {
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_registerResHandler(Jxta_resolver_service * service, JString * name, Jxta_listener * handler)
+{
     PTValid(service, Jxta_resolver_service);
     return VTBL->registerResponseHandler(service, name, handler);
 }
@@ -134,9 +156,8 @@ jxta_resolver_service_registerResHandler(Jxta_resolver_service * service,
   * @return error code
   *
   */
-Jxta_status
-jxta_resolver_service_unregisterResHandler(Jxta_resolver_service * service,
-        JString* name) {
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_unregisterResHandler(Jxta_resolver_service * service, JString * name)
+{
     PTValid(service, Jxta_resolver_service);
     return VTBL->unregisterResponseHandler(service, name);
 }
@@ -151,10 +172,8 @@ jxta_resolver_service_unregisterResHandler(Jxta_resolver_service * service,
  *
  * @since JXTA 1.0
  */
-Jxta_status
-jxta_resolver_service_sendQuery(Jxta_resolver_service* service,
-                                ResolverQuery* query,
-                                Jxta_id* peerid) {
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendQuery(Jxta_resolver_service * service, ResolverQuery * query, Jxta_id * peerid)
+{
     PTValid(service, Jxta_resolver_service);
     return VTBL->sendQuery(service, query, peerid);
 }
@@ -164,10 +183,8 @@ jxta_resolver_service_sendQuery(Jxta_resolver_service* service,
  * @param response is the response to be sent
  * @param addr  Peer address (unicast) , or NULL (propagate)
  */
-Jxta_status
-jxta_resolver_service_sendResponse(Jxta_resolver_service* service,
-                                   ResolverResponse* response,
-                                   Jxta_id* peerid) {
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendResponse(Jxta_resolver_service * service, ResolverResponse * response, Jxta_id * peerid)
+{
     PTValid(service, Jxta_resolver_service);
     return VTBL->sendResponse(service, response, peerid);
 }
@@ -177,11 +194,8 @@ jxta_resolver_service_sendResponse(Jxta_resolver_service* service,
  * @param message is the srdi message to be sent
  * @param addr  Peer address (unicast) , or NULL (propagate)
  */
-Jxta_status
-jxta_resolver_service_sendSrdi(Jxta_resolver_service* service,
-                                   ResolverSrdi* message,
-                                   Jxta_id* peerid) {
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendSrdi(Jxta_resolver_service * service, ResolverSrdi * message, Jxta_id * peerid)
+{
     PTValid(service, Jxta_resolver_service);
     return VTBL->sendSrdi(service, message, peerid);
 }
-

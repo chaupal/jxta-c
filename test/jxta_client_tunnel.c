@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_client_tunnel.c,v 1.4 2005/04/07 22:58:53 slowhog Exp $
+ * $Id: jxta_client_tunnel.c,v 1.5 2005/04/22 01:26:21 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     Jxta_PG *pg;
     Jxta_status rv;
     int ch;
-
+    char *tmp; 
     FILE *f;
     Jxta_log_file *log_f;
     Jxta_log_selector *log_s;
@@ -124,6 +124,10 @@ int main(int argc, char *argv[])
         exit(-4);
     }
 
+    tmp = jxta_socket_tunnel_addr_get(tun);
+    printf("Tunnel was establish, forward to socket addr: %s\n", tmp);
+    free(tmp);
+
     printf("Type 'q'/'Q' to quit\n");
     for (ch = getchar(); 'q' != ch && 'Q' != ch; ch = getchar());
 
@@ -144,4 +148,4 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-/* vim: set ts=4 sw=4 wm=130 et: */
+/* vim: set ts=4 sw=4 tw=130 et: */

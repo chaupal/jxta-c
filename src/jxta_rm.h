@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rm.h,v 1.4 2005/01/12 22:37:43 bondolo Exp $
+ * $Id: jxta_rm.h,v 1.6 2005/08/03 05:51:18 slowhog Exp $
  */
 
-   
+
 #ifndef __EndpointRouterMessage_H__
 #define __EndpointRouterMessage_H__
 
@@ -65,35 +65,35 @@
 extern "C" {
 #endif
 
-typedef struct _EndpointRouterMessage EndpointRouterMessage;
+    typedef struct _EndpointRouterMessage EndpointRouterMessage;
 
-EndpointRouterMessage * EndpointRouterMessage_new(void);
-void EndpointRouterMessage_set_handlers(EndpointRouterMessage *, XML_Parser, void *);
-void EndpointRouterMessage_delete(EndpointRouterMessage *);
-Jxta_status EndpointRouterMessage_get_xml(EndpointRouterMessage *, JString** xml);
-void EndpointRouterMessage_parse_charbuffer(EndpointRouterMessage *, const char *, int len); 
-void EndpointRouterMessage_parse_file(EndpointRouterMessage *, FILE * stream);
- 
-char * EndpointRouterMessage_get_EndpointRouterMessage(EndpointRouterMessage *);
-void EndpointRouterMessage_set_EndpointRouterMessage(EndpointRouterMessage *, char *);
- 
-Jxta_endpoint_address* EndpointRouterMessage_get_Src(EndpointRouterMessage *);
-void EndpointRouterMessage_set_Src(EndpointRouterMessage *, Jxta_endpoint_address *);
- 
-Jxta_endpoint_address * EndpointRouterMessage_get_Dest(EndpointRouterMessage *);
-void EndpointRouterMessage_set_Dest(EndpointRouterMessage *, Jxta_endpoint_address *);
- 
-Jxta_endpoint_address * EndpointRouterMessage_get_Last(EndpointRouterMessage *);
-void EndpointRouterMessage_set_Last(EndpointRouterMessage *, Jxta_endpoint_address *);
- 
-Jxta_vector * EndpointRouterMessage_get_GatewayForward(EndpointRouterMessage *);
-void EndpointRouterMessage_set_GatewayForward(EndpointRouterMessage *, Jxta_vector *);
- 
-Jxta_vector * EndpointRouterMessage_get_GatewayReverse(EndpointRouterMessage *);
-void EndpointRouterMessage_set_GatewayReverse(EndpointRouterMessage *, Jxta_vector *);
- 
- 
-#endif /* __EndpointRouterMessage_H__  */
+    JXTA_DECLARE(EndpointRouterMessage *) EndpointRouterMessage_new(void);
+    JXTA_DECLARE(void) EndpointRouterMessage_set_handlers(EndpointRouterMessage *, XML_Parser, void *);
+    void EndpointRouterMessage_delete(EndpointRouterMessage *);
+    JXTA_DECLARE(Jxta_status) EndpointRouterMessage_get_xml(EndpointRouterMessage *, JString ** xml);
+    JXTA_DECLARE(void) EndpointRouterMessage_parse_charbuffer(EndpointRouterMessage *, const char *, int len);
+    JXTA_DECLARE(void) EndpointRouterMessage_parse_file(EndpointRouterMessage *, FILE * stream);
+
+    JXTA_DECLARE(char *) EndpointRouterMessage_get_EndpointRouterMessage(EndpointRouterMessage *);
+    JXTA_DECLARE(void) EndpointRouterMessage_set_EndpointRouterMessage(EndpointRouterMessage *, char *);
+
+    JXTA_DECLARE(Jxta_endpoint_address *) EndpointRouterMessage_get_Src(EndpointRouterMessage *);
+    JXTA_DECLARE(void) EndpointRouterMessage_set_Src(EndpointRouterMessage *, Jxta_endpoint_address *);
+
+    JXTA_DECLARE(Jxta_endpoint_address *) EndpointRouterMessage_get_Dest(EndpointRouterMessage *);
+    JXTA_DECLARE(void) EndpointRouterMessage_set_Dest(EndpointRouterMessage *, Jxta_endpoint_address *);
+
+    JXTA_DECLARE(Jxta_endpoint_address *) EndpointRouterMessage_get_Last(EndpointRouterMessage *);
+    JXTA_DECLARE(void) EndpointRouterMessage_set_Last(EndpointRouterMessage *, Jxta_endpoint_address *);
+
+    JXTA_DECLARE(Jxta_vector *) EndpointRouterMessage_get_GatewayForward(EndpointRouterMessage *);
+    JXTA_DECLARE(void) EndpointRouterMessage_set_GatewayForward(EndpointRouterMessage *, Jxta_vector *);
+
+    JXTA_DECLARE(Jxta_vector *) EndpointRouterMessage_get_GatewayReverse(EndpointRouterMessage *);
+    JXTA_DECLARE(void) EndpointRouterMessage_set_GatewayReverse(EndpointRouterMessage *, Jxta_vector *);
+
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* __EndpointRouterMessage_H__  */

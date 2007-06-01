@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_msa.c,v 1.16 2005/02/02 02:58:28 exocetrick Exp $
+ * $Id: jxta_msa.c,v 1.21 2005/08/03 05:51:16 slowhog Exp $
  */
 
 
@@ -100,17 +100,17 @@ extern "C" {
      */
     struct _MSA {
         Jxta_advertisement jxta_advertisement;
-        char * MSA;
-        char * MSID;
-        char * Name;
-        char * Crtr;
-        char * SURI;
-        char * Vers;
-        char * Desc;
-        char * Parm;
-        char * PipeAdvertisement;
-        char * Proxy;
-        char * Auth;
+        char *MSA;
+        char *MSID;
+        char *Name;
+        char *Crtr;
+        char *SURI;
+        char *Vers;
+        char *Desc;
+        char *Parm;
+        char *PipeAdvertisement;
+        char *Proxy;
+        char *Auth;
     };
 
 
@@ -119,67 +119,65 @@ extern "C" {
      * tag name.
      */
     static void
-    handleMSA(void * userdata, const XML_Char * cd, int len) {
+     handleMSA(void *userdata, const XML_Char * cd, int len) {
         /* MSA * ad = (MSA*)userdata; */
         JXTA_LOG("In MSA element\n");
-    }
-
-    static void
-    handleMSID(void * userdata, const XML_Char * cd, int len) {
+    } static void
+     handleMSID(void *userdata, const XML_Char * cd, int len) {
         /* MSA * ad = (MSA*)userdata; */
         JXTA_LOG("In MSID element\n");
     }
 
     static void
-    handleName(void * userdata, const XML_Char * cd, int len) {
+     handleName(void *userdata, const XML_Char * cd, int len) {
         /* MSA * ad = (MSA*)userdata; */
         JXTA_LOG("In Name element\n");
     }
 
     static void
-    handleCrtr(void * userdata, const XML_Char * cd, int len) {
+     handleCrtr(void *userdata, const XML_Char * cd, int len) {
         /* MSA * ad = (MSA*)userdata; */
         JXTA_LOG("In Crtr element\n");
     }
 
     static void
-    handleSURI(void * userdata, const XML_Char * cd, int len) {
+     handleSURI(void *userdata, const XML_Char * cd, int len) {
         /* MSA * ad = (MSA*)userdata; */
         JXTA_LOG("In SURI element\n");
     }
 
     static void
-    handleVers(void * userdata, const XML_Char * cd, int len) {
+     handleVers(void *userdata, const XML_Char * cd, int len) {
         /* MSA * ad = (MSA*)userdata; */
         JXTA_LOG("In Vers element\n");
     }
 
     static void
-    handleDesc(void * userdata, const XML_Char * cd, int len) {
+     handleDesc(void *userdata, const XML_Char * cd, int len) {
         /* MSA * ad = (MSA*)userdata; */
         JXTA_LOG("In Desc element\n");
     }
 
     static void
-    handleParm(void * userdata, const XML_Char * cd, int len) {
+     handleParm(void *userdata, const XML_Char * cd, int len) {
         /* MSA * ad = (MSA*)userdata; */
         JXTA_LOG("In Parm element\n");
     }
 
     static void
-    handlePipeAdvertisement(void * userdata, const XML_Char * cd, int len) {
+     handlePipeAdvertisement(void *userdata, const XML_Char * cd, int len) {
         /* MSA * ad = (MSA*)userdata; */
         JXTA_LOG("In PipeAdvertisement element\n");
     }
 
     static void
-    handleProxy(void * userdata, const XML_Char * cd, int len) {
+     handleProxy(void *userdata, const XML_Char * cd, int len) {
         /* MSA * ad = (MSA*)userdata; */
         JXTA_LOG("In Proxy element\n");
     }
 
     static void
-    handleAuth(void * userdata, const XML_Char * cd, int len) {
+     handleAuth(void *userdata, const XML_Char * cd, int len) {
         /* MSA * ad = (MSA*)userdata; */
         JXTA_LOG("In Auth element\n");
     }
@@ -189,103 +187,92 @@ extern "C" {
     /** The get/set functions represent the public
      * interface to the ad class, that is, the API.
      */
-    char *
-    MSA_get_MSA(MSA * ad) {
+    JXTA_DECLARE(char *) MSA_get_MSA(MSA * ad) {
         return NULL;
     }
 
-    void
-    MSA_set_MSA(MSA * ad, char * name) {
+    JXTA_DECLARE(void)
+     MSA_set_MSA(MSA * ad, char *name) {
     }
 
-    char *
-    MSA_get_MSID(MSA * ad) {
+    JXTA_DECLARE(char *) MSA_get_MSID(MSA * ad) {
         return NULL;
     }
 
-    void
-    MSA_set_MSID(MSA * ad, char * name) {
+    JXTA_DECLARE(void)
+     MSA_set_MSID(MSA * ad, char *name) {
     }
 
-    char *
-    MSA_get_Name(MSA * ad) {
+    JXTA_DECLARE(char *) MSA_get_Name(MSA * ad) {
         return NULL;
     }
 
-    void
-    MSA_set_Name(MSA * ad, char * name) {
+    JXTA_DECLARE(void)
+     MSA_set_Name(MSA * ad, char *name) {
     }
 
-    char *
-    MSA_get_Crtr(MSA * ad) {
+    JXTA_DECLARE(char *) MSA_get_Crtr(MSA * ad) {
         return NULL;
     }
 
-    void
-    MSA_set_Crtr(MSA * ad, char * name) {
+    JXTA_DECLARE(void)
+     MSA_set_Crtr(MSA * ad, char *name) {
     }
 
-    char *
-    MSA_get_SURI(MSA * ad) {
+    JXTA_DECLARE(char *) MSA_get_SURI(MSA * ad) {
         return NULL;
     }
 
-    void
-    MSA_set_SURI(MSA * ad, char * name) {
+    JXTA_DECLARE(void)
+     MSA_set_SURI(MSA * ad, char *name) {
     }
 
-    char *
-    MSA_get_Vers(MSA * ad) {
+    JXTA_DECLARE(char *) MSA_get_Vers(MSA * ad) {
         return NULL;
     }
 
-    void
-    MSA_set_Vers(MSA * ad, char * name) {
+    JXTA_DECLARE(void)
+     MSA_set_Vers(MSA * ad, char *name) {
     }
 
-    char *
-    MSA_get_Desc(MSA * ad) {
+    JXTA_DECLARE(char *) MSA_get_Desc(MSA * ad) {
         return NULL;
     }
 
-    void
-    MSA_set_Desc(MSA * ad, char * name) {
+    JXTA_DECLARE(void)
+     MSA_set_Desc(MSA * ad, char *name) {
     }
 
-    char *
-    MSA_get_Parm(MSA * ad) {
+    JXTA_DECLARE(char *) MSA_get_Parm(MSA * ad) {
         return NULL;
     }
 
-    void
-    MSA_set_Parm(MSA * ad, char * name) {
+    JXTA_DECLARE(void)
+     MSA_set_Parm(MSA * ad, char *name) {
     }
 
-    char *
-    MSA_get_PipeAdvertisement(MSA * ad) {
+    JXTA_DECLARE(char *) MSA_get_PipeAdvertisement(MSA * ad) {
         return NULL;
     }
 
-    void
-    MSA_set_PipeAdvertisement(MSA * ad, char * name) {
+    JXTA_DECLARE(void)
+     MSA_set_PipeAdvertisement(MSA * ad, char *name) {
     }
 
-    char *
-    MSA_get_Proxy(MSA * ad) {
+    JXTA_DECLARE(char *) MSA_get_Proxy(MSA * ad) {
         return NULL;
     }
 
-    void
-    MSA_set_Proxy(MSA * ad, char * name) {
+    JXTA_DECLARE(void)
+     MSA_set_Proxy(MSA * ad, char *name) {
     }
 
-    char *
-    MSA_get_Auth(MSA * ad) {
+    JXTA_DECLARE(char *) MSA_get_Auth(MSA * ad) {
         return NULL;
     }
 
-    void
-    MSA_set_Auth(MSA * ad, char * name) {
+    JXTA_DECLARE(void)
+     MSA_set_Auth(MSA * ad, char *name) {
     }
 
 
@@ -297,41 +284,39 @@ extern "C" {
      * Later, the stream will be dispatched to the handler based
      * on the value in the char * kwd.
      */
-    const static Kwdtab MSA_tags[] = {
-                                         {"Null",             Null_,              NULL,                   NULL
-                                         },
-                                         {"jxta:MSA",         MSA_,              *handleMSA,              NULL},
-                                         {"MSID",             MSID_,             *handleMSID,             NULL},
-                                         {"Name",             Name_,             *handleName,             NULL},
-                                         {"Crtr",             Crtr_,             *handleCrtr,             NULL},
-                                         {"SURI",             SURI_,             *handleSURI,             NULL},
-                                         {"Vers",             Vers_,             *handleVers,             NULL},
-                                         {"Desc",             Desc_,             *handleDesc,             NULL},
-                                         {"Parm",             Parm_,             *handleParm,             NULL},
-                                         {"PipeAdvertisement",PipeAdvertisement_,*handlePipeAdvertisement,NULL},
-                                         {"Proxy",            Proxy_,            *handleProxy,            NULL},
-                                         {"Auth",             Auth_,             *handleAuth,             NULL},
-                                         {NULL,               0,                  0,                      NULL}
-                                     };
+    static const Kwdtab MSA_tags[] = {
+        {"Null", Null_, NULL, NULL, NULL},
+        {"jxta:MSA", MSA_, *handleMSA, NULL, NULL},
+        {"MSID", MSID_, *handleMSID, NULL, NULL},
+        {"Name", Name_, *handleName, NULL, NULL},
+        {"Crtr", Crtr_, *handleCrtr, NULL, NULL},
+        {"SURI", SURI_, *handleSURI, NULL, NULL},
+        {"Vers", Vers_, *handleVers, NULL, NULL},
+        {"Desc", Desc_, *handleDesc, NULL, NULL},
+        {"Parm", Parm_, *handleParm, NULL, NULL},
+        {"PipeAdvertisement", PipeAdvertisement_, *handlePipeAdvertisement, NULL, NULL},
+        {"Proxy", Proxy_, *handleProxy, NULL, NULL},
+        {"Auth", Auth_, *handleAuth, NULL, NULL},
+        {NULL, 0, 0, NULL, NULL}
+    };
 
 
-    Jxta_status
-    MSA_get_xml(MSA * ad, JString ** string) {
+    JXTA_DECLARE(Jxta_status) MSA_get_xml(MSA * ad, JString ** string) {
 
         /*
-         printer(stream,"<jxta:MSA>\n");
-         printer(stream,"<MSID>%s</MSID>\n",MSA_get_MSID(ad));
-         printer(stream,"<Name>%s</Name>\n",MSA_get_Name(ad));
-         printer(stream,"<Crtr>%s</Crtr>\n",MSA_get_Crtr(ad));
-         printer(stream,"<SURI>%s</SURI>\n",MSA_get_SURI(ad));
-         printer(stream,"<Vers>%s</Vers>\n",MSA_get_Vers(ad));
-         printer(stream,"<Desc>%s</Desc>\n",MSA_get_Desc(ad));
-         printer(stream,"<Parm>%s</Parm>\n",MSA_get_Parm(ad));
-         printer(stream,"<PipeAdvertisement>%s</PipeAdvertisement>\n",MSA_get_PipeAdvertisement(ad));
-         printer(stream,"<Proxy>%s</Proxy>\n",MSA_get_Proxy(ad));
-         printer(stream,"<Auth>%s</Auth>\n",MSA_get_Auth(ad));
-         printer(stream,"</MSA>\n");
-        */
+           printer(stream,"<jxta:MSA>\n");
+           printer(stream,"<MSID>%s</MSID>\n",MSA_get_MSID(ad));
+           printer(stream,"<Name>%s</Name>\n",MSA_get_Name(ad));
+           printer(stream,"<Crtr>%s</Crtr>\n",MSA_get_Crtr(ad));
+           printer(stream,"<SURI>%s</SURI>\n",MSA_get_SURI(ad));
+           printer(stream,"<Vers>%s</Vers>\n",MSA_get_Vers(ad));
+           printer(stream,"<Desc>%s</Desc>\n",MSA_get_Desc(ad));
+           printer(stream,"<Parm>%s</Parm>\n",MSA_get_Parm(ad));
+           printer(stream,"<PipeAdvertisement>%s</PipeAdvertisement>\n",MSA_get_PipeAdvertisement(ad));
+           printer(stream,"<Proxy>%s</Proxy>\n",MSA_get_Proxy(ad));
+           printer(stream,"<Auth>%s</Auth>\n",MSA_get_Auth(ad));
+           printer(stream,"</MSA>\n");
+         */
 
         return JXTA_NOTIMP;
     }
@@ -344,27 +329,21 @@ extern "C" {
      * just in case there is a segfault (not that 
      * that would ever happen, but in case it ever did.)
      */
-    MSA *
-    MSA_new() {
+    JXTA_DECLARE(MSA *) MSA_new() {
 
-        MSA * ad;
-        ad = (MSA *) malloc (sizeof (MSA));
-        memset (ad, 0xda, sizeof (MSA));
+        MSA *ad;
+        ad = (MSA *) malloc(sizeof(MSA));
+        memset(ad, 0xda, sizeof(MSA));
 
         /*
-        JXTA_OBJECT_INIT((Jxta_advertisement*)ad,MSA_delete, 0);
-        */
+           JXTA_OBJECT_INIT((Jxta_advertisement*)ad,MSA_delete, 0);
+         */
 
-        jxta_advertisement_initialize((Jxta_advertisement*)ad,
-                                      "jxta:MSA",
-                                      MSA_tags,
-                                      (JxtaAdvertisementGetXMLFunc)MSA_get_xml,
+        jxta_advertisement_initialize((Jxta_advertisement *) ad, "jxta:MSA", MSA_tags, (JxtaAdvertisementGetXMLFunc) MSA_get_xml,
                                       /* XXX Fixme MSA_get_MSID is not implemented nor has the correct sig.
                                          when it is fixed this needs to be corrected.  it's NULL for now
                                        */
-                                      NULL, 
-				      (JxtaAdvertisementGetIndexFunc)MSA_get_indexes,
-                                      (FreeFunc)MSA_delete);
+                                      NULL, (JxtaAdvertisementGetIndexFunc) MSA_get_indexes, (FreeFunc) MSA_delete);
 
         return ad;
     }
@@ -376,50 +355,49 @@ extern "C" {
      * after it was freed...
      */
     void
-    MSA_delete (MSA * ad) {
+     MSA_delete(MSA * ad) {
         /* Fill in the required freeing functions here. */
 
-        memset (ad, 0xdd, sizeof (MSA));
-        free (ad);
+        memset(ad, 0xdd, sizeof(MSA));
+        free(ad);
     }
 
-    void
-    MSA_parse_charbuffer(MSA * ad, const char * buf, int len) {
+    JXTA_DECLARE(void)
+     MSA_parse_charbuffer(MSA * ad, const char *buf, int len) {
 
-        jxta_advertisement_parse_charbuffer((Jxta_advertisement*)ad,buf,len);
+        jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
     }
 
 
 
-    void
-    MSA_parse_file(MSA * ad, FILE * stream) {
+    JXTA_DECLARE(void)
+     MSA_parse_file(MSA * ad, FILE * stream) {
 
-        jxta_advertisement_parse_file((Jxta_advertisement*)ad, stream);
+        jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
     }
-    
-    Jxta_vector * 
-    MSA_get_indexes(void) {
-        const char * idx[][2] = { 
-				{ "Name", NULL } ,
-        			{ NULL, NULL }
-				};
-    return jxta_advertisement_return_indexes(idx);
-}
+
+    JXTA_DECLARE(Jxta_vector *) MSA_get_indexes(Jxta_advertisement * dummy) {
+        const char *idx[][2] = {
+            {"Name", NULL},
+            {NULL, NULL}
+        };
+        return jxta_advertisement_return_indexes(idx[0]);
+    }
 
 #ifdef STANDALONE
     int
-    main (int argc, char **argv) {
-        MSA * ad;
+     main(int argc, char **argv) {
+        MSA *ad;
         FILE *testfile;
 
-        if(argc != 2) {
+        if (argc != 2) {
             printf("usage: ad <filename>\n");
             return -1;
         }
 
         ad = MSA_new();
 
-        testfile = fopen (argv[1], "r");
+        testfile = fopen(argv[1], "r");
         MSA_parse_file(ad, testfile);
         fclose(testfile);
 

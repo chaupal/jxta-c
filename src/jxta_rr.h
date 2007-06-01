@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rr.h,v 1.3 2005/01/12 21:47:00 bondolo Exp $
+ * $Id: jxta_rr.h,v 1.6 2005/08/03 05:51:19 slowhog Exp $
  */
 
-   
+
 #ifndef __ResolverResponse_H__
 #define __ResolverResponse_H__
 
@@ -66,15 +66,14 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _ResolverResponse ResolverResponse;
 
 /**
  * create a new ResolverResponse object
  * @return pointer to the resolver response object
  */
-ResolverResponse *
-jxta_resolver_response_new(void);
+JXTA_DECLARE(ResolverResponse *)
+    jxta_resolver_response_new(void);
 /**
  * create a new ResolverResponse object with inital given values
  * @param handlername associated with the query
@@ -82,15 +81,15 @@ jxta_resolver_response_new(void);
  * @param qid  the originator's query id
  * @return pointer to the resolver query object
  */
-ResolverResponse *
-jxta_resolver_response_new_1(JString *handlername, JString *response, long qid);
+JXTA_DECLARE(ResolverResponse *)
+    jxta_resolver_response_new_1(JString * handlername, JString * response, long qid);
 
 /**
  * @param ResolverResponse the resolver response object
  * frees the ResolverQuery object
  * @param ResolverQuery the resolver response object to free
  */
-void jxta_resolver_response_free(ResolverResponse *ad);
+void jxta_resolver_response_free(ResolverResponse * ad);
 
 /**
  * @param ResolverResponse the resolver response object
@@ -99,15 +98,15 @@ void jxta_resolver_response_free(ResolverResponse *ad);
  * @param adv a pointer to the advertisement.
  * @return Jxta_status
  */
-Jxta_status jxta_resolver_response_get_xml(ResolverResponse *ad, JString **document);
+JXTA_DECLARE(Jxta_status) jxta_resolver_response_get_xml(ResolverResponse * ad, JString ** document);
+
 /**
  * @param ResolverResponse the resolver response object
  * parse the char buffer 
  * @param pointer to the buffer to parse
  * @param len length of the buffer
  */
-void 
-jxta_resolver_response_parse_charbuffer(ResolverResponse *ad, const char *buf, int len);
+JXTA_DECLARE(void) jxta_resolver_response_parse_charbuffer(ResolverResponse * ad, const char *buf, int len);
 
 /**
  * @param ResolverResponse the resolver response object
@@ -115,24 +114,22 @@ jxta_resolver_response_parse_charbuffer(ResolverResponse *ad, const char *buf, i
  * @param pointer to the FILE to parse
  * @param len length of the buffer
  */
-void 
-jxta_resolver_response_parse_file(ResolverResponse *ad, FILE * stream);
+JXTA_DECLARE(void) jxta_resolver_response_parse_file(ResolverResponse * ad, FILE * stream);
 
 /**
  * get the message credential
  * @param ResolverQuery the resolver response object
  * @return Jstring the credential
  */
-JString * 
-jxta_resolver_response_get_credential(ResolverResponse *ad);
+JXTA_DECLARE(JString *)
+    jxta_resolver_response_get_credential(ResolverResponse * ad);
 
 /**
  * set the message credential
  * @param ResolverResponse the resolver response object
  * @param Jstring the credential
  */
-void 
-jxta_resolver_response_set_credential(ResolverResponse *ad, JString *credential);
+JXTA_DECLARE(void) jxta_resolver_response_set_credential(ResolverResponse * ad, JString * credential);
 
 /**
  * get the message handlername
@@ -140,48 +137,50 @@ jxta_resolver_response_set_credential(ResolverResponse *ad, JString *credential)
  * @param JString pointer to JString to retrun the handlername pointer
  * @return Jxta_id the peer's id
  */
-void
-jxta_resolver_response_get_handlername(ResolverResponse *ad, JString ** str);
+JXTA_DECLARE(void) jxta_resolver_response_get_handlername(ResolverResponse * ad, JString ** str);
 /**
  * set the message HandlerName
  * @param ResolverResponse the resolver response object
  * @param Jstring the HandlerName
  */
-void 
-jxta_resolver_response_set_handlername(ResolverResponse *ad, JString *handlerName);
+JXTA_DECLARE(void) jxta_resolver_response_set_handlername(ResolverResponse * ad, JString * handlerName);
 
 /**
  * get the message QueryID
  * @param ResolverResponse the resolver response object
  * @return Jstring the QueryID
- */ 
-long jxta_resolver_response_get_queryid(ResolverResponse *ad);
+ */
+JXTA_DECLARE(long) jxta_resolver_response_get_queryid(ResolverResponse * ad);
 
 /**
  * get the message QueryID
  * @param ResolverResponse the resolver response object
  * @param Jstring the QueryID
  */
-void jxta_resolver_response_set_queryid(ResolverResponse *ad, long queryID);
+JXTA_DECLARE(void) jxta_resolver_response_set_queryid(ResolverResponse * ad, long queryID);
 
 
 /**
  * get the message Query
  * @param ResolverResponse the resolver response object
  * @param JString pointer to JString to retrun the response pointer
- */ 
-void
-jxta_resolver_response_get_response(ResolverResponse * ad, JString ** str);
+ */
+JXTA_DECLARE(void) jxta_resolver_response_get_response(ResolverResponse * ad, JString ** str);
 
 /**
  * get the message response
  * @param ResolverResponse the resolver response object
  * @param Jstring the Response
  */
-void jxta_resolver_resposne_set_response(ResolverResponse *ad, JString *response);
- 
- 
-#endif /* __ResolverResponse_H__  */
+JXTA_DECLARE(void) jxta_resolver_resposne_set_response(ResolverResponse * ad, JString * response);
+
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
+#endif /* __ResolverResponse_H__  */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

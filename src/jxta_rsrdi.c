@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rsrdi.c,v 1.8 2005/02/02 02:58:32 exocetrick Exp $
+ * $Id: jxta_rsrdi.c,v 1.14 2005/08/03 05:51:19 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -68,12 +68,10 @@ extern "C" {
 #if 0
 }
 #endif
-
 /** 
  * Each of these corresponds to a tag in the
  * xml message
- */
-enum tokentype {
+ */ enum tokentype {
     Null_,
     ResolverSrdi_,
     Credential_,
@@ -88,41 +86,41 @@ enum tokentype {
  */
 struct _ResolverSrdi {
     Jxta_advertisement jxta_advertisement;
-    char    * ResolverSrdi;
-    JString * Credential;
-    JString * HandlerName;
-    JString * Payload;
+    char *ResolverSrdi;
+    JString *Credential;
+    JString *HandlerName;
+    JString *Payload;
 };
 
 /** Handler functions.  Each of these is responsible for
  * dealing with all of the character data associated with the 
  * tag name.
  */
-static void
-handleResolverSrdi(void * userdata, const XML_Char * cd, int len) {
-    /*ResolverSrdi * ad = (ResolverSrdi*)userdata;*/
+static void handleResolverSrdi(void *userdata, const XML_Char * cd, int len)
+{
+    /*ResolverSrdi * ad = (ResolverSrdi*)userdata; */
 }
 
-static void
-handleCredential(void * userdata, const XML_Char * cd, int len) {
-    ResolverSrdi * ad = (ResolverSrdi*)userdata;
-    jstring_append_0(((struct _ResolverSrdi *)ad)->Credential,cd,len);
+static void handleCredential(void *userdata, const XML_Char * cd, int len)
+{
+    ResolverSrdi *ad = (ResolverSrdi *) userdata;
+    jstring_append_0(((struct _ResolverSrdi *) ad)->Credential, cd, len);
 }
 
-static void
-handleHandlerName(void * userdata, const XML_Char * cd, int len) {
-    ResolverSrdi * ad = (ResolverSrdi*)userdata;
-    jstring_append_0((JString *) ad->HandlerName,cd,len);
+static void handleHandlerName(void *userdata, const XML_Char * cd, int len)
+{
+    ResolverSrdi *ad = (ResolverSrdi *) userdata;
+    jstring_append_0((JString *) ad->HandlerName, cd, len);
 }
 
-static void
-handlePayload(void * userdata, const XML_Char * cd, int len) {
-    ResolverSrdi * ad = (ResolverSrdi*)userdata;
-    jstring_append_0(ad->Payload,(char *)cd,len);
+static void handlePayload(void *userdata, const XML_Char * cd, int len)
+{
+    ResolverSrdi *ad = (ResolverSrdi *) userdata;
+    jstring_append_0(ad->Payload, (char *) cd, len);
 }
 
-static void
-trim_elements(ResolverSrdi * adv) {
+static void trim_elements(ResolverSrdi * adv)
+{
     jstring_trim(adv->Credential);
     jstring_trim(adv->HandlerName);
     jstring_trim(adv->Payload);
@@ -136,36 +134,33 @@ trim_elements(ResolverSrdi * adv) {
  * @return Jxta_status 
  */
 
-Jxta_status
-jxta_resolver_srdi_get_xml(ResolverSrdi * adv, JString** document) {
+Jxta_status jxta_resolver_srdi_get_xml(ResolverSrdi * adv, JString ** document)
+{
 
-    JString * doc;
-    JString * tmps;
-    char * buf;
+    JString *doc;
+    JString *tmps;
     Jxta_status status;
 
     if (adv == NULL) {
         return JXTA_INVALID_ARGUMENT;
     }
 
-    buf = malloc(128);
-    memset(buf, 0, 128);
     trim_elements(adv);
     doc = jstring_new_2("<?xml version=\"1.0\"?>\n");
     jstring_append_2(doc, "<!DOCTYPE jxta:ResolverSRDI>");
-    jstring_append_2(doc,"<jxta:ResolverSRDI>\n");
+    jstring_append_2(doc, "<jxta:ResolverSRDI>\n");
 
     if (jstring_length(adv->Credential) != 0) {
-        jstring_append_2(doc,"<jxta:Cred>");
-        jstring_append_1(doc,adv->Credential);
-        jstring_append_2(doc,"</jxta:Cred>\n");
+        jstring_append_2(doc, "<jxta:Cred>");
+        jstring_append_1(doc, adv->Credential);
+        jstring_append_2(doc, "</jxta:Cred>\n");
     }
 
-    jstring_append_2(doc,"<HandlerName>");
-    jstring_append_1(doc,adv->HandlerName);
-    jstring_append_2(doc,"</HandlerName>\n");
+    jstring_append_2(doc, "<HandlerName>");
+    jstring_append_1(doc, adv->HandlerName);
+    jstring_append_2(doc, "</HandlerName>\n");
 
-    jstring_append_2(doc,"<Payload>");
+    jstring_append_2(doc, "<Payload>");
     status = jxta_xml_util_encode_jstring(adv->Payload, &tmps);
 
     if (status != JXTA_SUCCESS) {
@@ -175,15 +170,15 @@ jxta_resolver_srdi_get_xml(ResolverSrdi * adv, JString** document) {
     }
     jstring_append_1(doc, tmps);
     JXTA_OBJECT_RELEASE(tmps);
-    jstring_append_2(doc,"</Payload>\n");
-    jstring_append_2(doc,"</jxta:ResolverSRDI>\n");
+    jstring_append_2(doc, "</Payload>\n");
+    jstring_append_2(doc, "</jxta:ResolverSRDI>\n");
     *document = doc;
 
     return JXTA_SUCCESS;
 }
 
-JString *
-jxta_resolver_srdi_get_credential(ResolverSrdi * ad) {
+JXTA_DECLARE(JString *) jxta_resolver_srdi_get_credential(ResolverSrdi * ad)
+{
     if (ad->Credential) {
         jstring_trim(ad->Credential);
         JXTA_OBJECT_SHARE(ad->Credential);
@@ -191,13 +186,13 @@ jxta_resolver_srdi_get_credential(ResolverSrdi * ad) {
     return ad->Credential;
 }
 
-void
-jxta_resolver_srdi_set_credential(ResolverSrdi * ad, JString *credential) {
+JXTA_DECLARE(void) jxta_resolver_srdi_set_credential(ResolverSrdi * ad, JString * credential)
+{
 
     if (ad == NULL) {
         return;
     }
-    if(ad->Credential) {
+    if (ad->Credential) {
         JXTA_OBJECT_RELEASE(ad->Credential);
         ad->Credential = NULL;
     }
@@ -205,21 +200,21 @@ jxta_resolver_srdi_set_credential(ResolverSrdi * ad, JString *credential) {
     ad->Credential = credential;
 }
 
-void
-jxta_resolver_srdi_get_handlername(ResolverSrdi * ad, JString ** str) {
-    if(ad->HandlerName) {
+JXTA_DECLARE(void) jxta_resolver_srdi_get_handlername(ResolverSrdi * ad, JString ** str)
+{
+    if (ad->HandlerName) {
         jstring_trim(ad->HandlerName);
         JXTA_OBJECT_SHARE(ad->HandlerName);
     }
     *str = ad->HandlerName;
 }
 
-void
-jxta_resolver_srdi_set_handlername(ResolverSrdi * ad, JString *handlerName) {
+JXTA_DECLARE(void) jxta_resolver_srdi_set_handlername(ResolverSrdi * ad, JString * handlerName)
+{
     if (ad == NULL) {
         return;
     }
-    if(ad->HandlerName) {
+    if (ad->HandlerName) {
         JXTA_OBJECT_RELEASE(ad->HandlerName);
         ad->HandlerName = NULL;
     }
@@ -227,18 +222,18 @@ jxta_resolver_srdi_set_handlername(ResolverSrdi * ad, JString *handlerName) {
     ad->HandlerName = handlerName;
 }
 
-void
-jxta_resolver_srdi_get_payload(ResolverSrdi * ad, JString ** payload) {
+JXTA_DECLARE(void) jxta_resolver_srdi_get_payload(ResolverSrdi * ad, JString ** payload)
+{
 
-    if( ad->Payload) {
+    if (ad->Payload) {
         jstring_trim(ad->Payload);
         JXTA_OBJECT_SHARE(ad->Payload);
     }
     *payload = ad->Payload;
 }
 
-void
-jxta_resolver_srdi_set_payload(ResolverSrdi * ad, JString * payload) {
+JXTA_DECLARE(void) jxta_resolver_srdi_set_payload(ResolverSrdi * ad, JString * payload)
+{
 
     if (ad == NULL) {
         return;
@@ -260,13 +255,13 @@ jxta_resolver_srdi_set_payload(ResolverSrdi * ad, JString * payload) {
  * Later, the stream will be dispatched to the handler based
  * on the value in the char * kwd.
  */
-const static Kwdtab ResolverSrdi_tags[] = {
-            {"Null",             Null_,        NULL,               NULL},
-            {"jxta:ResolverSRDI",ResolverSrdi_,*handleResolverSrdi,NULL},
-            {"jxta:Cred",        Credential_,  *handleCredential,  NULL},
-            {"HandlerName",      HandlerName_, *handleHandlerName, NULL},
-            {"Payload",          Payload_,     *handlePayload,     NULL},
-            {NULL,               0,            0,                  NULL}
+static const Kwdtab ResolverSrdi_tags[] = {
+    {"Null", Null_, NULL, NULL, NULL},
+    {"jxta:ResolverSRDI", ResolverSrdi_, *handleResolverSrdi, NULL, NULL},
+    {"jxta:Cred", Credential_, *handleCredential, NULL, NULL},
+    {"HandlerName", HandlerName_, *handleHandlerName, NULL, NULL},
+    {"Payload", Payload_, *handlePayload, NULL, NULL},
+    {NULL, 0, 0, NULL, NULL}
 };
 
 /** Get a new instance of the ad.
@@ -275,45 +270,42 @@ const static Kwdtab ResolverSrdi_tags[] = {
  * just in case there is a segfault (not that 
  * that would ever happen, but in case it ever did.)
  */
-ResolverSrdi *
-jxta_resolver_srdi_new(void) {
+JXTA_DECLARE(ResolverSrdi *) jxta_resolver_srdi_new(void)
+{
 
-    ResolverSrdi * ad;
+    ResolverSrdi *ad;
     ad = (ResolverSrdi *) malloc(sizeof(ResolverSrdi));
     memset(ad, 0xda, sizeof(ResolverSrdi));
-    jxta_advertisement_initialize((Jxta_advertisement*)ad,
+    jxta_advertisement_initialize((Jxta_advertisement *) ad,
                                   "jxta:ResolverSRDI",
                                   ResolverSrdi_tags,
-                                  (JxtaAdvertisementGetXMLFunc)jxta_resolver_srdi_get_xml,
-                                  NULL,
-				  (JxtaAdvertisementGetIndexFunc) NULL,
-                                  (FreeFunc)jxta_resolver_srdi_free);
+                                  (JxtaAdvertisementGetXMLFunc) jxta_resolver_srdi_get_xml,
+                                  NULL, (JxtaAdvertisementGetIndexFunc) NULL, (FreeFunc) jxta_resolver_srdi_free);
 
     /* Fill in the required initialization code here. */
-    ad->Credential  = jstring_new_0();
+    ad->Credential = jstring_new_0();
     ad->HandlerName = jstring_new_0();
-    ad->Payload     = jstring_new_0();
+    ad->Payload = jstring_new_0();
     return ad;
 }
 
 
-ResolverSrdi *
-jxta_resolver_srdi_new_1(JString * handlername, JString * payload, Jxta_id * src_pid) {
+JXTA_DECLARE(ResolverSrdi *) jxta_resolver_srdi_new_1(JString * handlername, JString * payload, Jxta_id * src_pid)
+{
 
-    ResolverSrdi * ad;
+    ResolverSrdi *ad;
 
     ad = (ResolverSrdi *) malloc(sizeof(ResolverSrdi));
     memset(ad, 0xda, sizeof(ResolverSrdi));
-    jxta_advertisement_initialize((Jxta_advertisement*)ad,
+    jxta_advertisement_initialize((Jxta_advertisement *) ad,
                                   "jxta:ResolverSRDI",
                                   ResolverSrdi_tags,
-                                  (JxtaAdvertisementGetXMLFunc)jxta_resolver_srdi_get_xml,
-                                  NULL,NULL,
-                                  (FreeFunc)jxta_resolver_srdi_free);
+                                  (JxtaAdvertisementGetXMLFunc) jxta_resolver_srdi_get_xml,
+                                  NULL, NULL, (FreeFunc) jxta_resolver_srdi_free);
 
     /* Fill in the required initialization code here. */
-    ad->Credential  = jstring_new_0();
-    ad->Payload     = payload;
+    ad->Credential = jstring_new_0();
+    ad->Payload = payload;
     JXTA_OBJECT_SHARE(ad->Payload);
     ad->HandlerName = jstring_new_2(jstring_get_string(handlername));
     return ad;
@@ -323,8 +315,8 @@ jxta_resolver_srdi_new_1(JString * handlername, JString * payload, Jxta_id * src
 /** 
  * free all objects and memory occupied by this object
  */
-void
-jxta_resolver_srdi_free(ResolverSrdi * ad) {
+void jxta_resolver_srdi_free(ResolverSrdi * ad)
+{
 
     if (ad->Credential) {
         JXTA_OBJECT_RELEASE(ad->Credential);
@@ -335,24 +327,29 @@ jxta_resolver_srdi_free(ResolverSrdi * ad) {
     if (ad->Payload) {
         JXTA_OBJECT_RELEASE(ad->Payload);
     }
-	jxta_advertisement_delete((Jxta_advertisement*)ad);
+    jxta_advertisement_delete((Jxta_advertisement *) ad);
     memset(ad, 0xdd, sizeof(ResolverSrdi));
     free(ad);
 }
 
 
-void
-jxta_resolver_srdi_parse_charbuffer(ResolverSrdi * ad, const char * buf, int len) {
+JXTA_DECLARE(void) jxta_resolver_srdi_parse_charbuffer(ResolverSrdi * ad, const char *buf, int len)
+{
 
-    jxta_advertisement_parse_charbuffer((Jxta_advertisement*)ad, buf, len);
+    jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
 
-void
-jxta_resolver_srdi_parse_file(ResolverSrdi * ad, FILE * stream) {
+JXTA_DECLARE(void) jxta_resolver_srdi_parse_file(ResolverSrdi * ad, FILE * stream)
+{
 
-    jxta_advertisement_parse_file((Jxta_advertisement*)ad, stream);
+    jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
+/* vi: set ts=4 sw=4 tw=130 et: */

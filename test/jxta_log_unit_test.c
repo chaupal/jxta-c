@@ -18,9 +18,9 @@
 #include "jxta_log.h"
 #include "jxta_log_priv.h"
 
-extern Jxta_log_selector *jxta_log_selector_new_and_set(const char *selector, Jxta_status *rv);
+JXTA_DECLARE(Jxta_log_selector*) jxta_log_selector_new_and_set(const char *selector, Jxta_status *rv);
 
-extern Jxta_boolean jxta_log_selector_is_selected(Jxta_log_selector *self, const char *cat, Jxta_log_level level);
+JXTA_DECLARE(Jxta_boolean) jxta_log_selector_is_selected(Jxta_log_selector *self, const char *cat, Jxta_log_level level);
 
 #include <stdio.h>
 

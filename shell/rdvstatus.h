@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rdvstatus.h,v 1.1 2004/12/05 02:16:45 slowhog Exp $
+ * $Id: rdvstatus.h,v 1.4 2005/09/02 08:56:45 slowhog Exp $
  */
 #ifndef __JXTA_SHELL_RDVSTATUS_H__
 #define __JXTA_SHELL_RDVSTATUS_H__
@@ -69,30 +69,24 @@ extern "C" {
 }
 #endif
 #endif
+JxtaShellApplication *jxta_rdvstatus_new(Jxta_PG * pg,
+                                         Jxta_listener * standout,
+                                         JxtaShellEnvironment * env, Jxta_object * parent, shell_application_terminate terminate);
 
+void jxta_rdvstatus_process_input(Jxta_object * app, JString * inputLine);
 
+void jxta_rdvstatus_start(Jxta_object * app, int argv, char **arg);
 
-JxtaShellApplication * jxta_rdvstatus_new(Jxta_PG * pg,
-                                       Jxta_listener* standout,
-                                       JxtaShellEnvironment *env,
-                                       Jxta_object * parent,
-                                       shell_application_terminate terminate);
-
-void  jxta_rdvstatus_process_input(Jxta_object *app,
-                                JString * inputLine);
-
-void jxta_rdvstatus_start(Jxta_object *app,
-                       int argv, char **arg);
-
-void jxta_rdvstatus_print_help(Jxta_object *app);
+void jxta_rdvstatus_print_help(Jxta_object * app);
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
-
-
 #endif /*__JXTA_SHELL_RDVSTATUS_H__ */
 
-
+/* vim: set ts=4 sw=4 et tw=130: */

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tcp_connection.h,v 1.2 2004/06/09 08:48:45 tra Exp $
+ * $Id: jxta_transport_tcp_connection.h,v 1.9 2005/08/03 05:51:20 slowhog Exp $
  */
 
 #ifndef __JXTA_TRANSPORT_TCP_CONNECTION_H__
@@ -63,87 +63,40 @@ extern "C" {
 }
 #endif
 #endif
-
-typedef struct _jxta_transport_tcp_connection Jxta_transport_tcp_connection;
-
+#include <apr_network_io.h>
 #include "jxta_transport_tcp_private.h"
 #include "jxta_endpoint_address.h"
 #include "jxta_message.h"
-#include "apr_network_io.h"
-#include "apr_time.h"
 
+JXTA_DECLARE(Jxta_transport_tcp_connection *) jxta_transport_tcp_connection_new_1(Jxta_transport_tcp * tp, Jxta_endpoint_address * dest);
 
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-Jxta_transport_tcp_connection *jxta_transport_tcp_connection_new_1(Jxta_transport_tcp *tp, Jxta_endpoint_address* dest, char *ipaddr, apr_port_t port);
+JXTA_DECLARE(Jxta_transport_tcp_connection *) jxta_transport_tcp_connection_new_2(Jxta_transport_tcp * tp, apr_socket_t * inc_socket);
 
+JXTA_DECLARE(Jxta_status) jxta_transport_tcp_connection_start(Jxta_transport_tcp_connection * self);
 
+JXTA_DECLARE(Jxta_status) jxta_transport_tcp_connection_close(Jxta_transport_tcp_connection * self);
 
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-Jxta_transport_tcp_connection *jxta_transport_tcp_connection_new_2 (Jxta_transport_tcp *tp, apr_socket_t *inc_socket);
+JXTA_DECLARE(Jxta_status) jxta_transport_tcp_connection_send_message(Jxta_transport_tcp_connection * conn, Jxta_message * msg);
 
+JXTA_DECLARE(Jxta_endpoint_address *) jxta_transport_tcp_connection_get_destaddr(Jxta_transport_tcp_connection * conn);
 
+JXTA_DECLARE(Jxta_endpoint_address *) jxta_transport_tcp_connection_get_connaddr(Jxta_transport_tcp_connection * conn);
 
+JXTA_DECLARE(Jxta_id *) jxta_transport_tcp_connection_get_destination_peerid(Jxta_transport_tcp_connection * conn);
 
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-Jxta_status jxta_transport_tcp_connection_start(Jxta_transport_tcp_connection *self);
+JXTA_DECLARE(char *) jxta_transport_tcp_connection_get_ipaddr(Jxta_transport_tcp_connection * conn);
 
+JXTA_DECLARE(apr_port_t) jxta_transport_tcp_connection_get_port(Jxta_transport_tcp_connection * conn);
 
-
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-Jxta_status jxta_transport_tcp_connection_send_message(Jxta_transport_tcp_connection *self, Jxta_message *msg);
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-Jxta_status jxta_transport_tcp_connection_stop(Jxta_transport_tcp_connection *self);
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-Jxta_endpoint_address *jxta_transport_tcp_connection_get_destaddr(Jxta_transport_tcp_connection *self);
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-Jxta_endpoint_address *jxta_transport_tcp_connection_get_connaddr(Jxta_transport_tcp_connection *self);
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-Jxta_id *jxta_transport_tcp_connection_get_destination_peerid(Jxta_transport_tcp_connection *self);
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-char *jxta_transport_tcp_connection_get_ipaddr(Jxta_transport_tcp_connection *self);
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/********************************************************************************/
-apr_port_t jxta_transport_tcp_connection_get_port(Jxta_transport_tcp_connection *self);
+JXTA_DECLARE(Jxta_boolean) jxta_transport_tcp_connection_is_connected(Jxta_transport_tcp_connection * self);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
-#endif	/* __JXTA_TRANSPORT_TCP_CONNECTION_H__ */
+#endif /* __JXTA_TRANSPORT_TCP_CONNECTION_H__ */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

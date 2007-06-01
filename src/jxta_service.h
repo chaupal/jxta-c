@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_service.h,v 1.6 2005/01/28 23:42:47 bondolo Exp $
+ * $Id: jxta_service.h,v 1.8 2005/06/16 23:11:51 slowhog Exp $
  */
 
 #ifndef JXTA_SERVICE_H
@@ -82,7 +82,7 @@ typedef struct _jxta_service Jxta_service;
  * @param service A location where to return (a ptr to) an object that implements
  * the public interface of the service.
  */
-extern void jxta_service_get_interface(Jxta_service * self, Jxta_service ** service);
+JXTA_DECLARE(void) jxta_service_get_interface(Jxta_service * self, Jxta_service ** service);
 
 /**
  * Returns the implementation advertisement for this service.
@@ -93,10 +93,15 @@ extern void jxta_service_get_interface(Jxta_service * self, Jxta_service ** serv
  * NULL may be returned if the implementation is incomplete and has no impl adv
  * to return.
  */
-extern void jxta_service_get_MIA(Jxta_service * self, Jxta_advertisement ** mia);
+JXTA_DECLARE(void) jxta_service_get_MIA(Jxta_service * self, Jxta_advertisement ** mia);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTA_SERVICE_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

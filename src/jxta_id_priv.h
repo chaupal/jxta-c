@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_id_priv.h,v 1.9 2005/01/12 20:20:53 brent Exp $
+ * $Id: jxta_id_priv.h,v 1.12 2005/06/16 23:11:43 slowhog Exp $
  */
 
 
@@ -64,49 +64,49 @@ extern "C" {
     /******************************************************************************/
     /*                                                                            */
     /******************************************************************************/
-     struct _JXTAIDFormat {
-        char const * fmt;
+    struct _JXTAIDFormat {
+        char const *fmt;
 
         /* constructors */
 
-        Jxta_status (*fmt_newPeergroupid1)(Jxta_id** pg);
+         Jxta_status(*fmt_newPeergroupid1) (Jxta_id ** pg);
 
-        Jxta_status (*fmt_newPeergroupid2)(Jxta_id** pg, unsigned char const * seed, size_t len );
+         Jxta_status(*fmt_newPeergroupid2) (Jxta_id ** pg, unsigned char const *seed, size_t len);
 
-        Jxta_status (*fmt_newPeerid1)( Jxta_id** peer, Jxta_id* pg );
+         Jxta_status(*fmt_newPeerid1) (Jxta_id ** peer, Jxta_id * pg);
 
-        Jxta_status (*fmt_newPeerid2)( Jxta_id** peer, Jxta_id* pg, unsigned char const * seed, size_t len  );
+         Jxta_status(*fmt_newPeerid2) (Jxta_id ** peer, Jxta_id * pg, unsigned char const *seed, size_t len);
 
-        Jxta_status (*fmt_newCodatid1)( Jxta_id** codat, Jxta_id* pg );
+         Jxta_status(*fmt_newCodatid1) (Jxta_id ** codat, Jxta_id * pg);
 
-        Jxta_status (*fmt_newCodatid2)( Jxta_id** codat, Jxta_id* pg, ReadFunc read_func, void* stream );
+         Jxta_status(*fmt_newCodatid2) (Jxta_id ** codat, Jxta_id * pg, ReadFunc read_func, void *stream);
 
-        Jxta_status (*fmt_newPipeid1)( Jxta_id** pipe, Jxta_id* pg );
+         Jxta_status(*fmt_newPipeid1) (Jxta_id ** pipe, Jxta_id * pg);
 
-        Jxta_status (*fmt_newPipeid2)( Jxta_id** pipe, Jxta_id* pg, unsigned char const * seed, size_t len );
+         Jxta_status(*fmt_newPipeid2) (Jxta_id ** pipe, Jxta_id * pg, unsigned char const *seed, size_t len);
 
-        Jxta_status (*fmt_newModuleclassid1)( Jxta_id** mcid );
+         Jxta_status(*fmt_newModuleclassid1) (Jxta_id ** mcid);
 
-        Jxta_status (*fmt_newModuleclassid2)( Jxta_id** mcid, Jxta_id* base );
+         Jxta_status(*fmt_newModuleclassid2) (Jxta_id ** mcid, Jxta_id * base);
 
-        Jxta_status (*fmt_newModulespecid)( Jxta_id** mcid, Jxta_id* msid );
+         Jxta_status(*fmt_newModulespecid) (Jxta_id ** mcid, Jxta_id * msid);
 
-        Jxta_status (*fmt_fromString)( Jxta_id** id, JString * string );
+         Jxta_status(*fmt_fromString) (Jxta_id ** id, JString * string);
 
         /* mutators */
 
-        Jxta_status  (*fmt_getUniqueportion)( Jxta_id* me, JString** string );
+         Jxta_status(*fmt_getUniqueportion) (Jxta_id * me, JString ** string);
 
-        Jxta_boolean (*fmt_equals)( Jxta_id* jid1, Jxta_id* jid2 );
+         Jxta_boolean(*fmt_equals) (Jxta_id * jid1, Jxta_id * jid2);
 
-        unsigned int (*fmt_hashcode)( Jxta_id* jid );
+        unsigned int (*fmt_hashcode) (Jxta_id * jid);
     };
-    
+
     typedef struct _JXTAIDFormat const JXTAIDFormat;
 
     struct _jxta_id {
         JXTA_OBJECT_HANDLE;
-        JXTAIDFormat * formatter;
+        JXTAIDFormat *formatter;
 
         /*  formats will add local stuff to this. */
     };
@@ -114,27 +114,27 @@ extern "C" {
     /******************************************************************************/
     /*                                                                            */
     /******************************************************************************/
-    typedef struct {
+    struct _jxta_id_jxta {
 
-        struct _jxta_id  common;
+        struct _jxta_id common;
 
-        char const * uniquevalue;
-    }
-    _jxta_id_jxta;
+        char const *uniquevalue;
+    };
+
+    typedef struct _jxta_id_jxta _jxta_id_jxta;
 
 
     /**
       We need these as externs to make pointers to them for static initialization.
-      We put them in priv though. The "public" pointers to them are in jxtaid.h  
+      We put them in priv though. The "public" pointers to them are in jxta_id.h  
     */
-    extern _jxta_id_jxta jxta_nullID;
+    JXTA_DECLARE_DATA _jxta_id_jxta jxta_nullID;
 
-    extern _jxta_id_jxta jxta_worldNetPeerGroupID;
+    JXTA_DECLARE_DATA _jxta_id_jxta jxta_worldNetPeerGroupID;
 
-    extern _jxta_id_jxta jxta_defaultNetPeerGroupID;
+    JXTA_DECLARE_DATA _jxta_id_jxta jxta_defaultNetPeerGroupID;
 
 
 #ifdef __cplusplus
 }
 #endif
-

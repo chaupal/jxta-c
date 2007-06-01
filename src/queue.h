@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: queue.h,v 1.3 2005/01/28 02:09:04 slowhog Exp $
+ * $Id: queue.h,v 1.5 2005/06/16 23:11:55 slowhog Exp $
  */
 
 #ifndef __QUEUE_H__
@@ -63,14 +63,13 @@ extern "C" {
 #if 0
 }
 #endif
-#endif /* __cplusplus */
-
+#endif                          /* __cplusplus */
 typedef struct _Queue Queue;
 
-Queue* queue_new (apr_pool_t *pool);
-void   queue_free (Queue *q);
-void   queue_enqueue (Queue *q, void *item);
-int    queue_size (Queue* q);
+Queue *queue_new(apr_pool_t * pool);
+void queue_free(Queue * q);
+int queue_enqueue(Queue * q, void *item);
+int queue_size(Queue * q);
 
 /**
  * Wait up to a certain amount of time until an item is available
@@ -79,7 +78,7 @@ int    queue_size (Queue* q);
  * @return an item from the queue or NULL if the function waited
  * for the maximum amount of time and there still wasn't anything enqueued.
  */
-void*  queue_dequeue (Queue *q, apr_time_t max_time_to_wait_in_microsecs);
+void *queue_dequeue(Queue * q, apr_time_t max_time_to_wait_in_microsecs);
 
 /**
  * Wait up to a certain amount of time until an item is available
@@ -88,7 +87,7 @@ void*  queue_dequeue (Queue *q, apr_time_t max_time_to_wait_in_microsecs);
  * @return an item from the queue or NULL if the function waited
  * for the maximum amount of time and there still wasn't anything enqueued.
  */
-Jxta_status queue_dequeue_1 (Queue *q, void **obj, apr_time_t max_time_to_wait_in_microsecs);
+Jxta_status queue_dequeue_1(Queue * q, void **obj, apr_time_t max_time_to_wait_in_microsecs);
 
 #ifdef __cplusplus
 #if 0
@@ -97,4 +96,3 @@ Jxta_status queue_dequeue_1 (Queue *q, void **obj, apr_time_t max_time_to_wait_i
 }
 #endif /* __cplusplus */
 #endif /* __QUEUE_H__ */
-

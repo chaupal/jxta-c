@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_listener.h,v 1.3 2005/02/21 22:48:49 bondolo Exp $
+ * $Id: jxta_listener.h,v 1.5 2005/06/16 23:11:43 slowhog Exp $
  */
 
 
@@ -92,16 +92,14 @@ extern "C" {
 }
 #endif
 #endif
-
 /**
  * Jxta_listener is the public type of the vector
- **/
-typedef struct _jxta_listener Jxta_listener;
+ **/ typedef struct _jxta_listener Jxta_listener;
 
 /**
  ** Prototype of the user function that eventually processes the event.
  **/
-typedef void         (*Jxta_listener_func) (Jxta_object* obj, void* arg);
+typedef void (*Jxta_listener_func) (Jxta_object * obj, void *arg);
 
 
 /************************************************************************
@@ -127,11 +125,8 @@ typedef void         (*Jxta_listener_func) (Jxta_object* obj, void* arg);
  ** @returns a new Jxta_listener or NULL if the system runs out of memory.
  *************************************************************************/
 
-Jxta_listener*
-jxta_listener_new (Jxta_listener_func func,
-		   void* arg,
-		   int maxNbOfInvoke,
-		   int maxQueueSize);
+JXTA_DECLARE(Jxta_listener *)
+    jxta_listener_new(Jxta_listener_func func, void *arg, int maxNbOfInvoke, int maxQueueSize);
 
 
 /************************************************************************
@@ -141,8 +136,7 @@ jxta_listener_new (Jxta_listener_func func,
  **
  ** @param listener a pointer to the listener to use.
  *************************************************************************/
-void
-jxta_listener_start (Jxta_listener* listener);
+JXTA_DECLARE(void) jxta_listener_start(Jxta_listener * listener);
 
 /************************************************************************
  ** Stops a listener.
@@ -156,8 +150,7 @@ jxta_listener_start (Jxta_listener* listener);
  ** @param listener a pointer to the listener to use.
  *************************************************************************/
 
-void
-jxta_listener_stop (Jxta_listener* listener);
+JXTA_DECLARE(void) jxta_listener_stop(Jxta_listener * listener);
 
 
 
@@ -173,9 +166,8 @@ jxta_listener_stop (Jxta_listener* listener);
  ** otherwise.
  *************************************************************************/
 
-Jxta_status
-jxta_listener_schedule_object (Jxta_listener* listener,
-			       Jxta_object* object);
+JXTA_DECLARE(Jxta_status)
+    jxta_listener_schedule_object(Jxta_listener * listener, Jxta_object * object);
 
 
 /************************************************************************
@@ -190,9 +182,8 @@ jxta_listener_schedule_object (Jxta_listener* listener,
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-Jxta_status
-jxta_listener_process_object (Jxta_listener* listener,
-			      Jxta_object* object);
+JXTA_DECLARE(Jxta_status)
+    jxta_listener_process_object(Jxta_listener * listener, Jxta_object * object);
 
 
 /************************************************************************
@@ -200,8 +191,7 @@ jxta_listener_process_object (Jxta_listener* listener,
  ** @param listener a pointer to the listener to use.
  ** @return the number of object that are currentley in the queue.
  *************************************************************************/
-int
-jxta_listener_queue_size (Jxta_listener* listener);
+JXTA_DECLARE(int) jxta_listener_queue_size(Jxta_listener * listener);
 
 
 /************************************************************************
@@ -215,21 +205,17 @@ jxta_listener_queue_size (Jxta_listener* listener);
  ** @return JXTA_SUCCESS when succesfull,
  **         JXTA_BUSY when a handler function has already been set.
  **/
-Jxta_status
-jxta_listener_wait_for_event (Jxta_listener* self,
-			      Jxta_time_diff timeout,
-			      Jxta_object** obj);
+JXTA_DECLARE(Jxta_status)
+    jxta_listener_wait_for_event(Jxta_listener * self, Jxta_time_diff timeout, Jxta_object ** obj);
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTA_LISTENER_H */
 
-
-
-
-
-
-
+/* vi: set ts=4 sw=4 tw=130 et: */

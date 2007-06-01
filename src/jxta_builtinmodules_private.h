@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_builtinmodules_private.h,v 1.1 2002/02/14 04:02:19 jice Exp $
+ * $Id: jxta_builtinmodules_private.h,v 1.2 2005/06/16 23:11:39 slowhog Exp $
  */
 
 #ifndef JXTA_BUILTINMODULES_PRIVATE_H
@@ -63,10 +63,9 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct {
-    const char* name;
-    void* (*instantiator)(void);
+    const char *name;
+    void *(*instantiator) (void);
 } Jxta_builtinmodule_record;
 
 /*
@@ -75,7 +74,12 @@ typedef struct {
 extern Jxta_builtinmodule_record jxta_builtinmodules_tbl[];
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTA_BUILTINMODULES_PRIVATE_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

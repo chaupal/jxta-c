@@ -50,47 +50,60 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: EndpointRouter.h,v 1.3 2004/12/05 02:16:57 slowhog Exp $
+ * $Id: EndpointRouter.h,v 1.5 2005/08/03 05:51:14 slowhog Exp $
  */
 
-   
+
 #ifndef __EndpointRouter_H__
 #define __EndpointRouter_H__
 
 #include "Advertisement.h"
 
+#ifdef __cplusplus
+extern "C" {
+#if 0
+}
+#endif
+#endif
+
 typedef struct _EndpointRouter EndpointRouter;
 
-EndpointRouter * EndpointRouter_new();
-EndpointRouter * EndpointRouter_set_handlers(EndpointRouter *, XML_Parser, void *);
+JXTA_DECLARE(EndpointRouter *) EndpointRouter_new();
+JXTA_DECLARE(EndpointRouter *) EndpointRouter_set_handlers(EndpointRouter *, XML_Parser, void *);
 void EndpointRouter_delete(EndpointRouter *);
-void EndpointRouter_print_XML(EndpointRouter *, FILE * stream);
-EndpointRouter * EndpointRouter_parse_charbuffer(const char *, int len); 
-EndpointRouter * EndpointRouter_parse_file(FILE * stream);
- 
-char * EndpointRouter_get_EndpointRouter(EndpointRouter *);
-void EndpointRouter_set_EndpointRouter(EndpointRouter *, char *);
- 
-char * EndpointRouter_get_Version(EndpointRouter *);
-void EndpointRouter_set_Version(EndpointRouter *, char *);
- 
-char * EndpointRouter_get_Type(EndpointRouter *);
-void EndpointRouter_set_Type(EndpointRouter *, char *);
- 
-char * EndpointRouter_get_DestPeer(EndpointRouter *);
-void EndpointRouter_set_DestPeer(EndpointRouter *, char *);
- 
-char * EndpointRouter_get_RoutingPeer(EndpointRouter *);
-void EndpointRouter_set_RoutingPeer(EndpointRouter *, char *);
- 
-char * EndpointRouter_get_RoutingPeerAdv(EndpointRouter *);
-void EndpointRouter_set_RoutingPeerAdv(EndpointRouter *, char *);
- 
-char * EndpointRouter_get_NbofHops(EndpointRouter *);
-void EndpointRouter_set_NbofHops(EndpointRouter *, char *);
- 
-char * EndpointRouter_get_GatewayForward(EndpointRouter *);
-void EndpointRouter_set_GatewayForward(EndpointRouter *, char *);
- 
- 
+JXTA_DECLARE(void) EndpointRouter_print_XML(EndpointRouter *, FILE * stream);
+JXTA_DECLARE(EndpointRouter *) EndpointRouter_parse_charbuffer(const char *, int len);
+JXTA_DECLARE(EndpointRouter *) EndpointRouter_parse_file(FILE * stream);
+
+JXTA_DECLARE(char *) EndpointRouter_get_EndpointRouter(EndpointRouter *);
+JXTA_DECLARE(void) EndpointRouter_set_EndpointRouter(EndpointRouter *, char *);
+
+JXTA_DECLARE(char *) EndpointRouter_get_Version(EndpointRouter *);
+JXTA_DECLARE(void) EndpointRouter_set_Version(EndpointRouter *, char *);
+
+JXTA_DECLARE(char *) EndpointRouter_get_Type(EndpointRouter *);
+JXTA_DECLARE(void) EndpointRouter_set_Type(EndpointRouter *, char *);
+
+JXTA_DECLARE(char *) EndpointRouter_get_DestPeer(EndpointRouter *);
+JXTA_DECLARE(void) EndpointRouter_set_DestPeer(EndpointRouter *, char *);
+
+JXTA_DECLARE(char *) EndpointRouter_get_RoutingPeer(EndpointRouter *);
+JXTA_DECLARE(void) EndpointRouter_set_RoutingPeer(EndpointRouter *, char *);
+
+JXTA_DECLARE(char *) EndpointRouter_get_RoutingPeerAdv(EndpointRouter *);
+JXTA_DECLARE(void) EndpointRouter_set_RoutingPeerAdv(EndpointRouter *, char *);
+
+JXTA_DECLARE(char *) EndpointRouter_get_NbofHops(EndpointRouter *);
+JXTA_DECLARE(void) EndpointRouter_set_NbofHops(EndpointRouter *, char *);
+
+JXTA_DECLARE(char *) EndpointRouter_get_GatewayForward(EndpointRouter *);
+JXTA_DECLARE(void) EndpointRouter_set_GatewayForward(EndpointRouter *, char *);
+
+#ifdef __cplusplus
+#if 0
+{
+#endif
+}
+#endif
+
 #endif /* __EndpointRouter_H__  */

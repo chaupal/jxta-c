@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_advertisement.h,v 1.15 2005/03/24 01:48:12 bondolo Exp $
+ * $Id: jxta_advertisement.h,v 1.24 2005/08/30 04:28:23 exocetrick Exp $
  */
 
 /**
@@ -123,6 +123,7 @@
 #ifndef __JXTA_ADVERTISEMENT_H__
 #define __JXTA_ADVERTISEMENT_H__
 
+#include <stddef.h>
 #include <stdio.h>
 
 #include <expat.h>
@@ -143,6 +144,7 @@ extern "C" {
 typedef struct _jxta_advertisement Jxta_advertisement;
 typedef struct _jxta_advertisement_new_func_struct Jxta_advertisement_new_func_struct;
 typedef struct _jxta_index Jxta_index;
+typedef struct _jxta_attribute Jxta_attribute;
 
 #ifndef FREE_FUNC
 #define FREE_FUNC
@@ -152,22 +154,22 @@ typedef void (*FreeFunc) (void *userdata);
 
 #ifndef  JXTA_ADVERTISEMENT_GET_XML_FUNC
 #define  JXTA_ADVERTISEMENT_GET_XML_FUNC
-typedef Jxta_status(*JxtaAdvertisementGetXMLFunc) (Jxta_advertisement *, JString **);
+typedef Jxta_status(JXTA_STDCALL * JxtaAdvertisementGetXMLFunc) (Jxta_advertisement *, JString **);
 #endif
 
 #ifndef  JXTA_ADVERTISEMENT_NEW_FUNC
 #define  JXTA_ADVERTISEMENT_NEW_FUNC
-typedef Jxta_advertisement *(*JxtaAdvertisementNewFunc) (void);
+typedef Jxta_advertisement *(JXTA_STDCALL * JxtaAdvertisementNewFunc) (void);
 #endif
 
 #ifndef  JXTA_ADVERTISEMENT_GET_ID_FUNC
 #define  JXTA_ADVERTISEMENT_GET_ID_FUNC
-typedef Jxta_id *(*JxtaAdvertisementGetIDFunc) (Jxta_advertisement *);
+typedef Jxta_id *(JXTA_STDCALL * JxtaAdvertisementGetIDFunc) (Jxta_advertisement *);
 #endif
 
 #ifndef  JXTA_ADVERTISEMENT_GET_INDEX_FUNC
 #define  JXTA_ADVERTISEMENT_GET_INDEX_FUNC
-typedef Jxta_vector *(*JxtaAdvertisementGetIndexFunc) (void);
+typedef Jxta_vector *(JXTA_STDCALL * JxtaAdvertisementGetIndexFunc) (Jxta_advertisement *);
 #endif
 
 /** Each tag has a character representation, and we have 
@@ -227,35 +229,34 @@ struct _jxta_advertisement_new_func_struct {
     JxtaAdvertisementNewFunc jxta_advertisement_new_func;
 };
 
-
 typedef void (*Jxta_advertisement_node_handler) (void *, const XML_Char *, int);
 
 typedef struct _kwdtab {
     const char *kwd;
     int tokentype;
     Jxta_advertisement_node_handler nodeparse;
-    char *(*get) (Jxta_advertisement *);
+
+    char *(JXTA_STDCALL * get) (Jxta_advertisement *);
+    char *(JXTA_STDCALL * get_parm) (Jxta_advertisement *, const char *);
 } Kwdtab;
 
 
-
 struct _jxta_advertisement {
+    JXTA_OBJECT_HANDLE;
 
-    /* JXTA_OBJECT_HANDLE; */
-    Jxta_object jxta_object;
     Jxta_advertisement *parent;
     const char *document_name;
-    const char *document_type;
     JxtaAdvertisementGetXMLFunc get_xml;
     JxtaAdvertisementGetIDFunc get_id;
     JxtaAdvertisementGetIndexFunc get_indexes;
     const char **atts;
-    const Kwdtab *dispatch_table;
+    Jxta_vector *attList;
+    Kwdtab *dispatch_table;
     Jxta_advertisement_node_handler curr_handler;
     int depth;
-
+    JString *name_space;
     JString *accum;
-
+    char *local_id;
     /*
      * The following is used when this base class is used directly
      * to handle a document that may contain any number of unknown
@@ -274,34 +275,52 @@ struct _jxta_advertisement {
 };
 
 struct _jxta_index {
-    Jxta_object jxta_object;
+    JXTA_OBJECT_HANDLE;
     JString *element;
     JString *attribute;
+    char *parm;
 };
 
-
-
-
 /** Private. */
+
 void jxta_advertisement_handle_chardata(void *userdata, const XML_Char * cd, int len);
 
 void jxta_advertisement_start_element(void *userdata, const char *ename, const char **atts);
 
 void jxta_advertisement_end_element(void *userdata, const char *name);
 
-void jxta_advertisement_initialize(Jxta_advertisement * ad,
-                                   const char *document_name,
-                                   const Kwdtab * dispatch_table,
-                                   JxtaAdvertisementGetXMLFunc,
-                                   JxtaAdvertisementGetIDFunc, JxtaAdvertisementGetIndexFunc, FreeFunc deleter);
 
+/**
+*   
+*
+*   @deprecated This is being deprecated in favour of the style used by other jxta objects. @see jxta_advertisement_construct()
+*   and @see jxta_advertisement_destruct()
+**/
+JXTA_DECLARE(void) jxta_advertisement_initialize(Jxta_advertisement * ad,
+                                                 const char *document_name,
+                                                 const Kwdtab * dispatch_table,
+                                                 JxtaAdvertisementGetXMLFunc,
+                                                 JxtaAdvertisementGetIDFunc, JxtaAdvertisementGetIndexFunc, FreeFunc deleter);
+
+JXTA_DECLARE(Jxta_advertisement *) jxta_advertisement_construct(Jxta_advertisement * ad,
+                                                                const char *document_name,
+                                                                const Kwdtab * dispatch_table,
+                                                                JxtaAdvertisementGetXMLFunc get_xml_func,
+                                                                JxtaAdvertisementGetIDFunc get_id_func,
+                                                                JxtaAdvertisementGetIndexFunc get_index_func);
+
+JXTA_DECLARE(void) jxta_advertisement_destruct(Jxta_advertisement * ad);
+
+/**
+*   
+*
+*   @deprecated This should be private
+**/
 void jxta_advertisement_delete(Jxta_advertisement * ad);
 
-void jxta_advertisement_set_free(Jxta_advertisement * ad, void *free_func);
+JXTA_DECLARE(void) jxta_advertisement_set_handlers(Jxta_advertisement * ad, XML_Parser parser, Jxta_advertisement * parent);
 
-void jxta_advertisement_set_handlers(Jxta_advertisement * ad, XML_Parser parser, void *parent);
-
-void jxta_advertisement_register_local_handler(Jxta_advertisement * ad, const char *name, const void *value);
+JXTA_DECLARE(void) jxta_advertisement_register_local_handler(Jxta_advertisement * ad, const char *name, const void *value);
 
 /** 
  ** Convenience function to builds a vector of Jxta_index structs that return the
@@ -309,7 +328,7 @@ void jxta_advertisement_register_local_handler(Jxta_advertisement * ad, const ch
  **
  ** @param idx - array of element/attribute pairs to be indexed.
  */
-Jxta_vector *jxta_advertisement_return_indexes(const char *idx[]);
+JXTA_DECLARE(Jxta_vector *) jxta_advertisement_return_indexes(const char *idx[]);
 
 
 /** Public. */
@@ -324,7 +343,12 @@ Jxta_vector *jxta_advertisement_return_indexes(const char *idx[]);
  *
  * @return nothing
  */
-void jxta_advertisement_get_xml(Jxta_advertisement * ad, JString **);
+JXTA_DECLARE(void) jxta_advertisement_get_xml(Jxta_advertisement * ad, JString **);
+
+/** 
+* Function to return the name space identification of this advertisement
+*/
+JXTA_DECLARE(void) jxta_advertisement_get_name_space(Jxta_advertisement * ad, JString **);
 
 /** Some advertisements have IDs that are used for indexing etc. 
  * This function wraps a callback to get the specific ID type 
@@ -336,8 +360,32 @@ void jxta_advertisement_get_xml(Jxta_advertisement * ad, JString **);
  * @return Jxta_id *, could be NULL depending on whether the advertisement
  *         has an ID.
  */
-Jxta_id *jxta_advertisement_get_id(Jxta_advertisement * ad);
+JXTA_DECLARE(Jxta_id *) jxta_advertisement_get_id(Jxta_advertisement * ad);
 
+/** For Advertisements that do not return an ID a hash of the document is used as the ID for the local cache
+ * 
+ *  @param - Jxta_advertisement * ad - advertisement pointer
+ *
+ *  @return const char *, the string representing the local cache ID.
+*/
+JXTA_DECLARE(const char *) jxta_advertisement_get_local_id_string(Jxta_advertisement * ad);
+
+/** Set a local cache ID when an advertisement does not have an AdvertisementID element.
+ *
+ *  @param - Jxta_advertisement * ad - advertisement pointer
+ *  @param - const char * local_id - id used in the local cache.
+ *  
+*/
+JXTA_DECLARE(void) jxta_advertisement_set_local_id_string(Jxta_advertisement * ad, const char *local_id);
+
+/** Advertisement that index items provide a callback to return
+ * a vector of items. 
+ * 
+ * @param Jxta_advertisement * ad
+ *
+ * @return Jxta_vector *, vector of Jxta_index items
+ */
+JXTA_DECLARE(Jxta_vector *) jxta_advertisement_get_indexes(Jxta_advertisement * ad);
 
 /** Each advertisement is initialized with a constant character 
  *  array denoting its type.  This value should be copied if it 
@@ -348,7 +396,7 @@ Jxta_id *jxta_advertisement_get_id(Jxta_advertisement * ad);
  * @return const char * to document name.  
  * @warning Do not free the returned char *
  */
-const char *jxta_advertisement_get_document_name(Jxta_advertisement * ad);
+JXTA_DECLARE(const char *) jxta_advertisement_get_document_name(Jxta_advertisement * ad);
 
 
 /** Registers callback for a printing function.
@@ -358,7 +406,7 @@ const char *jxta_advertisement_get_document_name(Jxta_advertisement * ad);
  *
  * @return nothing
  */
-void jxta_advertisement_set_printer(Jxta_advertisement * ad, PrintFunc printer);
+JXTA_DECLARE(void) jxta_advertisement_set_printer(Jxta_advertisement * ad, PrintFunc printer);
 
 /**  Many fields of an advertisement struct can be represented as 
  * a character string, which may be obtained by this function.
@@ -371,7 +419,8 @@ void jxta_advertisement_set_printer(Jxta_advertisement * ad, PrintFunc printer);
  *
  * @warning Returns a copy that must be freed.
  */
-char *jxta_advertisement_get_string(Jxta_advertisement *, const char *key);
+JXTA_DECLARE(char *) jxta_advertisement_get_string(Jxta_advertisement * ad, Jxta_index * ji);
+
 
 /** Messages saved in a buffer can be parsed later using 
  * this function.
@@ -379,11 +428,11 @@ char *jxta_advertisement_get_string(Jxta_advertisement *, const char *key);
  * @param Jxta_advertisement * ad
  * @param const char * buf is a buffer of character data presumably
  *        containing a valid XML application.
- * @param int len length of character buffer containing xml data.
+ * @param len length of character buffer containing xml data.
  *
  * @return JXTA_SUCCESS if the parse succeeded otherwise errors.
  */
-Jxta_status jxta_advertisement_parse_charbuffer(Jxta_advertisement * ad, const char *buf, size_t len);
+JXTA_DECLARE(Jxta_status) jxta_advertisement_parse_charbuffer(Jxta_advertisement * ad, const char *buf, size_t len);
 
 /**
  * 
@@ -394,7 +443,7 @@ Jxta_status jxta_advertisement_parse_charbuffer(Jxta_advertisement * ad, const c
  *
  * @todo Change the FILE * to a void pointer.
  */
-Jxta_status jxta_advertisement_parse_file(Jxta_advertisement * ad, FILE * instream);
+JXTA_DECLARE(Jxta_status) jxta_advertisement_parse_file(Jxta_advertisement * ad, FILE * instream);
 
 /**
  * 
@@ -405,8 +454,16 @@ Jxta_status jxta_advertisement_parse_file(Jxta_advertisement * ad, FILE * instre
  *         const strings stored in the private tags table in each 
  *         type of adverttisement.
  */
-const char **jxta_advertisement_get_tagnames(Jxta_advertisement * ad);
+JXTA_DECLARE(const char **) jxta_advertisement_get_tagnames(Jxta_advertisement * ad);
 
+/**
+ * 
+ * @param Jxta_advertisement * ad
+ * @param
+ *
+ * @return nothing
+ */
+JXTA_DECLARE(void) jxta_advertisement_register_global_handler(const char *key, const JxtaAdvertisementNewFunc ad_new_function);
 
 
 /**
@@ -416,17 +473,7 @@ const char **jxta_advertisement_get_tagnames(Jxta_advertisement * ad);
  *
  * @return nothing
  */
-void jxta_advertisement_register_global_handler(const char *key, const JxtaAdvertisementNewFunc ad_new_function);
-
-
-/**
- * 
- * @param Jxta_advertisement * ad
- * @param
- *
- * @return nothing
- */
-void jxta_advertisement_global_lookup(Jxta_advertisement * ad, const char *key);
+JXTA_DECLARE(void) jxta_advertisement_global_lookup(Jxta_advertisement * ad, const char *key);
 
 /**
  * The base type Jxta_advertisement can be used to parse documents containing
@@ -443,7 +490,7 @@ void jxta_advertisement_global_lookup(Jxta_advertisement * ad, const char *key);
  *
  * @return nothing
  */
-void jxta_advertisement_get_advs(Jxta_advertisement * ad, Jxta_vector ** advs);
+JXTA_DECLARE(void) jxta_advertisement_get_advs(Jxta_advertisement * ad, Jxta_vector ** advs);
 
 /**
  * Builds a base Jxta_advertisement object that can be used to parse documents
@@ -451,9 +498,7 @@ void jxta_advertisement_get_advs(Jxta_advertisement * ad, Jxta_vector ** advs);
  * types have been registered with jxta_advertisement_register_global_handler.
  * @return Jxta_advertisement* a pointer to the newly created advertisement.
  */
-Jxta_advertisement *jxta_advertisement_new(void);
-
-
+JXTA_DECLARE(Jxta_advertisement *) jxta_advertisement_new(void);
 
 #ifdef __cplusplus
 #if 0

@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include "jxta.h"
 #include "jxta_srdi.h"
 #include "jxta_id.h"
 
@@ -62,10 +63,12 @@ srdi_entry_test(Jxta_SRDIMessage * ad) {
 
 int main (int argc, char **argv) {
     int retval;
-    jxta_initialize();
-    Jxta_SRDIMessage * ad = jxta_srdi_message_new();
-    FILE *testfile;
-
+	Jxta_SRDIMessage * ad;
+	FILE *testfile;
+    
+	jxta_initialize();
+    ad = jxta_srdi_message_new();
+    
     testfile = fopen ("srdi.xml", "r");
     jxta_srdi_message_parse_file(ad, testfile);
     fclose(testfile);

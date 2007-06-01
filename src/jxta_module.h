@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_module.h,v 1.4 2005/01/18 19:44:41 bondolo Exp $
+ * $Id: jxta_module.h,v 1.7 2005/08/03 05:51:16 slowhog Exp $
  */
 
 #ifndef JXTA_MODULE_H
@@ -114,7 +114,8 @@ typedef struct _jxta_module Jxta_module;
  * @return Jxta_status JXTA_SUCCESS if the operation was carried out, an
  * error otherwise.
  */
-extern Jxta_status jxta_module_init(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv);
+JXTA_DECLARE(Jxta_status) jxta_module_init(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id,
+                                           Jxta_advertisement * impl_adv);
 
 
 /**
@@ -149,7 +150,8 @@ extern Jxta_status jxta_module_init(Jxta_module * self, Jxta_PG * group, Jxta_id
  *
  * @param impl_adv The implementation advertisement for this Module.
  */
-extern void jxta_module_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv, Throws);
+JXTA_DECLARE(void) jxta_module_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv,
+                                      Throws);
 
 
 /**
@@ -172,7 +174,7 @@ extern void jxta_module_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * as
  * @return status indication. By convention 0 means that this Module
  * started succesfully.
  */
-extern Jxta_status jxta_module_start(Jxta_module * self, char *args[]);
+JXTA_DECLARE(Jxta_status) jxta_module_start(Jxta_module * self, const char *args[]);
 
 
 /**
@@ -188,11 +190,16 @@ extern Jxta_status jxta_module_start(Jxta_module * self, char *args[]);
  * @param self handle of the Jxta_module object to which the operation is
  * applied.
  */
-extern void jxta_module_stop(Jxta_module * self);
+JXTA_DECLARE(void) jxta_module_stop(Jxta_module * self);
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTA_MODULE_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

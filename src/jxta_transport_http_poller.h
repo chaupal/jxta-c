@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http_poller.h,v 1.4 2005/01/10 17:22:18 brent Exp $
+ * $Id: jxta_transport_http_poller.h,v 1.7 2005/08/03 05:51:20 slowhog Exp $
  */
 #ifndef __HTTP_POLLER_H__
 #define __HTTP_POLLER_H__
@@ -60,26 +60,20 @@
 #include "jxta_endpoint_service.h"
 
 
-typedef struct _HttpPoller     HttpPoller;
+typedef struct _HttpPoller HttpPoller;
 
-HttpPoller*
-http_poller_new (Jxta_PG* group,
-		 Jxta_endpoint_service* service,
-		 const char* proxy_host,
-		 Jxta_port  proxy_port,
-		 const char* host,
-		 Jxta_port  port,
-		 char*      uri,
-		 char*      peerid,
-		 Jxta_pool* pool);
+JXTA_DECLARE(HttpPoller *) http_poller_new(Jxta_PG * group,
+                            Jxta_endpoint_service * service,
+                            const char *proxy_host,
+                            Jxta_port proxy_port, const char *host, Jxta_port port, const char *uri, const char *peerid,
+                            Jxta_pool * pool);
 
-void            http_poller_free          (HttpPoller* poller);
-Jxta_status     http_poller_start         (HttpPoller* poller);
-void            http_poller_stop          (HttpPoller* poller);
-Jxta_status     http_poller_join          (HttpPoller* poller);
+JXTA_DECLARE(Jxta_status) http_poller_start(HttpPoller * poller);
+JXTA_DECLARE(void) http_poller_stop(HttpPoller * poller);
+JXTA_DECLARE(Jxta_status) http_poller_join(HttpPoller * poller);
 
-int             http_poller_get_stopped   (HttpPoller* poller);
-char*           http_poller_get_peerid    (HttpPoller* poller);
-char*           http_poller_get_leaseid   (HttpPoller* poller);
+JXTA_DECLARE(Jxta_boolean) http_poller_is_running(HttpPoller * poller);
+JXTA_DECLARE(char *) http_poller_get_peerid(HttpPoller * poller);
+JXTA_DECLARE(char *) http_poller_get_leaseid(HttpPoller * poller);
 
 #endif

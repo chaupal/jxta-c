@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_hashtable.c,v 1.23 2005/03/02 23:49:23 bondolo Exp $
+ * $Id: jxta_hashtable.c,v 1.28 2005/08/28 07:07:42 slowhog Exp $
  */
 
 
@@ -138,7 +138,7 @@ static void jxta_hashtable_free(Jxta_object * the_table)
     free(self);
 }
 
-Jxta_hashtable *jxta_hashtable_new_0(size_t initial_usage, Jxta_boolean synchronized)
+JXTA_DECLARE(Jxta_hashtable *) jxta_hashtable_new_0(size_t initial_usage, Jxta_boolean synchronized)
 {
     size_t real_size = 1;
     apr_status_t res;
@@ -196,7 +196,7 @@ Jxta_hashtable *jxta_hashtable_new_0(size_t initial_usage, Jxta_boolean synchron
     }
 
     /* Create the mutex */
-    res = apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED,        /* nested */
+    res = apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED,    /* nested */
                                   self->pool);
     if (res != APR_SUCCESS) {
         /* Free the memory that has been already allocated */
@@ -209,7 +209,7 @@ Jxta_hashtable *jxta_hashtable_new_0(size_t initial_usage, Jxta_boolean synchron
     return self;
 }
 
-Jxta_hashtable *jxta_hashtable_new(size_t initial_usage)
+JXTA_DECLARE(Jxta_hashtable *) jxta_hashtable_new(size_t initial_usage)
 {
     return jxta_hashtable_new_0(initial_usage, FALSE);
 }
@@ -393,7 +393,6 @@ static Entry *findspot(Jxta_hashtable * self, size_t hashk, const void *key, siz
         curr = &tbl[curslot];
 #endif
 
-#ifndef NDEBUG
         /*
          * Since I trust my own sanity only that much, let's question that
          * this stuff realy works, for a while.
@@ -411,11 +410,10 @@ static Entry *findspot(Jxta_hashtable * self, size_t hashk, const void *key, siz
             return NULL;
         }
 
+#ifndef NDEBUG
         /* update nb hops while we're in the ! NDEBUG section. */
         ++hop_cnt;
-
 #endif /* NDEBUG */
-
     }
 }
 
@@ -598,7 +596,7 @@ jxta_hashtable_comboput(Jxta_hashtable * self, const void *key,
         abort();
     }
     memcpy(e->key, key, key_size);
-    
+
     e->value = JXTA_OBJECT_SHARE(value);
     e->ksz = key_size;
     e->hashk = hashk;
@@ -609,23 +607,24 @@ jxta_hashtable_comboput(Jxta_hashtable * self, const void *key,
     return TRUE;
 }
 
-void
-jxta_hashtable_replace(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object * value, Jxta_object ** old_value)
+JXTA_DECLARE(void)
+    jxta_hashtable_replace(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object * value, Jxta_object ** old_value)
 {
     jxta_hashtable_comboput(self, key, key_size, value, old_value, TRUE);
 }
 
-void jxta_hashtable_put(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object * value)
+JXTA_DECLARE(void) jxta_hashtable_put(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object * value)
 {
     jxta_hashtable_comboput(self, key, key_size, value, NULL, TRUE);
 }
 
-Jxta_boolean jxta_hashtable_putnoreplace(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object * value)
+JXTA_DECLARE(Jxta_boolean) jxta_hashtable_putnoreplace(Jxta_hashtable * self, const void *key, size_t key_size,
+                                                       Jxta_object * value)
 {
     return jxta_hashtable_comboput(self, key, key_size, value, NULL, FALSE);
 }
 
-Jxta_status jxta_hashtable_get(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object ** found_value)
+JXTA_DECLARE(Jxta_status) jxta_hashtable_get(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object ** found_value)
 {
     Entry *e;
     size_t hashk = (size_t) hash(key, key_size);
@@ -655,7 +654,7 @@ Jxta_status jxta_hashtable_get(Jxta_hashtable * self, const void *key, size_t ke
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_hashtable_del(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object ** found_value)
+JXTA_DECLARE(Jxta_status) jxta_hashtable_del(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object ** found_value)
 {
     Entry *e;
     size_t hashk = (size_t) hash(key, key_size);
@@ -689,10 +688,10 @@ Jxta_status jxta_hashtable_del(Jxta_hashtable * self, const void *key, size_t ke
      */
     free(e->key);
     e->hashk = 0;
-    e->key = (Jxta_object *) self;      /* we use the hashtable's addr as a valid
-                                         * non-null ptr to differentiate reusable
-                                         * entries from blank ones.
-                                         */
+    e->key = (Jxta_object *) self;  /* we use the hashtable's addr as a valid
+                                     * non-null ptr to differentiate reusable
+                                     * entries from blank ones.
+                                     */
 
     --(self->usage);
 
@@ -707,7 +706,7 @@ Jxta_status jxta_hashtable_del(Jxta_hashtable * self, const void *key, size_t ke
     return JXTA_SUCCESS;
 }
 
-Jxta_status jxta_hashtable_delcheck(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object * value)
+JXTA_DECLARE(Jxta_status) jxta_hashtable_delcheck(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object * value)
 {
     Entry *e;
     size_t hashk = (size_t) hash(key, key_size);
@@ -739,10 +738,10 @@ Jxta_status jxta_hashtable_delcheck(Jxta_hashtable * self, const void *key, size
      */
     free(e->key);
     e->hashk = 0;
-    e->key = (Jxta_object *) self;      /* we use the hashtable's addr as a valid
-                                         * non-null ptr to differentiate reusable
-                                         * entries from blank ones.
-                                         */
+    e->key = (Jxta_object *) self;  /* we use the hashtable's addr as a valid
+                                     * non-null ptr to differentiate reusable
+                                     * entries from blank ones.
+                                     */
 
     --(self->usage);
 
@@ -757,7 +756,7 @@ Jxta_status jxta_hashtable_delcheck(Jxta_hashtable * self, const void *key, size
     return JXTA_SUCCESS;
 }
 
-Jxta_vector *jxta_hashtable_values_get(Jxta_hashtable * self)
+JXTA_DECLARE(Jxta_vector *) jxta_hashtable_values_get(Jxta_hashtable * self)
 {
     Entry *e;
     Jxta_vector *vals;
@@ -789,7 +788,7 @@ Jxta_vector *jxta_hashtable_values_get(Jxta_hashtable * self)
  * FIXME: this inteface works only for string keys. If you put
  * other than string keys in your hashtbl, this is not usuable.
  */
-char **jxta_hashtable_keys_get(Jxta_hashtable * self)
+JXTA_DECLARE(char **) jxta_hashtable_keys_get(Jxta_hashtable * self)
 {
     Entry *e;
     int i;
@@ -827,7 +826,8 @@ char **jxta_hashtable_keys_get(Jxta_hashtable * self)
  * This is a diagnostic tool; it does not share the obj and
  * has the worst possible performance.
  */
-Jxta_status jxta_hashtable_stupid_lookup(Jxta_hashtable * self, const void *key, size_t key_size, Jxta_object ** found_value)
+JXTA_DECLARE(Jxta_status) jxta_hashtable_stupid_lookup(Jxta_hashtable * self, const void *key, size_t key_size,
+                                                       Jxta_object ** found_value)
 {
     Entry *e;
     int i;
@@ -864,8 +864,8 @@ Jxta_status jxta_hashtable_stupid_lookup(Jxta_hashtable * self, const void *key,
     return JXTA_ITEM_NOTFOUND;
 }
 
-void
-jxta_hashtable_stats(Jxta_hashtable * self, size_t * capacity, size_t * usage,
+JXTA_DECLARE(void)
+    jxta_hashtable_stats(Jxta_hashtable * self, size_t * capacity, size_t * usage,
                      size_t * occupancy, size_t * max_occupancy, double *avg_hops)
 {
     JXTA_OBJECT_CHECK_VALID(self);

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: trailing_average.c,v 1.3 2002/04/04 04:06:53 ddoolin Exp $
+ * $Id: trailing_average.c,v 1.5 2005/07/22 03:12:57 slowhog Exp $
  */
 
 #include <stdlib.h>
@@ -59,49 +59,48 @@
 #include <time.h>
 #include "trailing_average.h"
 
-struct _TrailingAverage
-{
-  int *values;
-  int  count;
+struct _TrailingAverage {
+    int *values;
+    int count;
 };
 
 
-TrailingAverage *trailing_average_new (int count)
+TrailingAverage *trailing_average_new(int count)
 {
-  TrailingAverage *ta = (TrailingAverage *) malloc (sizeof (TrailingAverage));
+    TrailingAverage *ta = (TrailingAverage *) malloc(sizeof(TrailingAverage));
 
-  ta->values = (int *) malloc (sizeof (int) * count);
+    ta->values = (int *) malloc(sizeof(int) * count);
 
-  ta->count  = count;
+    ta->count = count;
 
-  memset (ta->values, 0, sizeof (int) * count);
+    memset(ta->values, 0, sizeof(int) * count);
 
-  return ta;
+    return ta;
 }
 
-void trailing_average_free (TrailingAverage *ta)
+void trailing_average_free(TrailingAverage * ta)
 {
-  free (ta->values);
-  free (ta);
+    free(ta->values);
+    free(ta);
 }
 
-void trailing_average_inc (TrailingAverage *ta)
+void trailing_average_inc(TrailingAverage * ta)
 {
-  time_t now = time (NULL);
+    time_t now = time(NULL);
 
-  ta->values[now % ta->count] += 1;
+    ta->values[now % ta->count] += 1;
 }
 
-int trailing_average_get (TrailingAverage *ta)
+int trailing_average_get(TrailingAverage * ta)
 {
-  int    i     = 0;
-  int    total = 0;
-  time_t now   = time (NULL);
-  time_t start = now - ta->count; 
+    int i = 0;
+    int total = 0;
+    time_t now = time(NULL);
+    time_t start = now - ta->count;
 
-  for (i = start;  i < now;  i++) {
-    total += ta->values[i % ta->count]; 
-  }
+    for (i = start; i < now; i++) {
+        total += ta->values[i % ta->count];
+    }
 
-  return total;
-} 
+    return total;
+}

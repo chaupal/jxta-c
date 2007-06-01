@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peerinfo_service_private.h,v 1.5 2005/01/10 17:22:21 brent Exp $
+ * $Id: jxta_peerinfo_service_private.h,v 1.6 2005/06/16 23:11:46 slowhog Exp $
  */
 
 
@@ -74,7 +74,6 @@ extern "C" {
 }
 #endif
 #endif
-
 struct _jxta_peerinfo_service {
     Extends(Jxta_service);
 
@@ -87,38 +86,36 @@ struct _jxta_peerinfo_service_methods {
     Extends(Jxta_service_methods);
 
     /* peerinfo methods */
-     Jxta_status (*getRemotePeerInfo)(Jxta_peerinfo_service* self,
-                                            Jxta_id* peerid,
-                                            Jxta_peerinfo_listener* listener);
+    Jxta_status(*getRemotePeerInfo) (Jxta_peerinfo_service * self, Jxta_id * peerid, Jxta_peerinfo_listener * listener);
 
-					    
-     Jxta_status (*getLocalPeerInfo)(Jxta_peerinfo_service* self,
-                                            Jxta_id* peerid, Jxta_object ** adv);
-					    
-     Jxta_status (*getPeerInfoService)(Jxta_peerinfo_service* self, Jxta_object ** adv);
-     
-     Jxta_status (*flushPeerInfo)(Jxta_peerinfo_service* self,
-                                             Jxta_id* peerid);
+
+    Jxta_status(*getLocalPeerInfo) (Jxta_peerinfo_service * self, Jxta_id * peerid, Jxta_object ** adv);
+
+    Jxta_status(*getPeerInfoService) (Jxta_peerinfo_service * self, Jxta_object ** adv);
+
+    Jxta_status(*flushPeerInfo) (Jxta_peerinfo_service * self, Jxta_id * peerid);
 };
 
 /**
  * The base peerinfo service ctor (not public: the only public way to make a
  * new pg is to instantiate one of the derived types).
  */
-extern void
-jxta_peerinfo_service_construct(Jxta_peerinfo_service* service,
-				Jxta_peerinfo_service_methods* methods);
+extern void jxta_peerinfo_service_construct(Jxta_peerinfo_service * service, Jxta_peerinfo_service_methods * methods);
 
 /**
  * The base rsesolver service dtor (Not public, not virtual. Only called by
  * subclassers). We just pass it along.
  */
-extern void
-jxta_peerinfo_service_destruct(Jxta_peerinfo_service* service);
+extern void jxta_peerinfo_service_destruct(Jxta_peerinfo_service * service);
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
-	
+
 #endif /* JXTA_PEERINFO_SERVICE_PRIVATE_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_getopt.h,v 1.3 2005/02/25 21:44:57 slowhog Exp $
+ * $Id: jxta_shell_getopt.h,v 1.5 2005/08/24 01:21:21 slowhog Exp $
  */
 #ifndef __JXTA_SHELL_GETOPT_H__
 #define  __JXTA_SHELL_GETOPT_H__
@@ -66,17 +66,16 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _jxta_shell_getopt JxtaShellGetopt;
 
 enum JxtaShellGetOptErrors {
-    OPT_NO_ERROR        = 0,
-    NO_MORE_ARGS    =-1,
-    MISSING_OPTION  =-2,
-    MISSING_ARG     =-3,
-    INVALID_OPTION  =-4,
-    UNKNOWN_OPTION  =-5,
-    MISC_ERROR      =-6
+    OPT_NO_ERROR = 0,
+    NO_MORE_ARGS = -1,
+    MISSING_OPTION = -2,
+    MISSING_ARG = -3,
+    INVALID_OPTION = -4,
+    UNKNOWN_OPTION = -5,
+    MISC_ERROR = -6
 };
 
 typedef enum JxtaShellGetOptErrors JxtaShellGetOptError;
@@ -117,6 +116,8 @@ JxtaShellGetOptError JxtaShellGetopt_getErrorCode(const JxtaShellGetopt * opt);
 */
 JString *JxtaShellGetopt_getError(const JxtaShellGetopt * opt);
 
+JString *JxtaShellGetopt_OptionArgument(const JxtaShellGetopt * opt);
+
 /** 
 * If the previous option had an option argument,
 * we return it, otherwise, NULL is returned
@@ -151,8 +152,12 @@ int JxtaShellGetopt_getNextCharacter(const JxtaShellGetopt * opt);
 void JxtaShellGetopt_delete(JxtaShellGetopt * opt);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
-
 #endif /* __JXTA_SHELL_GETOPT_H__ */
+
+/* vim: set ts=4 sw=4 et tw=130 */

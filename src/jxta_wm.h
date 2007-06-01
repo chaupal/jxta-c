@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_wm.h,v 1.4 2005/01/12 21:47:01 bondolo Exp $
+ * $Id: jxta_wm.h,v 1.7 2005/08/03 05:51:21 slowhog Exp $
  */
 
-   
+
 #ifndef __JxtaWire_H__
 #define __JxtaWire_H__
 
@@ -65,35 +65,35 @@
 extern "C" {
 #endif
 
-typedef struct _JxtaWire JxtaWire;
+    typedef struct _JxtaWire JxtaWire;
 
-JxtaWire * JxtaWire_new(void);
-void JxtaWire_set_handlers(JxtaWire *, XML_Parser, void *);
-void JxtaWire_delete(JxtaWire *);
-Jxta_status JxtaWire_get_xml(JxtaWire *, JString** xml);
-void JxtaWire_parse_charbuffer(JxtaWire *, const char *, int len); 
-void JxtaWire_parse_file(JxtaWire *, FILE * stream);
- 
-char * JxtaWire_get_JxtaWire(JxtaWire *);
-void JxtaWire_set_JxtaWire(JxtaWire *, char *);
- 
-char* JxtaWire_get_SrcPeer(JxtaWire *);
-void JxtaWire_set_SrcPeer(JxtaWire *, char *);
+    JXTA_DECLARE(JxtaWire *) JxtaWire_new(void);
+    JXTA_DECLARE(void) JxtaWire_set_handlers(JxtaWire *, XML_Parser, void *);
+    void JxtaWire_delete(JxtaWire *);
+    JXTA_DECLARE(Jxta_status) JxtaWire_get_xml(JxtaWire *, JString ** xml);
+    JXTA_DECLARE(void) JxtaWire_parse_charbuffer(JxtaWire *, const char *, int len);
+    JXTA_DECLARE(void) JxtaWire_parse_file(JxtaWire *, FILE * stream);
 
-char* JxtaWire_get_PipeId(JxtaWire *);
-void JxtaWire_set_PipeId(JxtaWire *, char *);
+    JXTA_DECLARE(char *) JxtaWire_get_JxtaWire(JxtaWire *);
+    JXTA_DECLARE(void) JxtaWire_set_JxtaWire(JxtaWire *, const char *);
 
-char* JxtaWire_get_MsgId(JxtaWire *);
-void JxtaWire_set_MsgId(JxtaWire *, char *);
- 
-Jxta_vector * JxtaWire_get_VisitedPeer(JxtaWire *);
-void JxtaWire_set_VisitedPeer(JxtaWire *, Jxta_vector *);
+    JXTA_DECLARE(char *) JxtaWire_get_SrcPeer(JxtaWire *);
+    JXTA_DECLARE(void) JxtaWire_set_SrcPeer(JxtaWire *, const char *);
 
-int JxtaWire_get_TTL(JxtaWire *);
-void JxtaWire_set_TTL(JxtaWire *, int);
- 
- 
-#endif /* __JxtaWire_H__  */
+    JXTA_DECLARE(char *) JxtaWire_get_PipeId(JxtaWire *);
+    JXTA_DECLARE(void) JxtaWire_set_PipeId(JxtaWire *, const char *);
+
+    JXTA_DECLARE(char *) JxtaWire_get_MsgId(JxtaWire *);
+    JXTA_DECLARE(void) JxtaWire_set_MsgId(JxtaWire *, const char *);
+
+    JXTA_DECLARE(Jxta_vector *) JxtaWire_get_VisitedPeer(JxtaWire *);
+    JXTA_DECLARE(void) JxtaWire_set_VisitedPeer(JxtaWire *, Jxta_vector *);
+
+    JXTA_DECLARE(int) JxtaWire_get_TTL(JxtaWire *);
+    JXTA_DECLARE(void) JxtaWire_set_TTL(JxtaWire *, int);
+
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* __JxtaWire_H__  */

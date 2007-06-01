@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_excep.c,v 1.6 2005/03/24 19:35:30 slowhog Exp $
+ * $Id: jpr_excep.c,v 1.7 2005/04/16 13:27:13 lankes Exp $
  */
 
 #include <stdio.h>
@@ -143,7 +143,7 @@ void jpr_excep_terminate(void)
  * This routine behaves like setjmp: the natural return returns 0, the
  * jumped one returns non-zero.
  */
-void _jpr_threadPushCtx(Jpr_JmpFrame * frame, int nested_in_func)
+JPR_DECLARE(void) _jpr_threadPushCtx(Jpr_JmpFrame * frame, int nested_in_func)
 {
     apr_threadkey_private_get((void **) &(frame->prev_frame), jmp_key_p);
     frame->nested_in_func = nested_in_func;
@@ -159,7 +159,7 @@ void _jpr_threadPushCtx(Jpr_JmpFrame * frame, int nested_in_func)
  * The Frame that must be restored is returned so that the caller can
  * siglongjmp into it.
  */
-Jpr_JmpFrame *_jpr_threadRestoreCtx(int val)
+JPR_DECLARE(Jpr_JmpFrame *) _jpr_threadRestoreCtx(int val)
 {
     Jpr_JmpFrame *curframe_p;
     apr_threadkey_private_get((void **) &curframe_p, jmp_key_p);
@@ -175,7 +175,7 @@ Jpr_JmpFrame *_jpr_threadRestoreCtx(int val)
  * without restoring it. The new saved context is the next innerMost one if
  * any.
  */
-void _jpr_threadPopCtx(void)
+JPR_DECLARE(void) _jpr_threadPopCtx(void)
 {
     Jpr_JmpFrame *curframe_p;
     apr_threadkey_private_get((void **) &curframe_p, jmp_key_p);
@@ -191,7 +191,7 @@ void _jpr_threadPopCtx(void)
  * Always return 1. This is too keep the "return" macro syntacticaly
  * transparent.
  */
-int _jpr_threadPopAllFuncCtx(void)
+JPR_DECLARE(int) _jpr_threadPopAllFuncCtx(void)
 {
     Jpr_JmpFrame *curframe_p;
     apr_threadkey_private_get((void **) &curframe_p, jmp_key_p);
@@ -209,7 +209,7 @@ int _jpr_threadPopAllFuncCtx(void)
  * variable, and portable since errno may or may not exist and is actually
  * hidden by APR. 
  */
-Jpr_status jpr_lasterror_get(void)
+JPR_DECLARE(Jpr_status) jpr_lasterror_get(void)
 {
     Jpr_status status;
     apr_threadkey_private_get((void **) &status, status_key_p);

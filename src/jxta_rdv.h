@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv.h,v 1.7 2005/03/24 01:48:12 bondolo Exp $
+ * $Id: jxta_rdv.h,v 1.10 2005/08/03 05:51:18 slowhog Exp $
  */
 
 
@@ -80,7 +80,7 @@ extern "C" {
  ** @return a pointer to a new empty Jxta_RdvAdvertisement. Returns NULL if the
  ** system is out of memory.
  **/
-Jxta_RdvAdvertisement *jxta_RdvAdvertisement_new(void);
+JXTA_DECLARE(Jxta_RdvAdvertisement *) jxta_RdvAdvertisement_new(void);
 
 /**
  ** Builds and returns the XML (wire format) of the pipe advertisement.
@@ -91,7 +91,7 @@ Jxta_RdvAdvertisement *jxta_RdvAdvertisement_new(void);
  **                   JXTA_NOMEM when the system has ran out of memeory
  **                   JXTA_INVALID_PARAMETER when an argument was invalid.
  **/
-Jxta_status jxta_RdvAdvertisement_get_xml(Jxta_RdvAdvertisement * adv, JString ** xml);
+JXTA_DECLARE(Jxta_status) jxta_RdvAdvertisement_get_xml(Jxta_RdvAdvertisement * adv, JString ** xml);
 
 /**
  ** Parse an XML (wire format) document containing a JXTA advertisement from
@@ -104,7 +104,7 @@ Jxta_status jxta_RdvAdvertisement_get_xml(Jxta_RdvAdvertisement * adv, JString *
  **                   JXTA_NOMEM when the system has ran out of memeory
  **                   JXTA_INVALID_PARAMETER when an argument was invalid.
  **/
-Jxta_status jxta_RdvAdvertisement_parse_charbuffer(Jxta_RdvAdvertisement * adv, const char *buffer, size_t len);
+JXTA_DECLARE(Jxta_status) jxta_RdvAdvertisement_parse_charbuffer(Jxta_RdvAdvertisement * adv, const char *buffer, size_t len);
 
 /**
  ** Parse an XML (wire format) document containing a JXTA advertisement from
@@ -116,7 +116,7 @@ Jxta_status jxta_RdvAdvertisement_parse_charbuffer(Jxta_RdvAdvertisement * adv, 
  **                   JXTA_NOMEM when the system has ran out of memeory
  **                   JXTA_INVALID_PARAMETER when an argument was invalid.
  **/
-Jxta_status jxta_RdvAdvertisement_parse_file(Jxta_RdvAdvertisement * adv, FILE * stream);
+JXTA_DECLARE(Jxta_status) jxta_RdvAdvertisement_parse_file(Jxta_RdvAdvertisement * adv, FILE * stream);
 
 
 /**
@@ -125,7 +125,7 @@ Jxta_status jxta_RdvAdvertisement_parse_file(Jxta_RdvAdvertisement * adv, FILE *
  ** @param adv a pointer to the JXTA Advertisement.
  ** @returns a newly malloced pointer to a null terminated string containing the name.
  **/
-char *jxta_RdvAdvertisement_get_Name(Jxta_RdvAdvertisement * adv);
+JXTA_DECLARE(char *) jxta_RdvAdvertisement_get_Name(Jxta_RdvAdvertisement * adv);
 
 /**
  ** Sets the name of the JXTA Advertisement.
@@ -136,7 +136,7 @@ char *jxta_RdvAdvertisement_get_Name(Jxta_RdvAdvertisement * adv);
  **                   JXTA_NOMEM when the system has ran out of memeory
  **                   JXTA_INVALID_PARAMETER when an argument was invalid.
  **/
-void jxta_RdvAdvertisement_set_Name(Jxta_RdvAdvertisement * adv, const char *name);
+JXTA_DECLARE(void) jxta_RdvAdvertisement_set_Name(Jxta_RdvAdvertisement * adv, const char *name);
 
 /**
  ** Gets the identifier of the PeerGroup this rendezvous advertisement refers
@@ -145,7 +145,7 @@ void jxta_RdvAdvertisement_set_Name(Jxta_RdvAdvertisement * adv, const char *nam
  ** @param adv a pointer to the Pipe Advertisement.
  ** @returns a pointer to a JString containing the identifier.
  **/
-Jxta_id *jxta_RdvAdvertisement_get_RdvGroupId(Jxta_RdvAdvertisement * adv);
+JXTA_DECLARE(Jxta_id *) jxta_RdvAdvertisement_get_RdvGroupId(Jxta_RdvAdvertisement * adv);
 
 /**
  ** Sets the identifier of the PeerGroup this rendezvous advertisement refers
@@ -157,7 +157,7 @@ Jxta_id *jxta_RdvAdvertisement_get_RdvGroupId(Jxta_RdvAdvertisement * adv);
  **                   JXTA_NOMEM when the system has ran out of memeory
  **                   JXTA_INVALID_PARAMETER when an argument was invalid.
  **/
-void jxta_RdvAdvertisement_set_RdvGroupId(Jxta_RdvAdvertisement * adv, Jxta_id * id);
+JXTA_DECLARE(void) jxta_RdvAdvertisement_set_RdvGroupId(Jxta_RdvAdvertisement * adv, Jxta_id * id);
 
 /**
  ** Gets the identifier of the rendezvous Peer described by this advertisement
@@ -165,7 +165,7 @@ void jxta_RdvAdvertisement_set_RdvGroupId(Jxta_RdvAdvertisement * adv, Jxta_id *
  ** @param adv a pointer to the RDV Advertisement.
  ** @returns a pointer to a JString containing the identifier.
  **/
-Jxta_id *jxta_RdvAdvertisement_get_RdvPeerId(Jxta_RdvAdvertisement * adv);
+JXTA_DECLARE(Jxta_id *) jxta_RdvAdvertisement_get_RdvPeerId(Jxta_RdvAdvertisement * adv);
 
 /**
 ** Sets the identifier of the rendezvous Peer described by this advertisement
@@ -176,7 +176,7 @@ Jxta_id *jxta_RdvAdvertisement_get_RdvPeerId(Jxta_RdvAdvertisement * adv);
 **                   JXTA_NOMEM when the system has ran out of memeory
 **                   JXTA_INVALID_PARAMETER when an argument was invalid.
 **/
-void jxta_RdvAdvertisement_set_RdvPeerId(Jxta_RdvAdvertisement * adv, Jxta_id * id);
+JXTA_DECLARE(void) jxta_RdvAdvertisement_set_RdvPeerId(Jxta_RdvAdvertisement * adv, Jxta_id * id);
 
 /**
  ** Gets the identifier of the rendezvous service described by this advertisement
@@ -184,7 +184,7 @@ void jxta_RdvAdvertisement_set_RdvPeerId(Jxta_RdvAdvertisement * adv, Jxta_id * 
  ** @param adv a pointer to the RDV Advertisement.
  ** @returns a newly malloced pointer to a null terminated string containing the service.
  **/
-char *jxta_RdvAdvertisement_get_Service(Jxta_RdvAdvertisement * adv);
+JXTA_DECLARE(char *) jxta_RdvAdvertisement_get_Service(Jxta_RdvAdvertisement * adv);
 
 /**
  ** Sets the identifier of the rendezvous Peer described by this advertisement
@@ -195,7 +195,7 @@ char *jxta_RdvAdvertisement_get_Service(Jxta_RdvAdvertisement * adv);
  **                   JXTA_NOMEM when the system has ran out of memeory
  **                   JXTA_INVALID_PARAMETER when an argument was invalid.
  **/
-void jxta_RdvAdvertisement_set_Service(Jxta_RdvAdvertisement * adv, const char *id);
+JXTA_DECLARE(void) jxta_RdvAdvertisement_set_Service(Jxta_RdvAdvertisement * adv, const char *id);
 
 /**
  ** Gets the route advertisement of the rendezvous described by this advertisement
@@ -203,7 +203,7 @@ void jxta_RdvAdvertisement_set_Service(Jxta_RdvAdvertisement * adv, const char *
  ** @param adv a pointer to the RDV Advertisement.
  ** @returns a pointer to a RouteAdvertisement containing the identifier.
  **/
-Jxta_RouteAdvertisement *jxta_RdvAdvertisement_get_Route(Jxta_RdvAdvertisement * adv);
+JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_RdvAdvertisement_get_Route(Jxta_RdvAdvertisement * adv);
 
 /**
 ** Sets the route of the rendezvous Peer described by this advertisement
@@ -214,7 +214,7 @@ Jxta_RouteAdvertisement *jxta_RdvAdvertisement_get_Route(Jxta_RdvAdvertisement *
 **                   JXTA_NOMEM when the system has ran out of memeory
 **                   JXTA_INVALID_PARAMETER when an argument was invalid.
 **/
-void jxta_RdvAdvertisement_set_Route(Jxta_RdvAdvertisement * adv, Jxta_RouteAdvertisement * route);
+JXTA_DECLARE(void) jxta_RdvAdvertisement_set_Route(Jxta_RdvAdvertisement * adv, Jxta_RouteAdvertisement * route);
 
 
 /**
@@ -227,10 +227,15 @@ void jxta_RdvAdvertisement_set_Route(Jxta_RdvAdvertisement * adv, Jxta_RouteAdve
 ** @return Jxta_vector: return a vector of element/attribute pairs in Jxta_index struct.
 **
 **/
-Jxta_vector *jxta_RendezvousAdvertisement_get_indexes(void);
+JXTA_DECLARE(Jxta_vector *) jxta_RendezvousAdvertisement_get_indexes(Jxta_advertisement *);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* __RdvAdvertisement_H__  */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

@@ -50,17 +50,91 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: peers.c,v 1.11 2005/04/07 22:58:55 slowhog Exp $
+ * $Id: peers.c,v 1.13 2005/08/03 08:10:22 lankes Exp $
  */
 
 #include <stdio.h>
+#ifndef WIN32
 #include <unistd.h>
+#endif
 #include "jxta.h"
 #include "jxta_resolver_service.h"
 #include "jxta_errno.h"
 #include "jxta_peergroup.h"
 #include "jxta_object.h"
 #include "jxtaapr.h"
+
+#ifdef WIN32
+static char*	optarg = NULL;		// global argument pointer
+static int		optind = 0; 		// global argv index
+
+static int getopt(int argc, char* argv[], char* optstring)
+{
+	static char*	next = NULL;
+	char			c;
+	char*			cp = NULL;
+
+	if (optind == 0)
+		next = NULL;
+
+	optarg = NULL;
+
+	if (next == NULL || *next == '\0')
+	{
+		if (optind == 0)
+			optind++;
+
+		if (optind >= argc || argv[optind][0] != '-' || argv[optind][1] == '\0')
+		{
+			optarg = NULL;
+			if (optind < argc)
+				optarg = argv[optind];
+			return EOF;
+		}
+
+		if (strcmp(argv[optind], "--") == 0)
+		{
+			optind++;
+			optarg = NULL;
+			if (optind < argc)
+				optarg = argv[optind];
+			return EOF;
+		}
+
+		next = argv[optind];
+		next++;	
+		optind++;
+	}
+
+	c = *next++;
+	cp = strchr(optstring, c);
+
+	if (cp == NULL || c == ':')
+		return '?';
+
+	cp++;
+	if (*cp == ':')
+	{
+		if (*next != '\0')
+		{
+			optarg = next;
+			next = NULL;
+		}
+		else if (optind < argc)
+		{
+			optarg = argv[optind];
+			optind++;
+		}
+		else
+		{
+			return '?';
+		}
+	}
+
+	return c;
+}
+#endif
+
 /*
  *
  * peers command 
@@ -142,14 +216,14 @@ int main(int argc, char *argv[])
 	jxta_PG_get_discovery_service(pg, &discovery);
 
 	if (rf) {
-                jpr_thread_delay ((Jpr_interval_time) 5 *1000 *1000);
+                apr_sleep ((Jpr_interval_time) 5 *1000 *1000);
 		fprintf(stdout,"sending a discovery query");
 		qid=discovery_service_get_remote_advertisements(discovery,
 		                jxta_id_nullID, DISC_PEER, jstring_get_string(attr),
 		                jstring_get_string(value), responses, NULL);
 
 		fprintf(stderr,"Sent discovery query qid = %ld\n", qid);
-                jpr_thread_delay ((Jpr_interval_time) 7 *1000*1000);
+                apr_sleep ((Jpr_interval_time) 7 *1000*1000);
 	}
 	JXTA_OBJECT_RELEASE(discovery);
 	jxta_module_stop((Jxta_module*) pg);

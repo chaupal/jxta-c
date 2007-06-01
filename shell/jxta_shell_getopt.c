@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_getopt.c,v 1.3 2005/02/25 21:44:57 slowhog Exp $
+ * $Id: jxta_shell_getopt.c,v 1.5 2005/08/24 01:21:21 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -85,10 +85,10 @@ static JxtaShellGetOptError JxtaShellGetopt_setOptionArgument(JxtaShellGetopt * 
 JxtaShellGetopt *JxtaShellGetopt_new(int argc, const char **argv, const char *optionChars)
 {
     JxtaShellGetopt *opt = (JxtaShellGetopt *) malloc(sizeof(JxtaShellGetopt));
-    
-    if( NULL == opt ) {
+
+    if (NULL == opt) {
         return NULL;
-        }
+    }
 
     opt->argc = argc;
     opt->argv = argv;
@@ -121,6 +121,10 @@ int JxtaShellGetopt_getCurrentArgument(const JxtaShellGetopt * opt)
     return result;
 }
 
+JString *JxtaShellGetopt_OptionArgument(const JxtaShellGetopt * opt)
+{
+    return opt->optArgument;
+}
 
 JString *JxtaShellGetopt_getOptionArgument(const JxtaShellGetopt * opt)
 {
@@ -131,7 +135,7 @@ JString *JxtaShellGetopt_getOptionArgument(const JxtaShellGetopt * opt)
         if (result != NULL)
             JXTA_OBJECT_SHARE(result);
     }
-    
+
     return result;
 }
 
@@ -142,7 +146,7 @@ JxtaShellGetOptError JxtaShellGetopt_getErrorCode(const JxtaShellGetopt * opt)
     if (opt != NULL) {
         result = opt->optError;
     }
-    
+
     return result;
 }
 
@@ -154,7 +158,7 @@ JString *JxtaShellGetopt_getError(const JxtaShellGetopt * opt)
         result = jstring_new_2("An error occured");
         return result;
     }
-    
+
     switch (opt->optError) {
     case OPT_NO_ERROR:
         result = jstring_new_2("No error");
@@ -165,7 +169,7 @@ JString *JxtaShellGetopt_getError(const JxtaShellGetopt * opt)
     case MISSING_OPTION:
         result = jstring_new_2("Missing option ");
         break;
-     case MISSING_ARG:
+    case MISSING_ARG:
         result = jstring_new_2("Missing argument for option ");
         jstring_append_0(result, &opt->argv[opt->currentArg][1], 1);
         break;
@@ -268,47 +272,50 @@ static JxtaShellGetOptError JxtaShellGetopt_setOptionArgument(JxtaShellGetopt * 
 }
 
 #if 0
-int main(int argc, char **argv){
-   JxtaShellGetopt * opt = JxtaShellGetopt_new(argc-1, argv+1,"abc:de:"); 
-   JString *argument;
+int main(int argc, char **argv)
+{
+    JxtaShellGetopt *opt = JxtaShellGetopt_new(argc - 1, argv + 1, "abc:de:");
+    JString *argument;
 
-   while(1){
-     int type = JxtaShellGetopt_getNext(opt);
-     int error = 0;
-   
-     if( type == -1) break;
-     switch(type){
+    while (1) {
+        int type = JxtaShellGetopt_getNext(opt);
+        int error = 0;
+
+        if (type == -1)
+            break;
+        switch (type) {
         case 'a':
-          printf("Got option a\n");
-	  break;
+            printf("Got option a\n");
+            break;
         case 'b':
-          printf("Got option b\n");
-	  break;
+            printf("Got option b\n");
+            break;
         case 'c':
-          argument = JxtaShellGetopt_getOptionArgument(opt);
-          printf("Got option c with argument %s\n", 
-                  jstring_get_string(argument) );
-          JXTA_OBJECT_RELEASE( argument);
-	  break;
+            argument = JxtaShellGetopt_getOptionArgument(opt);
+            printf("Got option c with argument %s\n", jstring_get_string(argument));
+            JXTA_OBJECT_RELEASE(argument);
+            break;
         case 'd':
-          printf("Got option d\n");
-	  break;
+            printf("Got option d\n");
+            break;
         case 'e':
-          argument = JxtaShellGetopt_getOptionArgument(opt);
-          printf("Got option e with argument %s\n", 
-                  jstring_get_string(argument) );
-          JXTA_OBJECT_RELEASE( argument);
-	  break;
+            argument = JxtaShellGetopt_getOptionArgument(opt);
+            printf("Got option e with argument %s\n", jstring_get_string(argument));
+            JXTA_OBJECT_RELEASE(argument);
+            break;
         default:
-          argument = JxtaShellGetopt_getError(opt);
-          printf("Error: %s \n", jstring_get_string ( argument));
-          JXTA_OBJECT_RELEASE(argument);
-          error = 1;
-          break;
-     }
-     if( error != 0) break;
-   }
-   JxtaShellGetopt_delete(opt);
-   return 0;
+            argument = JxtaShellGetopt_getError(opt);
+            printf("Error: %s \n", jstring_get_string(argument));
+            JXTA_OBJECT_RELEASE(argument);
+            error = 1;
+            break;
+        }
+        if (error != 0)
+            break;
+    }
+    JxtaShellGetopt_delete(opt);
+    return 0;
 }
 #endif
+
+/* vi: set ts=4 sw=4 tw=130 et: */

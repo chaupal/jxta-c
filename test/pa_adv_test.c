@@ -50,14 +50,15 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: pa_adv_test.c,v 1.19 2005/04/07 22:58:55 slowhog Exp $
+ * $Id: pa_adv_test.c,v 1.21 2005/04/17 14:22:19 lankes Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h> 
+#include <sys/stat.h>
 
 #include <apr_general.h>
-
 #include <jxta.h>
 #include <jxta_pa.h>
 #include <jxta_svc.h>
@@ -85,16 +86,19 @@ pa_test(int argc, char **argv)
    ad = jxta_PA_new();
 
    testfile = fopen (argv[1], "r");
+   if (testfile == NULL)
+   {
+	   printf("could not open %s\n", argv[1]);
+	   return FALSE;
+   }
 
    jxta_PA_parse_file(ad,testfile);
 
    fclose(testfile);
 
-
    jxta_PA_get_xml(ad, &js);
 
    fprintf(stdout,"%s\n",jstring_get_string(js));
-
 
    JXTA_OBJECT_RELEASE(js);
 
@@ -115,7 +119,6 @@ pa_test(int argc, char **argv)
        Jxta_svc * svc;
        Jxta_id* clid;
        JString* cert;
-       Jxta_vector* addrs;  
        Jxta_HTTPTransportAdvertisement* hta;
        Jxta_TCPTransportAdvertisement* tta;
        Jxta_RouteAdvertisement* routea;
@@ -123,7 +126,6 @@ pa_test(int argc, char **argv)
        jxta_vector_get_object_at(services, (Jxta_object**) &svc, i);
        clid = jxta_svc_get_MCID(svc);
        cert = jxta_svc_get_RootCert(svc);
-       addrs = jxta_svc_get_Addr(svc);
        hta = jxta_svc_get_HTTPTransportAdvertisement(svc);
        tta = jxta_svc_get_TCPTransportAdvertisement(svc);
        routea = jxta_svc_get_RouteAdvertisement(svc);
@@ -139,18 +141,6 @@ pa_test(int argc, char **argv)
        if (cert != NULL) {
 	   printf("cert: %s\n", jstring_get_string(cert));
 	   JXTA_OBJECT_RELEASE(cert);
-       }
-
-       if (addrs != NULL) {
-	   int i;
-	   int nad = jxta_vector_size(addrs);
-	   for(i = 0; i < nad; i++) {
-	       JString* addr;
-	       jxta_vector_get_object_at(addrs, (Jxta_object**) &addr, i);
-	       printf("addr[%d]: %s\n", i, jstring_get_string(addr));
-	       JXTA_OBJECT_RELEASE(addr);
-	   }
-	   JXTA_OBJECT_RELEASE(addrs);
        }
 
        /* Tired, I'll just dump the hta and tta as is for now */

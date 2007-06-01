@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: unittest_jxta_func.c,v 1.6 2005/04/07 22:58:56 slowhog Exp $
+ * $Id: unittest_jxta_func.c,v 1.7 2005/04/17 14:22:20 lankes Exp $
  */
 
 #include <stdio.h>
@@ -121,7 +121,7 @@ main_test_function(const struct _funcs testfunc[],int argc, char ** argv){
 /**
  * Implemenation of SendFunc
  */
-Jxta_status
+Jxta_status JXTA_STDCALL
 sendFunction(void *stream, const char *buf, size_t len, unsigned int flag){
   read_write_test_buffer * buffer = (read_write_test_buffer *)stream;
   int i;
@@ -144,7 +144,7 @@ sendFunction(void *stream, const char *buf, size_t len, unsigned int flag){
 /**
  * Implementation of WriteFunc
  */
-Jxta_status
+Jxta_status JXTA_STDCALL
 writeFunction(void *stream, const char *buf, size_t len){
   read_write_test_buffer * target = (read_write_test_buffer *)stream;
   int i;
@@ -161,7 +161,7 @@ writeFunction(void *stream, const char *buf, size_t len){
 /**
  * Implemenation of ReadFunc
  */
-Jxta_status
+Jxta_status JXTA_STDCALL
 readFromStreamFunction(void *stream, char *buf, size_t len){
   read_write_test_buffer * buffer = (read_write_test_buffer *)stream;
   int i;

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tutorial1.c,v 1.4 2005/04/04 22:56:59 bondolo Exp $
+ * $Id: jxta_tutorial1.c,v 1.5 2005/09/07 22:21:09 slowhog Exp $
  */
 
 /*
@@ -64,6 +64,8 @@
 #include <unistd.h>             /* usleep() */
 #include <assert.h>             /* assert() */
 #include <string.h>
+
+#include <apr_lib.h>
 
 #include <jxta.h>
 #include <jxta_types.h>
@@ -113,17 +115,12 @@ Jxta_boolean process_args(int argc, const char *argv[])
     arg **args = NULL;
     unsigned i;
     Jxta_boolean wellFormedArguments = TRUE;
-    char *executablePath;
-    char *executable;
+    const char *executable;
 
     searchType = NO_SEARCH_TYPE;
     searchAttribute[0] = '\0';
     searchValue[0] = '\0';
-    executablePath = (char *) malloc(sizeof(char) * strlen(argv[0]));
-    strcpy(executablePath, argv[0]);
-    while (NULL != executablePath) {
-        executable = strsep(&executablePath, "/");
-    }
+    executable = apr_filepath_name_get(argv[0]);
 
     /* organize the arguments; there must be at least one, specifying the search type */
     unsigned count = arg_parse_launch_args(argc, argv, &args);

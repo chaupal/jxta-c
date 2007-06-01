@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_private.h,v 1.10 2005/01/19 00:09:00 bondolo Exp $
+ * $Id: jxta_transport_private.h,v 1.14 2005/09/13 16:26:02 slowhog Exp $
  */
 
 #ifndef JXTA_TRANSPORT_PRIVATE_H
@@ -74,10 +74,15 @@ extern "C" {
 }
 #endif
 #endif
+
 typedef struct _jxta_transport_methods Jxta_transport_methods;
 
-struct _jxta_transport_methods {
+typedef enum Jxta_transport_events
+{
+    JXTA_TRANSPORT_INBOUND_CONNECT = 0
+} Jxta_transport_event;
 
+struct _jxta_transport_methods {
     Extends(Jxta_module_methods);
 
     /* Transport specific API */
@@ -107,7 +112,7 @@ typedef struct _jxta_transport _jxta_transport;
  * is to instantiate one of the derived types). Derivates call this
  * to initialize the base part.
  */
-extern Jxta_transport *jxta_transport_construct(Jxta_transport * self, Jxta_transport_methods * methods);
+extern Jxta_transport *jxta_transport_construct(Jxta_transport * self, Jxta_transport_methods const *methods);
 
 /**
  * The base transport dtor (Not public, not virtual. Only called by subclassers).
@@ -115,7 +120,12 @@ extern Jxta_transport *jxta_transport_construct(Jxta_transport * self, Jxta_tran
 extern void jxta_transport_destruct(Jxta_transport * self);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTA_TRANSPORT_PRIVATE_H */
+
+/* vim: set ts=4 sw=4 et tw=130: */

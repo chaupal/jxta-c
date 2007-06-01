@@ -50,14 +50,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_message.c,v 1.37 2005/02/16 23:25:47 bondolo Exp $
+ * $Id: jxta_message.c,v 1.44 2005/09/10 01:04:55 slowhog Exp $
  */
 
 static const char *__log_cat = "MESSAGE";
 
 #include <stddef.h>
-#include <ctype.h>      /* tolower */
-#include <string.h>     /* for strncmp */
+#include <ctype.h>  /* tolower */
+#include <string.h> /* for strncmp */
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -74,6 +74,7 @@ typedef UINT uint32_t;
 
 #include "jxta_errno.h"
 #include "jxta_log.h"
+#include "jxta_debug.h"
 #include "jxta_message.h"
 
 /*************************************************************************
@@ -124,38 +125,36 @@ static void jxta_message_delete(Jxta_object * ptr);
 static void Jxta_message_element_delete(Jxta_object * ptr);
 static char *jxta_string_read(ReadFunc read_func, void *stream);
 static char *jxta_string_read4(ReadFunc read_func, void *stream);
-static Jxta_status jxta_string_write(WriteFunc write_func, void *stream, char *str);
-static Jxta_status jxta_string_write4(WriteFunc write_func, void *stream, char *str);
+static Jxta_status jxta_string_write(WriteFunc write_func, void *stream, const char *str);
+static Jxta_status jxta_string_write4(WriteFunc write_func, void *stream, const char *str);
 static char *parseqname(char const *srcqname, char **ns, char **ncname);
-static Jxta_status get_message_to_jstring(void *stream, char const *buf, size_t len);
+static Jxta_status JXTA_STDCALL get_message_to_jstring(void *stream, char const *buf, size_t len);
 
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_message *jxta_message_new(void)
+JXTA_DECLARE(Jxta_message *) jxta_message_new(void)
 {
-    Jxta_message_mutable *msg = (Jxta_message_mutable *) malloc(sizeof(Jxta_message_mutable));
+    Jxta_message_mutable *msg = (Jxta_message_mutable *) calloc(1, sizeof(Jxta_message_mutable));
 
     if (NULL == msg) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not malloc message");
         return NULL;
     }
 
-    memset(msg, 0, sizeof(Jxta_message_mutable));
-
     JXTA_OBJECT_INIT(msg, jxta_message_delete, NULL);
 
     msg->usr.elements = jxta_vector_new(0);
 
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Created new message [%p]\n", msg);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Create a new message [%p]\n", msg);
     return msg;
 }
 
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_message *jxta_message_clone(Jxta_message * old)
+JXTA_DECLARE(Jxta_message *) jxta_message_clone(Jxta_message * old)
 {
     Jxta_message *msg;
     int eachElement = 0;
@@ -193,7 +192,7 @@ Jxta_message *jxta_message_clone(Jxta_message * old)
         }
 
         JXTA_OBJECT_RELEASE(anElement);
-        anElement = NULL;       /* release local */
+        anElement = NULL;   /* release local */
     }
 
     return msg;
@@ -216,7 +215,7 @@ static void jxta_message_delete(Jxta_object * ptr)
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_endpoint_address *jxta_message_get_source(Jxta_message * msg)
+JXTA_DECLARE(Jxta_endpoint_address *) jxta_message_get_source(Jxta_message * msg)
 {
     Jxta_status err;
     Jxta_endpoint_address *result = NULL;
@@ -265,7 +264,7 @@ Jxta_endpoint_address *jxta_message_get_source(Jxta_message * msg)
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_endpoint_address *jxta_message_get_destination(Jxta_message * msg)
+JXTA_DECLARE(Jxta_endpoint_address *) jxta_message_get_destination(Jxta_message * msg)
 {
     Jxta_status err;
     Jxta_endpoint_address *result = NULL;
@@ -318,7 +317,7 @@ Jxta_endpoint_address *jxta_message_get_destination(Jxta_message * msg)
  ** FIXME 2/13/2002 lomax@jxta.org
  ** This function is not thread-safe (and should be)
  **/
-Jxta_status jxta_message_set_source(Jxta_message * msg, Jxta_endpoint_address * src_addr)
+JXTA_DECLARE(Jxta_status) jxta_message_set_source(Jxta_message * msg, Jxta_endpoint_address * src_addr)
 {
     Jxta_status res;
     char *el_value;
@@ -342,7 +341,7 @@ Jxta_status jxta_message_set_source(Jxta_message * msg, Jxta_endpoint_address * 
 
         res = jxta_message_add_element(msg, el);
         JXTA_OBJECT_RELEASE(el);
-        el = NULL;      /* release local */
+        el = NULL;  /* release local */
     } else
         res = JXTA_FAILED;
 
@@ -359,7 +358,7 @@ Jxta_status jxta_message_set_source(Jxta_message * msg, Jxta_endpoint_address * 
  ** FIXME 2/13/2002 lomax@jxta.org
  ** This function is not thread-safe (and should be)
  **/
-Jxta_status jxta_message_set_destination(Jxta_message * msg, Jxta_endpoint_address * dst_addr)
+JXTA_DECLARE(Jxta_status) jxta_message_set_destination(Jxta_message * msg, Jxta_endpoint_address * dst_addr)
 {
     Jxta_status res;
     char *el_value;
@@ -384,7 +383,7 @@ Jxta_status jxta_message_set_destination(Jxta_message * msg, Jxta_endpoint_addre
 
         res = jxta_message_add_element(msg, el);
         JXTA_OBJECT_RELEASE(el);
-        el = NULL;      /* release local */
+        el = NULL;  /* release local */
     } else
         res = JXTA_FAILED;
 
@@ -397,7 +396,7 @@ Jxta_status jxta_message_set_destination(Jxta_message * msg, Jxta_endpoint_addre
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_vector *jxta_message_get_elements_of_namespace(Jxta_message * msg, char const *ns)
+JXTA_DECLARE(Jxta_vector *) jxta_message_get_elements_of_namespace(Jxta_message * msg, char const *ns)
 {
     int eachElement = 0;
     Jxta_vector *result = jxta_vector_new(jxta_vector_size(msg->usr.elements));
@@ -432,7 +431,7 @@ Jxta_vector *jxta_message_get_elements_of_namespace(Jxta_message * msg, char con
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_vector *jxta_message_get_elements(Jxta_message * msg)
+JXTA_DECLARE(Jxta_vector *) jxta_message_get_elements(Jxta_message * msg)
 {
     Jxta_vector *result = msg->usr.elements;
 
@@ -450,7 +449,7 @@ Jxta_vector *jxta_message_get_elements(Jxta_message * msg)
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_message_get_element_1(Jxta_message * msg, char const *element_qname, Jxta_message_element ** el)
+JXTA_DECLARE(Jxta_status) jxta_message_get_element_1(Jxta_message * msg, char const *element_qname, Jxta_message_element ** el)
 {
     Jxta_status res;
     char *tmp;
@@ -484,8 +483,8 @@ Jxta_status jxta_message_get_element_1(Jxta_message * msg, char const *element_q
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_status
-jxta_message_get_element_2(Jxta_message * msg, char const *element_ns, char const *element_ncname, Jxta_message_element ** el)
+JXTA_DECLARE(Jxta_status)
+    jxta_message_get_element_2(Jxta_message * msg, char const *element_ns, char const *element_ncname, Jxta_message_element ** el)
 {
     Jxta_status res;
     int eachElement = 0;
@@ -522,7 +521,7 @@ jxta_message_get_element_2(Jxta_message * msg, char const *element_ns, char cons
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_message_add_element(Jxta_message * msg, Jxta_message_element * el)
+JXTA_DECLARE(Jxta_status) jxta_message_add_element(Jxta_message * msg, Jxta_message_element * el)
 {
     if (!JXTA_OBJECT_CHECK_VALID(msg))
         return JXTA_INVALID_ARGUMENT;
@@ -542,7 +541,7 @@ Jxta_status jxta_message_add_element(Jxta_message * msg, Jxta_message_element * 
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_message_remove_element(Jxta_message * msg, Jxta_message_element * el)
+JXTA_DECLARE(Jxta_status) jxta_message_remove_element(Jxta_message * msg, Jxta_message_element * el)
 {
     Jxta_status res;
     int eachElement;
@@ -568,7 +567,7 @@ Jxta_status jxta_message_remove_element(Jxta_message * msg, Jxta_message_element
 
         if (el == anElement) {
             res = jxta_vector_remove_object_at(msg->usr.elements, NULL, eachElement);   /* RLSE from msg */
-            JXTA_OBJECT_RELEASE(anElement);     /* RLSE local */
+            JXTA_OBJECT_RELEASE(anElement); /* RLSE local */
             return res;
         }
 
@@ -581,7 +580,7 @@ Jxta_status jxta_message_remove_element(Jxta_message * msg, Jxta_message_element
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_message_remove_element_1(Jxta_message * msg, char const *element_qname)
+JXTA_DECLARE(Jxta_status) jxta_message_remove_element_1(Jxta_message * msg, char const *element_qname)
 {
     Jxta_status res;
     char *ns;
@@ -608,7 +607,7 @@ Jxta_status jxta_message_remove_element_1(Jxta_message * msg, char const *elemen
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_message_remove_element_2(Jxta_message * msg, char const *ns, char const *name)
+JXTA_DECLARE(Jxta_status) jxta_message_remove_element_2(Jxta_message * msg, char const *ns, char const *name)
 {
     int eachElement;
 
@@ -634,7 +633,7 @@ Jxta_status jxta_message_remove_element_2(Jxta_message * msg, char const *ns, ch
                             anElement->usr.ns, anElement->usr.name, jxta_bytevector_size(anElement->usr.value));
 
             res = jxta_vector_remove_object_at(msg->usr.elements, NULL, eachElement);   /* RLSE from msg */
-            JXTA_OBJECT_RELEASE(anElement);     /* RLSE local */
+            JXTA_OBJECT_RELEASE(anElement); /* RLSE local */
             return res;
         }
 
@@ -647,13 +646,13 @@ Jxta_status jxta_message_remove_element_2(Jxta_message * msg, char const *ns, ch
 /*************************************************************************
  **
  *************************************************************************/
-static Jxta_status jxta_string_write4(WriteFunc write_func, void *stream, char *str)
+static Jxta_status jxta_string_write4(WriteFunc write_func, void *stream, const char *str)
 {
     Jxta_status res;
 
     uint32_t len = htonl(strlen(str));
 
-    res = (write_func) (stream, (char *) &len, sizeof(uint32_t));
+    res = (write_func) (stream, (const char *) &len, sizeof(uint32_t));
 
     if (JXTA_SUCCESS != res)
         return res;
@@ -667,12 +666,12 @@ static Jxta_status jxta_string_write4(WriteFunc write_func, void *stream, char *
  **
  *************************************************************************/
 static
-Jxta_status jxta_string_write(WriteFunc write_func, void *stream, char *str)
+Jxta_status jxta_string_write(WriteFunc write_func, void *stream, const char *str)
 {
     Jxta_status res;
     uint16_t len = htons((uint16_t) strlen(str));
 
-    res = write_func(stream, (char *) &len, sizeof(uint16_t));
+    res = write_func(stream, (const char *) &len, sizeof(uint16_t));
 
     if (JXTA_SUCCESS != res)
         return res;
@@ -740,7 +739,7 @@ static char *jxta_string_read(ReadFunc read_func, void *stream)
         return NULL;
     }
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "jxta_string_read: reading %d bytes to %p\n", len, data);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "jxta_string_read: reading %d bytes to %p\n", len, data);
 
     res = read_func(stream, data, len);
 
@@ -758,7 +757,7 @@ static char *jxta_string_read(ReadFunc read_func, void *stream)
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_message_read(Jxta_message * msg, char const *mime_type, ReadFunc read_func, void *stream)
+JXTA_DECLARE(Jxta_status) jxta_message_read(Jxta_message * msg, char const *mime_type, ReadFunc read_func, void *stream)
 {
     Jxta_status res = JXTA_SUCCESS;
     uint8_t message_magic_bytes[sizeof(JXTAMSG_MSGMAGICSIG)];
@@ -788,7 +787,7 @@ Jxta_status jxta_message_read(Jxta_message * msg, char const *mime_type, ReadFun
     if (JXTA_SUCCESS != res)
         goto ERROR_EXIT;
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "reading msg [%p]\n", msg);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Reading msg [%p]\n", msg);
 
     res = read_func(stream, (char *) message_magic_bytes, sizeof(message_magic_bytes));
 
@@ -843,7 +842,8 @@ Jxta_status jxta_message_read(Jxta_message * msg, char const *mime_type, ReadFun
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "jxta_message_read: Could not read namespace name\n");
             goto IO_ERROR_EXIT;
         }
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "jxta_message_read: Read namespace [msg= %p] name=[%s]\n", msg,
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "jxta_message_read: Read namespace [msg= %p] name=[%s]\n", msg,
                         namespaces[i]);
     }
 
@@ -954,10 +954,10 @@ Jxta_status jxta_message_read(Jxta_message * msg, char const *mime_type, ReadFun
         }
 
         JXTA_OBJECT_RELEASE(el_value);
-        el_value = NULL;        /* release local */
+        el_value = NULL;    /* release local */
 
         JXTA_OBJECT_RELEASE(el);
-        el = NULL;      /* release local */
+        el = NULL;  /* release local */
 
         free(el_name);
         el_name = NULL;
@@ -1013,7 +1013,7 @@ Jxta_status jxta_message_read(Jxta_message * msg, char const *mime_type, ReadFun
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_message_write(Jxta_message * msg, char const *mime_type, WriteFunc write_func, void *stream)
+JXTA_DECLARE(Jxta_status) jxta_message_write(Jxta_message * msg, char const *mime_type, WriteFunc write_func, void *stream)
 {
     Jxta_status res;
     size_t namespace_count = 2; /* start with the two default namespaces */
@@ -1125,7 +1125,8 @@ Jxta_status jxta_message_write(Jxta_message * msg, char const *mime_type, WriteF
         goto Common_Exit;
 
     for (eachNS = 2; eachNS < namespace_count; eachNS++) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, FILEANDLINE "Writing namespace %s [msg= %p]\n", namespaces[eachNS], msg);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, FILEANDLINE "Writing namespace %s [msg= %p]\n", namespaces[eachNS],
+                        msg);
         res = jxta_string_write(write_func, stream, namespaces[eachNS]);
 
         if (JXTA_SUCCESS != res)
@@ -1159,7 +1160,7 @@ Jxta_status jxta_message_write(Jxta_message * msg, char const *mime_type, WriteF
                 continue;
             }
 
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Writing element [msg=%p] ns='%s' name='%s' len=%d\n", msg,
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Writing element [msg=%p] ns='%s' name='%s' len=%d\n", msg,
                             anElement->usr.ns, anElement->usr.name, jxta_bytevector_size(anElement->usr.value));
 
             el_flags = 0;
@@ -1243,7 +1244,7 @@ Jxta_status jxta_message_write(Jxta_message * msg, char const *mime_type, WriteF
 /*************************************************************************
  **
  *************************************************************************/
-static Jxta_status get_message_to_jstring(void *stream, char const *buf, size_t len)
+static Jxta_status JXTA_STDCALL get_message_to_jstring(void *stream, char const *buf, size_t len)
 {
     JString *string = (JString *) stream;
 
@@ -1258,7 +1259,7 @@ static Jxta_status get_message_to_jstring(void *stream, char const *buf, size_t 
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_message_to_jstring(Jxta_message * msg, char const *mime, JString * string)
+JXTA_DECLARE(Jxta_status) jxta_message_to_jstring(Jxta_message * msg, char const *mime, JString * string)
 {
 
     if (!JXTA_OBJECT_CHECK_VALID(msg))
@@ -1270,7 +1271,7 @@ Jxta_status jxta_message_to_jstring(Jxta_message * msg, char const *mime, JStrin
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_status jxta_message_print(Jxta_message * msg)
+JXTA_DECLARE(Jxta_status) jxta_message_print(Jxta_message * msg)
 {
     Jxta_status res;
     JString *string;
@@ -1301,9 +1302,9 @@ Jxta_status jxta_message_print(Jxta_message * msg)
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_message_element *jxta_message_element_new_1(char const *qname,
-                                                 char const *mime_type,
-                                                 char const *value, size_t length, Jxta_message_element * sig)
+JXTA_DECLARE(Jxta_message_element *) jxta_message_element_new_1(char const *qname,
+                                                                char const *mime_type,
+                                                                char const *value, size_t length, Jxta_message_element * sig)
 {
     Jxta_message_element *el = NULL;
     char *tmp = NULL;
@@ -1329,9 +1330,9 @@ Jxta_message_element *jxta_message_element_new_1(char const *qname,
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_message_element *jxta_message_element_new_2(char const *ns, char const *ncname,
-                                                 char const *mime_type,
-                                                 char const *value, size_t length, Jxta_message_element * sig)
+JXTA_DECLARE(Jxta_message_element *) jxta_message_element_new_2(char const *ns, char const *ncname,
+                                                                char const *mime_type,
+                                                                char const *value, size_t length, Jxta_message_element * sig)
 {
 
     Jxta_message_element *el = NULL;
@@ -1348,7 +1349,7 @@ Jxta_message_element *jxta_message_element_new_2(char const *ns, char const *ncn
     if (NULL != value) {
         if (JXTA_SUCCESS != jxta_bytevector_add_bytes_at(value_vector, (unsigned char const *) value, 0, length)) {
             JXTA_OBJECT_RELEASE(value_vector);
-            value_vector = NULL;        /* release local */
+            value_vector = NULL;    /* release local */
             return NULL;
         }
     }
@@ -1356,7 +1357,7 @@ Jxta_message_element *jxta_message_element_new_2(char const *ns, char const *ncn
     el = jxta_message_element_new_3(ns, ncname, mime_type, value_vector, sig);
 
     JXTA_OBJECT_RELEASE(value_vector);
-    value_vector = NULL;        /* release local */
+    value_vector = NULL;    /* release local */
 
     return el;
 }
@@ -1364,8 +1365,9 @@ Jxta_message_element *jxta_message_element_new_2(char const *ns, char const *ncn
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_message_element *jxta_message_element_new_3(char const *ns, char const *ncname,
-                                                 char const *mime_type, Jxta_bytevector * value, Jxta_message_element * sig)
+JXTA_DECLARE(Jxta_message_element *) jxta_message_element_new_3(char const *ns, char const *ncname,
+                                                                char const *mime_type, Jxta_bytevector * value,
+                                                                Jxta_message_element * sig)
 {
     Jxta_message_element_mutable *el = NULL;
 
@@ -1384,12 +1386,11 @@ Jxta_message_element *jxta_message_element_new_3(char const *ns, char const *ncn
         return NULL;
     }
 
-    el = (Jxta_message_element_mutable *) malloc(sizeof(Jxta_message_element_mutable));
+    el = (Jxta_message_element_mutable *) calloc(1, sizeof(Jxta_message_element_mutable));
 
-    if (NULL == el)
+    if (NULL == el) {
         goto Error_Exit;
-
-    memset(el, 0, sizeof(Jxta_message_element_mutable));
+    }
 
     JXTA_OBJECT_INIT(el, Jxta_message_element_delete, NULL);
 
@@ -1457,8 +1458,8 @@ void Jxta_message_element_delete(Jxta_object * ptr)
 {
     Jxta_message_element_mutable *el = (Jxta_message_element_mutable *) ptr;
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Message element delete [el=%p] ns='%s' name='%s' len=%d\n", el, el->usr.ns,
-                    el->usr.name, jxta_bytevector_size(el->usr.value));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Message element delete [el=%p] ns='%s' name='%s' len=%d\n", el,
+                    el->usr.ns, el->usr.name, jxta_bytevector_size(el->usr.value));
 
     if (el->usr.ns != NULL)
         free(el->usr.ns);
@@ -1485,7 +1486,7 @@ void Jxta_message_element_delete(Jxta_object * ptr)
 /*************************************************************************
  **
  *************************************************************************/
-char const *jxta_message_element_get_namespace(Jxta_message_element * el)
+JXTA_DECLARE(char const *) jxta_message_element_get_namespace(Jxta_message_element * el)
 {
     if (!JXTA_OBJECT_CHECK_VALID(el))
         return NULL;
@@ -1496,7 +1497,7 @@ char const *jxta_message_element_get_namespace(Jxta_message_element * el)
 /*************************************************************************
  **
  *************************************************************************/
-char const *jxta_message_element_get_name(Jxta_message_element * el)
+JXTA_DECLARE(char const *) jxta_message_element_get_name(Jxta_message_element * el)
 {
     if (!JXTA_OBJECT_CHECK_VALID(el))
         return NULL;
@@ -1507,7 +1508,7 @@ char const *jxta_message_element_get_name(Jxta_message_element * el)
 /*************************************************************************
  **
  *************************************************************************/
-char const *jxta_message_element_get_mime_type(Jxta_message_element * el)
+JXTA_DECLARE(char const *) jxta_message_element_get_mime_type(Jxta_message_element * el)
 {
 
     char const *result = NULL;
@@ -1527,7 +1528,7 @@ char const *jxta_message_element_get_mime_type(Jxta_message_element * el)
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_bytevector *jxta_message_element_get_value(Jxta_message_element * el)
+JXTA_DECLARE(Jxta_bytevector *) jxta_message_element_get_value(Jxta_message_element * el)
 {
 
     if (!JXTA_OBJECT_CHECK_VALID(el))
@@ -1536,15 +1537,13 @@ Jxta_bytevector *jxta_message_element_get_value(Jxta_message_element * el)
     if (!JXTA_OBJECT_CHECK_VALID(el->usr.value))
         return NULL;
 
-    JXTA_OBJECT_SHARE(el->usr.value);
-
-    return el->usr.value;
+    return JXTA_OBJECT_SHARE(el->usr.value);
 }
 
 /*************************************************************************
  **
  *************************************************************************/
-Jxta_message_element *jxta_message_element_get_signature(Jxta_message_element * el)
+JXTA_DECLARE(Jxta_message_element *) jxta_message_element_get_signature(Jxta_message_element * el)
 {
     Jxta_message_element *result;
 
@@ -1576,7 +1575,7 @@ static char *parseqname(char const *srcqname, char **ns, char **ncname)
 
     if (NULL == pt) {
         size_t len = strlen(srcqname);
-        tmp = (char *) malloc(len + sizeof(MESSAGE_EMPTYNS));
+        tmp = (char *) malloc(len + strlen(MESSAGE_EMPTYNS) + 2);
         if (NULL == tmp)
             return NULL;
 

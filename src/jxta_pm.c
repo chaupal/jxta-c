@@ -50,256 +50,231 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pm.c,v 1.19 2005/04/06 00:38:52 bondolo Exp $
+ * $Id: jxta_pm.c,v 1.31 2005/08/19 02:39:42 exocetrick Exp $
  */
+
+static const char *__log_cat = "PropMsg";
 
 #include <stdio.h>
 #include <string.h>
 
-#include "jxta_errno.h"
-#include "jxta_debug.h"
 #include "jxta_pm.h"
+#include "jxta_errno.h"
+#include "jxta_log.h"
 #include "jxta_xml_util.h"
-#include "jstring.h"
+#include "jxtaapr.h"
 
 #ifdef __cplusplus
 extern "C" {
+#if 0
+}
 #endif
-
-    /** Each of these corresponds to a tag in the
-     * xml ad.
-     */
-    enum tokentype {
-        Null_,
-        RendezVousPropagateMessage_,
-        DestSName_,
-        DestSParam_,
-        MessageId_,
-        Path_,
-        TTL_
-    };
-
+#endif
+    /** Each of these corresponds to a tag in the xml ad.
+     */ enum tokentype {
+    Null_,
+    RendezVousPropagateMessage_,
+    DestSName_,
+    DestSParam_,
+    MessageId_,
+    Path_,
+    TTL_
+};
 
     /** This is the representation of the
      * actual ad in the code.  It should
      * stay opaque to the programmer, and be 
      * accessed through the get/set API.
      */
-    struct _RendezVousPropagateMessage {
-        Jxta_advertisement jxta_advertisement;
-        char        * RendezVousPropagateMessage;
-        char        * DestSName;
-        char        * DestSParam;
-        char        * MessageId;
-        Jxta_vector * Path;
-        int           TTL;
-    };
+struct _RendezVousPropagateMessage {
+    Jxta_advertisement jxta_advertisement;
+    char *rendezVousPropagateMessage;
+    JString *destSName;
+    JString *destSParam;
+    JString *messageId;
+    Jxta_vector *path;
+    int ttl;
+};
 
+void RendezVousPropagateMessage_delete(Jxta_object * obj);
 
     /** Handler functions.  Each of these is responsible for
      * dealing with all of the character data associated with the 
      * tag name.
      */
-    static void
-    handleRendezVousPropagateMessage(void * userdata, const XML_Char * cd, int len) {
-        /* RendezVousPropagateMessage * ad = (RendezVousPropagateMessage*)userdata; */
+
+static void handleRendezVousPropagateMessage(void *userdata, const XML_Char * cd, int len)
+{
+    /* RendezVousPropagateMessage * ad = (RendezVousPropagateMessage*)userdata; */
+}
+
+static void handleDestSName(void *userdata, const XML_Char * cd, int len)
+{
+    RendezVousPropagateMessage *ad = (RendezVousPropagateMessage *) userdata;
+    if (0 == len) return;
+    if (NULL == ad->destSName) {
+        ad->destSName = jstring_new_1(len);
+    } 
+    jstring_append_0(ad->destSName, cd, len);
+    jstring_trim(ad->destSName);
+}
+
+static void handleDestSParam(void *userdata, const XML_Char * cd, int len)
+{
+    RendezVousPropagateMessage *ad = (RendezVousPropagateMessage *) userdata;
+    if (0 == len) return;
+    if (NULL == ad->destSParam) {
+        ad->destSParam = jstring_new_1(len);
+    } 
+    jstring_append_0(ad->destSParam, cd, len);
+    jstring_trim(ad->destSParam);
+}
+
+static void handleMessageId(void *userdata, const XML_Char * cd, int len)
+{
+    RendezVousPropagateMessage *ad = (RendezVousPropagateMessage *) userdata;
+
+    if (0 == len) return;
+    if (NULL == ad->messageId) {
+        ad->messageId = jstring_new_1(len);
     }
+    jstring_append_0(ad->messageId, cd, len);
+    jstring_trim(ad->messageId);
+}
 
-    static void
-    handleDestSName(void * userdata, const XML_Char * cd, int len) {
-        RendezVousPropagateMessage * ad = (RendezVousPropagateMessage*)userdata;
+static void handleTTL(void *userdata, const XML_Char * cd, int len)
+{
+    RendezVousPropagateMessage *ad = (RendezVousPropagateMessage *) userdata;
 
-        char* tok = malloc (len + 1);
-        memset (tok, 0, len + 1);
+    char *tok = calloc(len + 1, sizeof(char));
 
-        extract_char_data(cd,len,tok);
+    extract_char_data(cd, len, tok);
 
-        if (strlen (tok) != 0) {
-            ad->DestSName = tok;
-        } else {
-            free (tok);
+    if (strlen(tok) != 0) {
+        ad->ttl = atoi(tok);
+    }
+    free(tok);
+}
+
+static void handlePath(void *userdata, const XML_Char * cd, int len)
+{
+    RendezVousPropagateMessage *ad = (RendezVousPropagateMessage *) userdata;
+    char *tok;
+
+    if (len > 0) {
+        tok = malloc(len + 1);
+        memset(tok, 0, len + 1);
+
+        extract_char_data(cd, len, tok);
+
+        if (strlen(tok) != 0) {
+            JString *pt = jstring_new_2(tok);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Path: [%s]\n", tok);
+            jxta_vector_add_object_last(ad->path, (Jxta_object *) pt);
+            /* The vector shares automatically the object. We must release */
+            JXTA_OBJECT_RELEASE(pt);
         }
+        free(tok);
     }
-
-    static void
-    handleDestSParam(void * userdata, const XML_Char * cd, int len) {
-
-        RendezVousPropagateMessage * ad = (RendezVousPropagateMessage*)userdata;
-
-        char* tok = malloc (len + 1);
-        memset (tok, 0, len + 1);
-
-        extract_char_data(cd,len,tok);
-
-        if (strlen (tok) != 0) {
-            ad->DestSParam = tok;
-        } else {
-            free (tok);
-        }
-    }
-
-    static void
-    handleMessageId(void * userdata, const XML_Char * cd, int len) {
-
-        RendezVousPropagateMessage * ad = (RendezVousPropagateMessage*)userdata;
-
-        char* tok = malloc (len + 1);
-        memset (tok, 0, len + 1);
-
-        extract_char_data(cd,len,tok);
-
-        if (strlen (tok) != 0) {
-            ad->MessageId = tok;
-        } else {
-            free (tok);
-        }
-    }
-
-    static void
-    handleTTL(void * userdata, const XML_Char * cd, int len) {
-
-        RendezVousPropagateMessage * ad = (RendezVousPropagateMessage*)userdata;
-
-        char* tok = malloc (len + 1);
-        memset (tok, 0, len + 1);
-
-        extract_char_data(cd,len,tok);
-
-        if (strlen (tok) != 0) {
-            sscanf (tok, "%d", &ad->TTL);
-        } else {
-            free (tok);
-        }
-    }
-
-    static void
-    handlePath(void * userdata, const XML_Char * cd, int len) {
-
-        RendezVousPropagateMessage * ad = (RendezVousPropagateMessage*)userdata;
-        char* tok;
-
-        if (len > 0) {
-
-            tok = malloc (len + 1);
-            memset (tok, 0, len + 1);
-
-            extract_char_data(cd,len,tok);
-
-            if (strlen (tok) != 0) {
-                JString* pt = jstring_new_2 (tok);
-                JXTA_LOG("Path: [%s]\n", tok);
-                jxta_vector_add_object_last (ad->Path, (Jxta_object*) pt);
-                /* The vector shares automatically the object. We must release */
-                JXTA_OBJECT_RELEASE (pt);
-            }
-            free (tok);
-        }
-
-    }
+}
 
 
-    /** The get/set functions represent the public
-     * interface to the ad class, that is, the API.
-     */
-    const char *
-    RendezVousPropagateMessage_get_RendezVousPropagateMessage(RendezVousPropagateMessage * ad) {
+ /** The get/set functions represent the public
+   * interface to the ad class, that is, the API.
+   */
+JXTA_DECLARE(JString *) RendezVousPropagateMessage_get_DestSName(RendezVousPropagateMessage * ad)
+{
+    if (NULL != ad->destSName) {
+        return JXTA_OBJECT_SHARE(ad->destSName);
+    } else {
         return NULL;
     }
+}
 
-    void
-    RendezVousPropagateMessage_set_RendezVousPropagateMessage(RendezVousPropagateMessage * ad, const char * name) {}
-
-    const char *
-    RendezVousPropagateMessage_get_DestSName(RendezVousPropagateMessage * ad) {
-        return ad->DestSName;
+JXTA_DECLARE(void) RendezVousPropagateMessage_set_DestSName(RendezVousPropagateMessage * ad, const char *dest)
+{
+    if (ad->destSName != NULL) {
+        JXTA_OBJECT_RELEASE(ad->destSName);
+        ad->destSName = NULL;
     }
 
-    void
-    RendezVousPropagateMessage_set_DestSName(RendezVousPropagateMessage * ad, const char* src) {
+    if (dest != NULL) {
+        ad->destSName = jstring_new_2(dest);
+    }
+}
 
-        if (ad->DestSName != NULL) {
-            free (ad->DestSName);
-            ad->DestSName = NULL;
-        }
-        if (src != NULL) {
-            ad->DestSName = malloc (strlen (src) + 1);
-            strcpy (ad->DestSName, src);
-        } else {
-            ad->DestSName = NULL;
-        }
+JXTA_DECLARE(JString *) RendezVousPropagateMessage_get_DestSParam(RendezVousPropagateMessage * ad)
+{
+    if (NULL != ad->destSParam) {
+        return JXTA_OBJECT_SHARE(ad->destSParam);
+    } else {
+        return NULL;
+    }
+}
+
+JXTA_DECLARE(void) RendezVousPropagateMessage_set_DestSParam(RendezVousPropagateMessage * ad, const char *dest)
+{
+    if (ad->destSParam != NULL) {
+        JXTA_OBJECT_RELEASE(ad->destSParam);
+        ad->destSParam = NULL;
     }
 
-    const char *
-    RendezVousPropagateMessage_get_DestSParam(RendezVousPropagateMessage * ad) {
-        return ad->DestSParam;
+    if (dest != NULL) {
+        ad->destSParam = jstring_new_2(dest);
+    }
+}
+
+JXTA_DECLARE(JString *) RendezVousPropagateMessage_get_MessageId(RendezVousPropagateMessage * ad)
+{
+    if (NULL != ad->messageId) {
+        return JXTA_OBJECT_SHARE(ad->messageId);
+    } else {
+        return NULL;
+    }
+}
+
+JXTA_DECLARE(void) RendezVousPropagateMessage_set_MessageId(RendezVousPropagateMessage * ad, const char *messageId)
+{
+    if (ad->messageId != NULL) {
+        JXTA_OBJECT_RELEASE(ad->messageId);
+        ad->messageId = NULL;
     }
 
-    void
-    RendezVousPropagateMessage_set_DestSParam(RendezVousPropagateMessage * ad, const char * dest) {
+    if (messageId != NULL) {
+        ad->messageId = jstring_new_2(messageId);
+    }
+}
 
-        if (ad->DestSParam != NULL) {
-            free (ad->DestSParam);
-        }
-        if (dest != NULL) {
-            ad->DestSParam = malloc (strlen (dest) + 1);
-            strcpy (ad->DestSParam, dest);
-        }
+JXTA_DECLARE(Jxta_vector *) RendezVousPropagateMessage_get_Path(RendezVousPropagateMessage * ad)
+{
+    if (ad->path != NULL) {
+        JXTA_OBJECT_SHARE(ad->path);
     }
 
-    const char *
-    RendezVousPropagateMessage_get_MessageId(RendezVousPropagateMessage * ad) {
-        return ad->MessageId;
+    return ad->path;
+}
+
+JXTA_DECLARE(void) RendezVousPropagateMessage_set_Path(RendezVousPropagateMessage * ad, Jxta_vector * vector)
+{
+    if (ad->path != NULL) {
+        JXTA_OBJECT_RELEASE(ad->path);
+        ad->path = NULL;
     }
 
-    void
-    RendezVousPropagateMessage_set_MessageId(RendezVousPropagateMessage * ad, const char* messageId) {
-
-        if (ad->MessageId != NULL) {
-            free (ad->MessageId);
-            ad->MessageId = NULL;
-        }
-        if (messageId != NULL) {
-            ad->MessageId = malloc (strlen (messageId) + 1);
-            strcpy (ad->MessageId, messageId);
-        }
-
+    if (vector != NULL) {
+        ad->path = JXTA_OBJECT_SHARE(vector);
     }
+}
 
-    Jxta_vector*
-    RendezVousPropagateMessage_get_Path(RendezVousPropagateMessage * ad) {
+JXTA_DECLARE(int) RendezVousPropagateMessage_get_TTL(RendezVousPropagateMessage * ad)
+{
+    return ad->ttl;
+}
 
-        if (ad->Path != NULL) {
-            JXTA_OBJECT_SHARE (ad->Path);
-            return ad->Path;
-        } else {
-            return NULL;
-        }
-    }
-
-    void
-    RendezVousPropagateMessage_set_Path(RendezVousPropagateMessage * ad, Jxta_vector* vector) {
-
-        if (ad->Path != NULL) {
-            JXTA_OBJECT_RELEASE (ad->Path);
-            ad->Path = NULL;
-        }
-        if (vector != NULL) {
-            JXTA_OBJECT_SHARE (vector);
-            ad->Path = vector;
-        }
-        return;
-    }
-
-    int
-    RendezVousPropagateMessage_get_TTL(RendezVousPropagateMessage * ad) {
-        return ad->TTL;
-    }
-
-    void
-    RendezVousPropagateMessage_set_TTL(RendezVousPropagateMessage * ad, int TTL) {
-
-        ad->TTL = TTL;
-    }
+JXTA_DECLARE(void) RendezVousPropagateMessage_set_TTL(RendezVousPropagateMessage * ad, int ttl)
+{
+    ad->ttl = ttl;
+}
 
     /** Now, build an array of the keyword structs.  Since
      * a top-level, or null state may be of interest, 
@@ -308,67 +283,66 @@ extern "C" {
      * Later, the stream will be dispatched to the handler based
      * on the value in the char * kwd.
      */
-    const static Kwdtab RendezVousPropagateMessage_tags[] = {
-                {"Null",                           Null_,                       NULL,                            NULL
-                },
-                {"jxta:RendezVousPropagateMessage",RendezVousPropagateMessage_,*handleRendezVousPropagateMessage,NULL},
-                {"DestSName",                      DestSName_,                 *handleDestSName,                 NULL},
-                {"DestSParam",                     DestSParam_,                *handleDestSParam,                NULL},
-                {"MessageId",                      MessageId_,                 *handleMessageId,                 NULL},
-                {"Path",                           Path_,                      *handlePath,                      NULL},
-                {"TTL",                            TTL_,                       *handleTTL,                       NULL},
-                {NULL,                             0,                           0,                               NULL}
-            };
+static const Kwdtab RendezVousPropagateMessage_tags[] = {
+    {"Null", Null_, NULL, NULL, NULL},
+    {"jxta:RendezVousPropagateMessage", RendezVousPropagateMessage_, *handleRendezVousPropagateMessage, NULL, NULL},
+    {"DestSName", DestSName_, *handleDestSName, NULL, NULL},
+    {"DestSParam", DestSParam_, *handleDestSParam, NULL, NULL},
+    {"MessageId", MessageId_, *handleMessageId, NULL, NULL},
+    {"Path", Path_, *handlePath, NULL, NULL},
+    {"TTL", TTL_, *handleTTL, NULL, NULL},
+    {NULL, 0, 0, NULL, NULL}
+};
 
 
-    Jxta_status RendezVousPropagateMessage_get_xml(RendezVousPropagateMessage * ad,
-            JString** xml) {
-        JString* string;
-        char buf[10]; /* We use this buffer to store a string representation of a int < 10 */
-        int i = 0;
+JXTA_DECLARE(Jxta_status) RendezVousPropagateMessage_get_xml(RendezVousPropagateMessage * ad, JString ** xml)
+{
+    JString *string;
+    char buf[18];               /* We use this buffer to store a string representation of a int < 10 */
+    unsigned int i = 0;
 
-        if (xml == NULL) {
-            return JXTA_INVALID_ARGUMENT;
-        }
-
-        string = jstring_new_0();
-
-        jstring_append_2 (string, "<?xml version=\"1.0\"?>\n");
-        jstring_append_2 (string, "<!DOCTYPE jxta:RendezVousPropagateMessage>");
-
-        jstring_append_2 (string,"<jxta:RendezVousPropagateMessage>\n");
-        jstring_append_2 (string,"<DestSName>");
-        jstring_append_2 (string,RendezVousPropagateMessage_get_DestSName(ad));
-        jstring_append_2 (string,"</DestSName>\n");
-        jstring_append_2 (string,"<DestSParam>");
-        jstring_append_2 (string,RendezVousPropagateMessage_get_DestSParam(ad));
-        jstring_append_2 (string,"</DestSParam>\n");
-        jstring_append_2 (string,"<MessageId>");
-        jstring_append_2 (string,RendezVousPropagateMessage_get_MessageId(ad));
-        jstring_append_2 (string,"</MessageId>\n");
-        jstring_append_2 (string,"<TTL>");
-        sprintf (buf, "%d", RendezVousPropagateMessage_get_TTL(ad));
-        jstring_append_2 (string, buf);
-        jstring_append_2 (string,"</TTL>\n");
-
-        for (i = 0; i < jxta_vector_size (ad->Path); ++i) {
-            JString* path;
-            Jxta_status res;
-
-            res = jxta_vector_get_object_at (ad->Path, (Jxta_object**) &path, i);
-            if ((res == JXTA_SUCCESS) && (path != NULL)) {
-                jstring_append_2 (string,"<Path>");
-                jstring_append_2 (string, jstring_get_string (path));
-                jstring_append_2 (string,"</Path>\n");
-                JXTA_OBJECT_RELEASE (path);
-            } else {
-                JXTA_LOG ("Failed to get Path from vector\n");
-            }
-        }
-        jstring_append_2 (string,"</jxta:RendezVousPropagateMessage>\n");
-        *xml = string;
-        return JXTA_SUCCESS;
+    if (xml == NULL) {
+        return JXTA_INVALID_ARGUMENT;
     }
+
+    string = jstring_new_0();
+
+    jstring_append_2(string, "<?xml version=\"1.0\"?>\n");
+    jstring_append_2(string, "<!DOCTYPE jxta:RendezVousPropagateMessage>");
+
+    jstring_append_2(string, "<jxta:RendezVousPropagateMessage>\n");
+    jstring_append_2(string, "<DestSName>");
+    jstring_append_2(string, jstring_get_string(ad->destSName));
+    jstring_append_2(string, "</DestSName>\n");
+    jstring_append_2(string, "<DestSParam>");
+    jstring_append_2(string, jstring_get_string(ad->destSParam));
+    jstring_append_2(string, "</DestSParam>\n");
+    jstring_append_2(string, "<MessageId>");
+    jstring_append_2(string, jstring_get_string(ad->messageId));
+    jstring_append_2(string, "</MessageId>\n");
+    jstring_append_2(string, "<TTL>");
+    apr_snprintf(buf, sizeof(buf), "%d", RendezVousPropagateMessage_get_TTL(ad));
+    jstring_append_2(string, buf);
+    jstring_append_2(string, "</TTL>\n");
+
+    for (i = 0; i < jxta_vector_size(ad->path); ++i) {
+        JString *path;
+        Jxta_status res;
+
+        res = jxta_vector_get_object_at(ad->path, (Jxta_object **) & path, i);
+        if ((res == JXTA_SUCCESS) && (path != NULL)) {
+            jstring_append_2(string, "<Path>");
+            jstring_append_2(string, jstring_get_string(path));
+            jstring_append_2(string, "</Path>\n");
+            JXTA_OBJECT_RELEASE(path);
+        } else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to get path idx %d from vector\n", i);
+        }
+    }
+    jstring_append_2(string, "</jxta:RendezVousPropagateMessage>\n");
+    *xml = string;
+    return JXTA_SUCCESS;
+}
 
 
     /** Get a new instance of the ad.
@@ -377,76 +351,71 @@ extern "C" {
      * just in case there is a segfault (not that 
      * that would ever happen, but in case it ever did.)
      */
-    RendezVousPropagateMessage *
-    RendezVousPropagateMessage_new(void) {
+JXTA_DECLARE(RendezVousPropagateMessage *) RendezVousPropagateMessage_new(void)
+{
+    RendezVousPropagateMessage *ad = (RendezVousPropagateMessage *) calloc(1, sizeof(RendezVousPropagateMessage));
 
-        RendezVousPropagateMessage * ad;
-        ad = (RendezVousPropagateMessage *) malloc (sizeof (RendezVousPropagateMessage));
-        memset (ad, 0x0, sizeof (RendezVousPropagateMessage));
+    jxta_advertisement_initialize((Jxta_advertisement *) ad,
+                                  "jxta:RendezVousPropagateMessage",
+                                  RendezVousPropagateMessage_tags,
+                                  (JxtaAdvertisementGetXMLFunc) RendezVousPropagateMessage_get_xml,
+                                  NULL, NULL, (FreeFunc) RendezVousPropagateMessage_delete);
 
-        jxta_advertisement_initialize((Jxta_advertisement*)ad,
-                                      "jxta:RendezVousPropagateMessage",
-                                      RendezVousPropagateMessage_tags,
-                                      (JxtaAdvertisementGetXMLFunc)RendezVousPropagateMessage_get_xml,
-                                      NULL,NULL,
-                                      (FreeFunc)RendezVousPropagateMessage_delete);
+    ad->destSName = NULL;
+    ad->destSParam = NULL;
+    ad->messageId = NULL;
+    ad->path = jxta_vector_new(3);
+    ad->ttl = 0;
+    return ad;
+}
 
-        ad->DestSName  = NULL;
-        ad->DestSParam = NULL;
-        ad->MessageId  = NULL;
-        ad->Path       = jxta_vector_new (7);
-        ad->TTL        = 0;
-        return ad;
+void RendezVousPropagateMessage_delete(Jxta_object * obj)
+{
+    RendezVousPropagateMessage *ad = (RendezVousPropagateMessage *) obj;
+
+    /* Fill in the required freeing functions here. */
+    if (ad->destSName) {
+        JXTA_OBJECT_RELEASE(ad->destSName);
+        ad->destSName = NULL;
     }
 
-    /** Shred the memory going out.  Again,
-     * if there ever was a segfault (unlikely,
-     * of course), the hex value dddddddd will 
-     * pop right out as a piece of memory accessed
-     * after it was freed...
-     */
-    void
-    RendezVousPropagateMessage_delete (RendezVousPropagateMessage * ad) {
-        /* Fill in the required freeing functions here. */
-        if (ad->DestSName) {
-            free (ad->DestSName);
-            ad->DestSName = NULL;
-        }
-
-        if (ad->DestSParam) {
-            free (ad->DestSParam);
-            ad->DestSParam = NULL;
-        }
-
-        if (ad->MessageId) {
-            free (ad->MessageId);
-            ad->MessageId = NULL;
-        }
-
-        if (ad->Path) {
-            JXTA_OBJECT_RELEASE (ad->Path);
-            ad->Path = NULL;
-        }
-
-        jxta_advertisement_delete((Jxta_advertisement*)ad);
-        memset (ad, 0xdd, sizeof (RendezVousPropagateMessage));
-        free (ad);
+    if (ad->destSParam) {
+        JXTA_OBJECT_RELEASE(ad->destSParam);
+        ad->destSParam = NULL;
     }
 
-    void
-    RendezVousPropagateMessage_parse_charbuffer(RendezVousPropagateMessage * ad, const char * buf, int len) {
-
-        jxta_advertisement_parse_charbuffer((Jxta_advertisement*)ad,buf,len);
+    if (ad->messageId) {
+        JXTA_OBJECT_RELEASE(ad->messageId);
+        ad->messageId = NULL;
     }
 
-
-
-    void
-    RendezVousPropagateMessage_parse_file(RendezVousPropagateMessage * ad, FILE * stream) {
-
-        jxta_advertisement_parse_file((Jxta_advertisement*)ad, stream);
+    if (ad->path) {
+        JXTA_OBJECT_RELEASE(ad->path);
+        ad->path = NULL;
     }
+
+    jxta_advertisement_delete((Jxta_advertisement *) ad);
+    memset(ad, 0xdd, sizeof(RendezVousPropagateMessage));
+    free(ad);
+}
+
+JXTA_DECLARE(Jxta_status) RendezVousPropagateMessage_parse_charbuffer(RendezVousPropagateMessage * ad, const char *buf, size_t len)
+{
+    return jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+}
+
+
+
+JXTA_DECLARE(Jxta_status) RendezVousPropagateMessage_parse_file(RendezVousPropagateMessage * ad, FILE * stream)
+{
+    return jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+}
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
+/* vim: set ts=3 sw=4 tw=130 et: */

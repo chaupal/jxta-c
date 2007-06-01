@@ -29,7 +29,6 @@ extern "C" {
 }
 #endif
 #endif
-
 struct Jxta_log_selector {
     size_t category_count;
     size_t category_size;
@@ -50,9 +49,12 @@ struct Jxta_log_file {
 };
 
 #ifdef __cplusplus
-} /* extern "C" */
+#if 0
+{
+#endif
+}   /* extern "C" */
 #endif
 
 #endif /* __JXTA_LOG_PRIV_H__ */
 
-/* vi: set sw=4 ts=4 et: */
+/* vi: set ts=4 sw=4 tw=130 et: */

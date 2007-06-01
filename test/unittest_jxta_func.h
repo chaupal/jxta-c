@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: unittest_jxta_func.h,v 1.1 2004/12/05 02:17:35 slowhog Exp $
+ * $Id: unittest_jxta_func.h,v 1.2 2005/04/17 14:22:20 lankes Exp $
  */
 
 
@@ -139,7 +139,7 @@ int  main_test_function(const struct _funcs testfunc[],int argc, char ** argv);
  * 
  *  @return always returns JXTA_SUCCESS
  */
-Jxta_status
+Jxta_status JXTA_STDCALL
 sendFunction(void *stream, const char *buf, size_t len, unsigned int flag);
 
 /**
@@ -149,10 +149,10 @@ sendFunction(void *stream, const char *buf, size_t len, unsigned int flag);
  *  @param strean the character buffer to which to write the data
  *  @param buf the buffer from which to copy the data
  *  @param len the amount of data to copy
- * 
+ *         
  *  @return always returns JXTA_SUCCESS
  */
-Jxta_status
+Jxta_status JXTA_STDCALL
 writeFunction(void *stream, const char *buf, size_t len);
 
 
@@ -168,7 +168,7 @@ writeFunction(void *stream, const char *buf, size_t len);
  * 
  *  @return always returns JXTA_SUCCESS
  */
-Jxta_status
+Jxta_status JXTA_STDCALL
 readFromStreamFunction(void *stream, char *buf, size_t len);
 
 #ifdef __cplusplus

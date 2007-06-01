@@ -1,5 +1,3 @@
-
-
 #ifndef __JXTACONF_H__
 #define __JXTACONF_H__
 
@@ -7,12 +5,8 @@
 #include <jxta.h>
 #include <apr_general.h>
 
-
-
 class Jxtaconf {
-
 public:
-
    Jxtaconf();
 
    void set_peer_name(const char * pname);
@@ -30,8 +24,6 @@ private:
    char peername[80];
    char hostname[80];
 };
-
-
 
 #endif /* __JXTACONF_H__ */
 

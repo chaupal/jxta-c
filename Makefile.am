@@ -2,9 +2,12 @@
 SUBDIRS = src test shell tutorials
 
 EXTRA_DIST = doxconf \
-		win32/jxta/jxtalib/jxtalib.dsp \
-		win32/JxtaShell/JxtaShell.dsp \
-		win32/test/server_tunnel/server_tunnel.dsp
+		win32 \
+		lib/libxml2
+
+dist-hook:
+	rm -fr `find $(distdir)/win32 -name CVS -o -name .cvsignore`
+	rm -fr `find $(distdir)/lib -name CVS -o -name .cvsignore`
 
 dox:
 	doxygen doxconf

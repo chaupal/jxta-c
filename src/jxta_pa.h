@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pa.h,v 1.4 2005/02/14 19:50:17 bondolo Exp $
+ * $Id: jxta_pa.h,v 1.9 2005/08/18 22:22:40 slowhog Exp $
  */
 
 
@@ -82,7 +82,7 @@ typedef struct _jxta_PA Jxta_PA;
  *
  * @return Pointer to peer advertisement Jxta_PA.
  */
-Jxta_PA *jxta_PA_new(void);
+JXTA_DECLARE(Jxta_PA *) jxta_PA_new(void);
 
 
 
@@ -96,7 +96,7 @@ Jxta_PA *jxta_PA_new(void);
  *
  * @return Jxta_status 
  */
-Jxta_status jxta_PA_get_xml(Jxta_PA *, JString **);
+JXTA_DECLARE(Jxta_status) jxta_PA_get_xml(Jxta_PA *, JString **);
 
   /**
    ** Return a vector of indexes to be applied to advertisement tags and attributes. 
@@ -109,7 +109,7 @@ Jxta_status jxta_PA_get_xml(Jxta_PA *, JString **);
    **
   **/
 
-Jxta_vector *jxta_PA_get_indexes(void);
+JXTA_DECLARE(Jxta_vector *) jxta_PA_get_indexes(Jxta_advertisement *);
 
 /**
  * Wrapper for jxta_advertisement_parse_charbuffer,
@@ -122,9 +122,9 @@ Jxta_vector *jxta_PA_get_indexes(void);
  *        with xml syntax.
  * @param int len length of character buffer.
  *
- * @return void Doesn't return anything.
+ * @return Jxta_status JXTA_SUCCESS if successful.
  */
-void jxta_PA_parse_charbuffer(Jxta_PA *, const char *, int len);
+JXTA_DECLARE(Jxta_status) jxta_PA_parse_charbuffer(Jxta_PA *, const char *, int len);
 
 /**
  * Wrapper for jxta_advertisement_parse_file,
@@ -137,7 +137,7 @@ void jxta_PA_parse_charbuffer(Jxta_PA *, const char *, int len);
  *
  * @return void Doesn't return anything.
  */
-void jxta_PA_parse_file(Jxta_PA *, FILE * stream);
+JXTA_DECLARE(void) jxta_PA_parse_file(Jxta_PA *, FILE * stream);
 
 /**
  * Function gets the Jxta_id associated with the peer 
@@ -147,7 +147,7 @@ void jxta_PA_parse_file(Jxta_PA *, FILE * stream);
  *
  * @return Jxta_id Jxta_id associated with peer advertisement.
  */
-Jxta_id *jxta_PA_get_PID(Jxta_PA *);
+JXTA_DECLARE(Jxta_id *) jxta_PA_get_PID(Jxta_PA *);
 
 
 /**
@@ -158,7 +158,7 @@ Jxta_id *jxta_PA_get_PID(Jxta_PA *);
  *
  * @return void Doesn't return anything.
  */
-void jxta_PA_set_PID(Jxta_PA *, Jxta_id *);
+JXTA_DECLARE(void) jxta_PA_set_PID(Jxta_PA *, Jxta_id *);
 
 
 /**
@@ -168,7 +168,7 @@ void jxta_PA_set_PID(Jxta_PA *, Jxta_id *);
  *
  * @return Jxta_id * pointer to peer group id.
  */
-Jxta_id *jxta_PA_get_GID(Jxta_PA *);
+JXTA_DECLARE(Jxta_id *) jxta_PA_get_GID(Jxta_PA *);
 
 
 /**
@@ -180,7 +180,7 @@ Jxta_id *jxta_PA_get_GID(Jxta_PA *);
  *
  * @return void Doesn't return anything.
  */
-void jxta_PA_set_GID(Jxta_PA *, Jxta_id *);
+JXTA_DECLARE(void) jxta_PA_set_GID(Jxta_PA *, Jxta_id *);
 
 
 /**
@@ -190,7 +190,7 @@ void jxta_PA_set_GID(Jxta_PA *, Jxta_id *);
  *
  * @return JString * containing peer name.
  */
-JString *jxta_PA_get_Name(Jxta_PA *);
+JXTA_DECLARE(JString *) jxta_PA_get_Name(Jxta_PA *);
 
 /**
  * Sets the peer name.
@@ -200,7 +200,27 @@ JString *jxta_PA_get_Name(Jxta_PA *);
  *
  * @return void Doesn't return anything.
  */
-void jxta_PA_set_Name(Jxta_PA *, JString *);
+JXTA_DECLARE(void) jxta_PA_set_Name(Jxta_PA *, JString *);
+
+
+/**
+ * Gets the peer description.
+ *
+ * @param Jxta_Jxta_PA * peer advertisement
+ *
+ * @return JString * peer description.
+ */
+JXTA_DECLARE(JString *) jxta_PA_get_Desc(Jxta_PA * ad);
+
+/**
+ * Sets the peer description.
+ *
+ * @param Jxta_Jxta_PGA * peer advertisement
+ * @param JString * peer description.
+ *
+ * return void Doesn't return anything.
+ */
+JXTA_DECLARE(void) jxta_PA_set_Desc(Jxta_PA * ad, JString * desc);
 
 
 /**
@@ -210,7 +230,7 @@ void jxta_PA_set_Name(Jxta_PA *, JString *);
  *
  * @return JString * containing peer debugging status.
  */
-JString *jxta_PA_get_Dbg(Jxta_PA *);
+JXTA_DECLARE(JString *) jxta_PA_get_Dbg(Jxta_PA *);
 
 /**
  * Sets the debugging status for the peer advertisement.
@@ -220,7 +240,7 @@ JString *jxta_PA_get_Dbg(Jxta_PA *);
  *
  * @return void Doesn't return anything.
  */
-void jxta_PA_set_Dbg(Jxta_PA *, JString *);
+JXTA_DECLARE(void) jxta_PA_set_Dbg(Jxta_PA *, JString *);
 
 /**
  * Sets the services parameters.
@@ -229,7 +249,7 @@ void jxta_PA_set_Dbg(Jxta_PA *, JString *);
  *
  * @return Jxta_vector* The current vector of service params.
  */
-Jxta_vector *jxta_PA_get_Svc(Jxta_PA *);
+JXTA_DECLARE(Jxta_vector *) jxta_PA_get_Svc(Jxta_PA *);
 
 /**
  * Sets the services parameters.
@@ -241,7 +261,7 @@ Jxta_vector *jxta_PA_get_Svc(Jxta_PA *);
  *
  * @return void Doesn't return anything.
  */
-void jxta_PA_set_Svc(Jxta_PA *, Jxta_vector *);
+JXTA_DECLARE(void) jxta_PA_set_Svc(Jxta_PA *, Jxta_vector *);
 
 
 /**
@@ -252,7 +272,7 @@ void jxta_PA_set_Svc(Jxta_PA *, Jxta_vector *);
  *
  * @return Jxta_status
  */
-Jxta_RouteAdvertisement *jxta_PA_add_relay_address(Jxta_PA *, Jxta_RdvAdvertisement *);
+JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_PA_add_relay_address(Jxta_PA *, Jxta_RdvAdvertisement *);
 
 
 /**
@@ -263,11 +283,16 @@ Jxta_RouteAdvertisement *jxta_PA_add_relay_address(Jxta_PA *, Jxta_RdvAdvertisem
  *
  * @return Jxta_status
  */
-Jxta_status jxta_PA_remove_relay_address(Jxta_PA *, Jxta_id *);
+JXTA_DECLARE(Jxta_status) jxta_PA_remove_relay_address(Jxta_PA *, Jxta_id *);
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTA_PA_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

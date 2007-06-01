@@ -50,10 +50,11 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: dr_adv_test.c,v 1.16 2005/03/22 16:23:45 bondolo Exp $
+ * $Id: dr_adv_test.c,v 1.17 2005/04/17 14:22:18 lankes Exp $
  */
  
 #include <stdio.h>
+#include "jxta.h"
 #include "jxta_dr.h"
 #include "jxta_pa.h"
 

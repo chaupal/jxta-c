@@ -51,12 +51,12 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_service.c,v 1.16 2005/03/25 23:41:13 bondolo Exp $
+ * $Id: jxta_service.c,v 1.18 2005/04/16 13:45:44 lankes Exp $
  */
 
 #include "jxta_service_private.h"
 
-_jxta_service *jxta_service_construct(_jxta_service * svc, Jxta_service_methods const * methods)
+_jxta_service *jxta_service_construct(_jxta_service * svc, Jxta_service_methods const *methods)
 {
     _jxta_service *self = NULL;
 
@@ -97,27 +97,31 @@ void jxta_service_destruct(_jxta_service * svc)
  */
 #define VTBL ((Jxta_service_methods*) JXTA_MODULE_VTBL(self))
 
-void jxta_service_get_interface(Jxta_service * svc, Jxta_service ** service)
+JXTA_DECLARE(void) jxta_service_get_interface(Jxta_service * svc, Jxta_service ** service)
 {
     _jxta_service *self = PTValid(svc, _jxta_service);
+
     (VTBL->get_interface) (self, service);
 }
 
 void jxta_service_get_peergroup(Jxta_service * svc, Jxta_PG ** pg)
 {
     _jxta_service *self = PTValid(svc, _jxta_service);
+
     jxta_service_get_peergroup_impl(self, pg);
 }
 
 void jxta_service_get_assigned_ID(Jxta_service * svc, Jxta_id ** assignedID)
 {
     _jxta_service *self = PTValid(svc, _jxta_service);
+
     jxta_service_get_assigned_ID_impl(self, assignedID);
 }
 
-void jxta_service_get_MIA(Jxta_service * svc, Jxta_advertisement ** mia)
+JXTA_DECLARE(void) jxta_service_get_MIA(Jxta_service * svc, Jxta_advertisement ** mia)
 {
     _jxta_service *self = PTValid(svc, _jxta_service);
+
     (VTBL->get_MIA) (self, mia);
 }
 
@@ -144,51 +148,27 @@ Jxta_status jxta_service_init(Jxta_service * svc, Jxta_PG * group, Jxta_id * ass
  * No one is supposed to create a object of this exact class.
  */
 
-/**
- * return this service's interface object
- *
- * @param service return this service's interface object
- * @return this service's interface object/
- **/
 void jxta_service_get_interface_impl(Jxta_service * svc, Jxta_service ** intf)
 {
     _jxta_service *self = PTValid(svc, _jxta_service);
 
-    JXTA_OBJECT_SHARE(self);
-    *intf = self;
+    *intf = JXTA_OBJECT_SHARE(self);
 }
 
-/**
- * return the peer group object associated with this service.
- *
- * @return the peer group object associated with this service.
- **/
 void jxta_service_get_peergroup_impl(Jxta_service * svc, Jxta_PG ** pg)
 {
     _jxta_service *self = PTValid(svc, _jxta_service);
 
-    JXTA_OBJECT_SHARE(self->group);
-    *pg = self->group;
+    *pg = JXTA_OBJECT_SHARE(self->group);
 }
 
-/**
- * Return the id associated with this service.
- *
- * @return the id associated with this service.
- **/
 void jxta_service_get_assigned_ID_impl(Jxta_service * svc, Jxta_id ** assignedID)
 {
     _jxta_service *self = PTValid(svc, _jxta_service);
 
-    JXTA_OBJECT_SHARE(self->assigned_id);
-    *assignedID = self->assigned_id;
+    *assignedID = JXTA_OBJECT_SHARE(self->assigned_id);
 }
 
-/**
- * return the module implementation advertisement for this service
- *
- * @return the module implementation advertisement for this service
- **/
 void jxta_service_get_MIA_impl(Jxta_service * svc, Jxta_advertisement ** mia)
 {
     _jxta_service *self = PTValid(svc, _jxta_service);

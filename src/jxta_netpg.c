@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_netpg.c,v 1.60 2005/04/02 00:57:41 slowhog Exp $
+ * $Id: jxta_netpg.c,v 1.65 2005/09/07 00:12:38 slowhog Exp $
  */
 
 /*
@@ -95,7 +95,7 @@ static const char *__log_cat = "NETPG";
 #ifdef __GNUC__
 #define UNUSED__  __attribute__((__unused__))
 #else
-#define UNUSED__        /* UNSUSED */
+#define UNUSED__    /* UNSUSED */
 #endif
 #endif
 
@@ -266,7 +266,7 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
     }
 
     /*
-     * use the superclasse's split init routines, so that
+     * use the superclass's split init routines, so that
      * we can init the transports before anything gets started.
      */
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before super group init :%d.\n",
@@ -317,7 +317,8 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
 
     }
     Catch {
-
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Exception during module initialization :%d.\n",
+                        jpr_lasterror_get());
 
         /*
          * For now, we assume that what was init'ed needs to be stopped,
@@ -335,12 +336,9 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
         Throw(jpr_lasterror_get());
     }
 
-
-    /* Now, start all services */
-    jxta_stdpg_start_modules(self);
-
     rv = jxta_module_start((Jxta_module *) (((Jxta_stdpg *) it)->endpoint), noargs);
     if (JXTA_SUCCESS != rv) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failure starting endpoint: %d.\n", rv);
         netpg_stop(self);
         Throw(rv);
     }
@@ -348,6 +346,7 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
     if (it->relay) {
         rv = jxta_module_start((Jxta_module *) (it->relay), noargs);
         if (JXTA_SUCCESS != rv) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failure starting relay: %d.\n", rv);
             netpg_stop(self);
             Throw(rv);
         }
@@ -356,6 +355,7 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
     if (it->tcp) {
         rv = jxta_module_start((Jxta_module *) (it->tcp), noargs);
         if (JXTA_SUCCESS != rv) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failure starting tcp: %d.\n", rv);
             netpg_stop(self);
             Throw(rv);
         }
@@ -364,6 +364,7 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
     if (it->http) {
         rv = jxta_module_start((Jxta_module *) (it->http), noargs);
         if (JXTA_SUCCESS != rv) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failure starting http: %d.\n", rv);
             netpg_stop(self);
             Throw(rv);
         }
@@ -371,9 +372,13 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
 
     rv = jxta_module_start((Jxta_module *) (it->router), noargs);
     if (JXTA_SUCCESS != rv) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failure starting router: %d.\n", rv);
         netpg_stop(self);
         Throw(rv);
     }
+
+    /* Now, start all services */
+    jxta_stdpg_start_modules(self);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count after init :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(self));
@@ -387,6 +392,7 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
     } Catch {
         return jpr_lasterror_get();
     }
+
     return JXTA_SUCCESS;
 }
 
@@ -513,7 +519,7 @@ Jxta_netpg *jxta_netpg_new_instance(void)
 {
     Jxta_netpg *self = (Jxta_netpg *) calloc(1, sizeof(Jxta_netpg));
 
-    JXTA_OBJECT_INIT_FLAGS(self, JXTA_OBJECT_SHARE_TRACK, myFree, 0);
+    JXTA_OBJECT_INIT(self, myFree, 0);
 
     /*
      * Initialize the methods table if needed.
@@ -522,3 +528,5 @@ Jxta_netpg *jxta_netpg_new_instance(void)
     jxta_netpg_construct(self, &jxta_netpg_methods);
     return self;
 }
+
+/* vim: set ts=4 sw=4 et tw=130: */

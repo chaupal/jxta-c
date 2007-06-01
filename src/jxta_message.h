@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_message.h,v 1.3 2005/01/12 20:20:51 brent Exp $
+ * $Id: jxta_message.h,v 1.5 2005/06/16 23:11:44 slowhog Exp $
  */
 
 #ifndef __JXTAMSG_H__
@@ -72,19 +72,17 @@ extern "C" {
 }
 #endif
 #endif
-
 /**
 *  JXTA messages are opaque JXTA objects. Jxta messages are not thread-safe.
 *  You must provide your own locking if you wish to use mutable messages from
 *  multiple threads.
-**/
-typedef struct _Jxta_message const           Jxta_message;
+**/ typedef struct _Jxta_message const Jxta_message;
 
 /**
 *  JXTA elements are opaque JXTA objects. Jxta elements are effectively 
 *  thread-safe since they are immutable after construction.
 **/
-typedef struct _Jxta_message_element const   Jxta_message_element;
+typedef struct _Jxta_message_element const Jxta_message_element;
 
 /************************************************************************
  *  Creates a new empty Jxta Message. Jxta_message is a Jxta_Object.
@@ -92,7 +90,7 @@ typedef struct _Jxta_message_element const   Jxta_message_element;
  *
  *  @return the new JXTA message or NULL for errors.
  *************************************************************************/
-Jxta_message*         jxta_message_new                (void);
+JXTA_DECLARE(Jxta_message *) jxta_message_new(void);
 
 /************************************************************************
  *  Copies a Jxta message. The copy can then be modified seperately from the
@@ -102,7 +100,7 @@ Jxta_message*         jxta_message_new                (void);
  *  @param msg The message to be copied.
  *  @return the new JXTA message or NULL for errors.
  *************************************************************************/
-Jxta_message*         jxta_message_clone              (Jxta_message* msg);
+JXTA_DECLARE(Jxta_message *) jxta_message_clone(Jxta_message * msg);
 
 /************************************************************************
  * Reads a Jxta message from a "stream". Any
@@ -118,11 +116,8 @@ Jxta_message*         jxta_message_clone              (Jxta_message* msg);
  * the stream.
  * @return  JXTA_SUCCESS if the message was read successfully.
  *************************************************************************/
-Jxta_status          jxta_message_read              (Jxta_message*  msg, 
-                 char const * mime_type,
-						     ReadFunc     read_func,
-						     void         *stream );
-                 
+JXTA_DECLARE(Jxta_status) jxta_message_read(Jxta_message * msg, char const *mime_type, ReadFunc read_func, void *stream);
+
 /************************************************************************
  * Writes a Jxta message to a "stream".
  *
@@ -136,23 +131,17 @@ Jxta_status          jxta_message_read              (Jxta_message*  msg,
  * the stream.
  * @return  JXTA_SUCCESS if the message was written successfully.
  *************************************************************************/
-Jxta_status      jxta_message_write                 (Jxta_message*  msg,
-                 char const * mime_type,
-						     WriteFunc    write_func,
-						     void         *stream);
-                 
-Jxta_endpoint_address* jxta_message_get_source      (Jxta_message*  msg);
+JXTA_DECLARE(Jxta_status) jxta_message_write(Jxta_message * msg, char const *mime_type, WriteFunc write_func, void *stream);
 
-Jxta_status          jxta_message_set_source        (Jxta_message*  msg,
-						     Jxta_endpoint_address *src);
-                 
-Jxta_endpoint_address* jxta_message_get_destination (Jxta_message*  msg);
+JXTA_DECLARE(Jxta_endpoint_address *) jxta_message_get_source(Jxta_message * msg);
 
-Jxta_status          jxta_message_set_destination   (Jxta_message*  msg,
-						     Jxta_endpoint_address *dst);
+JXTA_DECLARE(Jxta_status) jxta_message_set_source(Jxta_message * msg, Jxta_endpoint_address * src);
 
-Jxta_status          jxta_message_add_element       (Jxta_message*  msg,
-						     Jxta_message_element* el);
+JXTA_DECLARE(Jxta_endpoint_address *) jxta_message_get_destination(Jxta_message * msg);
+
+JXTA_DECLARE(Jxta_status) jxta_message_set_destination(Jxta_message * msg, Jxta_endpoint_address * dst);
+
+JXTA_DECLARE(Jxta_status) jxta_message_add_element(Jxta_message * msg, Jxta_message_element * el);
 
 /************************************************************************
  * Get an element from a message. The element is shared.
@@ -164,10 +153,8 @@ Jxta_status          jxta_message_add_element       (Jxta_message*  msg,
  * @return  JXTA_SUCCESS if the element was removed, JXTA_ITEM_NOTFOUND if
  * it was not present in the message.
  *************************************************************************/
- Jxta_status jxta_message_get_element_1   (Jxta_message*  msg,
-						     char const *           qname,
-                 Jxta_message_element** el );
-                 
+JXTA_DECLARE(Jxta_status) jxta_message_get_element_1(Jxta_message * msg, char const *qname, Jxta_message_element ** el);
+
 /************************************************************************
  * Removes an element from a message.
  *
@@ -178,15 +165,12 @@ Jxta_status          jxta_message_add_element       (Jxta_message*  msg,
  * @return  JXTA_SUCCESS if the element was removed, JXTA_ITEM_NOTFOUND if
  * it was not present in the message.
  *************************************************************************/
-Jxta_status  jxta_message_get_element_2   (Jxta_message*  msg,
-						     char const *      ns,
-                 char const *      name,
-                 Jxta_message_element** el  );
+JXTA_DECLARE(Jxta_status) jxta_message_get_element_2(Jxta_message * msg,
+                                                     char const *ns, char const *name, Jxta_message_element ** el);
 
-Jxta_vector*  jxta_message_get_elements    (Jxta_message*  msg );
-                 
-Jxta_vector*  jxta_message_get_elements_of_namespace (Jxta_message*  msg,
-							     char const *Namespace);
+JXTA_DECLARE(Jxta_vector *) jxta_message_get_elements(Jxta_message * msg);
+
+JXTA_DECLARE(Jxta_vector *) jxta_message_get_elements_of_namespace(Jxta_message * msg, char const *Namespace);
 
 /************************************************************************
  * Removes an element from a message. The first instance of the element
@@ -197,9 +181,8 @@ Jxta_vector*  jxta_message_get_elements_of_namespace (Jxta_message*  msg,
  * @return  JXTA_SUCCESS if the element was removed, JXTA_ITEM_NOTFOUND if
  * it was not present in the message.
  *************************************************************************/
-Jxta_status  jxta_message_remove_element    (Jxta_message*  msg,
-                 Jxta_message_element* el) ;
-                 
+JXTA_DECLARE(Jxta_status) jxta_message_remove_element(Jxta_message * msg, Jxta_message_element * el);
+
 /************************************************************************
  * Removes an element from a message. The first element matching qname will
  * be removed.
@@ -210,9 +193,8 @@ Jxta_status  jxta_message_remove_element    (Jxta_message*  msg,
  * @return  JXTA_SUCCESS if the element was removed, JXTA_ITEM_NOTFOUND if
  * it was not present in the message.
  *************************************************************************/
-Jxta_status            jxta_message_remove_element_1   (Jxta_message*  msg,
-                 char const *      qname ) ;
-                 
+JXTA_DECLARE(Jxta_status) jxta_message_remove_element_1(Jxta_message * msg, char const *qname);
+
 /************************************************************************
  * Removes an element from a message. The first element matching qname will
  * be removed.
@@ -223,10 +205,8 @@ Jxta_status            jxta_message_remove_element_1   (Jxta_message*  msg,
  * @return  JXTA_SUCCESS if the element was removed, JXTA_ITEM_NOTFOUND if
  * it was not present in the message.
  *************************************************************************/
-Jxta_status            jxta_message_remove_element_2   (Jxta_message*  msg,
-						     char const *      ns,
-                 char const *      name );
-                 
+JXTA_DECLARE(Jxta_status) jxta_message_remove_element_2(Jxta_message * msg, char const *ns, char const *name);
+
  /************************************************************************
  ** Convenience method that produces the content of a message in the
  ** wire format and appends it to the provided JString. This method is intended
@@ -239,15 +219,14 @@ Jxta_status            jxta_message_remove_element_2   (Jxta_message*  msg,
  ** @return JXTA_SUCCESS if the message could be generated, JXTA_INVALID_ARGUMENT
  ** for invalid parameters.
  *************************************************************************/
-Jxta_status jxta_message_to_jstring (Jxta_message* msg, char const * mime_type,
-                JString* string );
+JXTA_DECLARE(Jxta_status) jxta_message_to_jstring(Jxta_message * msg, char const *mime_type, JString * string);
 
  /************************************************************************ 
  ** Print on the console the content of a message.
  **
  ** @param  msg the message to be printed.
  *************************************************************************/
-Jxta_status jxta_message_print (Jxta_message* msg);
+JXTA_DECLARE(Jxta_status) jxta_message_print(Jxta_message * msg);
 
 /**
  **
@@ -268,10 +247,10 @@ Jxta_status jxta_message_print (Jxta_message* msg);
     or message digest of this element. If NULL then no signature.
   @return the resulting message element or NULL if it could not be allocated.
  *************************************************************************/
-Jxta_message_element*  jxta_message_element_new_1 (char const *qname,
-							  char const *mime_type,
-							  char const *value, size_t length, Jxta_message_element* sig );
-                
+JXTA_DECLARE(Jxta_message_element *) jxta_message_element_new_1(char const *qname,
+                                                                char const *mime_type,
+                                                                char const *value, size_t length, Jxta_message_element * sig);
+
  /************************************************************************
   Build a message element from components.
   
@@ -285,9 +264,9 @@ Jxta_message_element*  jxta_message_element_new_1 (char const *qname,
     or message digest of this element. If NULL then no signature.
   @return the resulting message element or NULL if it could not be allocated.
  *************************************************************************/
-Jxta_message_element*  jxta_message_element_new_2 ( char const *ns, char const *ncname,
-							  char const *mime_type,
-							  char const *value, size_t length, Jxta_message_element* sig );
+JXTA_DECLARE(Jxta_message_element *) jxta_message_element_new_2(char const *ns, char const *ncname,
+                                                                char const *mime_type,
+                                                                char const *value, size_t length, Jxta_message_element * sig);
 
  /************************************************************************
   Build a message element from components.
@@ -302,27 +281,27 @@ Jxta_message_element*  jxta_message_element_new_2 ( char const *ns, char const *
     or message digest of this element. If NULL then no signature.
   @return the resulting message element or NULL if it could not be allocated.
  *************************************************************************/
-Jxta_message_element*  jxta_message_element_new_3 ( char const *ns, char const *ncname,
-							  char const *mime_type,
-							  Jxta_bytevector* value, Jxta_message_element* sig );
+JXTA_DECLARE(Jxta_message_element *) jxta_message_element_new_3(char const *ns, char const *ncname,
+                                                                char const *mime_type,
+                                                                Jxta_bytevector * value, Jxta_message_element * sig);
 
 /************************************************************************
   @return the pointer returned is valid until the message element is destroyed.
   you dont have to dispose it.
  *************************************************************************/
-char const*          jxta_message_element_get_namespace  (Jxta_message_element* el);
+JXTA_DECLARE(char const *) jxta_message_element_get_namespace(Jxta_message_element * el);
 
 /************************************************************************
   @return the pointer returned is valid until the message element is destroyed.
   you dont have to dispose it.
  *************************************************************************/
-char const*          jxta_message_element_get_name  (Jxta_message_element* el);
+JXTA_DECLARE(char const *) jxta_message_element_get_name(Jxta_message_element * el);
 
 /************************************************************************
  ** @return the pointer returned is valid until the message element is destroyed.
  ** you dont have to dispose it.
  *************************************************************************/
-char const*          jxta_message_element_get_mime_type  (Jxta_message_element* el);
+JXTA_DECLARE(char const *) jxta_message_element_get_mime_type(Jxta_message_element * el);
 
 /************************************************************************
  ** Get the value of this element. The returned byte vector is shared and
@@ -331,7 +310,7 @@ char const*          jxta_message_element_get_mime_type  (Jxta_message_element* 
  ** @param  el the element who's value is desired
  ** @return the byte vector.
  *************************************************************************/
-Jxta_bytevector*     jxta_message_element_get_value (Jxta_message_element* el);
+JXTA_DECLARE(Jxta_bytevector *) jxta_message_element_get_value(Jxta_message_element * el);
 
 /************************************************************************
  ** Return a shared version of the signature element for this element.
@@ -339,12 +318,15 @@ Jxta_bytevector*     jxta_message_element_get_value (Jxta_message_element* el);
  ** @param  the element who's signature is desired.
  ** @return the signature element for this element.
  *************************************************************************/
-Jxta_message_element* jxta_message_element_get_signature (Jxta_message_element* el);
+JXTA_DECLARE(Jxta_message_element *) jxta_message_element_get_signature(Jxta_message_element * el);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif
 
-
+/* vi: set ts=4 sw=4 tw=130 et: */

@@ -50,36 +50,37 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_debug.c,v 1.12 2005/02/17 20:31:44 bondolo Exp $
+ * $Id: jxta_debug.c,v 1.15 2005/08/18 19:01:50 slowhog Exp $
  */
 
 #include "jxta_debug.h"
+#include "jxtaapr.h"
 
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
-const char * __debug_log_cat = "DEBUG";
+const char *__debug_log_cat = "DEBUG";
 
 int jxta_log(const char *fmt, ...)
 {
     va_list argv;
 
     va_start(argv, fmt);
-    jxta_log_appendv( __debug_log_cat, JXTA_LOG_LEVEL_DEBUG, fmt, argv);
+    jxta_log_appendv(__debug_log_cat, JXTA_LOG_LEVEL_DEBUG, fmt, argv);
     va_end(argv);
 
     return 0;
 }
 
-void jxta_buffer_display(const char *msgbuf, size_t size)
+JXTA_DECLARE(void) jxta_buffer_display(const char *msgbuf, size_t size)
 {
     unsigned int i;
 
     for (i = 0; i < size; ++i) {
         if ((msgbuf[i] < 32) && (msgbuf[i] != '\n') && (msgbuf[i] != '\r') && (msgbuf[i] != '\t')) {
             char buf[10];
-            sprintf(buf, "\\%d", msgbuf[i]);
+            apr_snprintf(buf, sizeof(buf),"\\%d", msgbuf[i]);
             fwrite(buf, strlen(buf), 1, stdout);
             fwrite(" ", 1, 1, stdout);
         } else {

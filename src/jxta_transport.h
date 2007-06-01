@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport.h,v 1.3 2005/01/12 20:20:51 brent Exp $
+ * $Id: jxta_transport.h,v 1.6 2005/09/13 16:26:02 slowhog Exp $
  */
 
 #ifndef JXTA_TRANSPORT_H
@@ -73,7 +73,6 @@ extern "C" {
 
 typedef struct _jxta_transport Jxta_transport;
 
-
 /*
  * Transport API.
  */
@@ -87,8 +86,7 @@ typedef struct _jxta_transport Jxta_transport;
  * @return JString* The name of the protocol handled by this transport as
  * a JString.
  */
-extern JString*
-    jxta_transport_name_get(Jxta_transport* that);
+JXTA_DECLARE(JString *) jxta_transport_name_get(Jxta_transport * that);
 
 /*
  * Returns the address of this peer by this transport.
@@ -97,8 +95,7 @@ extern JString*
  * applied.
  * @return Jxta_endpoint_address* (Ptr to) the address.
  */
-extern Jxta_endpoint_address*
-    jxta_transport_publicaddr_get(Jxta_transport* that);
+JXTA_DECLARE(Jxta_endpoint_address *) jxta_transport_publicaddr_get(Jxta_transport * that);
 
 /*
  * Returns a messenger object which may be used to send one or more messages
@@ -111,9 +108,7 @@ extern Jxta_endpoint_address*
  * @return JxtaEndpointMessenger* (Ptr to) the requested messenger object.
  * Returns NULL if no adequate messenger could be constructed.
  */
-extern JxtaEndpointMessenger*
-    jxta_transport_messenger_get(Jxta_transport* that,
-                                 Jxta_endpoint_address* there);
+JXTA_DECLARE(JxtaEndpointMessenger *) jxta_transport_messenger_get(Jxta_transport * that, Jxta_endpoint_address * there);
 
 /*
  * Tests the reachability of the given address via this transport.
@@ -123,8 +118,7 @@ extern JxtaEndpointMessenger*
  * @return Jxta_boolean TRUE if this transport claims that a message would
  * have a chance to reach that destination.
  */
-extern Jxta_boolean
-    jxta_transport_ping(Jxta_transport* that, Jxta_endpoint_address* there);
+JXTA_DECLARE(Jxta_boolean) jxta_transport_ping(Jxta_transport * that, Jxta_endpoint_address * there);
 
 /*
  * Propagates a message to multiple destinations in one operation as permitted
@@ -141,9 +135,8 @@ extern Jxta_boolean
  * listener which name is identical to the concatenation of servie_name
  * and service_param. 
  */
-extern void
-    jxta_transport_propagate(Jxta_transport* that, Jxta_message* msg,
-                             const char* service_name, const char* service_params);
+JXTA_DECLARE(void)
+jxta_transport_propagate(Jxta_transport * that, Jxta_message * msg, const char *service_name, const char *service_params);
 
 
 /*
@@ -154,8 +147,7 @@ extern void
  * applied.
  * @return Jxta_boolean TRUE if overloading is acceptable, FALSE otherwise.
  */
-extern Jxta_boolean
-    jxta_transport_allow_overload_p(Jxta_transport* that);
+JXTA_DECLARE(Jxta_boolean) jxta_transport_allow_overload_p(Jxta_transport * that);
 
 /*
  * Tells if this transport may be used as vehicle by the router.
@@ -165,8 +157,7 @@ extern Jxta_boolean
  * @return Jxta_boolean TRUE if use by the router is advisable, FALSE
  * otherwise.
  */
-extern Jxta_boolean
-    jxta_transport_allow_routing_p(Jxta_transport* that);
+JXTA_DECLARE(Jxta_boolean) jxta_transport_allow_routing_p(Jxta_transport * that);
 
 /*
  * Tells if this transport maintains connections between points.
@@ -175,11 +166,15 @@ extern Jxta_boolean
  * applied.
  * @return Jxta_boolean TRUE if connection-oriented, FALSE otherwise.
  */
-extern Jxta_boolean
-    jxta_transport_connection_oriented_p(Jxta_transport* that);
+JXTA_DECLARE(Jxta_boolean) jxta_transport_connection_oriented_p(Jxta_transport * that);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTA_TRANSPORT_H */
+
+/* vim: set sw=4 ts=4 et tw=130: */

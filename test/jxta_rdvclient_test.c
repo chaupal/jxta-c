@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdvclient_test.c,v 1.20 2005/04/07 22:58:54 slowhog Exp $
+ * $Id: jxta_rdvclient_test.c,v 1.21 2005/04/14 21:10:51 bondolo Exp $
  */
 
 
@@ -61,7 +61,6 @@
  ****************************************************************/
 
 #include "jxta.h"
-#include "jpr/jpr_thread.h"
 #include "jxta_peergroup.h"
 
 #include "apr_time.h"
@@ -198,12 +197,12 @@ jxta_rdv_service_client_test(int argc, char** argv) {
   }
 
   /* Wait a bit */
-  jpr_thread_delay ((Jpr_interval_time) 5 * 1000 * 1000);
+  apr_sleep (5 * 1000 * 1000);
   if (!display_peers (rdv)) {
     return FALSE;
   }
   /* Wait to let the protocols run */
-  jpr_thread_delay ((Jpr_interval_time) WAIT_TIME);
+  apr_sleep (WAIT_TIME);
   return TRUE;
 }
 

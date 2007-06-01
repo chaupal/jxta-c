@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: peers.c,v 1.6 2005/03/22 03:49:58 bondolo Exp $
+ * $Id: peers.c,v 1.10 2005/08/24 07:09:42 lankes Exp $
  */
 
 #include <stdio.h>
@@ -64,168 +64,182 @@
 
 #include "jxta_shell_getopt.h"
 
-static Jxta_PG * group;
-static JxtaShellEnvironment * environment;
-static JString * env_type = NULL;
+static Jxta_PG *group;
+static JxtaShellEnvironment *environment;
 
-JxtaShellApplication * jxta_peers_new(Jxta_PG * pg,
-                                      Jxta_listener* standout,
-                                      JxtaShellEnvironment *env,
-                                      Jxta_object * parent,
-                                      shell_application_terminate terminate){
-	JxtaShellApplication *app  =
-	        JxtaShellApplication_new(pg,standout,env,parent,terminate);
-	if( app == 0) return 0;
-	JxtaShellApplication_setFunctions(app,
-	                                  (Jxta_object*) app,
-	                                  jxta_peers_print_help,
-	                                  jxta_peers_start,
-	                                  (shell_application_stdin)jxta_peers_process_input);
-	group = pg;
-	environment = env;
-	env_type = jstring_new_2("PeerAdvertisement");
-	return app;
+JxtaShellApplication *jxta_peers_new(Jxta_PG * pg,
+                                     Jxta_listener * standout,
+                                     JxtaShellEnvironment * env, Jxta_object * parent, shell_application_terminate terminate)
+{
+    JxtaShellApplication *app = JxtaShellApplication_new(pg, standout, env, parent, terminate);
+    if (app == 0)
+        return 0;
+    JxtaShellApplication_setFunctions(app,
+                                      (Jxta_object *) app,
+                                      jxta_peers_print_help,
+                                      jxta_peers_start, (shell_application_stdin) jxta_peers_process_input);
+    group = pg;
+    environment = env;
+    return app;
 }
 
 
-void  jxta_peers_process_input(Jxta_object * appl,
-                               JString * inputLine){
-	JxtaShellApplication * app = (JxtaShellApplication*)appl;
-	JxtaShellApplication_terminate(app);
+void jxta_peers_process_input(Jxta_object * appl, JString * inputLine)
+{
+    JxtaShellApplication *app = (JxtaShellApplication *) appl;
+    JxtaShellApplication_terminate(app);
 }
 
 
-void jxta_peers_start(Jxta_object * appl,
-                      int argv,
-                      char **arg){
-	JxtaShellApplication * app = (JxtaShellApplication*)appl;
-	JxtaShellGetopt * opt = JxtaShellGetopt_new(argv,arg,"rfhp:n:a:v:");
-	JString * pid = jstring_new_0();
-	JString * attr= jstring_new_0();
-	JString * value= jstring_new_0();
-	Jxta_boolean rf=FALSE;
-	Jxta_boolean pf=FALSE;
-	Jxta_boolean ff=FALSE;
-	Jxta_discovery_service* discovery;
-	long qid=-1;
-	long responses = 10;
-	Jxta_vector * res_vec = NULL;
-	int error = 0;
+void jxta_peers_start(Jxta_object * appl, int argv, char **arg)
+{
+    JxtaShellApplication *app = (JxtaShellApplication *) appl;
+    JxtaShellGetopt *opt = JxtaShellGetopt_new(argv, arg, "rfhp:n:a:v:");
+    JString *pid = jstring_new_0();
+    JString *attr = jstring_new_0();
+    JString *value = jstring_new_0();
+    Jxta_boolean rf = FALSE;
+    Jxta_boolean pf = FALSE;
+    Jxta_boolean ff = FALSE;
+    Jxta_discovery_service *discovery;
+    long qid = -1;
+    long responses = 10;
+    Jxta_vector *res_vec = NULL;
+    int error = 0;
 
-	while(1){
- 	        int type = JxtaShellGetopt_getNext(opt);
+    while (1) {
+        JString *op_val = NULL;
+        int type = JxtaShellGetopt_getNext(opt);
 
-		if( type == -1) break;
-		switch(type){
-		case 'r':
-			rf = TRUE;
-			break;
-		case 'f':
-			ff = TRUE;
-			break;
-		case 'p':
-			pf = TRUE;
-			jstring_append_1(pid, JxtaShellGetopt_getOptionArgument(opt));
-			break;
-		case 'n':
-			responses = strtol(jstring_get_string(JxtaShellGetopt_getOptionArgument(opt)),
-			                   NULL, 0);
-			break;
-		case 'a':
-			jstring_append_1(attr, JxtaShellGetopt_getOptionArgument(opt));
-			break;
-		case 'v':
-			jstring_append_1(value, JxtaShellGetopt_getOptionArgument(opt));
-			break;
-		case 'h':
-			jxta_peers_print_help(appl);
-			error = 1;
-			break;
-		default:
-			jxta_peers_print_help(appl);
-			error = 1;
-			break;
-		}
-		if( error != 0) break;
-	}
+        if (type == -1)
+            break;
+        switch (type) {
+        case 'r':
+            rf = TRUE;
+            break;
+        case 'f':
+            ff = TRUE;
+            break;
+        case 'p':
+            pf = TRUE;
+            op_val = JxtaShellGetopt_getOptionArgument(opt);
+            jstring_append_1(pid, op_val);
+            JXTA_OBJECT_RELEASE(op_val);
+            break;
+        case 'n':
+            op_val = JxtaShellGetopt_getOptionArgument(opt);
+            responses = strtol(jstring_get_string(op_val), NULL, 0);
+            JXTA_OBJECT_RELEASE(op_val);
+            break;
+        case 'a':
+            op_val = JxtaShellGetopt_getOptionArgument(opt);
+            jstring_append_1(attr, op_val);
+            JXTA_OBJECT_RELEASE(op_val);
+            break;
+        case 'v':
+            op_val = JxtaShellGetopt_getOptionArgument(opt);
+            jstring_append_1(value, op_val);
+            JXTA_OBJECT_RELEASE(op_val);
+            break;
+        case 'h':
+            jxta_peers_print_help(appl);
+            error = 1;
+            break;
+        default:
+            jxta_peers_print_help(appl);
+            error = 1;
+            break;
+        }
+        if (error != 0)
+            break;
+    }
 
-	JxtaShellGetopt_delete(opt);
-	jxta_PG_get_discovery_service(group, &discovery);
-	if (ff) {
-		discovery_service_flush_advertisements(discovery , NULL, DISC_PEER);
-		JxtaShellApplication_terminate(app);
-	    JXTA_OBJECT_RELEASE(pid);
-	    JXTA_OBJECT_RELEASE(attr);
-	    JXTA_OBJECT_RELEASE(value);
-		return;
-	}
-	if (rf) {
-		char * paddr=NULL;
-		if (pf) {
-			paddr = (char *) jstring_get_string(pid);
-		}
-		qid=discovery_service_get_remote_advertisements(discovery,
-		                paddr,
-		                DISC_PEER,
-		                (char *) jstring_get_string(attr),
-		                (char *) jstring_get_string(value),
-		                responses,
-		                NULL);
-	} else if( error == 0) {
-		discovery_service_get_local_advertisements(discovery,
-		                DISC_PEER,
-		                (char *)jstring_get_string(attr),
-		                (char *)jstring_get_string(value),
-		                & res_vec);
-		if (res_vec != NULL ) {
-			int i;
-			Jxta_PA * padv;
-			char buf[64];
-			JString * name = NULL;
-			JxtaShellObject * sh_obj;
-			printf("restored %d peer advertisement(s) \n",jxta_vector_size(res_vec));
-			for (i=0; i < jxta_vector_size(res_vec); i++ ){
-	 		        /* Create the shell object for the peer*/ 
-				sprintf(buf,"peer%d",i);
-				name = jstring_new_2(buf);
-                JXTA_OBJECT_SHARE(name);
-				jxta_vector_get_object_at (res_vec, (Jxta_object**)&padv, i);
-				sh_obj = JxtaShellObject_new (name, (Jxta_object*)padv, env_type);
-				JxtaShellEnvironment_add_0(environment, sh_obj);
-				JXTA_OBJECT_RELEASE(name);
-				JXTA_OBJECT_RELEASE(padv);
+    JxtaShellGetopt_delete(opt);
+    jxta_PG_get_discovery_service(group, &discovery);
+    if (ff) {
+		JString *tmp_str = NULL;
+        discovery_service_flush_advertisements(discovery, NULL, DISC_PEER);
+        tmp_str = jstring_new_2("PeerAdvertisement");
+        JxtaShellEnvironment_delete_type(environment, tmp_str);
+        JxtaShellApplication_terminate(app);
+        JXTA_OBJECT_RELEASE(tmp_str);
+        JXTA_OBJECT_RELEASE(pid);
+        JXTA_OBJECT_RELEASE(attr);
+        JXTA_OBJECT_RELEASE(value);
+        return;
+    }
+    if (rf) {
+        char *paddr = NULL;
+        if (pf) {
+            paddr = (char *) jstring_get_string(pid);
+        }
+        qid = discovery_service_get_remote_advertisements(discovery,
+                                                          paddr,
+                                                          DISC_PEER,
+                                                          (char *) jstring_get_string(attr),
+                                                          (char *) jstring_get_string(value), responses, NULL);
+    } else if (error == 0) {
+        discovery_service_get_local_advertisements(discovery,
+                                                   DISC_PEER,
+                                                   (char *) jstring_get_string(attr),
+                                                   (char *) jstring_get_string(value), &res_vec);
+        if (res_vec != NULL) {
+            int i;
+            Jxta_PA *padv;
+            char buf[64];
+            JString *name = NULL;
+            JxtaShellObject *sh_obj;
+            JString *env_type;
 
-				/** And print the information to the screen */
-				name  = jxta_PA_get_Name(padv);
-				printf("%d: %s\n",i,jstring_get_string(name));
-				JXTA_OBJECT_RELEASE(name);
-			}
-			JXTA_OBJECT_RELEASE(res_vec);
-		} else {
-			printf("No peer advertisements retrieved\n");
-		}
-	}
+            printf("restored %d peer advertisement(s) \n", jxta_vector_size(res_vec));
+            for (i = 0; i < jxta_vector_size(res_vec); i++) {
+                /* Create the shell object for the peer */
+                sprintf(buf, "peer%d", i);
+                name = jstring_new_2(buf);
+                jxta_vector_get_object_at(res_vec, (Jxta_object **) & padv, i);
+                env_type = jstring_new_2("PeerAdvertisement");
+                sh_obj = JxtaShellObject_new(name, (Jxta_object *) padv, env_type);
+                JXTA_OBJECT_RELEASE(env_type);
+                JxtaShellEnvironment_add_0(environment, sh_obj);
+                JXTA_OBJECT_RELEASE(sh_obj);
+                JXTA_OBJECT_RELEASE(name);
+                JXTA_OBJECT_RELEASE(padv);
 
-	JxtaShellApplication_terminate(app);
-	JXTA_OBJECT_RELEASE(pid);
-	JXTA_OBJECT_RELEASE(attr);
-	JXTA_OBJECT_RELEASE(value);
+                /** And print the information to the screen */
+                name = jxta_PA_get_Name(padv);
+                printf("%d: %s\n", i, jstring_get_string(name));
+                JXTA_OBJECT_RELEASE(name);
+            }
+            JXTA_OBJECT_RELEASE(res_vec);
+        } else {
+            printf("No peer advertisements retrieved\n");
+        }
+    }
+
+    JXTA_OBJECT_RELEASE(discovery);
+
+    JxtaShellApplication_terminate(app);
+    JXTA_OBJECT_RELEASE(pid);
+    JXTA_OBJECT_RELEASE(attr);
+    JXTA_OBJECT_RELEASE(value);
 }
 
-void jxta_peers_print_help(Jxta_object *appl){
-	JxtaShellApplication * app = (JxtaShellApplication*)appl;
-	JString * inputLine = jstring_new_2("peers - discover peers \n\n");
-	jstring_append_2(inputLine,"SYNOPSIS\n");
-	jstring_append_2(inputLine,"    peers [-p peerid name attribute]\n");
-	jstring_append_2(inputLine,"           [-n n] limit the number of responses to n from a single peer\n");
-	jstring_append_2(inputLine,"           [-r] discovers peer groups using remote propagation\n");
-	jstring_append_2(inputLine,"           [-a] specify Attribute name to limit discovery to\n");
-	jstring_append_2(inputLine,"           [-v] specify Attribute value to limit discovery to. wild card is allowed\n");
-	jstring_append_2(inputLine,"           [-f] flush peer advertisements\n");
-	jstring_append_2(inputLine,"           [-h] print this information\n");
-	if( app != 0){
-		JxtaShellApplication_print(app,inputLine);
-	}
-	JXTA_OBJECT_RELEASE(inputLine);
+void jxta_peers_print_help(Jxta_object * appl)
+{
+    JxtaShellApplication *app = (JxtaShellApplication *) appl;
+    JString *inputLine = jstring_new_2("peers - discover peers \n\n");
+    jstring_append_2(inputLine, "SYNOPSIS\n");
+    jstring_append_2(inputLine, "    peers [-p peerid name attribute]\n");
+    jstring_append_2(inputLine, "           [-n n] limit the number of responses to n from a single peer\n");
+    jstring_append_2(inputLine, "           [-r] discovers peer groups using remote propagation\n");
+    jstring_append_2(inputLine, "           [-a] specify Attribute name to limit discovery to\n");
+    jstring_append_2(inputLine, "           [-v] specify Attribute value to limit discovery to. wild card is allowed\n");
+    jstring_append_2(inputLine, "           [-f] flush peer advertisements\n");
+    jstring_append_2(inputLine, "           [-h] print this information\n");
+    if (app != 0) {
+        JxtaShellApplication_print(app, inputLine);
+    }
+    JXTA_OBJECT_RELEASE(inputLine);
 }
 
+/* vi: set ts=4 sw=4 tw=130 et: */

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_join_test.c,v 1.3 2005/04/07 22:58:54 slowhog Exp $
+ * $Id: jxta_join_test.c,v 1.4 2005/06/05 17:31:53 lankes Exp $
  */
 
 #include "jxta.h"
@@ -86,6 +86,7 @@ int main(int argc, char *argv[])
     res = jxta_PG_new_netpg(&netpg);
     if (res != JXTA_SUCCESS) {
 	printf("jxta_PG_new_netpg failed with error: %ld\n", res);
+	exit(1);
     }
 
     pga = jxta_PGA_new();
@@ -97,6 +98,7 @@ int main(int argc, char *argv[])
 
     if (res != JXTA_SUCCESS) {
 	printf("jxta_PG_newfromadv failed with error: %ld\n", res);
+	exit(1);
     }
 
     jxta_PG_get_rendezvous_service(pg, &rdv);

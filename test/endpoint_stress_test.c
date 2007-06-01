@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: endpoint_stress_test.c,v 1.19 2005/04/07 22:58:53 slowhog Exp $
+ * $Id: endpoint_stress_test.c,v 1.20 2005/04/14 21:10:50 bondolo Exp $
  */
 
 #include "jxta.h"
@@ -61,7 +61,6 @@
 #include "jxta_peergroup.h"
 #include "jxta_endpoint_service.h"
 #include "jxta_transport.h"
-#include "jpr/jpr_thread.h"
 #include "../src/jxta_private.h" 
 #include "jxta_listener.h"
 
@@ -303,7 +302,7 @@ main (int argc, char **argv)
   apr_thread_mutex_unlock (mutex);
  
   /* Sleep a bit to let the endpoint works */
-  jpr_thread_delay (1 * 60 * 1000 * 1000); 
+  apr_sleep (1 * 60 * 1000 * 1000); 
 
   apr_thread_mutex_destroy (mutex);
   apr_thread_cond_destroy (cond);

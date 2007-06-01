@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup.h,v 1.5 2005/03/01 23:27:43 bondolo Exp $
+ * $Id: jxta_peergroup.h,v 1.10 2005/06/16 23:11:46 slowhog Exp $
  */
 
 #ifndef JXTA_PEERGROUP_H
@@ -75,6 +75,8 @@
 #include "jxta_peerinfo_service.h"
 #include "jxta_pipe_service.h"
 #include "jxta_rdv.h"
+#include "jxta_srdi.h"
+#include "jxta_srdi_service.h"
 
 
 #ifdef __cplusplus
@@ -115,36 +117,38 @@ typedef struct _jxta_loader Jxta_loader;
 /*
  * Functions to get the well known IDs
  */
-extern Jxta_MCID *jxta_peergroup_classid_get(void);
-extern Jxta_MCID *jxta_resolver_classid_get(void);
-extern Jxta_MCID *jxta_discovery_classid_get(void);
-extern Jxta_MCID *jxta_pipe_classid_get(void);
-extern Jxta_MCID *jxta_membership_classid_get(void);
-extern Jxta_MCID *jxta_rendezvous_classid_get(void);
-extern Jxta_MCID *jxta_peerinfo_classid_get(void);
-extern Jxta_MCID *jxta_endpoint_classid_get(void);
-extern Jxta_MCID *jxta_tcpproto_classid_get(void);
-extern Jxta_MCID *jxta_httpproto_classid_get(void);
-extern Jxta_MCID *jxta_routerproto_classid_get(void);
-extern Jxta_MCID *jxta_relayproto_classid_get(void);
-extern Jxta_MCID *jxta_application_classid_get(void);
-extern Jxta_MCID *jxta_tlsproto_classid_get(void);
-extern Jxta_MSID *jxta_ref_platform_specid_get(void);
-extern Jxta_MSID *jxta_ref_netpeergroup_specid_get(void);
-extern Jxta_MSID *jxta_ref_resolver_specid_get(void);
-extern Jxta_MSID *jxta_ref_discovery_specid_get(void);
-extern Jxta_MSID *jxta_ref_pipe_specid_get(void);
-extern Jxta_MSID *jxta_ref_membership_specid_get(void);
-extern Jxta_MSID *jxta_ref_rendezvous_specid_get(void);
-extern Jxta_MSID *jxta_ref_peerinfo_specid_get(void);
-extern Jxta_MSID *jxta_ref_endpoint_specid_get(void);
-extern Jxta_MSID *jxta_ref_tcpProto_specid_get(void);
-extern Jxta_MSID *jxta_ref_httpProto_specid_get(void);
-extern Jxta_MSID *jxta_ref_routerProto_specid_get(void);
-extern Jxta_MSID *jxta_ref_rlsProto_specid_get(void);
-extern Jxta_MSID *jxta_ref_startnetpeergroup_specid_get(void);
-extern Jxta_MSID *jxta_ref_shell_specid_get(void);
-extern Jxta_MSID *jxta_genericpeergroup_specid_get(void);
+
+JXTA_DECLARE(Jxta_MCID *) jxta_peergroup_classid_get(void);
+JXTA_DECLARE(Jxta_MCID *) jxta_resolver_classid_get(void);
+JXTA_DECLARE(Jxta_MCID *) jxta_discovery_classid_get(void);
+JXTA_DECLARE(Jxta_MCID *) jxta_srdi_classid_get(void);
+JXTA_DECLARE(Jxta_MCID *) jxta_pipe_classid_get(void);
+JXTA_DECLARE(Jxta_MCID *) jxta_membership_classid_get(void);
+JXTA_DECLARE(Jxta_MCID *) jxta_rendezvous_classid_get(void);
+JXTA_DECLARE(Jxta_MCID *) jxta_peerinfo_classid_get(void);
+JXTA_DECLARE(Jxta_MCID *) jxta_endpoint_classid_get(void);
+JXTA_DECLARE(Jxta_MCID *) jxta_tcpproto_classid_get(void);
+JXTA_DECLARE(Jxta_MCID *) jxta_httpproto_classid_get(void);
+JXTA_DECLARE(Jxta_MCID *) jxta_routerproto_classid_get(void);
+JXTA_DECLARE(Jxta_MCID *) jxta_relayproto_classid_get(void);
+JXTA_DECLARE(Jxta_MCID *) jxta_application_classid_get(void);
+JXTA_DECLARE(Jxta_MCID *) jxta_tlsproto_classid_get(void);
+JXTA_DECLARE(Jxta_MSID *) jxta_ref_platform_specid_get(void);
+JXTA_DECLARE(Jxta_MSID *) jxta_ref_netpeergroup_specid_get(void);
+JXTA_DECLARE(Jxta_MSID *) jxta_ref_resolver_specid_get(void);
+JXTA_DECLARE(Jxta_MSID *) jxta_ref_discovery_specid_get(void);
+JXTA_DECLARE(Jxta_MSID *) jxta_ref_pipe_specid_get(void);
+JXTA_DECLARE(Jxta_MSID *) jxta_ref_membership_specid_get(void);
+JXTA_DECLARE(Jxta_MSID *) jxta_ref_rendezvous_specid_get(void);
+JXTA_DECLARE(Jxta_MSID *) jxta_ref_peerinfo_specid_get(void);
+JXTA_DECLARE(Jxta_MSID *) jxta_ref_endpoint_specid_get(void);
+JXTA_DECLARE(Jxta_MSID *) jxta_ref_tcpProto_specid_get(void);
+JXTA_DECLARE(Jxta_MSID *) jxta_ref_httpProto_specid_get(void);
+JXTA_DECLARE(Jxta_MSID *) jxta_ref_routerProto_specid_get(void);
+JXTA_DECLARE(Jxta_MSID *) jxta_ref_rlsProto_specid_get(void);
+JXTA_DECLARE(Jxta_MSID *) jxta_ref_startnetpeergroup_specid_get(void);
+JXTA_DECLARE(Jxta_MSID *) jxta_ref_shell_specid_get(void);
+JXTA_DECLARE(Jxta_MSID *) jxta_genericpeergroup_specid_get(void);
 
 /*
  * Macros to lighten a bit the syntax required to get the well-known IDs.
@@ -152,6 +156,7 @@ extern Jxta_MSID *jxta_genericpeergroup_specid_get(void);
 #define jxta_peergroup_classid            jxta_peergroup_classid_get           ()
 #define jxta_resolver_classid             jxta_resolver_classid_get            ()
 #define jxta_discovery_classid            jxta_discovery_classid_get           ()
+#define jxta_srdi_classid                 jxta_srdi_classid_get                ()
 #define jxta_pipe_classid                 jxta_pipe_classid_get                ()
 #define jxta_membership_classid           jxta_membership_classid_get          ()
 #define jxta_rendezvous_classid           jxta_rendezvous_classid_get          ()
@@ -167,6 +172,7 @@ extern Jxta_MSID *jxta_genericpeergroup_specid_get(void);
 #define jxta_ref_netpeergroup_specid      jxta_ref_netpeergroup_specid_get     ()
 #define jxta_ref_resolver_specid          jxta_ref_resolver_specid_get         ()
 #define jxta_ref_discovery_specid         jxta_ref_discovery_specid_get        ()
+#define jxta_ref_srdi_specid              jxta_ref_srdi_specid_get             ()
 #define jxta_ref_pipe_specid              jxta_ref_pipe_specid_get             ()
 #define jxta_ref_membership_specid        jxta_ref_membership_specid_get       ()
 #define jxta_ref_rendezvous_specid        jxta_ref_rendezvous_specid_get       ()
@@ -193,7 +199,7 @@ typedef struct _jxta_PG Jxta_PG;
  * @param loader A location where to return (a ptr to) the loader.
  * The object returned is already shared and thus must be released after use.
  */
-extern void jxta_PG_get_loader(Jxta_PG * self, Jxta_loader ** loader);
+JXTA_DECLARE(void) jxta_PG_get_loader(Jxta_PG * self, Jxta_loader ** loader);
 
 
 /**
@@ -204,7 +210,7 @@ extern void jxta_PG_get_loader(Jxta_PG * self, Jxta_loader ** loader);
  * @param pga A location where to return (a ptr to) this Group's advertisement.
  * The object returned is already shared and thus must be released after use.
  */
-extern void jxta_PG_get_PGA(Jxta_PG * self, Jxta_PGA ** pga);
+JXTA_DECLARE(void) jxta_PG_get_PGA(Jxta_PG * self, Jxta_PGA ** pga);
 
 
 /**
@@ -215,7 +221,7 @@ extern void jxta_PG_get_PGA(Jxta_PG * self, Jxta_PGA ** pga);
  * @param pa A location where to return (a ptr to) this peerXgroup advertisement.
  * The object returned is already shared and thus must be released after use.
  */
-extern void jxta_PG_get_PA(Jxta_PG * self, Jxta_PA ** pa);
+JXTA_DECLARE(void) jxta_PG_get_PA(Jxta_PG * self, Jxta_PA ** pa);
 
 
 /**
@@ -229,7 +235,7 @@ extern void jxta_PG_get_PA(Jxta_PG * self, Jxta_PA ** pa);
  * @return Jxta_status JXTA_SUCCESS if the operation was performed, an error
  * otherwise.
  */
-extern Jxta_status jxta_PG_lookup_service(Jxta_PG * self, Jxta_id * name, Jxta_service ** result);
+JXTA_DECLARE(Jxta_status) jxta_PG_lookup_service(Jxta_PG * self, Jxta_id * name, Jxta_service ** result);
 
 
 /**
@@ -242,7 +248,7 @@ extern Jxta_status jxta_PG_lookup_service(Jxta_PG * self, Jxta_id * name, Jxta_s
  * @param service A location where to return (a ptr to) the service registered by
  * that name. *service is not affected if an error is thrown.
  */
-extern void jxta_PG_lookup_service_e(Jxta_PG * self, Jxta_id * name, Jxta_service ** service, Throws);
+JXTA_DECLARE(void) jxta_PG_lookup_service_e(Jxta_PG * self, Jxta_id * name, Jxta_service ** service, Throws);
 
 
 /**
@@ -254,7 +260,7 @@ extern void jxta_PG_lookup_service_e(Jxta_PG * self, Jxta_id * name, Jxta_servic
  *
  * @return Jxta_boolean True if the statement is compatible.
  */
-extern Jxta_boolean jxta_PG_is_compatible(Jxta_PG * self, JString * compat);
+JXTA_DECLARE(Jxta_boolean) jxta_PG_is_compatible(Jxta_PG * self, JString * compat);
 
 
 /**
@@ -276,8 +282,8 @@ extern Jxta_boolean jxta_PG_is_compatible(Jxta_PG * self, JString * compat);
  * @return Jxta_status JXTA_SUCCESS if the operation was performed, an error
  * otherwise.
  */
-extern Jxta_status jxta_PG_loadfromimpl_module(Jxta_PG * self,
-                                               Jxta_id * assigned_id, Jxta_advertisement * impl, Jxta_module ** result);
+JXTA_DECLARE(Jxta_status) jxta_PG_loadfromimpl_module(Jxta_PG * self,
+                                                      Jxta_id * assigned_id, Jxta_advertisement * impl, Jxta_module ** result);
 
 
 /**
@@ -296,8 +302,8 @@ extern Jxta_status jxta_PG_loadfromimpl_module(Jxta_PG * self,
  * but not started, module. The object returned is already shared and thus must be
  * released after use. If an error is thrown, *module is not affected.
  */
-extern void jxta_PG_loadfromimpl_module_e(Jxta_PG * self,
-                                          Jxta_id * assigned_id, Jxta_advertisement * impl, Jxta_module ** module, Throws);
+JXTA_DECLARE(void) jxta_PG_loadfromimpl_module_e(Jxta_PG * self,
+                                                 Jxta_id * assigned_id, Jxta_advertisement * impl, Jxta_module ** module, Throws);
 
 
 /**
@@ -325,8 +331,8 @@ extern void jxta_PG_loadfromimpl_module_e(Jxta_PG * self,
  * @return Jxta_status JXTA_SUCCESS if the operation was performed, an error
  * otherwise.
  */
-extern Jxta_status jxta_PG_loadfromid_module(Jxta_PG * self,
-                                             Jxta_id * assigned_id, Jxta_MSID * spec_id, int where, Jxta_module ** result);
+JXTA_DECLARE(Jxta_status) jxta_PG_loadfromid_module(Jxta_PG * self,
+                                                    Jxta_id * assigned_id, Jxta_MSID * spec_id, int where, Jxta_module ** result);
 
 
 /**
@@ -356,8 +362,9 @@ extern Jxta_status jxta_PG_loadfromid_module(Jxta_PG * self,
  * error. The object returned is already shared and thus must be released
  * after use.
  */
-extern void jxta_PG_loadfromid_module_e(Jxta_PG * self,
-                                        Jxta_id * assigned_id, Jxta_MSID * spec_id, int where, Jxta_module ** module, Throws);
+JXTA_DECLARE(void) jxta_PG_loadfromid_module_e(Jxta_PG * self,
+                                               Jxta_id * assigned_id, Jxta_MSID * spec_id, int where, Jxta_module ** module,
+                                               Throws);
 
 
 /**
@@ -373,7 +380,7 @@ extern void jxta_PG_loadfromid_module_e(Jxta_PG * self,
  * @param name The name of this group.
  * @param description The description of this group.
  */
-extern void jxta_PG_set_labels(Jxta_PG * self, JString * name, JString * description);
+JXTA_DECLARE(void) jxta_PG_set_labels(Jxta_PG * self, JString * name, JString * description);
 
 
 
@@ -410,8 +417,8 @@ extern void jxta_PG_set_labels(Jxta_PG * self, JString * name, JString * descrip
  * @return Jxta_status JXTA_SUCCESS if the operation was performed, an error
  * otherwise.
  */
-extern Jxta_status jxta_PG_newfromadv(Jxta_PG * self, Jxta_advertisement * pgAdv,
-                                      Jxta_vector * resource_groups, Jxta_PG ** result);
+JXTA_DECLARE(Jxta_status) jxta_PG_newfromadv(Jxta_PG * self, Jxta_advertisement * pgAdv,
+                                             Jxta_vector * resource_groups, Jxta_PG ** result);
 
 
 /**
@@ -443,8 +450,8 @@ extern Jxta_status jxta_PG_newfromadv(Jxta_PG * self, Jxta_advertisement * pgAdv
  * shared and thus must be released after use. If an exception is thown,
  * *pg is not affected.
  */
-extern void jxta_PG_newfromadv_e(Jxta_PG * self,
-                                 Jxta_advertisement * pg_adv, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws);
+JXTA_DECLARE(void) jxta_PG_newfromadv_e(Jxta_PG * self,
+                                        Jxta_advertisement * pg_adv, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws);
 
 
 /**
@@ -471,9 +478,9 @@ extern void jxta_PG_newfromadv_e(Jxta_PG * self,
  * @return Jxta_status JXTA_STATUS if the operation was performed, an error
  * otherwise.
  */
-extern Jxta_status jxta_PG_newfromimpl(Jxta_PG * self, Jxta_PGID * gid,
-                                       Jxta_advertisement * impl, JString * name,
-                                       JString * description, Jxta_vector * resource_groups, Jxta_PG ** result);
+JXTA_DECLARE(Jxta_status) jxta_PG_newfromimpl(Jxta_PG * self, Jxta_PGID * gid,
+                                              Jxta_advertisement * impl, JString * name,
+                                              JString * description, Jxta_vector * resource_groups, Jxta_PG ** result);
 
 
 /**
@@ -497,9 +504,9 @@ extern Jxta_status jxta_PG_newfromimpl(Jxta_PG * self, Jxta_PGID * gid,
  * shared and thus must be released after use. If an exception is thown,
  * *pg is not affected.
  */
-extern void jxta_PG_newfromimpl_e(Jxta_PG * self, Jxta_PGID * gid,
-                                  Jxta_advertisement * impl, JString * name,
-                                  JString * description, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws);
+JXTA_DECLARE(void) jxta_PG_newfromimpl_e(Jxta_PG * self, Jxta_PGID * gid,
+                                         Jxta_advertisement * impl, JString * name,
+                                         JString * description, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws);
 
 
 /**
@@ -523,7 +530,7 @@ extern void jxta_PG_newfromimpl_e(Jxta_PG * self, Jxta_PGID * gid,
  * @return Jxta_status JXTA_SUCCESS if the operation was performed, an error
  * otherwise.
  */
-extern Jxta_status jxta_PG_newfromid(Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * resource_groups, Jxta_PG ** result);
+JXTA_DECLARE(Jxta_status) jxta_PG_newfromid(Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * resource_groups, Jxta_PG ** result);
 
 
 /**
@@ -545,7 +552,7 @@ extern Jxta_status jxta_PG_newfromid(Jxta_PG * self, Jxta_PGID * gid, Jxta_vecto
  * shared and thus must be released after use. If an exception is thown,
  * *pg is not affected.
  */
-extern void jxta_PG_newfromid_e(Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws);
+JXTA_DECLARE(void) jxta_PG_newfromid_e(Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws);
 
 
 /*
@@ -560,7 +567,7 @@ extern void jxta_PG_newfromid_e(Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * r
  * rendezvous service for this group. The object returned is already shared
  * and thus must be released after use.
  */
-extern void jxta_PG_get_rendezvous_service(Jxta_PG * self, Jxta_rdv_service ** rdv);
+JXTA_DECLARE(void) jxta_PG_get_rendezvous_service(Jxta_PG * self, Jxta_rdv_service ** rdv);
 
 
 /**
@@ -570,7 +577,7 @@ extern void jxta_PG_get_rendezvous_service(Jxta_PG * self, Jxta_rdv_service ** r
  * endpoint service for this group. The object returned is already shared
  * and thus must be released after use.
  */
-extern void jxta_PG_get_endpoint_service(Jxta_PG * self, Jxta_endpoint_service ** endp);
+JXTA_DECLARE(void) jxta_PG_get_endpoint_service(Jxta_PG * self, Jxta_endpoint_service ** endp);
 
 
 /**
@@ -580,7 +587,7 @@ extern void jxta_PG_get_endpoint_service(Jxta_PG * self, Jxta_endpoint_service *
  * resolver service for this group. The object returned is already shared
  * and thus must be released after use.
  */
-extern void jxta_PG_get_resolver_service(Jxta_PG * self, Jxta_resolver_service ** resolver);
+JXTA_DECLARE(void) jxta_PG_get_resolver_service(Jxta_PG * self, Jxta_resolver_service ** resolver);
 
 
 /**
@@ -590,7 +597,7 @@ extern void jxta_PG_get_resolver_service(Jxta_PG * self, Jxta_resolver_service *
  * discovery service for this group. The object returned is already shared
  * and thus must be released after use.
  */
-extern void jxta_PG_get_discovery_service(Jxta_PG * self, Jxta_discovery_service ** disco);
+JXTA_DECLARE(void) jxta_PG_get_discovery_service(Jxta_PG * self, Jxta_discovery_service ** disco);
 
 
 /**
@@ -600,7 +607,7 @@ extern void jxta_PG_get_discovery_service(Jxta_PG * self, Jxta_discovery_service
  * peerinfo service for this group. The object returned is already shared
  * and thus must be released after use.
  */
-extern void jxta_PG_get_peerinfo_service(Jxta_PG * self, Jxta_peerinfo_service ** peerinfo);
+JXTA_DECLARE(void) jxta_PG_get_peerinfo_service(Jxta_PG * self, Jxta_peerinfo_service ** peerinfo);
 
 
 /**
@@ -610,7 +617,7 @@ extern void jxta_PG_get_peerinfo_service(Jxta_PG * self, Jxta_peerinfo_service *
  * membership service for this group. The object returned is already shared
  * and thus must be released after use.
  */
-extern void jxta_PG_get_membership_service(Jxta_PG * self, Jxta_membership_service ** membership);
+JXTA_DECLARE(void) jxta_PG_get_membership_service(Jxta_PG * self, Jxta_membership_service ** membership);
 
 
 /**
@@ -620,9 +627,9 @@ extern void jxta_PG_get_membership_service(Jxta_PG * self, Jxta_membership_servi
  * pipe service for this group. The object returned is already shared
  * and thus must be released after use.
  */
-extern void jxta_PG_get_pipe_service(Jxta_PG * self, Jxta_pipe_service ** pipe);
+JXTA_DECLARE(void) jxta_PG_get_pipe_service(Jxta_PG * self, Jxta_pipe_service ** pipe);
 
-
+JXTA_DECLARE(void) jxta_PG_get_srdi_service(Jxta_PG * self, Jxta_srdi_service ** srdi);
 /*
  * A few convenience methods. This information is available from
  * the peer and peergroup advertisements. These methods do not fail.
@@ -636,7 +643,7 @@ extern void jxta_PG_get_pipe_service(Jxta_PG * self, Jxta_pipe_service ** pipe);
  * @param gid A location where to return (a ptr to) this groups ID.
  * The object returned is already shared and thus must be released after use.
  */
-extern void jxta_PG_get_GID(Jxta_PG * self, Jxta_PGID ** gid);
+JXTA_DECLARE(void) jxta_PG_get_GID(Jxta_PG * self, Jxta_PGID ** gid);
 
 
 /**
@@ -647,7 +654,7 @@ extern void jxta_PG_get_GID(Jxta_PG * self, Jxta_PGID ** gid);
  * @param pid A location where to return (a ptr to) the ID of this peer in this
  * group. The object returned is already shared and thus must be released after use.
  */
-extern void jxta_PG_get_PID(Jxta_PG * self, Jxta_PID ** pid);
+JXTA_DECLARE(void) jxta_PG_get_PID(Jxta_PG * self, Jxta_PID ** pid);
 
 
 /**
@@ -658,7 +665,7 @@ extern void jxta_PG_get_PID(Jxta_PG * self, Jxta_PID ** pid);
  * @param gname A location where to return (a ptr to) the name of this group.
  * The object returned is already shared and thus must be released after use.
  */
-extern void jxta_PG_get_groupname(Jxta_PG * self, JString ** gname);
+JXTA_DECLARE(void) jxta_PG_get_groupname(Jxta_PG * self, JString ** gname);
 
 
 /**
@@ -668,7 +675,7 @@ extern void jxta_PG_get_groupname(Jxta_PG * self, JString ** gname);
  * @param pname A location where to return (a ptr to) the name of this peer.
  * The object returned is already shared and thus must be released after use.
  */
-extern void jxta_PG_get_peername(Jxta_PG * self, JString ** pname);
+JXTA_DECLARE(void) jxta_PG_get_peername(Jxta_PG * self, JString ** pname);
 
 
 /**
@@ -681,7 +688,7 @@ extern void jxta_PG_get_peername(Jxta_PG * self, JString ** pname);
  * advertisement, a NULL pointer is returned, otherwise the object returned, is
  * already shared and thus must be released after use.
  */
-extern void jxta_PG_get_configadv(Jxta_PG * self, Jxta_PA ** confadv);
+JXTA_DECLARE(void) jxta_PG_get_configadv(Jxta_PG * self, Jxta_PA ** confadv);
 
 
 /**
@@ -696,7 +703,7 @@ extern void jxta_PG_get_configadv(Jxta_PG * self, Jxta_PA ** confadv);
  * @param confadv A location where to return (a ptr to) the advertisement.
  * The object returned, is already shared and thus must be released after use.
  */
-extern void jxta_PG_get_genericpeergroupMIA(Jxta_PG * self, Jxta_MIA ** mia);
+JXTA_DECLARE(void) jxta_PG_get_genericpeergroupMIA(Jxta_PG * self, Jxta_MIA ** mia);
 
 /*
  * Supplies a group with references to other groups that can be used
@@ -717,7 +724,7 @@ extern void jxta_PG_get_genericpeergroupMIA(Jxta_PG * self, Jxta_MIA ** mia);
  * @param resource groups. A vector of already instantiated groups. If NULL
  * the group may use its "parent" group as the sole resource group.
  */
-extern void jxta_PG_set_resourcegroups(Jxta_PG * self, Jxta_vector * resource_groups);
+JXTA_DECLARE(void) jxta_PG_set_resourcegroups(Jxta_PG * self, Jxta_vector * resource_groups);
 
 /*
  * Returns references to other groups that can be used to publish
@@ -738,7 +745,7 @@ extern void jxta_PG_set_resourcegroups(Jxta_PG * self, Jxta_vector * resource_gr
  * @param resource_groups. A location where to return (a ptr to) a vector of
  * groups.
  */
-extern void jxta_PG_get_resourcegroups(Jxta_PG * self, Jxta_vector ** resource_groups);
+JXTA_DECLARE(void) jxta_PG_get_resourcegroups(Jxta_PG * self, Jxta_vector ** resource_groups);
 
 /*
  * Returns a reference to the group object that was passed as the "group"
@@ -754,7 +761,7 @@ extern void jxta_PG_get_resourcegroups(Jxta_PG * self, Jxta_vector ** resource_g
  * object. This may be null if this group has no parent or does keep a reference
  * to its parent.
  */
-extern void jxta_PG_get_parentgroup(Jxta_PG * self, Jxta_PG ** parent_group);
+JXTA_DECLARE(void) jxta_PG_get_parentgroup(Jxta_PG * self, Jxta_PG ** parent_group);
 
 /*
  * Returns a copy of the compatibility statement string for this group.
@@ -763,8 +770,12 @@ extern void jxta_PG_get_parentgroup(Jxta_PG * self, Jxta_PG ** parent_group);
  * @param compat. A location where to return (a ptr to) the compat statement
  * string.
  */
-extern void jxta_PG_get_compatstatement(Jxta_PG * self, JString ** compat);
+JXTA_DECLARE(void) jxta_PG_get_compatstatement(Jxta_PG * self, JString ** compat);
 
+/*
+ * @todo Add documentation.
+ */
+JXTA_DECLARE(void) jxta_PG_get_srdi_service(Jxta_PG * self, Jxta_srdi_service ** srdi);
 
 /*
  * Returns an initialized and ready to use (but not started) instance of
@@ -782,7 +793,7 @@ extern void jxta_PG_get_compatstatement(Jxta_PG * self, JString ** compat);
  * described above. Otherwise, an error code is returned and *new_netpg is not
  * affected.
  */
-extern Jxta_status jxta_PG_new_netpg(Jxta_PG ** new_netpg);
+JXTA_DECLARE(Jxta_status) jxta_PG_new_netpg(Jxta_PG ** new_netpg);
 
 
 /*
@@ -799,7 +810,7 @@ extern Jxta_status jxta_PG_new_netpg(Jxta_PG ** new_netpg);
  * @return Jxta_status JXTA_SUCCESS if ok, JXTA_ITEM_EXISTS if there is
  * already has a group object associated with th egiven GID.
  */
-extern Jxta_status jxta_register_group_instance(Jxta_id * gid, Jxta_PG * pg);
+JXTA_DECLARE(Jxta_status) jxta_register_group_instance(Jxta_id * gid, Jxta_PG * pg);
 
 
 /*
@@ -817,7 +828,7 @@ extern Jxta_status jxta_register_group_instance(Jxta_id * gid, Jxta_PG * pg);
  * group ID is registered. JXTA_VIOLATION if the given group object does
  * not match the registered one.
  */
-extern Jxta_status jxta_unregister_group_instance(Jxta_id * gid, Jxta_PG * pg);
+JXTA_DECLARE(Jxta_status) jxta_unregister_group_instance(Jxta_id * gid, Jxta_PG * pg);
 
 /*
  * Lookup an already instantiated group by ID.
@@ -828,7 +839,7 @@ extern Jxta_status jxta_unregister_group_instance(Jxta_id * gid, Jxta_PG * pg);
  *
  * @return Jxta_status JXTA_SUCCESS if found, an error otherwise.
  */
-extern Jxta_status jxta_lookup_group_instance(Jxta_id * gid, Jxta_PG ** pg);
+JXTA_DECLARE(Jxta_status) jxta_lookup_group_instance(Jxta_id * gid, Jxta_PG ** pg);
 
 /*
  * Add a new relay address to the peergroup advertisement. This
@@ -841,7 +852,7 @@ extern Jxta_status jxta_lookup_group_instance(Jxta_id * gid, Jxta_PG ** pg);
  *
  * @return Jxta_status JXTA_SUCCESS if found, an error otherwise.
  */
-extern Jxta_status jxta_PG_add_relay_address(Jxta_PG * pg, Jxta_RdvAdvertisement * relay);
+JXTA_DECLARE(Jxta_status) jxta_PG_add_relay_address(Jxta_PG * pg, Jxta_RdvAdvertisement * relay);
 
 /*
  * Remove a relay address from the peergroup advertisement after
@@ -852,10 +863,15 @@ extern Jxta_status jxta_PG_add_relay_address(Jxta_PG * pg, Jxta_RdvAdvertisement
  *
  * @return Jxta_status JXTA_SUCCESS if found, an error otherwise.
  */
-extern Jxta_status jxta_PG_remove_relay_address(Jxta_PG * pg, Jxta_id * relayid);
+JXTA_DECLARE(Jxta_status) jxta_PG_remove_relay_address(Jxta_PG * pg, Jxta_id * relayid);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTA_PEERGROUP_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

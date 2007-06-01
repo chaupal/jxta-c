@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_incoming_unicast_server.h,v 1.2 2005/01/12 20:20:51 brent Exp $
+ * $Id: jxta_incoming_unicast_server.h,v 1.4 2005/06/16 23:11:43 slowhog Exp $
  */
 
 #ifndef __JXTA_INCOMING_UNICAST_SERVER_H__
@@ -68,7 +68,6 @@ extern "C" {
 }
 #endif
 #endif
-
 typedef struct _incoming_unicast_server IncomingUnicastServer;
 
 
@@ -77,38 +76,43 @@ typedef struct _incoming_unicast_server IncomingUnicastServer;
 /********************************************************************************/
 /*                                                                              */
 /********************************************************************************/
-IncomingUnicastServer *jxta_incoming_unicast_server_new(Jxta_transport_tcp *tp, char *addr, apr_port_t port);
+IncomingUnicastServer *jxta_incoming_unicast_server_new(Jxta_transport_tcp * tp, char *addr, apr_port_t port);
 
 
 
 /********************************************************************************/
 /*                                                                              */
 /********************************************************************************/
-Jxta_boolean jxta_incoming_unicast_server_start(IncomingUnicastServer *ius);
+Jxta_boolean jxta_incoming_unicast_server_start(IncomingUnicastServer * ius);
 
 
 
 /********************************************************************************/
 /*                                                                              */
 /********************************************************************************/
-void jxta_incoming_unicast_server_stop(IncomingUnicastServer *ius);
+void jxta_incoming_unicast_server_stop(IncomingUnicastServer * ius);
 
 
 
 /********************************************************************************/
 /*                                                                              */
 /********************************************************************************/
-apr_port_t jxta_incoming_unicast_server_get_local_port(IncomingUnicastServer *ius);
+apr_port_t jxta_incoming_unicast_server_get_local_port(IncomingUnicastServer * ius);
 
 
 
 /********************************************************************************/
 /*                                                                              */
 /********************************************************************************/
-char *jxta_incoming_unicast_server_get_local_interface(IncomingUnicastServer *ius);
+const char *jxta_incoming_unicast_server_get_local_interface(IncomingUnicastServer * ius);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
-#endif	/* __JXTA_INCOMING_UNICAST_SERVER_H__ */
+#endif /* __JXTA_INCOMING_UNICAST_SERVER_H__ */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

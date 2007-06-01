@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: search.h,v 1.1 2004/12/05 02:16:45 slowhog Exp $
+ * $Id: search.h,v 1.3 2005/08/24 01:21:23 slowhog Exp $
  */
 #ifndef __JXTA_SHELL_SEARCH_H__
 #define __JXTA_SHELL_SEARCH_H__
@@ -70,30 +70,26 @@ extern "C" {
 }
 #endif
 #endif
+JxtaShellApplication *jxta_search_new(Jxta_PG * pg,
+                                      Jxta_listener * standout,
+                                      JxtaShellEnvironment * env, Jxta_object * parent, shell_application_terminate terminate);
+
+void jxta_search_process_input(Jxta_object * app, JString * inputLine);
+
+void jxta_search_start(Jxta_object * app, int argv, char **arg);
+
+void jxta_search_print_help(Jxta_object * app);
 
 
-
-JxtaShellApplication * jxta_search_new(Jxta_PG * pg,
-                                               Jxta_listener* standout,
-                                               JxtaShellEnvironment *env,
-                                               Jxta_object * parent,
-                                       shell_application_terminate terminate);
-
-void  jxta_search_process_input(Jxta_object *app,
-                                       JString * inputLine);
-
-void jxta_search_start(Jxta_object *app,
-                               int argv, char **arg);
-
-void jxta_search_print_help(Jxta_object *app);
-
+void search_read_query_file(JString * filename, JString * jquery);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
-
-
 #endif /*__JXTA_SHELL_SEARCH_H__ */
 
-
+/* vim: set ts=4 sw=4 et tw=130 */

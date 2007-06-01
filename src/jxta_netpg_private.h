@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_netpg_private.h,v 1.12 2005/01/10 17:23:43 brent Exp $
+ * $Id: jxta_netpg_private.h,v 1.13 2005/06/16 23:11:45 slowhog Exp $
  */
 
 #ifndef JXTA_NETPG_PRIVATE_H
@@ -66,15 +66,12 @@ extern "C" {
 }
 #endif
 #endif
-
 /*
  * Note: Jxta_netpg does not normaly need to be public, unless the
  * group has some extra features available to applications. That's why
  * there is no separate incomplete type declaration in a public
  * header file. Here we only export this type to subclassers.
- */
-
-typedef struct _jxta_netpg Jxta_netpg;
+ */ typedef struct _jxta_netpg Jxta_netpg;
 struct _jxta_netpg {
 
     Extends(Jxta_stdpg);
@@ -83,10 +80,10 @@ struct _jxta_netpg {
     /*
      * Netpg provides at least these transports.
      */
-    Jxta_transport*          http;
-    Jxta_transport*          tcp;
-    Jxta_transport*          router;
-    Jxta_transport*          relay;
+    Jxta_transport *http;
+    Jxta_transport *tcp;
+    Jxta_transport *router;
+    Jxta_transport *relay;
 };
 
 
@@ -108,17 +105,21 @@ extern Jxta_netpg_methods jxta_netpg_methods;
 /*
  * export the constructor to subclassers.
  */
-extern void jxta_netpg_construct(Jxta_netpg* self,
-				 Jxta_netpg_methods* methods);
+extern void jxta_netpg_construct(Jxta_netpg * self, Jxta_netpg_methods * methods);
 
 /*
  * export the destructor to subclassers.
  */
-extern void jxta_netpg_destruct(Jxta_netpg* self);
+extern void jxta_netpg_destruct(Jxta_netpg * self);
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTA_NETPG_PRIVATE_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

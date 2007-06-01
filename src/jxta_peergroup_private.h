@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup_private.h,v 1.17 2005/01/10 17:19:28 brent Exp $
+ * $Id: jxta_peergroup_private.h,v 1.20 2005/06/16 23:11:46 slowhog Exp $
  */
 
 #ifndef JXTA_PEERGROUP_PRIVATE_H
@@ -76,16 +76,13 @@ extern "C" {
 }
 #endif
 #endif
-
-
 /**
  * A Jxta_PG is a Jxta_service plus a thisType field of "Jxta_peergroup".
  * The set of methods is assigned to the base Jxta_module.
  * The set of methods is a superset of the set of methods of Jxta_service.
  * After allocating such an object, one must apply JXTA_OBJECT_INIT() and
  * jxta_PG_construct to it.
- */
-struct _jxta_PG {
+ */ struct _jxta_PG {
 
     Extends(Jxta_service);
 
@@ -129,74 +126,49 @@ struct _jxta_PG_methods {
 
     Extends(Jxta_service_methods);
 
-    void (*get_loader)(Jxta_PG* self, Jxta_loader** loader);
-    void (*get_PGA)(Jxta_PG* self, Jxta_PGA** pga);
-    void (*get_PA)(Jxta_PG* self, Jxta_PA** pa);
-    Jxta_status (*lookup_service)(Jxta_PG* self, Jxta_id* name,
-					  Jxta_service** result);
-    void (*lookup_service_e)(Jxta_PG* self, Jxta_id* name, Jxta_service** serv, 
-				      Throws);
-    Jxta_boolean (*is_compatible)(Jxta_PG* self, JString* compat);
-    Jxta_status (*loadfromimpl_module)(Jxta_PG* self,
-				       Jxta_id* assigned_id,
-				       Jxta_advertisement* impl,
-				       Jxta_module** result);
-    void (*loadfromimpl_module_e)(Jxta_PG* self,
-				  Jxta_id* assigned_id,
-				  Jxta_advertisement* impl,
-				  Jxta_module** mod,
-				  Throws);
-    Jxta_status (*loadfromid_module)(Jxta_PG* self,
-				     Jxta_id* assigned_id,
-				     Jxta_MSID* spec_id,
-				     int where,
-				     Jxta_module** result);
-    void (*loadfromid_module_e)(Jxta_PG* self,
-				Jxta_id* assigned_id,
-				Jxta_MSID* spec_id, int where,
-				Jxta_module** mod,
-				Throws);
-    void (*set_labels)(Jxta_PG* self, JString* name, JString* description);
-    Jxta_status (*newfromadv)(Jxta_PG* self, Jxta_advertisement* pgAdv,
-			      Jxta_vector* resource_groups, Jxta_PG** result);
-    void (*newfromadv_e)(Jxta_PG* self, Jxta_advertisement* pgAdv,
-			 Jxta_vector* resource_group, Jxta_PG** pg, Throws);
-    Jxta_status (*newfromimpl)(Jxta_PG* self, Jxta_PGID* gid,
-			       Jxta_advertisement* impl, JString* name,
-			       JString* description,
-			       Jxta_vector* resource_groups, Jxta_PG** result);
-    void (*newfromimpl_e)(Jxta_PG* self, Jxta_PGID* gid,
-			  Jxta_advertisement* impl, JString* name,
-			  JString* description,
-			  Jxta_vector* resource_groups,
-			  Jxta_PG** pg, Throws);
-    Jxta_status (*newfromid)(Jxta_PG* self, Jxta_PGID* gid,
-			     Jxta_vector* resource_groups, Jxta_PG** result);
-    void (*newfromid_e)(Jxta_PG* self, Jxta_PGID* gid,
-			Jxta_vector* resource_groups, Jxta_PG** pg, Throws);
-    void (*get_rendezvous_service)(Jxta_PG* self, Jxta_rdv_service** rdv);
-    void (*get_endpoint_service)(Jxta_PG* self, Jxta_endpoint_service** endp);
-    void (*get_resolver_service)(Jxta_PG* self, Jxta_resolver_service** resolver);
-    void (*get_discovery_service)(Jxta_PG* self, Jxta_discovery_service** disco);
-    void (*get_peerinfo_service)(Jxta_PG* self, Jxta_peerinfo_service** peerinfo);
-    void (*get_membership_service)(Jxta_PG* self, Jxta_membership_service** memb);
-    void (*get_pipe_service)(Jxta_PG* self, Jxta_pipe_service** pipe);
-    void (*get_GID)(Jxta_PG* self, Jxta_PGID** gid);
-    void (*get_PID)(Jxta_PG* self, Jxta_PID** pid);
-    void (*get_groupname)(Jxta_PG* self, JString** nm);
-    void (*get_peername)(Jxta_PG* self, JString** nm);
-    void (*get_configadv)(Jxta_PG* self, Jxta_PA** adv);
-    void (*get_genericpeergroupMIA)(Jxta_PG* self, Jxta_MIA** mia);
-    void (*set_resourcegroups)(Jxta_PG* self,
-			       Jxta_vector* resource_groups);
-    void (*get_resourcegroups)(Jxta_PG* self,
-			       Jxta_vector** resource_groups);
-    void (*get_parentgroup)(Jxta_PG* self,
-			    Jxta_PG** parent_group);
-    void (*get_compatstatement)(Jxta_PG* self,
-				JString** compat);
-    Jxta_status (*add_relay_address) (Jxta_PG* self, Jxta_RdvAdvertisement *relay);
-    Jxta_status (*remove_relay_address)(Jxta_PG* self, Jxta_id *relayid);
+    void (*get_loader) (Jxta_PG * self, Jxta_loader ** loader);
+    void (*get_PGA) (Jxta_PG * self, Jxta_PGA ** pga);
+    void (*get_PA) (Jxta_PG * self, Jxta_PA ** pa);
+     Jxta_status(*lookup_service) (Jxta_PG * self, Jxta_id * name, Jxta_service ** result);
+    void (*lookup_service_e) (Jxta_PG * self, Jxta_id * name, Jxta_service ** serv, Throws);
+     Jxta_boolean(*is_compatible) (Jxta_PG * self, JString * compat);
+     Jxta_status(*loadfromimpl_module) (Jxta_PG * self, Jxta_id * assigned_id, Jxta_advertisement * impl, Jxta_module ** result);
+    void (*loadfromimpl_module_e) (Jxta_PG * self, Jxta_id * assigned_id, Jxta_advertisement * impl, Jxta_module ** mod, Throws);
+     Jxta_status(*loadfromid_module) (Jxta_PG * self,
+                                      Jxta_id * assigned_id, Jxta_MSID * spec_id, int where, Jxta_module ** result);
+    void (*loadfromid_module_e) (Jxta_PG * self,
+                                 Jxta_id * assigned_id, Jxta_MSID * spec_id, int where, Jxta_module ** mod, Throws);
+    void (*set_labels) (Jxta_PG * self, JString * name, JString * description);
+     Jxta_status(*newfromadv) (Jxta_PG * self, Jxta_advertisement * pgAdv, Jxta_vector * resource_groups, Jxta_PG ** result);
+    void (*newfromadv_e) (Jxta_PG * self, Jxta_advertisement * pgAdv, Jxta_vector * resource_group, Jxta_PG ** pg, Throws);
+     Jxta_status(*newfromimpl) (Jxta_PG * self, Jxta_PGID * gid,
+                                Jxta_advertisement * impl, JString * name,
+                                JString * description, Jxta_vector * resource_groups, Jxta_PG ** result);
+    void (*newfromimpl_e) (Jxta_PG * self, Jxta_PGID * gid,
+                           Jxta_advertisement * impl, JString * name,
+                           JString * description, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws);
+     Jxta_status(*newfromid) (Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * resource_groups, Jxta_PG ** result);
+    void (*newfromid_e) (Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws);
+    void (*get_rendezvous_service) (Jxta_PG * self, Jxta_rdv_service ** rdv);
+    void (*get_endpoint_service) (Jxta_PG * self, Jxta_endpoint_service ** endp);
+    void (*get_resolver_service) (Jxta_PG * self, Jxta_resolver_service ** resolver);
+    void (*get_discovery_service) (Jxta_PG * self, Jxta_discovery_service ** disco);
+    void (*get_peerinfo_service) (Jxta_PG * self, Jxta_peerinfo_service ** peerinfo);
+    void (*get_membership_service) (Jxta_PG * self, Jxta_membership_service ** memb);
+    void (*get_pipe_service) (Jxta_PG * self, Jxta_pipe_service ** pipe);
+    void (*get_GID) (Jxta_PG * self, Jxta_PGID ** gid);
+    void (*get_PID) (Jxta_PG * self, Jxta_PID ** pid);
+    void (*get_groupname) (Jxta_PG * self, JString ** nm);
+    void (*get_peername) (Jxta_PG * self, JString ** nm);
+    void (*get_configadv) (Jxta_PG * self, Jxta_PA ** adv);
+    void (*get_genericpeergroupMIA) (Jxta_PG * self, Jxta_MIA ** mia);
+    void (*set_resourcegroups) (Jxta_PG * self, Jxta_vector * resource_groups);
+    void (*get_resourcegroups) (Jxta_PG * self, Jxta_vector ** resource_groups);
+    void (*get_parentgroup) (Jxta_PG * self, Jxta_PG ** parent_group);
+    void (*get_compatstatement) (Jxta_PG * self, JString ** compat);
+     Jxta_status(*add_relay_address) (Jxta_PG * self, Jxta_RdvAdvertisement * relay);
+     Jxta_status(*remove_relay_address) (Jxta_PG * self, Jxta_id * relayid);
+    void (*get_srdi_service) (Jxta_PG * self, Jxta_srdi_service ** srdi);
 };
 
 /**
@@ -207,15 +179,20 @@ struct _jxta_PG_methods {
  * @param self The Jxta_PG_object to initialize.
  * @param methods A pointer to the relevant set of methods.
  */
-extern void jxta_PG_construct(Jxta_PG* self, Jxta_PG_methods* methods);
+JXTA_DECLARE(void) jxta_PG_construct(Jxta_PG * self, Jxta_PG_methods * methods);
 
 /**
  * The base PG dtor (Not public, not virtual. Only called by subclassers).
  */
-extern void jxta_PG_destruct(Jxta_PG* self);
+JXTA_DECLARE(void) jxta_PG_destruct(Jxta_PG * self);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* JXTA_PEERGROUP_PRIVATE_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

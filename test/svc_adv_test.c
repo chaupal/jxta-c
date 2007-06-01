@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: svc_adv_test.c,v 1.7 2005/04/07 22:58:56 slowhog Exp $
+ * $Id: svc_adv_test.c,v 1.8 2005/04/17 14:22:20 lankes Exp $
  */
 
    
@@ -66,6 +66,7 @@
  
 #include <stdio.h>
 #include <string.h>
+#include "jxta.h"
 #include "jxta_svc.h"
 
 

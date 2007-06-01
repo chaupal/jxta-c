@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object_ptrwrapper.h,v 1.4 2005/01/12 22:37:41 bondolo Exp $
+ * $Id: jxta_object_ptrwrapper.h,v 1.5 2005/06/16 23:11:45 slowhog Exp $
  */
 
 #ifndef __JXTAPTRWRAPPER_H__
@@ -67,23 +67,25 @@ extern "C" {
 }
 #endif
 #endif
-
-    typedef struct _JxtaObjectPtrWrapper const * JxtaObjectPtrWrapper;
+typedef struct _JxtaObjectPtrWrapper const *JxtaObjectPtrWrapper;
 
     /**
     *   Create a new JxtaObjectPtrWrapper. This wrapper lets you do reference
     *   counting on a plain pointer. 
     **/
 
-    JxtaObjectPtrWrapper
-    jxta_object_ptrwrapper_new( void* ptr, Jxta_boolean callfree );
+JxtaObjectPtrWrapper jxta_object_ptrwrapper_new(void *ptr, Jxta_boolean callfree);
 
-    void *
-    jxta_object_ptrwrapper_get_ptr( JxtaObjectPtrWrapper obj );
+void *jxta_object_ptrwrapper_get_ptr(JxtaObjectPtrWrapper obj);
 
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif
+
+/* vi: set ts=4 sw=4 tw=130 et: */

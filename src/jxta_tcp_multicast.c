@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tcp_multicast.c,v 1.14 2005/03/24 18:27:17 slowhog Exp $
+ * $Id: jxta_tcp_multicast.c,v 1.24 2005/08/18 19:01:51 slowhog Exp $
  */
 
 #define BUFSIZE		8192
@@ -60,21 +60,22 @@
 #include <apr_network_io.h>
 #include <apr_thread_proc.h>
 
+#include "jpr/jpr_apr_wrapper.h"
 #include "jpr/jpr_types.h"
-#include "jpr/jpr_thread.h"
 
+#include "jxtaapr.h"
 #include "jxta_errno.h"
-#include "jxta_debug.h"
+#include "jxta_log.h"
 #include "jxta_tcp_multicast.h"
 #include "jxta_endpoint_address.h"
 #include "jxta_tcp_message_packet_header.h"
-#include "jxta_log.h"
 
 #ifdef WIN32
 #include <winsock.h>
 #include <ws2tcpip.h>
 #else
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #endif
 
 typedef struct _stream {
@@ -122,14 +123,14 @@ static void stream_print(STREAM * stream);
 
 static void tcp_multicast_free(Jxta_object * arg);
 
-static Jxta_status read_from_tcp_multicast_stream(void *stream, char *buf, apr_size_t len);
+static Jxta_status JXTA_STDCALL read_from_tcp_multicast_stream(void *stream, char *buf, apr_size_t len);
 static void *APR_THREAD_FUNC tcp_multicast_body(apr_thread_t * t, void *arg);
-static void tcp_multicast_process(TcpMulticast * tm, STREAM * stream);
+static void JXTA_STDCALL tcp_multicast_process(TcpMulticast * tm, STREAM * stream);
 
-static Jxta_status msg_wireformat_size(void *arg, const char *buf, apr_size_t len);
-static Jxta_status write_to_tcp_multicast_stream(void *stream, const char *buf, apr_size_t len);
+static Jxta_status JXTA_STDCALL msg_wireformat_size(void *arg, const char *buf, apr_size_t len);
+static Jxta_status JXTA_STDCALL write_to_tcp_multicast_stream(void *stream, const char *buf, apr_size_t len);
 
-static Jxta_status tcp_multicast_read(TcpMulticast * tm, char *buf, apr_size_t * size);
+static Jxta_status JXTA_STDCALL tcp_multicast_read(TcpMulticast * tm, char *buf, apr_size_t * size);
 /*
 static Jxta_status tcp_multicast_unread(TcpMulticast *tm, char *buf, apr_size_t size);
 */
@@ -209,7 +210,7 @@ TcpMulticast *tcp_multicast_new(Jxta_transport_tcp * tp, char *ipaddr, apr_port_
 
     /* apr setting */
     status = apr_pool_create(&self->pool, NULL);
-    if (!APR_STATUS_IS_SUCCESS(status)) {
+    if (APR_SUCCESS != status) {
         char msg[256];
         apr_strerror(status, msg, sizeof(msg));
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "%s\n", msg);
@@ -218,7 +219,7 @@ TcpMulticast *tcp_multicast_new(Jxta_transport_tcp * tp, char *ipaddr, apr_port_
         return NULL;
     }
     status = apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED, self->pool);
-    if (!APR_STATUS_IS_SUCCESS(status)) {
+    if (APR_SUCCESS != status) {
         char msg[256];
         apr_strerror(status, msg, sizeof(msg));
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "%s\n", msg);
@@ -229,7 +230,7 @@ TcpMulticast *tcp_multicast_new(Jxta_transport_tcp * tp, char *ipaddr, apr_port_
 
     /* socket info */
     status = apr_sockaddr_info_get(&self->recv_intf, APR_ANYADDR, APR_INET, self->multicast_port, 0, self->pool);
-    if (!APR_STATUS_IS_SUCCESS(status)) {
+    if (APR_SUCCESS != status) {
         char msg[256];
         apr_strerror(status, msg, sizeof(msg));
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "%s\n", msg);
@@ -238,7 +239,7 @@ TcpMulticast *tcp_multicast_new(Jxta_transport_tcp * tp, char *ipaddr, apr_port_
     }
 
     status = apr_sockaddr_info_get(&self->send_intf, ipaddr, APR_INET, self->multicast_port, 0, self->pool);
-    if (!APR_STATUS_IS_SUCCESS(status)) {
+    if (APR_SUCCESS != status) {
         char msg[256];
         apr_strerror(status, msg, sizeof(msg));
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "%s\n", msg);
@@ -273,6 +274,8 @@ static void tcp_multicast_free(Jxta_object * obj)
     stream_free(self->output_stream);
     stream_free(self->buf_stream);
 
+    JXTA_OBJECT_RELEASE(self->endpoint);
+
     apr_pool_destroy(self->pool);
 
     free(self);
@@ -295,8 +298,12 @@ Jxta_boolean tcp_multicast_start(TcpMulticast * tm)
     self->run = FALSE;
 
     /* sending socket */
-    status = apr_socket_create(&self->send_sock, APR_INET, SOCK_DGRAM, self->pool);
-    if (!APR_STATUS_IS_SUCCESS(status)) {
+#if CHECK_APR_VERSION(1, 0, 0)
+    status = apr_socket_create(&self->send_sock, APR_INET, SOCK_DGRAM, APR_PROTO_UDP, self->pool);
+#else
+    status = apr_socket_create_ex(&self->send_sock, APR_INET, SOCK_DGRAM, APR_PROTO_UDP, self->pool);
+#endif
+    if (APR_SUCCESS != status) {
         char msg[256];
         apr_strerror(status, msg, sizeof(msg));
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "%s\n", msg);
@@ -305,8 +312,12 @@ Jxta_boolean tcp_multicast_start(TcpMulticast * tm)
     }
 
     /* receiving socket */
-    status = apr_socket_create(&self->recv_sock, APR_INET, SOCK_DGRAM, self->pool);
-    if (!APR_STATUS_IS_SUCCESS(status)) {
+#if CHECK_APR_VERSION(1, 0, 0)
+    status = apr_socket_create(&self->recv_sock, APR_INET, SOCK_DGRAM, APR_PROTO_UDP, self->pool);
+#else
+    status = apr_socket_create_ex(&self->recv_sock, APR_INET, SOCK_DGRAM, APR_PROTO_UDP, self->pool);
+#endif
+    if (APR_SUCCESS != status) {
         char msg[256];
         apr_strerror(status, msg, sizeof(msg));
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "%s\n", msg);
@@ -314,7 +325,7 @@ Jxta_boolean tcp_multicast_start(TcpMulticast * tm)
 
     /* REUSEADDR */
     status = apr_socket_opt_set(self->recv_sock, APR_SO_REUSEADDR, 1);
-    if (!APR_STATUS_IS_SUCCESS(status)) {
+    if (APR_SUCCESS != status) {
         char msg[256];
         apr_strerror(status, msg, sizeof(msg));
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "%s\n", msg);
@@ -322,7 +333,7 @@ Jxta_boolean tcp_multicast_start(TcpMulticast * tm)
     }
 
     status = apr_socket_bind(self->recv_sock, self->recv_intf);
-    if (!APR_STATUS_IS_SUCCESS(status)) {
+    if (APR_SUCCESS != status) {
         char msg[256];
         apr_strerror(status, msg, sizeof(msg));
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "%s\n", msg);
@@ -350,7 +361,7 @@ Jxta_boolean tcp_multicast_start(TcpMulticast * tm)
     /* thread */
     status = apr_thread_create(&self->thread, NULL, tcp_multicast_body, (void *) self, self->pool);
 
-    if (!APR_STATUS_IS_SUCCESS(status)) {
+    if (APR_SUCCESS != status) {
         char msg[256];
         apr_strerror(status, msg, sizeof(msg));
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "%s\n", msg);
@@ -386,7 +397,7 @@ void tcp_multicast_stop(TcpMulticast * tm)
     }
 }
 
-static Jxta_status read_from_tcp_multicast_stream(void *stream, char *buf, apr_size_t len)
+static Jxta_status JXTA_STDCALL read_from_tcp_multicast_stream(void *stream, char *buf, apr_size_t len)
 {
     return tcp_multicast_read_stream_n((STREAM *) stream, buf, len);
 }
@@ -413,10 +424,11 @@ static void *APR_THREAD_FUNC tcp_multicast_body(apr_thread_t * t, void *arg)
 
         tcp_multicast_process(self, stream);
     }
+    apr_thread_exit(t, APR_SUCCESS);
     return NULL;
 }
 
-static void tcp_multicast_process(TcpMulticast * tm, STREAM * stream)
+static void JXTA_STDCALL tcp_multicast_process(TcpMulticast * tm, STREAM * stream)
 {
     TcpMulticast *self = tm;
     Jxta_message *msg;
@@ -434,9 +446,13 @@ static void tcp_multicast_process(TcpMulticast * tm, STREAM * stream)
     stream->d_index += 4;
     stream->d_len -= 4;
 
-    res = message_packet_header_read(read_from_tcp_multicast_stream, (void *) stream, &msg_size, TRUE, self->received_src_addr);
+    res = message_packet_header_read(read_from_tcp_multicast_stream, (void *) stream, &msg_size, TRUE, &self->received_src_addr);
 
     /* We do not have anything with self->received_src_addr */
+    /* FIXME: slowhog: what does this mean? do we want to have it but failed because bug of
+       message_packet_header_read prototype before? Free the addr for now */
+    free(self->received_src_addr);
+    self->received_src_addr = NULL;
 
     if (res != JXTA_SUCCESS) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Failed to read message packet header\n");
@@ -454,17 +470,18 @@ static void tcp_multicast_process(TcpMulticast * tm, STREAM * stream)
 
         JXTA_OBJECT_CHECK_VALID(self->endpoint);
         jxta_endpoint_service_demux(self->endpoint, msg);
+        JXTA_OBJECT_RELEASE(msg);
     }
 }
 
-static Jxta_status msg_wireformat_size(void *arg, const char *buf, apr_size_t len)
+static Jxta_status JXTA_STDCALL msg_wireformat_size(void *arg, const char *buf, apr_size_t len)
 {
-    JXTA_LONG_LONG *size = (JXTA_LONG_LONG *) arg;      /* 8 bytes */
+    JXTA_LONG_LONG *size = (JXTA_LONG_LONG *) arg;  /* 8 bytes */
     *size += len;
     return JXTA_SUCCESS;
 }
 
-static Jxta_status write_to_tcp_multicast_stream(void *stream, const char *buf, apr_size_t len)
+static Jxta_status JXTA_STDCALL write_to_tcp_multicast_stream(void *stream, const char *buf, apr_size_t len)
 {
     return tcp_multicast_write_stream((STREAM *) stream, buf, len);
 }
@@ -478,6 +495,7 @@ Jxta_status tcp_multicast_propagate(TcpMulticast * tm, Jxta_message * msg, const
     apr_size_t packet_header_size = 0;
     JXTA_LONG_LONG msg_size = (JXTA_LONG_LONG) 0;
     Jxta_status res;
+    int len;
 
     JXTA_OBJECT_CHECK_VALID(self);
 
@@ -493,10 +511,11 @@ Jxta_status tcp_multicast_propagate(TcpMulticast * tm, Jxta_message * msg, const
 
     stream_init(stream);
 
-    dest_addr = (char *) malloc(strlen(self->multicast_ipaddr) + 20);
-    sprintf(dest_addr, "%s:%d", self->multicast_ipaddr, self->multicast_port);
+    len = strlen(self->multicast_ipaddr) + 20;
+    dest_addr = (char *) malloc(len);
+    apr_snprintf(dest_addr, len, "%s:%d", self->multicast_ipaddr, self->multicast_port);
     /* set destination */
-    m_addr = jxta_endpoint_address_new2(strdup("tcp"), dest_addr, strdup(service_name), strdup(service_params));
+    m_addr = jxta_endpoint_address_new2("tcp", dest_addr, service_name, service_params);
     jxta_message_set_destination(msg, m_addr);
     JXTA_OBJECT_RELEASE(m_addr);
     free(dest_addr);
@@ -512,7 +531,7 @@ Jxta_status tcp_multicast_propagate(TcpMulticast * tm, Jxta_message * msg, const
     jxta_message_write(msg, APP_MSG, msg_wireformat_size, &msg_size);
 
     src_addr = (char *) malloc(128);
-    sprintf(src_addr, "tcp://%s:%d", jxta_transport_tcp_get_local_ipaddr(self->tp), jxta_transport_tcp_get_local_port(self->tp));
+    apr_snprintf(src_addr, 128, "tcp://%s:%d", jxta_transport_tcp_local_ipaddr_cstr(self->tp), jxta_transport_tcp_get_local_port(self->tp));
 
     message_packet_header_write(msg_wireformat_size, (void *) &packet_header_size, msg_size, TRUE, src_addr);
     message_packet_header_write(write_to_tcp_multicast_stream, (void *) stream, msg_size, TRUE, src_addr);
@@ -543,7 +562,7 @@ Jxta_status tcp_multicast_propagate(TcpMulticast * tm, Jxta_message * msg, const
     return res;
 }
 
-static Jxta_status tcp_multicast_read(TcpMulticast * tm, char *buf, apr_size_t * size)
+static Jxta_status JXTA_STDCALL tcp_multicast_read(TcpMulticast * tm, char *buf, apr_size_t * size)
 {
     apr_status_t status;
 
@@ -551,7 +570,7 @@ static Jxta_status tcp_multicast_read(TcpMulticast * tm, char *buf, apr_size_t *
         return JXTA_FAILED;
 
     status = apr_socket_recvfrom(tm->recv_intf, tm->recv_sock, 0, buf, size);
-    if (!APR_STATUS_IS_SUCCESS(status))
+    if (APR_SUCCESS != status)
         return JXTA_FAILED;
     return JXTA_SUCCESS;
 }
@@ -591,7 +610,7 @@ static Jxta_status tcp_multicast_write(TcpMulticast * tm, const char *buf, apr_s
 
     while (size > 0) {
         status = apr_socket_sendto(tm->send_sock, tm->send_intf, 0, buf, &written);
-        if (!APR_STATUS_IS_SUCCESS(status)) {
+        if (APR_SUCCESS != status) {
             char msg[256];
             apr_strerror(status, msg, sizeof(msg));
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "%s\n", msg);
@@ -604,12 +623,13 @@ static Jxta_status tcp_multicast_write(TcpMulticast * tm, const char *buf, apr_s
             break;
     }
 
-    return APR_STATUS_IS_SUCCESS(status) ? JXTA_SUCCESS : JXTA_FAILED;
+    return (APR_SUCCESS == status) ? JXTA_SUCCESS : JXTA_FAILED;
 }
 
 void stream_print(STREAM * stream)
 {
-    int i, ch;
+    apr_size_t i; 
+    int ch;
 
     printf("[%lu] ", stream->d_len);
     for (i = 0; i < stream->d_len; i++) {
