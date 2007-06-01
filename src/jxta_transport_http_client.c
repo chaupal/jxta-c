@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http_client.c,v 1.15 2005/03/30 02:22:52 slowhog Exp $
+ * $Id: jxta_transport_http_client.c,v 1.15.2.1 2005/04/30 09:22:33 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -250,10 +250,13 @@ void http_request_free(void *addr)
 HttpRequest *http_client_start_request(HttpClient * con, const char *method, const char *uri, const char *body)
 {
     Jxta_status res;
-    HttpRequest *req = (HttpRequest *) malloc(sizeof(HttpRequest));
+    HttpRequest *req = NULL;
     char s[1024];               /* Should be large enough */
 
-    memset(req, 0, sizeof(HttpRequest));
+    req = (HttpRequest *) calloc(1, sizeof(HttpRequest));
+    if (NULL == req) {
+        return NULL;
+    }
 
     if (con->proxy_host)
         sprintf(s, "%s http://%s:%d%s HTTP/1.0\r\n", method, con->host, con->port, uri);
@@ -267,6 +270,7 @@ HttpRequest *http_client_start_request(HttpClient * con, const char *method, con
     res = http_request_write(req, s, strlen(s));
     if (res != JXTA_SUCCESS) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Connection failure need to re-open connection\n");
+        free(req);
         return NULL;
     }
 
@@ -459,11 +463,8 @@ HttpResponse *http_request_done(HttpRequest * req)
 
 
     if (past_header) {
-
-        res->headers = header_buf;
-        i = 0;
-        while (i++ < pos) {
-            *res->headers++ = tolower(*res->headers);
+        for (i = 0; i < pos; i++) {
+            header_buf[i] = tolower(header_buf[i]);
         }
 
         res->headers = header_buf;

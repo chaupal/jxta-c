@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_service.c,v 1.73 2005/03/30 00:51:59 slowhog Exp $
+ * $Id: jxta_endpoint_service.c,v 1.73.2.7 2005/05/10 07:34:40 slowhog Exp $
  */
 
 #include <stdlib.h>             /* malloc, free */
@@ -106,7 +106,7 @@ struct _jxta_endpoint_service {
     Jxta_PG *my_group;
     JString *my_groupid;
     Jxta_id *my_assigned_id;
-    Jxta_transport *transport;
+    Jxta_transport *router;
     char *relay_addr;
     char *relay_proto;
     Jxta_hashtable *unreachable_addresses;
@@ -172,6 +172,11 @@ static void endpoint_stop(Jxta_module * self)
     queue_enqueue(me->outgoing_queue, NULL);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Waiting outgoing message thread shutdown completely ...\n");
     apr_thread_join(&status, me->thread);
+    
+    if (NULL != me->router) {
+        JXTA_OBJECT_RELEASE(me->router);
+        me->router = NULL;
+    }
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Endpoint service stopped.\n");
 }
@@ -242,7 +247,14 @@ void jxta_endpoint_service_destruct(Jxta_endpoint_service * service)
     /* delete tables and stuff */
     JXTA_OBJECT_RELEASE(service->unreachable_addresses);
     JXTA_OBJECT_RELEASE(service->transport_table);
-    JXTA_OBJECT_RELEASE(service->listener_table);
+
+    if (service->relay_addr) free(service->relay_addr);
+    if (service->relay_proto) free(service->relay_proto);
+    dl_free(service->filter_list, free);
+    queue_free(service->outgoing_queue);
+
+    apr_thread_mutex_destroy(service->filter_list_mutex);
+    apr_thread_mutex_destroy(service->listener_table_mutex);
     apr_pool_destroy(service->pool);
 
     /* un-ref our impl_adv, and delete assigned_id */
@@ -304,7 +316,7 @@ Jxta_status jxta_endpoint_service_construct(Jxta_endpoint_service * service, Jxt
     service->my_impl_adv = 0;
     service->my_group = 0;
     service->my_groupid = NULL;
-    service->transport = NULL;
+    service->router = NULL;
     apr_thread_create(&service->thread, NULL,   /* no attr */
                       outgoing_message_processor, (void *) service, service->pool);
 
@@ -369,8 +381,10 @@ void jxta_endpoint_service_demux(Jxta_endpoint_service * service, Jxta_message *
 
             JXTA_OBJECT_RELEASE(el);
             /* discard the message if the filter returned false */
-            if (!cur_filter->func(msg, cur_filter->arg))
+            if (!cur_filter->func(msg, cur_filter->arg)) {
+                apr_thread_mutex_unlock(service->filter_list_mutex);
                 return;
+            }
 
         }
         if (vector != NULL) {
@@ -409,7 +423,6 @@ void jxta_endpoint_service_demux(Jxta_endpoint_service * service, Jxta_message *
 
         JXTA_OBJECT_RELEASE(dest);
     }
-    JXTA_OBJECT_RELEASE(msg);
 }
 
 
@@ -684,7 +697,8 @@ Jxta_status
 jxta_endpoint_service_add_listener(Jxta_endpoint_service * service,
                                    char const *serviceName, char const *serviceParam, Jxta_listener * listener)
 {
-    char *str = malloc((serviceName != NULL ? strlen(serviceName) : 0) + (serviceParam != NULL ? strlen(serviceParam) : 0) + 1);
+    char *str = apr_pcalloc(service->pool, (serviceName != NULL ? strlen(serviceName) : 0) + 
+            (serviceParam != NULL ? strlen(serviceParam) : 0) + 1);
 
     PTValid(service, Jxta_endpoint_service);
 
@@ -696,7 +710,6 @@ jxta_endpoint_service_add_listener(Jxta_endpoint_service * service,
 
     if (is_listener_for(service, str)) {
         apr_thread_mutex_unlock(service->listener_table_mutex);
-        free(str);
         return JXTA_BUSY;
     }
 
@@ -704,7 +717,6 @@ jxta_endpoint_service_add_listener(Jxta_endpoint_service * service,
     apr_hash_set(service->listener_table, str, APR_HASH_KEY_STRING, (void *) listener);
 
     apr_thread_mutex_unlock(service->listener_table_mutex);
-  /**free (str);**/
     return JXTA_SUCCESS;
 }
 
@@ -885,8 +897,6 @@ jxta_endpoint_service_send(Jxta_PG * obj, Jxta_endpoint_service * service, Jxta_
 
     JXTA_OBJECT_CHECK_VALID(msg);
 
-    JXTA_OBJECT_SHARE(msg);
-
     JXTA_OBJECT_CHECK_VALID(dest_addr);
 
     /*
@@ -929,6 +939,8 @@ jxta_endpoint_service_send(Jxta_PG * obj, Jxta_endpoint_service * service, Jxta_
             }
         }
     }
+
+    JXTA_OBJECT_SHARE(msg);
 
     /*
      * Note: 20040510 tra
@@ -1078,6 +1090,7 @@ void *APR_THREAD_FUNC outgoing_message_processor(apr_thread_t * t, void *arg)
         }
     }
 
+    apr_thread_exit(t, JXTA_SUCCESS);
     return NULL;
 }
 
@@ -1113,15 +1126,15 @@ void outgoing_message_process(Jxta_endpoint_service * service, Jxta_message * ms
                     jxta_endpoint_address_get_protocol_address(dest),
                     jxta_endpoint_address_get_service_name(dest), jxta_endpoint_address_get_service_params(dest));
 
-    if (service->transport == NULL) {
-        service->transport = jxta_endpoint_service_lookup_transport(service, "jxta");
+    if (service->router == NULL) {
+        service->router = jxta_endpoint_service_lookup_transport(service, "jxta");
     }
 
     /*
      * We have the router transport go ahead and demux to it for sending our message
      */
-    if (service->transport != NULL) {
-        endpoint = jxta_transport_messenger_get(service->transport, dest);
+    if (service->router != NULL) {
+        endpoint = jxta_transport_messenger_get(service->router, dest);
         JXTA_OBJECT_CHECK_VALID(endpoint);
         if (endpoint != NULL) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Send message [%p] to router endpoint\n", msg);

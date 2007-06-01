@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_piperesolver_msg.c,v 1.7 2005/03/22 04:08:03 bondolo Exp $
+ * $Id: jxta_piperesolver_msg.c,v 1.7.2.4 2005/06/01 21:04:14 mathieu Exp $
  */
 
 
@@ -64,15 +64,21 @@
   -lexpat -L/usr/local/apache2/lib/ -lapr
 */
 
+static const char *__log_cat = "PIPE_RESOLVER_MSG";
+
 #include <stdio.h>
 #include <string.h>
 #include "jxta_piperesolver_msg.h"
 #include "jxta_errno.h"
 #include "jxta_xml_util.h"
 #include "jstring.h"
+#include "jxta_log.h"
 
 #ifdef __cplusplus
 extern "C" {
+#if 0
+}
+#endif
 #endif
 
     /** Each of these corresponds to a tag in the
@@ -184,9 +190,8 @@ extern "C" {
             if (strcmp (tok, "true") == 0) {
                 ad->Found = TRUE;
             }
-        } else {
-            free (tok);
-        }
+        } 
+	free (tok);
     }
 
     static void
@@ -369,6 +374,9 @@ extern "C" {
     jxta_piperesolver_msg_set_PeerAdv(Jxta_piperesolver_msg* ad, JString* val) {
         if (val != NULL) {
             JXTA_OBJECT_SHARE (val);
+            if (NULL != ad->PeerAdv) {
+                JXTA_OBJECT_RELEASE(ad->PeerAdv);
+            }
             ad->PeerAdv = val;
         }
         return JXTA_SUCCESS;
@@ -403,6 +411,7 @@ extern "C" {
                                   JString** xml) {
         JString* string = NULL;
         JString* tmp = NULL;
+        Jxta_status rv = JXTA_SUCCESS;
         ;
 
         if (xml == NULL) {
@@ -430,9 +439,14 @@ extern "C" {
             jstring_append_2 (string,"</Peer>\n");
         }
 
-        jxta_piperesolver_msg_get_PeerAdv(ad, &tmp);
+        if (NULL != ad->PeerAdv) {
+            rv = jxta_xml_util_encode_jstring(ad->PeerAdv, &tmp);
+            if (JXTA_SUCCESS != rv) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "error encoding the PeerAdv, retrun status :%d\n", rv);
+                JXTA_OBJECT_RELEASE(string);
+                return rv;
+            }
 
-        if (tmp != NULL) {
             jstring_append_2 (string,"<PeerAdv>");
             jstring_append_1 (string, tmp);
             jstring_append_2 (string,"</PeerAdv>\n");
@@ -503,6 +517,8 @@ extern "C" {
     void
     jxta_piperesolver_msg_delete (Jxta_piperesolver_msg* ad) {
         /* Fill in the required freeing functions here. */
+        jxta_advertisement_delete((Jxta_advertisement*) ad);
+
         if (ad->MsgType) {
             free (ad->MsgType);
             ad->MsgType = NULL;
@@ -570,5 +586,10 @@ extern "C" {
     }
 #endif
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
+
+/* vi: set ts=4 sw=4 tw=130 et: */

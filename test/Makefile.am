@@ -58,7 +58,8 @@ bin_PROGRAMS = jstring_test	    \
 	       jxta_log_unit_test   \
 	       jxta_server_tunnel   \
 	       jxta_client_tunnel   \
-	       pg_start_stop_test
+	       pg_start_stop_test   \
+	       npg_test
 
 LDADD = @APR_LIBS@		    \
 	-L../src/		    \

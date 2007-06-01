@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rq.c,v 1.54 2005/02/02 02:58:32 exocetrick Exp $
+ * $Id: jxta_rq.c,v 1.54.4.1 2005/05/04 03:46:39 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -91,7 +91,6 @@ enum tokentype {
  */
 struct _ResolverQuery {
     Jxta_advertisement jxta_advertisement;
-    char    * ResolverQuery;
     JString * Credential;
     Jxta_id * SrcPeerID;
     Jxta_RouteAdvertisement* route;
@@ -154,6 +153,7 @@ handleSrcRoute(void * userdata, const XML_Char * cd, int len) {
         jxta_RouteAdvertisement_new();
 
     jxta_resolver_query_set_src_peer_route(ad, ra);
+    JXTA_OBJECT_RELEASE(ra);
 
     jxta_advertisement_set_handlers((Jxta_advertisement *)ra,
                                     ((Jxta_advertisement *)ad)->parser,

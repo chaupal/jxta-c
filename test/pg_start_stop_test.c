@@ -1,3 +1,58 @@
+/*
+ * Copyright (c) 2005 Sun Microsystems, Inc.  All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *
+ * 3. The end-user documentation included with the redistribution,
+ *    if any, must include the following acknowledgment:
+ *       "This product includes software developed by the
+ *       Sun Microsystems, Inc. for Project JXTA."
+ *    Alternately, this acknowledgment may appear in the software itself,
+ *    if and wherever such third-party acknowledgments normally appear.
+ *
+ * 4. The names "Sun", "Sun Microsystems, Inc.", "JXTA" and "Project JXTA" must
+ *    not be used to endorse or promote products derived from this
+ *    software without prior written permission. For written
+ *    permission, please contact Project JXTA at http://www.jxta.org.
+ *
+ * 5. Products derived from this software may not be called "JXTA",
+ *    nor may "JXTA" appear in their name, without prior written
+ *    permission of Sun.
+ *
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED.  IN NO EVENT SHALL SUN MICROSYSTEMS OR
+ * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+ * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ * ====================================================================
+ *
+ * This software consists of voluntary contributions made by many
+ * individuals on behalf of Project JXTA.  For more
+ * information on Project JXTA, please see
+ * <http://www.jxta.org/>.
+ *
+ * This license is based on the BSD license adopted by the Apache Foundation.
+ *
+ * $Id: pg_start_stop_test.c,v 1.2.2.4 2005/05/27 20:42:30 slowhog Exp $
+ */
+
 #include <apr_time.h>
 
 #include "jxta.h"
@@ -12,7 +67,7 @@ int display_peers(Jxta_rdv_service* rdv) {
     Jxta_PA*      adv = NULL;
     JString*  string = NULL;
     Jxta_time expires = 0;
-    boolean connected = FALSE;
+    Jxta_boolean connected = FALSE;
     Jxta_status err;
     Jxta_vector* peers = NULL;
     Jxta_time currentTime;
@@ -43,13 +98,15 @@ int display_peers(Jxta_rdv_service* rdv) {
             err = jxta_peer_get_adv(peer, &adv);
             if (err == JXTA_SUCCESS) {
                 string = jxta_PA_get_Name(adv);
+                JXTA_OBJECT_RELEASE(adv);
                 sprintf(linebuff, "Name: [%s]\n", jstring_get_string(string));
                 jstring_append_2(outputLine, linebuff);
-                JXTA_OBJECT_RELEASE(adv);
+                JXTA_OBJECT_RELEASE(string);
             }
             err = jxta_peer_get_peerid(peer, &pid);
             if (err == JXTA_SUCCESS) {
                 jxta_id_to_jstring(pid, &string);
+                JXTA_OBJECT_RELEASE(pid);
                 sprintf(linebuff, "PeerId: [%s]\n", jstring_get_string(string));
                 jstring_append_2(outputLine, linebuff);
                 JXTA_OBJECT_RELEASE(string);
@@ -128,12 +185,17 @@ int main(int argc, char **argv)
     Jxta_status rv;
 
     jxta_initialize();
-    jxta_log_file_open(&f, "-");
+    jxta_log_file_open(&f, "pg_test.log");
     s = jxta_log_selector_new_and_set("*.*", &rv);
     jxta_log_file_attach_selector(f, s, NULL);
     jxta_log_using(jxta_log_file_append, f);
 
-    a = 10;
+    if (argc < 2) {
+        a = 1;
+    } else {
+        a = atoi(argv[1]);
+    }
+
 	while(a--) 
 	{
         /* Create and start peer group */
@@ -159,7 +221,9 @@ int main(int argc, char **argv)
         pg = NULL;
 	}
 
+    jxta_log_using(NULL, NULL);
     jxta_log_file_close(f);
+    jxta_log_selector_delete(s);
 
     jxta_terminate();
     return 0;

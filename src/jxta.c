@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta.c,v 1.6 2005/04/07 22:35:05 slowhog Exp $
+ * $Id: jxta.c,v 1.6.2.4 2005/05/04 07:44:11 slowhog Exp $
  */
 
 #include <apr_general.h>
@@ -69,13 +69,13 @@ static unsigned int _jxta_initialized = 0;
  */
 void jxta_initialize(void)
 {
-    if (_jxta_initialized) {
-        _jxta_initialized++;
+    if (_jxta_initialized++) {
         return;
     }
 
     apr_initialize();
     jpr_initialize();
+    jxta_object_initialize();
     jxta_log_initialize();
     jxta_PG_module_initialize();
 }
@@ -97,6 +97,7 @@ void jxta_terminate(void)
 
     jxta_PG_module_terminate();
     jxta_log_terminate();
+    jxta_object_terminate();
     jpr_terminate();
     apr_terminate();
 }

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: chat.c,v 1.28 2005/04/07 22:58:52 slowhog Exp $
+ * $Id: chat.c,v 1.28.2.1 2005/05/06 10:42:10 slowhog Exp $
  */
 
 
@@ -212,8 +212,6 @@ message_listener (Jxta_object* obj, void* arg) {
   Jxta_message* msg = (Jxta_message*) obj;
 
   processIncomingMessage (msg);
-
-  JXTA_OBJECT_RELEASE (msg);
 }
 
 

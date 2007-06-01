@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_message.c,v 1.37 2005/02/16 23:25:47 bondolo Exp $
+ * $Id: jxta_message.c,v 1.37.4.1 2005/05/04 08:08:30 slowhog Exp $
  */
 
 static const char *__log_cat = "MESSAGE";
@@ -497,6 +497,9 @@ jxta_message_get_element_2(Jxta_message * msg, char const *element_ns, char cons
 
     if (!JXTA_OBJECT_CHECK_VALID(msg))
         return JXTA_INVALID_ARGUMENT;
+
+    if (!JXTA_OBJECT_CHECK_VALID(msg->usr.elements))
+        return JXTA_ITEM_NOTFOUND;
 
     for (eachElement = jxta_vector_size(msg->usr.elements) - 1; eachElement >= 0; eachElement--) {
         Jxta_message_element *anElement = NULL;

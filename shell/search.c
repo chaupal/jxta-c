@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: search.c,v 1.4 2005/03/22 03:49:58 bondolo Exp $
+ * $Id: search.c,v 1.4.2.2 2005/05/21 01:03:45 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -125,17 +125,17 @@ void jxta_search_start(Jxta_object * appl,
 			break;
 		case 'p':
 			pf = TRUE;
-			jstring_append_1(pid, JxtaShellGetopt_getOptionArgument(opt));
+			jstring_append_1(pid, JxtaShellGetopt_OptionArgument(opt));
 			break;
 		case 'n':
-			responses = strtol(jstring_get_string(JxtaShellGetopt_getOptionArgument(opt)),
+			responses = strtol(jstring_get_string(JxtaShellGetopt_OptionArgument(opt)),
 			                   NULL, 0);
 			break;
 		case 'a':
-			jstring_append_1(attr, JxtaShellGetopt_getOptionArgument(opt));
+			jstring_append_1(attr, JxtaShellGetopt_OptionArgument(opt));
 			break;
 		case 'v':
-			jstring_append_1(value, JxtaShellGetopt_getOptionArgument(opt));
+			jstring_append_1(value, JxtaShellGetopt_OptionArgument(opt));
 			break;
 		case 'h':
 			jxta_search_print_help(appl);
@@ -213,7 +213,6 @@ void jxta_search_print_help(Jxta_object *appl){
 	jstring_append_2(inputLine,"           [-v] specify Attribute value to limit discovery to. wild card is allowed\n");
 	jstring_append_2(inputLine,"           [-f] flush advertisements\n");
 	if( app != 0){
-		JXTA_OBJECT_SHARE(inputLine);
 		JxtaShellApplication_print(app,inputLine);
 	}
 	JXTA_OBJECT_RELEASE(inputLine);

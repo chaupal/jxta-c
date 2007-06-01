@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jstring.c,v 1.58 2005/03/29 20:10:44 bondolo Exp $
+ * $Id: jstring.c,v 1.58.2.1 2005/05/02 19:08:45 slowhog Exp $
  */
 
 
@@ -122,27 +122,17 @@ static void jstring_delete(Jxta_object * js);
  * @todo Find a way to make sure we get a '\0' in the 
  * correct place after realloc.
  */
-static void *resizeBuf(void *p, size_t size)
+static char *resizeBuf(char *p, size_t size)
 {
-
-    if (p == NULL)
-        return NULL;
-    else if (size == 0)
-        return NULL;
-    else if ((p = realloc(p, size)) == NULL)
-        return NULL;
-
-    return p;
+    return realloc(p, size);
 }
 
 
 static char *newCharBuf(size_t size)
 {
-
     char *buf;
-    buf = (char *) malloc(size + 1);
+    buf = (char *) calloc(size + 1, sizeof(char));
 
-    memset(buf, 0x0, size + 1);
     return buf;
 }
 
@@ -321,7 +311,7 @@ static void jstring_delete(Jxta_object * obj)
         return;
 
     deleteCharBuf(js->string, js->bufsize);
-    memset(js, 0x0, sizeof(JString));
+    memset(js, 0xdd, sizeof(JString));
     free(js);
 }
 
@@ -337,7 +327,7 @@ void jstring_append_0(JString * js, char const *newstring, size_t length)
         return;                 /* error */
     }
 
-    while (js->bufsize <= (js->length + length)) {
+    while (js->bufsize <= (js->length + length + 1)) {
         js->bufsize *= 2;
         js->string = resizeBuf(js->string, js->bufsize);
     }
@@ -499,3 +489,5 @@ int jstring_writefunc_appender(void *stream, const char *buf, size_t len, Jxta_s
 
     return (JXTA_SUCCESS == status) ? len : -1;
 }
+
+/* vim: set ts=4 sw=4 tw=130 et: */

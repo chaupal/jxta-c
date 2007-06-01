@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_app_env.c,v 1.2 2004/12/05 02:16:39 slowhog Exp $
+ * $Id: jxta_shell_app_env.c,v 1.2.4.1 2005/05/06 10:41:58 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -120,7 +120,6 @@ void JxtaShellApp_env_start(Jxta_object * appl,
                jstring_append_1(line,tmp);
                JXTA_OBJECT_RELEASE(tmp);
   	    }
-            JXTA_OBJECT_SHARE(line);
             JxtaShellApplication_println(app,line);
             JXTA_OBJECT_RELEASE(line); 
 	    JXTA_OBJECT_RELEASE(obj);
@@ -143,7 +142,6 @@ void JxtaShellApp_env_printHelp(Jxta_object *appl){
 	jstring_append_2(inputLine,"   Takes no arguments \n");
 	jstring_append_2(inputLine,"\n");
 	if( app != 0){
-		JXTA_OBJECT_SHARE(inputLine);
 		JxtaShellApplication_print(app,inputLine);
 	}
 	JXTA_OBJECT_RELEASE(inputLine);

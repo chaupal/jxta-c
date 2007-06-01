@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr.c,v 1.1 2005/03/24 19:40:21 slowhog Exp $
+ * $Id: jpr.c,v 1.1.2.1 2005/04/30 04:35:44 slowhog Exp $
  */
 
 #include <apr_general.h>
@@ -67,8 +67,7 @@ Jpr_status jpr_initialize(void)
 {
     apr_status_t rv;
 
-    if (_jpr_initialized) {
-        _jpr_initialized++;
+    if (_jpr_initialized++) {
         return APR_SUCCESS;
     }
 

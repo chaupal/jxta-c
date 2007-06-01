@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dr.c,v 1.48 2005/04/02 23:50:44 bondolo Exp $
+ * $Id: jxta_dr.c,v 1.48.2.4 2005/05/20 19:41:34 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -205,7 +205,7 @@ static void handleResponse(void *userdata, const XML_Char * cd, int len)
      * FIXME: jice@jxta.org 20020404 - Mo, you forgot to JXTA_OBJECT_INIT
      * r. (and also to release it after the vector got his own ref.
      */
-    r = (Jxta_DiscoveryResponseElement *) malloc(sizeof(Jxta_DiscoveryResponseElement));
+    r = (Jxta_DiscoveryResponseElement *) calloc(1, sizeof(Jxta_DiscoveryResponseElement));
     JXTA_OBJECT_INIT(r, DRE_Free, 0);
 
     r->expiration = 0;
@@ -464,13 +464,13 @@ Jxta_status response_print(Jxta_DiscoveryResponse * ad, JString * js)
             JXTA_LOG("error encoding the response, retrun status :%d\n", status);
             return status;
         }
-        JXTA_OBJECT_SHARE(tmps);
         jstring_append_1(js, tmps);
         JXTA_OBJECT_RELEASE(tmps);
         jstring_append_2(js, "</Response>\n");
 
         JXTA_OBJECT_RELEASE(anElement);
     }
+    JXTA_OBJECT_RELEASE(responselist);
     return JXTA_SUCCESS;
 }
 
@@ -532,7 +532,6 @@ Jxta_DiscoveryResponse *jxta_discovery_response_new(void)
     ad->PeerAdv = jstring_new_0();
     ad->responselist = jxta_vector_new(4);
     ad->advertisements = jxta_vector_new(4);
-    ad->advertisements = jxta_vector_new(4);
     ad->Attr = jstring_new_0();
     ad->Value = jstring_new_0();
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
@@ -581,6 +580,10 @@ void jxta_discovery_response_free(Jxta_DiscoveryResponse * ad)
         JXTA_OBJECT_RELEASE(ad->Value);
     if (ad->responselist)
         JXTA_OBJECT_RELEASE(ad->responselist);
+    if (ad->advertisements)
+        JXTA_OBJECT_RELEASE(ad->advertisements);
+    if (ad->peer_advertisement)
+        JXTA_OBJECT_RELEASE(ad->peer_advertisement);
     jxta_advertisement_delete((Jxta_advertisement *) ad);
     memset(ad, 0x0, sizeof(Jxta_DiscoveryResponse));
     free(ad);

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_wm.c,v 1.10 2005/02/02 02:58:33 exocetrick Exp $
+ * $Id: jxta_wm.c,v 1.10.4.2 2005/05/10 07:34:41 slowhog Exp $
  */
 
 
@@ -171,16 +171,14 @@ extern "C" {
 
         JxtaWire * ad = (JxtaWire*)userdata;
 
-        char* tok = malloc (len + 1);
-        memset (tok, 0, len + 1);
+        char* tok = calloc (len + 1, sizeof(char));
 
         extract_char_data(cd,len,tok);
 
         if (strlen (tok) != 0) {
             sscanf (tok, "%d", &ad->TTL);
-        } else {
-            free (tok);
         }
+        free (tok);
     }
 
     static void
@@ -448,6 +446,7 @@ extern "C" {
             ad->VisitedPeer = NULL;
         }
 
+	jxta_advertisement_delete(ad);
         memset (ad, 0x00, sizeof (JxtaWire));
         free (ad);
     }

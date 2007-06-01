@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv.c,v 1.33 2005/04/06 00:38:52 bondolo Exp $
+ * $Id: jxta_rdv.c,v 1.33.2.1 2005/06/01 21:04:14 mathieu Exp $
  */
 
 #include <stdio.h>
@@ -214,7 +214,8 @@ static char *jxta_RdvAdvertisement_get_Name_string(Jxta_advertisement * ad)
 
 void jxta_RdvAdvertisement_set_Name(Jxta_RdvAdvertisement * ad, const char *name)
 {
-
+    if (ad->Name != NULL) 
+        JXTA_OBJECT_RELEASE(ad->Name);
     ad->Name = jstring_new_2(name);
 }
 
@@ -231,7 +232,8 @@ static char *jxta_RdvAdvertisement_get_Service_string(Jxta_advertisement * ad)
 
 void jxta_RdvAdvertisement_set_Service(Jxta_RdvAdvertisement * ad, const char *name)
 {
-
+    if (ad->Service != NULL)
+        JXTA_OBJECT_RELEASE(ad->Service);
     ad->Service = jstring_new_2(name);
 }
 
@@ -286,6 +288,8 @@ static char *jxta_RdvAdvertisement_get_RdvPeerId_string(Jxta_advertisement * ad)
 
 void jxta_RdvAdvertisement_set_RdvPeerId(Jxta_RdvAdvertisement * ad, Jxta_id * id)
 {
+    if (ad->RdvPeerId != NULL) 
+        JXTA_OBJECT_RELEASE(ad->RdvPeerId);
     ad->RdvPeerId = JXTA_OBJECT_SHARE(id);
 }
 

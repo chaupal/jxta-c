@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pa.c,v 1.70 2005/04/03 01:47:58 bondolo Exp $
+ * $Id: jxta_pa.c,v 1.70.2.2 2005/05/26 20:20:45 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -299,6 +299,7 @@ Jxta_RouteAdvertisement *jxta_PA_add_relay_address(Jxta_PA * ad, Jxta_RdvAdverti
             ap = jxta_RouteAdvertisement_get_Dest(routeRelay);
             jxta_AccessPointAdvertisement_set_PID(ap, pid);
             jxta_RouteAdvertisement_add_first_hop(route, ap);
+            JXTA_OBJECT_RELEASE(pid);
             JXTA_OBJECT_RELEASE(svc);
             JXTA_OBJECT_RELEASE(routeRelay);
             JXTA_OBJECT_RELEASE(ap);
@@ -630,10 +631,10 @@ Jxta_vector *jxta_PA_get_indexes(void)
 }
 
 
-void jxta_PA_parse_charbuffer(Jxta_PA * ad, const char *buf, int len)
+Jxta_status jxta_PA_parse_charbuffer(Jxta_PA * ad, const char *buf, int len)
 {
 
-    jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    return jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
 
 void jxta_PA_parse_file(Jxta_PA * ad, FILE * stream)

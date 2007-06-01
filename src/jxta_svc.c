@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_svc.c,v 1.38 2005/04/03 01:47:57 bondolo Exp $
+ * $Id: jxta_svc.c,v 1.38.4.4 2005/05/20 01:05:13 slowhog Exp $
  */
 
 
@@ -548,16 +548,12 @@ jxta_svc_get_IsClient(Jxta_svc * ad)
 {
   JString* val;
   val = jxta_RelayAdvertisement_get_IsClient(ad->relaya);
-  if (val != NULL) JXTA_OBJECT_SHARE(val);
     return val;
 }
 
 void
 jxta_svc_set_IsClient(Jxta_svc * ad, JString * val)
 {
-  JString* old;
-  old = jxta_RelayAdvertisement_get_IsClient(ad->relaya);
-  JXTA_OBJECT_RELEASE(old);
   jxta_RelayAdvertisement_set_IsClient(ad->relaya, val);
 }
 
@@ -566,16 +562,12 @@ jxta_svc_get_IsServer(Jxta_svc * ad)
 {
   JString* val;
   val = jxta_RelayAdvertisement_get_IsServer(ad->relaya);
-  if (val != NULL) JXTA_OBJECT_SHARE(val);
     return val;
 }
 
 void
 jxta_svc_set_IsServer(Jxta_svc * ad, JString * val)
 {
-  JString* old;
-  old = jxta_RelayAdvertisement_get_IsServer(ad->relaya);
-  JXTA_OBJECT_RELEASE(old);
   jxta_RelayAdvertisement_set_IsServer(ad->relaya, val);
 }
 
@@ -759,7 +751,6 @@ addrs_print(Jxta_svc * ad, JString * js) {
   
 Jxta_status
 jxta_svc_get_xml(Jxta_svc * ad, JString ** result) {
-
     JString* ids;
     JString* string = jstring_new_0();
 
@@ -826,13 +817,18 @@ jxta_svc_get_xml(Jxta_svc * ad, JString ** result) {
 	 * method has the std nehaviour; it allocates a new jxtring.
 	 */
 	JString* tmp = jstring_new_0();
+	JString *val;
 
 	jstring_append_2(tmp,"<isClient>");
-	jstring_append_1(tmp, jxta_RelayAdvertisement_get_IsClient(ad->relaya));
+	val = jxta_RelayAdvertisement_get_IsClient(ad->relaya);
+	jstring_append_1(tmp, val);
+	JXTA_OBJECT_RELEASE(val);
 	jstring_append_2(tmp,"</isClient>\n");
    
 	jstring_append_2(tmp,"<isServer>");
-	jstring_append_1(tmp, jxta_RelayAdvertisement_get_IsServer(ad->relaya));
+	val = jxta_RelayAdvertisement_get_IsServer(ad->relaya);
+	jstring_append_1(tmp, val);
+	JXTA_OBJECT_RELEASE(val);
 	jstring_append_2(tmp,"</isServer>\n");
 
 	httpRelay_printer(ad->relaya,tmp);
@@ -895,6 +891,8 @@ jxta_svc_delete (Jxta_svc * ad) {
   if (ad->hta != NULL) JXTA_OBJECT_RELEASE(ad->hta);
   if (ad->addrlist != NULL) JXTA_OBJECT_RELEASE(ad->addrlist);
   if (ad->relaya != NULL) JXTA_OBJECT_RELEASE(ad->relaya);
+  if (NULL != ad->route) JXTA_OBJECT_RELEASE(ad->route);
+  if (NULL != ad->rdvConfig) JXTA_OBJECT_RELEASE(ad->rdvConfig);
 
   jxta_advertisement_delete((Jxta_advertisement*)ad);
   memset (ad, 0xdd, sizeof (Jxta_svc));

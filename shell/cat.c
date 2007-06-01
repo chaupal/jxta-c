@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: cat.c,v 1.2 2004/12/05 02:16:37 slowhog Exp $
+ * $Id: cat.c,v 1.2.4.2 2005/05/21 01:03:43 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -108,33 +108,26 @@ void jxta_cat_start(Jxta_object * appl,
 		JString * xml=NULL;
 		Jxta_PA * padv = NULL;
 		Jxta_PGA * pgadv = NULL;
-		jstring_append_2(envr,arg[0]);
-		JXTA_OBJECT_SHARE(envr);
-                object = JxtaShellEnvironment_get (environment, envr);
+
+        jstring_append_2(envr,arg[0]);
+        object = JxtaShellEnvironment_get (environment, envr);
 		if (object != NULL) {
 			type = JxtaShellObject_type (object);
-			if ( strncmp("PeerAdvertisement", 
-			             jstring_get_string(type),
-				     strlen("PeerAdvertisement") ) == 0 ||
-			   ( strncmp("GroupAdvertisement", 
-			             jstring_get_string(type),
-				     strlen("GroupAdvertisement")) == 0 ) ||
-		           ( strncmp("Advertisement", 
-			             jstring_get_string(type),
-				     strlen("Advertisement")) == 0 ) ) {
-				     
-			        Jxta_advertisement * adv = (Jxta_advertisement*) JxtaShellObject_object(object);
+			if ( strncmp("PeerAdvertisement", jstring_get_string(type), strlen("PeerAdvertisement") ) == 0 ||
+			   ( strncmp("GroupAdvertisement", jstring_get_string(type), strlen("GroupAdvertisement")) == 0 ) ||
+               ( strncmp("Advertisement", jstring_get_string(type), strlen("Advertisement")) == 0 ) )
+            {
+                Jxta_advertisement * adv = (Jxta_advertisement*) JxtaShellObject_object(object);
 				jxta_advertisement_get_xml(adv, & xml);
-				JXTA_OBJECT_SHARE(xml);
 				JxtaShellApplication_print(app,xml);
 				JXTA_OBJECT_RELEASE(xml);
-				JXTA_OBJECT_RELEASE(type);
 				JXTA_OBJECT_RELEASE(adv);
 			}
+            JXTA_OBJECT_RELEASE(type);
+            JXTA_OBJECT_RELEASE(object);
 		}
-
 	}
-        JXTA_OBJECT_RELEASE(envr);
+    JXTA_OBJECT_RELEASE(envr);
 	JxtaShellApplication_terminate(app);
 }
 
@@ -156,13 +149,9 @@ void jxta_cat_print_help(Jxta_object *appl) {
         jstring_append_2(inputLine,"    -p Pretty display\n\n");
 	
 	if( app != 0){
-		JXTA_OBJECT_SHARE(inputLine);
 		JxtaShellApplication_print(app,inputLine);
 	}
 	JXTA_OBJECT_RELEASE(inputLine);
 }
 
-
-
-
-
+/* vim: set ts=4 sw=4 tw=130 et: */

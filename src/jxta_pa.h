@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pa.h,v 1.4 2005/02/14 19:50:17 bondolo Exp $
+ * $Id: jxta_pa.h,v 1.4.4.1 2005/05/26 20:20:45 slowhog Exp $
  */
 
 
@@ -122,9 +122,9 @@ Jxta_vector *jxta_PA_get_indexes(void);
  *        with xml syntax.
  * @param int len length of character buffer.
  *
- * @return void Doesn't return anything.
+ * @return Jxta_status JXTA_SUCCESS is successfully parsed
  */
-void jxta_PA_parse_charbuffer(Jxta_PA *, const char *, int len);
+Jxta_status jxta_PA_parse_charbuffer(Jxta_PA *, const char *, int len);
 
 /**
  * Wrapper for jxta_advertisement_parse_file,

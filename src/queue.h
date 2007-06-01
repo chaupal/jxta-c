@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: queue.h,v 1.3 2005/01/28 02:09:04 slowhog Exp $
+ * $Id: queue.h,v 1.3.4.1 2005/05/18 23:56:22 slowhog Exp $
  */
 
 #ifndef __QUEUE_H__
@@ -69,7 +69,7 @@ typedef struct _Queue Queue;
 
 Queue* queue_new (apr_pool_t *pool);
 void   queue_free (Queue *q);
-void   queue_enqueue (Queue *q, void *item);
+int    queue_enqueue (Queue *q, void *item);
 int    queue_size (Queue* q);
 
 /**

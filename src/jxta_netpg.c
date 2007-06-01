@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_netpg.c,v 1.60 2005/04/02 00:57:41 slowhog Exp $
+ * $Id: jxta_netpg.c,v 1.60.2.1 2005/05/04 03:41:20 slowhog Exp $
  */
 
 /*
@@ -513,7 +513,7 @@ Jxta_netpg *jxta_netpg_new_instance(void)
 {
     Jxta_netpg *self = (Jxta_netpg *) calloc(1, sizeof(Jxta_netpg));
 
-    JXTA_OBJECT_INIT_FLAGS(self, JXTA_OBJECT_SHARE_TRACK, myFree, 0);
+    JXTA_OBJECT_INIT(self, myFree, 0);
 
     /*
      * Initialize the methods table if needed.

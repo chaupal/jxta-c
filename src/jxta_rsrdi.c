@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rsrdi.c,v 1.8 2005/02/02 02:58:32 exocetrick Exp $
+ * $Id: jxta_rsrdi.c,v 1.8.4.1 2005/05/06 10:42:06 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -141,15 +141,12 @@ jxta_resolver_srdi_get_xml(ResolverSrdi * adv, JString** document) {
 
     JString * doc;
     JString * tmps;
-    char * buf;
     Jxta_status status;
 
     if (adv == NULL) {
         return JXTA_INVALID_ARGUMENT;
     }
 
-    buf = malloc(128);
-    memset(buf, 0, 128);
     trim_elements(adv);
     doc = jstring_new_2("<?xml version=\"1.0\"?>\n");
     jstring_append_2(doc, "<!DOCTYPE jxta:ResolverSRDI>");

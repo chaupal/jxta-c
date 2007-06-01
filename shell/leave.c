@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: leave.c,v 1.2 2004/12/05 02:16:43 slowhog Exp $
+ * $Id: leave.c,v 1.2.4.1 2005/05/06 10:41:59 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -166,6 +166,7 @@ void jxta_leave_start(Jxta_object * appl,
 Common_Exit:
     if( jstring_length( outputLine ) > 0 )
         JxtaShellApplication_print(app, outputLine );
+    JXTA_OBJECT_RELEASE(outputLine);
 
     JxtaShellApplication_terminate(app);
 }
@@ -184,7 +185,6 @@ void jxta_leave_print_help(Jxta_object *appl) {
     jstring_append_2(inputLine,"\t-r\tresign from the group. \n\n");
 
     if( app != NULL ) {
-        JXTA_OBJECT_SHARE(inputLine);
         JxtaShellApplication_print(app,inputLine);
     }
     JXTA_OBJECT_RELEASE(inputLine);

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
+ * $Id: jxta_log.c,v 1.6.2.9 2005/06/08 23:09:49 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -56,8 +57,7 @@ jxta_log_initialize()
 {
     Jxta_status rv;
 
-    if (_jxta_log_initialized) {
-        _jxta_log_initialized++;
+    if (_jxta_log_initialized++) {
         return JXTA_SUCCESS;
     }
 
@@ -75,6 +75,7 @@ jxta_log_initialize()
         jxta_log_selector_new_and_set("*.warning-fatal", &rv);
 
     if (NULL == _jxta_log_default_selector) {
+        apr_pool_destroy(_jxta_log_pool);
         _jxta_log_initialized = 0;
         return rv;
     }
@@ -94,11 +95,11 @@ jxta_log_terminate()
         return;
     }
 
+    jxta_log_using(NULL, NULL);
+    jxta_log_selector_delete(_jxta_log_default_selector);
     apr_pool_destroy(_jxta_log_pool);
     apr_pool_terminate();
     _jxta_log_pool = NULL;
-
-    jxta_log_selector_delete(_jxta_log_default_selector);
 }
 
 void
@@ -402,6 +403,7 @@ jxta_log_selector_delete(Jxta_log_selector *self)
 
     jpr_thread_mutex_lock(self->mutex);
     free_categories(self);
+    jpr_thread_mutex_unlock(self->mutex);
     jpr_thread_mutex_destroy(self->mutex);
     free(self);
 }
@@ -634,6 +636,9 @@ Jxta_status
 jxta_log_file_close(Jxta_log_file *self)
 {
     if (NULL == self) return JXTA_INVALID_ARGUMENT;
+    if (self == _jxta_log_user_data) {
+        jxta_log_using(NULL, NULL);
+    }
 
     jpr_thread_mutex_lock(self->mutex);
 
@@ -641,7 +646,9 @@ jxta_log_file_close(Jxta_log_file *self)
         fclose(self->thefile);
     }
     
+    jpr_thread_mutex_unlock(self->mutex);
     jpr_thread_mutex_destroy(self->mutex);
+    free(self);
     return JXTA_SUCCESS;
 }
 
@@ -669,6 +676,9 @@ jxta_log_file_append(void *user_data, const char *cat,
     Jxta_log_file *self;
     Jxta_log_selector *sel;
     Jxta_status rv;
+    apr_time_exp_t tm;
+    char tm_str[16];
+    apr_size_t tm_str_sz;
 
     if (NULL == user_data) return JXTA_INVALID_ARGUMENT;
 
@@ -687,7 +697,13 @@ jxta_log_file_append(void *user_data, const char *cat,
         return JXTA_SUCCESS;
     }
 
-    fprintf(self->thefile, "[%s]-%s-[TID: %X] - ", cat, _jxta_log_level_labels[level], apr_os_thread_current());
+    apr_time_exp_lt(&tm, apr_time_now());
+    apr_strftime(tm_str, &tm_str_sz, 32, "%m/%d %H:%M:%S", &tm);
+#ifdef WIN32
+    fprintf(self->thefile, "[%s]-%s-[%s][TID: %u] - ", cat, _jxta_log_level_labels[level], tm_str, GetCurrentThreadId());
+#else
+    fprintf(self->thefile, "[%s]-%s-[%s][TID: %p] - ", cat, _jxta_log_level_labels[level], tm_str, apr_os_thread_current());
+#endif
     rv = (vfprintf(self->thefile, fmt, ap) < 0) ? JXTA_FAILED : JXTA_SUCCESS;
     fflush(self->thefile);
 
@@ -695,4 +711,4 @@ jxta_log_file_append(void *user_data, const char *cat,
     return rv;
 }
 
-/* vi: set sw=4 ts=4 et: */
+/* vi: set sw=4 ts=4 tw=130 et: */

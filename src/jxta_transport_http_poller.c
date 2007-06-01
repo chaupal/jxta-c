@@ -50,8 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http_poller.c,v 1.14 2005/03/30 02:17:38 slowhog Exp $
+ * $Id: jxta_transport_http_poller.c,v 1.14.2.3 2005/05/10 07:34:40 slowhog Exp $
  */
+
+static const char *__log_cat = "HTTP_POLLER";
 
 #include <ctype.h>
 #include <string.h>
@@ -66,7 +68,6 @@
 #include <apr_thread_proc.h>
 
 #include "jpr/jpr_types.h"
-#include "jpr/jpr_thread.h"
 
 #include "jxta_errno.h"
 #include "jxta_debug.h"
@@ -77,27 +78,36 @@
 #include "jxta_transport_http_poller.h"
 #include "jxta_endpoint_service.h"
 
-static const char *__log_cat = "HTTP_POLLER";
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#else
+#define PACKAGE_STRING "jxta 2.1+"
+#endif
+
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
 struct _HttpPoller {
+    JXTA_OBJECT_HANDLE;
+
+    apr_pool_t *pool;
+    volatile Jxta_boolean running;
+    apr_thread_t *tid;
+
     Jxta_PG *group;
     Jxta_endpoint_service *service;
     HttpClient *htcli;
     char *addr;
-    char *uri;
-    char *peerid;
-    char *leaseid;
+    const char *uri;
+    const char *peerid;
+    volatile const char *leaseid;
     Jxta_time leaseRenewalTime;
-    int run;
-    apr_thread_t *tid;
-    apr_pool_t *pool;
 };
 
 #define PROTOCOL_NAME "http"
 
 static void *APR_THREAD_FUNC http_poller_body(apr_thread_t * t, void *arg);
+static void http_poller_free( Jxta_object * obj);
 static Jxta_status read_from_http_request(void *stream, char *buf, apr_size_t len);
 
 /******************************************************************************/
@@ -106,11 +116,12 @@ static Jxta_status read_from_http_request(void *stream, char *buf, apr_size_t le
 HttpPoller *http_poller_new(Jxta_PG * group,
                             Jxta_endpoint_service * service,
                             const char *proxy_host,
-                            Jxta_port proxy_port, const char *host, Jxta_port port, char *uri, char *peerid, Jxta_pool * pool1)
+                            Jxta_port proxy_port, const char *host, Jxta_port port, const char *uri, const char *peerid, Jxta_pool * pool1)
 {
     HttpPoller *poller = (HttpPoller *) calloc(1, sizeof(HttpPoller));
 
     if (NULL != poller) {
+        JXTA_OBJECT_INIT(poller, http_poller_free, 0);
         poller->group = group;
         poller->service = service;
         poller->htcli = http_client_new(proxy_host, proxy_port, host, port, NULL);
@@ -119,53 +130,62 @@ HttpPoller *http_poller_new(Jxta_PG * group,
         sprintf(poller->addr, "%s:%d", host, port);
         poller->peerid = peerid;
         poller->leaseid = NULL;
-        poller->run = 0;
+        poller->running = FALSE;
         poller->tid = NULL;
         poller->pool = (apr_pool_t *) pool1;
         poller->leaseRenewalTime = 0;
     }
+
     return poller;
 }
 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-void http_poller_free(HttpPoller * poller)
+static void http_poller_free( Jxta_object * obj)
 {
+    HttpPoller * poller = (HttpPoller *) obj;
 
+    if (poller->running) {
+        http_poller_stop(poller);
+    }
+    
     if (poller->htcli != NULL)
         http_client_free(poller->htcli);
-    if (poller->leaseid)
-        free(poller->leaseid);
-    poller->run = 0;
+
+    free(poller->addr);
     free(poller);
 }
 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-Jpr_status http_poller_start(HttpPoller * poller)
+Jxta_status http_poller_start(HttpPoller * poller)
 {
     apr_status_t status;
 
     if (poller->htcli == NULL)
         return JXTA_FAILED;
+        
+    poller->running = TRUE;
 
-    status = apr_thread_create(&poller->tid, NULL, http_poller_body, poller, poller->pool);
+    status = apr_thread_create(&poller->tid, NULL, http_poller_body, (void *) poller, poller->pool);
 
-    if (!APR_STATUS_IS_SUCCESS(status)) {
-        fprintf(stderr, "failed thread start");
-        poller->run = 0;
+    if (APR_SUCCESS != status) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "failed thread start");
+        poller->running = FALSE;
+        return JXTA_FAILED; 
     }
 
     /**
-     ** 2/21/2002 lomax@dioxine.com FIXME
-     **
      ** We need to wait until the poller thread had a chance to get a lease, otherwise
      ** sending messages and waiting for an answer may not work for the first very few
      ** messages. Explicit synchronization is what has to be done.
      **/
-    jpr_thread_delay(3 * 1000 * 1000);
+    while( poller->running && (NULL == poller->leaseid) ) {
+        /* sleep for 100ms */
+        apr_sleep( 100 * 1000);
+        }
 
     return status;
 }
@@ -175,16 +195,24 @@ Jpr_status http_poller_start(HttpPoller * poller)
 /******************************************************************************/
 void http_poller_stop(HttpPoller * poller)
 {
+    apr_status_t rv;
 
-    poller->run = 0;
+    if (! poller->running) {
+        return;
+    }
+
+    poller->running = FALSE;
+    http_client_close(poller->htcli);
+
+    apr_thread_join(&rv, poller->tid);
 }
 
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-int http_poller_get_stopped(HttpPoller * poller)
+Jxta_boolean http_poller_is_running(HttpPoller * poller)
 {
-    return poller->run;
+    return poller->running;
 }
 
 /* Private functions. */
@@ -193,22 +221,23 @@ int http_poller_get_stopped(HttpPoller * poller)
 /******************************************************************************/
 static void *APR_THREAD_FUNC http_poller_body(apr_thread_t * t, void *arg)
 {
-
     HttpPoller *poller = (HttpPoller *) arg;
+    apr_status_t status;
     HttpRequest *req;
     HttpResponse *res;
     char *cmd;
     char uri[1024];
     char uri_msg[1024];
     Jxta_message *msg = NULL;
-    Jxta_time_diff lease;
-    char *active_poller;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "HTTP poller thread starts\n");
-    poller->run = 1;
 
-    if (!APR_STATUS_IS_SUCCESS(http_client_connect(poller->htcli))) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "failed connect\n");
+    status = http_client_connect(poller->htcli);
+    if (APR_SUCCESS != status) {
+        char buf[256];
+        apr_strerror(status, buf, sizeof(buf));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed connect : %s \n", buf);
+        poller->running = FALSE;
         apr_thread_exit(t, !APR_SUCCESS);
     }
 
@@ -227,7 +256,7 @@ static void *APR_THREAD_FUNC http_poller_body(apr_thread_t * t, void *arg)
             PROTOCOL_NAME, poller->addr, RELAY_ADDRESS, "connect", LEASE_REQUEST, LAZY_CLOSE);
 
     req = http_client_start_request(poller->htcli, "GET", uri, cmd);
-    http_request_set_header(req, "User-Agent", "JXTA-C 2.0");
+    http_request_set_header(req, "User-Agent", PACKAGE_STRING);
 
     /*
      * need to send the end of header mark
@@ -240,12 +269,12 @@ static void *APR_THREAD_FUNC http_poller_body(apr_thread_t * t, void *arg)
     if (http_get_content_length(res) > 0) {
         msg = jxta_message_new();
 
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "received a lease response.\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "received a lease response.\n");
 
         jxta_message_read(msg, "application/x-jxta-msg", read_from_http_request, res);
 
     } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "received empty lease request message\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "received empty lease request message\n");
     }
     http_response_free(res);
 
@@ -256,20 +285,14 @@ static void *APR_THREAD_FUNC http_poller_body(apr_thread_t * t, void *arg)
      */
     poller->leaseid = poller->peerid;
 
-    lease = 0;
-
     if (msg) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "process lease: %s\n", poller->leaseid);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "process lease: %s\n", poller->leaseid);
         jxta_endpoint_service_demux(poller->service, msg);
+        JXTA_OBJECT_RELEASE(msg);
     }
 
-    while (poller->run) {
-
-        if (!poller->run) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "poller is stopped\n");
-            break;
-        }
-
+    while (poller->running) {
+        char *active_poller = jxta_endpoint_service_get_relay_addr(poller->service);
 
         /*
          * check if this poller is associated with the current active
@@ -277,10 +300,9 @@ static void *APR_THREAD_FUNC http_poller_body(apr_thread_t * t, void *arg)
          * work. The other ones should stay in standby until a relay
          * failover occurs
          */
-        active_poller = jxta_endpoint_service_get_relay_addr(poller->service);
         if (active_poller != NULL) {
             if (strcmp(poller->addr, active_poller) != 0) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Inactive Poller %s, will stop\n", poller->addr);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Inactive Poller %s, will stop\n", poller->addr);
                 free(active_poller);
                 break;
             }
@@ -291,7 +313,7 @@ static void *APR_THREAD_FUNC http_poller_body(apr_thread_t * t, void *arg)
          */
         sprintf(uri_msg, "%s%s?%s,%s://%s/%s/", poller->uri, poller->peerid,
                 REQUEST_TIMEOUT, PROTOCOL_NAME, poller->addr, RELAY_ADDRESS);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Pulling for a new message\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Polling for a new message\n");
         req = http_client_start_request(poller->htcli, "POST", uri_msg, cmd);
 
         /* 
@@ -305,23 +327,23 @@ static void *APR_THREAD_FUNC http_poller_body(apr_thread_t * t, void *arg)
             /* 
              * Try to open a new connection
              */
-            if (!APR_STATUS_IS_SUCCESS(http_client_connect(poller->htcli))) {
+            if (APR_SUCCESS != http_client_connect(poller->htcli)) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed re-opening relay connection\n");
                 /*
                  * Reset the relay info to the endpoint service. As this point
                  * no default route exists.
                  */
                 jxta_endpoint_service_set_relay(poller->service, NULL, NULL);
+                apr_thread_exit(t, JXTA_FAILED);
                 return NULL;
             }
             continue;
         }
 
-        http_request_set_header(req, "User-Agent", "JXTA-C 2.0");
+        http_request_set_header(req, "User-Agent", PACKAGE_STRING);
         http_request_write(req, "\r\n", 2);
 
         res = http_request_done(req);
-
         http_request_free(req);
 
         if (http_get_content_length(res) > 0) {
@@ -332,6 +354,7 @@ static void *APR_THREAD_FUNC http_poller_body(apr_thread_t * t, void *arg)
             jxta_message_read(msg, "application/x-jxta-msg", read_from_http_request, res);
 
             jxta_endpoint_service_demux(poller->service, msg);
+            JXTA_OBJECT_RELEASE(msg);
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Received empty message\n");
         }
@@ -345,6 +368,11 @@ static void *APR_THREAD_FUNC http_poller_body(apr_thread_t * t, void *arg)
      * no default route exists.
      */
     jxta_endpoint_service_set_relay(poller->service, NULL, NULL);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Poller thread is stopping\n");
+
+    apr_thread_exit(t, APR_SUCCESS);
+
+    /* NOTREACHED */
     return NULL;
 }
 
@@ -362,7 +390,9 @@ static Jxta_status read_from_http_request(void *stream, char *buf, apr_size_t le
     if (res == APR_SUCCESS) {
         res = JXTA_SUCCESS;
     } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "HTTP_REQUEST reading of message failed\n");
+        char msg[256];
+        apr_strerror(res, msg, sizeof(msg));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "HTTP_REQUEST reading of message failed : %s\n", msg);
     }
     return res;
 }

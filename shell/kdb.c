@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: kdb.c,v 1.2 2004/12/05 02:16:42 slowhog Exp $
+ * $Id: kdb.c,v 1.2.4.1 2005/05/06 10:41:58 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -124,7 +124,6 @@ void jxta_kdb_print_help(Jxta_object *appl) {
     jstring_append_2(inputLine,"OPTIONS\n");
 
     if( app != NULL ) {
-        JXTA_OBJECT_SHARE(inputLine);
         JxtaShellApplication_print(app,inputLine);
     }
     JXTA_OBJECT_RELEASE(inputLine);

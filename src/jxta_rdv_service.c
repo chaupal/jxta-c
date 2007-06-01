@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service.c,v 1.34 2005/03/03 02:53:53 slowhog Exp $
+ * $Id: jxta_rdv_service.c,v 1.34.4.4 2005/06/01 21:04:15 mathieu Exp $
  */
 
 /**
@@ -262,7 +262,7 @@ static void jxta_rdv_service_destruct(_jxta_rdv_service * rdv)
  **/
 static Jxta_rdv_event *jxta_rdv_event_new(Jxta_rdv_service * rdv, Jxta_Rendezvous_event_type event, Jxta_id * id)
 {
-    Jxta_rdv_event *rdv_event = (Jxta_rdv_event *) malloc(sizeof(Jxta_rdv_event));
+    Jxta_rdv_event *rdv_event = (Jxta_rdv_event *) calloc(1, sizeof(Jxta_rdv_event));
 
     if (NULL == rdv_event) {
         JXTA_LOG("Could not malloc rdv event");
@@ -273,7 +273,7 @@ static Jxta_rdv_event *jxta_rdv_event_new(Jxta_rdv_service * rdv, Jxta_Rendezvou
 
     rdv_event->source = rdv;
     rdv_event->event = event;
-    rdv_event->pid = id;
+    rdv_event->pid = JXTA_OBJECT_SHARE(id);
 
     JXTA_LOG("EVENT: Create a new rdv event [%p]\n", rdv_event);
     return rdv_event;
@@ -416,7 +416,7 @@ Jxta_status jxta_rdv_service_remove_event_listener(Jxta_rdv_service * rdv, const
  * @param service a pointer to the instance of the Rendezvous Service
  * @return TRUE if the peer is a rendezvous, FALSE otherwise.
  **/
-boolean jxta_rdv_service_is_rendezvous(Jxta_rdv_service * rdv)
+Jxta_boolean jxta_rdv_service_is_rendezvous(Jxta_rdv_service * rdv)
 {
 
     PTValid(rdv, _jxta_rdv_service);
@@ -436,7 +436,7 @@ boolean jxta_rdv_service_is_rendezvous(Jxta_rdv_service * rdv)
  * @param service a pointer to the instance of the Rendezvous Service
  * @return TRUE if the peer is a rendezvous, FALSE otherwise.
  **/
-boolean jxta_rdv_service_peer_is_connected(Jxta_rdv_service * rdv, Jxta_peer * peer)
+Jxta_boolean jxta_rdv_service_peer_is_connected(Jxta_rdv_service * rdv, Jxta_peer * peer)
 {
 
     PTValid(rdv, _jxta_rdv_service);
@@ -456,7 +456,7 @@ boolean jxta_rdv_service_peer_is_connected(Jxta_rdv_service * rdv, Jxta_peer * p
  * @param service a pointer to the instance of the Rendezvous Service
  * @return TRUE if the peer is a rendezvous, FALSE otherwise.
  **/
-boolean jxta_rdv_service_peer_is_rdv(Jxta_rdv_service * rdv, Jxta_peer * peer)
+Jxta_boolean jxta_rdv_service_peer_is_rdv(Jxta_rdv_service * rdv, Jxta_peer * peer)
 {
     PTValid(rdv, _jxta_rdv_service);
 
@@ -608,7 +608,7 @@ Jxta_status jxta_rdv_service_remove_propagate_listener(Jxta_rdv_service * rdv,
     return remove_propagate_listener(rdv, serviceName, serviceParam, listener);
 }
 
-static boolean is_listener_for(_jxta_rdv_service * self, char *str)
+static Jxta_boolean is_listener_for(_jxta_rdv_service * self, char *str)
 {
     Jxta_boolean res = FALSE;
     Jxta_listener *listener = NULL;
@@ -775,6 +775,7 @@ Jxta_pipe_adv *jxta_rdv_get_wirepipeadv(_jxta_rdv_service * self)
 
     buf = jstring_new_2(JXTA_RDV_PEERVIEW_NAME);
     jstring_append_1(buf, pgIdString);
+    JXTA_OBJECT_RELEASE(pgIdString);
 
     jxta_PG_get_parentgroup(group, &parent);
     jxta_PG_get_GID(parent, &parentpgid);

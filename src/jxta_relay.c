@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_relay.c,v 1.28 2005/03/30 00:47:12 slowhog Exp $
+ * $Id: jxta_relay.c,v 1.28.2.7 2005/05/06 10:42:05 slowhog Exp $
  */
 #include <stdlib.h>     /* for atoi */
 
@@ -319,6 +319,7 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     struct sigaction sa;
 
     sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
     sa.sa_handler = SIG_IGN;
     sigaction(SIGPIPE, &sa, NULL);
 #endif
@@ -414,11 +415,13 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
 
     relays = jxta_RelayAdvertisement_get_HttpRelay(rla);
     if (jxta_vector_clone(relays, &(self->HttpRelays), 0, 20) != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(rla);
         return JXTA_CONFIG_NOTFOUND;
     }
     JXTA_OBJECT_RELEASE(relays);
 
     relays = jxta_RelayAdvertisement_get_TcpRelay(rla);
+    JXTA_OBJECT_RELEASE(rla);
     if (jxta_vector_clone(relays, &(self->TcpRelays), 0, 20) != JXTA_SUCCESS) {
         return JXTA_CONFIG_NOTFOUND;
     }
@@ -488,18 +491,6 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
         JXTA_OBJECT_RELEASE(relay);
     }
 
-    /*
-     * only register transport if we are a client
-     */
-    if (self->Is_Client) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Be relay client\n");
-        jxta_endpoint_service_add_transport(self->endpoint, (Jxta_transport *) self);
-    }
-
-    if (self->Is_Server) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Relay server is not supported yet!\n");
-    }
-
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Initialized\n");
     return JXTA_SUCCESS;
 }
@@ -511,6 +502,10 @@ static Jxta_status start(Jxta_module * module, const char *argv[])
 {
     _jxta_transport_relay *self = PTValid(module, _jxta_transport_relay);
 
+    if (self->Is_Server) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Relay server is not supported yet!\n");
+    }
+
     /*
      * Check if the relay service is configured as a client, if not
      * just skip starting the service
@@ -519,19 +514,18 @@ static Jxta_status start(Jxta_module * module, const char *argv[])
         return JXTA_SUCCESS;
     }
 
+    jxta_endpoint_service_add_transport(self->endpoint, (Jxta_transport *) self);
+
     /* 
      *  we need to register the relay endpoint listener
      */
     self->listener_service = jxta_listener_new(relay_transport_client_listener, (void *) self, 1, 1);
-
-    jxta_endpoint_service_add_listener(self->endpoint, (char *) self->assigned_id, NULL, self->listener_service);
-
     jxta_listener_start(self->listener_service);
+    jxta_endpoint_service_add_listener(self->endpoint, (char *) self->assigned_id, NULL, self->listener_service);
 
     /*
      * Go ahead an start the Relay connect thread
      */
-    JXTA_OBJECT_SHARE(self);
     apr_thread_create(&self->thread, NULL,      /* no attr */
                       connect_relay_thread, (void *) self, (apr_pool_t *) self->pool);
 
@@ -551,10 +545,16 @@ static void stop(Jxta_module * module)
         return;
     }
 
-    jxta_endpoint_service_remove_listener(self->endpoint, (char *) self->assigned_id, (char *) self->groupid);
+    jxta_endpoint_service_remove_transport(self->endpoint, (Jxta_transport *) self);
+
+    jxta_endpoint_service_remove_listener(self->endpoint, (char *) self->assigned_id, NULL);
+    jxta_listener_stop(self->listener_service);
+    JXTA_OBJECT_RELEASE(self->listener_service);
+    self->listener_service = NULL;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Signal thread to exit...\n");
     apr_thread_mutex_lock(self->stop_mutex);
+    self->running = FALSE;
     apr_thread_cond_signal(self->stop_cond);
     apr_thread_mutex_unlock(self->stop_mutex);
 
@@ -676,9 +676,6 @@ _jxta_transport_relay *jxta_transport_relay_construct(Jxta_transport * relay, Jx
  */
 void jxta_transport_relay_destruct(_jxta_transport_relay * self)
 {
-    if (self->listener_service) {
-        JXTA_OBJECT_RELEASE(self->listener_service);
-    }
     if (self->HttpRelays != NULL) {
         JXTA_OBJECT_RELEASE(self->HttpRelays);
     }
@@ -698,7 +695,7 @@ void jxta_transport_relay_destruct(_jxta_transport_relay * self)
         JXTA_OBJECT_RELEASE(self->endpoint);
     }
     if (self->assigned_id) {
-        JXTA_OBJECT_RELEASE(self->assigned_id);
+        free(self->assigned_id);
     }
     if (self->peerid != NULL) {
         free(self->peerid);
@@ -788,7 +785,6 @@ static void relay_transport_client_listener(Jxta_object * obj, void *arg)
      * we are already connected
      */
     if (connected) {
-        JXTA_OBJECT_RELEASE(msg);
         return;
     }
 
@@ -817,11 +813,6 @@ static void relay_transport_client_listener(Jxta_object * obj, void *arg)
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "No relay response element\n");
     }
-
-    /**
-     ** Release the message we are done with it.
-     **/
-    JXTA_OBJECT_RELEASE(msg);
 }
 
 
@@ -1085,6 +1076,7 @@ static void *APR_THREAD_FUNC connect_relay_thread(apr_thread_t * thread, void *a
 
     if (jxta_vector_size(self->peers) == 0) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "sorry, no valid relay addresses supported by relay service\n");
+        apr_thread_exit(thread, JXTA_SUCCESS);
         return NULL;
     }
 
@@ -1162,10 +1154,6 @@ static void *APR_THREAD_FUNC connect_relay_thread(apr_thread_t * thread, void *a
             apr_thread_mutex_lock(self->stop_mutex);
             res = apr_thread_cond_timedwait(self->stop_cond, self->stop_mutex, RELAY_THREAD_NAP_TIME_NORMAL);
             apr_thread_mutex_unlock(self->stop_mutex);
-        }
-
-        if (APR_TIMEUP != res) {
-            apr_thread_exit(thread, JXTA_SUCCESS);
         }
 
         /*

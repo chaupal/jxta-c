@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service.h,v 1.11 2005/02/26 01:52:33 slowhog Exp $
+ * $Id: jxta_rdv_service.h,v 1.11.4.1 2005/05/27 18:56:03 slowhog Exp $
  */
 
 #ifndef __JXTA_RDV_SERVICE_H__
@@ -185,7 +185,7 @@ Jxta_status jxta_rdv_service_remove_event_listener(Jxta_rdv_service * rdv, const
      * @param rdv a pointer to the instance of the Rendezvous Service
      * @return TRUE if the peer is a rendezvous, FALSE otherwise.
      **/
-boolean jxta_rdv_service_is_rendezvous(Jxta_rdv_service * rdv);
+Jxta_boolean jxta_rdv_service_is_rendezvous(Jxta_rdv_service * rdv);
 
     /**
      * Adds an Propagation listener. The listener is invoked when there is a incoming
@@ -239,7 +239,7 @@ Jxta_status jxta_rdv_service_propagate(Jxta_rdv_service * rdv, Jxta_message * ms
      * @param peer a pointer to the Jxta_peer to test upon
      * @return TRUE if the peer is connected
      **/
-boolean jxta_rdv_service_peer_is_connected(Jxta_rdv_service * rdv, Jxta_peer * peer);
+Jxta_boolean jxta_rdv_service_peer_is_connected(Jxta_rdv_service * rdv, Jxta_peer * peer);
 
     /**
      * Return the time in absolute milliseconds time at which the provided peer will expire if not renewed.
@@ -259,7 +259,7 @@ Jxta_time jxta_rdv_service_peer_get_expires(Jxta_rdv_service * rdv, Jxta_peer * 
      * @param peer a pointer to the Jxta_peer to test upon
      * @return TRUE if the peer is a rendezvous, FALSE otherwise.
      **/
-boolean jxta_rdv_service_peer_is_rdv(Jxta_rdv_service * rdv, Jxta_peer * peer);
+Jxta_boolean jxta_rdv_service_peer_is_rdv(Jxta_rdv_service * rdv, Jxta_peer * peer);
 
 #ifdef __cplusplus
 }

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_unipipe_service.c,v 1.17 2005/03/26 00:32:03 bondolo Exp $
+ * $Id: jxta_unipipe_service.c,v 1.17.2.10 2005/05/27 06:46:14 slowhog Exp $
  */
 
 #include "jxtaapr.h"
@@ -82,6 +82,8 @@ typedef struct {
     Jxta_pipe_resolver*    unipipe_resolver;
     apr_thread_mutex_t*    mutex;
     apr_pool_t*            pool;
+
+    Jxta_listener *listener;
 }
 Jxta_unipipe_service;
 
@@ -159,11 +161,14 @@ jxta_unipipe_service_free(Jxta_object* obj) {
                                            (char *) JXTA_UNICAST_PIPE,
                                            (char *) jstring_get_string(self->gid_str));
 
+    jxta_listener_stop(self->listener);
+    JXTA_OBJECT_RELEASE(self->listener);
+    JXTA_OBJECT_RELEASE(self->rdv);
+
     if (self->gid_str) {
         JXTA_OBJECT_RELEASE(self->gid_str);
         self->gid_str = NULL;
     }
-
 
     self->group = NULL;
 
@@ -188,6 +193,7 @@ jxta_unipipe_service_free(Jxta_object* obj) {
     }
 
     if(self->pool != NULL) {
+        apr_thread_mutex_destroy(self->mutex);
         apr_pool_destroy(self->pool);
         self->pool = NULL;
         self->mutex = NULL;
@@ -196,14 +202,12 @@ jxta_unipipe_service_free(Jxta_object* obj) {
     free(self);
 }
 
-
 Jxta_pipe_service_impl*
 jxta_unipipe_service_new_instance(Jxta_pipe_service* pipe_service,
                                   Jxta_PG* group) {
 
     Jxta_unipipe_service* self = NULL;
     Jxta_status res;
-    Jxta_listener* listener = NULL;
     Jxta_id* gid = NULL;
     self = (Jxta_unipipe_service*) malloc(sizeof(Jxta_unipipe_service));
     memset(self, 0, sizeof(Jxta_unipipe_service));
@@ -260,17 +264,17 @@ jxta_unipipe_service_new_instance(Jxta_pipe_service* pipe_service,
 
     jxta_PG_get_GID(group, &gid);
     jxta_id_to_jstring( gid, &self->gid_str);
-    listener = jxta_listener_new((Jxta_listener_func) unipipe_service_rdv_listener,
+    self->listener = jxta_listener_new((Jxta_listener_func) unipipe_service_rdv_listener,
                                  self,
                                  1,
                                  1);
 
-    jxta_listener_start(listener);
+    jxta_listener_start(self->listener);
     jxta_PG_get_rendezvous_service(group, &self->rdv);
     jxta_rdv_service_add_event_listener(self->rdv,
                                         (char *) JXTA_UNICAST_PIPE,
                                         (char *) jstring_get_string(self->gid_str),
-                                        listener);
+                                        self->listener);
     JXTA_OBJECT_RELEASE(gid);
 
     return(Jxta_pipe_service_impl*) self;
@@ -346,10 +350,10 @@ unipipe_timed_connect(Jxta_pipe_service_impl* obj,
     }
 
     res = jxta_listener_wait_for_event(listener, timeout, (Jxta_object**) &event);
+    JXTA_OBJECT_RELEASE(listener);
 
     if(res != JXTA_SUCCESS) {
         JXTA_LOG("Timeout\n");
-        JXTA_OBJECT_RELEASE(listener);
         return res;
     }
 
@@ -357,7 +361,6 @@ unipipe_timed_connect(Jxta_pipe_service_impl* obj,
 
     if(jxta_pipe_connect_event_get_event(event) != JXTA_PIPE_CONNECTED) {
         JXTA_LOG("timed_connect: CONNECTION_FAILED event\n");
-        JXTA_OBJECT_RELEASE(listener);
         JXTA_OBJECT_RELEASE(event);
         return JXTA_TIMEOUT;
     }
@@ -368,10 +371,11 @@ unipipe_timed_connect(Jxta_pipe_service_impl* obj,
 
     if(res != JXTA_SUCCESS) {
         JXTA_LOG("Cannot retrieve pipe from connect event\n");
-        JXTA_OBJECT_RELEASE(listener);
         JXTA_OBJECT_RELEASE(event);
         return JXTA_TIMEOUT;
     }
+
+    JXTA_OBJECT_RELEASE(event);
     JXTA_LOG("timed connect complete\n");
     return JXTA_SUCCESS;
 }
@@ -453,15 +457,14 @@ unipipe_timed_accept(Jxta_pipe_service_impl* obj,
 
     res = jxta_listener_wait_for_event(listener, timeout, (Jxta_object**) &event);
     JXTA_LOG("Got connect_event\n");
+    JXTA_OBJECT_RELEASE(listener);
 
     if(res != JXTA_SUCCESS) {
         JXTA_LOG("Cannot wait for event on the listener\n");
-        JXTA_OBJECT_RELEASE(listener);
         return res;
     }
 
     if(jxta_pipe_connect_event_get_event(event) != JXTA_PIPE_CONNECTED) {
-        JXTA_OBJECT_RELEASE(listener);
         JXTA_OBJECT_RELEASE(event);
         JXTA_LOG("Connect timeout\n");
         apr_thread_mutex_unlock(self->mutex);
@@ -472,12 +475,12 @@ unipipe_timed_accept(Jxta_pipe_service_impl* obj,
 
     if(res != JXTA_SUCCESS) {
         JXTA_LOG("Cannot retrieve pipe from connect event\n");
-        JXTA_OBJECT_RELEASE(listener);
         JXTA_OBJECT_RELEASE(event);
         apr_thread_mutex_unlock(self->mutex);
         return JXTA_TIMEOUT;
     }
 
+    JXTA_OBJECT_RELEASE(event);
     apr_thread_mutex_unlock(self->mutex);
 
     return res;
@@ -669,7 +672,6 @@ resolve_listener(Jxta_object* obj, void* arg) {
     JXTA_OBJECT_CHECK_VALID(event);
 
     if((event == NULL) || (req == NULL)) {
-        JXTA_OBJECT_RELEASE(obj);
         return;
     }
 
@@ -751,7 +753,6 @@ error:
     res = jxta_listener_schedule_object(req->listener, (Jxta_object*) connect_event);
 
     JXTA_OBJECT_RELEASE(connect_event);
-    JXTA_OBJECT_RELEASE(event);
     if (req->listener)
         JXTA_OBJECT_RELEASE(req->listener);
 
@@ -778,8 +779,6 @@ jxta_unipipe_pipe_connect(Jxta_unipipe_service* pipe_service,
         JXTA_LOG("pipe_connect failed\n");
         return JXTA_INVALID_ARGUMENT;
     }
-
-    JXTA_OBJECT_SHARE(listener);
 
     /**
      ** Resolve the pipe. If a peer has been added into "peers", the
@@ -841,6 +840,7 @@ jxta_unipipe_pipe_connect(Jxta_unipipe_service* pipe_service,
             self->dst_peer = peer_tmp;
 
             event = jxta_pipe_connect_event_new(JXTA_PIPE_CONNECTED, (Jxta_pipe*) self);
+            JXTA_OBJECT_RELEASE(self);
 
             if(event == NULL) {
                 JXTA_LOG("Cannot allocate a connect_event\n");
@@ -850,7 +850,8 @@ jxta_unipipe_pipe_connect(Jxta_unipipe_service* pipe_service,
             JXTA_LOG("Invoking the listener\n");
             res = jxta_listener_schedule_object(listener, (Jxta_object*) event);
 
-            JXTA_OBJECT_RELEASE(listener);
+            JXTA_OBJECT_RELEASE(event);
+
             return JXTA_SUCCESS;
         }
     }
@@ -862,11 +863,10 @@ jxta_unipipe_pipe_connect(Jxta_unipipe_service* pipe_service,
     JXTA_LOG("Start remote localize\n");
 
     req = (ResolveRequest*) malloc(sizeof(ResolveRequest));
-    myListener = jxta_listener_new(resolve_listener, (void*) req, 1, 1);
-
-    req->listener = listener;
+    req->listener = JXTA_OBJECT_SHARE(listener);
     req->pipe_service = pipe_service;
 
+    myListener = jxta_listener_new(resolve_listener, (void*) req, 0, 0);
     jxta_listener_start(myListener);
 
     res = jxta_pipe_resolver_remote_resolve(pipe_service->generic_resolver,
@@ -876,6 +876,7 @@ jxta_unipipe_pipe_connect(Jxta_unipipe_service* pipe_service,
                                             myListener);
 
     JXTA_OBJECT_CHECK_VALID(myListener);
+    JXTA_OBJECT_RELEASE(myListener);
 
     /**
      ** We release the oject right now: the listener will be destroyed
@@ -924,6 +925,8 @@ jxta_unipipe_pipe_accept(Jxta_unipipe_service* pipe_service,
     }
 
     res = jxta_listener_schedule_object(listener, (Jxta_object*) event);
+    JXTA_OBJECT_RELEASE(event);
+    JXTA_OBJECT_RELEASE(self);
     return res;
 }
 
@@ -1307,10 +1310,7 @@ unipipe_outputpipe_new(Jxta_unipipe_pipe* pipe) {
     JString* string = NULL;
     Jxta_endpoint_address* addr = NULL;
 
-    self = (Jxta_unipipe_outputpipe*) malloc(sizeof(Jxta_unipipe_outputpipe));
-    memset(self, 0, sizeof(Jxta_unipipe_outputpipe));
-    JXTA_OBJECT_INIT(self, unipipe_outputpipe_free, 0);
-
+    self = (Jxta_unipipe_outputpipe*) calloc(1, sizeof(Jxta_unipipe_outputpipe));
 
     self->user_listener = NULL;
     JXTA_OBJECT_SHARE(pipe);
@@ -1320,15 +1320,20 @@ unipipe_outputpipe_new(Jxta_unipipe_pipe* pipe) {
     peer = pipe->dst_peer;
     if(peer == NULL) {
         JXTA_LOG("outputpipe_new: no destination peer.\n");
+        JXTA_OBJECT_RELEASE(pipe);
+        free(self);
         return NULL;
     }
 
     jxta_peer_get_peerid(peer, &pid);
     if(pid == NULL) {
         JXTA_LOG("Cannot retried peer id from jxta_peer. Message discarded\n");
+        JXTA_OBJECT_RELEASE(pipe);
+        free(self);
         return NULL;
     }
     jxta_id_get_uniqueportion(pid, &string);
+    JXTA_OBJECT_RELEASE(pid);
 
     /**
      ** The following cast are necessary because jxta_endpoint_address_new2()
@@ -1344,6 +1349,8 @@ unipipe_outputpipe_new(Jxta_unipipe_pipe* pipe) {
 
     if(addr == NULL) {
         JXTA_LOG("Cannot allocate a new endpoint address\n");
+        JXTA_OBJECT_RELEASE(pipe);
+        free(self);
         return NULL;
     }
 
@@ -1358,6 +1365,7 @@ unipipe_outputpipe_new(Jxta_unipipe_pipe* pipe) {
     self->generic.add_listener = outputpipe_add_listener;
     self->generic.remove_listener = outputpipe_remove_listener;
 
+    JXTA_OBJECT_INIT(self, unipipe_outputpipe_free, 0);
     return(Jxta_unipipe_outputpipe*) self;
 }
 
@@ -1409,10 +1417,8 @@ static void
 piperesolver_free(Jxta_object* obj) {
 
     Pipe_resolver* self = (Pipe_resolver*) obj;
-    if(self->pipe_service != NULL) {
-        JXTA_OBJECT_RELEASE(self->pipe_service);
-        self->pipe_service = NULL;
-    }
+    self->pipe_service = NULL;
+    free(self);
     return;
 }
 
@@ -1426,7 +1432,6 @@ unipipe_piperesolver_new(Jxta_unipipe_service* pipe_service) {
     self = (Pipe_resolver*) malloc(sizeof(Pipe_resolver));
     memset(self, 0, sizeof(Pipe_resolver));
     JXTA_OBJECT_INIT(self, piperesolver_free, 0);
-    JXTA_OBJECT_SHARE(pipe_service);
     self->pipe_service = pipe_service;
 
     /*
@@ -1472,4 +1477,4 @@ unipipe_service_rdv_listener(Jxta_object* obj, void* arg) {
     free(ids);
 }
 
-
+/* vim: set ts=4 sw=4 tw=130 et: */

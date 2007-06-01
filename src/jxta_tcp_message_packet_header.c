@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tcp_message_packet_header.c,v 1.3 2005/01/12 22:37:43 bondolo Exp $
+ * $Id: jxta_tcp_message_packet_header.c,v 1.3.4.3 2005/06/01 19:49:09 slowhog Exp $
  */
 
 #include <stdlib.h>
@@ -79,7 +79,8 @@ typedef struct _message_packet_header {
 
 const char *MESSAGE_PACKET_HEADER[MESSAGE_PACKET_HEADER_COUNT] = {"content-type", "content-length", "srcEA"};
 
-Jxta_status message_packet_header_read(ReadFunc read_func, void *stream, JXTA_LONG_LONG *msg_size, Jxta_boolean is_multicast, char *src_addr) {
+Jxta_status message_packet_header_read(ReadFunc read_func, void *stream, JXTA_LONG_LONG *msg_size, Jxta_boolean is_multicast,
+        char **src_addr) {
 	MessagePacketHeader header[MESSAGE_PACKET_HEADER_COUNT];		/* for extra if there exists content-coding */
 	Jxta_boolean saw_empty, saw_length, saw_type, saw_srcEA;
 	int i, length_index = -1, srcEA_index = -1;
@@ -155,7 +156,7 @@ Jxta_status message_packet_header_read(ReadFunc read_func, void *stream, JXTA_LO
 				return JXTA_FAILED;
 			
 			header[i].value_size = ntohs(header[i].value_size);
-			header[i].value = (BYTE *)malloc(header[i].value_size);
+			header[i].value = (BYTE *)malloc(header[i].value_size + 1);
 			if(header[i].value == NULL) {
 				JXTA_LOG("Error header body malloc()\n");
 				return JXTA_FAILED;
@@ -165,11 +166,25 @@ Jxta_status message_packet_header_read(ReadFunc read_func, void *stream, JXTA_LO
 			if(res != JXTA_SUCCESS)
 				return JXTA_FAILED;
 
-			if(i == srcEA_index)
-				src_addr = strdup((char*)header[i].value);
+            header[i].value[header[i].value_size] = '\0';
+
+			if(i == srcEA_index) {
+                if (NULL != src_addr) {
+                    *src_addr = strdup((char*)header[i].value);
+                }
+            }
 	
-			if(++ i > header_count)
-			       return JXTA_FAILED;
+            i++;
+			if (i > header_count) {
+				JXTA_LOG("Header count is more than expected %d\n", header_count);
+                for(i = 0; i < header_count; i ++) {
+                    if(header[i].name != NULL)
+                        free(header[i].name);
+                    if(header[i].value != NULL)
+                        free(header[i].value);
+                }
+			    return JXTA_FAILED;
+            }
 		}
 	} while(saw_empty != TRUE);
 
@@ -235,3 +250,5 @@ Jxta_status message_packet_header_write(WriteFunc write_func, void *stream, JXTA
 
 	return JXTA_SUCCESS;
 }
+
+/* vim: set ts=4 sw=4 tw=130 et: */

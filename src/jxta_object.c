@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object.c,v 1.32 2005/03/30 00:49:08 slowhog Exp $
+ * $Id: jxta_object.c,v 1.32.2.4 2005/06/08 23:09:49 slowhog Exp $
  */
 
 static const char *__log_cat = "OBJECT";
@@ -61,6 +61,10 @@ static const char *__log_cat = "OBJECT";
 #include "jxta_object.h"
 
 #define MAX_REF_COUNT 10000
+
+#ifndef JXTA_OBJECT_TRACKING_ENABLE
+#define JXTA_OBJECT_TRACKING_ENABLE 0
+#endif
 
 /**
  * Forward definition. Makes compilers happier.
@@ -98,7 +102,7 @@ void start_kdb_server(void);
 
 static apr_thread_mutex_t *jxta_object_mutex = NULL;
 static apr_pool_t *jxta_object_pool = NULL;
-static Jxta_boolean jxta_object_initialized = FALSE;
+static unsigned int jxta_object_initialized = 0;
 
 /**
  * Initialize the global mutex. Since we do want this module
@@ -113,40 +117,59 @@ static Jxta_boolean jxta_object_initialized = FALSE;
  * jice@jxta.org - 20020204 : Actualy, the POSIX way is to use thread-once
  * because static initialization order is practicaly impossible to control.
  **/
-void jxta_object_initialize(void)
+Jxta_status jxta_object_initialize(void)
 {
     apr_status_t res;
 
-    if (jxta_object_initialized) {
-        /* Already initialized. Nothing to do. */
-        return;
+    if (jxta_object_initialized++) {
+        return JXTA_SUCCESS;
     }
 
     /* Initialize the global mutex. */
     res = apr_pool_create(&jxta_object_pool, NULL);
     if (res != APR_SUCCESS) {
+        jxta_object_initialized = 0;
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Cannot allocate pool for jxta_object_mutex\n");
-        return;
+        return res;
     }
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, FILEANDLINE "Allocated pool fot jxta_object_mutex\n");
 
     /* Create the mutex */
     res = apr_thread_mutex_create(&jxta_object_mutex, APR_THREAD_MUTEX_NESTED, jxta_object_pool);
     if (res != APR_SUCCESS) {
+        apr_pool_destroy(jxta_object_pool);
+        jxta_object_initialized = 0;
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Cannot jxta_object_mutex\n");
-        return;
+        return res;
     }
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, FILEANDLINE "Allocated the global jxta_object_mutex\n");
 
-    if (jxta_object_initialized) {
-        /* This should not be the case */
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "jxta_object_initialized invoked concurrently !!!\n");
-    }
 #ifdef KDB_SERVER
     start_kdb_server();
 #endif
 
-    jxta_object_initialized = TRUE;
+}
+
+void jxta_object_terminate(void)
+{
+    apr_status_t res;
+
+    if (!jxta_object_initialized) {
+        return;
+    }
+
+    jxta_object_initialized--;
+    if (jxta_object_initialized) {
+        return;
+    }
+
+    /* Destroy the mutex */
+    apr_thread_mutex_destroy(jxta_object_mutex);
+
+    /* Destroy the global apr pool. */
+    apr_pool_destroy(jxta_object_pool);
+
+    jxta_object_initialized = FALSE;
 }
 
 /**
@@ -156,7 +179,6 @@ static void jxta_object_mutexGet(void)
 {
     apr_status_t res;
 
-    jxta_object_initialize();
     res = apr_thread_mutex_lock(jxta_object_mutex);
     if (res != APR_SUCCESS) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Error getting jxta_object_mutex\n");
@@ -170,7 +192,6 @@ static void jxta_object_mutexRel(void)
 {
     apr_status_t res;
 
-    jxta_object_initialize();
     res = apr_thread_mutex_unlock(jxta_object_mutex);
     if (res != APR_SUCCESS) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Error getting jxta_object_mutex\n");
@@ -338,6 +359,9 @@ void *_jxta_object_init(Jxta_object * obj, unsigned int flags, JXTA_OBJECT_FREE_
     jxta_object_check_uninitialized(obj, file, line);
 
     obj->_bitset = flags;
+#if JXTA_OBJECT_TRACKING_ENABLE 
+    obj->_bitset |= JXTA_OBJECT_SHARE_TRACK;
+#endif
     obj->_free = freefunc;
     obj->_freeCookie = cookie;
 #ifdef JXTA_OBJECT_TRACKER
@@ -347,6 +371,9 @@ void *_jxta_object_init(Jxta_object * obj, unsigned int flags, JXTA_OBJECT_FREE_
     obj->_refCount = 1;
 
     jxta_object_set_initialized(obj, file, line);
+    if (0 != (obj->_bitset & JXTA_OBJECT_SHARE_TRACK)) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "[%s:%d] INIT obj[%p]\n", file, line, obj);
+    }
 
     return obj;
 }
@@ -611,6 +638,8 @@ void start_kdb_server(void)
 
     apr_thread_create(&thread, NULL,    /* no attr */
                       kdb_server_main, (void *) NULL, pool);
+
+    apr_thread_detach(thread);
 #else
 
     printf("************* Cannot start KDB server: JXTA_OBJECT_TRACKER is not enabled\n");

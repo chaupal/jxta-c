@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_apr_wrapper.h,v 1.3 2005/02/24 21:13:26 slowhog Exp $
+ * $Id: jpr_apr_wrapper.h,v 1.3.4.1 2005/05/27 06:29:05 slowhog Exp $
  */
 
 #ifndef __JPR_APR_WRAPPER_H__
@@ -60,6 +60,7 @@
 #include "apr_version.h"
 #include "apr_thread_mutex.h"
 #include "apr_general.h"
+#include "apr_time.h"
 
 #define CHECK_APR_VERSION(major, minor, patch) \
 	(APR_MAJOR_VERSION > (major) || \

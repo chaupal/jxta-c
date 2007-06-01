@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_stdpg.c,v 1.25 2005/03/30 01:11:39 slowhog Exp $
+ * $Id: jxta_stdpg.c,v 1.25.4.1 2005/05/04 03:47:42 slowhog Exp $
  */
 
 /*
@@ -141,6 +141,7 @@ static Jxta_PA *read_config(const char *fname)
     Jxta_PA *ad;
     FILE *advfile;
 
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Reading configuration ...\n");
     ad = jxta_PA_new();
     if (ad == NULL) {
         return NULL;

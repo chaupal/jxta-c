@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: whoami.c,v 1.2 2004/12/05 02:16:46 slowhog Exp $
+ * $Id: whoami.c,v 1.2.4.1 2005/05/06 10:42:00 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -357,6 +357,7 @@ void jxta_whoami_start(Jxta_object * appl,
 Common_Exit:
     if( jstring_length( outputLine ) > 0 )
         JxtaShellApplication_print(app, outputLine );
+    JXTA_OBJECT_RELEASE(outputLine);
 
     JxtaShellApplication_terminate(app);
 }
@@ -378,7 +379,6 @@ void jxta_whoami_print_help(Jxta_object *appl) {
     jstring_append_2(inputLine,"\t-p\t\"pretty print\" the output.\n");
 
     if( app != NULL ) {
-        JXTA_OBJECT_SHARE(inputLine);
         JxtaShellApplication_print(app,inputLine);
     }
     JXTA_OBJECT_RELEASE(inputLine);

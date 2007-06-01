@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_getopt.c,v 1.3 2005/02/25 21:44:57 slowhog Exp $
+ * $Id: jxta_shell_getopt.c,v 1.3.4.1 2005/05/21 01:03:44 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -121,6 +121,10 @@ int JxtaShellGetopt_getCurrentArgument(const JxtaShellGetopt * opt)
     return result;
 }
 
+JString *JxtaShellGetopt_OptionArgument(const JxtaShellGetopt * opt)
+{
+    return opt->optArgument;
+}
 
 JString *JxtaShellGetopt_getOptionArgument(const JxtaShellGetopt * opt)
 {
@@ -312,3 +316,5 @@ int main(int argc, char **argv){
    return 0;
 }
 #endif
+
+/* vi: set ts=4 sw=4 tw=130 et: */
