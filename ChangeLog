@@ -1,0 +1,4553 @@
+2006-06-20 15:59  slowhog
+
+	* jxta.pc.in:
+	  - jpr is now static library
+
+2006-06-20 15:35  slowhog
+
+	* Makefile.am:
+	  - doxconf is now generated with doxconf.in by configure
+
+2006-06-20 15:33  slowhog
+
+	* configure.in, doxconf, doxconf.in:
+	  - bumper the release
+	  - use configure to generate doxconf with correct version
+
+2006-06-20 15:28  mmx2005
+
+	* src/jxta_rdv_service_server.c: memory leak fix from David
+	  committed by ericx
+
+2006-06-20 10:58  slowhog
+
+	* src/jpr/Makefile.am:
+	  - required to build on FC4 64-bits
+
+2006-06-20 10:12  slowhog
+
+	* configure.in, src/jpr/Makefile.am, src/unicode/Makefile.am:
+	  - no need to link against libs apr/apu depends on, linker should
+	  address that
+	  - build jpr/unicode as static library
+
+	  Submitted by: Alexander Sack Reviewed by:  Henry the slowhog
+
+2006-06-19 01:14  mmx2005
+
+	* src/jxta_unipipe_service.c: memory leak fix by ericx
+
+2006-06-19 01:04  mmx2005
+
+	* src/jxta_stdpg.c: memory leak fix by ericx
+
+2006-06-17 23:21  mmx2005
+
+	* src/jxta_resolver_service_ref.c: spelling fix by ericx
+
+2006-06-17 23:09  mmx2005
+
+	* src/jxta_rsrdi.c: spelling fix by ericx
+
+2006-06-17 02:24  mmx2005
+
+	* src/: jxta_listener.c, jxta_listener.h: spelling fix
+
+	  by ericx
+
+2006-06-16 02:10  mmx2005
+
+	* src/jxta_rsrdi.h: spelling fix
+
+	  by ericx
+
+2006-06-15 23:20  mmx2005
+
+	* src/jxta_piperesolver_impl.c: unneeded type cast by ericx
+
+2006-06-15 22:44  mmx2005
+
+	* src/: jxta_pipe_service.h, jxta_pipe_service_impl.h,
+	  jxta_unipipe_service.c: spelling fix by ericx
+
+2006-06-15 20:15  mmx2005
+
+	* src/: jxta_dr.h: spelling fix by ericx
+
+2006-06-15 19:52  mmx2005
+
+	* src/jxta_discovery_service.h: spelling fix by ericx
+
+2006-06-15 18:50  mmx2005
+
+	* src/jxta_cm.h: spelling fix
+
+	  by ericx
+
+2006-06-15 18:19  slowhog
+
+	* src/jxta_cm.c:
+	  - Fix object leaks Submitted by: Amin Xu <mmx2005@jxta.org> Reviewed
+	  by:  Henry the slowhog
+
+2006-06-15 16:09  slowhog
+
+	* src/: jxta_discovery_service_ref.c, jxta_endpoint_service.c:
+	  - remove not unnecessary reference to parent group
+
+2006-06-15 15:55  slowhog
+
+	* src/: jxta_rdv_service_client.c, jxta_rdv_service_server.c:
+	  - fix leak of parent group
+
+2006-06-15 12:19  mmx2005
+
+	* src/: jxta_rq.c, jxta_rq.h: spelling fix
+
+	  by ericx
+
+2006-06-15 11:43  mmx2005
+
+	* src/jxta_endpoint_service.c: memory leak fix obtained from David
+
+	  reviewed by ericx
+
+2006-06-15 01:26  slowhog
+
+	* configure.in, ChangeLog:
+	  - bump the version to 2.5_beta
+	  - update ChangeLog
+
+2006-06-15 01:20  mmx2005
+
+	* src/jxta_srdi.c: JXTA_LOG ->jxta_log_append by ericx
+
+2006-06-15 01:12  mmx2005
+
+	* src/: jxta_pipe_service.c, jxta_pipe_service.h,
+	  jxta_pipe_service_impl.h, jxta_unipipe_service.c,
+	  jxta_wire_service.c: patch of issue 244 by ericx
+
+2006-06-15 00:07  slowhog
+
+	* src/jxta_srdi.c: Issue number: 245 Submitted by: Henry Jen the
+	  slowhog
+
+	  - avoid segment fault and make the SRDI message in old style
+
+2006-06-14 14:03  slowhog
+
+	* src/jxta_rdv_config_adv.h:
+	  - fix type in function protoctype
+
+2006-06-14 12:54  mmx2005
+
+	* src/jxta_tcp_message_packet_header.c: JXTA_LOG ->jxta_log_append
+
+	  by ericx
+
+2006-06-14 10:48  slowhog
+
+	* src/: jxta_peergroup.c, jxta_transport_http_poller.c,
+	  jxta_transport_tcp_connection.c:
+	  - stop thread pool when stopping peer group instead of in
+	  destructor.
+	  - deal thread_pool for subgroup correctly
+	  - don't call apr_thread_exit as we cannot gurantee the thread is
+	  fully stopped before the parent pool is destroyed.
+
+2006-06-14 04:52  mmx2005
+
+	* src/jxta_dq.c: JXTA_LOG -> jxta_log_append
+
+	  by ericx
+
+2006-06-13 17:06  mmx2005
+
+	* src/jxta_endpoint_service.c: issue 242 patch 390 by ericx
+
+2006-06-13 15:50  slowhog
+
+	* src/: jxta_dq.c, jxta_dr.c, jxta_dr.h, jxta_object.c:
+	  - allow NULL pointer in JXTA_OBJECT_SHARE
+	  - parameter should be const char * in discovery_response_new
+
+2006-06-12 22:04  mmx2005
+
+	* src/jxta_rdv_service_client.c: potential memory leak fix
+
+	  by ericx
+
+2006-06-12 15:40  mmx2005
+
+	* src/: jxta_pipe_adv.c, jxta_pipe_adv.h: Issue 240 (add 'Desc'
+	  into pipeadv) by ericx
+
+2006-06-12 11:22  slowhog
+
+	* src/jxta_incoming_unicast_server.c:
+	  - Fix potential segment fault in case the service is stopped before
+	  the thread had started.
+
+2006-06-11 04:02  mmx2005
+
+	* src/jxta_discovery_service_ref.c: unused var removed
+
+	  by ericx
+
+2006-06-11 03:57  mmx2005
+
+	* src/jxta_pipe_service.h: spelling fix
+
+	  by ericx
+
+2006-06-09 10:51  slowhog
+
+	* src/jxta_transport_tcp_connection.c:
+	  - the connection maybe invalid and cause welcome message to be NULL.
+
+2006-06-09 10:49  slowhog
+
+	* src/jxta_resolver_service_ref.c:
+	  - return JXTA_SUCCESS if the resolver query is finish process
+	  correctly.
+
+2006-06-07 17:54  slowhog
+
+	* src/jxta_discovery_service_ref.c:
+	  - fix the hop count exceed limit of 3 problem caused by the complex
+	  query support
+
+2006-06-07 13:45  slowhog
+
+	* src/: jxta_discovery_service_ref.c, jxta_dq.c, jxta_dr.c:
+	  - PeerAdv element is optional in Discovery Query/Response
+
+2006-06-07 10:42  slowhog
+
+	* src/jxta_srdi_service_ref.c:
+	  - get redudant pid for peerID
+
+2006-06-06 14:56  slowhog
+
+	* src/jxta_srdi_service_ref.c:
+	  - revert srdi owner to be replicating RDV. This is by design for the
+	  complex query.
+
+2006-06-05 17:30  mmx2005
+
+	* src/jxta_discovery_service_ref.c:
+	   should share it
+
+	   by ericx
+
+2006-06-05 12:19  slowhog
+
+	* src/jxta_transport_tcp_connection.c:
+	  - fix connection_new_2 remote addr bug
+
+2006-06-05 10:29  slowhog
+
+	* src/jxta_incoming_unicast_server.c:
+	  - log bug fix
+
+2006-06-02 18:10  mmx2005
+
+	* src/jxta_endpoint_service.c: local use of 'parentgroup'
+
+	  by ericx
+
+2006-06-02 18:01  mmx2005
+
+	* src/jxta_cm.c: add comments for the patch of issue 234
+
+	  by ericx
+
+2006-06-02 17:43  mmx2005
+
+	* src/jxta_endpoint_service.c: memory leak fix
+
+	  by ericx
+
+2006-06-02 10:28  slowhog
+
+	* src/jxta_transport_tcp.c:
+	  - get method should increase reference count
+
+2006-06-02 10:28  slowhog
+
+	* src/jxta_discovery_service_ref.c:
+	  - fix typo
+
+2006-06-02 04:05  mmx2005
+
+	* src/jxta_cm.c: issue 234
+
+	  by ericx
+
+2006-06-02 02:15  mmx2005
+
+	* src/jpr/: apr_thread_pool.c, apr_thread_pool.h: spelling fix
+
+	  by ericx
+
+2006-06-01 23:18  mmx2005
+
+	* src/jxta_transport_tcp.c: memory leak fix (or
+	  tcp_connection_start_socket should release peerid)
+
+	  by ericx
+
+2006-06-01 23:01  mmx2005
+
+	* src/jxta_cm.c: ensure jPeerNs ...  freed after exit
+
+	  by ericx
+
+2006-06-01 22:42  mmx2005
+
+	* src/: jxta_transport_tcp_connection.c,
+	  jxta_transport_welcome_message.c: free temporary 'welcome_str'
+
+	  by ericx
+
+2006-06-01 21:43  mmx2005
+
+	* src/jxta_wire_service.c: memory leak fix
+
+	  by ericx
+
+2006-06-01 20:35  mmx2005
+
+	* src/jxta_endpoint_service.c: demux ignored if endpoint is stopped
+
+	  by ericx
+
+2006-06-01 16:40  bondolo
+
+	* src/jxta_transport_welcome_message.c: Fixes issue with parsing of
+	  3.0 welcome message found during testing.
+
+2006-06-01 14:20  slowhog
+
+	* src/jxta_discovery_service_ref.c:
+	  - make sure listener was registered
+
+2006-06-01 11:29  slowhog
+
+	* src/jxta_discovery_service_ref.c:
+	  - Return query ID when the peer is a RDV
+
+2006-06-01 08:44  slowhog
+
+	* src/jxta_endpoint_service.c:
+	  - recipient field should be freed at the time the structure
+	  destroyed
+
+2006-06-01 00:22  lankes
+
+	* win32/jxta/: jxtadll/jxtadll.vcproj, jxtalib/jxtalib.vcproj:
+	  - add jxta_transport_welcome_message.c to the visual studio project
+	  files
+
+2006-06-01 00:12  mmx2005
+
+	* src/: jxta_rdv_service_client.c,
+	  jxta_transport_welcome_message.c: remove unused vars & char type
+	  fix
+
+	  by ericx
+
+2006-05-31 22:22  slowhog
+
+	* src/jpr/Makefile.am:
+	  - HEADERS should not be used
+
+2006-05-31 22:01  mmx2005
+
+	* src/: jxta_discovery_service_ref.c, jxta_peergroup.c,
+	  jxta_peerinfo_service_ref.c: remove unused vars & compile
+	  warnings
+
+	  by ericx
+
+2006-05-31 21:47  mmx2005
+
+	* src/jxta_endpoint_service.c: remove unused vars & compile
+	  warnings
+
+	  by ericx
+
+2006-05-31 21:41  mmx2005
+
+	* src/jxta_endpoint_service.c: 'return' needed
+
+	  by ericx
+
+2006-05-31 21:29  mmx2005
+
+	* src/: jxta_transport_welcome_message.c,
+	  jxta_transport_welcome_message.h: do not export
+	  'welcome_message_free'
+
+	  by ericx
+
+2006-05-31 21:23  mmx2005
+
+	* src/jxta_wire_service.c: should return something
+
+	  by ericx
+
+2006-05-31 19:41  mmx2005
+
+	* src/: jxta_constants.c, jxta_constants.h: 'long long' ->
+	  'Jxta_time_diff'
+
+	  by ericx
+
+2006-05-31 19:40  slowhog
+
+	* src/jpr/apr_thread_pool.c:
+	  - compliant to coding convention
+
+2006-05-31 19:01  mmx2005
+
+	* src/jpr/apr_thread_pool.c: remove unused vars
+
+	  by ericx
+
+2006-05-31 18:25  slowhog
+
+	* src/mod_jxta.c:
+	  - remove obsolete file mod_jxta.c
+
+2006-05-31 17:25  slowhog
+
+	* src/jpr/Makefile.am:
+	  - apr_thread_pool.h should be public header file
+
+2006-05-31 08:34  lankes
+
+	* src/jxta_transport_tcp.c:
+	  - using of strict ANSI C
+	  - necessary for Visual Studio .NET 2003
+
+2006-05-26 17:12  slowhog
+
+	* src/jxta_log.c:
+	  - use va_copy macro whenever possible.
+
+2006-05-26 17:08  slowhog
+
+	* autogen.sh:
+	  - don't call configure by default. This seems to be more widely-use
+	  convention and is friendlier when build in a different folder.
+
+2006-05-26 15:14  bondolo
+
+	* src/Makefile.am: Add missing makefile.am
+
+2006-05-25 19:49  bondolo
+
+	* src/: jxta_message.c, jxta_message.h: javadoc cleanups and minor
+	  lint removal.
+
+2006-05-25 19:16  bondolo
+
+	* src/jxta_message.c: This commit and the previous commit contain
+	  Brian A. Wilson's memory checking patches.
+
+2006-05-25 19:15  bondolo
+
+	* src/: jxta_tcp_message_packet_header.c, jxta_tcp_multicast.c,
+	  jxta_transport_tcp.c, jxta_transport_tcp_connection.c,
+	  jxta_transport_tcp_connection.h, jxta_transport_tcp_private.h,
+	  jxta_transport_welcome_message.c,
+	  jxta_transport_welcome_message.h: refactors welcome message out
+	  of tcp transport and adds support for welcome message version 2.
+	  Also improves the way in which the welcome message is read and
+	  parsed.
+
+2006-05-25 19:13  bondolo
+
+	* src/jxta_module.c: spelling error
+
+2006-05-25 14:50  bondolo
+
+	* src/jxta_endpoint_address.h: docs corrections
+
+2006-05-25 14:45  bondolo
+
+	* src/jxta_peergroup.c: minor cleanups
+
+2006-05-25 14:37  bondolo
+
+	* src/jxta_stdpg.c: minor nits found while debugging logging
+	  problems.
+
+2006-05-25 14:31  bondolo
+
+	* src/jxta_cm.c: minor tweaks found while debugging logging
+	  problem.
+
+2006-05-25 14:19  bondolo
+
+	* src/jxta_log.c: Corrects problems with the handling of var args
+	  under linux gcc x84_64 ABI.
+
+	  ISO C-99 provides a va_copy function. It's not clear from the C spec
+	  or other reading about C ABI if the memmove copy we now do is going
+	  to always work. It does seem that copying a va_list *after* calling
+	  va_arg would produce undefined results.
+
+2006-05-24 15:23  bondolo
+
+	* src/jxta_cm.h: remove duplicate definition
+
+2006-05-24 14:57  slowhog
+
+	* src/jxta_object.c:
+	  - adjust log level. object tracking message is a lot, should be at
+	  trace level.
+
+2006-05-23 10:39  slowhog
+
+	* src/: jxta_id.c, jxta_id.h, jxta_resolver_service_ref.c:
+	  - add jxta_id_to_cstr function
+	  - use char* from pool instead of jstring
+
+2006-05-23 10:37  slowhog
+
+	* src/: jxta_module.c, jxta_relay.c:
+	  - fix bug not stopping relay service
+
+2006-05-23 10:36  slowhog
+
+	* src/jxta_pa.c:
+	  - leak fix
+
+2006-05-23 10:01  slowhog
+
+	* src/jpr/apr_thread_pool.c:
+	  - check memory allocation error
+
+2006-05-23 08:57  bondolo
+
+	* doxconf: add additional wrapper macro to predefined list
+
+2006-05-22 07:33  lankes
+
+	* win32/jxta.sln:
+	  - change the dependencies between the sub projects
+
+2006-05-22 07:28  lankes
+
+	* win32/test/: dummypg_test/dummypg_test.vcproj,
+	  endpoint_test/endpoint_test.vcproj:
+	  - these test programs use now the static version of the jxta library
+	  - the test programs use some private functions of the jxta library
+	  which are not exported into the jxta dll => only the static version
+	  of the jxta library gives the developer the possibility to use these
+	  private functions (why use the test programs some private functions
+	  of the jxta library?)
+
+2006-05-22 07:06  lankes
+
+	* src/jxta_peergroup.c:
+	  - it is not necessary to export private functions (jxta_PG_destruct
+	  is declared in jxta_peergroup_private.h)
+
+2006-05-19 23:20  slowhog
+
+	* src/: jxta_bidipipe.c, jxta_discovery_service_ref.c,
+	  jxta_endpoint_service.c, jxta_piperesolver_impl.c,
+	  jxta_rdv_service.c, jxta_resolver_service_ref.c,
+	  jxta_unipipe_service.c, jxta_wire_service.c:
+	  - use process_object instead of schedule_object. we can use
+	  pool_object later if we found performance is hit
+
+2006-05-19 23:08  slowhog
+
+	* src/: jxta_listener.c, jxta_listener.h:
+	  - pool method for listener to use thread_pool
+
+2006-05-19 22:29  slowhog
+
+	* src/jxta_peerview.c:
+	  - fix object lease
+	  - using callback mode for listener
+
+2006-05-19 22:26  slowhog
+
+	* src/jxta_peerview.c:
+	  - cosmetic fix with indent
+
+2006-05-19 14:59  bondolo
+
+	* src/Makefile.am: remove trailing space after backslash
+
+2006-05-18 04:46  lankes
+
+	* src/jxta_log.c:
+	  - initilialize return value with JXTA_SUCCESS
+
+2006-05-18 04:12  lankes
+
+	* src/jxta_router_client.c:
+	  - using of strict ANSI C
+	  - necessary for Visual Studio .NET 2003
+
+2006-05-18 01:12  slowhog
+
+	* configure.in, src/jxta_apr.h:
+	  - fix include path for apr_thread_pool.h in case it is not in apr
+	  distribution
+
+2006-05-17 01:27  slowhog
+
+	* src/: jxta_rdv_service.c, jxta_rdv_service.h,
+	  jxta_rdv_service_client.c, jxta_rdv_service_server.c,
+	  jxta_relay.c, jxta_resolver_service_ref.c, jxta_router_client.c,
+	  jxta_srdi_service_ref.c, jxta_wire_service.c:
+	  - use endpoint callback API
+	  - Merged some patches from issue 237
+	  - Cosmetic changes
+
+	  Issue number: 238 and part of 237 Obtained from: Henry the slowhog,
+	  Brian A. Wilson
+
+2006-05-17 00:17  slowhog
+
+	* src/jxta_endpoint_service.c:
+	  - add log messages
+
+2006-05-16 12:48  slowhog
+
+	* src/jxta_stdpg.c:
+	  - start the peergroup
+
+2006-05-16 05:52  lankes
+
+	* src/jxta_endpoint_service.c:
+	  - cosmetic changes
+
+2006-05-16 05:51  lankes
+
+	* src/jxta_endpoint_service.c:
+	  - using of strict ANSI C
+	  - necessary for Visual Studio .NET 2003
+
+2006-05-15 17:58  slowhog
+
+	* src/jxta_endpoint_service.c, src/jxta_endpoint_service.h,
+	  src/jxta_endpoint_service_priv.h, src/jxta_module.h,
+	  src/jxta_netpg.c, src/jxta_peergroup.c, src/jxta_peergroup.h,
+	  src/jxta_peergroup_private.h, src/jxta_stdpg.c,
+	  test/dummypg_test.c, test/endpoint_stress_test.c,
+	  test/endpoint_test.c:
+	  - add shared resources to peergroup
+	  - endpoint using thread pool
+	  - endpoint expose callback API
+
+	  Issue number:  238 Submitted by:  Henry the slowhog
+
+2006-05-15 17:36  slowhog
+
+	* test/Makefile.am, tutorials/Makefile.am:
+	  - support separate builddir
+
+2006-05-13 03:34  slowhog
+
+	* src/: jxta_callback.c, jxta_callback.h:
+	  - Fix return type of Jxta_callback_func
+	  - Add helper function to convert a listener into a callback
+
+2006-05-13 03:26  slowhog
+
+	* src/: jxta_log.c, jxta_log.h:
+	  - add JXTA_DEPRECATED_API macro
+	  - Merge out of memory patch for issue 237 from Biran A. Wilson
+
+	  Issue number: 237
+
+2006-05-12 10:01  exocetrick
+
+	* src/jxta_discovery_service_ref.c: Check for zero-length string
+	  properly
+
+2006-05-12 02:56  slowhog
+
+	* shell/Makefile.am, src/Makefile.am, test/Makefile.am,
+	  tutorials/Makefile.am:
+	  - use top_builddir and top_srcdir to ensure correct path
+	  - make sure use local libjpr and libjxta dependency
+
+2006-05-12 02:52  slowhog
+
+	* configure.in, src/jxta_apr.h, src/jpr/Makefile.am,
+	  src/jpr/apr_thread_pool.c, src/jpr/apr_thread_pool.h:
+	  - add thread pool code in case apr does not have it yet
+	  - add configure code to detect if apr have apr_thread_pool code
+	  - add configure code to make sure apr-util supports SQLite3
+
+2006-05-03 13:29  lankes
+
+	* jxta.net/: shell/AssemblyInfo.cs, src/AssemblyInfo.cs:
+	  - bump the version to 2.4
+
+2006-05-03 13:22  lankes
+
+	* win32/test/: any_adv_test/any_adv_test.vcproj,
+	  apa_adv_test/apa_adv_test.vcproj, dq_adv_test/dq_adv_test.vcproj,
+	  dr_adv_test/dr_adv_test.vcproj, excep_test/excep_test.vcproj,
+	  hta_adv_test/hta_adv_test.vcproj,
+	  http_client_test/http_client_test.vcproj,
+	  jstring_test/jstring_test.vcproj,
+	  jxta_bytevector_test/jxta_bytevector_test.vcproj,
+	  jxta_discovery_test/jxta_discovery_test.vcproj,
+	  jxta_hash_test/jxta_hash_test.vcproj,
+	  jxta_id_test/jxta_id_test.vcproj,
+	  jxta_log_unit_test/jxta_log_unit_test.vcproj,
+	  jxta_objecthash_test/jxta_objecthash_test.vcproj,
+	  jxta_vector_test/jxta_vector_test.vcproj,
+	  jxta_xml_util_test/jxta_xml_util_test.vcproj,
+	  jxtaobject_test/jxtaobject_test.vcproj,
+	  mia_adv_test/mia_adv_test.vcproj, msg_test/msg_test.vcproj,
+	  pa_adv_test/pa_adv_test.vcproj, pga_adv_test/pga_adv_test.vcproj,
+	  rdv_adv_test/rdv_adv_test.vcproj,
+	  relay_adv_test/relay_adv_test.vcproj,
+	  route_adv_test/route_adv_test.vcproj,
+	  rq_adv_test/rq_adv_test.vcproj, rr_adv_test/rr_adv_test.vcproj,
+	  srdi_test/srdi_test.vcproj, svc_adv_test/svc_adv_test.vcproj,
+	  tta_adv_test/tta_adv_test.vcproj, xmltest/xmltest.vcproj:
+	  - add missing include path
+
+2006-04-25 22:45  mmx2005
+
+	* shell/talk.c: release it if it is NOT NULL by mmx2005
+
+2006-04-07 23:44  mmx2005
+
+	* src/jxta_msa.c: pipeadv type fix by mmx2005
+
+2006-04-05 10:17  slowhog
+
+	* jxta.pc.in:
+	  - add openssl
+
+2006-04-04 23:02  slowhog
+
+	* jxta.pc.in:
+	  - add apr-util-1 depedency
+
+2006-04-04 22:39  slowhog
+
+	* Makefile.am, configure.in, jxta.pc.in:
+	  - add support to pkg-config, jxta.pc
+
+2006-04-04 11:19  slowhog
+
+	* src/jstring.c:
+	  - Make sure the prototype matches
+
+2006-03-31 17:22  slowhog
+
+	* shell/Makefile.am, src/Makefile.am, src/jpr/Makefile.am,
+	  src/unicode/Makefile.am, test/Makefile.am, tutorials/Makefile.am:
+	  - remove gcc specific flags, now it can be build with Sun Studio 11.
+	  Free on both Solaris and Linux. :-)
+
+2006-03-31 17:20  slowhog
+
+	* src/: jxta_rdv_service.c, jxta_util_priv.c, jxta_util_priv.h:
+	  - handling the service name and param correctly
+
+2006-03-31 17:02  slowhog
+
+	* src/jxta_rdv_service_client.c:
+	  - identify the RDV instance in the log file
+
+2006-03-29 14:06  slowhog
+
+	* src/jxta.h:
+	  - Make jxta.h the single file to be include for public APIs
+
+2006-03-29 13:49  slowhog
+
+	* jxta.net/src/Log.cs, shell/jxta_shell_main.c,
+	  src/jxta_bidipipe.c, src/jxta_endpoint_service.c,
+	  src/jxta_incoming_unicast_server.c, src/jxta_listener.c,
+	  src/jxta_log.c, src/jxta_log.h, src/jxta_message.c,
+	  src/jxta_object.c, src/jxta_object_type.c, src/jxta_peerview.c,
+	  src/jxta_rdv_service.c, src/jxta_rdv_service_client.c,
+	  src/jxta_rdv_service_provider.c, src/jxta_rdv_service_server.c,
+	  src/jxta_resolver_service_ref.c, src/jxta_router_client.c,
+	  src/jxta_transport.c, src/jxta_transport_tcp.c,
+	  src/jxta_transport_tcp_connection.c:
+	  - Change the jxta_log_callback definition to take a string as log
+	    message instead of depending on the callback to do the formatting.
+	    This ensure the interpretation of format string and the callback
+	    still be able to do additional formatting as needed.
+
+	  Issue number: 235 Obtained from: Stefan Lankes Submitted by:  Henry
+	  the slowhog Reviewed by:   Stefan
+
+2006-03-29 11:27  slowhog
+
+	* src/jxta_dq.c:
+	  - add log category
+
+2006-03-28 12:54  slowhog
+
+	* src/jxta_dq.c:
+	  - Handle out of memory exceptions Obtained from: Brian A. Wilson
+	  Reviewed by:   Henry the slowhog
+
+2006-03-24 10:23  slowhog
+
+	* src/jxta_discovery_service_ref.c:
+	  - fix extra argument Obtained from: Ruben Niederhagen
+
+2006-03-22 18:26  slowhog
+
+	* src/xml.c:
+	  - remove unused file
+
+2006-03-22 18:26  slowhog
+
+	* src/: jxta.c, jxta_id.c, jxta_id_jxta.c,
+	  jxta_object_ptrwrapper.c, mod_jxta.c:
+	  - not to include "jxta.h", which is for app developer to use as a
+	  single include
+
+2006-03-22 17:01  slowhog
+
+	* src/jxta_discovery_service_ref.c:
+	  - Coding convention: FINAL_EXIT
+	  - cosmetic change
+
+2006-03-22 14:21  slowhog
+
+	* src/jxta_rdv_service.h:
+	  - cosmetic change
+
+2006-03-15 17:21  slowhog
+
+	* ChangeLog:
+	  - use utc time
+
+2006-03-15 16:53  slowhog
+
+	* Makefile.am:
+	  - Include jxta.net in dist tarball
+
+2006-03-15 16:53  slowhog
+
+	* configure.in, doxconf:
+	  - bump version to 2.4
+
+2006-03-15 16:52  slowhog
+
+	* ChangeLog:
+	  - Update ChangeLog with cvs2cl.pl --fsf -I www -P --hide-filenames
+	  -l -d '2005-03-15<'
+
+2006-03-15 14:36  slowhog
+
+	* src/jxta_discovery_service_ref.c:
+	  - fix object leak Obtained from: Eric Xu Submitted by:  Henry the
+	  slowhogdd
+
+2006-03-15 11:17  slowhog
+
+	* src/jxta_unipipe_service.c:
+	  - remove unused local variable
+
+2006-03-15 01:05  slowhog
+
+	* src/jxta_piperesolver_impl.c:
+	  - fix the issue when one failed resolver request causing following
+	    resolver queries won't work the reason is that
+	  pending_request_remove change the size of vector, therefore failed
+	  to invoke the right listener
+	  - fix one object leak
+
+2006-03-14 17:41  slowhog
+
+	* src/jxta_srdi_service_ref.c:
+	  - fix SRDI replication with wrong peer ID.
+
+2006-03-14 17:40  slowhog
+
+	* src/jxta_rdv_config_adv.c:
+	  - useOnlySeeds is not supported yet
+
+2006-03-14 10:08  slowhog
+
+	* src/jxta_resolver_service_ref.c:
+	  - fix object leak Obtained from: Eric Xu Submitted by:  Henry the
+	  slowhog
+
+2006-03-14 10:07  slowhog
+
+	* src/: jxta_module.c, jxta_module_private.h:
+	  - fix return value
+	  - not to export a private function to Win32 DLL. It will become
+	  public API for implementing external modules.
+
+	  Obtained from: Stefan Lankes Submitted by:  Henry the slowhog
+
+2006-03-14 00:52  slowhog
+
+	* src/jxta_srdi.c:
+	  - use value as advId(pkey) when advId is not available.
+
+2006-03-14 00:39  slowhog
+
+	* src/jxta_srdi_service_ref.c:
+	  - fix typo
+
+2006-03-13 11:45  slowhog
+
+	* src/: jxta_module.c, jxta_module_private.h, jxta_relay.c:
+	  - fix the relay segfault when stopping with a failure start, i.e,
+	  port had been in use
+	  - add module state support
+
+2006-03-11 00:35  slowhog
+
+	* src/jxta_rdv_config_adv.c:
+	  - don't forget the attributes
+
+2006-03-10 18:38  slowhog
+
+	* src/jxta_cm.c:
+	  - fix peer ID. The first peer ID is not been catched while the last
+	  duplicates.
+	  - more logs
+
+2006-03-10 18:35  slowhog
+
+	* src/jxta_util_priv.c:
+	  - more comprehensive log
+
+2006-03-10 12:53  lankes
+
+	* win32/installdev/jxta.wxs:
+	  - remove jpr_threadonce.h from the installer
+	  - is not longer part of jxta-c
+
+2006-03-09 17:26  slowhog
+
+	* lib/libxml2/jxta_libxml2_2.6.23.diff:
+	  - update wildcard patch for libxml2
+
+2006-03-09 00:30  slowhog
+
+	* src/jxta_cm.c: Issue number: 228 Obtained from: Eric Xu Submitted
+	  by:  Henry the slowhog
+
+2006-03-06 18:23  slowhog
+
+	* src/jxta_dq.h:
+	  - fix the comment to at least match the function prototype.
+
+	  Issue number: 57 Submitted by: Henry the slowhog
+
+2006-03-06 15:50  slowhog
+
+	* src/: jxta_endpoint_service.c, jxta_endpoint_service.h:
+	  - Provide both sync/async API for sending messages with endpoint
+	  - Return UNREACHABLE_DEST for async mode if a host is in negative
+	  cache Issue number: 231 Submitted by: Henry the slowhog Reviewed by:
+	  Eric Xu (mmx2005)
+
+2006-03-06 15:08  slowhog
+
+	* autogen.sh:
+	  - gcc is not required
+
+2006-03-06 13:44  slowhog
+
+	* src/jxta_endpoint_service.c:
+	  - rq could be NULL if the connection is made from a peer is in the
+	  negative cache and bail itself out
+
+2006-03-03 18:54  slowhog
+
+	* src/jxta_endpoint_service.c:
+	  - Exclude peer which is still unreachable after maximum timeout.
+
+2006-03-03 16:24  slowhog
+
+	* src/jxta_proffer.c:
+	  - cosmetic change
+
+2006-03-01 11:30  lankes
+
+	* win32/jxta/: jprdll/resource.rc, jxtadll/resource.rc:
+	  - bump the version to 2.4
+
+2006-03-01 00:18  slowhog
+
+	* shell/talk.c:
+	  - fix object leak
+
+2006-03-01 00:17  slowhog
+
+	* configure.in:
+	  - bump the version to 2.4_beta
+
+2006-02-21 09:12  slowhog
+
+	* src/: jxta_bytevector.c, jxta_bytevector.h:
+	  - rename variables not to collide with C++ reserve word.
+
+2006-02-18 06:57  lankes
+
+	* src/jxta_log.c:
+	  - on a UNIX system jxta_managed_log_callback_func allocates not
+	  enough memory for the log message
+
+2006-02-17 16:32  slowhog
+
+	* src/: jstring.c, jxta_apa.c, jxta_cred.c, jxta_cred_null.c,
+	  jxta_discovery_config_adv.c, jxta_dq.c, jxta_id_jxta.c,
+	  jxta_mca.c, jxta_mia.c, jxta_msa.c, jxta_pa.c, jxta_pga.c,
+	  jxta_piperesolver_msg.c, jxta_pm.c, jxta_proffer.c, jxta_rm.c,
+	  jxta_routea.c, jxta_rsrdi.c:
+	  - remove ifdef __cplusplus for source files
+	  - indent
+
+2006-02-17 16:04  slowhog
+
+	* src/jxta_router_client.c:
+	  - typo
+
+2006-02-17 15:54  slowhog
+
+	* src/jxta_router_client.c:
+	  - object leak fix Obtained from: Eric Xu Reviewed by:   Henry the
+	  slowhog
+
+2006-02-17 15:26  slowhog
+
+	* src/: jxta_peerview.c, jxta_srdi_service_ref.c,
+	  jxta_transport_http.c, jxta_transport_tcp.c:
+	  - memory leak fixes Obtained from: David J Deterra Reviewed by:
+	  Henry the slowhog
+
+2006-02-17 10:26  slowhog
+
+	* src/jxta_pipe_adv.c:
+	  - cosmetic change
+	  - no extern C block for source file
+
+2006-02-17 10:24  slowhog
+
+	* src/jxta_netpg.c:
+	  - cosmetic change
+
+2006-02-17 10:22  slowhog
+
+	* src/jxta_discovery_service.h:
+	  - fix DEFAULT_LIFETIME overflow(L suffix should be LL) on Unices, by
+	  casting first, this form works on all platform.
+
+2006-02-16 02:46  lankes
+
+	* jxta.net/src/JxtaObject.cs:
+	  - fix error in releasing objects
+
+2006-02-15 18:06  slowhog
+
+	* src/jxta_discovery_service_ref.c:
+	  - Return correct expiration time in discovery response Obtained
+	  from: David J Deterra Submitted by: Reviewed by:   Henry the
+	  slowhog/bondolo
+
+2006-02-15 17:20  slowhog
+
+	* src/jxta_discovery_service.h:
+	  - cosmetic change
+
+2006-02-15 16:33  slowhog
+
+	* src/jxta_rdv_service_server.c:
+	  - Reset error condition before walk, thanks to David Deterra
+	  reporting the bug Obtained from: David J Deterra Reviewed by:  Henry
+	  the slowhog
+
+2006-02-14 17:15  slowhog
+
+	* src/jpr/jpr_threadonce.h:
+	  - remove obsolete jpr_threadonce
+
+2006-02-14 17:09  slowhog
+
+	* src/jxta.c, src/jxta_advertisement.c,
+	  src/jxta_advertisement_priv.h, src/jxta_apr.h,
+	  src/jxta_bidipipe.c, src/jxta_cm.c, src/jxta_cm.h,
+	  src/jxta_discovery_service_ref.c, src/jxta_dr.c,
+	  src/jxta_endpoint_service.c, src/jxta_hta.c, src/jxta_id.c,
+	  src/jxta_incoming_unicast_server.c, src/jxta_log.c,
+	  src/jxta_netpg.c, src/jxta_netpg_private.h, src/jxta_peergroup.c,
+	  src/jxta_private.h, src/jxta_query.c, src/jxta_ra.c,
+	  src/jxta_range.c, src/jxta_range.h, src/jxta_rdv_config_adv.c,
+	  src/jxta_rdv_service_server.c, src/jxta_relay.c,
+	  src/jxta_relaya.c, src/jxta_router_client.c, src/jxta_rq.c,
+	  src/jxta_rr.c, src/jxta_socket_tunnel.c,
+	  src/jxta_srdi_config_adv.c, src/jxta_svc.c,
+	  src/jxta_tcp_message_packet_header.c, src/jxta_tcp_multicast.c,
+	  src/jxta_transport_http.c, src/jxta_transport_http_client.c,
+	  src/jxta_transport_http_client.h,
+	  src/jxta_transport_http_poller.c,
+	  src/jxta_transport_tcp_connection.c,
+	  src/jxta_transport_tcp_connection.h,
+	  src/jxta_transport_tcp_private.h, src/jxta_tta.c,
+	  src/jxta_vector.c, src/jxta_walk_msg.c, src/jxta_wm.c,
+	  src/jxta_xml_util.c, src/jpr/Makefile.am, src/jpr/jpr_excep.c,
+	  test/xmltest.c:
+	  - apr include cleanup. Never directly include apr header files, use
+	  jxta_apr.h instead so we can isolate apr functions
+	  - ifdef __cplusplus should not be in C source file, remove when I
+	  encounter them
+	  - remove usage of jpr_thread_once, use init/terminate call instead.
+
+2006-02-13 14:37  lankes
+
+	* jxta.net/shell/Search.cs:
+	  - use the correct year in the license text
+
+2006-02-13 14:34  lankes
+
+	* jxta.net/shell/Makefile.am:
+	  - add Search.cs the project
+
+2006-02-13 13:27  lankes
+
+	* jxta.net/shell/Search.cs:
+	  - add license text
+
+2006-02-13 13:07  lankes
+
+	* jxta.net/shell/Search.cs:
+	  - add the command "search" to the shell
+
+2006-02-13 13:06  lankes
+
+	* jxta.net/shell/: JxtaNETShell.csproj, Peers.cs, RdvStatus.cs,
+	  Shell.cs, Talk.cs, WhoAmI.cs:
+	  - redesign of the parameter analyse
+
+2006-02-13 13:04  lankes
+
+	* jxta.net/src/DiscoveryService.cs:
+	  - now,  we support the parameter paadr of
+	  discovery_service_get_remote_advertisements
+
+2006-02-13 11:51  slowhog
+
+	* src/: jxta_endpoint_config_adv.c, jxta_endpoint_config_adv.h,
+	  jxta_endpoint_service.c: Issue number: 229 Submitted by: Henry
+	  the slowhog Reviewed by:  Eric Xu
+
+2006-02-13 05:30  lankes
+
+	* src/jxta_log.c:
+	  - On Windows apr_os_thread_current evaluates the thread handle and
+	  not the thread id => therefore, I use GetCurrentThreadId instead of
+	  apr_os_thread_current
+
+2006-02-13 02:06  lankes
+
+	* jxta.net/shell/Shell.cs:
+	  - cosmetic changes
+
+2006-02-13 02:06  lankes
+
+	* jxta.net/src/Log.cs:
+	  - use the new JXTA-C helper functions to create the log messages
+
+2006-02-13 02:05  lankes
+
+	* src/jxta_log.c:
+	  - add some helper functions for JXTA.NET
+	  - this functions are needed to create log messages
+
+2006-02-13 02:04  lankes
+
+	* src/jxta_util_priv.c:
+	  - remove obsolete function
+
+2006-02-13 00:49  lankes
+
+	* src/jxta_apr.h:
+	  - include apr_atomic.h, which is needed for Windows
+
+2006-02-12 23:36  mathieu
+
+	* src/: jxta_bytevector.c, jxta_bytevector.h: Commit patch 290 of
+	  issue 187 :-). Reviewer: slowhog
+
+2006-02-10 14:18  slowhog
+
+	* src/jxta_peerview.c:
+	  - deadlock fix. periodicMutex is locked in periodicThread which may
+	  calling listener funciton. Use atomic operation instead and make
+	  sure we leave listener function when the peerview object is
+	  destructing.
+
+2006-02-09 18:25  slowhog
+
+	* src/jxta_peerview.c:
+	  - peerview_listener should not be released in stop method, but in
+	  destructor. It is not created in start method.
+
+2006-02-06 23:53  slowhog
+
+	* src/: jxta_rdv_service_client.c, jxta_rdv_service_server.c:
+	  cosmetic indent style fix
+
+2006-02-06 23:40  slowhog
+
+	* src/jxta_rdv_service_server.c:
+	  - initialize the thread interval with default value Submitted by:
+	  Henry the slowhog
+
+2006-02-05 08:10  lankes
+
+	* jxta.net/shell/Shell.cs:
+	  - use the new logging interface
+
+2006-02-05 08:09  lankes
+
+	* jxta.net/src/JxtaNET.dll.config:
+	  - JXTA.NET use jxta_vsnprintf instead of apr_vsnprintf => remove
+	  libapr from the DLL mapping
+
+2006-02-05 08:05  lankes
+
+	* jxta.net/src/PeerGroup.cs:
+	  - stop the module in the destructor of PeerGroup
+
+2006-02-05 08:03  lankes
+
+	* jxta.net/src/JxtaObject.cs:
+	  - use jxta_terminate in the destructor of JxtaObject
+
+2006-02-05 08:02  lankes
+
+	* jxta.net/src/Log.cs:
+	  - redesign of the logging interface
+
+2006-02-05 07:58  lankes
+
+	* src/jxta_util_priv.c:
+	  - apr_vsnprintf is not compatible to ANSI vsnprintf.
+	  - Therefore, I define my own helper function for JXTA.NET.
+
+2006-02-05 06:21  mathieu
+
+	* src/jpr/Makefile.am: Adding SQLITE or else lsqlite not found when
+	  jpr.so
+
+2006-02-05 06:16  lankes
+
+	* src/jpr/jpr.c:
+	  - now, jpr use the same code to intialize apr
+
+2006-02-05 03:11  lankes
+
+	* src/jxta_rdv_service_client.c:
+	  - check, if seeds is a null pointer.
+
+2006-02-05 02:51  lankes
+
+	* win32/installdev/jxta.wxs:
+	  - add example jxta_discovery_publication_test to the Windows
+	  installer
+
+2006-02-02 15:08  lankes
+
+	* win32/jxta/jxtadll/jxtadll_vs2005.vcproj:
+	  - add jxta_discovery_config_adv and jxta_endpoint_config_adv to the
+	  VS 2005 project files
+
+2006-02-02 14:47  lankes
+
+	* win32/jxta/: jxtadll/jxtadll.vcproj, jxtalib/jxtalib.vcproj:
+	  - add jxta_discovery_config_adv and jxta_endpoint_config_adv to the
+	  VS project files
+
+2006-02-02 13:45  slowhog
+
+	* src/: jxta_discovery_config_adv.c, jxta_discovery_config_adv.h,
+	  jxta_endpoint_config_adv.c, jxta_endpoint_config_adv.h:
+	  - New files for endpoint/discovery tunning options, thanks to Stefan
+	  reminding me
+
+2006-02-02 11:53  slowhog
+
+	* src/: Makefile.am, jxta_discovery_service_ref.c,
+	  jxta_endpoint_service.c, jxta_platformconfig.c, jxta_svc.c,
+	  jxta_svc.h:
+	  - Tunning options for endpoint and discovery services Obtained from:
+	  Rick Keiner Submitted by:  Henry the slowhog
+
+2006-02-01 15:40  slowhog
+
+	* src/: jxta_rdv_service.c, jxta_rdv_service_client.c,
+	  jxta_rdv_service_server.c:
+	  - support tunning options in RDV Obtained from: Rick Kleiner/Henry
+	  the slowhog Submitted by:  Henry the slowhog
+
+2006-02-01 15:37  slowhog
+
+	* src/: jxta_peerview.c, jxta_peerview.h, jxta_peerview_priv.h:
+	  - Support tunning options in peerview Obtained from: Rick
+	  Kleiner/Henry the slowhog Submitted by:  Henry the slowhog
+
+2006-02-01 15:34  slowhog
+
+	* src/: jxta_rdv_config_adv.c, jxta_rdv_config_adv.h:
+	  - Add tunning options to RDV configuration Obtained from: Rick
+	  Kleiner/Henry the slowhog Submitted by:  Henry the slowhog
+
+2006-02-01 11:01  bondolo
+
+	* src/: jxta_hashtable.c, jxta_hashtable.h: adds 'clear' method to
+	  hashtable for emptying a hashtable of all entries.
+
+2006-02-01 10:58  bondolo
+
+	* src/jxta_discovery_service.h: minor dox improvements
+
+2006-02-01 10:57  bondolo
+
+	* src/jxta_peerview.c: prevents leak if peerview is
+	  started/stopped/restarted.
+
+2006-01-31 14:11  slowhog
+
+	* src/: jxta_srdi_config_adv.c, jxta_srdi_config_adv.h,
+	  jxta_srdi_service_ref.c:
+	  - Each instance of SRDI service gets the threshold of peerview size
+	  from configuration. This is the minimum size to start replication. A
+	  mechanism to get the configuration object from the service is needed
+	  to ease configuration at run-time.
+
+	  Obtained from: Rick Kleiner/Henry the slowhog Submitted by:  Henry
+	  the slowhog
+
+2006-01-31 11:20  slowhog
+
+	* src/jxta_test_adv.c:
+	  - Allow NULL for range at line 452,580
+	  - Indent style fix
+
+	  Obtained from: Rick Kleiner/Henry the slowhog Submitted by:  Henry
+	  the slowhog
+
+2006-01-31 10:52  slowhog
+
+	* src/jxta_platformconfig.c:
+	  - Default will be set in the srdi advertisement constructor.
+
+	  Obtained from: Rick Kleiner Submitted by:  Henry Jen the slowhog
+
+2006-01-31 00:58  slowhog
+
+	* src/: jxta_cm.c, jxta_cm.h:
+	  - remove unnecessary mutex op Obtained from: Rick Kleiner, Henry Jen
+	  the slowhog Submitted by:  Henry Jen the slowhog
+
+2006-01-30 00:11  lankes
+
+	* win32/: jxta.sln,
+	  test/jxta_discovery_publication_test/jxta_discovery_publication_test.vcproj:
+	  - add new test tool to the Visual Studio project files
+
+2006-01-29 17:14  bondolo
+
+	* shell/: talk.c, jxta_shell_application.h, talk.h: cleanups
+
+2006-01-29 17:13  bondolo
+
+	* test/: Makefile.am, jxta_discovery_publication_test.c: a new test
+	  tool.
+
+2006-01-29 12:31  lankes
+
+	* configure.in:
+	  - produce nicer output messages
+
+2006-01-29 12:02  lankes
+
+	* configure.in:
+	  - add auto-detection of Mono support
+
+2006-01-29 08:57  lankes
+
+	* jxta.net/README.txt:
+	  - minor changes
+
+2006-01-29 08:50  lankes
+
+	* jxta.net/README.txt:
+	  - add a small README
+
+2006-01-28 07:24  lankes
+
+	* jxta.net/shell/Shell.cs:
+	  - remove obsolete files
+
+2006-01-28 07:22  lankes
+
+	* jxta.net/shell/: Makefile.am, Shell.cs:
+	  - add missing "$@" in the creation of the JxtaNETShell script
+
+2006-01-28 06:59  lankes
+
+	* jxta.net/shell/Makefile.am:
+	  - fix problems by the creation of the script JxtaNETShell
+
+2006-01-27 16:43  slowhog
+
+	* src/jxta_relay.c:
+	  - make sure self->peers is always available, but can be an empty
+	  vector.  Issue number: 226 Submitted by: Henry Jen the slowhog
+
+2006-01-27 14:50  lankes
+
+	* jxta.net/shell/JxtaNETShell.in:
+	  - remove obsolete files
+
+2006-01-27 14:48  lankes
+
+	* configure.in, jxta.net/shell/Makefile.am:
+	  - better support for the 'DESTDIR' variable
+
+2006-01-27 11:14  lankes
+
+	* jxta.net/: shell/Makefile.am, src/Makefile.am:
+	  - add support for the 'DESTDIR' variable
+
+2006-01-27 10:28  lankes
+
+	* jxta.net/: shell/Shell.cs, shell/Talk.cs, src/ByteStream.cs,
+	  src/Listener.cs, src/RendezVousService.cs:
+	  - remove some warnings
+
+2006-01-26 17:01  bondolo
+
+	* src/: jxta_netpg.c, jxta_stdpg.c: Make peerid configuration more
+	  automatic. You can now start with a PlatformConfig that doesn't
+	  contain a PID (or GID) and have values filled in for you.
+
+	  Also improves behaviour of initial PlatformConfiguration creation.
+
+2006-01-26 12:56  lankes
+
+	* jxta.net/src/: JxtaNET.dll.config, Makefile.am:
+	  - minor changes for mono
+
+2006-01-26 12:33  lankes
+
+	* jxta.net/shell/: Shell.cs, Talk.cs:
+	  - minor changes in JxtaNetShell to use the new logging facilities
+
+2006-01-26 12:31  lankes
+
+	* jxta.net/src/: Errors.cs, JxtaNET.csproj, JxtaObject.cs, Log.cs:
+	  - add in jxta.net the possibility to use the logging facilities of
+	  jxta-c
+
+2006-01-26 12:27  lankes
+
+	* src/: jxta_constants.c, jxta_constants.h:
+	  - export more marcos for programming languages (like C#) which have
+	  no access to the include files of jxta-c
+
+2006-01-25 19:29  bondolo
+
+	* src/jxta_pa.c: remove extra X
+
+2006-01-25 19:25  bondolo
+
+	* src/jxta_relay.c: fixes handling of error case when no relays are
+	  defined.
+
+2006-01-25 16:35  bondolo
+
+	* doxconf: updated for 2.3
+
+2006-01-21 09:56  lankes
+
+	* Makefile.am, configure.in, jxta.net/Makefile.am,
+	  jxta.net/shell/JxtaNETShell.in, jxta.net/shell/Makefile.am,
+	  jxta.net/src/JxtaNET.dll.config, jxta.net/src/Makefile.am:
+	  - modify the configure file and add makefiles to create the C#
+	  wrapper
+	  - the flag "--enable-mono" activates the Mono support
+
+2006-01-18 12:33  lankes
+
+	* win32/jxta/: jprdll/jprdll_vs2005.vcproj,
+	  jxtadll/jxtadll_vs2005.vcproj:
+	  - add project files for Visual Studio 2005
+	  - this is necessary for our C#-wrapper
+
+2006-01-18 12:30  lankes
+
+	* jxta.net/: JxtaNET.sln, shell/App.ico, shell/AssemblyInfo.cs,
+	  shell/JxtaNETShell.csproj, shell/Peers.cs, shell/RdvStatus.cs,
+	  shell/Shell.cs, shell/ShellApp.cs, shell/Talk.cs,
+	  shell/WhoAmI.cs, src/Advertisement.cs, src/AssemblyInfo.cs,
+	  src/ByteStream.cs, src/Credential.cs, src/DiscoveryResponse.cs,
+	  src/DiscoveryService.cs, src/Errors.cs, src/ID.cs,
+	  src/InputPipe.cs, src/JxtaNET.csproj, src/JxtaObject.cs,
+	  src/JxtaString.cs, src/JxtaVector.cs, src/Listener.cs,
+	  src/MembershipService.cs, src/Message.cs, src/MessageElement.cs,
+	  src/ModuleClassAdvertisement.cs, src/OutputPipe.cs, src/Peer.cs,
+	  src/PeerAdvertisement.cs, src/PeerGroup.cs,
+	  src/PeerGroupAdvertisement.cs, src/PeerView.cs, src/Pipe.cs,
+	  src/PipeAdvertisement.cs, src/PipeService.cs,
+	  src/RendezVousService.cs, src/jxtaDll.cs:
+	  - add C#-wrapper for JXTA-C and its Visual Studio project files
+	  - tomorrow, I will check-in the UNIX make and configure file
+
+2006-01-15 07:08  lankes
+
+	* win32/jxta/: jxtadll/jxtadll.vcproj, jxtalib/jxtalib.vcproj:
+	  - add jxta_constants.c to the VS project files
+
+2006-01-15 05:33  lankes
+
+	* src/: Makefile.am, jxta_constants.c, jxta_constants.h,
+	  jpr/Makefile.am:
+	  - add the new file jxta_constants.c to export marcos for programming
+	  languages (like C#) which have no access to the include files of
+	  jxta-c
+
+2006-01-12 19:19  mmx2005
+
+	* src/jxta_transport_tcp_connection.c:
+	  - memory leak fix, or fix it in the destructor.
+	   - by mmx2005
+
+2006-01-12 11:35  slowhog
+
+	* src/jxta_rdv_config_adv.c:
+	  - There is no required CDATA in those elements, so length could be
+	  0.
+
+2006-01-12 11:30  slowhog
+
+	* src/jxta_router_client.c:
+	  - addr is NULL for sure
+
+2006-01-02 17:58  mmx2005
+
+	* src/jxta_rdv_config_adv.c:
+	  - return if len=0
+	   by mmx2005
+
+2005-12-31 03:05  mmx2005
+
+	* src/jxta_piperesolver_impl.c:
+	  - memory leak fix
+	   by mmx2005
+
+2005-12-31 03:04  mmx2005
+
+	* src/jxta_transport.c:
+	  - memory free fix
+	   by mmx2005
+
+2005-12-31 03:01  mmx2005
+
+	* src/jxta_router_client.c:
+	  - memory leak fix
+	   by mmx2005
+
+2005-12-31 02:59  mmx2005
+
+	* src/jxta_relay.c:
+	  - shuffle seeds
+	   by mmx2005
+
+2005-12-27 21:11  mmx2005
+
+	* src/: jxta_apa.c, jxta_rdv.c:
+	  -  adjust log level
+	     by mmx2005
+
+2005-12-27 02:45  slowhog
+
+	* src/jxta_bidipipe.c:
+	  - fix waiting timeout Obtained from: "Victor Semizarov"
+	  <victor.semizarov@auriga.ru> Reviewed by:  Henry Jen the slowhog
+
+2005-12-24 21:47  mmx2005
+
+	* src/jxta_endpoint_service.c:
+	  - ensure alloced buffer is initiated ( malloc -> calloc )
+	    by mmx2005
+
+2005-12-24 18:15  mmx2005
+
+	* src/: jxta_endpoint_service.c, jxta_endpoint_service.h:
+	  - 'JXTA_ENDPOINT_DEST_UNREACHABLE_TIMEOUT' -> private
+	   by mmx2005
+
+2005-12-24 15:46  mmx2005
+
+	* src/jxta_discovery_service_ref.c:
+	  - reg MCA/MSA
+	   by mmx2005
+
+2005-12-23 22:44  mmx2005
+
+	* src/jxta_mia.c:
+	  - JXTA_LOG -> jxta_log_append
+	   by mmx2005
+
+2005-12-23 20:41  mmx2005
+
+	* src/jxta_pga.c:
+	  - change log level
+	    by mmx2005
+
+2005-12-23 20:36  mmx2005
+
+	* src/jxta_pga.c:
+	  - change the value of __log_cat
+	    by mmx2005
+
+2005-12-23 20:31  mmx2005
+
+	* src/jxta_dr.c:
+	  - JXTA_LOG -> jxta_log_append
+	    by mmx2005
+
+2005-12-23 13:44  mmx2005
+
+	* src/: jxta_advertisement.c, jxta_advertisement.h:
+	  - register MCA/MSA parser
+	    by mmx2005
+
+2005-12-23 13:33  mmx2005
+
+	* src/: jxta_msa.c, jxta_msa.h:
+	  - MSA impl
+	    by mmx2005
+
+2005-12-23 13:32  mmx2005
+
+	* src/: jxta_mca.c, jxta_mca.h:
+	  - MCA impl
+	    by mmx2005
+
+2005-12-21 21:02  mmx2005
+
+	* src/jxta_wire_service.c:
+	   -  change log level
+	    by mmx2005
+
+2005-12-21 19:11  mmx2005
+
+	* src/jxta_wire_service.c:
+	   -  JXTA_LOG -> jxta_log_append
+	    by mmx2005
+
+2005-12-21 15:39  mmx2005
+
+	* src/jxta_advertisement.c:
+	   -  JXTA_LOG -> jxta_log_append
+	     by mmx2005
+
+2005-12-21 03:04  mmx2005
+
+	* src/: jxta_stdpg.c, jxta_stdpg_private.h:
+	   - issue 221
+	     by mmx2005
+	     reviewed by mathieu
+
+2005-12-20 22:00  mmx2005
+
+	* src/jxta_peerview.c:
+	   - check rdva first
+	    by mmx2005
+
+2005-12-19 21:14  mmx2005
+
+	* src/: jxta_endpoint_service.c, jxta_rdv_service.c,
+	  jxta_rdv_service_server.c, jxta_relay.c, jxta_transport_http.c,
+	  jxta_transport_tcp.c:
+	   - replaced by 'jxta_PA_get_Svc_with_id'
+	     by mmx2005
+
+2005-12-19 19:47  mmx2005
+
+	* src/: jxta_mia.c, jxta_routea.c:
+	   - conform to the definition of 'Kwdtab'
+	     by mmx2005
+
+2005-12-19 19:44  mmx2005
+
+	* src/: jxta_log.c, jxta_rdv_service_server.c:
+	   - compile warning fix
+	     by mmx2005
+
+2005-12-18 23:01  mmx2005
+
+	* src/jxta_stdpg.c:
+	   - indent fix
+	     by mmx2005
+
+2005-12-16 14:42  lankes
+
+	* win32/jxta/jxtadll/resource.rc:
+	  - use correct file name in the dll description
+
+2005-12-16 02:46  lankes
+
+	* shell/jxta_shell_main.c:
+	  - bump version to 2.3
+
+2005-12-15 15:36  slowhog
+
+	* configure.in:
+	  - bump version to 2.3
+
+2005-12-15 15:26  slowhog
+
+	* src/: jxta_cm.c, jxta_srdi.c:
+	  - fix the pipe srdi expiration time overflow
+
+2005-12-15 13:30  slowhog
+
+	* src/jxta_wire_service.c:
+	  - return correct value Submitted by: Eric Xu (mmx2005)
+
+2005-12-15 13:29  slowhog
+
+	* src/jxta_piperesolver_impl.c:
+	  - LONG_MAX is depending on definition, we need 2^63 -
+	  1(Long.MAX_VALUE in JSE).
+
+2005-12-15 12:30  slowhog
+
+	* src/jxta_wire_service.c:
+	  - return value
+	  - remove unused variables
+
+	  Submitted by: Erix Xu (mmx2005)
+
+2005-12-15 08:59  slowhog
+
+	* src/jxta_wire_service.c:
+	  - Use SRDI on RDV
+	  - Properly walk the propagate msg
+
+2005-12-15 08:49  slowhog
+
+	* src/jxta_srdi.c:
+	  - remove __cplusplus, not needed in C source file
+
+2005-12-14 22:44  slowhog
+
+	* src/jxta_resolver_service_ref.c:
+	  - only walk when it is a RDV server
+
+2005-12-14 19:40  slowhog
+
+	* src/jxta_rdv_service_server.c:
+	  - Make walk to be compatible with JSE implementation
+
+2005-12-14 19:34  slowhog
+
+	* src/jxta_rdv_service_server.c:
+	  - indent style fix
+
+2005-12-13 19:34  slowhog
+
+	* src/jxta_discovery_service_ref.c:
+	  - fix the over-release of a peerview entry
+
+	  Submitted by: Henry Jen the slowhog Reviewed by:  Rick Keiner,
+	  hamada
+
+2005-12-11 14:46  mmx2005
+
+	* src/jxta_pa.c:
+	   - change the value of '__log_cat'
+
+	    committed by mmx2005
+
+2005-12-06 17:16  slowhog
+
+	* src/jxta_transport_tcp.c:
+	  - release mutex Obtained from: Biran A. Wilson
+
+2005-12-05 10:59  lankes
+
+	* win32/jxta/: jprdll/resource.rc, jxtadll/resource.rc:
+	  - bump version to 2.3 (only on a Windows system)
+
+2005-12-02 23:15  slowhog
+
+	* configure.in:
+	  - bump version to 2.3_beta
+
+2005-12-02 08:29  slowhog
+
+	* src/jxta_discovery_service_ref.c:
+	  - Make query expression based on type and also fix query without
+	  attribute
+
+	  Issue number: 218 Submitted by: Henry Jen the slowhog
+
+2005-12-02 08:21  slowhog
+
+	* src/jxta_peerview.c:
+	  - Make sure the listener function is not in process before destruct
+	  - Should not remove listener from endpoint at stop, it was suppose
+	    to be removed at destruct, as RDV client does not start peerview
+
+2005-12-01 21:12  slowhog
+
+	* src/: jxta_discovery_service_ref.c, jxta_resolver_service_ref.c:
+	  - Fix discovery query origin from a RDV
+	  - Fix route for resolver query in subgroup
+
+	  Issue number:  218 Obtained from: exocetrick, slowhog
+
+2005-12-01 19:39  slowhog
+
+	* src/jxta_rq.c:
+	  - Although not really affect functionality, the correct layout
+	  allows cscope to build tag db correctly
+
+2005-11-30 23:44  slowhog
+
+	* src/jxta_rdv_service_server.c:
+	  - more infomation in log entry
+
+2005-11-30 23:43  slowhog
+
+	* src/jxta_discovery_service_ref.c:
+	  - correct return value
+
+2005-11-30 23:43  slowhog
+
+	* src/jxta_endpoint_service.c: source file should not have #ifdef
+	  __cplusplus, which should be in header files only.
+
+2005-11-27 19:53  mmx2005
+
+	* src/jxta_peerview.c:
+	   - destroy cond/mutex on quit
+	     use 'jxta_PA_get_Svc_with_id'
+
+	     committed by mmx2005
+
+2005-11-27 12:35  exocetrick
+
+	* src/jxta_peerview.c:
+	  - Get correct rdv state
+	  - Only the edge should publish rdv advertisement
+
+2005-11-27 04:18  mmx2005
+
+	* src/: jxta_peerview.c, jxta_transport_tcp.c:
+	   - possible memory leak fix
+	    committed by mmx2005
+
+2005-11-27 02:48  mmx2005
+
+	* src/jxta_cm.c:
+	   - add or remove space-line
+
+2005-11-26 18:40  mmx2005
+
+	* src/jxta_pipe_service_impl.h:
+	   - misspelled comment word fix
+	    committed by mmx2005
+
+2005-11-26 18:30  mmx2005
+
+	* src/jxta_piperesolver_impl.c:
+	   - possible memory leak fix
+	     committed by mmx2005
+
+2005-11-26 10:03  exocetrick
+
+	* src/jxta_id.c: Initialize status and remove unused variable
+
+2005-11-26 09:00  mmx2005
+
+	* src/: jxta_pa.c, jxta_pga.c, jxta_rq.c:
+	   - JXTA_LOG -->  jxta_log_append
+	    committed by mmx2005
+
+2005-11-26 08:38  mmx2005
+
+	* src/: jxta_pipe_adv.c, jxta_pipe_adv.h:
+	   - Indent fix
+	    committed by mmx2005
+
+2005-11-26 04:11  mmx2005
+
+	* src/: jxta_discovery_service.c, jxta_discovery_service_private.h,
+	  jxta_discovery_service_ref.c:
+	   - AdvId from jxta_cm_hash is saved as a 'positive' value
+	     committed by mmx2005
+
+2005-11-26 00:18  mmx2005
+
+	* src/jxta_rdv.c:
+	  - take 'Jxta_advertisement*)
+	    committed by mmx2005
+
+2005-11-25 23:52  mmx2005
+
+	* src/jxta_object.h:
+	  - misspelled comment word fix
+	    commited by mmx2005
+
+2005-11-25 23:37  mmx2005
+
+	* src/: jxta_pga.c, jxta_pga.h:
+	  - indent fix
+	    commited by mmx2005
+
+2005-11-25 23:28  mmx2005
+
+	* src/: jxta_pa.c, jxta_pa.h:
+	  - remove some space lines
+	    commited by mmx2005
+
+2005-11-25 21:57  mmx2005
+
+	* shell/groups.c:
+	   -- memory leak fix
+	    committed by mmx2005
+
+2005-11-25 21:52  mmx2005
+
+	* src/jxta_unipipe_service.c:
+	   -- take 'const char *'
+	    committed by mmx2005
+
+2005-11-25 15:53  mmx2005
+
+	* src/: jxta_discovery_service_ref.c, jxta_id_jxta.c,
+	  jxta_srdi_service_private.h, jxta_srdi_service_ref.c:
+	    - indent fix
+	      compile warnings
+	    committed by mmx2005
+
+2005-11-25 12:25  exocetrick
+
+	* src/jxta_resolver_service_ref.c: Remove unused variable
+
+2005-11-24 23:50  mmx2005
+
+	* src/: jxta_router_client.c, jxta_transport.c,
+	  jxta_transport_tcp.c, jxta_unipipe_service.c:
+	   - destroy mutex
+	     remove compile warnings
+	     committed by mmx2005
+
+2005-11-24 10:57  exocetrick
+
+	* src/jxta_discovery_service_ref.c: Didn't need to save it at all
+
+2005-11-23 20:17  mmx2005
+
+	* shell/: rdvcontrol.c, rdvstatus.c, talk.c:
+	  - use JPR_ABS_TIME_FMT
+	    remove some compile warnings
+	    committed by mmx2005
+
+2005-11-23 16:20  mmx2005
+
+	* src/: jxta_discovery_service_ref.c, jxta_piperesolver_impl.c,
+	  jxta_resolver_service_private.h, jxta_resolver_service_ref.c:
+	   - fix calling convention
+	   - remove compile warnings
+
+	   committed by mmx2005
+
+2005-11-23 15:41  exocetrick
+
+	* src/jxta_proffer.c: Fix memory leak
+
+2005-11-23 14:09  exocetrick
+
+	* src/: jxta_discovery_service_ref.c, jxta_walk_msg.c: Fix memory
+	  leaks
+
+2005-11-23 13:19  exocetrick
+
+	* src/: jxta_srdi_config_adv.c, jxta_srdi_service_ref.c:
+	  - Handle the replication threshold from the config
+	  - Fix the hopcount check
+
+2005-11-23 13:15  exocetrick
+
+	* src/jxta_rdv_service_server.c: Add debug messages
+
+2005-11-23 13:12  exocetrick
+
+	* src/jxta_discovery_service_ref.c:
+	  - Changes for walking queries properly (Issues 203/214)
+	  - pass char to search_srdi
+	  - create a function to send to replica
+	  - fix threshold handling
+
+2005-11-23 08:06  slowhog
+
+	* src/: jxta_discovery_service_ref.c, jxta_piperesolver_impl.c,
+	  jxta_resolver_service.c, jxta_resolver_service.h,
+	  jxta_resolver_service_ref.c, jxta_srdi_service.c,
+	  jxta_srdi_service.h, jxta_srdi_service_private.h,
+	  jxta_srdi_service_ref.c:
+	  - Use Jxta_callback for resolver handler
+	  - Fix jxta_srdi_searchSrdi API to include handler
+	  - Modify discovery and pipe resolver to adapt API changes
+	  - Pipe resolver is fixed and verified with desired behavior
+
+	  Issue number: 204, 158 Submitted by: Henry Jen the slowhog
+
+2005-11-23 07:50  slowhog
+
+	* src/: jxta_cm.c, jxta_cm.h:
+	  - indent style fix
+
+2005-11-23 02:51  mmx2005
+
+	* src/jxta_rdv_service_server.c:
+	   - memory leak
+	   - committed by mmx2005
+
+2005-11-22 19:12  slowhog
+
+	* src/: jxta_rdv_service.c, jxta_rdv_service_client.c,
+	  jxta_rdv_service_private.h, jxta_rdv_service_server.c:
+	  - Walk will be continued by handler, not RDV walker listener.
+
+	  Issue number: 214 Submitted by: Henry Jen the slowhog
+
+2005-11-22 15:44  mmx2005
+
+	* src/: jxta_rdv.c, jxta_stdpg.c, jxta_tcp_multicast.c,
+	  jxta_transport_http.c:
+	  - remove compile warnings
+	  - indent style fix
+	    committed by mmx2005
+
+2005-11-22 14:00  mmx2005
+
+	* src/: jxta_advertisement.c, jxta_dq.c, jxta_dr.c,
+	  jxta_endpoint_service.c, jxta_id.c,
+	  jxta_incoming_unicast_server.c, jxta_log.c, jxta_mia.c,
+	  jxta_peergroup.c, jxta_range.c, jxta_rr.c, jxta_service.c:
+	   - remove compile warniongs
+	   - indent style fix
+	   committed by mmx2005
+
+2005-11-22 02:40  slowhog
+
+	* src/jxta_srdi_service_ref.c:
+	  - fix broken replication due to missing {}
+	  - Replace JXTA_LOG with new log facility
+
+2005-11-22 02:33  slowhog
+
+	* src/jxta_callback.c:
+	  - Type information
+
+2005-11-22 01:42  mmx2005
+
+	* src/jpr/jpr_types.c:
+	   - define MIN MAX
+	   Committed by mmx2005
+
+2005-11-21 23:48  mmx2005
+
+	* src/jxta_unipipe_service.c:
+	   - mutex destroyed on
+	   Committed by mmx2005
+	   reviewed by slowhog
+
+2005-11-21 19:06  slowhog
+
+	* src/jxta_unipipe_service.c:
+	  - switch to new log facility
+
+2005-11-20 17:37  mmx2005
+
+	* shell/groups.c:
+	   - memory leak committed by mmx2005
+
+2005-11-20 17:32  mmx2005
+
+	* src/jpr/jpr_excep.h:
+	   - Remove compile warnings committed by mmx2005
+
+2005-11-20 17:19  mmx2005
+
+	* src/: jxta_endpoint_service.c, jxta_message.c, jxta_range.c,
+	  jxta_rdv_service_provider.c, jxta_rdv_service_server.c,
+	  jxta_router_client.c, jxta_transport_tcp_connection.c:
+	   - Remove unused vars  memory leak.  committed by mmx2005
+
+2005-11-20 15:22  mmx2005
+
+	* src/jxta_apa.c: use jxta_AccessPointAdvertisement_get_PID_string
+	  Submitted by: Eric Xu (mmx2005) Reviewed by: slowhog
+
+2005-11-17 00:25  lankes
+
+	* win32/jxta/: jxtadll/jxtadll.vcproj, jxtalib/jxtalib.vcproj:
+	  - add jxta_callback to the VS project files
+
+2005-11-17 00:18  slowhog
+
+	* src/jxta_callback.h:
+	  - Fix compile warning on Win32 Submitted by: Eric Xu (mmx2005)
+
+2005-11-17 00:09  lankes
+
+	* shell/talk.c:
+	  - listener function calling convention fix
+
+2005-11-16 20:23  slowhog
+
+	* src/jxta_object_type.h:
+	  - take away comma to be consistent.
+
+2005-11-16 20:21  slowhog
+
+	* shell/: jxta_shell_application.c, jxta_shell_application.h:
+	  - listener fucntion calling convention fix
+
+	  Obtained from: Eric Xu (mmx2005) Reviewed by:   Henry Jen the
+	  slowhog
+
+2005-11-16 19:46  slowhog
+
+	* test/pg_start_stop_test.c:
+	  - get rid if C++ style inline comments
+
+2005-11-16 19:40  slowhog
+
+	* src/: Makefile.am, jxta_callback.c, jxta_callback.h:
+	  - add jxta_callback to replace synchronous listener
+
+	  Issue number: 215 Submitted by: Henry Jen the slowhog Reviewed by:
+	  Mike Duigou (bondolo)
+
+2005-11-16 17:18  slowhog
+
+	* src/jxta_object.c:
+	  - allow NULL as a parameter, but return -1 to indicate error.
+
+2005-11-16 15:00  slowhog
+
+	* src/jpr/jpr_ckcompat.c:
+	  - fix initialize value and eliminate compiler warning
+
+2005-11-16 14:53  slowhog
+
+	* src/jxta_bytevector.h:
+	  - indent style fix
+
+2005-11-16 12:10  lankes
+
+	* src/jxta_bidipipe.c, src/jxta_discovery_service_ref.c,
+	  src/jxta_listener.h, src/jxta_peerview.c,
+	  src/jxta_piperesolver_impl.c, src/jxta_rdv_service_client.c,
+	  src/jxta_rdv_service_provider.c,
+	  src/jxta_rdv_service_provider_private.h,
+	  src/jxta_rdv_service_server.c, src/jxta_relay.c,
+	  src/jxta_resolver_service_ref.c, src/jxta_router_client.c,
+	  src/jxta_socket_tunnel.c, src/jxta_srdi_service_ref.c,
+	  src/jxta_transport_tcp.c, src/jxta_unipipe_service.c,
+	  src/jxta_wire_service.c, test/chat.c, test/endpoint_test.c,
+	  test/jxta_bench_comm.c, test/jxta_bidipipe_test.c,
+	  test/jxta_rdvclient_listener_test.c, test/jxta_rdvserver_test.c,
+	  test/npg_test.c:
+	  - now, the listener function use stdcall as calling convention Issue
+	  number: 212 Submitted by:  lankes Reviewed by:  slowhog
+
+2005-11-16 08:40  exocetrick
+
+	* src/jxta_proffer.c: Make sure the proffer handles the element
+	  properly and shares it.
+
+2005-11-15 19:09  slowhog
+
+	* src/jxta_piperesolver_impl.c:
+	  - indent style fix
+
+2005-11-15 18:51  slowhog
+
+	* src/jxta_transport_tcp_connection.c:
+	  - Fix logical mistake cause connection cannot be established.
+	  Obtained from: Eric Xu (mmx2005) Reviewed by:   Henry Jen the
+	  slowhog
+
+2005-11-15 10:52  slowhog
+
+	* src/jxta_rdv_service_provider.c:
+	  - correct peer count for log message
+
+	  Obtained from: Eric Xu (mmx2005) Reviewed by:   Henry Jen the
+	  slowhog
+
+2005-11-15 10:41  slowhog
+
+	* shell/groups.c, shell/join.c, shell/jxta_shell_environment.c,
+	  shell/peers.c, shell/publish.c, shell/rdvstatus.c,
+	  shell/search.c, shell/talk.c, shell/whoami.c,
+	  src/jpr/jpr_ckcompat.c, test/any_adv_test.c, test/dr_adv_test.c,
+	  test/jxta_hash_test.c, test/jxta_objecthash_test.c,
+	  test/jxta_rdvclient_test.c, test/jxta_vector_test.c,
+	  test/mia_adv_test.c, test/npg_test.c, test/pa_adv_test.c,
+	  test/pg_start_stop_test.c, test/rdvstatus.c, test/srdi_test.c,
+	  tutorials/jxta_tutorial1.c, tutorials/jxta_tutorial_shared.c,
+	  tutorials/whisp.c:
+	  - More JXTA_OBJECT_PPTR fix to eliminate compiler warnings.
+
+	  Issue number: 140 Submitted by: Henry Jen the slowhog
+
+2005-11-14 02:11  slowhog
+
+	* src/: jxta_advertisement.c, jxta_apa.c, jxta_cm.c,
+	  jxta_discovery_service_ref.c, jxta_dr.c, jxta_endpoint_service.c,
+	  jxta_message.c, jxta_pa.c, jxta_peergroup.c, jxta_peerview.c,
+	  jxta_piperesolver_impl.c, jxta_pm.c, jxta_proffer.c, jxta_ra.c,
+	  jxta_rdv_config_adv.c, jxta_rdv_service.c,
+	  jxta_rdv_service_client.c, jxta_rdv_service_provider.c,
+	  jxta_rdv_service_server.c, jxta_relay.c, jxta_relaya.c,
+	  jxta_routea.c, jxta_router_client.c, jxta_srdi.c,
+	  jxta_srdi_service_ref.c, jxta_stdpg.c, jxta_test_adv.c,
+	  jxta_transport_http.c, jxta_transport_tcp.c,
+	  jxta_unipipe_service.c, jxta_util_priv.c, jxta_wire_service.c,
+	  jxta_wm.c:
+	  - use JXTA_OBJECT_PPTR macro to eliminate compiler warning
+
+	  Issue number: 140 Submitted by: Henry Jen the slowhog
+
+2005-11-14 00:41  slowhog
+
+	* src/jxta_peerview.c:
+	  - leak fix
+
+2005-11-14 00:40  slowhog
+
+	* src/jxta_listener.c:
+	  - terminate threads one by one, so that each thread get singaled
+	  properly Issue number: 208 Obtained from: Eric Xu (mmx2005) Reviewed
+	  by:   Henry Jen the slowhog
+
+2005-11-13 09:43  lankes
+
+	* src/jxta_discovery_service.h:
+	  - remove warning of MS's C++ compiler
+
+2005-11-13 09:09  lankes
+
+	* src/jxta_object_priv.h:
+	  - define _jxta_return to export in the JXTA DLL
+
+2005-11-12 10:09  exocetrick
+
+	* src/: jxta.c, jxta_object_priv.h: Fix compiler warnings - Doesn't
+	  generate a statement.
+
+2005-11-12 09:47  exocetrick
+
+	* src/jxta_srdi_config_adv.c: Invalid XML syntax fixed.
+
+2005-11-11 20:34  slowhog
+
+	* shell/talk.c:
+	  - Fix IP2PGRP pipe ID creation.
+
+	  Submitted by: Henry Jen the slowhog
+
+2005-11-11 20:26  slowhog
+
+	* src/jxta_transport_tcp_connection.c:
+	  - another fix, should not work Friday night. :-P
+
+2005-11-11 19:59  slowhog
+
+	* src/jxta_transport_tcp_connection.c:
+	  - Check return code.
+
+2005-11-11 19:05  slowhog
+
+	* src/jxta_transport_tcp_connection.c:
+	  - Provide return value for tcp_connection_start_socket, so in
+	  jxta_transport_tcp_connection_new_? can check the value and behave
+	  properly.
+	  - Match the naming convention of me/_self for member functions.
+
+	  Issue number: 210 Submitted by: Henry Jen the slowhog
+
+2005-11-11 17:41  slowhog
+
+	* src/: jxta_discovery_service_ref.c, jxta_rdv_service.c,
+	  jxta_rdv_service_client.c, jxta_rdv_service_provider.c,
+	  jxta_rdv_service_server.c, jxta_router_client.c:
+	  - fix deadlock caused by listener function require the mutex hold by
+	  stop function to stop itself.
+
+	  Issue number: 207 Submitted by: Eric Xu (mmx2005) Reviewed by:
+	  Henry Jen the slowhog
+
+2005-11-11 13:58  slowhog
+
+	* src/: jxta_apa.c, jxta_apa.h, jxta_rm.c, jxta_router_client.c:
+	  - ERM fix. Fwd & Rvs should contains a list of APA
+
+	  Issue number: 156 Submitted by: Henry Jen the slowhog
+
+2005-11-10 13:10  exocetrick
+
+	* src/jxta_discovery_service_ref.c: Don't release here. It will be
+	  released in finishTop.
+
+2005-11-09 15:30  mathieu
+
+	* src/jxta_object_priv.h: Issue number: 187. As it is always
+	  defined, let's play with #if Obtained from: mathieu Submitted by:
+	  mathieu Reviewed by:
+
+2005-11-09 15:27  mathieu
+
+	* src/jxta_discovery_service_ref.c: Issue number: 180 Obtained
+	  from: mathieu Submitted by: mathieu Reviewed by: valgrind
+
+2005-11-09 01:59  slowhog
+
+	* src/jpr/jpr_types.h:
+	  - style fix
+
+2005-11-09 01:57  slowhog
+
+	* src/jxta_object.h:
+	  - Declare a macro to be used for case that casting a pointer to
+	  JXTA_OBJECT pointer, which is causing the compiler warning while the
+	  code is correct. The macro cast to a void* first, and thus compiler
+	  won't complain
+
+	  Issue number: 140 Submitted by: Henry Jen the slowhog
+
+2005-11-08 01:08  slowhog
+
+	* src/jxta_rdv_service_client.c:
+	  - fix missing param for log message
+
+2005-11-07 16:29  exocetrick
+
+	* src/: jxta_srdi_config_adv.c, jxta_srdi_config_adv.h: Do not use
+	  bool with C++.
+
+2005-11-07 03:56  lankes
+
+	* win32/jxta/: jxtadll/jxtadll.vcproj, jxtalib/jxtalib.vcproj:
+	  - add jxta_srdi_config_adv.c to the VS project files
+
+2005-11-07 02:31  slowhog
+
+	* src/jxta_id_jxta.c: Obtained from: ericx Submitted by:  slowhog
+
+2005-11-05 16:59  slowhog
+
+	* src/: jxta_id.c, jxta_id.h, jxta_id_jxta.c, jxta_id_priv.h,
+	  jxta_id_uuid.c:
+	  - Add methods to construct from character string/buffer. Reduce
+	  unnecessary copy
+
+	  Issue number: 205 Submitted by: Henry Jen the slowhog
+
+2005-11-05 16:55  slowhog
+
+	* src/jxta_apa.c: -indent style fix
+
+2005-11-04 22:42  exocetrick
+
+	* src/jxta_srdi_service_ref.c: Improve SRDI Replication Publication
+	  Issue number: 206 Obtained from: Submitted by: ExocetRick Reviewed
+	  by:
+
+2005-11-04 21:47  slowhog
+
+	* test/peerlist_test.c:
+	  - don't know how this is left out
+
+2005-11-04 15:23  exocetrick
+
+	* src/: jxta_peerview.c, jxta_discovery_service_ref.c: Correct the
+	  message level
+
+2005-11-04 14:29  exocetrick
+
+	* src/jxta_resolver_service_ref.c: Issue number: 203 Obtained from:
+	  Submitted by: ExocetRick Reviewed by:
+
+2005-11-04 14:16  exocetrick
+
+	* src/: jxta_range.c, jxta_range.h: Changes required for
+	  replication
+
+2005-11-04 14:13  exocetrick
+
+	* src/: Makefile.am, jxta_platformconfig.c, jxta_srdi_config_adv.c,
+	  jxta_srdi_config_adv.h, jxta_srdi_service.c, jxta_srdi_service.h,
+	  jxta_srdi_service_private.h, jxta_srdi_service_ref.c, jxta_svc.c,
+	  jxta_svc.h: Add SRDI config for Numeric replication
+
+2005-11-04 14:08  exocetrick
+
+	* src/jxta_pa.c: Fix memory leak
+
+2005-11-04 14:07  exocetrick
+
+	* src/jxta_sql.h: Add PRAGMA define
+
+2005-11-04 14:06  exocetrick
+
+	* src/: jxta_discovery_service_ref.c, jxta_proffer.c,
+	  jxta_proffer.h: Fix proffer to only create indexable
+	  element/attributes
+
+2005-11-04 13:59  exocetrick
+
+	* src/jxta_cm.c: Performance improvements
+	  - timeout check
+	  - add index
+	  - add pragma for SQLite synchronous spec.
+
+2005-11-04 13:28  exocetrick
+
+	* src/jxta_peerview.c: Issue number: 201 Obtained from: Submitted
+	  by: ExocetRick Reviewed by:
+
+2005-11-03 13:09  lankes
+
+	* win32/: JxtaShell/JxtaShell.vcproj, jxta/jprdll/jprdll.vcproj,
+	  jxta/jprlib/jprlib.vcproj, jxta/jxtadll/jxtadll.vcproj,
+	  jxta/jxtalib/jxtalib.vcproj,
+	  test/any_adv_test/any_adv_test.vcproj,
+	  test/apa_adv_test/apa_adv_test.vcproj, test/chat/chat.vcproj,
+	  test/cm_test/cm_test.vcproj, test/dq_adv_test/dq_adv_test.vcproj,
+	  test/dr_adv_test/dr_adv_test.vcproj,
+	  test/dummypg_test/dummypg_test.vcproj,
+	  test/endpoint_test/endpoint_test.vcproj,
+	  test/excep_test/excep_test.vcproj,
+	  test/hta_adv_test/hta_adv_test.vcproj,
+	  test/http_client_test/http_client_test.vcproj,
+	  test/jstring_test/jstring_test.vcproj,
+	  test/jxta_bench_comm/jxta_bench_comm.vcproj,
+	  test/jxta_bidipipe_test/jxta_bidipipe_test.vcproj,
+	  test/jxta_bytevector_test/jxta_bytevector_test.vcproj,
+	  test/jxta_client_tunnel/jxta_client_tunnel.vcproj,
+	  test/jxta_discovery_test/jxta_discovery_test.vcproj,
+	  test/jxta_hash_test/jxta_hash_test.vcproj,
+	  test/jxta_id_test/jxta_id_test.vcproj,
+	  test/jxta_join_test/jxta_join_test.vcproj,
+	  test/jxta_log_unit_test/jxta_log_unit_test.vcproj,
+	  test/jxta_objecthash_test/jxta_objecthash_test.vcproj,
+	  test/jxta_pg_test/jxta_pg_test.vcproj,
+	  test/jxta_rdvclient_listener_test/jxta_rdvclient_listener_test.vcproj,
+	  test/jxta_rdvclient_test/jxta_rdvclient_test.vcproj,
+	  test/jxta_rdvserver_test/jxta_rdvserver_test.vcproj,
+	  test/jxta_resolver_test/jxta_resolver_test.vcproj,
+	  test/jxta_server_tunnel/jxta_server_tunnel.vcproj,
+	  test/jxta_vector_test/jxta_vector_test.vcproj,
+	  test/jxta_xml_util_test/jxta_xml_util_test.vcproj,
+	  test/jxtaobject_test/jxtaobject_test.vcproj,
+	  test/mia_adv_test/mia_adv_test.vcproj,
+	  test/msg_test/msg_test.vcproj, test/npg_test/npg_test.vcproj,
+	  test/pa_adv_test/pa_adv_test.vcproj, test/peers/peers.vcproj,
+	  test/pg_start_stop_test/pg_start_stop_test.vcproj,
+	  test/pga_adv_test/pga_adv_test.vcproj,
+	  test/rdv_adv_test/rdv_adv_test.vcproj,
+	  test/rdvstatus/rdvstatus.vcproj,
+	  test/relay_adv_test/relay_adv_test.vcproj,
+	  test/route_adv_test/route_adv_test.vcproj,
+	  test/rq_adv_test/rq_adv_test.vcproj,
+	  test/rr_adv_test/rr_adv_test.vcproj,
+	  test/server_tunnel/server_tunnel.vcproj,
+	  test/srdi_test/srdi_test.vcproj,
+	  test/svc_adv_test/svc_adv_test.vcproj,
+	  test/tta_adv_test/tta_adv_test.vcproj,
+	  test/unit_test_runner/unit_test_runner.vcproj,
+	  test/xmltest/xmltest.vcproj:
+	  - MS declare in its newest Platform SDK some
+	   functions (like strdup and strncpy) as deprecated
+	  - the definition of _CRT_SECURE_NO_DEPRECATE and
+	  _CRT_NONSTDC_NO_DEPRECATE suppressed the warnings messages of VC7
+
+2005-11-03 12:52  lankes
+
+	* win32/installdev/jxta.wxs:
+	  - add jxta_apr.h to the Windows installer
+	  - remove jxtaapr.h from the Windows installer
+
+2005-11-03 11:18  lankes
+
+	* src/jxta_advertisement.c:
+	  - change to C calling convention
+	  - this is necessary for all internal "delete" functions
+
+2005-11-02 23:31  mathieu
+
+	* src/: jxta_tcp_multicast.c, jxta_transport_tcp_connection.c,
+	  jxta_tcp_message_packet_header.c,
+	  jxta_tcp_message_packet_header.h: Issue number: 187. Patch number
+	  3.  Obtained from: mathieu Submitted by: mathieu Reviewed by:
+	  slowhog
+
+2005-10-28 15:48  slowhog
+
+	* src/jxta_apr.h:
+	  - minor fix for convention
+
+2005-10-28 15:30  mathieu
+
+	* src/: jxta_endpoint_address.c, jxta_endpoint_address.h: Issue
+	  number: 187. Patch number 2 Obtained from: mathieu Submitted by:
+	  mathieu Reviewed by: slowhog
+
+2005-10-27 11:49  mathieu
+
+	* src/jxta_object.c: Issue number: 187. fixing things reported by
+	  Henry Obtained from: mathieu Submitted by: mathieu Reviewed by:
+	  slowhog
+
+2005-10-27 11:32  mathieu
+
+	* configure.in, src/jxta_object.c, src/jxta_object_priv.h: Issue
+	  number: 187 (1st patch) Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by: slowhog
+
+2005-10-27 02:44  lankes
+
+	* test/: jxta_join_test.c, jxta_pg_test.c, jxta_resolver_test.c,
+	  peers.c:
+	  - the jxtaapr.h should be jxta_apr.h
+
+2005-10-27 02:29  lankes
+
+	* win32/jxta/: jxtadll/jxtadll.vcproj, jxtalib/jxtalib.vcproj:
+	   - change in VS project files jxtaapr.h to jxta_apr.h
+
+2005-10-26 23:42  slowhog
+
+	* src/jxta_relay.c:
+	  - eliminate complier warning with appropriate casting
+	  - remove useless msg element in connect/renew request Submitted by:
+	  Eric Xu (mmx2005) Reviewed by:  Henry Jen the slowhog
+
+2005-10-26 18:55  slowhog
+
+	* src/: Makefile.am, jxta_advertisement.c, jxta_apr.h,
+	  jxta_bytevector.c, jxta_cm.c, jxta_debug.c,
+	  jxta_discovery_service_ref.c, jxta_dq.c, jxta_dr.c,
+	  jxta_endpoint_address.c, jxta_endpoint_service.c,
+	  jxta_hashtable.c, jxta_hta.c, jxta_id_uuid.c, jxta_listener.c,
+	  jxta_membership_service_null.c, jxta_object.c,
+	  jxta_objecthashtable.c, jxta_peer.c, jxta_peer_private.h,
+	  jxta_peerinfo_service_ref.c, jxta_peerview.c, jxta_peerview.h,
+	  jxta_peerview_priv.h, jxta_pipe_service.c,
+	  jxta_piperesolver_impl.c, jxta_pm.c, jxta_private.h,
+	  jxta_query.c, jxta_rdv_config_adv.c, jxta_rdv_service.c,
+	  jxta_rdv_service_client.c, jxta_rdv_service_private.h,
+	  jxta_rdv_service_provider_private.h, jxta_rdv_service_server.c,
+	  jxta_resolver_service_ref.c, jxta_rq.c, jxta_rr.c, jxta_srdi.c,
+	  jxta_srdi_service_ref.c, jxta_tcp_multicast.c,
+	  jxta_transport_http_client.c, jxta_transport_tcp.c, jxta_tta.c,
+	  jxta_unipipe_service.c, jxta_vector.c, jxta_walk_msg.c,
+	  jxta_wire_service.c, jxta_wm.c, jxtaapr.h, queue.c:
+	  - the jxtaapr.h should be jxta_apr.h
+
+2005-10-23 10:25  exocetrick
+
+	* src/jxta_router_client.c: Issue number: 199 Obtained from:
+	  Submitted by: ExocetRick Reviewed by: slowhog
+
+2005-10-18 16:37  slowhog
+
+	* src/jxta_transport.c:
+	  - leak fix
+
+2005-10-18 16:34  slowhog
+
+	* src/: jxta_relay.c, jxta_router_client.c, jxta_transport.c,
+	  jxta_transport_tcp.c:
+	  - fix segment fault when got a RA with relay:// EA
+	  - fix over-release on EA when picking best address(contributed by
+	  Brian A. Wilson)
+	  - Change the default transport direction to OUTBOUND only
+
+	  Issue number:  191 Submitted by:  Henry Jen the slowhog
+
+2005-10-18 16:27  slowhog
+
+	* src/jxta_endpoint_service.c:
+	  - use new API for getting service
+
+2005-10-18 07:34  exocetrick
+
+	* src/: jxta_pa.c, jxta_pa.h: Add function to retrieve service with
+	  an ID
+
+2005-10-17 18:23  mathieu
+
+	* src/jxta_unipipe_service.c: Issue number: 178 Obtained from:
+	  mathieu Submitted by: mathieu Reviewed by:
+
+2005-10-17 18:22  mathieu
+
+	* src/jxta_piperesolver_msg.c: Issue number: 198 Obtained from:
+	  mathieu Submitted by: mathieu Reviewed by: valgrind ;-)
+
+2005-10-17 13:51  slowhog
+
+	* src/: jxta_endpoint_service.c, jxta_router_client.c,
+	  jxta_transport.c, jxta_transport.h, jxta_transport_http.c,
+	  jxta_transport_private.h, jxta_transport_tcp.c:
+	  - eliminate hardcode rules to support multiple transports Issue
+	  number: 191 Submitted by: Henry Jen the slowhog
+
+2005-10-16 23:54  mathieu
+
+	* src/jxta_transport_http_poller.c: Issue number: 184. Obvious fix
+	  Obtained from: mathieu Submitted by: mathieu Reviewed by:
+
+2005-10-14 19:43  mathieu
+
+	* src/jxta_resolver_service_ref.c: Issue number: 165. Bad merge ...
+	  Obtained from: mathieu Submitted by: mathieu Reviewed by:
+
+2005-10-14 15:00  lankes
+
+	* src/jxta_rdv_service_client.c, src/jxta_rdv_service_provider.c,
+	  src/jxta_rdv_service_server.c, shell/rdvstatus.c:
+	  - need to include some headers
+	  - otherwise I got linker errors on Windows
+
+2005-10-14 14:57  lankes
+
+	* src/jxta_platformconfig.c:
+	  - arpa/inet.h doesn't exist on a Windows system => avoid inclusion
+	  of arpa/inet.h
+
+2005-10-14 14:49  lankes
+
+	* win32/jxta/: jxtadll/jxtadll.vcproj, jxtalib/jxtalib.vcproj:
+	  - add jxta_util_priv.c and jxta_platformconfig.c to the VS project
+	  files
+
+2005-10-14 14:47  lankes
+
+	* src/jxta_query.c:
+	  - remove obsolete windows implementation of signbit
+
+2005-10-13 23:20  mathieu
+
+	* src/Makefile.am: Issue number: 197 Obtained from: mathieu
+	  Submitted by: mathieu Reviewed by:
+
+2005-10-13 23:19  mathieu
+
+	* test/Makefile.am: Issue number: 181. Hum, let say that's a typo
+	  fix :-) Obtained from: mathieu Submitted by: mathieu Reviewed by:
+
+2005-10-13 23:12  mathieu
+
+	* test/: Makefile.am, jxta_bench_pipe_resolution.c: Issue number:
+	  181 Obtained from: mathieu Submitted by: mathieu Reviewed by:
+
+2005-10-13 18:12  slowhog
+
+	* src/jxta_advertisement.c:
+	  - indent style change
+	  - fix segfault when len=0
+
+2005-10-13 16:49  mathieu
+
+	* src/: jxta_pipe_service.c, jxta_pipe_service_impl.h,
+	  jxta_piperesolver_impl.c, jxta_unipipe_service.c,
+	  jxta_wire_service.c: Issue number: 158 & 170 Obtained from:
+	  mathieu Submitted by: mathieu Reviewed by: slowhog
+
+2005-10-13 15:35  slowhog
+
+	* src/jxta_object_type.h:
+	  - rename internal variable name for superclass.
+
+2005-10-13 14:52  exocetrick
+
+	* test/README: Didn't save before previous commit.
+
+2005-10-13 14:21  mathieu
+
+	* src/jxta_transport_http_poller.c: Issue number: change from world
+	  to net peergroup Id. (issue 184) Obtained from: mathieu Submitted
+	  by: mathieu Reviewed by: slowhog
+
+2005-10-13 13:35  mathieu
+
+	* src/: jxta_peerview.c, jxta_peerview.h, jxta_peerview_priv.h,
+	  jxta_rdv_service.c, jxta_rdv_service.h,
+	  jxta_srdi_service_private.h: Issue number: 196 Obtained from:
+	  mathieu Submitted by: mathieu Reviewed by: bondolo & slowhog
+
+2005-10-13 13:28  mathieu
+
+	* src/jxta_netpg.h: Issue number: 184 (missing file) Obtained from:
+	  mathieu Submitted by: mathieu Reviewed by: slowhog
+
+2005-10-13 12:52  mathieu
+
+	* src/: Makefile.am, jxta_netpg.c, jxta_peergroup.c,
+	  jxta_peergroup.h, jxta_relay.h, jxta_router_client.c,
+	  jxta_stdpg.c, jxta_stdpg_private.h, jxta_transport_http_poller.c,
+	  jxta_wire_service.c, jxta.c, jxta_advertisement.c,
+	  jxta_advertisement_priv.h, jxta_platformconfig.c,
+	  jxta_platformconfig.h: Issue number: 184 Obtained from: mathieu
+	  Submitted by: mathieu Reviewed by: slowhog
+
+2005-10-13 10:07  exocetrick
+
+	* test/: any_adv_test.c, apa_adv_test.c, chat.c, dr_adv_test.c,
+	  jstring_test.h, jxta_bidipipe_test.c, jxta_discovery_test.c,
+	  jxta_join_test.c, jxta_log_unit_test.c, jxta_objecthash_test.c,
+	  jxta_rdvclient_listener_test.c, jxta_rdvclient_test.c,
+	  jxta_rdvserver_test.c, jxta_resolver_test.c,
+	  jxta_server_tunnel.c, mia_adv_test.c, npg_test.c, pa_adv_test.c,
+	  peers.c, rdvstatus.c, route_adv_test.c, srdi_test.c,
+	  svc_adv_test.c, tta_adv_test.c, unittest_jxta_func.h:
+	  Modifications to support execution from a test script Issue number:
+	  182 Obtained from: Submitted by: ExocetRick Reviewed by:
+
+2005-10-13 09:59  exocetrick
+
+	* test/: README, testWithINP.sh, tests.inp: Test case execution
+	  enhancements Issue number: 182 Obtained from: Submitted by:
+	  ExocetRick Reviewed by:
+
+2005-10-13 09:42  mathieu
+
+	* src/jxta_rdv_service_server.c: Issue number: 195 Obtained from:
+	  mathieu Submitted by: mathieu Reviewed by:
+
+2005-10-12 16:11  slowhog
+
+	* src/: jxta_discovery_service_ref.c, jxta_rdv_service.h,
+	  jxta_srdi_service_ref.c, jxta_util_priv.c:
+	  - Fix wrong include filename and one warning
+
+2005-10-11 17:26  mathieu
+
+	* src/: Makefile.am, jxta_util_priv.c, jxta_util_priv.h: Issue
+	  number: Missing files :-(. Thanks Henry! Obtained from: mathieu
+	  Submitted by: Reviewed by:
+
+2005-10-11 17:04  mathieu
+
+	* src/: Makefile.am, jxta_discovery_service_ref.c,
+	  jxta_srdi_service.c, jxta_srdi_service.h,
+	  jxta_srdi_service_private.h, jxta_srdi_service_ref.c: Issue
+	  number: 189 & 192 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by: exocetrick
+
+2005-10-07 16:14  slowhog
+
+	* win32/jxta/jxtalib/jxtalib.dsp: Issue number: 118
+
+2005-10-07 16:05  mathieu
+
+	* tutorials/whisp.c: Issue number: 176. LEASE rdv events where
+	  removed by this patch. Update whisp code Obtained from: bondolo
+	  Submitted by: bondolo Reviewed by: mathieu
+
+2005-10-07 16:04  mathieu
+
+	* src/jxta_advertisement.c, test/mia_adv_test.c: Issue number: 188
+	  Obtained from: mathieu Submitted by: mathieu Reviewed by: slowhog
+
+2005-10-06 15:47  exocetrick
+
+	* src/jxta_query.c: Remove dependency of signbit. Negative zero
+	  check not needed.
+
+2005-10-06 10:20  exocetrick
+
+	* src/jxta_discovery_service_ref.c: Fix debug messages to match the
+	  operation.
+
+2005-10-06 09:37  exocetrick
+
+	* src/jxta_discovery_service_ref.c: Support for new rdv events
+	  introduced by auto-rendezvous
+
+2005-10-06 09:36  exocetrick
+
+	* src/jxta_cm.c: Fix infinite loop when no replica entries and no
+	  sub queries Change log level for updates
+
+2005-10-06 09:33  bondolo
+
+	* src/: jxta_errno.h, jxta_rdv_service.h,
+	  jxta_rdv_service_client.c, jxta_rdv_service_provider.c,
+	  jxta_rdv_service_provider_private.h, jxta_rdv_service_server.c,
+	  jxta_resolver_service_ref.c: Corrects problems with rdv
+	  propagation by edges and reduces cost of propagation significantly.
+
+	  Issue number: 176 Reviewed by:  mathieu
+
+2005-10-04 21:02  exocetrick
+
+	* src/jxta_cm.c: Remove debug code and compiler warning.
+
+2005-10-04 20:59  exocetrick
+
+	* src/jxta_cm.h: Add lost comments
+
+2005-10-04 20:14  exocetrick
+
+	* src/: jxta_advertisement.c, jxta_advertisement.h: Remove unused
+	  entries and references in the advertisement structure
+
+2005-10-04 17:57  mathieu
+
+	* src/jxta_cm.c: Issue number: 169 Obtained from: mathieu Submitted
+	  by: mathieu Reviewed by: exocetrick
+
+2005-10-03 09:35  bondolo
+
+	* src/jxta_rdv.c: update to new logging.
+
+2005-10-03 09:34  bondolo
+
+	* src/jxta_wm.c: update to new logging
+
+2005-10-03 09:21  mathieu
+
+	* src/jxta_rdv_service.c: Issue number: 185 Obtained from: mathieu
+	  Submitted by: mathieu Reviewed by: bondolo
+
+2005-09-30 18:12  mathieu
+
+	* src/jxta_peerview.c: Issue number: 183 Obtained from: mathieu
+	  Submitted by: mathieu Reviewed by:
+
+2005-09-30 17:12  mathieu
+
+	* src/: jxta_peerview.c, jxta_peerview.h: Issue number: 141
+	  Obtained from: mathieu Submitted by: mathieu Reviewed by: bondolo &
+	  slowhog
+
+2005-09-30 17:02  slowhog
+
+	* src/jxta_rr.h:
+	  - recover changes between r1.6 and r1.7
+	  - indent style change
+
+2005-09-30 16:46  mathieu
+
+	* src/: jxta_discovery_service_ref.c, jxta_rr.c, jxta_rr.h,
+	  jxta_piperesolver_impl.c: Issue number: 158 Obtained from:
+	  mathieu Submitted by: mathieu Reviewed by: bondolo & slowhog
+
+2005-09-29 17:20  slowhog
+
+	* src/jxta_discovery_service_ref.c:
+	  - fix seg fault when PA is not in the discovery response
+
+2005-09-29 17:20  slowhog
+
+	* src/: jxta_object_priv.h, jxta_pa.c:
+	  - get rid of complier warning of type-puffing
+
+2005-09-29 17:14  slowhog
+
+	* src/jxta_object_priv.h:
+	  - get rid of complier warning of type-puffing
+
+2005-09-29 17:14  bondolo
+
+	* src/jxta_endpoint_service.c: better error handling.
+
+2005-09-29 15:45  lankes
+
+	* win32/jxta/: jxtadll/jxtadll.vcproj, jxtalib/jxtalib.vcproj:
+	  - add jxta_range.c to the VS2003 project files
+
+2005-09-29 15:44  lankes
+
+	* src/jxta_cm.c:
+	  - fix function declaration
+	  - this is necessary for Windows
+
+2005-09-29 15:40  lankes
+
+	* src/jxta_query.c:
+	  - Windows doesn't support the signbit function.
+	  - Therefore, I define my own signbit function.
+
+2005-09-29 15:21  bondolo
+
+	* src/: jxta_endpoint_service.c, jxta_endpoint_service.h:
+	  additional demux so that services don't have to set_destination on
+	  msg just to call demux
+
+2005-09-29 15:01  bondolo
+
+	* src/jxta_router_client.c: better diagnostics and error handling
+	  in listener
+
+2005-09-29 15:01  bondolo
+
+	* src/: jxta_rm.c, jxta_rm.h: clean up logging, return the results
+	  of parse operations.
+
+2005-09-29 11:22  mathieu
+
+	* src/jxta_endpoint_service.c: Issue number: 171 Obtained from:
+	  mathieu Submitted by: mathieu Reviewed by: bondolo
+
+2005-09-29 00:30  slowhog
+
+	* src/jxta_object.h:
+	  - Change to void * to match macro definition
+
+2005-09-29 00:27  slowhog
+
+	* src/: jxta_builtinmodules.c, jxta_builtinmodules_private.h:
+	  - Enable to extend with C++ modules
+
+2005-09-24 21:36  exocetrick
+
+	* src/jxta_cm.c: Remove comments from an important debug message.
+
+2005-09-24 20:55  exocetrick
+
+	* src/Makefile.am, src/jxta_advertisement.c,
+	  src/jxta_advertisement.h, src/jxta_cm.c, src/jxta_cm.h,
+	  src/jxta_discovery_service.c,
+	  src/jxta_discovery_service_private.h,
+	  src/jxta_discovery_service_ref.c, src/jxta_proffer.c,
+	  src/jxta_proffer.h, src/jxta_query.c, src/jxta_query.h,
+	  src/jxta_range.c, src/jxta_range.h, src/jxta_sql.h,
+	  src/jxta_srdi.c, src/jxta_srdi.h, src/jxta_srdi_service.c,
+	  src/jxta_srdi_service.h, src/jxta_srdi_service_private.h,
+	  src/jxta_srdi_service_ref.c, src/jxta_test_adv.h,
+	  shell/publish.c, shell/publish.h, src/jxta_test_adv.c: Query
+	  Extensions for Numeric and Relational Operators Includes a fix for
+	  searches that weren't being walked.  Issue number: 127 and 167
+	  Obtained from: ExocetRick Submitted by: ExcoetRick Reviewed by:
+
+2005-09-24 11:06  bondolo
+
+	* shell/talk.c: Add the ability to create propagate pipes.
+
+	  Add "magic" binding to the "ip2pgrp" talk user name.
+
+2005-09-23 19:36  mathieu
+
+	* src/jxta_discovery_service_ref.c: Issue number: 180 Obtained
+	  from: mathieu Submitted by: mathieu Reviewed by:
+
+2005-09-23 18:55  mathieu
+
+	* src/jxta_resolver_service_ref.c: Issue number: 179 Obtained from:
+	  mathieu Submitted by: mathieu Reviewed by:
+
+2005-09-23 18:34  mathieu
+
+	* src/: jxta_unipipe_service.c, jxta_wire_service.c: Issue number:
+	  178 Obtained from: mathieu Submitted by: mathieu Reviewed by:
+
+2005-09-23 18:19  mathieu
+
+	* src/jxta_endpoint_service.c: Issue number: 175 (part 2) Obtained
+	  from: mathieu Submitted by: mathieu Reviewed by:
+
+2005-09-23 17:15  mathieu
+
+	* src/jxta_piperesolver_impl.c: Issue number: 177 Obtained from:
+	  mathieu Submitted by: mathieu Reviewed by:
+
+2005-09-23 16:25  mathieu
+
+	* src/jxta_endpoint_service.c: Issue number: 175 Obtained from:
+	  mathieu Submitted by: mathieu Reviewed by:
+
+2005-09-23 16:11  mathieu
+
+	* src/jxta_incoming_unicast_server.c:
+
+	  Issue number: 174 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by:
+
+2005-09-23 14:58  mathieu
+
+	* src/jxta_endpoint_service.c: Issue number: 171 Obtained from:
+	  mathieu Submitted by: mathieu Reviewed by:
+
+2005-09-23 13:38  exocetrick
+
+	* src/jxta_discovery_service_ref.c: Discard responses that
+	  originate at the local peer.  Issue Number: 172 Obtained from:
+	  Submitted by: bondolo Reviewed by:
+
+2005-09-23 13:09  slowhog
+
+	* test/: chat.c, endpoint_stress_test.c, endpoint_test.c,
+	  jxta_bench_comm.c, jxta_rdvclient_test.c, jxta_resolver_test.c,
+	  msg_test.c, rdvstatus.c:
+	  - Replace reprecated APIs
+
+2005-09-23 13:07  slowhog
+
+	* test/: any_adv_test.c, apa_adv_test.c, chat.c, cm_test.c,
+	  dq_adv_test.c, dr_adv_test.c, dummypg_test.c,
+	  endpoint_stress_test.c, endpoint_test.c, excep_test.c,
+	  hta_adv_test.c, http_client_test.c, jstring_test.c,
+	  jxta_bidipipe_test.c, jxta_bytevector_test.c,
+	  jxta_client_tunnel.c, jxta_discovery_test.c, jxta_hash_test.c,
+	  jxta_id_test.c, jxta_join_test.c, jxta_log_unit_test.c,
+	  jxta_objecthash_test.c, jxta_pg_test.c,
+	  jxta_rdvclient_listener_test.c, jxta_rdvclient_test.c,
+	  jxta_rdvserver_test.c, jxta_resolver_test.c,
+	  jxta_server_tunnel.c, jxta_shell.c, jxta_vector_test.c,
+	  jxta_xml_util_test.c, jxtatcptest.c, mia_adv_test.c, msg_test.c,
+	  npg_test.c, pa_adv_test.c, peerlist_test.c, peers.c,
+	  pg_start_stop_test.c, pga_adv_test.c, pga_test.c, rdv_adv_test.c,
+	  rdvstatus.c, relay_adv_test.c, route_adv_test.c, rq_adv_test.c,
+	  rr_adv_test.c, srdi_test.c, svc_adv_test.c, timer_test.c,
+	  tta_adv_test.c, unit_test_runner.c, unittest_jxta_func.c,
+	  xmltest.c:
+	  - large indent change
+
+2005-09-23 13:01  slowhog
+
+	* src/: jxta_bidipipe.c, jxta_endpoint_service.c, jxta_peerview.c,
+	  jxta_rdv_config_adv.c, jxta_rdv_service_client.c,
+	  jxta_rdv_service_provider.c, jxta_rdv_service_server.c,
+	  jxta_relay.c, jxta_router_client.c, jxta_svc.c,
+	  jxta_tcp_multicast.c, jxta_transport_tcp.c,
+	  jxta_transport_tcp_connection.c, jxta_unipipe_service.c:
+	  - replace deprecated API
+	  - indent changes
+
+	  Issue number: 55
+
+2005-09-23 11:06  slowhog
+
+	* src/: jxta_endpoint_service.c, jxta_endpoint_service_priv.h,
+	  jxta_incoming_unicast_server.c, jxta_transport.c,
+	  jxta_transport_private.h, jxta_transport_tcp.c,
+	  jxta_transport_tcp_private.h:
+	  - Change to transport event
+	  - Remove both physical & jxta address from the negative cache
+
+	  Issue number: 155 Submitted by: Henry Jen the slowhog
+
+2005-09-23 10:37  slowhog
+
+	* src/jxta_rq.c:
+	  - indent style fixes
+
+2005-09-23 10:03  bondolo
+
+	* test/msg_test.c: correct syntax error
+
+2005-09-23 08:34  exocetrick
+
+	* shell/search.c: Memory leaks
+
+2005-09-23 08:05  exocetrick
+
+	* src/jxta_dr.c: Handle the Peer Advertisement properly.
+
+2005-09-22 21:31  slowhog
+
+	* src/: jxta_endpoint_address.c, jxta_endpoint_address.h,
+	  jxta_resolver_service_ref.c, jxta_router_client.c:
+	  - add a jxta_endpoint_address_new_3 to construct from a peer ID
+	  - change contructors naming convention to new_? to be consistent
+	  with others Issue number: 168, 55 Submitted by: Henry Jen the
+	  slowhog Reviewed by:  bondolo (Mike Duigou)
+
+2005-09-22 21:12  slowhog
+
+	* src/: jxta_endpoint_address.c, jxta_resolver_service_ref.c,
+	  jxta_router_client.c:
+	  - indent style changes
+
+2005-09-22 15:57  slowhog
+
+	* src/jxta_transport_tcp_connection.c:
+	  - Make sure NULL was returned if the string cannot be converted to a
+	  valid Jxta_id
+
+2005-09-22 14:14  lankes
+
+	* win32/: JxtaShell/JxtaShell.vcproj, test/chat/chat.vcproj,
+	  test/dummypg_test/dummypg_test.vcproj,
+	  test/endpoint_test/endpoint_test.vcproj,
+	  test/jxta_bench_comm/jxta_bench_comm.vcproj,
+	  test/jxta_bidipipe_test/jxta_bidipipe_test.vcproj,
+	  test/jxta_client_tunnel/jxta_client_tunnel.vcproj,
+	  test/jxta_join_test/jxta_join_test.vcproj,
+	  test/jxta_pg_test/jxta_pg_test.vcproj,
+	  test/jxta_rdvclient_listener_test/jxta_rdvclient_listener_test.vcproj,
+	  test/jxta_rdvclient_test/jxta_rdvclient_test.vcproj,
+	  test/jxta_rdvserver_test/jxta_rdvserver_test.vcproj,
+	  test/jxta_resolver_test/jxta_resolver_test.vcproj,
+	  test/jxta_server_tunnel/jxta_server_tunnel.vcproj,
+	  test/npg_test/npg_test.vcproj, test/peers/peers.vcproj,
+	  test/pg_start_stop_test/pg_start_stop_test.vcproj,
+	  test/rdvstatus/rdvstatus.vcproj,
+	  test/server_tunnel/server_tunnel.vcproj,
+	  test/unit_test_runner/unit_test_runner.vcproj:
+	  - add aditional include path to libxml2
+
+2005-09-22 12:23  mathieu
+
+	* src/jxta_stdpg.c: The patch also removes uneeded
+	  JXTA_OBJECT_RELEASE in the case the group is not even created.
+	  Issue number: 166 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by:
+
+2005-09-22 09:28  exocetrick
+
+	* src/jxta_stdpg.c: Remove unused variables and clean up some
+	  casting
+
+2005-09-22 08:17  exocetrick
+
+	* src/jxta_srdi_service_ref.c: Forgot to release the cache manager.
+	  :/.
+
+2005-09-21 21:28  exocetrick
+
+	* src/: jxta_cm.c, jxta_cm.h, jxta_srdi_service_ref.c: Remove srdi
+	  entries when the edge disconnects from the rendezvous
+
+2005-09-21 20:58  exocetrick
+
+	* src/jxta_discovery_service_ref.c: Retrieve the cm from the peer
+	  group
+
+2005-09-21 20:44  exocetrick
+
+	* src/jxta_cm.c: Add the groupid to debug messages
+
+2005-09-21 20:36  exocetrick
+
+	* src/jxta_discovery_service_ref.c: For responses received add
+	  debug info for peer and queryid
+
+2005-09-21 20:26  exocetrick
+
+	* src/: jxta_peergroup.c, jxta_stdpg.c, jxta_stdpg_private.h,
+	  jxta_peergroup.h, jxta_peergroup_private.h: Create the cache
+	  manager in the Peer Group with get/set functions
+
+2005-09-21 15:56  mathieu
+
+	* src/jxta_rq.h: Forget to use JXTA_DECLARE_DATA macro.  Issue
+	  number: Obtained from: Submitted by: Reviewed by:
+
+2005-09-21 14:37  mathieu
+
+	* src/: jxta_resolver_service_ref.c, jxta_rq.c, jxta_rq.h: Issue
+	  number: 165 Obtained from: mathieu Submitted by: mathieu Reviewed
+	  by: slowhog
+
+2005-09-21 14:16  slowhog
+
+	* src/: EndpointRouter.h, jdlist.h, jstring.h,
+	  jxta_advertisement.h, jxta_apa.h, jxta_bidipipe.h,
+	  jxta_builtinmodules_private.h, jxta_discovery_service_private.h,
+	  jxta_dq.h, jxta_dr.h, jxta_dr_priv.h, jxta_endpoint_address.h,
+	  jxta_endpoint_messenger.h, jxta_endpoint_service.h,
+	  jxta_endpoint_service_priv.h, jxta_errno.h, jxta.h,
+	  jxta_hashtable.h, jxta_hta.h, jxta_id.h, jxta_id_priv.h,
+	  jxta_incoming_unicast_server.h, jxta_listener.h, jxta_log.h,
+	  jxta_log_priv.h, jxta_mca.h, jxta_membership_service.h,
+	  jxta_membership_service_private.h, jxta_message.h, jxta_mia.h,
+	  jxta_module.h, jxta_module_private.h, jxta_msa.h,
+	  jxta_netpg_private.h, jxta_object.h, jxta_object_priv.h,
+	  jxta_object_ptrwrapper.h, jxta_object_type.h,
+	  jxta_objecthashtable.h, jxta_pa.h, jxta_peer.h, jxta_peergroup.h,
+	  jxta_peergroup_private.h, jxta_peerinfo_service.h,
+	  jxta_peerinfo_service_private.h, jxta_peer_private.h,
+	  jxta_peerview.h, jxta_pga.h, jxta_pipe_adv.h,
+	  jxta_pipe_service.h, jxta_pipe_service_impl.h,
+	  jxta_piperesolver_msg.h, jxta_pm.h, jxta_private.h,
+	  jxta_proffer.h, jxta_query.h, jxta_rdv.h, jxta_rdv_config_adv.h,
+	  jxta_rdv_service.h, jxta_rdv_service_private.h,
+	  jxta_rdv_service_provider.h, jxta_rdv_service_provider_private.h,
+	  jxta_relay.h, jxta_relaya.h, jxta_resolver_service.h,
+	  jxta_resolver_service_private.h, jxta_rm.h, jxta_routea.h,
+	  jxta_router_service.h, jxta_rq.h, jxta_rr.h, jxta_rsrdi.h,
+	  jxta_service.h, jxta_service_private.h, jxta_socket_tunnel.h,
+	  jxta_sql.h, jxta_srdi.h, jxta_srdi_service.h,
+	  jxta_srdi_service_private.h, jxta_stdpg_private.h, jxta_string.h,
+	  jxta_svc.h, jxta_tcp_message_packet_header.h,
+	  jxta_tcp_multicast.h, jxta_test_adv.h, jxta_transport.h,
+	  jxta_transport_http_client.h, jxta_transport_http_poller.h,
+	  jxta_transport_private.h, jxta_transport_tcp_connection.h,
+	  jxta_transport_tcp_private.h, jxta_tta.h, jxta_types.h,
+	  jxta_vector.h, jxta_walk_msg.h, jxta_wm.h, queue.h,
+	  trailing_average.h:
+	  - indent style change.
+	  - change } to }; to correct the indent behavior
+
+2005-09-21 12:18  exocetrick
+
+	* src/jxta_rdv.c:
+	  - Check for a null route to avoid segfault of a malformed
+	  advertisement
+	  - Add the index for RdvServiceName
+
+2005-09-20 16:29  mathieu
+
+	* src/jxta_peerview.c: Memory leak fix Issue number: 164 Obtained
+	  from: mathieu Submitted by: mathieu Reviewed by: bondolo
+
+2005-09-19 19:42  mathieu
+
+	* src/jxta_rdv_service_client.c: Memory leak fix.  ==17300== 141
+	  (64 direct, 77 indirect) bytes in 1 blocks are definitely lost in
+	  loss record 11 of 35 ==17300==    at 0x11B1E48D: calloc
+	  (vg_replace_malloc.c:279) ==17300==    by 0x13062B3B:
+	  jxta_endpoint_address_new2 (jxta_endpoint_address.c:113) ==17300==
+	  by 0x1307BBCA: client_listener (jxta_rdv_service_client.c:1305)
+	  ==17300==    by 0x130896C7: listener_thread_main
+	  (jxta_listener.c:317) ==17300==    by 0x12E15B54: start_thread (in
+	  /lib/libpthread-0.60.so) ==17300==    by 0x133C286F: clone (in
+	  /lib/libc-2.3.2.so) Issue number: Obtained from: Submitted by:
+	  Reviewed by:
+
+2005-09-19 18:03  slowhog
+
+	* test/msg_test.c:
+	  - With a capacity larger than the size, the content was realloc'ed,
+	  and of course the test will fail. Change to same size to avoid
+	  realloc.  Issue number: 152 Submitted by: Henry Jen the slowhog
+
+2005-09-19 17:31  mathieu
+
+	* test/jxta_rdvserver_test.c: Update test since peers can go down
+	  an up easily now Issue number: Obtained from: Submitted by: Reviewed
+	  by:
+
+2005-09-19 17:28  mathieu
+
+	* src/unicode/Makefile.am: Remove -g in the default setting Issue
+	  number: Obtained from: Submitted by: Reviewed by:
+
+2005-09-19 17:28  mathieu
+
+	* src/jxta_rdv_service_client.c: Memory leak fix.  ==15218== 276
+	  bytes in 2 blocks are definitely lost in loss record 30 of 49
+	  ==15218==    at 0x11B1E582: realloc (vg_replace_malloc.c:306)
+	  ==15218==    by 0x1304DF7C: resizeBuf (jstring.c:128) ==15218==
+	  by 0x1304E422: jstring_append_0 (jstring.c:308) ==15218==    by
+	  0x1304E549: jstring_append_2 (jstring.c:335) ==15218==    by
+	  0x13053B94: getUniqueportion (jxta_id_uuid.c:712) ==15218==    by
+	  0x1305258B: jxta_id_get_uniqueportion (jxta_id.c:389) ==15218==
+	  by 0x13089ED7: get_peer_entry (jxta_rdv_service_client.c:1289)
+	  ==15218==    by 0x130890CC: process_connected_reply
+	  (jxta_rdv_service_client.c:879) ==15218==    by 0x130893BE:
+	  client_listener (jxta_rdv_service_client.c:964) ==15218==    by
+	  0x1309A92C: listener_thread_main (jxta_listener.c:317) ==15218==
+	  by 0x12E15B54: start_thread (in /lib/libpthread-0.60.so) ==15218==
+	  by 0x133E086F: clone (in /lib/libc-2.3.2.so) Issue number: Obtained
+	  from: Submitted by: Reviewed by:
+
+2005-09-19 12:23  mathieu
+
+	* configure.in: Fix issue for correct setting of sqlite include
+	  directory.  Otherwise no include directory is put in Makefile and
+	  sqlite.h cannot be found.  Note: this apply to JXTA-C 2.2 release
+	  Issue number: Obtained from: Submitted by: Reviewed by:
+
+2005-09-18 19:05  mathieu
+
+	* src/jxta_log.c: Adding usec in log traces Issue number: Obtained
+	  from: Submitted by: Reviewed by:
+
+2005-09-15 22:16  slowhog
+
+	* Makefile.am:
+	  - add libxml2 patch into source tarball
+
+2005-09-15 15:02  slowhog
+
+	* configure.in:
+	  - mark 2.2 release
+
+2005-09-15 14:53  slowhog
+
+	* src/: jxta_rdv_service.c, jxta_rdv_service_private.h,
+	  jxta_rdv_service_provider.c:
+	  - mutex lock to make rdv_service methods like propagate/walk to be
+	  synchronized
+	  - add protection in case allocating message element fail
+	  - get rid of non-use get_provier_priv method
+	  - disable auto-rdv as C RDV capability is not fully implemented yet
+	  Issue number: 161 Submitted by: Henry Jen the slowhog Reviewed by:
+	  bondolo (Mike Duigou)
+
+2005-09-15 11:41  slowhog
+
+	* src/jxta_endpoint_service.c:
+	  - increase timeout to 10 seconds Issue number: 116 Submitted by:
+	  Henry Jen the slowhog
+
+2005-09-14 20:26  slowhog
+
+	* src/jxta_router_client.c:
+	  - revert bad changes by mistake
+
+2005-09-14 20:20  slowhog
+
+	* src/jxta_router_client.c:
+	  - Service name & param should always be NULL here
+
+2005-09-14 19:31  bondolo
+
+	* src/jxta_transport_tcp.c: corrects issue with typing of
+	  intf_addr. luckily int is the same size as pointers on most
+	  platforms....
+
+	  Issue number: n/a Reviewed by: slowhog
+
+2005-09-14 19:18  bondolo
+
+	* src/jxta_rdv_service.c: forgot to commit this file with issue
+	  154. Additional logging only.  issue : 154 reviewer : mathieu
+
+2005-09-14 19:15  slowhog
+
+	* src/jxta_transport_tcp.c: Issue number: 159 Submitted by: Henry
+	  Jen the slowhog Reviewed by:  bondolo (Mike Duigou)
+
+2005-09-14 14:03  bondolo
+
+	* doxconf: updated doxconf for release 2.2
+
+2005-09-13 22:00  slowhog
+
+	* src/: jxta_xml_util.c, jxta_xml_util.h:
+	  - indent style fix
+
+2005-09-13 16:06  slowhog
+
+	* src/jxta_xml_util.c:
+	  - indent style fix
+
+2005-09-13 14:55  slowhog
+
+	* src/jxta_rm.c:
+	  - indent style fix
+
+2005-09-13 09:26  slowhog
+
+	* src/: Makefile.am, jxta_endpoint_service.c,
+	  jxta_endpoint_service_priv.h, jxta_incoming_unicast_server.c,
+	  jxta_transport.h, jxta_transport_private.h, jxta_transport_tcp.c,
+	  jxta_transport_tcp_private.h:
+	  - Remove a peer connect in from the unreachable cache Submitted by:
+	  Henry Jen the slowhog Reviewed by:  bondolo (Mike Duigou)
+
+2005-09-12 10:46  mathieu
+
+	* src/jxta_rq.c:
+
+	  Issue number: issue 157 + removed uneeded use of an
+	  AccessPointAdvertisement Obtained from: mathieu Submitted by:
+	  mathieu Reviewed by: Henry Jen aka slowhog
+
+2005-09-12 00:02  slowhog
+
+	* src/jxta_bytevector.c: Issue number: 146 Obtained from: Mathieu
+	  Jan Reviewed by:  Henry Jen the slowhog
+
+2005-09-09 20:20  bondolo
+
+	* src/: jxta_rdv_service_client.c, jxta_rdv_service_server.c: Fixes
+	  rdv event generation for a number of cases.
+
+	  corrects problem with removal of expired rdv clients.
+
+	  issue : 153/154 reviewer : mathieu
+
+2005-09-09 18:25  slowhog
+
+	* src/jxta_rdv.c:
+	  - Copy & Paste error, fixed. :-P
+
+2005-09-09 18:04  slowhog
+
+	* src/jxta_message.c:
+	  - The sizeof is 4, not causing a problem now, but is a bug.
+
+2005-09-09 17:57  slowhog
+
+	* src/jxta_wire_service.c:
+	  - SrcPeer does not exist for JXME implementation is causing segment
+	  fault. We should prevent the segment fault anyway as we should not
+	  trust input from elsewhere.
+
+2005-09-09 17:55  slowhog
+
+	* src/jxta_rdv.c:
+	  - RdvServerName need to be trimmed. Some implementation(JSE) is
+	  sending RDV ADV with indentation characters(\n\t).
+
+2005-09-09 11:22  bondolo
+
+	* configure.in: remove explicit test for dlopen in libdl. dlopen is
+	  not in libdl on all platforms. The AC_LIBTOOL_DLOPEN macro performs
+	  the correct check anyway.
+
+2005-09-09 11:20  bondolo
+
+	* autogen.sh: better handling for missing programs (discovered when
+	  i tried running without libtool on cygwin0
+
+2005-09-09 08:34  exocetrick
+
+	* src/jxta_query.c: Free storage allocated by libxml2 for the
+	  result
+
+2005-09-08 13:01  lankes
+
+	* win32/JxtaShell/JxtaShell.vcproj:
+	  - use the environment variable APACHE2 instead of a relative path to
+	  the lib
+
+2005-09-07 15:21  slowhog
+
+	* tutorials/: jxta_tutorial1.c, whisp.c:
+	  - replace strsep(), which is not a portable function.
+
+	  Submitted by: Henry Jen the slowhog
+
+2005-09-07 12:10  slowhog
+
+	* test/jxta_bench_comm.c:
+	  - indent style change
+
+2005-09-07 12:08  slowhog
+
+	* test/jxta_bench_comm.c:
+	  - use portable apr_time function rather then gettimeofday and
+	  timersub, where timersub is not standard conforming and not
+	  available on Solaris.  Submitted by: Henry Jen the slowhog Reviewed
+	  by:  Mathieu Jan
+
+2005-09-07 11:01  lankes
+
+	* win32/: JxtaShell/JxtaShell.vcproj, jxta/jprdll/jprdll.vcproj,
+	  jxta/jprlib/jprlib.vcproj, jxta/jxtadll/jxtadll.vcproj,
+	  jxta/jxtalib/jxtalib.vcproj,
+	  test/any_adv_test/any_adv_test.vcproj,
+	  test/apa_adv_test/apa_adv_test.vcproj, test/chat/chat.vcproj,
+	  test/cm_test/cm_test.vcproj, test/dq_adv_test/dq_adv_test.vcproj,
+	  test/dr_adv_test/dr_adv_test.vcproj,
+	  test/dummypg_test/dummypg_test.vcproj,
+	  test/endpoint_test/endpoint_test.vcproj,
+	  test/excep_test/excep_test.vcproj,
+	  test/hta_adv_test/hta_adv_test.vcproj,
+	  test/http_client_test/http_client_test.vcproj,
+	  test/jstring_test/jstring_test.vcproj,
+	  test/jxta_bench_comm/jxta_bench_comm.vcproj,
+	  test/jxta_bidipipe_test/jxta_bidipipe_test.vcproj,
+	  test/jxta_bytevector_test/jxta_bytevector_test.vcproj,
+	  test/jxta_client_tunnel/jxta_client_tunnel.vcproj,
+	  test/jxta_discovery_test/jxta_discovery_test.vcproj,
+	  test/jxta_hash_test/jxta_hash_test.vcproj,
+	  test/jxta_id_test/jxta_id_test.vcproj,
+	  test/jxta_join_test/jxta_join_test.vcproj,
+	  test/jxta_log_unit_test/jxta_log_unit_test.vcproj,
+	  test/jxta_objecthash_test/jxta_objecthash_test.vcproj,
+	  test/jxta_pg_test/jxta_pg_test.vcproj,
+	  test/jxta_rdvclient_listener_test/jxta_rdvclient_listener_test.vcproj,
+	  test/jxta_rdvclient_test/jxta_rdvclient_test.vcproj,
+	  test/jxta_rdvserver_test/jxta_rdvserver_test.vcproj,
+	  test/jxta_resolver_test/jxta_resolver_test.vcproj,
+	  test/jxta_server_tunnel/jxta_server_tunnel.vcproj,
+	  test/jxta_vector_test/jxta_vector_test.vcproj,
+	  test/jxta_xml_util_test/jxta_xml_util_test.vcproj,
+	  test/jxtaobject_test/jxtaobject_test.vcproj,
+	  test/mia_adv_test/mia_adv_test.vcproj,
+	  test/msg_test/msg_test.vcproj, test/npg_test/npg_test.vcproj,
+	  test/pa_adv_test/pa_adv_test.vcproj, test/peers/peers.vcproj,
+	  test/pg_start_stop_test/pg_start_stop_test.vcproj,
+	  test/pga_adv_test/pga_adv_test.vcproj,
+	  test/rdv_adv_test/rdv_adv_test.vcproj,
+	  test/rdvstatus/rdvstatus.vcproj,
+	  test/relay_adv_test/relay_adv_test.vcproj,
+	  test/route_adv_test/route_adv_test.vcproj,
+	  test/rq_adv_test/rq_adv_test.vcproj,
+	  test/rr_adv_test/rr_adv_test.vcproj,
+	  test/server_tunnel/server_tunnel.vcproj,
+	  test/srdi_test/srdi_test.vcproj,
+	  test/svc_adv_test/svc_adv_test.vcproj,
+	  test/tta_adv_test/tta_adv_test.vcproj,
+	  test/unit_test_runner/unit_test_runner.vcproj,
+	  test/xmltest/xmltest.vcproj:
+	  - go back to the now the dynamic version of Microsoft's C library
+	  - the installer include now the dynamic version (MSVCRT71.DLL)
+
+2005-09-07 10:56  lankes
+
+	* win32/installdev/jxta.wxs:
+	  - add MSVCRT71.DLL to the installer
+	  - installer include now the release instead of the debug version of
+	  JXTA-C
+
+2005-09-07 07:33  exocetrick
+
+	* src/jxta_rdv_service.c:
+	  - Status was not being stored in the rendezvous object
+	  - Stop the old provider before starting the provider
+
+2005-09-06 17:12  slowhog
+
+	* src/: jxta_netpg.c, jxta_transport_tcp.c:
+	  - The old start sequence may cause segfault, as the rdv could be
+	  started before endpoint has a transport. This problem had been
+	  reported by bondolo and David Deterra.
+
+	  Submitted by: Henry Jen the slowhog Reviewed by:  Mike Duigou
+	  (bondolo)
+
+2005-09-05 05:13  lankes
+
+	* win32/: JxtaShell/JxtaShell.vcproj, jxta/jprdll/jprdll.vcproj,
+	  jxta/jprlib/jprlib.vcproj, jxta/jxtadll/jxtadll.vcproj,
+	  jxta/jxtalib/jxtalib.vcproj,
+	  test/any_adv_test/any_adv_test.vcproj,
+	  test/apa_adv_test/apa_adv_test.vcproj, test/chat/chat.vcproj,
+	  test/cm_test/cm_test.vcproj, test/dq_adv_test/dq_adv_test.vcproj,
+	  test/dr_adv_test/dr_adv_test.vcproj,
+	  test/dummypg_test/dummypg_test.vcproj,
+	  test/endpoint_test/endpoint_test.vcproj,
+	  test/excep_test/excep_test.vcproj,
+	  test/hta_adv_test/hta_adv_test.vcproj,
+	  test/http_client_test/http_client_test.vcproj,
+	  test/jstring_test/jstring_test.vcproj,
+	  test/jxta_bench_comm/jxta_bench_comm.vcproj,
+	  test/jxta_bidipipe_test/jxta_bidipipe_test.vcproj,
+	  test/jxta_bytevector_test/jxta_bytevector_test.vcproj,
+	  test/jxta_client_tunnel/jxta_client_tunnel.vcproj,
+	  test/jxta_discovery_test/jxta_discovery_test.vcproj,
+	  test/jxta_hash_test/jxta_hash_test.vcproj,
+	  test/jxta_id_test/jxta_id_test.vcproj,
+	  test/jxta_join_test/jxta_join_test.vcproj,
+	  test/jxta_log_unit_test/jxta_log_unit_test.vcproj,
+	  test/jxta_objecthash_test/jxta_objecthash_test.vcproj,
+	  test/jxta_pg_test/jxta_pg_test.vcproj,
+	  test/jxta_rdvclient_listener_test/jxta_rdvclient_listener_test.vcproj,
+	  test/jxta_rdvclient_test/jxta_rdvclient_test.vcproj,
+	  test/jxta_rdvserver_test/jxta_rdvserver_test.vcproj,
+	  test/jxta_resolver_test/jxta_resolver_test.vcproj,
+	  test/jxta_server_tunnel/jxta_server_tunnel.vcproj,
+	  test/jxta_vector_test/jxta_vector_test.vcproj,
+	  test/jxta_xml_util_test/jxta_xml_util_test.vcproj,
+	  test/jxtaobject_test/jxtaobject_test.vcproj,
+	  test/mia_adv_test/mia_adv_test.vcproj,
+	  test/msg_test/msg_test.vcproj, test/npg_test/npg_test.vcproj,
+	  test/pa_adv_test/pa_adv_test.vcproj, test/peers/peers.vcproj,
+	  test/pg_start_stop_test/pg_start_stop_test.vcproj,
+	  test/pga_adv_test/pga_adv_test.vcproj,
+	  test/rdv_adv_test/rdv_adv_test.vcproj,
+	  test/rdvstatus/rdvstatus.vcproj,
+	  test/relay_adv_test/relay_adv_test.vcproj,
+	  test/route_adv_test/route_adv_test.vcproj,
+	  test/rq_adv_test/rq_adv_test.vcproj,
+	  test/rr_adv_test/rr_adv_test.vcproj,
+	  test/server_tunnel/server_tunnel.vcproj,
+	  test/srdi_test/srdi_test.vcproj,
+	  test/svc_adv_test/svc_adv_test.vcproj,
+	  test/tta_adv_test/tta_adv_test.vcproj,
+	  test/unit_test_runner/unit_test_runner.vcproj,
+	  test/xmltest/xmltest.vcproj:
+	  - remove Jxta_boot.c from the project files
+	  - JXTA-C use now the static version of Microsoft's C library because
+	  the dynamic version (MSVCRT71.DLL) isn't installed on standard
+	  Windows XP system.
+
+2005-09-04 07:43  lankes
+
+	* win32/jxta/: jprdll/resource.rc, jxtadll/resource.rc:
+	  - change version number to 2.2 (Palau)
+
+2005-09-02 23:56  mathieu
+
+	* test/jxta_bench_comm.c:
+	  - Fix compile error on Mac: jxta_bench_comm.c:151: error: `pipe'
+	  redeclared as different kind of symbol /usr/include/unistd.h:164:
+	  error: previous declaration of `pipe' Issue number: Obtained from:
+	  Submitted by: Reviewed by:
+
+2005-09-02 23:39  mathieu
+
+	* src/jxta_transport_tcp_connection.c:
+
+	  Issue number: 147 Obtained from: Mathieu Submitted by: Mathieu
+	  Reviewed by: Henri Jen the slowhog
+
+2005-09-02 19:02  slowhog
+
+	* src/: jdlist.c, jpr/jpr_types.h:
+	  - Fix compile error on Mac
+	  - Remove unecessary definition of TRUE/FALSE, they are not even used
+	  in jdlist.c
+
+2005-09-02 12:26  slowhog
+
+	* Makefile.am:
+	  - Update Win32 distribution
+
+2005-09-02 11:18  slowhog
+
+	* win32/: JxtaShell/JxtaShell.dsp, JxtaShell/JxtaShell.dsw,
+	  confgui/jxtaconf.dsp, confgui/jxtaconf.dsw,
+	  jxta/jxtalib/jxtalib.dsp, jxta/jxtalib/jxtalib.dsw,
+	  test/chat/chat.dsp, test/chat/chat.dsw, test/cm_test/cm_test.dsp,
+	  test/cm_test/cm_test.dsw, test/jstring_test/jstring_test.dsp,
+	  test/jstring_test/jstring_test.dsw,
+	  test/pa_adv_test/pa_adv_test.dsp,
+	  test/pa_adv_test/pa_adv_test.dsw, test/rdvstatus/rdvstatus.dsp,
+	  test/rdvstatus/rdvstatus.dsw,
+	  test/server_tunnel/server_tunnel.dsp:
+	  - remove out-dated VC6 project files
+
+2005-09-02 10:51  slowhog
+
+	* win32/: JxtaShell/JxtaShell.vcproj, jxta/jxtadll/jxtadll.vcproj,
+	  jxta/jxtalib/jxtalib.vcproj:
+	  - add rdvcontrol to JxtaShell project
+	  - Use $(APACHE2) env var for include path
+	  - add jxta_dr_priv.h to jxta lib/dll project Issue number: 129
+	  Submitted by: Henry Jen the slowhog
+
+2005-09-02 01:57  slowhog
+
+	* shell/: rdvcontrol.c, rdvcontrol.h:
+	  - add rdvcontrol command Issue number:  129 Submitted by:  Mike
+	  Duigou (bondolo) Reviewed by:   Henry Jen the slowhog
+
+2005-09-02 01:56  slowhog
+
+	* shell/: Makefile.am, jxta_shell_main.c, rdvstatus.c, rdvstatus.h:
+	  - rdvstatus command enhancement
+	  - add rdvcontrol command
+
+	  Issue number: 129 Submitted by: Mike Duigou (bondolo) Reviewed by:
+	  Henry Jen the slowhog
+
+2005-09-01 14:46  slowhog
+
+	* configure.in:
+	  - consistent way to specify openssl location
+
+2005-09-01 14:45  slowhog
+
+	* shell/join.c:
+	  - newline after join a group
+
+2005-09-01 10:58  exocetrick
+
+	* src/jxta_cm.c: This is makes the time out handling consistent
+	  with JSE implementation.  Another fix is in to remove a "double"
+	  close of the SQL database.  Issue number: 139
+
+2005-08-31 20:27  slowhog
+
+	* src/jxta_peerview.c: Issue number: 125 Submitted by: Mike Duigou
+	  Reviewed by:  Henry Jen the slowhog
+
+2005-08-31 19:51  bondolo
+
+	* src/jxta_peerview.c: shuffle seed rdvs to provide fairer access
+	  to rdvs.
+
+	  issue : 145 reviewer : slowhog
+
+2005-08-31 18:50  slowhog
+
+	* src/jxta_rdv_service_client.c: -indent style fix
+
+2005-08-31 16:30  slowhog
+
+	* shell/groups.c:
+	  - leak fixes
+
+2005-08-31 15:50  bondolo
+
+	* src/: jxta_vector.c, jxta_vector.h: adds shuffle operation. will
+	  be used for a bug fix to be posted shortly.
+
+	  Issue number: 144 Reviewed by: slowhog
+
+2005-08-30 23:19  slowhog
+
+	* src/: jxta_peerview.c, jxta_peerview.h, jxta_rdv_config_adv.c,
+	  jxta_rdv_service.c, jxta_rdv_service.h,
+	  jxta_rdv_service_client.c, jxta_rdv_service_private.h:
+	  - refactor on jxta_rdv_service for better auto_rdv switching and
+	  thread sync issues Issue number:  129 Obtained from: Mike Duigou
+	  (bondolo) Submitted by:  Henry Jen the slowhog Reviewed by:   Mike
+	  Duigou
+
+2005-08-30 10:27  slowhog
+
+	* shell/talk.c:
+	  - various leak fixes Issue number: 135 Submitted by: Henry Jen the
+	  slowhog
+
+2005-08-29 21:28  exocetrick
+
+	* src/: jxta_advertisement.c, jxta_advertisement.h, jxta_cm.c,
+	  jxta_discovery_service_ref.c: Use the id for composite
+	  advertisements from the original hash of the document when an
+	  advertisement does not return an Id.
+
+2005-08-29 16:08  mathieu
+
+	* configure.in: gdbm is the dbm used when JXTA-C runs over
+	  PadicoTM. Allowing it so that people can simply do a cvs co to get a
+	  JXTA-C package for PadicoTM Issue number: Obtained from: Submitted
+	  by: Reviewed by:
+
+2005-08-29 15:49  slowhog
+
+	* src/: jxta_discovery_service.c, jxta_discovery_service.h,
+	  jxta_discovery_service_private.h, jxta_discovery_service_ref.c:
+	  - Implement remove discovery listeners
+	  - Add discovery_service_cancel_remote_query() API
+
+	  Issue number: 135, shell/talk.c need this patch to fix object leak
+
+2005-08-29 14:26  slowhog
+
+	* src/jxta_cm.c:
+	  - prevent from update an adv with a shorter expiration period, to be
+	  consistent as JSE implementation Issue number: 139 Submitted by:
+	  Rick Keiner (exocetrick) Reviewed by:  Henry Jen the slowhog
+
+2005-08-29 14:18  slowhog
+
+	* src/jxta_cm.c:
+	  - indent style change
+
+2005-08-29 06:39  lankes
+
+	* win32/README.txt:
+	  - add a small introduction to build JXTA-C on Windows
+
+2005-08-28 23:39  slowhog
+
+	* src/: jxta_vector.c, jxta_vector.h:
+	  - remove object in a vector by value, needed for removing discovery
+	  listeners.  Issue number: 135 Submitted by: Henry Jen the slowhog
+
+2005-08-28 23:38  slowhog
+
+	* src/: Makefile.am, jxta_dr.c, jxta_dr.h, jxta_dr_priv.h:
+	  - add query_id to discovery response, so one listener can be used
+	  for multiple remote queries.
+
+	  Issue number: 135 Submitted by: Henry Jen the slowhog
+
+2005-08-28 00:07  slowhog
+
+	* src/: jxta_hashtable.c, jxta_objecthashtable.c:
+	  - this is the right fix for issue 128, should had catched this.
+	  - I do see the Oops message on Linux, means we need it for Win32
+	  release version.
+
+	  Issue number: 128, 140 Submitted by: Henry Jen the slowhog
+
+2005-08-26 18:08  slowhog
+
+	* src/jxta_pipe_adv.c:
+	  - leak fix
+
+2005-08-25 19:39  slowhog
+
+	* src/jxta_wm.c: -indent style change
+
+2005-08-24 16:49  slowhog
+
+	* src/Makefile.am:
+	  - add jxta_object_priv.h to distribution tarball.  Issue number:  78
+
+2005-08-24 10:07  bondolo
+
+	* src/jxta_rdv_service_server.c: add missing parameter for log
+	  trace.
+
+2005-08-24 03:09  lankes
+
+	* src/jxta_cm.c:
+	  - use on windows __int64 instead of long long
+	  - long long isn't supported by VC6
+
+2005-08-24 00:09  lankes
+
+	* shell/: groups.c, peers.c, search.c:
+	  - change code style to traditional ANSI C
+	  - this is necessary for Microsoft's VC7
+
+2005-08-23 23:36  lankes
+
+	* shell/rdvstatus.c:
+	  - change U64d to I64d
+	  - thanks to ericx!
+
+2005-08-23 18:31  slowhog
+
+	* shell/jxta_shell_environment.c:
+	  - missed bug
+
+2005-08-23 18:21  slowhog
+
+	* shell/: TestApplication.c, TestApplication.h, cat.c, cat.h,
+	  groups.c, groups.h, join.c, join.h, jxta_shell_app_env.c,
+	  jxta_shell_app_env.h, jxta_shell_application.c,
+	  jxta_shell_application.h, jxta_shell_environment.c,
+	  jxta_shell_environment.h, jxta_shell_getopt.c,
+	  jxta_shell_getopt.h, jxta_shell_main.c, jxta_shell_main.h,
+	  jxta_shell_object.c, jxta_shell_object.h, jxta_shell_tokenizer.c,
+	  jxta_shell_tokenizer.h, kdb.c, kdb.h, leave.h, peers.c, peers.h,
+	  publish.c, publish.h, rdvstatus.c, rdvstatus.h, search.c,
+	  search.h, talk.c, talk.h, whoami.c, whoami.h:
+	  - indent style changes, should not do after code freeze, but the
+	  code is really bad styled. Sorry!
+
+2005-08-23 18:09  slowhog
+
+	* shell/: groups.c, jxta_shell_environment.c,
+	  jxta_shell_environment.h, peers.c, search.c:
+	  - remove adv from env as flushed Issue number: 16 Submitted by:
+	  Brian.A.Wilson@boeing.com Reviewed by:  Henry Jen the slowhog
+
+2005-08-23 13:51  lankes
+
+	* src/jpr/jpr_types.h: Issue number:  138 Submitted by:   mmx2005
+	  Reviewed by:   lankes
+
+	  - JPR_ABS_TIME_FMT use now the correct prefix
+
+2005-08-22 15:39  slowhog
+
+	* src/jxta_rm.c:
+	  - revert the change of cloning revertGateways, as it does not seem
+	  to be the correct fix. Even if it is, it is not complete without
+	  covering forwardGateway.
+
+2005-08-19 15:16  slowhog
+
+	* shell/leave.c:
+	  - leak fix
+
+2005-08-18 19:39  exocetrick
+
+	* src/jxta_pm.c: Fix memory leak.
+
+2005-08-18 19:25  exocetrick
+
+	* src/jxta_discovery_service_ref.c: Query ID debug info when a
+	  response is received.
+
+2005-08-18 15:43  slowhog
+
+	* src/: jxta_discovery_service_ref.c, jxta_dr.c,
+	  jxta_rdv_service_server.c, jxta_relay.c, jxta_srdi.c,
+	  jxta_transport_tcp_connection.c:
+	  - use APR_INT64_T_FMT macro instead of %lld, which cause segfault on
+	  Opetron systems where APR_INT64_T_FMT is "ld" rather than "lld"when
+	  use with apr_snprintf.
+
+2005-08-18 15:22  slowhog
+
+	* src/: jxta_pa.c, jxta_pa.h:
+	  - add Desc element handling Issue number:  53 Obtained from:
+	  Brian.A.Wilson@boeing.com Submitted by:  Henry Jen the slowhog
+	  Reviewed by:   Henry Jen the slowhog
+
+2005-08-18 13:46  lankes
+
+	* src/: jxta_advertisement.c, jxta_cm.c, jxta_endpoint_service.c,
+	  jxta_router_client.c:
+	  - change code style to traditional ANSI C
+	  - this is necessary for Microsoft's VC7
+
+2005-08-18 12:01  slowhog
+
+	* src/: jxta_advertisement.c, jxta_cm.c, jxta_debug.c,
+	  jxta_discovery_service_ref.c, jxta_dq.c, jxta_dr.c,
+	  jxta_endpoint_address.c, jxta_endpoint_service.c, jxta_hta.c,
+	  jxta_id_uuid.c, jxta_object.c, jxta_pm.c, jxta_rdv_config_adv.c,
+	  jxta_rdv_service_server.c, jxta_router_client.c, jxta_rq.c,
+	  jxta_rr.c, jxta_srdi.c, jxta_tcp_multicast.c,
+	  jxta_transport_http.c, jxta_transport_http_client.c,
+	  jxta_transport_http_poller.c, jxta_transport_tcp.c,
+	  jxta_transport_tcp_connection.c, jxta_tta.c, jxta_walk_msg.c,
+	  jxta_wm.c:
+	  - replace sprintf with apr_snprintf
+
+	  Issue number:  133 Obtained from: Brian.A.Wilson@boeing.com Reviewed
+	  by:   Henry Jen the slowhog
+
+2005-08-17 23:39  mathieu
+
+	* autogen.sh: using CC instead of gcc if set and modified regular
+	  exp for gcc-4.0 support style cmd
+
+2005-08-17 19:32  slowhog
+
+	* shell/leave.c:
+	  - add option -k to stop and release the peer group
+
+2005-08-17 19:20  slowhog
+
+	* shell/leave.c:
+	  - indent style fix
+
+2005-08-17 19:19  slowhog
+
+	* src/jxta_transport_http_poller.c:
+	  - work-around the bad behavior on Relay Server.  Issue number:  131
+
+2005-08-17 18:55  slowhog
+
+	* src/: jxta_hashtable.c, jxta_objecthashtable.c:
+	  - Fix infinite loop in debug version.  Issue number: 128
+
+2005-08-16 18:31  slowhog
+
+	* src/jxta_srdi_service_ref.c:
+	  - leak fixes
+
+2005-08-16 12:08  lankes
+
+	* win32/installdev/: CreateInstaller.bat, README.TXT, jxta.wxs,
+	  images/New.ico, images/Up.ico:
+	  - add scripts to create an installer for Windows
+
+2005-08-16 12:02  lankes
+
+	* win32/installdev/: README, installer.nsi:
+	  - remove unnecessary files
+
+2005-08-16 00:27  lankes
+
+	* win32/jxta/: jxtadll/jxtadll.vcproj, jxtalib/jxtalib.vcproj:
+	  - set in the VS 2003 project files GZIP_ENABLED and GUNZIP_ENABLED
+	  to 1 => enable zlib compression
+
+2005-08-15 15:30  bondolo
+
+	* src/jxta_svc.c: adjust level of chatty trace message.
+
+2005-08-15 13:56  slowhog
+
+	* autogen.sh:
+	  - fix gcc version issue on Debian, tested on Debian, Solaris and FC4
+	  Issue number:  123 Submitted by:  Henry Jen the slowhog
+
+2005-08-14 10:56  exocetrick
+
+	* shell/search.c: Fix Memory leak and add info message for the
+	  query ID.
+
+2005-08-14 10:53  exocetrick
+
+	* src/jxta_srdi_service_ref.c: Remove elements not needed.
+
+2005-08-14 10:39  exocetrick
+
+	* src/jxta_resolver_service_ref.c: Support compile  option to
+	  disable SRDI compression/decompression.
+
+2005-08-14 10:37  exocetrick
+
+	* configure.in: Configuration option to disable SRDI
+	  compression/decompression.
+
+2005-08-14 08:30  exocetrick
+
+	* src/jxta_dq.c: Extended query should be escaped.
+
+2005-08-04 18:26  slowhog
+
+	* src/jxta_relay.c:
+	  - Small refactoring to eliminate duplicate code
+
+2005-08-04 13:53  exocetrick
+
+	* src/jxta_discovery_service_ref.c: Fixed the destruction of the CM
+	  Changed advertisement expiration check to 10 minutes
+
+2005-08-04 13:51  exocetrick
+
+	* src/jxta_cm.c: Fix initialization of apr_dbd Add debug messages
+	  for table creation change malloc to calloc
+
+2005-08-04 12:15  slowhog
+
+	* src/jxta_rdv_service.c:
+	  - ensure auto_rdv thread is stopped properly Submitted by: Henry Jen
+	  the slowhog Reviewed by:  Mike Duigou (bondolo)
+
+2005-08-03 01:44  lankes
+
+	* src/: jxta_resolver_service.c, jxta_resolver_service.h:
+	  - add JXTA_DECLARE to export these functions
+
+2005-08-03 01:32  lankes
+
+	* win32/: jxta.sln, jxta/jprlib/jprlib.vcproj,
+	  jxta/jxtadll/jxtadll.vcproj, test/dq_adv_test/dq_adv_test.vcproj,
+	  test/dr_adv_test/dr_adv_test.vcproj,
+	  test/npg_test/npg_test.vcproj,
+	  test/pg_start_stop_test/pg_start_stop_test.vcproj,
+	  test/rq_adv_test/rq_adv_test.vcproj,
+	  test/rr_adv_test/rr_adv_test.vcproj,
+	  test/server_tunnel/server_tunnel.vcproj,
+	  test/unit_test_runner/unit_test_runner.vcproj,
+	  test/jxta_bench_comm/jxta_bench_comm.vcproj,
+	  test/jxta_bidipipe_test/jxta_bidipipe_test.vcproj,
+	  test/jxta_client_tunnel/jxta_client_tunnel.vcproj,
+	  test/jxta_log_unit_test/jxta_log_unit_test.vcproj,
+	  test/jxta_resolver_test/jxta_resolver_test.vcproj,
+	  test/jxta_server_tunnel/jxta_server_tunnel.vcproj,
+	  test/peers/peers.vcproj, test/xmltest/xmltest.vcproj:
+	  - add VS 2003 project files for some test programs
+	  - minor changes in the other project files
+	  - some test programs use now the static JXTA lib instead  of the
+	  DLL, because they use internal JXTA function
+
+2005-08-03 01:10  lankes
+
+	* test/: jxta_bench_comm.c, jxta_log_unit_test.c,
+	  jxta_resolver_test.c, peers.c:
+	  - minor changes to create these test programs on a Windows system
+	  - Unfortunately, Windows doesn't support timersub, gettimeofday and
+	  getopt. Therefore, I create my own timersub, gettimeofday and getopt
+	  on Windows.
+
+2005-08-02 22:51  slowhog
+
+	* src/: EndpointRouter.h, jxta_advertisement.c,
+	  jxta_advertisement.h, jxta_apa.c, jxta_apa.h, jxta_bidipipe.c,
+	  jxta_bidipipe.h, jxta_cm.c, jxta_cm.h,
+	  jxta_discovery_service_ref.c, jxta_dq.c, jxta_dq.h, jxta_dr.c,
+	  jxta_dr.h, jxta_endpoint_service.c, jxta_hta.c, jxta_hta.h,
+	  jxta_incoming_unicast_server.c, jxta_log.c, jxta_mca.c,
+	  jxta_mca.h, jxta_membership_service_null.c, jxta_mia.c,
+	  jxta_mia.h, jxta_module.c, jxta_module.h, jxta_msa.c, jxta_msa.h,
+	  jxta_object.c, jxta_pa.c, jxta_pa.h, jxta_pga.c, jxta_pga.h,
+	  jxta_pipe_adv.c, jxta_pipe_adv.h, jxta_piperesolver_impl.c,
+	  jxta_piperesolver_msg.c, jxta_piperesolver_msg.h, jxta_pm.c,
+	  jxta_pm.h, jxta_rdv.c, jxta_rdv.h, jxta_relay.c, jxta_relaya.c,
+	  jxta_relaya.h, jxta_rm.c, jxta_rm.h, jxta_routea.c,
+	  jxta_routea.h, jxta_rq.c, jxta_rq.h, jxta_rr.c, jxta_rr.h,
+	  jxta_rsrdi.c, jxta_rsrdi.h, jxta_socket_tunnel.c,
+	  jxta_socket_tunnel.h, jxta_srdi.c, jxta_srdi.h, jxta_stdpg.c,
+	  jxta_tcp_multicast.c, jxta_test_adv.c, jxta_test_adv.h,
+	  jxta_transport.c, jxta_transport.h, jxta_transport_http.c,
+	  jxta_transport_http_client.c, jxta_transport_http_client.h,
+	  jxta_transport_http_poller.c, jxta_transport_http_poller.h,
+	  jxta_transport_tcp.c, jxta_transport_tcp_connection.c,
+	  jxta_transport_tcp_connection.h, jxta_tta.c, jxta_tta.h,
+	  jxta_walk_msg.c, jxta_walk_msg.h, jxta_wm.c, jxta_wm.h, queue.c:
+	  - Win32 fixes on calling convention, type, etc.
+
+	  Issue number: 119 Obtained from: Stefan Lankes Reviewed by:   Henry
+	  Jen the slowhog
+
+2005-08-02 14:36  slowhog
+
+	* src/: jxta_rdv_service_client.c, jxta_rdv_service_provider.c,
+	  jxta_rdv_service_server.c:
+	  - apr_thread_exit could cause segfault if the rdv is destructed
+	  already.
+	  - remove an extra provider mutex lock in the
+	  jxta_rdv_service_server.c::start()
+
+2005-07-31 09:34  exocetrick
+
+	* src/jxta_resolver_service_ref.c: Add gzip compression to srdi
+	  messages
+
+2005-07-30 20:16  exocetrick
+
+	* src/jxta_rm.c: Create a vector clone rather than just a
+	  JXTA_OBJECT_SHARE for reverseGateways to fix an apr_pools problem.
+
+2005-07-30 19:31  exocetrick
+
+	* src/jxta_cm.c: Add diagnostics for apr_pool allocation Remove
+	  duplication of index entries to the SRDI table
+
+2005-07-30 19:18  exocetrick
+
+	* src/: jxta_resolver_service_ref.c, jxta_discovery_service_ref.c:
+	  fix memory leak
+
+2005-07-30 19:17  exocetrick
+
+	* src/jxta_rdv_config_adv.c: Modify default config
+
+2005-07-28 16:46  slowhog
+
+	* src/jxta_rdv_service_server.c:
+	  - leak fix
+
+2005-07-28 16:12  slowhog
+
+	* src/jxta_transport_tcp.c:
+	  - leak fix
+
+2005-07-28 16:03  slowhog
+
+	* src/jxta_rdv_service.c:
+	  - Remove unnecessary RELEASE, they are released in stop() function.
+
+2005-07-28 12:17  slowhog
+
+	* src/jxta_rdv_service.c:
+	  - leak fix.
+	  - set provider to NULL later
+
+	  Obtained from: Brian.A.Wilson@boeing.com Reviewed by:   Henry Jen
+	  the slowhog
+
+2005-07-28 12:10  slowhog
+
+	* src/jxta_rdv_service_server.c:
+	  - remove the walker listener
+
+	  Obtained from: Brian.A.Wilson@boeing.com Reviewed by:   Henry Jen
+	  the slowhog
+
+2005-07-28 12:03  slowhog
+
+	* src/jxta_srdi_service_ref.c:
+	  - Fix a few leaks
+
+	  Obtained from: Brian.A.Wilson@boeing.com Reviewed by:   Henry Jen
+	  the slowhog
+
+2005-07-28 11:08  slowhog
+
+	* configure.in:
+	  - Add $apr_config/bin into path for finding apu-1-config. So in case
+	  apr-util are installed in the same place as apr, not need to specify
+	  --with-apu option.  In case --with-aor option isn't used, /bin
+	  should be pretty safe to be in path.  :-)
+
+2005-07-27 19:27  slowhog
+
+	* src/: jxta_incoming_unicast_server.c, jxta_transport_tcp.c:
+	  - Fix segment fault caused by multiple TCP connections between 2
+	  peers. After patched, there should only be one connection between
+	  two peers.
+
+	  Submitted by: Henry Jen the slowhog
+
+2005-07-27 19:24  slowhog
+
+	* src/jxta_cm.c:
+	  - Avoid release a NULL object. I don't see the secondary_keys are
+	  used with a quick look, can we safely remove it?
+
+	  Obtained from: "Wilson, Brian A" <Brian.A.Wilson@boeing.com>
+	  Reviewed by:   Henry Jen the slowhog
+
+2005-07-27 19:20  slowhog
+
+	* src/jxta_peerview.c:
+	  - Fix leak caused by thread not stopping. Set running to false when
+	  requested to stop
+	  - use apr_thread_join to make sure thread stopped before free the
+	  object rather than self-reference
+
+	  Submitted by: Henry Jen the slowhog
+
+2005-07-27 18:52  slowhog
+
+	* src/jxta_rdv_service_private.h:
+	  - There is a member var group in the base class jxta_service, no
+	  need to keep another here
+
+	  Reviewed by: Henry Jen the slowhog
+
+2005-07-27 18:17  slowhog
+
+	* src/jxta_rdv_service.c:
+	  - There is a member var group in the base class jxta_service, no
+	  need to keep another here
+
+	  Reported by: Wilson, Brian A <Brian.A.Wilson@boeing.com> Reviewed
+	  by: Henry Jen the slowhog
+
+2005-07-27 18:12  slowhog
+
+	* src/: jxta_rdv_service_client.c, jxta_rdv_service_server.c:
+	  - Fix leaks, there is a share when calling apr_thread_create
+
+	  Submitted by: Wilson, Brian A <Brian.A.Wilson@boeing.com> Reviewed
+	  by:  Henry Jen the slowhog
+
+2005-07-27 17:23  slowhog
+
+	* src/jxta_object.h:
+	  - avoid compile warning caused by name collision, using pf_free
+	  instead of free Submitted by: Henry Jen the slowhog
+
+2005-07-26 21:52  exocetrick
+
+	* src/jxta_cm.h: Add the definition of jxta_cm_get_others_time.
+
+2005-07-26 21:22  exocetrick
+
+	* src/jxta_cm.c: Remove reindex at startup. Just remove expired
+	  records.
+
+2005-07-25 18:30  slowhog
+
+	* src/: jxta_endpoint_address.c, jxta_endpoint_address.h:
+	  - Add a new accessor function to get a transport address of an
+	  endpoint address
+
+2005-07-25 10:42  mathieu
+
+	* test/jxta_bench_comm.c: Fixed issue of wrong copyright. Sorry for
+	  the noise ...  Issue number: Obtained from: Submitted by: Reviewed
+	  by:
+
+2005-07-25 10:41  mathieu
+
+	* test/jxta_bench_comm.c: Fixed issue with GENERATE Issue number:
+	  Obtained from: Submitted by: Reviewed by:
+
+2005-07-25 10:34  mathieu
+
+	* test/jxta_bench_comm.c: Fixed issue with GENERATE ...  Issue
+	  number: Obtained from: Submitted by: Reviewed by:
+
+2005-07-25 05:06  mathieu
+
+	* test/: jxta_bench_comm.c:
+
+	  Issue number: Obtained from: Submitted by: Reviewed by:
+
+2005-07-24 12:17  mathieu
+
+	* test/: Makefile.am, jxta_bench_comm.c: Added benchmark code (comm
+	  layers) Issue number: 59 Obtained from: mathieu Submitted by:
+	  mathieu Reviewed by:
+
+2005-07-24 11:59  mathieu
+
+	* test/: Makefile.am, jxta_bench_comm.c: Added benchmark code (comm
+	  layers) Issue number: 59 Obtained from: mathieu Submitted by:
+	  mathieu Reviewed by:
+
+2005-07-24 11:47  lankes
+
+	* win32/: jxta.sln, jxta/jxtadll/jxtadll.vcproj,
+	  test/jxta_rdvclient_listener_test/jxta_rdvclient_listener_test.vcproj,
+	  test/jxta_rdvserver_test/jxta_rdvserver_test.vcproj:
+	  - add VS 2003 project files for jxta_rdvclient_listener_test and
+	  jxta_rdvserver_test
+
+2005-07-24 04:33  mathieu
+
+	* test/: Makefile.am, jxta_rdvclient_listener_test.c,
+	  jxta_rdvserver_test.c: Added test programs for deployment purpose
+	  Issue number: Obtained from: Submitted by: Reviewed by:
+
+2005-07-21 20:12  slowhog
+
+	* src/: jdlist.c, jstring.c, jxta.h, jxta_advertisement.c,
+	  jxta_bidipipe.c, jxta_bidipipe.h, jxta_builtinmodules.c,
+	  jxta_bytevector.c, jxta_cm.c, jxta_cred.c,
+	  jxta_discovery_service_ref.c, jxta_endpoint_address.c,
+	  jxta_endpoint_service.c, jxta_hashtable.c, jxta_hta.c, jxta_id.c,
+	  jxta_id.h, jxta_id_jxta.c, jxta_id_uuid.c,
+	  jxta_incoming_unicast_server.c, jxta_listener.c, jxta_log.c,
+	  jxta_log_priv.h, jxta_message.c, jxta_netpg.c, jxta_object.h,
+	  jxta_object_priv.h, jxta_objecthashtable.c,
+	  jxta_objecthashtable.h, jxta_pa.c, jxta_peer.c,
+	  jxta_peer_private.h, jxta_pipe_adv.c, jxta_pipe_service.c,
+	  jxta_pipe_service.h, jxta_piperesolver_impl.c,
+	  jxta_piperesolver_msg.c, jxta_proffer.c, jxta_query.c,
+	  jxta_query.h, jxta_rdv_service_client.c,
+	  jxta_rdv_service_provider.c, jxta_rdv_service_server.c,
+	  jxta_relay.c, jxta_relay.h, jxta_resolver_service_ref.c,
+	  jxta_rm.c, jxta_router_client.c, jxta_rq.c, jxta_rr.c,
+	  jxta_socket_tunnel.c, jxta_socket_tunnel.h, jxta_srdi.c,
+	  jxta_srdi_service_ref.c, jxta_stdpg.c, jxta_svc.c,
+	  jxta_tcp_message_packet_header.c, jxta_tcp_multicast.c,
+	  jxta_test_adv.c, jxta_transport_http.c,
+	  jxta_transport_http_client.c, jxta_transport_http_client.h,
+	  jxta_transport_http_poller.c, jxta_transport_tcp.c,
+	  jxta_transport_tcp_connection.c, jxta_tta.c,
+	  jxta_unipipe_service.c, jxta_vector.c, jxta_walk_msg.c,
+	  jxta_wire_service.c, jxta_wm.c, jxta_wm.h, jxta_xml_util.c,
+	  mod_jxta.c, queue.c, trailing_average.c:
+	  - Patch for C++ compatibility
+	  - Indent style changes
+
+	  Obtained from: Wilson, Brian A <Brian.A.Wilson@boeing.com> Submitted
+	  by:  Henry Jen the slowhog Reviewed by:   Henry Jen the slowhog
+
+2005-07-21 16:02  slowhog
+
+	* src/jpr/: inet_ntop.c, jpr_apr_wrapper.h:
+	  - Patch for C++ compatibility Obtained from: Wilson, Brian A
+	  <Brian.A.Wilson@boeing.com> Reviewed by:   Henry Jen the slowhog
+
+2005-07-21 15:05  slowhog
+
+	* configure.in:
+	  - Change the--with-xxx behavior. If not specifying, configure script
+	  will try to find the lib automatically.  Submitted by:  Henry Jen
+	  the slowhog
+
+2005-07-21 14:08  slowhog
+
+	* src/jxta_transport_http_poller.c:
+	  - add "Content-Length" header for proxy compatibility
+
+	  Obtained from: "maurizio rucco" <garrick@hotmail.it> Reviewed by:
+	  Henry Jen the slowhog
+
+2005-07-19 14:29  slowhog
+
+	* configure.in.solaris:
+	  - Remove obsolete configure.in.solaris
+
+2005-07-19 13:51  slowhog
+
+	* configure.in:
+	  - allow apr-util & apr be in different locations
+
+2005-07-15 10:27  slowhog
+
+	* src/jxta_resolver_service_ref.c:
+	  - fix the log message with error number
+
+2005-07-06 10:28  exocetrick
+
+	* src/jxta_tcp_message_packet_header.c: Fixed a header count check
+	  and added some warning messages
+
+2005-07-05 10:04  exocetrick
+
+	* src/jxta_discovery_service.c: indent restyle
+
+2005-07-01 17:15  exocetrick
+
+	* src/jxta_cm.c:
+	  - Add functions to return lifetime and expiration times
+	  - Use absolute value for expiration and lifetime values
+
+2005-07-01 11:29  exocetrick
+
+	* src/jxta_discovery_service_ref.c: indent restyle
+
+2005-07-01 11:24  exocetrick
+
+	* src/: jxta_discovery_service.c, jxta_discovery_service.h,
+	  jxta_discovery_service_private.h, jxta_discovery_service_ref.c:
+	  Add functions to the API for retrieval of expiration and lifetime
+	  values
+
+2005-06-24 12:53  exocetrick
+
+	* src/jxta_discovery_service_ref.c: Improved shutdown handling and
+	  added debug messages for tracking shutdown
+
+2005-06-24 01:00  slowhog
+
+	* src/: jxta_dr.c:
+	  - Bug fix in set_advertisements
+	  - Memory leak fix
+
+	  Submitted by: Henry Jen the slowhog Reviewed by:  Mathieu Jan
+
+2005-06-22 19:40  exocetrick
+
+	* src/jxta_proffer.c: Fix memory calloc problem.
+
+2005-06-22 19:35  exocetrick
+
+	* src/jxta_cm.c: Fix memory leaks
+
+2005-06-22 19:31  exocetrick
+
+	* src/: jxta_query.c, jxta_discovery_service_private.h,
+	  jxta_discovery_service_ref.c: Modifications to route complex
+	  queries.
+
+2005-06-22 19:21  exocetrick
+
+	* src/jxta_srdi_service_ref.c: Fix memory leak
+
+2005-06-22 08:30  exocetrick
+
+	* src/jxta_srdi.c: Fix memory leak
+
+2005-06-22 08:25  exocetrick
+
+	* src/jxta_srdi_service_ref.c: Fix memory leak
+
+2005-06-22 02:01  exocetrick
+
+	* src/jxta_dr.c: Fix memory leak
+
+2005-06-22 01:45  exocetrick
+
+	* src/: jxta_rdv.c, jxta_rdv_service_server.c,
+	  jxta_resolver_service_ref.c: Fix memory leaks
+
+2005-06-17 13:55  lankes
+
+	* win32/jxta/jxtadll/jxtadll.vcproj:
+	  - cosmetic changes
+
+2005-06-17 13:51  exocetrick
+
+	* src/jxta_discovery_service_ref.c:
+	  - clean up log messages
+	  - fix init problems
+	  - clean up return checking
+
+2005-06-17 13:49  lankes
+
+	* win32/: jxta/jxtadll/jxtadll.vcproj, test/cm_test/cm_test.vcproj:
+	  - add additional include path to the VS2003 project files
+
+2005-06-17 13:38  exocetrick
+
+	* src/jxta_srdi_service_ref.c: Fix memory leaks
+
+2005-06-17 08:53  exocetrick
+
+	* src/: jxta_cm.c, jxta_cm.h, jxta_discovery_service_ref.c,
+	  jxta_query.c, jxta_query.h, jxta_srdi_service_ref.c: Complex
+	  query routing in replicas.
+
+2005-06-17 07:30  exocetrick
+
+	* shell/search.c: indent restyle
+
+2005-06-17 07:27  exocetrick
+
+	* shell/search.c: Read file for remote queries
+
+2005-06-16 16:11  slowhog
+
+	* src/: EndpointRouter.h, jdlist.c, jdlist.h, jstring.c, jxta.c,
+	  jxta.h, jxta_advertisement.c, jxta_advertisement.h, jxta_apa.c,
+	  jxta_apa.h, jxta_bidipipe.c, jxta_bidipipe.h,
+	  jxta_builtinmodules.c, jxta_builtinmodules_private.h,
+	  jxta_bytevector.c, jxta_bytevector.h, jxta_cm.c, jxta_cm.h,
+	  jxta_cred.c, jxta_cred.h, jxta_cred_null.c, jxta_cred_null.h,
+	  jxta_cred_priv.h, jxta_debug.c, jxta_debug.h, jxta_defloader.c,
+	  jxta_defloader_private.h, jxta_discovery_service.h,
+	  jxta_discovery_service_private.h, jxta_discovery_service_ref.c,
+	  jxta_dq.c, jxta_dq.h, jxta_dr.c, jxta_dr.h,
+	  jxta_endpoint_address.c, jxta_endpoint_address.h,
+	  jxta_endpoint_messenger.h, jxta_endpoint_service.c,
+	  jxta_endpoint_service.h, jxta_errno.h, jxta_hashtable.c,
+	  jxta_hashtable.h, jxta_hta.c, jxta_hta.h, jxta_id.h,
+	  jxta_id_jxta.c, jxta_id_priv.h, jxta_id_uuid.c,
+	  jxta_incoming_unicast_server.c, jxta_incoming_unicast_server.h,
+	  jxta_listener.h, jxta_log.c, jxta_log.h, jxta_log_priv.h,
+	  jxta_mca.c, jxta_mca.h, jxta_membership_service.c,
+	  jxta_membership_service.h, jxta_membership_service_null.c,
+	  jxta_membership_service_private.h, jxta_message.c,
+	  jxta_message.h, jxta_mia.c, jxta_mia.h, jxta_module.c,
+	  jxta_module.h, jxta_module_private.h, jxta_msa.c, jxta_msa.h,
+	  jxta_netpg.c, jxta_netpg_private.h, jxta_object.c, jxta_object.h,
+	  jxta_object_priv.h, jxta_object_ptrwrapper.c,
+	  jxta_object_ptrwrapper.h, jxta_object_type.c, jxta_object_type.h,
+	  jxta_objecthashtable.c, jxta_objecthashtable.h, jxta_pa.c,
+	  jxta_pa.h, jxta_peer.c, jxta_peer.h, jxta_peer_private.h,
+	  jxta_peergroup.c, jxta_peergroup.h, jxta_peergroup_private.h,
+	  jxta_peerinfo_service.c, jxta_peerinfo_service.h,
+	  jxta_peerinfo_service_private.h, jxta_peerview.c,
+	  jxta_peerview.h, jxta_pga.c, jxta_pga.h, jxta_pipe_adv.c,
+	  jxta_pipe_adv.h, jxta_pipe_service.c, jxta_pipe_service.h,
+	  jxta_pipe_service_impl.h, jxta_piperesolver_impl.c,
+	  jxta_piperesolver_msg.c, jxta_piperesolver_msg.h, jxta_pm.c,
+	  jxta_private.h, jxta_proffer.c, jxta_proffer.h, jxta_query.c,
+	  jxta_query.h, jxta_ra.c, jxta_rdv.c, jxta_rdv.h,
+	  jxta_rdv_config_adv.c, jxta_rdv_service.c,
+	  jxta_rdv_service_client.c, jxta_rdv_service_private.h,
+	  jxta_rdv_service_provider.c, jxta_rdv_service_provider_private.h,
+	  jxta_rdv_service_server.c, jxta_relay.c, jxta_relay.h,
+	  jxta_relaya.c, jxta_relaya.h, jxta_resolver_service.c,
+	  jxta_resolver_service.h, jxta_resolver_service_private.h,
+	  jxta_resolver_service_ref.c, jxta_rm.c, jxta_rm.h, jxta_routea.c,
+	  jxta_routea.h, jxta_router_client.c, jxta_router_service.h,
+	  jxta_rq.c, jxta_rq.h, jxta_rr.c, jxta_rr.h, jxta_rsrdi.c,
+	  jxta_rsrdi.h, jxta_service.h, jxta_socket_tunnel.c, jxta_sql.h,
+	  jxta_srdi.c, jxta_srdi.h, jxta_srdi_service.c,
+	  jxta_srdi_service_ref.c, jxta_stdpg.c, jxta_stdpg_private.h,
+	  jxta_string.c, jxta_string.h, jxta_svc.c, jxta_svc.h,
+	  jxta_tcp_message_packet_header.c,
+	  jxta_tcp_message_packet_header.h, jxta_tcp_multicast.c,
+	  jxta_tcp_multicast.h, jxta_test_adv.c, jxta_test_adv.h,
+	  jxta_transport_http.c, jxta_transport_http_client.c,
+	  jxta_transport_http_client.h, jxta_transport_http_poller.c,
+	  jxta_transport_http_poller.h, jxta_transport_private.h,
+	  jxta_transport_tcp.c, jxta_transport_tcp_connection.c,
+	  jxta_transport_tcp_connection.h, jxta_transport_tcp_private.h,
+	  jxta_tta.c, jxta_types.h, jxta_unipipe_service.c, jxta_vector.c,
+	  jxta_vector.h, jxta_walk_msg.c, jxta_walk_msg.h,
+	  jxta_wire_service.c, jxta_wm.c, jxta_wm.h, jxta_xml_util.c,
+	  jxta_xml_util.h, mod_jxta.c, queue.c, queue.h,
+	  trailing_average.c, trailing_average.h, xml.c: indent style
+	  change for *.[ch] files in src folder
+
+2005-06-16 11:17  slowhog
+
+	* configure.in:
+	  - developer version, named as 2.2_pre
+
+2005-06-15 23:43  lankes
+
+	* src/jxta_id_priv.h:
+	  - export jxta_nullID, jxta_worldNetPeerGroupID and
+	  jxta_defaultNetPeerGroupID
+

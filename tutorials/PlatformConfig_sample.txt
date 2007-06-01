@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<!DOCTYPE jxta:PA>
+<jxta:PA xmlns:jxta="http://jxta.org">
+
+    <PID><!-- make sure to use a unique PID for EVERY running peer. --></PID>
+<!-- to make a new PID, just run any peer from a directory with no PlatformConfig. A new PlatformConfig will be generated, with a new PID which you can use in your real PlatformConfig. -->
+    <GID>urn:jxta:jxta-Null</GID>
+    <Name>JXTA-C Tutorial</Name>
+    <Dbg></Dbg>
+
+
+    <!-- RDV Service configuration -->
+
+<Svc>
+    	<MCID>urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000605</MCID> <!-- Protocol specified module class ID -->
+    	<!-- The following are the seed RDV. Your peer will attempt to connect with one of these to join the JXTA network. -->
+    	<Parm>
+		<Addr>tcp://192.168.0.100:9701</Addr>	
+
+<!--
+		<Addr>http://192.18.37.36:9700</Addr>	
+		<Addr>http://192.18.37.37:9700</Addr>	
+		<Addr>http://192.18.37.38:9700</Addr>	
+		<Addr>http://192.18.37.39:9700</Addr>
+-->
+	</Parm>
+</Svc>
+
+    <!-- TCP Transport Service configuration -->
+
+<Svc>
+    	<MCID>urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000905</MCID> <!-- Protocol specified module class ID -->
+    	<Parm>
+    		<jxta:TransportAdvertisement xmlns:jxta="http://jxta.org" type="jxta:TCPTransportAdvertisement">
+    			<Protocol>tcp</Protocol>
+    			<InterfaceAddress>192.168.0.100</InterfaceAddress> <!-- IP address for TCP connections on your peer -->
+    			<Port>9721</Port> <!-- Socket Port for TCP connections -->
+    			<ConfigMode>manual</ConfigMode> <!-- Currently only manual mode supported by jxta-c -->
+    			<MulticastAddr>224.0.1.85</MulticastAddr> <!-- IP address for IP multicast connections on your peer -->
+    			<MulticastPort>1239</MulticastPort> <!-- Socket Port for IP multicast -->
+    		<MulticastSize>16384</MulticastSize>
+    		</jxta:TransportAdvertisement>
+    	</Parm>
+</Svc>
+
+    <!-- HTTP Transport Service configuration -->
+
+<Svc>
+    	<MCID>urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000A05</MCID> <!-- Protocol specified module class ID -->
+    	<Parm>
+    		<jxta:TransportAdvertisement xmlns:jxta="http://jxta.org" type="jxta:HTTPTransportAdvertisement">
+    			<Protocol>http</Protocol>
+    			<InterfaceAddress>192.168.0.100</InterfaceAddress> <!-- IP address for HTTP connections on your peer -->
+    			<ConfigMode>manual</ConfigMode>
+    			<Port>9720</Port> <!-- Socket Port for HTTP connections -->
+    			<Proxy></Proxy>
+    			<ProxyOff></ProxyOff>
+    			<ServerOff></ServerOff>
+    		</jxta:TransportAdvertisement>
+    	</Parm>
+</Svc>
+
+    <!-- Relay Service configuration -->
+
+<Svc>
+    	<MCID>urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000F05</MCID> <!-- Protocol specified module class ID -->
+    	<Parm>
+    		<isClient>true</isClient> <!-- specifies whether your peer tries to find a relay peer -->
+    		<isServer>false</isServer> <!-- whether your peer acts as a server. Not currently supported in jxta-c -->
+    <!-- Addresses of seed relays -->
+    		<httpaddress>192.18.37.36:9700</httpaddress>
+		<httpaddress>192.18.37.37:9700</httpaddress>
+		<httpaddress>192.18.37.38:9700</httpaddress>
+		<httpaddress>192.18.37.39:9700</httpaddress>
+    	</Parm>
+</Svc>
+
+    </jxta:PA>
