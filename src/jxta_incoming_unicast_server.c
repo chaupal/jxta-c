@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_incoming_unicast_server.c,v 1.29 2006/02/15 01:09:41 slowhog Exp $
+ * $Id: jxta_incoming_unicast_server.c,v 1.32 2006/06/12 18:22:57 slowhog Exp $
  */
 
 static const char *__log_cat = "TCP_UNICAST";
@@ -202,6 +202,7 @@ Jxta_boolean jxta_incoming_unicast_server_start(IncomingUnicastServer * ius)
     }
 
     /* thread create */
+    self->connected = TRUE;
     status = apr_thread_create(&self->tid, NULL, unicast_accept_thread, (void *) self, self->pool);
 
     if (APR_SUCCESS != status) {
@@ -224,11 +225,11 @@ void jxta_incoming_unicast_server_stop(IncomingUnicastServer * ius)
     if (self->srv_socket != NULL) {
         apr_socket_shutdown(self->srv_socket, APR_SHUTDOWN_READWRITE);
         apr_socket_close(self->srv_socket);
-        self->srv_socket = NULL;
     }
 
     if (self->tid != NULL) {
         apr_thread_join(&status, self->tid);
+        self->srv_socket = NULL;
         self->tid = NULL;
     }
 }
@@ -241,7 +242,6 @@ static void *APR_THREAD_FUNC unicast_accept_thread(apr_thread_t * tid, void *arg
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Unicast incoming accept thread started.\n");
 
     JXTA_OBJECT_CHECK_VALID(self);
-    self->connected = TRUE;
 
     while (self->connected) {
         Jxta_transport_tcp_connection *conn;
@@ -267,13 +267,14 @@ static void *APR_THREAD_FUNC unicast_accept_thread(apr_thread_t * tid, void *arg
 
         JXTA_OBJECT_CHECK_VALID(conn);
 
-        ipaddr = jxta_transport_tcp_connection_get_ipaddr(conn), jxta_transport_tcp_connection_get_port(conn);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Incoming connection [%p] from %s:%d\n", conn,ipaddr);
+        ipaddr = jxta_transport_tcp_connection_get_ipaddr(conn);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Incoming connection [%pp] from %s:%d\n", conn, ipaddr,
+                        jxta_transport_tcp_connection_get_port(conn));
 	    if (ipaddr != NULL) 
             free(ipaddr);
 
         if (JXTA_SUCCESS != status) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Start connection [%p] failed. Closing socket.\n", conn);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Start connection [%pp] failed. Closing socket.\n", conn);
             JXTA_OBJECT_RELEASE(conn);
             apr_socket_shutdown(input_socket, APR_SHUTDOWN_READWRITE);
             apr_socket_close(input_socket);

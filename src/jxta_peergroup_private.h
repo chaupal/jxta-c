@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup_private.h,v 1.22 2005/09/22 03:26:39 exocetrick Exp $
+ * $Id: jxta_peergroup_private.h,v 1.23 2006/05/16 00:58:13 slowhog Exp $
  */
 
 #ifndef JXTA_PEERGROUP_PRIVATE_H
@@ -84,10 +84,15 @@ extern "C" {
  * After allocating such an object, one must apply JXTA_OBJECT_INIT() and
  * jxta_PG_construct to it.
  */
-struct _jxta_PG {
+struct jxta_PG {
     Extends(Jxta_service);
 
     /* Implementors put their stuff after that */
+    apr_pool_t *pool;
+    apr_thread_pool_t *thd_pool;
+    struct jxta_PG *parent;
+    char *ep_name;
+    void *ep_cookie;
 };
 
 /**
@@ -123,8 +128,8 @@ struct _jxta_PG {
  * }
  */
 typedef struct _jxta_PG_methods Jxta_PG_methods;
-struct _jxta_PG_methods {
 
+struct _jxta_PG_methods {
     Extends(Jxta_service_methods);
 
     void (*get_loader) (Jxta_PG * self, Jxta_loader ** loader);
@@ -170,8 +175,8 @@ struct _jxta_PG_methods {
      Jxta_status(*add_relay_address) (Jxta_PG * self, Jxta_RdvAdvertisement * relay);
      Jxta_status(*remove_relay_address) (Jxta_PG * self, Jxta_id * relayid);
     void (*get_srdi_service) (Jxta_PG * self, Jxta_srdi_service ** srdi);
-    void (*set_cache_manager) (Jxta_PG * self, Jxta_cm *cm);
-    void (*get_cache_manager) (Jxta_PG * self, Jxta_cm **cm);
+    void (*set_cache_manager) (Jxta_PG * self, Jxta_cm * cm);
+    void (*get_cache_manager) (Jxta_PG * self, Jxta_cm ** cm);
 };
 
 /**
@@ -181,13 +186,18 @@ struct _jxta_PG_methods {
  *
  * @param self The Jxta_PG_object to initialize.
  * @param methods A pointer to the relevant set of methods.
+ * @deprecated This API will be eliminated
  */
-JXTA_DECLARE(void) jxta_PG_construct(Jxta_PG * self, Jxta_PG_methods * methods);
+void jxta_PG_construct(Jxta_PG * self, Jxta_PG_methods * methods);
+
+Jxta_status peergroup_init(Jxta_PG * me, Jxta_PG * parent);
+Jxta_status peergroup_start(Jxta_PG * me);
+Jxta_status peergroup_stop(Jxta_PG * me);
 
 /**
  * The base PG dtor (Not public, not virtual. Only called by subclassers).
  */
-JXTA_DECLARE(void) jxta_PG_destruct(Jxta_PG * self);
+void jxta_PG_destruct(Jxta_PG * self);
 
 #ifdef __cplusplus
 #if 0

@@ -116,6 +116,4 @@ echo "Running $AUTOCONF ..."
 $AUTOCONF || exit;
 echo "Running $AUTOMAKE second round ..." 
 $AUTOMAKE
-echo "Running configure $@ ..."
-./configure $@
 

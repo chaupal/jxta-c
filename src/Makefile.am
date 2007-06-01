@@ -1,13 +1,16 @@
 SUBDIRS = jpr unicode
 
-AM_CPPFLAGS = @APR_CPPFLAGS@ @XML2_CPPFLAGS@ @SQLITE_CPPFLAGS@ 
+AM_CPPFLAGS = \
+	      -I$(top_srcdir)/jpr \
+	      @APR_CPPFLAGS@ @XML2_CPPFLAGS@ @SQLITE_CPPFLAGS@ 
 
-AM_CFLAGS = -DTARGET_ARCH_OS_PLATFORM=\"$(target)\" -Wall -W -pedantic -Wno-long-long -Wstrict-prototypes -Wwrite-strings -Wpointer-arith
-
+AM_CFLAGS = -DTARGET_ARCH_OS_PLATFORM=\"$(target)\" 
 
 lib_LTLIBRARIES = libjxta.la
 
-libjxta_la_LIBADD = @APR_LIBS@  @XML2_LIBS@ @SQLITE_LIBS@ -Ljpr -ljpr			
+libjxta_la_LIBADD = \
+		    $(top_builddir)/src/jpr/libjpr.la \
+		    @APR_LIBS@  @XML2_LIBS@ @SQLITE_LIBS@
 
 include_HEADERS = EndpointRouter.h          \
                   jdlist.h                  \
@@ -88,6 +91,7 @@ include_HEADERS = EndpointRouter.h          \
                   jxta_transport_http_poller.h         \
                   jxta_incoming_unicast_server.h       \
                   jxta_transport_tcp_connection.h      \
+                  jxta_transport_welcome_message.h      \
                   jxta_tcp_multicast.h                 \
                   jxta_wm.h                            \
                   localconf.h                          \
@@ -149,6 +153,7 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_transport.c               \
                      jxta_transport_http.c          \
                      jxta_transport_http_client.c   \
+                     jxta_transport_welcome_message.c   \
                      jxta_incoming_unicast_server.c \
                      jxta_transport_tcp.c           \
                      jxta_transport_tcp_connection.c \

@@ -1,20 +1,15 @@
 
-AM_CPPFLAGS = -I../src @APR_CPPFLAGS@ @XML2_CPPFLAGS@ @SQLITE_CPPFLAGS@
+AM_CPPFLAGS = -I$(top_srcdir)/src @APR_CPPFLAGS@ @XML2_CPPFLAGS@ @SQLITE_CPPFLAGS@
 
-AM_CFLAGS = -DSTANDALONE -DTARGET_ARCH_OS_PLATFORM=\"$(target)\" -Wall -W -pedantic -Wno-long-long -Wstrict-prototypes -Wwrite-strings -Wpointer-arith
+AM_CFLAGS = -DSTANDALONE -DTARGET_ARCH_OS_PLATFORM=\"$(target)\" 
 
 bin_PROGRAMS = jxtaShell
 
-LDADD = @APR_LIBS@                  \
-        @XML2_LIBS@                 \
-        @SQLITE_LIBS@               \
-	-L../src/                   \
-	-L../src/.libs              \
-	-L../src/jpr                \
-	-L../src/jpr/.libs          \
-	-lpthread                   \
-        -ljpr                       \
-        -ljxta
+LDADD = \
+	$(top_builddir)/src/libjxta.la \
+	@APR_LIBS@              \
+        @XML2_LIBS@             \
+        @SQLITE_LIBS@
 
 
 jxtaShell_SOURCES =  jxta_shell_application.c \
@@ -23,7 +18,6 @@ jxtaShell_SOURCES =  jxta_shell_application.c \
                      jxta_shell_main.c    \
                      jxta_shell_object.c  \
                      jxta_shell_tokenizer.c  \
-                     \
                      TestApplication.c \
                      cat.c   \
                      groups.c  \

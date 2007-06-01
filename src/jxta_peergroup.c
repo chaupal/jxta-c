@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup.c,v 1.39 2006/02/15 01:09:43 slowhog Exp $
+ * $Id: jxta_peergroup.c,v 1.44 2006/06/14 17:48:15 slowhog Exp $
  */
 
 #include "jpr/jpr_excep.h"
@@ -69,6 +69,12 @@
 #include "jxta_peergroup.h"
 #include "jxta_peergroup_private.h"
 #include "jxta_objecthashtable.h"
+#include "jxta_endpoint_service_priv.h"
+#include "jxta_util_priv.h"
+
+#ifndef JXTA_SINGLE_THREAD_POOL
+#define JXTA_SINGLE_THREAD_POOL 1
+#endif
 
 /*
  * This implementation supports only one instance of each group; the peer ID
@@ -710,26 +716,105 @@ JXTA_DECLARE(Jxta_MSID *) jxta_genericpeergroup_specid_get(void)
     return _genericpeergroup_specid;
 }
 
-
 /**
  * The base PG ctor (not public: the only public way to make a new pg 
  * is to instantiate one of the derived types).
  */
-JXTA_DECLARE(void) jxta_PG_construct(Jxta_PG * self, Jxta_PG_methods * methods)
+void jxta_PG_construct(Jxta_PG * self, Jxta_PG_methods * methods)
 {
-
     PTValid(methods, Jxta_PG_methods);
     jxta_service_construct((Jxta_service *) self, (Jxta_service_methods *) methods);
     self->thisType = "Jxta_PG";
+}
+
+Jxta_status peergroup_init(Jxta_PG * me, Jxta_PG * parent)
+{
+    me->parent = parent;
+    apr_pool_create(&me->pool, parent ? parent->pool : NULL);
+    /* FIXME: JXTA_SINGLE_THREAD_POOL better to use configuration than defined constant */
+    if (parent && JXTA_SINGLE_THREAD_POOL) {
+        me->thd_pool = NULL;
+    } else {
+        apr_thread_pool_create(&me->thd_pool, 1, 3, me->pool);
+    }
+
+    return JXTA_SUCCESS;
+}
+
+static Jxta_status JXTA_STDCALL peergroup_ep_callback(Jxta_object * obj, void *arg)
+{
+    Jxta_PG *me = arg;
+    Jxta_message *msg = (Jxta_message *) obj;
+    Jxta_endpoint_address *dest;
+    char *name, *param;
+    Jxta_endpoint_service *ep;
+    Jxta_status rv;
+
+    dest = jxta_message_get_destination(msg);
+    name = strdup(jxta_endpoint_address_get_service_params(dest));
+    JXTA_OBJECT_RELEASE(dest);
+    param = strchr(name, '/');
+    if (param) {
+        *param++ = '\0';
+    }
+
+    jxta_PG_get_endpoint_service(me, &ep);
+    rv = endpoint_service_demux(ep, name, param, msg);
+    free(name);
+    JXTA_OBJECT_RELEASE(ep);
+
+    return rv;
+}
+
+Jxta_status peergroup_start(Jxta_PG * me)
+{
+    static const char *prefix = "EndpointService:";
+    Jxta_id *gid;
+    JString *tmp;
+    Jxta_endpoint_service *ep;
+    Jxta_status rv;
+
+    jxta_PG_get_GID(me, &gid);
+    if (jxta_id_equals(gid, jxta_id_defaultNetPeerGroupID)) {
+        tmp = jstring_new_2("jxta-NetGroup");
+    } else {
+        jxta_id_get_uniqueportion(gid, &tmp);
+    }
+    me->ep_name = apr_pstrcat(me->pool, prefix, jstring_get_string(tmp), NULL);
+    JXTA_OBJECT_RELEASE(gid);
+    JXTA_OBJECT_RELEASE(tmp);
+
+    jxta_PG_get_endpoint_service(me, &ep);
+    rv = endpoint_service_add_recipient(ep, &me->ep_cookie, me->ep_name, NULL, peergroup_ep_callback, me);
+    JXTA_OBJECT_RELEASE(ep);
+    return rv;
+}
+
+Jxta_status peergroup_stop(Jxta_PG * me)
+{
+    Jxta_endpoint_service *ep;
+    Jxta_status rv;
+
+    jxta_PG_get_endpoint_service(me, &ep);
+    rv = endpoint_service_remove_recipient(ep, &me->ep_cookie);
+    JXTA_OBJECT_RELEASE(ep);
+
+    if (me->thd_pool) {
+        apr_thread_pool_destroy(me->thd_pool);
+    }
+
+    return rv;
 }
 
 /**
  * The base PG dtor (Not public, not virtual. Only called by subclassers).
  * We just pass it along.
  */
-JXTA_DECLARE(void) jxta_PG_destruct(Jxta_PG * self)
+void jxta_PG_destruct(Jxta_PG * me)
 {
-    jxta_service_destruct((Jxta_service *) self);
+    jxta_service_destruct((Jxta_service *) me);
+
+    apr_pool_destroy(me->pool);
 }
 
 /**
@@ -901,7 +986,7 @@ JXTA_DECLARE(void) jxta_PG_get_cache_manager(Jxta_PG * self, Jxta_cm ** cm)
 {
     PTValid(self, Jxta_PG);
     (VTBL->get_cache_manager) (self, cm);
-   
+
 }
 
 JXTA_DECLARE(void) jxta_PG_set_cache_manager(Jxta_PG * self, Jxta_cm * cm)
@@ -980,13 +1065,12 @@ JXTA_DECLARE(Jxta_status) jxta_PG_new_netpg(Jxta_PG ** new_netpg)
 {
     Jxta_PG *npg = NULL;
     Jxta_status res = JXTA_SUCCESS;
-    char *noargs[] = { NULL };
+    const char *noargs[] = { NULL };
 
     Try {
-        npg = (Jxta_PG *)
-            jxta_defloader_instantiate_e("builtin:netpg", MayThrow);
+        npg = (Jxta_PG *) jxta_defloader_instantiate_e("builtin:netpg", MayThrow);
 
-        jxta_module_init_e((Jxta_module *) npg, (Jxta_PG *) 0, (Jxta_id *) 0, 0, MayThrow);
+        jxta_module_init_e((Jxta_module *) npg, (Jxta_PG *) NULL, (Jxta_id *) NULL, NULL, MayThrow);
 
         res = jxta_module_start((Jxta_module *) npg, noargs);
 
@@ -1007,12 +1091,12 @@ JXTA_DECLARE(Jxta_status) jxta_PG_new_custom_netpg(Jxta_PG ** new_private_netpg,
 {
     Jxta_PG *custom_npg = NULL;
     Jxta_status res = JXTA_SUCCESS;
-    char *noargs[] = { NULL };
+    const char *noargs[] = { NULL };
 
     Try {
-        custom_npg = (Jxta_PG *)jxta_defloader_instantiate_e("builtin:netpg", MayThrow);
+        custom_npg = (Jxta_PG *) jxta_defloader_instantiate_e("builtin:netpg", MayThrow);
 
-        jxta_module_init_e((Jxta_module *) custom_npg, (Jxta_PG *) 0, (Jxta_id *) 0, (Jxta_advertisement*)mia, MayThrow);
+        jxta_module_init_e((Jxta_module *) custom_npg, (Jxta_PG *) NULL, (Jxta_id *) NULL, (Jxta_advertisement *) mia, MayThrow);
 
         res = jxta_module_start((Jxta_module *) custom_npg, noargs);
 
@@ -1085,6 +1169,74 @@ void jxta_PG_module_terminate(void)
     JXTA_OBJECT_RELEASE(_ref_startnetpeergroup_specid);
     JXTA_OBJECT_RELEASE(_ref_shell_specid);
     JXTA_OBJECT_RELEASE(_genericpeergroup_specid);
+}
+
+/* FIXME: New API to be implemented
+JXTA_DECLARE(Jxta_status) jxta_PG_create(Jxta_PG **me, Jxta_PG *parent, Jxta_MIA *mia)
+{
+    return JXTA_NOTIMP;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_PG_destroy(Jxta_PG *me)
+{
+    return JXTA_NOTIMP;
+}
+*/
+
+JXTA_DECLARE(apr_pool_t *) jxta_PG_pool_get(Jxta_PG * me)
+{
+    return me->pool;
+}
+
+JXTA_DECLARE(apr_thread_pool_t *) jxta_PG_thread_pool_get(Jxta_PG * me)
+{
+    if (NULL == me->thd_pool && me->parent) {
+        return jxta_PG_thread_pool_get(me->parent);
+    }
+    return me->thd_pool;
+}
+
+JXTA_DECLARE(Jxta_PG *) jxta_PG_netpg(Jxta_PG * me)
+{
+    Jxta_PG *npg;
+
+    npg = me;
+    while (NULL != npg->parent) {
+        npg = npg->parent;
+    }
+    return npg;
+}
+
+JXTA_DECLARE(Jxta_PG *) jxta_PG_parent(Jxta_PG * me)
+{
+    return me->parent;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_PG_add_recipient(Jxta_PG * me, void **cookie, const char *name, const char *param,
+                                                Jxta_callback_func func, void *arg)
+{
+    Jxta_endpoint_service *ep;
+    Jxta_status rv;
+    char *new_param;
+
+    new_param = get_service_key(name, param);
+    jxta_PG_get_endpoint_service(me, &ep);
+    rv = endpoint_service_add_recipient(ep, cookie, me->ep_name, new_param, func, arg);
+    free(new_param);
+    JXTA_OBJECT_RELEASE(ep);
+
+    return rv;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_PG_remove_recipient(Jxta_PG * me, void *cookie)
+{
+    Jxta_endpoint_service *ep;
+    Jxta_status rv;
+
+    jxta_PG_get_endpoint_service(me, &ep);
+    rv = endpoint_service_remove_recipient(ep, cookie);
+    JXTA_OBJECT_RELEASE(ep);
+    return rv;
 }
 
 /* vim: set ts=4 sw=4 tw=130 et: */

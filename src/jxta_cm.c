@@ -50,8 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cm.c,v 1.114 2006/03/11 02:38:17 slowhog Exp $
+ * $Id: jxta_cm.c,v 1.119 2006/06/16 01:19:50 slowhog Exp $
  */
+
+static const char *__log_cat = "CM";
 
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -90,7 +92,6 @@
 #define DBTYPE "SDBM"   /* defined for other platform in config.h */
 #endif
 
-static const char *__log_cat = "CM";
 /*
  * Hashtables want a value to be associated with keys.
  * In one instance we do not need any, so we just use one instance
@@ -171,6 +172,7 @@ static JString *jPeerNs;
 static JString *jGroupNs;
 static JString *jInt64_for_format;
 static JString *fmtTime;
+static unsigned int _cm_params_initialized = 0;
 
 static Jxta_boolean dbd_initialized = FALSE;
 static apr_pool_t *apr_dbd_init_pool = NULL;
@@ -308,6 +310,41 @@ static void cm_sql_pragma(GroupDB * groupDB, const char *pragma);
 
 JXTA_DECLARE(Jxta_boolean) jxta_sql_escape_and_wc_value(JString * jStr, Jxta_boolean replace);
 
+
+static void initiate_cm_params()
+{
+    if(_cm_params_initialized ++){
+        return;
+    }
+
+    jPeerNs = jstring_new_2("jxta:PA");
+    jGroupNs = jstring_new_2("jxta:PGA");
+
+    /* this is for formatted strings */
+    jInt64_for_format = jstring_new_2("%");
+    fmtTime = jstring_new_2("exp Time ");
+    jstring_append_2(jInt64_for_format, APR_INT64_T_FMT);
+    jstring_append_1(fmtTime, jInt64_for_format);
+    jstring_append_2(fmtTime, "\n");
+}
+
+static void terminate_cm_params()
+{
+    if (!_cm_params_initialized) {
+        return;
+    }
+
+    _cm_params_initialized--;
+    if (_cm_params_initialized) {
+        return;
+    }
+
+    JXTA_OBJECT_RELEASE(jPeerNs);
+    JXTA_OBJECT_RELEASE(jGroupNs);
+    JXTA_OBJECT_RELEASE(jInt64_for_format);
+    JXTA_OBJECT_RELEASE(fmtTime);
+}
+
 /* Destroy the cm and free all allocated memory */
 static void cm_free(Jxta_object * cm)
 {
@@ -316,6 +353,9 @@ static void cm_free(Jxta_object * cm)
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "CM free\n");
 
     apr_thread_mutex_lock(self->mutex);
+
+    terminate_cm_params();
+
     if (self->folders) {
         JXTA_OBJECT_RELEASE(self->folders);
     }
@@ -364,20 +404,13 @@ JXTA_DECLARE(Jxta_cm *) jxta_cm_new(const char *home_directory, Jxta_id * group_
     Jxta_cm *self ;
     int root_len;
     int name_len;
+    
+    JXTA_OBJECT_CHECK_VALID(group_id);
+    JXTA_OBJECT_CHECK_VALID(localPeerId);    
 
     self = (Jxta_cm *) calloc(1, sizeof(Jxta_cm));
 
-    if (jPeerNs == NULL) {
-        jPeerNs = jstring_new_2("jxta:PA");
-        jGroupNs = jstring_new_2("jxta:PGA");
-
-        /* this is for formatted strings */
-        jInt64_for_format = jstring_new_2("%");
-        fmtTime = jstring_new_2("exp Time ");
-        jstring_append_2(jInt64_for_format, APR_INT64_T_FMT);
-        jstring_append_1(fmtTime, jInt64_for_format);
-        jstring_append_2(fmtTime, "\n");
-    }
+    initiate_cm_params();
 
     JXTA_OBJECT_INIT(self, cm_free, 0);
     self->thisType = "Jxta_cm";
@@ -392,14 +425,20 @@ JXTA_DECLARE(Jxta_cm *) jxta_cm_new(const char *home_directory, Jxta_id * group_
 
     root_len = strlen(home_directory) + jstring_length(group_id_s) + 2;
     self->root = calloc(1, root_len);
-
+    
+    if( NULL == self->root ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Could not allocate root directory name." );
+        JXTA_OBJECT_RELEASE(self);
+        return NULL;
+    }
+    
 #ifdef WIN32
     apr_snprintf(self->root, root_len, "%s\\%s", home_directory, (char *) jstring_get_string(group_id_s));
 #else
     apr_snprintf(self->root, root_len, "%s/%s", home_directory, (char *) jstring_get_string(group_id_s));
 #endif
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "CM home_directory: %s\n", self->root);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "CM root: %s\n", self->root);
 
     self->folders = jxta_hashtable_new_0(3, FALSE);
     self->srdi_delta = jxta_hashtable_new_0(3, TRUE);
@@ -939,6 +978,24 @@ JXTA_DECLARE(Jxta_status) jxta_cm_save_replica(Jxta_cm * self, JString * handler
     if (primaryKey) {
     }
 
+    /**
+     * FIXME 6/2/2006 mmx2005@jxta.org
+       the following is to fix issue 234, it is better for SRDI service to handle it.
+    **/
+    if(peerid != NULL){
+        JString * localPeerId_JString;
+
+        // don't replicate message back to ourselves
+        jxta_id_to_jstring(self->localPeerId, &localPeerId_JString);
+
+        if( strcmp(jstring_get_string(localPeerId_JString), jstring_get_string(peerid)) == 0){
+            JXTA_OBJECT_RELEASE(localPeerId_JString);
+            return JXTA_SUCCESS;
+        }
+
+        JXTA_OBJECT_RELEASE(localPeerId_JString);
+    }
+
     status = cm_sql_save_srdi(self->groupDB, handler, peerid, entry->nameSpace, entry->advId, 
                               entry->key, entry->value, entry->range, entry->expiration, TRUE);
     return status;
@@ -1416,15 +1473,15 @@ JXTA_DECLARE(Jxta_vector *) jxta_cm_query_replica(Jxta_cm * self, JString * name
             if (leastPopular == 0) {
                 leastPopular = size;
                 jxta_vector_add_object_first(finalResult, (Jxta_object *) result);
-            } else if (size > leastPopular) {
-                JXTA_OBJECT_RELEASE(result);
             } else if (size == leastPopular) {
                 jxta_vector_add_object_first(finalResult, (Jxta_object *) result);
             } else if (size < leastPopular) {
                 jxta_vector_clear(finalResult);
                 jxta_vector_add_object_first(finalResult, (Jxta_object *) result);
             }
+            JXTA_OBJECT_RELEASE(result);
         }
+        JXTA_OBJECT_RELEASE(results);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "%s -- Final result:%i items\n", groupDB->id,
                         jxta_vector_size(finalResult));
         for (j = 0; j < jxta_vector_size(finalResult); j++) {
@@ -1455,7 +1512,9 @@ JXTA_DECLARE(Jxta_vector *) jxta_cm_query_replica(Jxta_cm * self, JString * name
                 JXTA_OBJECT_RELEASE(peer);
                 peer = NULL;
             }
+            JXTA_OBJECT_RELEASE(peerEntries);
         }
+        JXTA_OBJECT_RELEASE(finalResult);
     }
     if (NULL != peersHash) {
         ret = jxta_hashtable_values_get(peersHash);

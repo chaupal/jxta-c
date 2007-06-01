@@ -21,7 +21,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				FavorSizeOrSpeed="0"
-				AdditionalIncludeDirectories="..\..\..\src,$(APACHE2)\include;$(XML2)\include;$(ZLIB)\include;$(SQLITE3)\include;$(OPENSSL)\include"
+				AdditionalIncludeDirectories="..\..\..\src,..\..\..\src\jpr,$(APACHE2)\include;$(XML2)\include;$(ZLIB)\include;$(SQLITE3)\include;$(OPENSSL)\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;JXTA_EXPORTS;GZIP_ENABLED=1;GUNZIP_ENABLED=1;JXTA_LOG_ENABLE=1;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				StringPooling="FALSE"
 				MinimalRebuild="TRUE"
@@ -80,7 +80,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="0"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\..\..\src,$(APACHE2)\include;$(XML2)\include;$(ZLIB)\include;$(SQLITE3)\include;$(OPENSSL)\include"
+				AdditionalIncludeDirectories="..\..\..\src,..\..\..\src\jpr,$(APACHE2)\include;$(XML2)\include;$(ZLIB)\include;$(SQLITE3)\include;$(OPENSSL)\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;JXTA_EXPORTS;GZIP_ENABLED=1;GUNZIP_ENABLED=1;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				StringPooling="FALSE"
 				ExceptionHandling="FALSE"
@@ -415,6 +415,9 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_transport_tcp_connection.c">
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_transport_welcome_message.c">
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_tta.c">
@@ -765,6 +768,9 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_transport_tcp_private.h">
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_transport_welcome_message.h">
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_tta.h">

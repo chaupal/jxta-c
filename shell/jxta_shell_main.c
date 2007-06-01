@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_main.c,v 1.29 2005/12/16 10:46:32 lankes Exp $
+ * $Id: jxta_shell_main.c,v 1.30 2006/03/29 21:49:14 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -412,7 +412,7 @@ JxtaShellApplication *ShellStartupApplication_startApplication(ShellStartupAppli
     }
 
   COMMON_EXIT:
-    JXTA_LOG("Returning application : %p\n", app);
+    JXTA_LOG("Returning application : %pp\n", app);
     printf("JXTA>");
     fflush(stdout);
     return app;

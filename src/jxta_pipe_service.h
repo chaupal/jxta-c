@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_service.h,v 1.8 2005/09/21 21:16:49 slowhog Exp $
+ * $Id: jxta_pipe_service.h,v 1.11 2006/06/16 05:44:55 mmx2005 Exp $
  */
 
 
@@ -112,7 +112,7 @@ JXTA_DECLARE(int) jxta_pipe_connect_event_get_event(Jxta_pipe_connect_event * se
    **
    ** @param ev type of the event
    ** @param pipe returned value: a pointer to a pointer that will contain the pipe.
-   ** @return JXTA_SUCCESS when succesfull.
+   ** @return JXTA_SUCCESS when successful.
    **         JXTA_FAILED when the even was not associated to any pipe.
    **/
 JXTA_DECLARE(Jxta_status) jxta_pipe_connect_event_get_pipe(Jxta_pipe_connect_event * self, Jxta_pipe ** pipe);
@@ -143,12 +143,12 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_connect_event_get_pipe(Jxta_pipe_connect_eve
    ** the type of type. Unicast typically can only connect to a single peer.
    **
    ** @param service pointer to the Pipe Service
-   ** @param adv Pipe Advertisment of the pipe to connect to.
+   ** @param adv Pipe Advertisement of the pipe to connect to.
    ** @param timeout timeout in micro-seconds
    ** @param peers optional vector of pointers to Jxta_peer.
    ** @param pipe returned value, a pipe connected to a remote end.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_BUSY when the pipe is already in use.
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_TIMEOUT when the timeout has been reached and no connection
@@ -167,7 +167,7 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_service_timed_connect(Jxta_pipe_service * se
    ** the type of type. Unicast typically can only connect to a single peer.
    **
    ** The listener which is associated to the connect request is guaranteed to
-   ** be called exactely once. If the timeout is reached before a connection
+   ** be called exactly once. If the timeout is reached before a connection
    ** was established, the listener is invoked with an error event.
    ** Connection events are objects (that need to be released after used),
    ** of type Jxta_pipe_connect_event.
@@ -176,12 +176,12 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_service_timed_connect(Jxta_pipe_service * se
    ** (the listener object is released).
    **
    ** @param service pointer to the Pipe Service
-   ** @param adv Pipe Advertisment of the pipe to connect to.
+   ** @param adv Pipe Advertisement of the pipe to connect to.
    ** @param timeout timeout in micro-seconds
    ** @param peers optional vector of pointers to Jxta_peer.
    ** @param listener a Jxta_listener which will handle the connect events.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_BUSY when the pipe is already in use.
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid
@@ -202,11 +202,11 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_service_connect(Jxta_pipe_service * service,
    ** the pipe is released, or jxta_pipe_service_deny() is called.
    **
    ** @param service pointer to the Pipe Service
-   ** @param adv Pipe Advertisment of the pipe to connect to.
+   ** @param adv Pipe Advertisement of the pipe to connect to.
    ** @param timeout timeout in micro-seconds
    ** @param pipe returned value, a pipe connected to a remote end.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid
    **                          JXTA_NOTIMP when the pipe advertisement is for a unsupported type of pipe
    **                          JXTA_NOMEM when the system is running out of memory.
@@ -223,9 +223,9 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_service_timed_accept(Jxta_pipe_service * ser
    ** The pipe is marked as not being able to receive connections.
    **
    ** @param service pointer to the Pipe Service
-   ** @param adv Pipe Advertisment of the pipe to connect to.
+   ** @param adv Pipe Advertisement of the pipe to connect to.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid
    **                          JXTA_NOTIMP when the pipe advertisement is for a unsupported type of pipe
    **/
@@ -241,10 +241,10 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_service_deny(Jxta_pipe_service * service, Jx
    ** connect event can be generated.
    **
    ** @param service pointer to the Pipe Service
-   ** @param adv Pipe Advertisment of the pipe to connect to.
+   ** @param adv Pipe Advertisement of the pipe to connect to.
    ** @param listener a Jxta_listener which will handle the connect events.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid
    **                          JXTA_NOTIMP when the pipe advertisement is for a unsupported type of pipe
    **                          JXTA_NOMEM when the system is running out of memory.
@@ -259,10 +259,10 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_service_add_accept_listener(Jxta_pipe_servic
    ** The listener is removed, and the pipe is set to deny incoming connection.
    **
    ** @param service pointer to the Pipe Service
-   ** @param adv Pipe Advertisment of the pipe to connect to.
+   ** @param adv Pipe Advertisement of the pipe to connect to.
    ** @param listener a Jxta_listener which will handle the connect events.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid
    **                          JXTA_NOTIMP when the pipe advertisement is for a unsupported type of pipe
    **/
@@ -280,13 +280,13 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_service_remove_accept_listener(Jxta_pipe_ser
 
   /**
    ** Return, if any, the implementation of a particular type of pipe.
-   ** The type name is exactely what is returned by the pipe advertisement.
+   ** The type name is exactly what is returned by the pipe advertisement.
    **
    ** @param service pointer to the Pipe Service
    ** @param type_name is a null terminated string that contains the type name.
    ** @param impl returned value: a pointer to a pointer to a Jxta_pipe_service_impl.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_NOTIMP when the type_name is not a supported type of pipe.
    **/
@@ -295,13 +295,13 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_service_lookup_impl(Jxta_pipe_service * serv
 
   /**
    ** Add a new pipe implementation to the Pipe Service.
-   ** The type name is exactely what is returned by the pipe advertisement.
+   ** The type name is exactly what is returned by the pipe advertisement.
    ** 
    ** @param service pointer to the Pipe Service
    ** @param type_name is a null terminated string that contains the type name.
    ** @param impl a pointer to a valid Jxta_pipe_service_impl.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_INVALID_ARGUMENT if impl is invalid
    **                          JXTA_BUSY when there is already an implementation for the given
@@ -314,13 +314,13 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_service_add_impl(Jxta_pipe_service * service
 
   /**
    ** Remove a pipe implementation to the Pipe Service.
-   ** The type name is exactely what is returned by the pipe advertisement.
+   ** The type name is exactly what is returned by the pipe advertisement.
    ** 
    ** @param service pointer to the Pipe Service
    ** @param type_name is a null terminated string that contains the type name.
    ** @param impl a pointer to a valid Jxta_pipe_service_impl to remove.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_INVALID_ARGUMENT if impl is invalid
    **                          JXTA_BUSY when the pipe implementation cannot be
    **                                    removed.
@@ -336,7 +336,7 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_service_remove_impl(Jxta_pipe_service * serv
    ** @param service pointer to the Pipe Service
    ** @param resolver returned value:  a pointer to a pointer to a Jxta_pipe_resolver
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_NOMEM when the system is running out of memory.
    **/
 JXTA_DECLARE(Jxta_status) jxta_pipe_service_get_resolver(Jxta_pipe_service * service, Jxta_pipe_resolver ** resolver);
@@ -349,7 +349,7 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_service_get_resolver(Jxta_pipe_service * ser
    ** @param old returned value: if non NULL, old will contain a pointer
    **                            to the previous pipe resolver.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_VIOLATION when changing the default pipe is not authorized
    **/
@@ -368,7 +368,7 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_service_set_resolver(Jxta_pipe_service * ser
    ** @param pipe pointer to the instance of the pipe.
    ** @param op a returned value: the output pipe
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_VIOLATION when this pipe is not capable of getting an
    **                                         output pipe.
@@ -382,7 +382,7 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_get_outputpipe(Jxta_pipe * pipe, Jxta_output
    ** @param pipe pointer to the instance of the pipe.
    ** @param op a returned value: the input pipe
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_VIOLATION when this pipe is not capable of getting an
    **                                         output pipe.
@@ -397,10 +397,22 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_get_inputpipe(Jxta_pipe * pipe, Jxta_inputpi
    ** @param pipe pointer to the instance of the pipe.
    ** @param vector a returned value: the vector containing a list of pointers to Jxta_peer.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_NOMEM when the system is running out of memory.
    **/
 JXTA_DECLARE(Jxta_status) jxta_pipe_get_remote_peers(Jxta_pipe * pipe, Jxta_vector ** vector);
+
+  /**
+   ** Get the pipe advertisement on the other end of the pipe
+   **
+   ** @param pipe pointer to the instance of the pipe.
+   ** @param pipeadv a returned value: the pipeadv containing pipe advertisement.
+   **
+   ** @return an error status. JXTA_SUCCESS when successful.
+   **                          JXTA_NOMEM when the system is running out of memory.
+   **/
+JXTA_DECLARE(Jxta_status) jxta_pipe_get_pipeadv(Jxta_pipe * pipe, Jxta_pipe_adv ** pipeadv);
+
 
 
   /***********************************************************************
@@ -444,7 +456,7 @@ JXTA_DECLARE(int) jxta_inputpipe_event_get_event(Jxta_inputpipe_event * self);
    **
    ** @param ev type of the event
    ** @param object returned value: a pointer to a pointer that will contain the object.
-   ** @return JXTA_SUCCESS when succesfull.
+   ** @return JXTA_SUCCESS when successful.
    **         JXTA_FAILED when the even was not associated to any object.
    **/
 JXTA_DECLARE(Jxta_status) jxta_inputpipe_event_get_object(Jxta_inputpipe_event * self, Jxta_object ** object);
@@ -456,7 +468,7 @@ JXTA_DECLARE(Jxta_status) jxta_inputpipe_event_get_object(Jxta_inputpipe_event *
    ** @param timeout maximum time to wait in micro-seconds
    ** @param msg returned value: the received message.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_BUSY when a listener has already been added.
    **                          JXTA_TIMEOUT when the timeout has been reached and no
@@ -471,7 +483,7 @@ JXTA_DECLARE(Jxta_status) jxta_inputpipe_timed_receive(Jxta_inputpipe * ip, Jxta
    ** @param ip the input pipe.
    ** @param listener listener to add.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_NOMEM when the system is running out of memory.
    **/
 JXTA_DECLARE(Jxta_status) jxta_inputpipe_add_listener(Jxta_inputpipe * ip, Jxta_listener * listener);
@@ -482,7 +494,7 @@ JXTA_DECLARE(Jxta_status) jxta_inputpipe_add_listener(Jxta_inputpipe * ip, Jxta_
    ** @param ip the input pipe.
    ** @param listener listener to remove
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_INVALID_ARGUMENT when the listener is not valid.
    **/
 JXTA_DECLARE(Jxta_status) jxta_inputpipe_remove_listener(Jxta_inputpipe * ip, Jxta_listener * listener);
@@ -527,7 +539,7 @@ JXTA_DECLARE(int) jxta_outputpipe_event_get_event(Jxta_outputpipe_event * self);
    **
    ** @param ev type of the event
    ** @param object returned value: a pointer to a pointer that will contain the object.
-   ** @return JXTA_SUCCESS when succesfull.
+   ** @return JXTA_SUCCESS when successful.
    **         JXTA_FAILED when the even was not associated to any object.
    **/
 JXTA_DECLARE(Jxta_status) jxta_outputpipe_event_get_object(Jxta_outputpipe_event * self, Jxta_object ** object);
@@ -539,7 +551,7 @@ JXTA_DECLARE(Jxta_status) jxta_outputpipe_event_get_object(Jxta_outputpipe_event
    ** @param op the output pipe.
    ** @param msg the message to send
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_FAILED when the send failed.
    **/
@@ -555,7 +567,7 @@ JXTA_DECLARE(Jxta_status) jxta_outputpipe_send(Jxta_outputpipe * op, Jxta_messag
    ** @param op the output pipe.
    ** @param listener listener to add.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_FAILED when the pipe service is not capable of throwing
    **                          Jxta_outpipe_event.
@@ -568,7 +580,7 @@ JXTA_DECLARE(Jxta_status) jxta_outputpipe_add_listener(Jxta_outputpipe * op, Jxt
    ** @param op the output pipe.
    ** @param listener listener to remove
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_INVALID_ARGUMENT when the listener is not valid.
    **/
 JXTA_DECLARE(Jxta_status) jxta_outputpipe_remove_listener(Jxta_outputpipe * op, Jxta_listener * listener);

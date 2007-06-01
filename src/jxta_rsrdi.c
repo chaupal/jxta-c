@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rsrdi.c,v 1.15 2006/02/18 00:32:53 slowhog Exp $
+ * $Id: jxta_rsrdi.c,v 1.16 2006/06/18 06:09:56 mmx2005 Exp $
  */
 
 #include <stdio.h>
@@ -122,8 +122,8 @@ static void trim_elements(ResolverSrdi * adv)
 }
 
 /**
- * return a JString represntation of the advertisement
- * it is the responsiblity of the caller to release the JString object
+ * return a JString representation of the advertisement
+ * it is the responsibility of the caller to release the JString object
  * @param adv a pointer to the advertisement.
  * @param doc  a pointer to the JString object representing the document.
  * @return Jxta_status 

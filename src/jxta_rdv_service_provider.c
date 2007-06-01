@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_provider.c,v 1.21 2005/11/21 01:19:23 mmx2005 Exp $
+ * $Id: jxta_rdv_service_provider.c,v 1.22 2006/03/29 21:49:17 slowhog Exp $
  */
 
 static const char *__log_cat = "RdvProvider";
@@ -217,12 +217,12 @@ void JXTA_STDCALL jxta_rdv_service_provider_prop_listener(Jxta_object * obj, voi
 
     JXTA_OBJECT_CHECK_VALID(msg);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Rendezvous received a propagated message [%p].\n", msg);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Rendezvous received a propagated message [%pp].\n", msg);
 
     res = jxta_message_get_element_1(msg, self->messageElementName, &el);
 
     if ((JXTA_SUCCESS != res) || (NULL == el)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "PropHdr element missing. Dropping msg [%p].\n", msg);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "PropHdr element missing. Dropping msg [%pp].\n", msg);
         return;
     }
 
@@ -237,14 +237,14 @@ void JXTA_STDCALL jxta_rdv_service_provider_prop_listener(Jxta_object * obj, voi
     JXTA_OBJECT_RELEASE(string);
 
     if (JXTA_SUCCESS != res) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Damaged PropHdr. Dropping msg [%p].\n", msg);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Damaged PropHdr. Dropping msg [%pp].\n", msg);
     } else {
         JString *msgid = RendezVousPropagateMessage_get_MessageId(pmsg);
         JString *svc_name = RendezVousPropagateMessage_get_DestSName(pmsg);
         JString *svc_param = RendezVousPropagateMessage_get_DestSParam(pmsg);
         Jxta_vector *vector = NULL;
 
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Demux propagated message [%p] MessageId [%s] -> %s/%s\n",
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Demux propagated message [%pp] MessageId [%s] -> %s/%s\n",
                         msg, jstring_get_string(msgid), jstring_get_string(svc_name), jstring_get_string(svc_param));
 
         /* XXX 20050516 bondolo Do duplicate message removal based upon msgid here */
@@ -270,7 +270,7 @@ void JXTA_STDCALL jxta_rdv_service_provider_prop_listener(Jxta_object * obj, voi
                 }
 
                 if (0 == strcmp(jstring_get_string(aPeer), jstring_get_string(self->localPeerIdJString))) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Removing previously seen meessage [%p] msgid [%s]\n", msg,
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Removing previously seen meessage [%pp] msgid [%s]\n", msg,
                                     jstring_get_string(msgid));
                     message_seen = TRUE;
                     break;
@@ -316,7 +316,7 @@ Jxta_status jxta_rdv_service_provider_update_prophdr(Jxta_rdv_service_provider *
 
     JXTA_OBJECT_CHECK_VALID(msg);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Updating message [%p].\n", msg);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Updating message [%pp].\n", msg);
 
     /* Test arguments first */
     if ((ttl <= 0) || (NULL == serviceName)) {
@@ -367,7 +367,7 @@ Jxta_status jxta_rdv_service_provider_update_prophdr(Jxta_rdv_service_provider *
         RendezVousPropagateMessage_set_TTL(pmsg, ttl);
     }
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Updating message [%p] ID [%s] ttl=%d \n", msg,
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Updating message [%pp] ID [%s] ttl=%d \n", msg,
                     jstring_get_string(messageId), ttl);
     JXTA_OBJECT_RELEASE(messageId);
 
@@ -437,7 +437,7 @@ Jxta_status jxta_rdv_service_provider_prop_to_peers(Jxta_rdv_service_provider * 
     /* We are going to modify the message so we clone it */
     msg = jxta_message_clone(msg);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Propagating message [%p].\n", msg);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Propagating message [%pp].\n", msg);
 
     /*
      * propagate via physical transport if any transport
@@ -487,7 +487,7 @@ Jxta_status jxta_rdv_service_provider_prop_to_peers(Jxta_rdv_service_provider * 
                     jxta_endpoint_service_send(jxta_service_get_peergroup_priv
                                                ((_jxta_service *) provider->service), provider->service->endpoint, msg, destAddr);
                 if (res != JXTA_SUCCESS) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to propagate message [%p]. Expiring %s://%s\n",
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to propagate message [%pp]. Expiring %s://%s\n",
                                     msg,
                                     jxta_endpoint_address_get_protocol_name(((_jxta_peer_entry *) peer)->address),
                                     jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) peer)->address));
@@ -504,7 +504,7 @@ Jxta_status jxta_rdv_service_provider_prop_to_peers(Jxta_rdv_service_provider * 
         }
         JXTA_OBJECT_RELEASE(vector);
 
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Propagated message [%p] to %d peers.\n", msg, peerCount);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Propagated message [%pp] to %d peers.\n", msg, peerCount);
     }
 
     JXTA_OBJECT_RELEASE(msg);

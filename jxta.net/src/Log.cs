@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: Log.cs,v 1.3 2006/02/13 10:06:10 lankes Exp $
+ * $Id: Log.cs,v 1.4 2006/03/29 21:49:14 slowhog Exp $
  */
 
 using System;
@@ -101,12 +101,12 @@ namespace JxtaNET.Log
         #region native_callback-interop
 
         // Callback-method for nativ-interop.
-        private static UInt32 log_callback(String cat, UInt32 level, String message, UInt32 thread)
+        private static UInt32 log_callback(IntPtr userData, String cat, UInt32 level, String message)
         {
             try
             {
                 // call the global logger
-                LogMessage msg = new LogMessage(cat, LoggersLittleHelper.GetManagedLevel(level), message, DateTime.Now, (uint)thread);
+                LogMessage msg = new LogMessage(cat, LoggersLittleHelper.GetManagedLevel(level), message, DateTime.Now, Thread.CurrentThread.ManagedThreadId);
                 GlobalLogger.AppendLog(msg);
             }
             catch (JxtaException e)
@@ -117,10 +117,10 @@ namespace JxtaNET.Log
             return Errors.JXTA_SUCCESS;
         }
 
-        private delegate UInt32 native_log_callback(String cat, UInt32 level, String message, UInt32 thread);
+        private delegate UInt32 native_log_callback(IntPtr userData, String cat, UInt32 level, String message);
 
         [DllImport("jxta.dll")]
-        private static extern void jxta_managed_log_using(native_log_callback logCb);
+        private static extern void jxta_log_using(native_log_callback logCb, IntPtr userData);
 
         private static native_log_callback _delegate;
         
@@ -130,7 +130,7 @@ namespace JxtaNET.Log
                 return;
 
             _delegate = new native_log_callback(log_callback);
-            jxta_managed_log_using(_delegate);
+            jxta_log_using(_delegate, IntPtr.Zero);
         }
 
         public static void StopLogging()
@@ -139,7 +139,7 @@ namespace JxtaNET.Log
                 return;
 
             _delegate = null;
-            jxta_managed_log_using(null);
+            jxta_log_using(null, IntPtr.Zero);
         }
 
         static GlobalLogger()
@@ -231,7 +231,7 @@ namespace JxtaNET.Log
         /// Thread-ID of the calling thread.
         /// -1 if not set.
         /// </summary>
-        public uint ThreadID = 0;
+        public int ThreadID = -1;
         /// <summary>
         /// FormatString for the ToString-method.
         /// c: Category;
@@ -308,7 +308,7 @@ namespace JxtaNET.Log
             Time = time;
         }
 */
-        public LogMessage(String category, LogLevels logLevel, String message, DateTime time, uint threadID)
+        public LogMessage(String category, LogLevels logLevel, String message, DateTime time, int threadID)
         {
             Category = category;
             LogLevel = logLevel;

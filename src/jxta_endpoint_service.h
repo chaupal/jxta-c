@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_service.h,v 1.14 2006/03/06 23:50:38 slowhog Exp $
+ * $Id: jxta_endpoint_service.h,v 1.15 2006/05/16 00:58:12 slowhog Exp $
  */
 
 
@@ -78,7 +78,7 @@ extern "C" {
 
 #define  JXTA_ENDPOINT_SERVICE_NAME "EndpointService"
 
-typedef struct _jxta_endpoint_service Jxta_endpoint_service;
+typedef struct jxta_endpoint_service Jxta_endpoint_service;
 
 typedef void (*JxtaEndpointListener) (Jxta_message * msg, void *arg);
 typedef int (*JxtaEndpointFilter) (Jxta_message * msg, void *arg);
@@ -179,9 +179,11 @@ JXTA_DECLARE(void) jxta_endpoint_service_remove_filter(Jxta_endpoint_service * s
  * @param dest_addr The destination of the message.
  * @return Jxta_status success or failed
  */
-JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_sync(Jxta_PG * pg, Jxta_endpoint_service * service, Jxta_message * msg, Jxta_endpoint_address * dest_addr);
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_sync(Jxta_PG * pg, Jxta_endpoint_service * service, Jxta_message * msg,
+                                                          Jxta_endpoint_address * dest_addr);
 
-JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_async(Jxta_PG * pg, Jxta_endpoint_service * service, Jxta_message * msg, Jxta_endpoint_address * dest_addr);
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_async(Jxta_PG * pg, Jxta_endpoint_service * service, Jxta_message * msg,
+                                                           Jxta_endpoint_address * dest_addr);
 
 #define jxta_endpoint_service_send jxta_endpoint_service_send_async
 
@@ -213,6 +215,8 @@ JXTA_DECLARE(Jxta_status)
  ** @returns JXTA_INVALID_PARAMETERS if some arguments are invalid,
  **          JXTA_BUSY if there was already a listener registered
  **          JXTA_SUCCESS otherwise
+ **
+ ** @deprecated
  **/
 JXTA_DECLARE(Jxta_status)
     jxta_endpoint_service_add_listener(Jxta_endpoint_service * endpoint,
@@ -227,6 +231,8 @@ JXTA_DECLARE(Jxta_status)
  ** @param serviceParam pointer to a string containing the parameter associated to the
  ** serviceName.
  ** @returns JXTA_INVALID_PARAMETERS if some arguments are invalid, JXTA_SUCCESS otherise
+ **
+ ** @deprecated
  **/
 JXTA_DECLARE(Jxta_status)
     jxta_endpoint_service_remove_listener(Jxta_endpoint_service * endpoint, char const *serviceName, char const *serviceParam);

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peerinfo_service_ref.c,v 1.11 2005/10/27 01:55:27 slowhog Exp $
+ * $Id: jxta_peerinfo_service_ref.c,v 1.12 2006/06/01 05:01:35 mmx2005 Exp $
  */
 
 
@@ -158,7 +158,7 @@ static void init_e(Jxta_module * peerinfo, Jxta_PG * group, Jxta_id * assigned_i
  * @param self a pointer to the instance of the Peerinfo Service
  * @param argv a vector of string arguments.
  */
-static Jxta_status start(Jxta_module * self, char *argv[])
+static Jxta_status start(Jxta_module * self, const char *argv[])
 {
     /* easy as pai */
     return JXTA_SUCCESS;

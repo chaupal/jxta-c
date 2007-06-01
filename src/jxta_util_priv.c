@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_util_priv.c,v 1.6 2006/03/11 02:35:02 slowhog Exp $
+ * $Id: jxta_util_priv.c,v 1.7 2006/04/01 01:20:20 slowhog Exp $
  */
 
 static const char *__log_cat = "UTIL";
@@ -104,6 +104,29 @@ Jxta_vector *getPeerids(Jxta_vector * peers)
     }
     JXTA_OBJECT_RELEASE(peersHash);
     return peerIds;
+}
+
+char* get_service_key(const char * svc_name, const char * svc_param)
+{
+    char *key = NULL;
+    size_t len;
+
+    if (!svc_name) {
+        return NULL;
+    }
+
+    len = strlen(svc_name);
+    key = (svc_param) ? malloc(len + strlen(svc_param) + 2) : malloc(len + 1);
+    if (!key) {
+        return NULL;
+    }
+
+    strcpy(key, svc_name);
+    if (svc_param) {
+        key[len] = '/';
+        strcpy(key + len + 1, svc_param);
+    }
+    return key;
 }
 
 /* vim: set ts=4 sw=4 et tw=130: */

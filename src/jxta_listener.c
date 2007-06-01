@@ -51,10 +51,11 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_listener.c,v 1.38 2005/11/14 08:40:48 slowhog Exp $
+ * $Id: jxta_listener.c,v 1.41 2006/06/17 09:24:12 mmx2005 Exp $
  */
 
 #include <stdlib.h>
+#include <assert.h>
 
 #include "jxta_apr.h"
 
@@ -72,6 +73,12 @@ static const char *__log_cat = "LISTENER";
  ** for detail on the API.
  **********************************************************************/
 
+struct _listener_arg {
+    Jxta_listener *listener;
+    Jxta_object *obj;
+    struct _listener_arg *recycle;
+};
+
 struct _jxta_listener {
     JXTA_OBJECT_HANDLE;
     Jxta_listener_func func;
@@ -84,15 +91,15 @@ struct _jxta_listener {
     Queue *queue;
     apr_thread_mutex_t *mutex;
     apr_pool_t *pool;
+    struct _listener_arg *recycles;
 };
-
 
 static const Jxta_time_diff WAITING_DELAY = 5 * 60 * 1000 * 1000;
 
 static void _listener_stop(Jxta_listener * self)
 {
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Stopping listener [%p], signal %u working threads\n", self,
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Stopping listener [%pp], signal %u working threads\n", self,
                     self->nbOfThreads);
     self->started = FALSE;
 
@@ -107,7 +114,7 @@ static void _listener_stop(Jxta_listener * self)
         apr_sleep(20 * 1000);   /* 20 ms */
     }
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,
-                    "There is(are) %d worker thread(s) for listener[%p] still busy, will be stopped shortly\n",
+                    "There is(are) %d worker thread(s) for listener[%pp] still busy, will be stopped shortly\n",
                     self->nbOfBusyThreads, self);
     apr_thread_mutex_lock(self->mutex);
 }
@@ -141,13 +148,13 @@ static void jxta_listener_free(Jxta_object * listener)
         _listener_stop(self);
     }
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Waiting %d worker thread(s) for listener[%p] to stop ...\n",
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Waiting %d worker thread(s) for listener[%pp] to stop ...\n",
                     self->nbOfThreads, self);
     apr_thread_mutex_unlock(self->mutex);
     while (self->nbOfThreads > 0) {
         apr_sleep(20 * 1000);   /* 20 ms */
     }
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "All worker threads for listener[%p] have been stopped\n", self);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "All worker threads for listener[%pp] have been stopped\n", self);
     apr_thread_mutex_lock(self->mutex);
 
     /* Release all the object contained in the listener */
@@ -289,7 +296,7 @@ static void *APR_THREAD_FUNC listener_thread_main(apr_thread_t * thread, void *a
         Jxta_object *obj = NULL;
         JXTA_OBJECT_CHECK_VALID(self);
         rv = queue_dequeue_1(self->queue, (void **) &obj, WAITING_DELAY);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Dequeue a message[%p] for listener[%p], queue size left %d\n", obj,
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Dequeue a message[%pp] for listener[%pp], queue size left %d\n", obj,
                         self, queue_size(self->queue));
 
         if (JXTA_TIMEOUT == rv) {
@@ -323,7 +330,7 @@ static void *APR_THREAD_FUNC listener_thread_main(apr_thread_t * thread, void *a
     }
     apr_thread_mutex_lock(self->mutex);
     --self->nbOfThreads;
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Listener[%p] thread stopped, number of alive threads: %d\n", self,
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Listener[%pp] thread stopped, number of alive threads: %d\n", self,
                     self->nbOfThreads);
 
     if ((!self->started) && (self->nbOfThreads > self->nbOfBusyThreads)) {    
@@ -357,7 +364,7 @@ static void create_listener_thread(Jxta_listener * self)
 /************************************************************************
  ** Schedule an event to the listener
  ** The event is either queued to be processed by the next available thread.
- ** Jxta_listener_scheduled_object is guaranted to not be blocking.
+ ** Jxta_listener_scheduled_object is guaranteed to not be blocking.
  **
  ** @param listener a pointer to the listener to use.
  ** @param object a pointer to the Jxta_object to schedule. Note that the
@@ -373,7 +380,7 @@ JXTA_DECLARE(Jxta_status) jxta_listener_schedule_object(Jxta_listener * self, Jx
 
     JXTA_OBJECT_CHECK_VALID(self);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Schedule event for listener[%p]\n", self);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Schedule event for listener[%pp]\n", self);
 
     apr_thread_mutex_lock(self->mutex);
 
@@ -388,7 +395,7 @@ JXTA_DECLARE(Jxta_status) jxta_listener_schedule_object(Jxta_listener * self, Jx
     if (!self->started) {
         /* Do nothing */
         apr_thread_mutex_unlock(self->mutex);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Listener[%p] is stopped: event discarded\n", self);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Listener[%pp] is stopped: event discarded\n", self);
         return JXTA_SUCCESS;
     }
 
@@ -397,7 +404,7 @@ JXTA_DECLARE(Jxta_status) jxta_listener_schedule_object(Jxta_listener * self, Jx
             if (self->nbOfThreads < self->maxNbOfInvoke) {
                 /* We can create a new listener thread */
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,
-                                "Create additional worker thread for listener[%p] to existing %d ones\n",
+                                "Create additional worker thread for listener[%pp] to existing %d ones\n",
                                 self, self->nbOfThreads);
                 create_listener_thread(self);
             }
@@ -413,7 +420,7 @@ JXTA_DECLARE(Jxta_status) jxta_listener_schedule_object(Jxta_listener * self, Jx
         JXTA_OBJECT_SHARE(object);
 
     size = queue_enqueue(self->queue, (void *) object);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Enqueued message[%p] for listener[%p], queue size %d\n", object, self,
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Enqueued message[%pp] for listener[%pp], queue size %d\n", object, self,
                     size);
 
     JXTA_OBJECT_CHECK_VALID(self);
@@ -427,7 +434,7 @@ JXTA_DECLARE(Jxta_status) jxta_listener_schedule_object(Jxta_listener * self, Jx
 /************************************************************************
  ** Process an event to the listener
  ** The calling thread invokes the listener function itself. This is
- ** not guaranted to be a non blocking operation, and in fact, caller of
+ ** not guaranteed to be a non blocking operation, and in fact, caller of
  ** this method should expect it to be potentially blocking.
  **
  ** @param listener a pointer to the listener to use.
@@ -442,12 +449,12 @@ JXTA_DECLARE(Jxta_status) jxta_listener_process_object(Jxta_listener * self, Jxt
     JXTA_OBJECT_CHECK_VALID(self);
     JXTA_OBJECT_CHECK_VALID(object);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Listener[%p] is processing event\n", self);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Listener[%pp] is processing event\n", self);
 
     apr_thread_mutex_lock(self->mutex);
     if (!self->started) {
         /* Do nothing */
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Listener[%p] is stoped: event discarded\n", self);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Listener[%pp] is stoped: event discarded\n", self);
         apr_thread_mutex_unlock(self->mutex);
         return JXTA_SUCCESS;
     }
@@ -465,9 +472,9 @@ JXTA_DECLARE(Jxta_status) jxta_listener_process_object(Jxta_listener * self, Jxt
 
 
 /************************************************************************
- ** Returns the number of objects that are currentely in the queue.
+ ** Returns the number of objects that are currently in the queue.
  ** @param listener a pointer to the listener to use.
- ** @return the number of object that are currentley in the queue.
+ ** @return the number of object that are currently in the queue.
  *************************************************************************/
 JXTA_DECLARE(int) jxta_listener_queue_size(Jxta_listener * self)
 {
@@ -498,5 +505,51 @@ JXTA_DECLARE(Jxta_status) jxta_listener_wait_for_event(Jxta_listener * self, Jxt
     }
 }
 
+static void *APR_THREAD_FUNC listener_thd_func(apr_thread_t * thread, void *arg)
+{
+    struct _listener_arg *la = arg;
+    Jxta_listener *me = la->listener;
+
+    me->func(la->obj, me->arg);
+    if (la->obj) {
+        JXTA_OBJECT_RELEASE(la->obj);
+    }
+    apr_thread_mutex_lock(me->mutex);
+    la->recycle = me->recycles;
+    me->recycles = la;
+    apr_thread_mutex_unlock(me->mutex);
+
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_listener_pool_object(Jxta_listener * me, Jxta_object * object, apr_thread_pool_t *tpool)
+{
+    struct _listener_arg *la = NULL;
+    
+    if (! me->func) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE 
+                        "Trying to use thread pool for listener in blocking mode, is this a bug?.\n");
+        JXTA_OBJECT_SHARE(object);
+        queue_enqueue(me->queue, (void *) object);
+        return JXTA_SUCCESS;
+    }
+
+    apr_thread_mutex_lock(me->mutex);
+    if (me->recycles) {
+        la = me->recycles;
+        me->recycles = la->recycle;
+    } else {
+        la = apr_palloc(me->pool, sizeof(*la));
+        if (!la) {
+            apr_thread_mutex_unlock(me->mutex);
+            return JXTA_NOMEM;
+        }
+        la->listener = me;
+    }
+    apr_thread_mutex_unlock(me->mutex);
+    assert(me == la->listener);
+    la->obj = object ? JXTA_OBJECT_SHARE(object) : NULL;
+    return apr_thread_pool_push(tpool, listener_thd_func, la, APR_THREAD_TASK_PRIORITY_NORMAL);
+}
 
 /* vi: set ts=4 sw=4 tw=130 et: */

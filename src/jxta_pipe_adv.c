@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_adv.c,v 1.26 2006/02/17 18:26:43 slowhog Exp $
+ * $Id: jxta_pipe_adv.c,v 1.27 2006/06/12 22:40:39 mmx2005 Exp $
  */
 
 
@@ -79,7 +79,8 @@ enum tokentype {
     PipeAdvertisement_,
     Id_,
     Type_,
-    Name_
+    Name_,
+    Desc_
 };
 
 /** This is the representation of the
@@ -93,6 +94,7 @@ struct _jxta_pipe_adv {
     char *Id;
     char *Type;
     char *Name;
+    char *Desc;
 };
 
 void jxta_pipe_adv_delete(Jxta_pipe_adv *);
@@ -115,11 +117,10 @@ static void handleId(void *userdata, const XML_Char * cd, int len)
 
     extract_char_data(cd, len, tok);
 
-    if (strlen(tok) != 0) {
-        ad->Id = tok;
-    } else {
-        free(tok);
-    }
+    if (strlen(tok) != 0)
+        jxta_pipe_adv_set_Id(ad, tok);
+
+    free(tok);
 }
 
 static void handleType(void *userdata, const XML_Char * cd, int len)
@@ -131,11 +132,10 @@ static void handleType(void *userdata, const XML_Char * cd, int len)
 
     extract_char_data(cd, len, tok);
 
-    if (strlen(tok) != 0) {
-        ad->Type = tok;
-    } else {
-        free(tok);
-    }
+    if (strlen(tok) != 0)
+        jxta_pipe_adv_set_Type(ad, tok);
+    
+    free(tok);
 }
 
 static void handleName(void *userdata, const XML_Char * cd, int len)
@@ -145,11 +145,28 @@ static void handleName(void *userdata, const XML_Char * cd, int len)
 
     extract_char_data(cd, len, tok);
 
-    if (strlen(tok) != 0) {
-        ad->Name = tok;
-    } else {
-        free(tok);
-    }
+    if (strlen(tok) != 0)
+        jxta_pipe_adv_set_Name(ad, tok);
+    
+    free(tok);
+}
+
+static void handleDesc(void *userdata, const XML_Char * cd, int len)
+{
+    Jxta_pipe_adv *ad = (Jxta_pipe_adv *) userdata;
+    JString * string;
+
+    if(len == 0)
+        return;
+
+    string = jstring_new_0();
+    jstring_append_0(string, cd, len);
+    jstring_trim(string);
+
+    if(jstring_length(string) > 0)
+        jxta_pipe_adv_set_Desc(ad, jstring_get_string(string));
+
+    JXTA_OBJECT_RELEASE(string);
 }
 
 /** The get/set functions represent the public
@@ -207,6 +224,10 @@ char *JXTA_STDCALL jxta_pipe_adv_get_Type_string(Jxta_advertisement * ad)
 JXTA_DECLARE(Jxta_status) jxta_pipe_adv_set_Type(Jxta_pipe_adv * ad, const char *val)
 {
     if (val != NULL) {
+        if(ad->Type){
+            free(ad->Type);
+        }
+        
         ad->Type = (char *) malloc(strlen(val) + 1);
         strcpy(ad->Type, val);
     } else {
@@ -233,8 +254,32 @@ char *JXTA_STDCALL jxta_pipe_adv_get_Name_string(Jxta_advertisement * ad)
 JXTA_DECLARE(Jxta_status) jxta_pipe_adv_set_Name(Jxta_pipe_adv * ad, const char *val)
 {
     if (val != NULL) {
+        if(ad->Name){
+            free(ad->Name);
+        }
+
         ad->Name = (char *) malloc(strlen(val) + 1);
         strcpy(ad->Name, val);
+    } else {
+        return JXTA_INVALID_ARGUMENT;
+    }
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(const char *) jxta_pipe_adv_get_Desc(Jxta_pipe_adv * ad)
+{
+    return ad->Desc;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_pipe_adv_set_Desc(Jxta_pipe_adv * ad, const char *val)
+{
+    if (val != NULL) {
+        if(ad->Desc){
+            free(ad->Desc);
+        }
+
+        ad->Desc = (char *) malloc(strlen(val) + 1);
+        strcpy(ad->Desc, val);
     } else {
         return JXTA_INVALID_ARGUMENT;
     }
@@ -255,6 +300,7 @@ static const Kwdtab PipeAdvertisement_tags[] = {
     {"Id", Id_, *handleId, jxta_pipe_adv_get_Id_string, NULL},
     {"Type", Type_, *handleType, jxta_pipe_adv_get_Type_string, NULL},
     {"Name", Name_, *handleName, jxta_pipe_adv_get_Name_string, NULL},
+    {"Desc", Desc_, *handleDesc, NULL, NULL},
     {NULL, 0, 0, NULL, NULL}
 };
 
@@ -272,15 +318,24 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_adv_get_xml(Jxta_pipe_adv * ad, JString ** x
     jstring_append_2(string, "<!DOCTYPE jxta:PipeAdvertisement>\n");
 
     jstring_append_2(string, "<jxta:PipeAdvertisement xmlns:jxta=\"http://jxta.org\">\n");
+
     jstring_append_2(string, "<Id>");
     jstring_append_2(string, jxta_pipe_adv_get_Id(ad));
     jstring_append_2(string, "</Id>\n");
+
     jstring_append_2(string, "<Type>");
     jstring_append_2(string, jxta_pipe_adv_get_Type(ad));
     jstring_append_2(string, "</Type>\n");
+
     jstring_append_2(string, "<Name>");
     jstring_append_2(string, jxta_pipe_adv_get_Name(ad));
     jstring_append_2(string, "</Name>\n");
+
+    if(jxta_pipe_adv_get_Desc(ad)){
+        jstring_append_2(string, "<Desc>");
+        jstring_append_2(string, jxta_pipe_adv_get_Desc(ad));
+        jstring_append_2(string, "</Desc>\n");
+    }
 
     jstring_append_2(string, "</jxta:PipeAdvertisement>\n");
     *xml = string;
@@ -314,6 +369,7 @@ JXTA_DECLARE(Jxta_pipe_adv *) jxta_pipe_adv_new(void)
     ad->Id = NULL;
     ad->Type = NULL;
     ad->Name = NULL;
+    ad->Desc = NULL;
 
     return ad;
 }
@@ -340,6 +396,11 @@ void jxta_pipe_adv_delete(Jxta_pipe_adv * ad)
     if (ad->Name) {
         free(ad->Name);
         ad->Name = NULL;
+    }
+
+    if (ad->Desc) {
+        free(ad->Desc);
+        ad->Desc = NULL;
     }
 
     jxta_advertisement_delete((Jxta_advertisement *) ad);

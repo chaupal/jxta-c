@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dr.h,v 1.8 2005/09/21 21:16:46 slowhog Exp $
+ * $Id: jxta_dr.h,v 1.11 2006/06/16 03:16:55 mmx2005 Exp $
  */
 
 
@@ -71,7 +71,7 @@ typedef struct _Jxta_DiscoveryResponse Jxta_DiscoveryResponse;
 typedef struct _jxta_DiscoveryResponseElement Jxta_DiscoveryResponseElement;
 
 /* Expiration is an attribute that will have to be handled for
- * each repsonse.
+ * each response.
  */
 
 struct _jxta_DiscoveryResponseElement {
@@ -90,8 +90,8 @@ struct _jxta_DiscoveryResponseElement {
 JXTA_DECLARE(Jxta_DiscoveryResponse *) jxta_discovery_response_new(void);
 
 JXTA_DECLARE(Jxta_DiscoveryResponse *) jxta_discovery_response_new_1(short type,
-                                                                     char *attr,
-                                                                     char *value,
+                                                                     const char *attr,
+                                                                     const char *value,
                                                                      int threshold, JString * peeradv, Jxta_vector * responses);
 
 

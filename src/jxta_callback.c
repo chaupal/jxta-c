@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_callback.c,v 1.2 2005/11/22 10:33:25 slowhog Exp $
+ * $Id: jxta_callback.c,v 1.3 2006/05/13 10:34:01 slowhog Exp $
  */
 
 #include <stdlib.h>
@@ -60,6 +60,8 @@
 #include "jxta_errno.h"
 #include "jxta_object_type.h"
 #include "jxta_callback.h"
+#include "jxta_listener.h"
+#include "jxta_log.h"
 
 /**********************************************************************
  ** This file implements Jxta_callback. Please refer to jxta_callback.h
@@ -77,7 +79,7 @@ static void jxta_callback_free(Jxta_object * me)
     free(PTValid(me, Jxta_callback));
 }
 
-JXTA_DECLARE(Jxta_status) jxta_callback_new(Jxta_callback **instance, Jxta_callback_func func, void *arg)
+JXTA_DECLARE(Jxta_status) jxta_callback_new(Jxta_callback ** instance, Jxta_callback_func func, void *arg)
 {
     Jxta_callback *me = (Jxta_callback *) calloc(1, sizeof(Jxta_callback));
 
@@ -106,6 +108,15 @@ JXTA_DECLARE(Jxta_status) jxta_callback_process_object(Jxta_callback * me, Jxta_
     JXTA_OBJECT_CHECK_VALID(object);
 
     return me->func(object, me->arg);
+}
+
+Jxta_status JXTA_STDCALL listener_callback(Jxta_object * obj, void *arg)
+{
+    Jxta_listener *l = arg;
+
+    JXTA_DEPRECATED_API();
+    jxta_listener_process_object(l, obj);
+    return JXTA_SUCCESS;
 }
 
 /* vi: set ts=4 sw=4 tw=130 et: */

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_service_ref.c,v 1.95 2006/03/14 18:08:27 slowhog Exp $
+ * $Id: jxta_resolver_service_ref.c,v 1.101 2006/06/18 06:21:59 mmx2005 Exp $
  */
 
 static const char *__log_cat = "RSLVR";
@@ -76,13 +76,12 @@ static const char *__log_cat = "RSLVR";
 #include "jxta_discovery_service.h"
 #include "jxta_routea.h"
 #include "jxta_callback.h"
+#include "jxta_endpoint_service_priv.h"
 
 #define HAVE_POOL
 
 typedef struct {
-
     Extends(Jxta_resolver_service);
-    JString *instanceName;
     Jxta_boolean running;
     Jxta_PG *group;
     Jxta_rdv_service *rendezvous;
@@ -94,17 +93,13 @@ typedef struct {
     Jxta_PID *localPeerId;
     Jxta_id *assigned_id;
     Jxta_advertisement *impl_adv;
-    JString *inque;
-    JString *outque;
-    JString *srdique;
+    char *instanceName;
+    char *inque;
+    char *outque;
+    char *srdique;
     apr_thread_mutex_t *mutex;
     long query_id;
-    apr_pool_t *pool;
-
-    /* hold listener to stop, no API to retrieve the listener */
-    Jxta_listener *o_listener;
-    Jxta_listener *i_listener;
-    Jxta_listener *s_listener;
+    void *ep_cookies[3];
 } Jxta_resolver_service_ref;
 
 #ifdef GZIP_ENABLED
@@ -113,10 +108,10 @@ typedef struct {
 #endif /* ndef GUNZIP_ENABLED */
 #endif /* GZIP_ENABLED */
 
-/* used to make an adress out of a peerid */
-static void JXTA_STDCALL resolver_service_query_listener(Jxta_object * obj, void *arg);
-static void JXTA_STDCALL resolver_service_response_listener(Jxta_object * obj, void *arg);
-static void JXTA_STDCALL resolver_service_srdi_listener(Jxta_object * obj, void *arg);
+/* used to make an address out of a peerid */
+static Jxta_status JXTA_STDCALL resolver_service_query_cb(Jxta_object * obj, void *arg);
+static Jxta_status JXTA_STDCALL resolver_service_response_cb(Jxta_object * obj, void *arg);
+static Jxta_status JXTA_STDCALL resolver_service_srdi_cb(Jxta_object * obj, void *arg);
 static long getid(Jxta_resolver_service_ref * resolver);
 static Jxta_status learn_route_from_query(Jxta_resolver_service_ref * me, ResolverQuery * rq);
 
@@ -150,6 +145,7 @@ jxta_resolver_service_ref_init(Jxta_module * resolver, Jxta_PG * group, Jxta_id 
 {
     Jxta_status status = JXTA_SUCCESS;
     Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
+    apr_pool_t *pool;
 
     /* Test arguments first */
     if ((resolver == NULL) || (group == NULL)) {
@@ -157,11 +153,22 @@ jxta_resolver_service_ref_init(Jxta_module * resolver, Jxta_PG * group, Jxta_id 
         return JXTA_INVALID_ARGUMENT;
     }
 
+    self->group = group;
+    pool = jxta_PG_pool_get(group);
+    jxta_PG_get_endpoint_service(group, &(self->endpoint));
+    jxta_PG_get_rendezvous_service(group, &(self->rendezvous));
+    jxta_PG_get_PID(group, &(self->localPeerId));
+    /* Create the mutex */
+    apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED,  /* nested */
+                            pool);
 
-    apr_pool_create(&self->pool, NULL);
     self->queryhandlers = jxta_hashtable_new(3);
     self->responsehandlers = jxta_hashtable_new(3);
     self->srdihandlers = jxta_hashtable_new(3);
+    if (self->queryhandlers == NULL || self->responsehandlers == NULL || self->srdihandlers == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        return JXTA_NOMEM;
+    }
     self->query_id = 0;
     /* store a copy of our assigned id */
     if (assigned_id != 0) {
@@ -173,40 +180,29 @@ jxta_resolver_service_ref_init(Jxta_module * resolver, Jxta_PG * group, Jxta_id 
     if (impl_adv != 0) {
         JXTA_OBJECT_SHARE(impl_adv);
     }
-    self->group = group;
     self->impl_adv = impl_adv;
-
-    jxta_PG_get_endpoint_service(group, &(self->endpoint));
-    jxta_PG_get_rendezvous_service(group, &(self->rendezvous));
-    jxta_PG_get_PID(group, &(self->localPeerId));
-    /* Create the mutex */
-    apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED,      /* nested */
-                            self->pool);
 
     /**
      ** Build the local name of the instance
      **/
     self->instanceName = NULL;
-    jxta_id_to_jstring(self->assigned_id, &self->instanceName);
+    jxta_id_to_cstr(self->assigned_id, &self->instanceName, pool);
 
-    {                           /* don't release this object */
+    {   /* don't release this object */
         JString *grp_str = NULL;
         Jxta_id *gid;
 
         jxta_PG_get_GID(self->group, &gid);
         jxta_id_get_uniqueportion(gid, &grp_str);
         JXTA_OBJECT_RELEASE(gid);
-
-        self->inque = jstring_new_2(jstring_get_string(grp_str));
-        self->outque = jstring_new_2(jstring_get_string(grp_str));
-        self->srdique = jstring_new_2(jstring_get_string(grp_str));
-
-        /* append queue identifier */
-        jstring_append_2(self->inque, INQUENAMESHORT);
-        jstring_append_2(self->outque, OUTQUENAMESHORT);
-        jstring_append_2(self->srdique, SRDIQUENAMESHORT);
-
+        self->inque = apr_pstrcat(pool, jstring_get_string(grp_str), INQUENAMESHORT, NULL);
+        self->outque = apr_pstrcat(pool, jstring_get_string(grp_str), OUTQUENAMESHORT, NULL);
+        self->srdique = apr_pstrcat(pool, jstring_get_string(grp_str), SRDIQUENAMESHORT, NULL);
         JXTA_OBJECT_RELEASE(grp_str);
+        if (self->inque == NULL || self->outque == NULL || self->srdique == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+            return JXTA_NOMEM;
+        }
     }
 
     return status;
@@ -232,37 +228,34 @@ jxta_resolver_service_ref_init(Jxta_module * resolver, Jxta_PG * group, Jxta_id 
  */
 static Jxta_status start(Jxta_module * resolver, const char *argv[])
 {
-    Jxta_status status = JXTA_SUCCESS;
+    Jxta_status rv = JXTA_SUCCESS;
     Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
+
     if (argv) {
     }
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Starting ...\n");
     jxta_PG_get_discovery_service(self->group, &(self->discovery));
 
-    self->o_listener = jxta_listener_new((Jxta_listener_func) resolver_service_query_listener, self, 1, 200);
-    status = jxta_rdv_service_add_propagate_listener(self->rendezvous,
-                                                     (char *) jstring_get_string(self->instanceName),
-                                                     (char *) jstring_get_string(self->outque), self->o_listener);
-    if (status != JXTA_SUCCESS) {
-        return status;
+    rv = endpoint_service_add_recipient(self->endpoint, &self->ep_cookies[0], self->instanceName,
+                                        self->outque, resolver_service_query_cb, self);
+    if (rv != JXTA_SUCCESS) {
+        return rv;
     }
 
-    jxta_listener_start(self->o_listener);
+    rv = endpoint_service_add_recipient(self->endpoint, &self->ep_cookies[1], self->instanceName,
+                                        self->inque, resolver_service_response_cb, self);
+    if (rv != JXTA_SUCCESS) {
+        return rv;
+    }
 
-    self->i_listener = jxta_listener_new((Jxta_listener_func) resolver_service_response_listener, self, 1, 200);
-    status = jxta_rdv_service_add_propagate_listener(self->rendezvous,
-                                                     (char *) jstring_get_string(self->instanceName),
-                                                     (char *) jstring_get_string(self->inque), self->i_listener);
-    jxta_listener_start(self->i_listener);
-
-    self->s_listener = jxta_listener_new((Jxta_listener_func) resolver_service_srdi_listener, self, 1, 200);
-    status = jxta_endpoint_service_add_listener(self->endpoint,
-                                                (char *) jstring_get_string(self->instanceName),
-                                                (char *) jstring_get_string(self->srdique), self->s_listener);
-    jxta_listener_start(self->s_listener);
+    rv = endpoint_service_add_recipient(self->endpoint, &self->ep_cookies[2], self->instanceName,
+                                        self->srdique, resolver_service_srdi_cb, self);
+    if (rv != JXTA_SUCCESS) {
+        return rv;
+    }
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Started\n");
-    return status;
+    return rv;
 }
 
 /**
@@ -275,32 +268,10 @@ static void stop(Jxta_module * resolver)
 {
     Jxta_status status = JXTA_SUCCESS;
     Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
+    int i;
 
-    if (NULL != self->s_listener) {
-        status = jxta_endpoint_service_remove_listener(self->endpoint,
-                                                       (char *) jstring_get_string(self->instanceName),
-                                                       (char *) jstring_get_string(self->srdique));
-        jxta_listener_stop(self->s_listener);
-        JXTA_OBJECT_RELEASE(self->s_listener);
-        self->s_listener = NULL;
-    }
-
-    if (NULL != self->i_listener) {
-        status = jxta_rdv_service_remove_propagate_listener(self->rendezvous,
-                                                            (char *) jstring_get_string(self->instanceName),
-                                                            (char *) jstring_get_string(self->inque), self->i_listener);
-        jxta_listener_stop(self->i_listener);
-        JXTA_OBJECT_RELEASE(self->i_listener);
-        self->i_listener = NULL;
-    }
-
-    if (NULL != self->o_listener) {
-        status = jxta_rdv_service_remove_propagate_listener(self->rendezvous,
-                                                            (char *) jstring_get_string(self->instanceName),
-                                                            (char *) jstring_get_string(self->outque), self->o_listener);
-        jxta_listener_stop(self->o_listener);
-        JXTA_OBJECT_RELEASE(self->o_listener);
-        self->o_listener = NULL;
+    for (i = 0; i < 3; i++) {
+        endpoint_service_remove_recipient(self->endpoint, self->ep_cookies[i]);
     }
 
     if (NULL != self->discovery) {
@@ -365,7 +336,7 @@ Jxta_status registerQueryHandler(Jxta_resolver_service * resolver, JString * nam
     hashname = jstring_get_string(name);
 
     if (strlen(hashname) != 0) {
-        jxta_hashtable_put(self->queryhandlers, hashname, strlen(hashname), (Jxta_object*) handler);
+        jxta_hashtable_put(self->queryhandlers, hashname, strlen(hashname), (Jxta_object *) handler);
         return JXTA_SUCCESS;
     } else {
         return JXTA_INVALID_ARGUMENT;
@@ -488,15 +459,86 @@ static Jxta_status unregisterResponseHandler(Jxta_resolver_service * resolver, J
     return status;
 }
 
-static Jxta_status sendQuery(Jxta_resolver_service * resolver, ResolverQuery * query, Jxta_id * peerid)
+static Jxta_status do_send(Jxta_resolver_service_ref * me, Jxta_id * peerid, JString * doc, const char * queue)
 {
     Jxta_message *msg = NULL;
     Jxta_message_element *msgElem;
     Jxta_endpoint_address *address;
     char *tmp;
-    JString *doc;
     Jxta_status status;
     JString *el_name;
+
+    tmp = malloc(jstring_length(doc) + 1);
+    if (tmp == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        return JXTA_NOMEM;
+    }
+    tmp[jstring_length(doc)] = 0;
+    memcpy(tmp, jstring_get_string(doc), jstring_length(doc));
+
+    msg = jxta_message_new();
+    if (msg == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        free(tmp);
+        return JXTA_NOMEM;
+    }
+
+    el_name = jstring_new_2(JXTA_NAMESPACE);
+    if (el_name == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        JXTA_OBJECT_RELEASE(msg);
+        free(tmp);
+        return JXTA_NOMEM;
+    }
+    jstring_append_2(el_name, queue);
+    msgElem = jxta_message_element_new_1(jstring_get_string(el_name), "text/xml", tmp, strlen(tmp), NULL);
+    JXTA_OBJECT_RELEASE(el_name);
+    free(tmp);
+    if (msgElem == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "failed to create message element.\n");
+        JXTA_OBJECT_RELEASE(msg);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    jxta_message_add_element(msg, msgElem);
+
+    if (NULL == peerid) {
+        jxta_rdv_service_walk(me->rendezvous, msg, me->instanceName, queue);
+        status = jxta_endpoint_service_propagate(me->endpoint, msg, me->instanceName, queue);
+        if (JXTA_SUCCESS != status) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Endpoint service propagation status= %d\n", status);
+            goto FINAL_EXIT;
+        }
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Resolver message sent by propagation\n");
+    } else {
+        address = jxta_endpoint_address_new_3(peerid, me->instanceName, queue);
+        if (address == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+            status = JXTA_NOMEM;
+            goto FINAL_EXIT;
+        }
+        status = jxta_endpoint_service_send(me->group, me->endpoint, msg, address);
+        if (status != JXTA_SUCCESS) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to send resolver message\n");
+        }
+        tmp = jxta_endpoint_address_to_string(address);
+        if (tmp) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Resolver message sent to %s\n", tmp);
+            free(tmp);
+        }
+        JXTA_OBJECT_RELEASE(address);
+    }
+
+  FINAL_EXIT:
+    JXTA_OBJECT_RELEASE(msgElem);
+    JXTA_OBJECT_RELEASE(msg);
+
+    return status;
+}
+
+static Jxta_status sendQuery(Jxta_resolver_service * resolver, ResolverQuery * query, Jxta_id * peerid)
+{
+    JString *doc;
+    Jxta_status status;
     Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
 
     PTValid(self, Jxta_resolver_service_ref);
@@ -510,48 +552,15 @@ static Jxta_status sendQuery(Jxta_resolver_service * resolver, ResolverQuery * q
       /** That's a new query, set a new locally unique query id */
         jxta_resolver_query_set_queryid(query, getid(self));
     }
+
     status = jxta_resolver_query_get_xml(query, &doc);
     if (status != JXTA_SUCCESS) {
         return status;
     }
 
-    tmp = (char *) malloc(jstring_length(doc) + 1);
-    tmp[jstring_length(doc)] = 0;
-    memcpy(tmp, jstring_get_string(doc), jstring_length(doc));
-
-    msg = jxta_message_new();
-
-    el_name = jstring_new_2(JXTA_NAMESPACE);
-    jstring_append_1(el_name, self->outque);
-    msgElem = jxta_message_element_new_1(jstring_get_string(el_name), "text/xml", tmp, strlen(tmp), NULL);
-    JXTA_OBJECT_RELEASE(el_name);
-    if (msgElem == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "failed to create message element.\n");
-        free(tmp);
-        JXTA_OBJECT_RELEASE(msg);
-        return JXTA_INVALID_ARGUMENT;
-    }
-    jxta_message_add_element(msg, msgElem);
-
-    if (NULL == peerid) {
-        jxta_rdv_service_walk(self->rendezvous, msg, jstring_get_string(self->instanceName), jstring_get_string(self->outque));
-        jxta_endpoint_service_propagate(self->endpoint, msg, jstring_get_string(self->instanceName), 
-                                        jstring_get_string(self->outque));
-    } else {
-        address = jxta_endpoint_address_new_3(peerid, jstring_get_string(self->instanceName), jstring_get_string(self->outque));
-        status = jxta_endpoint_service_send(self->group, self->endpoint, msg, address);
-        if (status != JXTA_SUCCESS) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to send resolver message\n");
-        }
-        JXTA_OBJECT_RELEASE(address);
-    }
-    JXTA_OBJECT_RELEASE(msgElem);
-    JXTA_OBJECT_RELEASE(msg);
+    status = do_send(self, peerid, doc, self->outque);
     JXTA_OBJECT_RELEASE(doc);
-    free(tmp);
-
-    return JXTA_SUCCESS;
-
+    return status;
 }
 
 /* XXX fixme hamada@jxta.org breakout the sending part out into static function both
@@ -560,16 +569,10 @@ static Jxta_status sendQuery(Jxta_resolver_service * resolver, ResolverQuery * q
 
 static Jxta_status sendResponse(Jxta_resolver_service * resolver, ResolverResponse * response, Jxta_id * peerid)
 {
-    Jxta_message *msg;
-    Jxta_message_element *msgElem;
-    Jxta_endpoint_address *address;
     JString *doc;
-    char *tmp;
     Jxta_status status;
-    JString *pid;
-    JString *el_name;
-
     Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
+
     PTValid(self, Jxta_resolver_service_ref);
 
     /* Test arguments first */
@@ -582,65 +585,9 @@ static Jxta_status sendResponse(Jxta_resolver_service * resolver, ResolverRespon
         return status;
     }
 
-    /**
-	 ** XXX fixme hamada@jxta.org 3/09/2002
-	 ** FIXME 3/8/2002 lomax@jxta.org
-	 ** Allocate a buffer than can be freed by the message 
-	 ** This is currentely needed because the message API does not yet
-	 ** support sharing of data. When that will be completed, we will be
-	 ** able to avoid this extra copy.
-	 **/
-
-    tmp = (char *) malloc(jstring_length(doc) + 1);
-    tmp[jstring_length(doc)] = 0;
-    memcpy(tmp, jstring_get_string(doc), jstring_length(doc));
-
+    status = do_send(self, peerid, doc, self->inque);
     JXTA_OBJECT_RELEASE(doc);
-    msg = jxta_message_new();
-
-    el_name = jstring_new_2(JXTA_NAMESPACE);
-    jstring_append_1(el_name, self->inque);
-    msgElem = jxta_message_element_new_1(jstring_get_string(el_name), "text/xml", tmp, strlen(tmp), NULL);
-    JXTA_OBJECT_RELEASE(el_name);
-
-    if (msgElem == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "failed to create message element.\n");
-        free(tmp);
-        JXTA_OBJECT_RELEASE(msg);
-        return JXTA_INVALID_ARGUMENT;
-    }
-    jxta_message_add_element(msg, msgElem);
-
-    if (peerid != NULL) {
-        jxta_id_to_jstring(peerid, &pid);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Send resolver response to peer %s\n", jstring_get_string(pid));
-        JXTA_OBJECT_RELEASE(pid);
-    }
-
-    if (peerid == NULL) {
-        jxta_rdv_service_walk(self->rendezvous, msg, jstring_get_string(self->instanceName), jstring_get_string(self->inque));
-        jxta_endpoint_service_propagate(self->endpoint, msg, jstring_get_string(self->instanceName), 
-                                        jstring_get_string(self->inque));
-    } else {
-        /* unicast */
-        address = jxta_endpoint_address_new_3(peerid, jstring_get_string(self->instanceName), jstring_get_string(self->inque));
-
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "address message to %s://%s/%s/%s\n",
-                        jxta_endpoint_address_get_protocol_name(address),
-                        jxta_endpoint_address_get_protocol_address(address),
-                        jxta_endpoint_address_get_service_name(address), jxta_endpoint_address_get_service_params(address));
-
-        status = jxta_endpoint_service_send(self->group, self->endpoint, msg, address);
-        if (status != JXTA_SUCCESS) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to send resolver message\n");
-        }
-        JXTA_OBJECT_RELEASE(address);
-    }
-
-    JXTA_OBJECT_RELEASE(msgElem);
-    JXTA_OBJECT_RELEASE(msg);
-    free(tmp);
-    return JXTA_SUCCESS;
+    return status;
 }
 
 static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * message, Jxta_id * peerid)
@@ -679,14 +626,24 @@ static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * mes
     tmp = (unsigned char *) calloc(1, jstring_length(doc) + 1);
     if (NULL == tmp) {
         status = JXTA_NOMEM;
-        goto finish;
+        goto FINAL_EXIT;
     }
     tmp[jstring_length(doc)] = 0;
     memcpy(tmp, jstring_get_string(doc), jstring_length(doc));
 
     msg = jxta_message_new();
+    if (msg == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        status = JXTA_NOMEM;
+        goto FINAL_EXIT;
+    }
     el_name = jstring_new_2(JXTA_NAMESPACE);
-    jstring_append_1(el_name, self->srdique);
+    if (el_name == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        status = JXTA_NOMEM;
+        goto FINAL_EXIT;
+    }
+    jstring_append_2(el_name, self->srdique);
 
 #ifndef GZIP_ENABLED
     msgElem = jxta_message_element_new_1(jstring_get_string(el_name), "text/xml", (char *) tmp, strlen((char *) tmp), NULL);
@@ -696,11 +653,16 @@ static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * mes
     if (Z_OK == ret) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "length:%d zipped_len:%d \n", strlen((char *) tmp), zipped_len);
         jSend_buf = jxta_bytevector_new_2(zipped, zipped_len, zipped_len);
+        if (jSend_buf == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+            status = JXTA_NOMEM;
+            goto FINAL_EXIT;
+        }
         byte_len = jxta_bytevector_size(jSend_buf);
         bytes = calloc(1, byte_len);
         if (NULL == bytes) {
             status = JXTA_NOMEM;
-            goto finish;
+            goto FINAL_EXIT;
         }
         jxta_bytevector_get_bytes_at(jSend_buf, bytes, 0, byte_len);
         msgElem =
@@ -714,24 +676,27 @@ static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * mes
     if (msgElem == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "failed to create message element.\n");
         status = JXTA_FAILED;
-        goto finish;
+        goto FINAL_EXIT;
     }
     jxta_message_add_element(msg, msgElem);
 
     if (peerid == NULL) {
         jxta_rdv_service_walk(self->rendezvous,
-                                   msg,
-                                   (char *) jstring_get_string(self->instanceName),
-                                   (char *) jstring_get_string(self->srdique));
+                              msg, self->instanceName, self->srdique);
     } else {
-        address = jxta_endpoint_address_new_3(peerid, jstring_get_string(self->instanceName), jstring_get_string(self->srdique));
+        address = jxta_endpoint_address_new_3(peerid, self->instanceName, self->srdique);
+        if (address == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+            status = JXTA_NOMEM;
+            goto FINAL_EXIT;
+        }
         status = jxta_endpoint_service_send(self->group, self->endpoint, msg, address);
         if (status != JXTA_SUCCESS) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to send srdi message\n");
         }
     }
 
-  finish:
+  FINAL_EXIT:
     if (jSend_buf)
         JXTA_OBJECT_RELEASE(jSend_buf);
     if (el_name)
@@ -828,9 +793,6 @@ void jxta_resolver_service_ref_destruct(Jxta_resolver_service_ref * self)
     if (self->srdihandlers != 0) {
         JXTA_OBJECT_RELEASE(self->srdihandlers);
     }
-    if (self->instanceName != 0) {
-        JXTA_OBJECT_RELEASE(self->instanceName);
-    }
 
     self->group = NULL;
 
@@ -840,13 +802,8 @@ void jxta_resolver_service_ref_destruct(Jxta_resolver_service_ref * self)
     if (self->assigned_id != 0) {
         JXTA_OBJECT_RELEASE(self->assigned_id);
     }
-    JXTA_OBJECT_RELEASE(self->inque);
-    JXTA_OBJECT_RELEASE(self->outque);
-    JXTA_OBJECT_RELEASE(self->srdique);
-    if (self->pool != 0) {
-        apr_pool_destroy(self->pool);
-    }
 
+    apr_thread_mutex_destroy(self->mutex);
     /* call the base classe's dtor. */
     jxta_resolver_service_destruct((Jxta_resolver_service *) self);
 
@@ -881,8 +838,7 @@ static void resol_free(void *service)
 Jxta_resolver_service_ref *jxta_resolver_service_ref_new_instance(void)
 {
     /* Allocate an instance of this service */
-    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *)
-        malloc(sizeof(Jxta_resolver_service_ref));
+    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) malloc(sizeof(Jxta_resolver_service_ref));
 
     if (self == NULL) {
         return NULL;
@@ -912,14 +868,14 @@ static Jxta_status learn_route_from_query(Jxta_resolver_service_ref * me, Resolv
 
     route = jxta_resolver_query_get_src_peer_route(rq);
     if (NULL == route) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Cannot extract route to source peer for resolver query[%p]\n", rq);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Cannot extract route to source peer for resolver query[%pp]\n", rq);
         return JXTA_ITEM_NOTFOUND;
     }
 
     dest = jxta_RouteAdvertisement_get_Dest(route);
     if (NULL == dest) {
         JXTA_OBJECT_RELEASE(route);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Cannot extract APA for RA destination from resolver query[%p]\n", rq);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Cannot extract APA for RA destination from resolver query[%pp]\n", rq);
         return JXTA_INVALID_ARGUMENT;
     }
     JXTA_OBJECT_RELEASE(dest);
@@ -944,8 +900,8 @@ static Jxta_status learn_route_from_query(Jxta_resolver_service_ref * me, Resolv
     JXTA_OBJECT_RELEASE(discovery);
     JXTA_OBJECT_RELEASE(route);
     if (JXTA_SUCCESS != rc) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, 
-                        "Failed to publish route to source peer for resolver query[%p], error code %d\n", rq, rc);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,
+                        "Failed to publish route to source peer for resolver query[%pp], error code %d\n", rq, rc);
     }
     return rc;
 }
@@ -954,10 +910,10 @@ static Jxta_status learn_route_from_query(Jxta_resolver_service_ref * me, Resolv
  * When receiving a resolver query, resolver should call the appropriate handler.
  * Handler will return JXTA_SUCCESS to stop the query, otherwise, the query will be walked.
  *
- * This function also try to publish the router advertisment embedded in the query to reduce the need to resolve the router for
+ * This function also try to publish the router advertisement embedded in the query to reduce the need to resolve the router for
  * returning the response if the query is satisfied locally.
  */
-static void JXTA_STDCALL resolver_service_query_listener(Jxta_object * obj, void *me)
+static Jxta_status JXTA_STDCALL resolver_service_query_cb(Jxta_object * obj, void *me)
 {
     Jxta_message *msg = (Jxta_message *) obj;
     Jxta_message_element *element = NULL;
@@ -978,22 +934,37 @@ static void JXTA_STDCALL resolver_service_query_listener(Jxta_object * obj, void
     JXTA_OBJECT_CHECK_VALID(_self);
 
     el_name = jstring_new_2(JXTA_NAMESPACE);
-    jstring_append_1(el_name, _self->outque);
+    if (el_name == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        return JXTA_NOMEM;
+    }
+    jstring_append_2(el_name, _self->outque);
     status = jxta_message_get_element_1(msg, (char *)
                                         jstring_get_string(el_name), &element);
 
     if (!element) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Resolver Query not for me %s\n", jstring_get_string(el_name));
         JXTA_OBJECT_RELEASE(el_name);
-        return;
+        return JXTA_INVALID_ARGUMENT;
     }
 
     JXTA_OBJECT_RELEASE(el_name);
 
     rq = jxta_resolver_query_new();
+    if (rq == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        JXTA_OBJECT_RELEASE(element);
+        return JXTA_NOMEM;
+    }
     bytes = jxta_message_element_get_value(element);
     string = jstring_new_3(bytes);
     JXTA_OBJECT_RELEASE(bytes);
+    if (string == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        JXTA_OBJECT_RELEASE(rq);
+        JXTA_OBJECT_RELEASE(element);
+        return JXTA_NOMEM;
+    }
     bytes = NULL;
     jxta_resolver_query_parse_charbuffer(rq, jstring_get_string(string), jstring_length(string));
     JXTA_OBJECT_RELEASE(string);
@@ -1013,67 +984,72 @@ static void JXTA_STDCALL resolver_service_query_listener(Jxta_object * obj, void
     jxta_resolver_query_get_handlername(rq, &handlername);
 
     if (handlername != NULL) {
-        status = jxta_hashtable_get(_self->queryhandlers,
-                                    jstring_get_string(handlername), jstring_length(handlername), &handler);
+        status = jxta_hashtable_get(_self->queryhandlers, jstring_get_string(handlername), jstring_length(handlername), &handler);
         /* call the query handler with the query */
         if (handler != NULL) {
-            status = jxta_callback_process_object((Jxta_callback*) handler, (Jxta_object *) rq);
+            status = jxta_callback_process_object((Jxta_callback *) handler, (Jxta_object *) rq);
             JXTA_OBJECT_RELEASE(handler);
         } else {
             assert(JXTA_SUCCESS != status);
         }
         JXTA_OBJECT_RELEASE(handlername);
-        handlername = NULL;
     } else {
         status = JXTA_ITEM_NOTFOUND;
     }
 
     if (JXTA_SUCCESS != status) {
-        if (! jxta_rdv_service_is_rendezvous(_self->rendezvous)) {
+        if (!jxta_rdv_service_is_rendezvous(_self->rendezvous)) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Cannot solve query at edge, done deal\n");
+            status = JXTA_SUCCESS;
         } else {
-            jxta_rdv_service_walk(_self->rendezvous, msg, jstring_get_string(_self->instanceName), 
-                                  jstring_get_string(_self->outque));
+            status = jxta_rdv_service_walk(_self->rendezvous, msg, _self->instanceName, _self->outque);
         }
     }
     JXTA_OBJECT_RELEASE(rq);
+    return status;
 }
 
-static void JXTA_STDCALL resolver_service_response_listener(Jxta_object * obj, void *arg)
+static Jxta_status JXTA_STDCALL resolver_service_response_cb(Jxta_object * obj, void *arg)
 {
     Jxta_message *msg = (Jxta_message *) obj;
     Jxta_message_element *element = NULL;
     Jxta_object *handler = NULL;
     JString *handlername = NULL;
     ResolverResponse *rr = NULL;
-    Jxta_status status;
-    JString *el_name;
+    Jxta_status status = JXTA_SUCCESS;
 
     Jxta_resolver_service_ref *resolver = (Jxta_resolver_service_ref *) arg;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Resolver Response Listener, response received\n");
 
-    el_name = jstring_new_2(JXTA_NAMESPACE);
-    jstring_append_1(el_name, resolver->inque);
-    status = jxta_message_get_element_1(msg, (char *)
-                                        jstring_get_string(el_name), &element);
-    JXTA_OBJECT_RELEASE(el_name);
-
+    status = jxta_message_get_element_2(msg, "jxta", resolver->inque, &element);
     if (element) {
         Jxta_bytevector *bytes = NULL;
         JString *string = NULL;
 
+        assert(JXTA_SUCCESS == status);
         rr = jxta_resolver_response_new();
+        if (rr == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+            JXTA_OBJECT_RELEASE(element);
+            return JXTA_NOMEM;
+        }
         bytes = jxta_message_element_get_value(element);
         string = jstring_new_3(bytes);
         JXTA_OBJECT_RELEASE(bytes);
+        if (string == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+            JXTA_OBJECT_RELEASE(rr);
+            JXTA_OBJECT_RELEASE(element);
+            return JXTA_NOMEM;
+        }
         bytes = NULL;
         jxta_resolver_response_parse_charbuffer(rr, jstring_get_string(string), jstring_length(string));
         JXTA_OBJECT_RELEASE(string);
         string = NULL;
         JXTA_OBJECT_RELEASE(element);
     } else {
-        return;
+        return JXTA_INVALID_ARGUMENT;
     }
 
     jxta_resolver_response_get_handlername(rr, &handlername);
@@ -1083,16 +1059,17 @@ static void JXTA_STDCALL resolver_service_response_listener(Jxta_object * obj, v
                                     jstring_get_string(handlername), jstring_length(handlername), &handler);
 
         if (handler != NULL) {
-            status = jxta_listener_schedule_object((Jxta_listener *) handler, (Jxta_object *) rr);
+            status = jxta_listener_process_object((Jxta_listener *) handler, (Jxta_object *) rr);
             JXTA_OBJECT_RELEASE(handler);
         }
         JXTA_OBJECT_RELEASE(handlername);
         handlername = NULL;
     }
     JXTA_OBJECT_RELEASE(rr);
+    return status;
 }
 
-static void JXTA_STDCALL resolver_service_srdi_listener(Jxta_object * obj, void *arg)
+static Jxta_status JXTA_STDCALL resolver_service_srdi_cb(Jxta_object * obj, void *arg)
 {
     Jxta_message *msg = (Jxta_message *) obj;
     Jxta_message_element *element = NULL;
@@ -1107,7 +1084,11 @@ static void JXTA_STDCALL resolver_service_srdi_listener(Jxta_object * obj, void 
     JXTA_OBJECT_CHECK_VALID(msg);
 
     el_name = jstring_new_2(JXTA_NAMESPACE);
-    jstring_append_1(el_name, resolver->srdique);
+    if (el_name == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        return JXTA_NOMEM;
+    }
+    jstring_append_2(el_name, resolver->srdique);
     status = jxta_message_get_element_1(msg, (char *)
                                         jstring_get_string(el_name), &element);
     JXTA_OBJECT_RELEASE(el_name);
@@ -1121,12 +1102,24 @@ static void JXTA_STDCALL resolver_service_srdi_listener(Jxta_object * obj, void 
             Jxta_bytevector *jb = jxta_message_element_get_value(element);
             size = jxta_bytevector_size(jb);
             bytes = calloc(1, size);
+            if (bytes == NULL) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+                JXTA_OBJECT_RELEASE(jb);
+                JXTA_OBJECT_RELEASE(element);
+                return JXTA_NOMEM;
+            }
             jxta_bytevector_get_bytes_at(jb, bytes, 0, size);
             JXTA_OBJECT_RELEASE(jb);
             if (!strcmp(mime_type, "application/gzip")) {
 #ifdef GUNZIP_ENABLED
                 uncomprLen = 40 * size;
                 uncompr = calloc(1, uncomprLen);
+                if (uncompr == NULL) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+                    free(bytes);
+                    JXTA_OBJECT_RELEASE(element);
+                    return JXTA_NOMEM;
+                }
                 err = zip_uncompress(uncompr, &uncomprLen, bytes, size);
                 free(bytes);
                 if (err != Z_OK) {
@@ -1144,6 +1137,11 @@ static void JXTA_STDCALL resolver_service_srdi_listener(Jxta_object * obj, void 
             }
             if (NULL != uncompr) {
                 srdi_msg = jxta_resolver_srdi_new();
+                if (srdi_msg == NULL) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+                    JXTA_OBJECT_RELEASE(element);
+                    return JXTA_NOMEM;
+                }
                 jxta_resolver_srdi_parse_charbuffer(srdi_msg, (const char *) uncompr, uncomprLen);
                 jxta_resolver_srdi_get_handlername(srdi_msg, &handlername);
                 if (handlername != NULL) {
@@ -1156,7 +1154,7 @@ static void JXTA_STDCALL resolver_service_srdi_listener(Jxta_object * obj, void 
                     JString *payload = NULL;
                     jxta_resolver_srdi_get_payload(srdi_msg, &payload);
                     if (payload != NULL) {
-                        status = jxta_listener_schedule_object((Jxta_listener *) handler, (Jxta_object *) payload);
+                        status = jxta_listener_process_object((Jxta_listener *) handler, (Jxta_object *) payload);
                         JXTA_OBJECT_RELEASE(payload);
                     }
                     JXTA_OBJECT_RELEASE(handler);
@@ -1166,12 +1164,14 @@ static void JXTA_STDCALL resolver_service_srdi_listener(Jxta_object * obj, void 
             }
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "got a message with a null mime type \n");
+            status = JXTA_INVALID_ARGUMENT;
         }
         JXTA_OBJECT_RELEASE(element);
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Didn't get the resolver srdi msg expected \n");
-        return;
+        status = JXTA_INVALID_ARGUMENT;
     }
+    return status;
 }
 
 /**
@@ -1227,6 +1227,9 @@ static int zip_compress(unsigned char **out, size_t * out_len, const char *in, s
     int err;
     *out = NULL;
     stream = calloc(1, sizeof(struct z_stream_s));
+    if (stream == NULL) {
+        return -1;
+    }
     stream->zalloc = Z_NULL;
     stream->zfree = Z_NULL;
     stream->opaque = NULL;
@@ -1237,6 +1240,10 @@ static int zip_compress(unsigned char **out, size_t * out_len, const char *in, s
     if (out_size < 1024)
         out_size = 1024;
     *out = calloc(1, out_size);
+    if (out == NULL) {
+        free(stream);
+        return -1;
+    }
     stream->next_out = *out;
     stream->avail_out = out_size;
     err = deflateInit2(stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, MAX_WBITS + 16, 8, Z_DEFAULT_STRATEGY);

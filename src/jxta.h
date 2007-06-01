@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta.h,v 1.10 2005/09/21 21:16:47 slowhog Exp $
+ * $Id: jxta.h,v 1.11 2006/03/29 22:06:28 slowhog Exp $
  */
 
 #ifndef __JXTA_H__
@@ -77,6 +77,12 @@
 #include "jxta_listener.h"
 #include "jxta_message.h"   /* Definition of JXTA message */
 #include "jxta_endpoint_service.h"  /* Definition of JXTA Endpoint Service */
+#include "jxta_pipe_service.h"
+#include "jxta_discovery_service.h"
+#include "jxta_rdv_service.h"
+#include "jxta_pipe_adv.h"
+#include "jxta_dr.h"
+#include "jxta_peergroup.h"
 
 #ifdef __cplusplus
 extern "C" {

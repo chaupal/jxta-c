@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_address.h,v 1.17 2005/10/28 22:30:02 mathieu Exp $
+ * $Id: jxta_endpoint_address.h,v 1.18 2006/05/25 21:50:16 bondolo Exp $
  */
 
 
@@ -85,7 +85,7 @@ typedef const struct _jxta_endpoint_address Jxta_endpoint_address;
  ** shared.
  **
  ** @param s a pointer to a null-terminated string that contains the URI
- ** @return an Jxta_endpoint_address* pointing to the new Jxta_endpoint_addres.
+ ** @return an Jxta_endpoint_address* pointing to the new Jxta_endpoint_address.
  ** NULL is returned when the URI was incorrect.
  **/
 JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new(const char *s);
@@ -97,7 +97,7 @@ JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new(const char *s);
  ** shared.
  **
  ** @param s a pointer to a JString taht contains the URI
- ** @return an Jxta_endpoint_address* pointing to the new Jxta_endpoint_addres.
+ ** @return an Jxta_endpoint_address* pointing to the new Jxta_endpoint_address.
  ** NULL is returned when the URI was incorrect.
  **/
 JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new_1(JString * s);
@@ -125,7 +125,7 @@ JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new_2(const char *pr
  ** @param peer_id a pointer to the peer ID
  ** @param service_name name of the service
  ** @param service_param parameter of the service
- ** @return an Jxta_endpoint_address* pointing to the new Jxta_endpoint_addres.
+ ** @return an Jxta_endpoint_address* pointing to the new Jxta_endpoint_address.
  ** NULL is returned when the URI was incorrect.
  **/
 JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new_3(Jxta_id * peer_id,

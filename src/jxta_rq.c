@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rq.c,v 1.70 2006/02/15 01:09:46 slowhog Exp $
+ * $Id: jxta_rq.c,v 1.71 2006/06/15 19:19:28 mmx2005 Exp $
  */
 
 static const char *__log_cat = "RSLVQuery";
@@ -127,12 +127,12 @@ static void handleSrcPeerID(void *userdata, const XML_Char * cd, int len)
         extract_char_data(cd, len, tok);
         /* XXXX hamada@jxta.org it is possible to get called many times, some of which are
          * calls on white-space, we only care for the id therefore
-         * we create the id only when we have data, this not an elagant way
+         * we create the id only when we have data, this not an elegant way
          * of dealing with this.
          */
         if (*tok != '\0') {
             JString *tmps = jstring_new_2(tok);
-            /* hamada@jxta.org it would be desireable to have a fucntion that
+            /* hamada@jxta.org it would be desirable to have a function that
                takes a "char *" we would not need to create a JString to create 
                the ID
              */
@@ -215,8 +215,8 @@ static void trim_elements(ResolverQuery * adv)
 
 
 /**
- * return a JString represntation of the advertisement
- * it is the responsiblity of the caller to release the JString object
+ * return a JString representation of the advertisement
+ * it is the responsibility of the caller to release the JString object
  * @param adv a pointer to the advertisement.
  * @param doc  a pointer to the JString object representing the document.
  * @return Jxta_status 
@@ -492,7 +492,7 @@ JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new(void)
 
     /*
      * in theory we're supposed to share even nullID, although, normally
-     * it is never freed, nomatter the ref-count, but let's not assume too much
+     * it is never freed, no matter the ref-count, but let's not assume too much
      */
     JXTA_OBJECT_SHARE(jxta_id_nullID);
     ad->SrcPeerID = jxta_id_nullID;

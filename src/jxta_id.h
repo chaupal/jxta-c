@@ -50,16 +50,15 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_id.h,v 1.9 2005/11/06 00:59:50 slowhog Exp $
+ * $Id: jxta_id.h,v 1.10 2006/05/23 17:39:53 slowhog Exp $
  */
 
 #ifndef JXTAID_H
 #define JXTAID_H
 
+#include "jxta_apr.h"
 #include "jxta_object.h"
-
 #include "jstring.h"
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -359,6 +358,8 @@ JXTA_DECLARE(Jxta_status) jxta_id_get_uniqueportion(Jxta_id * jid, JString ** st
 ** @return returns JXTA_SUCCESS if successful, otherwise errors.
 **/
 JXTA_DECLARE(Jxta_status) jxta_id_to_jstring(Jxta_id * jid, JString ** string);
+
+JXTA_DECLARE(Jxta_status) jxta_id_to_cstr(Jxta_id * id, char **p, apr_pool_t *pool);
 
 /**
 ** Compares two ids for equality. Note that for programmatic reasons,

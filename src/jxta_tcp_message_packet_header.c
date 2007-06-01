@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tcp_message_packet_header.c,v 1.12 2006/02/15 01:09:48 slowhog Exp $
+ * $Id: jxta_tcp_message_packet_header.c,v 1.14 2006/06/14 19:54:15 mmx2005 Exp $
  */
 
 #include <stdlib.h>
@@ -146,14 +146,14 @@ Jxta_status JXTA_STDCALL message_packet_header_read(char *header_buf, ReadFunc r
             switch (packet_header_nb) {
             case CONTENT_TYPE_HEADER:  /* content-type */
                 if (saw_type == TRUE) {
-                    JXTA_LOG("Duplicate content-type header\n");
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Duplicate content-type header\n");
                     return JXTA_FAILED;
                 }
                 saw_type = TRUE;
                 break;
             case CONTENT_LENGTH_HEADER:    /* content-length */
                 if (saw_length == TRUE) {
-                    JXTA_LOG("Duplicate content-length header\n");
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Duplicate content-length header\n");
                     return JXTA_FAILED;
                 }
                 saw_length = TRUE;
@@ -161,7 +161,7 @@ Jxta_status JXTA_STDCALL message_packet_header_read(char *header_buf, ReadFunc r
                 break;
             case SRC_EA_HEADER:    /* srcEA */
                 if (saw_srcEA == TRUE) {
-                    JXTA_LOG("Duplicate srcEA header\n");
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Duplicate srcEA header\n");
                     return JXTA_FAILED;
                 }
                 saw_srcEA = TRUE;
@@ -242,6 +242,9 @@ Jxta_status JXTA_STDCALL message_packet_header_write(WriteFunc write_func, void 
             break;
         case CONTENT_LENGTH_HEADER:
             header[i].value = (BYTE *) malloc(8);
+            if (header[i].value == NULL) {
+                return JXTA_NOMEM;
+            }
             for (j = 0; j < 8; j++) {
                 header[i].value[j] = (BYTE) (msg_size >> ((7 - j) * 8L));   /* JXTA_LONG_LONG to bytes */
             }

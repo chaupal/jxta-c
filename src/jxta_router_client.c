@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_router_client.c,v 1.95 2006/02/18 00:04:57 slowhog Exp $
+ * $Id: jxta_router_client.c,v 1.98 2006/05/18 11:12:12 lankes Exp $
  */
 
 static const char *__log_cat = "ROUTER_CLIENT";
@@ -74,7 +74,7 @@ static const char *__log_cat = "ROUTER_CLIENT";
 #include "jxta_apa.h"
 #include "jxta_routea.h"
 #include "jxta_log.h"
-
+#include "jxta_endpoint_service_priv.h"
 
 struct _jxta_router_client {
     Extends(Jxta_transport);
@@ -90,9 +90,9 @@ struct _jxta_router_client {
     Jxta_endpoint_address *localPeerAddr;
     Jxta_endpoint_service *endpoint;
     Jxta_discovery_service *discovery;
-    Jxta_listener *listener;
 
     volatile Jxta_boolean started;
+    void *ep_cookie;
 };
 
 typedef struct {
@@ -111,11 +111,11 @@ typedef struct {
 
 extern Jxta_id *jxta_id_defaultNetPeerGroupID;
 
-#define JXTA_ENDPOINT_PREFIX_ROUTER_NAME   "EndpointService:" 
+#define JXTA_ENDPOINT_PREFIX_ROUTER_NAME   "EndpointService:"
 #define JXTA_ENDPOINT_ROUTER_SVC_PAR       "EndpointRouter"
 #define JXTA_ENDPOINT_ROUTER_ELEMENT_NAME  "jxta:EndpointRouterMsg"
 
-static void JXTA_STDCALL router_client_listener(Jxta_object * msg, void *arg);
+static Jxta_status JXTA_STDCALL router_client_cb(Jxta_object * msg, void *arg);
 static Peer_entry *get_peer_entry(Jxta_router_client * self, Jxta_id * peerid, Jxta_boolean create);
 static void peer_entry_set_forward_gateways(Peer_entry * peer, Jxta_vector * vector);
 static Jxta_vector *peer_entry_get_forward_gateways(Peer_entry * peer);
@@ -142,6 +142,11 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
         jxta_PG_get_PID(group, &(self->localPeerId));
         jxta_id_get_uniqueportion(self->localPeerId, &tmp);
         self->localPeerIdString = malloc(jstring_length(tmp) + 1);
+        if (self->localPeerIdString == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+            JXTA_OBJECT_RELEASE(tmp);
+            return JXTA_NOMEM;
+        }
         strcpy(self->localPeerIdString, jstring_get_string(tmp));
         JXTA_OBJECT_RELEASE(tmp);
         jxta_PG_get_endpoint_service(group, &(self->endpoint));
@@ -153,24 +158,38 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
 
         jxta_PG_get_GID(group, &groupId);
         if (jxta_id_equals(groupId, jxta_id_defaultNetPeerGroupID)) {
-	        tmp = jstring_new_2("jxta-NetGroup");
+            tmp = jstring_new_2("jxta-NetGroup");
+            if (tmp == NULL) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+                JXTA_OBJECT_RELEASE(groupId);
+                return JXTA_NOMEM;
+            }
         } else {
-	        jxta_id_get_uniqueportion(groupId, &tmp);
+            jxta_id_get_uniqueportion(groupId, &tmp);
         }
         JXTA_OBJECT_RELEASE(groupId);
 
-        len=strlen(JXTA_ENDPOINT_PREFIX_ROUTER_NAME) + jstring_length(tmp);
-        self->router_name = malloc( len + 1);
+        len = strlen(JXTA_ENDPOINT_PREFIX_ROUTER_NAME) + jstring_length(tmp);
+        self->router_name = malloc(len + 1);
+        if (self->router_name == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+            JXTA_OBJECT_RELEASE(tmp);
+            return JXTA_NOMEM;
+        }
 
         strcpy(self->router_name, JXTA_ENDPOINT_PREFIX_ROUTER_NAME);
         strcat(self->router_name, jstring_get_string(tmp));
 
-        self->router_name[len]=0;
-        
+        self->router_name[len] = 0;
+
         JXTA_OBJECT_RELEASE(tmp);
     }
 
     self->localPeerAddr = jxta_endpoint_address_new_3(self->localPeerId, NULL, NULL);
+    if (self->localPeerAddr == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        return JXTA_NOMEM;
+    }
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Inited.\n");
 
@@ -180,26 +199,18 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
 static Jxta_status start(Jxta_module * module, const char *argv[])
 {
     Jxta_router_client *self = PTValid(module, Jxta_router_client);
+    Jxta_status rv;
 
     apr_thread_mutex_lock(self->mutex);
 
     /**
-     ** Add the router listener. Note that the Endpoint Router lives
+     ** Add the router callback. Note that the Endpoint Router lives
      ** in the net peergroup.
      **/
-    {
-        JString *gid = NULL;
-
-        jxta_id_get_uniqueportion(jxta_id_defaultNetPeerGroupID, &gid);
-
-        self->listener = jxta_listener_new(router_client_listener, (void *) self, 10, 100);
-
-        jxta_listener_start(self->listener);
-
-        jxta_endpoint_service_add_listener(self->endpoint, self->router_name, 
-                                           JXTA_ENDPOINT_ROUTER_SVC_PAR, self->listener);
-
-        JXTA_OBJECT_RELEASE(gid);
+    rv = endpoint_service_add_recipient(self->endpoint, &self->ep_cookie, self->router_name, JXTA_ENDPOINT_ROUTER_SVC_PAR,
+                                        router_client_cb, self);
+    if (JXTA_SUCCESS != rv) {
+        return rv;
     }
 
     jxta_endpoint_service_add_transport(self->endpoint, (Jxta_transport *) self);
@@ -227,12 +238,10 @@ static void stop(Jxta_module * module)
     }
 
     self->started = FALSE;
-    
+
     apr_thread_mutex_unlock(self->mutex);
 
-    jxta_endpoint_service_remove_listener(self->endpoint, self->router_name, JXTA_ENDPOINT_ROUTER_SVC_PAR);
-    jxta_listener_stop(self->listener);
-    JXTA_OBJECT_RELEASE(self->listener);
+    endpoint_service_remove_recipient(self->endpoint, self->ep_cookie);
 
     jxta_endpoint_service_remove_transport(self->endpoint, (Jxta_transport *) self);
 
@@ -268,8 +277,7 @@ static Jxta_endpoint_address *publicaddr_get(Jxta_transport * tpt)
  **/
 
 static Jxta_status
-get_peer_forward_gateways(Jxta_router_client * me, Jxta_id * peerid, 
-                          Jxta_vector ** vector, Jxta_endpoint_address ** nextHopAddr)
+get_peer_forward_gateways(Jxta_router_client * me, Jxta_id * peerid, Jxta_vector ** vector, Jxta_endpoint_address ** nextHopAddr)
 {
     Jxta_status res;
     Peer_entry *peer = NULL;
@@ -397,7 +405,7 @@ get_peer_forward_gateways(Jxta_router_client * me, Jxta_id * peerid,
                     jxta_endpoint_address_get_protocol_name(addr), jxta_endpoint_address_get_protocol_address(addr));
     res = JXTA_SUCCESS;
 
-COMMON_EXIT:
+  COMMON_EXIT:
     if (NULL != tmpVector)
         JXTA_OBJECT_RELEASE(tmpVector);
     if (NULL != apa)
@@ -406,7 +414,7 @@ COMMON_EXIT:
         JXTA_OBJECT_RELEASE(peer);
     return res;
 
-ERROR_EXIT:
+  ERROR_EXIT:
     if (NULL != *vector) {
         JXTA_OBJECT_RELEASE(*vector);
         *vector = NULL;
@@ -615,6 +623,10 @@ static Jxta_status messenger_route(Router_messenger * messenger, Jxta_message * 
         }
 
         forwardGateways = jxta_vector_new(0);
+        if (forwardGateways == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+            return JXTA_NOMEM;
+        }
     }
 
     /* We have a route. Build a router element, add it into the message, and send it. */
@@ -670,6 +682,10 @@ static Jxta_status messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
     if (messenger->peerid == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Direct pre-resolved route\n");
         dest_addr = jxta_message_get_destination(msg);
+        if (dest_addr == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failed to get message destination\n");
+            return JXTA_FAILED;
+        }
     } else {
       /**
        ** Check if destination is local
@@ -730,7 +746,6 @@ static Jxta_status messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
         JXTA_OBJECT_RELEASE(transport);
         return JXTA_FAILED;
     }
-
     free(caddress);
     JXTA_OBJECT_RELEASE(dest_addr);
 
@@ -803,6 +818,11 @@ static Jxta_endpoint_address *jxta_router_select_best_address(Jxta_router_client
 
         eaddr = jxta_endpoint_address_new(jstring_get_string(addr));
         JXTA_OBJECT_RELEASE(addr);
+        if (eaddr == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+            JXTA_OBJECT_RELEASE(addresses);
+            return NULL;
+        }
 
         metric = reachable_address(router, eaddr);
         if (metric > best) {
@@ -817,7 +837,7 @@ static Jxta_endpoint_address *jxta_router_select_best_address(Jxta_router_client
 
     if (best_addr != NULL) {
         caddress = jxta_endpoint_address_to_string(best_addr);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Best address selected %s\n",caddress);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Best address selected %s\n", caddress);
         free(caddress);
     }
 
@@ -920,6 +940,10 @@ static JxtaEndpointMessenger *messenger_get(Jxta_transport * t, Jxta_endpoint_ad
     JXTA_OBJECT_CHECK_VALID(dest);
 
     messenger = (Router_messenger *) calloc(1, sizeof(Router_messenger));
+    if (messenger == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        return NULL;
+    }
 
     JXTA_OBJECT_INIT(messenger, messenger_delete, NULL);
 
@@ -1034,6 +1058,11 @@ Jxta_router_client *jxta_router_client_construct(Jxta_router_client * self, Jxta
     self->endpoint = NULL;
     self->discovery = NULL;
     self->peers = jxta_vector_new(0);
+    if (self->peers == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        JXTA_OBJECT_RELEASE(self);
+        return NULL;
+    }
     self->started = FALSE;
 
     return self;
@@ -1080,10 +1109,10 @@ void jxta_router_client_destruct(Jxta_router_client * self)
         self->localPeerAddr = NULL;
     }
 
-    if(self->mutex){
+    if (self->mutex) {
         apr_thread_mutex_destroy(self->mutex);
-        self->mutex=NULL;
-    }   
+        self->mutex = NULL;
+    }
 
     if (self->pool) {
         apr_pool_destroy(self->pool);
@@ -1103,6 +1132,10 @@ static void router_free(Jxta_object * obj)
 Jxta_router_client *jxta_router_client_new_instance(void)
 {
     Jxta_router_client *self = (Jxta_router_client *) calloc(1, sizeof(Jxta_router_client));
+    if (self == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        return NULL;
+    }
 
     JXTA_OBJECT_INIT(self, router_free, 0);
 
@@ -1136,8 +1169,17 @@ static Jxta_id *get_peerid_from_endpoint_address(Jxta_endpoint_address * addr)
 
     tmp_len = strlen(pt) + strlen("urn:jxta:") + 1;
     tmp = malloc(tmp_len);
+    if (tmp == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        return NULL;
+    }
     apr_snprintf(tmp, tmp_len, "%s%s", "urn:jxta:", pt);
     string = jstring_new_2(tmp);
+    if (string == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        free(tmp);
+        return NULL;
+    }
     id = NULL;
     jxta_id_from_jstring(&id, string);
 
@@ -1195,10 +1237,10 @@ static void updateRouteTable(Jxta_router_client * self, Jxta_endpoint_address * 
  ** This implementation only handles routed messages that are destinated for the
  ** the local peer.
  **/
-static void JXTA_STDCALL router_client_listener(Jxta_object * obj, void *arg)
+static Jxta_status JXTA_STDCALL router_client_cb(Jxta_object * obj, void *arg)
 {
     Jxta_status res = JXTA_SUCCESS;
-    Jxta_router_client *self = PTValid(arg, Jxta_router_client); 
+    Jxta_router_client *self = PTValid(arg, Jxta_router_client);
     Jxta_message_element *el = NULL;
     EndpointRouterMessage *rmsg;
     Jxta_message *msg = (Jxta_message *) obj;
@@ -1220,28 +1262,43 @@ static void JXTA_STDCALL router_client_listener(Jxta_object * obj, void *arg)
 
     if (JXTA_SUCCESS != res || NULL == el) {
         /* No destination drop message */
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, 
-                        "No router message element in msg [%p]. Incoming message is dropped.\n", msg );
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,
+                        "No router message element in msg [%pp]. Incoming message is dropped.\n", msg);
 
-        return;
+        return JXTA_INVALID_ARGUMENT;
     }
 
     origSrc = jxta_message_get_source(msg);
     bytes = jxta_message_element_get_value(el);
     string = jstring_new_3(bytes);
     JXTA_OBJECT_RELEASE(bytes);
+    if (string == NULL || origSrc == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        JXTA_OBJECT_RELEASE(string);
+        JXTA_OBJECT_RELEASE(origSrc);
+        JXTA_OBJECT_RELEASE(el);
+        return JXTA_NOMEM;
+    }
     bytes = NULL;
     rmsg = EndpointRouterMessage_new();
+    if (rmsg == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        JXTA_OBJECT_RELEASE(origSrc);
+        JXTA_OBJECT_RELEASE(el);
+        JXTA_OBJECT_RELEASE(string);
+        return JXTA_NOMEM;
+    }
     res = EndpointRouterMessage_parse_charbuffer(rmsg, jstring_get_string(string), jstring_length(string));
     JXTA_OBJECT_RELEASE(string);
     string = NULL;
     JXTA_OBJECT_RELEASE(el);
     el = NULL;
-    
-    if( res != JXTA_SUCCESS ) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed parsing router message element in msg [%p]. Incoming message is dropped.\n", msg );
+
+    if (res != JXTA_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,
+                        "Failed parsing router message element in msg [%pp]. Incoming message is dropped.\n", msg);
         JXTA_OBJECT_RELEASE(rmsg);
-        return;
+        return JXTA_INVALID_ARGUMENT;
     }
 
     realDest = EndpointRouterMessage_get_Dest(rmsg);
@@ -1270,7 +1327,7 @@ static void JXTA_STDCALL router_client_listener(Jxta_object * obj, void *arg)
     }
     jxta_AccessPointAdvertisement_set_PID(apa, last_hop);
 
-    if (! jxta_endpoint_address_equals(last, origSrc)) {
+    if (!jxta_endpoint_address_equals(last, origSrc)) {
         jxta_AccessPointAdvertisement_add_EndpointAddress(apa, origSrc);
         reverseGateways = jxta_vector_new(1);
         if (NULL == reverseGateways) {
@@ -1330,14 +1387,17 @@ static void JXTA_STDCALL router_client_listener(Jxta_object * obj, void *arg)
             JXTA_OBJECT_CHECK_VALID(realSrc);
 
             jxta_message_set_source(msg, realSrc);
+            jxta_message_set_destination(msg, realDest);
 
             jxta_endpoint_service_demux_addr(self->endpoint, realDest, msg);
         } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Recevied a routed message [%p] for an unrecognized destination [%s]\n", msg, jxta_endpoint_address_get_protocol_address(realDest) );
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,
+                            "Recevied a routed message [%pp] for an unrecognized destination [%s]\n", msg,
+                            jxta_endpoint_address_get_protocol_address(realDest));
         }
     }
 
-ERROR_EXIT:
+  ERROR_EXIT:
     if (apa)
         JXTA_OBJECT_RELEASE(apa);
     if (last_hop)
@@ -1352,6 +1412,7 @@ ERROR_EXIT:
         JXTA_OBJECT_RELEASE(origSrc);
 
     JXTA_OBJECT_RELEASE(rmsg);
+    return JXTA_SUCCESS;
 }
 
 static void peer_entry_delete(Jxta_object * addr)
@@ -1379,9 +1440,12 @@ static Peer_entry *peer_entry_new(Jxta_id * peerid)
 {
 
     JString *pid;
-    Peer_entry *self = (Peer_entry *) malloc(sizeof(Peer_entry));
     apr_status_t res;
-
+    Peer_entry *self = (Peer_entry *) malloc(sizeof(Peer_entry));
+    if (self == NULL) {
+        return NULL;
+    }
+    
     /* Initialize the object */
     memset(self, 0, sizeof(Peer_entry));
     JXTA_OBJECT_INIT(self, peer_entry_delete, 0);

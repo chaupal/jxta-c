@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_util_priv.h,v 1.1 2005/10/12 00:26:53 mathieu Exp $
+ * $Id: jxta_util_priv.h,v 1.2 2006/04/01 01:20:20 slowhog Exp $
  */
 
 #include "jxta_vector.h"
@@ -71,6 +71,8 @@ extern "C" {
  * @param returns the output vector
  */
 Jxta_vector *getPeerids(Jxta_vector * peers);
+
+char* get_service_key(const char * svc_name, const char * svc_param);
 
 #ifdef __cplusplus
 #if 0

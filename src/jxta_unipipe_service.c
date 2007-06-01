@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_unipipe_service.c,v 1.38 2006/03/15 19:17:56 slowhog Exp $
+ * $Id: jxta_unipipe_service.c,v 1.42 2006/06/19 08:14:42 mmx2005 Exp $
  */
 
 #include "jxta_apr.h"
@@ -136,6 +136,7 @@ static Jxta_status unipipe_remove_accept_listener(Jxta_pipe_service_impl *, Jxta
 static Jxta_status unipipe_pipe_get_outputpipe(Jxta_pipe *, Jxta_outputpipe **);
 static Jxta_status unipipe_pipe_get_inputpipe(Jxta_pipe *, Jxta_inputpipe **);
 static Jxta_status unipipe_pipe_get_remote_peers(Jxta_pipe *, Jxta_vector **);
+static Jxta_status unipipe_pipe_get_pipeadv(Jxta_pipe *, Jxta_pipe_adv ** pipeadv);
 
 #define UNIPIPE_ENDPOINT_NAME "PipeService"
 
@@ -581,6 +582,7 @@ static Jxta_unipipe_pipe *jxta_unipipe_pipe_new(const char *id, Jxta_pipe_adv * 
     self->generic.get_outputpipe = unipipe_pipe_get_outputpipe;
     self->generic.get_inputpipe = unipipe_pipe_get_inputpipe;
     self->generic.get_remote_peers = unipipe_pipe_get_remote_peers;
+    self->generic.get_pipeadv = unipipe_pipe_get_pipeadv;
 
     return self;
 }
@@ -676,7 +678,7 @@ static void JXTA_STDCALL resolve_listener(Jxta_object * obj, void *arg)
     JXTA_OBJECT_CHECK_VALID(req->listener);
     JXTA_OBJECT_CHECK_VALID(connect_event);
 
-    res = jxta_listener_schedule_object(req->listener, (Jxta_object *) connect_event);
+    res = jxta_listener_process_object(req->listener, (Jxta_object *) connect_event);
 
     JXTA_OBJECT_RELEASE(connect_event);
     if (req->listener)
@@ -706,7 +708,7 @@ jxta_unipipe_pipe_connect(Jxta_unipipe_service * pipe_service, const char *id, J
     /**
      ** Resolve the pipe. If a peer has been added into "peers", the
      ** the resolve request must be sent there. Otherwise, first look
-     ** locally, if no pipe is resolved, then use the generic pipe serive
+     ** locally, if no pipe is resolved, then use the generic pipe service
      ** pipe resolver to resolve remotely.
      **/
 
@@ -768,7 +770,7 @@ jxta_unipipe_pipe_connect(Jxta_unipipe_service * pipe_service, const char *id, J
             }
 
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Invoking the listener\n");
-            res = jxta_listener_schedule_object(listener, (Jxta_object *) event);
+            res = jxta_listener_process_object(listener, (Jxta_object *) event);
 
             JXTA_OBJECT_RELEASE(event);
 
@@ -791,7 +793,7 @@ jxta_unipipe_pipe_connect(Jxta_unipipe_service * pipe_service, const char *id, J
 
     res = jxta_pipe_resolver_remote_resolve(pipe_service->pipe_resolver, adv, timeout, peer, myListener);
     /**
-     ** We release the oject right now: the listener will be destroyed
+     ** We release the object right now: the listener will be destroyed
      ** when it will be called(by the pipe resolver itself).
      **/
     JXTA_OBJECT_RELEASE(myListener);
@@ -829,14 +831,14 @@ jxta_unipipe_pipe_accept(Jxta_unipipe_service * pipe_service, const char *id, Jx
     jxta_listener_start(listener);
 
     event = jxta_pipe_connect_event_new(JXTA_PIPE_CONNECTED, (Jxta_pipe *) self);
+    JXTA_OBJECT_RELEASE(self);
 
     if (event == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot allocate a connect_event\n");
-        JXTA_OBJECT_RELEASE(self);
         return JXTA_NOMEM;
     }
 
-    res = jxta_listener_schedule_object(listener, (Jxta_object *) event);
+    res = jxta_listener_process_object(listener, (Jxta_object *) event);
     JXTA_OBJECT_RELEASE(event);
     return res;
 }
@@ -892,6 +894,21 @@ static Jxta_status unipipe_pipe_get_remote_peers(Jxta_pipe * self, Jxta_vector *
      ** feature.
      **/
     return JXTA_NOTIMP;
+}
+
+static Jxta_status unipipe_pipe_get_pipeadv(Jxta_pipe * obj, Jxta_pipe_adv ** pipeadv)
+{
+    Jxta_unipipe_pipe *self = (Jxta_unipipe_pipe *) obj;
+
+    if(self->adv == NULL){
+        return JXTA_FAILED;
+    }
+
+    JXTA_OBJECT_SHARE(self->adv);   
+    *pipeadv = self->adv;
+
+    return JXTA_SUCCESS;
+    
 }
 
 /****************************************************************

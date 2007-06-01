@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tcp_multicast.c,v 1.29 2006/02/15 01:09:48 slowhog Exp $
+ * $Id: jxta_tcp_multicast.c,v 1.30 2006/05/26 02:15:55 bondolo Exp $
  */
 
 #define BUFSIZE		8192
@@ -192,6 +192,10 @@ TcpMulticast *tcp_multicast_new(Jxta_transport_tcp * tp, char *ipaddr, apr_port_
     self->input_stream = stream_new(self->multicast_packet_size);
     self->output_stream = stream_new(self->multicast_packet_size);
     self->header_buf = malloc(HEADER_BUFSIZE);
+    if (self->header_buf == NULL) {
+        free(self);
+        return NULL;
+    }
 
     /* apr setting */
     status = apr_pool_create(&self->pool, NULL);
@@ -221,6 +225,7 @@ TcpMulticast *tcp_multicast_new(Jxta_transport_tcp * tp, char *ipaddr, apr_port_
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "%s\n", msg);
         apr_pool_destroy(self->pool);
         free(self);
+        return NULL;
     }
 
     status = apr_sockaddr_info_get(&self->send_intf, ipaddr, APR_INET, self->multicast_port, 0, self->pool);
@@ -230,6 +235,7 @@ TcpMulticast *tcp_multicast_new(Jxta_transport_tcp * tp, char *ipaddr, apr_port_
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "%s\n", msg);
         apr_pool_destroy(self->pool);
         free(self);
+        return NULL;
     }
 
     self->multicast_ipaddr = strdup(ipaddr);
@@ -446,6 +452,10 @@ static void JXTA_STDCALL tcp_multicast_process(TcpMulticast * tm, STREAM * strea
 
     if (msg_size > 0) {
         msg = jxta_message_new();
+        if (msg == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+            return;
+        }
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Received new message\n");
 
         res = jxta_message_read(msg, APP_MSG, read_from_tcp_multicast_stream, stream);
@@ -498,9 +508,20 @@ Jxta_status tcp_multicast_propagate(TcpMulticast * tm, Jxta_message * msg, const
 
     len = strlen(self->multicast_ipaddr) + 20;
     dest_addr = (char *) malloc(len);
+    if (dest_addr == NULL) {
+        JXTA_OBJECT_RELEASE(msg);
+        apr_thread_mutex_unlock(self->mutex);
+        return JXTA_NOMEM;
+    }
     apr_snprintf(dest_addr, len, "%s:%d", self->multicast_ipaddr, self->multicast_port);
     /* set destination */
     m_addr = jxta_endpoint_address_new_2("tcp", dest_addr, service_name, service_params);
+    if (m_addr == NULL) {
+        apr_thread_mutex_unlock(self->mutex);
+        JXTA_OBJECT_RELEASE(msg);
+        free(dest_addr);
+        return JXTA_NOMEM;
+    }
     jxta_message_set_destination(msg, m_addr);
     JXTA_OBJECT_RELEASE(m_addr);
     free(dest_addr);
@@ -516,11 +537,26 @@ Jxta_status tcp_multicast_propagate(TcpMulticast * tm, Jxta_message * msg, const
     jxta_message_write(msg, APP_MSG, msg_wireformat_size, &msg_size);
 
     src_addr = (char *) malloc(128);
+    if (src_addr == NULL) {
+        apr_thread_mutex_unlock(self->mutex);
+        JXTA_OBJECT_RELEASE(msg);
+        return JXTA_NOMEM;
+    }
     apr_snprintf(src_addr, 128, "tcp://%s:%d", jxta_transport_tcp_local_ipaddr_cstr(self->tp),
                  jxta_transport_tcp_get_local_port(self->tp));
 
-    message_packet_header_write(msg_wireformat_size, (void *) &packet_header_size, msg_size, TRUE, src_addr);
-    message_packet_header_write(write_to_tcp_multicast_stream, (void *) stream, msg_size, TRUE, src_addr);
+    if (message_packet_header_write(msg_wireformat_size, (void *) &packet_header_size, msg_size, TRUE, src_addr) != JXTA_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Failed to write packet header\n");
+        apr_thread_mutex_unlock(self->mutex);
+        JXTA_OBJECT_RELEASE(msg);
+        return JXTA_NOMEM;
+    }
+    if (message_packet_header_write(write_to_tcp_multicast_stream, (void *) stream, msg_size, TRUE, src_addr) != JXTA_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Failed to write packet header\n");
+        apr_thread_mutex_unlock(self->mutex);
+        JXTA_OBJECT_RELEASE(msg);
+        return JXTA_NOMEM;
+    }
 
     free(src_addr);
     /* message body */

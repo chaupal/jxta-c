@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tcp_private.h,v 1.14 2006/02/15 01:09:50 slowhog Exp $
+ * $Id: jxta_transport_tcp_private.h,v 1.15 2006/05/26 02:15:56 bondolo Exp $
  */
 
 #ifndef __JXTA_TRANSPORT_TCP_PRIVATE_H__
@@ -61,12 +61,8 @@
 #include "jxta_types.h"
 #include "jxta_endpoint_address.h"
 #include "jxta_endpoint_service.h"
-
-#define SEND_BUFFER_SIZE	(64 * 1024)
-#define RECV_BUFFER_SIZE	(64 * 1024)
-#define LINGER_DELAY		(2 * 60 * 1000 * 1000)
-#define CONNECTION_TIMEOUT	(1 * 1000 * 1000)
-#define MAX_ACCEPT_COUNT_BACKLOG	50
+#include "jxta_endpoint_service.h"
+#include "jxta_transport_tcp_connection.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,29 +71,32 @@ extern "C" {
 #endif
 #endif
 
-typedef struct _jxta_transport_tcp Jxta_transport_tcp;
-typedef struct _tcp_messenger TcpMessenger;
-typedef struct _jxta_transport_tcp_connection Jxta_transport_tcp_connection;
+#define SEND_BUFFER_SIZE	(64 * 1024)
+#define RECV_BUFFER_SIZE	(64 * 1024)
+#define LINGER_DELAY		(2 * 60 * 1000 * 1000)
+#define CONNECTION_TIMEOUT	(1 * 1000 * 1000)
+#define MAX_ACCEPT_COUNT_BACKLOG	50
+
 
 Jxta_transport_tcp *jxta_transport_tcp_new_instance(void);
 
-TcpMessenger *get_tcp_messenger(Jxta_transport_tcp * tp, Jxta_transport_tcp_connection * conn, Jxta_endpoint_address * addr);
+TcpMessenger *get_tcp_messenger(Jxta_transport_tcp * me, Jxta_transport_tcp_connection * conn, Jxta_endpoint_address * addr);
 
-Jxta_status jxta_transport_tcp_remove_messenger(Jxta_transport_tcp * tp, Jxta_endpoint_address * addr);
+Jxta_status jxta_transport_tcp_remove_messenger(Jxta_transport_tcp * me, Jxta_endpoint_address * addr);
 
-Jxta_endpoint_service *jxta_transport_tcp_get_endpoint_service(Jxta_transport_tcp * tp);
+Jxta_endpoint_service *jxta_transport_tcp_get_endpoint_service(Jxta_transport_tcp * me);
 
 const char *jxta_transport_tcp_local_ipaddr_cstr(Jxta_transport_tcp * me);
 
-char *jxta_transport_tcp_get_local_ipaddr(Jxta_transport_tcp * tp);
+char *jxta_transport_tcp_get_local_ipaddr(Jxta_transport_tcp * me);
 
-apr_port_t jxta_transport_tcp_get_local_port(Jxta_transport_tcp * tp);
+apr_port_t jxta_transport_tcp_get_local_port(Jxta_transport_tcp * me);
 
-char *jxta_transport_tcp_get_peerid(Jxta_transport_tcp * tp);
+JString *jxta_transport_tcp_get_peerid(Jxta_transport_tcp * me);
 
-Jxta_endpoint_address *jxta_transport_tcp_get_public_addr(Jxta_transport_tcp * tp);
+Jxta_endpoint_address *jxta_transport_tcp_get_public_addr(Jxta_transport_tcp * me);
 
-Jxta_boolean jxta_transport_tcp_get_allow_multicast(Jxta_transport_tcp * tp);
+Jxta_boolean jxta_transport_tcp_get_allow_multicast(Jxta_transport_tcp * me);
 
 void jxta_tcp_got_inbound_connection(Jxta_transport_tcp * me, Jxta_transport_tcp_connection * conn);
 

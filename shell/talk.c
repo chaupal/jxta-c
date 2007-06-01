@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: talk.c,v 1.24 2006/03/01 08:18:06 slowhog Exp $
+ * $Id: talk.c,v 1.25 2006/04/26 05:45:02 mmx2005 Exp $
  */
 
 #include <stdio.h>
@@ -593,10 +593,10 @@ static void processIncomingMessage(Jxta_message * msg)
     }
 
     fflush(stdout);
-    if (!groupname) {
+    if (groupname) {
         JXTA_OBJECT_RELEASE(groupname);
     }
-    if (!senderName) {
+    if (senderName) {
         JXTA_OBJECT_RELEASE(senderName);
     }
 }

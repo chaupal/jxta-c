@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bidipipe.c,v 1.19 2006/02/15 01:09:38 slowhog Exp $
+ * $Id: jxta_bidipipe.c,v 1.21 2006/05/20 06:20:07 slowhog Exp $
  */
 
 #include <stdlib.h>
@@ -430,7 +430,7 @@ static void JXTA_STDCALL bidipipe_input_listener(Jxta_object * obj, void *arg)
         if (JXTA_SUCCESS == jxta_message_get_element_2(msg, JXTA_BIDIPIPE_NAMESPACE, JXTA_BIDIPIPE_CLOSE_TAG, &e)) {
             jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_TRACE, "Close request received, closing connection ...\n");
             self->state = JXTA_BIDIPIPE_CLOSING;
-            jxta_listener_schedule_object(self->listener, NULL);
+            jxta_listener_process_object(self->listener, NULL);
             rv = close_pipes(self);
             jpr_thread_mutex_unlock(self->mutex);
             JXTA_OBJECT_RELEASE(e);
@@ -440,7 +440,7 @@ static void JXTA_STDCALL bidipipe_input_listener(Jxta_object * obj, void *arg)
 
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_TRACE, "Schedule regular message to pipe owner\n");
         assert(NULL != self->listener);
-        jxta_listener_schedule_object(self->listener, obj);
+        jxta_listener_process_object(self->listener, obj);
         break;
 
     case JXTA_BIDIPIPE_CONNECTING:
@@ -598,7 +598,7 @@ Jxta_status jxta_bidipipe_delete(Jxta_bidipipe * self)
         return JXTA_INVALID_ARGUMENT;
     }
 
-    jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_DEBUG, "freeing Bidipipe[%p] ...\n", self);
+    jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_DEBUG, "freeing Bidipipe[%pp] ...\n", self);
     jpr_thread_mutex_lock(self->mutex);
 
     if (JXTA_BIDIPIPE_CLOSED != self->state) {
@@ -784,9 +784,9 @@ JXTA_DECLARE(Jxta_status) jxta_bidipipe_close(Jxta_bidipipe * self)
         return rv;
     }
 
-    jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_TRACE, "Close pipes of bidipipe[%p] ...\n", self);
+    jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_TRACE, "Close pipes of bidipipe[%pp] ...\n", self);
     rv = close_pipes(self);
-    jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_TRACE, "Pipes of bidipipe[%p] closed\n", self);
+    jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_TRACE, "Pipes of bidipipe[%pp] closed\n", self);
     return rv;
 }
 

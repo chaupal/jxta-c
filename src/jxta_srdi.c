@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi.c,v 1.27 2006/03/14 08:52:12 slowhog Exp $
+ * $Id: jxta_srdi.c,v 1.29 2006/06/15 08:20:41 mmx2005 Exp $
  */
 
 #include <stdio.h>
@@ -96,7 +96,7 @@ static const char *__log_cat = "SRDI";
  */
 static void handleJxta_SRDIMessage(void *userdata, const XML_Char * cd, int len)
 {
-    JXTA_LOG("In Jxta_SRDIMessage element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Jxta_SRDIMessage element\n");
 }
 
 static void handleTTL(void *userdata, const XML_Char * cd, int len)
@@ -110,11 +110,11 @@ static void handleTTL(void *userdata, const XML_Char * cd, int len)
         extract_char_data(cd, len, tok);
         if (*tok != '\0') {
             ad->TTL = (short) strtol(cd, NULL, 0);
-            JXTA_LOG("Type is :%d\n", ad->TTL);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Type is :%d\n", ad->TTL);
         }
         free(tok);
     }
-    JXTA_LOG("In Type element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Type element\n");
 }
 
 static void handlePeerID(void *userdata, const XML_Char * cd, int len)
@@ -224,7 +224,7 @@ static void handleEntry(void *userdata, const XML_Char * cd, int len)
     jxta_vector_add_object_last(ad->Entries, (Jxta_object *) entry);
     JXTA_OBJECT_RELEASE(entry);
 
-    JXTA_LOG("In Srdi Entry element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Srdi Entry element\n");
 }
 
 
@@ -345,11 +345,23 @@ Jxta_status srdi_message_print(Jxta_SRDIMessage * ad, JString * js)
             continue;
         }
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "srdi - key:%s AdvId:%s \n", jstring_get_string(anElement->key),
-                        jstring_get_string(anElement->advId));
-        apr_snprintf(buf, 512, "<Entry SKey=\"%s\" Expiration=\"%" APR_INT64_T_FMT "\" nSpace=\"%s\" AdvId=\"%s\"",
-                     jstring_get_string(anElement->key), anElement->expiration, jstring_get_string(anElement->nameSpace),
-                     jstring_get_string(anElement->advId));
+                        anElement->advId ? jstring_get_string(anElement->advId) : "(null)");
+        apr_snprintf(buf, 512, "<Entry SKey=\"%s\" Expiration=\"%" APR_INT64_T_FMT "\"",
+                     jstring_get_string(anElement->key), anElement->expiration);
         jstring_append_2(js, buf);
+
+        if (NULL != anElement->nameSpace) {
+            jstring_append_2(js, " nSpace=\"");
+            jstring_append_2(js, jstring_get_string(anElement->nameSpace));
+            jstring_append_2(js, "\"");
+        }
+
+        if (NULL != anElement->advId) {
+            jstring_append_2(js, " AdvId=\"");
+            jstring_append_2(js, jstring_get_string(anElement->advId));
+            jstring_append_2(js, "\"");
+        }
+
         if (NULL != anElement->range) {
             jstring_append_2(js, " Range=\"");
             jstring_append_2(js, jstring_get_string(anElement->range));

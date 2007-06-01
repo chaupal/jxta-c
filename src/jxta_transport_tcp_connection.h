@@ -51,14 +51,13 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tcp_connection.h,v 1.11 2006/02/15 01:09:50 slowhog Exp $
+ * $Id: jxta_transport_tcp_connection.h,v 1.12 2006/05/26 02:15:56 bondolo Exp $
  */
 
 #ifndef __JXTA_TRANSPORT_TCP_CONNECTION_H__
 #define __JXTA_TRANSPORT_TCP_CONNECTION_H__
 
 #include "jxta_apr.h"
-#include "jxta_transport_tcp_private.h"
 #include "jxta_endpoint_address.h"
 #include "jxta_message.h"
 
@@ -68,6 +67,10 @@ extern "C" {
 };
 #endif
 #endif
+
+typedef struct _jxta_transport_tcp Jxta_transport_tcp;
+typedef struct _tcp_messenger TcpMessenger;
+typedef struct _jxta_transport_tcp_connection Jxta_transport_tcp_connection;
 
 JXTA_DECLARE(Jxta_transport_tcp_connection *) jxta_transport_tcp_connection_new_1(Jxta_transport_tcp * tp,
                                                                                   Jxta_endpoint_address * dest);

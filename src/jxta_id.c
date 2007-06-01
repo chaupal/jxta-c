@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_id.c,v 1.20 2006/02/15 01:09:41 slowhog Exp $
+ * $Id: jxta_id.c,v 1.22 2006/05/23 17:39:53 slowhog Exp $
  */
 
 
@@ -60,9 +60,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "jxta_apr.h"
 
-#include "jxta.h"
+#include "jxta_apr.h"
+#include "jxta_errno.h"
+
 #include "jxta_id.h"
 
 #include "jxta_id_priv.h"
@@ -296,7 +297,8 @@ JXTA_DECLARE(Jxta_status) jxta_id_from_str(Jxta_id ** id, const char * id_str, s
     fmt = id_str + jxta_id_PREFIX_LENGTH;
     len -= jxta_id_PREFIX_LENGTH;
     for (offset = 0; offset < len; ++offset) {
-        if (fmt[offset] == '-') break;
+        if (fmt[offset] == '-')
+            break;
     }
 
     if (offset >= len) {
@@ -371,7 +373,7 @@ JXTA_DECLARE(Jxta_status) jxta_id_to_jstring(Jxta_id * jid, JString ** string)
     if (JXTA_SUCCESS != result)
         return result;
 
-    *string = jstring_new_1(jstring_length(unique) + sizeof(prefix) - 1);
+    *string = jstring_new_1(jstring_length(unique) + sizeof(prefix) + 1);
 
     if (NULL == *string) {
         result = JXTA_NOMEM;
@@ -385,6 +387,26 @@ JXTA_DECLARE(Jxta_status) jxta_id_to_jstring(Jxta_id * jid, JString ** string)
     if (NULL != unique)
         JXTA_OBJECT_RELEASE(unique);
     unique = NULL;
+
+    return result;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_id_to_cstr(Jxta_id * id, char **p, apr_pool_t *pool)
+{
+    static char const *prefix = "urn:jxta:";
+    Jxta_status result = JXTA_SUCCESS;
+    JString *unique = NULL;
+
+    result = (id->formatter->fmt_getUniqueportion) (id, &unique);
+    if (JXTA_SUCCESS != result)
+        return result;
+
+    *p = apr_pstrcat(pool, prefix, jstring_get_string(unique), NULL);
+
+    if (NULL == *p) {
+        result = JXTA_NOMEM;
+    }
+    JXTA_OBJECT_RELEASE(unique);
 
     return result;
 }

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jstring.c,v 1.66 2006/02/18 00:32:50 slowhog Exp $
+ * $Id: jstring.c,v 1.67 2006/04/04 18:19:46 slowhog Exp $
  */
 
 
@@ -330,7 +330,7 @@ JXTA_DECLARE(void) jstring_append_2(JString * js, char const *string)
 }
 
 /* ... are const char* */
-void jstring_concat(JString * js, int number, ...)
+JXTA_DECLARE(void) jstring_concat(JString * js, int number, ...)
 {
     va_list argv;
     const char *s;

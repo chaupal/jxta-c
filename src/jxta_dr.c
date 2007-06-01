@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dr.c,v 1.68 2006/02/15 01:09:40 slowhog Exp $
+ * $Id: jxta_dr.c,v 1.70 2006/06/13 22:50:29 slowhog Exp $
  */
 
 static const char *__log_cat = "DR_ADV";
@@ -147,7 +147,15 @@ static void handlePeerAdv(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_DiscoveryResponse *ad = (Jxta_DiscoveryResponse *) userdata;
 
-    jstring_append_0((JString *) ad->PeerAdv, cd, len);
+    if (len <= 0) {
+        return;
+    }
+    JXTA_OBJECT_RELEASE(ad->PeerAdv);
+    ad->PeerAdv = jstring_new_1(len + 1);
+    if (ad->PeerAdv) {
+        return;
+    }
+    jstring_append_0(ad->PeerAdv, cd, len);
     jstring_trim(ad->PeerAdv);
 }
 
@@ -259,7 +267,6 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_response_set_count(Jxta_DiscoveryRespon
 JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_peeradv(Jxta_DiscoveryResponse * ad, JString ** padv)
 {
     if (ad->PeerAdv) {
-        jstring_trim(ad->PeerAdv);
         JXTA_OBJECT_SHARE(ad->PeerAdv);
     }
     *padv = ad->PeerAdv;
@@ -269,14 +276,15 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_peeradv(Jxta_DiscoveryResp
 
 JXTA_DECLARE(Jxta_status) jxta_discovery_response_set_peeradv(Jxta_DiscoveryResponse * ad, JString * padv)
 {
-    if (ad == NULL || padv == NULL) {
+    if (ad == NULL) {
         return JXTA_INVALID_ARGUMENT;
     }
     if (ad->PeerAdv != NULL) {
         JXTA_OBJECT_RELEASE(ad->PeerAdv);
-        ad->PeerAdv = NULL;
     }
-    JXTA_OBJECT_SHARE(padv);
+    if (NULL != padv) {
+        JXTA_OBJECT_SHARE(padv);
+    }
     ad->PeerAdv = padv;
     return JXTA_SUCCESS;
 }
@@ -286,7 +294,7 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_peer_advertisement(Jxta_Di
 {
     if (ad->peer_advertisement) {
         JXTA_OBJECT_SHARE(ad->peer_advertisement);
-    } else if (jstring_length(ad->PeerAdv) > 0) {
+    } else if (ad->PeerAdv && jstring_length(ad->PeerAdv) > 0) {
         ad->peer_advertisement = (Jxta_advertisement *) jxta_PA_new();
         jxta_PA_parse_charbuffer((Jxta_PA *) ad->peer_advertisement, jstring_get_string(ad->PeerAdv), jstring_length(ad->PeerAdv));
         JXTA_OBJECT_SHARE(ad->peer_advertisement);
@@ -508,16 +516,18 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_xml(Jxta_DiscoveryResponse
     jstring_append_2(doc, buf);
     jstring_append_2(doc, "</Count>\n");
 
-    jstring_append_2(doc, "<PeerAdv>");
-    status = jxta_xml_util_encode_jstring(ad->PeerAdv, &tmps);
-    if (status != JXTA_SUCCESS) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "error encoding the PeerAdv, retrun status :%d\n", status);
-        JXTA_OBJECT_RELEASE(doc);
-        return status;
+    if (ad->PeerAdv) {
+        jstring_append_2(doc, "<PeerAdv>");
+        status = jxta_xml_util_encode_jstring(ad->PeerAdv, &tmps);
+        if (status != JXTA_SUCCESS) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "error encoding the PeerAdv, retrun status :%d\n", status);
+            JXTA_OBJECT_RELEASE(doc);
+            return status;
+        }
+        jstring_append_1(doc, tmps);
+        JXTA_OBJECT_RELEASE(tmps);
+        jstring_append_2(doc, "</PeerAdv>\n");
     }
-    jstring_append_1(doc, tmps);
-    JXTA_OBJECT_RELEASE(tmps);
-    jstring_append_2(doc, "</PeerAdv>\n");
 
     jstring_append_2(doc, "<Attr>");
     jstring_append_2(doc, "</Attr>\n");
@@ -539,7 +549,7 @@ JXTA_DECLARE(Jxta_DiscoveryResponse *) jxta_discovery_response_new(void)
     ad = (Jxta_DiscoveryResponse *) malloc(sizeof(Jxta_DiscoveryResponse));
 
     memset(ad, 0x0, sizeof(Jxta_DiscoveryResponse));
-    ad->PeerAdv = jstring_new_0();
+    ad->PeerAdv = NULL;
     ad->responselist = jxta_vector_new(4);
     ad->advertisements = jxta_vector_new(4);
     ad->Attr = jstring_new_0();
@@ -554,7 +564,7 @@ JXTA_DECLARE(Jxta_DiscoveryResponse *) jxta_discovery_response_new(void)
     return ad;
 }
 
-JXTA_DECLARE(Jxta_DiscoveryResponse *) jxta_discovery_response_new_1(short type, char *attr, char *value, 
+JXTA_DECLARE(Jxta_DiscoveryResponse *) jxta_discovery_response_new_1(short type, const char *attr, const char *value, 
                                                                      int threshold, JString * peeradv,
                                                                      Jxta_vector * responses)
 {
@@ -570,7 +580,9 @@ JXTA_DECLARE(Jxta_DiscoveryResponse *) jxta_discovery_response_new_1(short type,
                                   (JxtaAdvertisementGetXMLFunc) jxta_discovery_response_get_xml,
                                   NULL, NULL, (FreeFunc) jxta_discovery_response_free);
 
-    JXTA_OBJECT_SHARE(peeradv);
+    if (peeradv) {
+        JXTA_OBJECT_SHARE(peeradv);
+    }
     JXTA_OBJECT_SHARE(responses);
 
     ad->PeerAdv = peeradv;

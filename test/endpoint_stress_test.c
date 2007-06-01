@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: endpoint_stress_test.c,v 1.22 2005/09/23 20:09:01 slowhog Exp $
+ * $Id: endpoint_stress_test.c,v 1.23 2006/05/16 00:58:13 slowhog Exp $
  */
 
 #include "jxta.h"
@@ -62,6 +62,7 @@
 #include "jxta_endpoint_service.h"
 #include "jxta_transport.h"
 #include "../src/jxta_private.h"
+#include "../src/jxta_endpoint_service_priv.h"
 #include "jxta_listener.h"
 
 
@@ -84,16 +85,16 @@ int loop_count;
 
 static void test_thread_done(void);
 
-void listener(Jxta_object * obj, void *cookie)
+static Jxta_status callback(Jxta_object * obj, void *cookie)
 {
-
     printf("Received a message\n");
+    return JXTA_SUCCESS;
 }
 
 void init(void)
 {
     Jxta_status res;
-    Jxta_listener *endpoint_listener = NULL;
+    void *cookie;
 
     apr_pool_create(&pool, NULL);
 
@@ -110,13 +111,7 @@ void init(void)
     jxta_PG_get_endpoint_service(pg, &endpoint);
 
     /* sets and endpoint listener */
-    endpoint_listener = jxta_listener_new(listener, NULL, 1, 0);
-
-    jxta_endpoint_service_add_listener(endpoint,
-                                       (char *) ENDPOINT_TEST_SERVICE_NAME,
-                                       (char *) ENDPOINT_TEST_SERVICE_PARAMS, endpoint_listener);
-
-    jxta_listener_start(endpoint_listener);
+    endpoint_service_add_recipient(endpoint, &cookie, ENDPOINT_TEST_SERVICE_NAME, ENDPOINT_TEST_SERVICE_PARAMS, callback, NULL);
 }
 
 
@@ -163,7 +158,7 @@ void *APR_THREAD_FUNC single_test(apr_thread_t * thread, void *arg)
     DIR *dir = opendir(msg_dir);
     struct dirent *entry;
     FILE *file;
-    Jxta_message **msg;
+    Jxta_message *msg;
     int i;
 
     if (dir) {

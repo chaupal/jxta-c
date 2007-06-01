@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: endpoint_test.c,v 1.27 2005/11/16 20:10:43 lankes Exp $
+ * $Id: endpoint_test.c,v 1.28 2006/05/16 00:58:13 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -59,6 +59,7 @@
 #include "jxta_peergroup.h"
 
 #include "../src/jxta_private.h"
+#include "../src/jxta_endpoint_service_priv.h"
 
 /****************************************************************
  **
@@ -79,16 +80,17 @@ Jxta_endpoint_address *hostAddr;
 
 Jxta_transport *http_transport;
 
-void JXTA_STDCALL listener(Jxta_object * msg, void *cookie)
+Jxta_status JXTA_STDCALL callback(Jxta_object * msg, void *cookie)
 {
 
     printf("Received a message\n");
+    return JXTA_SUCCESS;
 }
 
 void init(void)
 {
     Jxta_status res;
-    Jxta_listener *endpoint_listener = NULL;
+    void *cookie;
 
     apr_pool_create(&pool, NULL);
 
@@ -106,13 +108,7 @@ void init(void)
     jxta_PG_get_endpoint_service(pg, &endpoint);
 
     /* sets and endpoint listener */
-    endpoint_listener = jxta_listener_new(listener, NULL, 1, 0);
-
-    jxta_endpoint_service_add_listener(endpoint,
-                                       (char *) ENDPOINT_TEST_SERVICE_NAME,
-                                       (char *) ENDPOINT_TEST_SERVICE_PARAMS, endpoint_listener);
-
-    jxta_listener_start(endpoint_listener);
+    endpoint_service_add_recipient(endpoint, &cookie, ENDPOINT_TEST_SERVICE_NAME, ENDPOINT_TEST_SERVICE_PARAMS, callback, NULL);
 }
 
 

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup.h,v 1.13 2005/10/13 19:52:33 mathieu Exp $
+ * $Id: jxta_peergroup.h,v 1.14 2006/05/16 00:58:13 slowhog Exp $
  */
 
 #ifndef JXTA_PEERGROUP_H
@@ -187,7 +187,7 @@ JXTA_DECLARE(Jxta_MSID *) jxta_genericpeergroup_specid_get(void);
 
 #ifndef JXTA_PG_FORW
 #define JXTA_PG_FORW
-typedef struct _jxta_PG Jxta_PG;
+typedef struct jxta_PG Jxta_PG;
 #endif
 
 /**
@@ -419,7 +419,6 @@ JXTA_DECLARE(void) jxta_PG_set_labels(Jxta_PG * self, JString * name, JString * 
 JXTA_DECLARE(Jxta_status) jxta_PG_newfromadv(Jxta_PG * self, Jxta_advertisement * pgAdv,
                                              Jxta_vector * resource_groups, Jxta_PG ** result);
 
-
 /**
  * Instantiate a group from its given advertisement
  * Use this when a published implementation advertisement for the group
@@ -553,6 +552,20 @@ JXTA_DECLARE(Jxta_status) jxta_PG_newfromid(Jxta_PG * self, Jxta_PGID * gid, Jxt
  */
 JXTA_DECLARE(void) jxta_PG_newfromid_e(Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws);
 
+/* FIXME: New API to be implemented
+JXTA_DECLARE(Jxta_status) jxta_PG_create(Jxta_PG **me, Jxta_PG *parent, Jxta_MIA *mia);
+JXTA_DECLARE(Jxta_status) jxta_PG_destroy(Jxta_PG *me);
+
+*/
+
+JXTA_DECLARE(apr_pool_t *) jxta_PG_pool_get(Jxta_PG * me);
+JXTA_DECLARE(apr_thread_pool_t *) jxta_PG_thread_pool_get(Jxta_PG * me);
+JXTA_DECLARE(Jxta_PG *) jxta_PG_netpg(Jxta_PG * me);
+JXTA_DECLARE(Jxta_PG *) jxta_PG_parent(Jxta_PG * me);
+
+JXTA_DECLARE(Jxta_status) jxta_PG_add_recipient(Jxta_PG * me, void **cookie, const char *name, const char *param,
+                                                Jxta_callback_func func, void *arg);
+JXTA_DECLARE(Jxta_status) jxta_PG_remove_recipient(Jxta_PG * me, void *cookie);
 
 /*
  * shortcuts to the well-known services, in order to avoid calls to lookup.
@@ -627,9 +640,9 @@ JXTA_DECLARE(void) jxta_PG_get_membership_service(Jxta_PG * self, Jxta_membershi
  */
 JXTA_DECLARE(void) jxta_PG_get_pipe_service(Jxta_PG * self, Jxta_pipe_service ** pipe);
 
-JXTA_DECLARE(void) jxta_PG_get_cache_manager(Jxta_PG * self, Jxta_cm **cm);
+JXTA_DECLARE(void) jxta_PG_get_cache_manager(Jxta_PG * self, Jxta_cm ** cm);
 
-JXTA_DECLARE(void) jxta_PG_set_cache_manager(Jxta_PG * self, Jxta_cm *cm);
+JXTA_DECLARE(void) jxta_PG_set_cache_manager(Jxta_PG * self, Jxta_cm * cm);
 /*
  * A few convenience methods. This information is available from
  * the peer and peergroup advertisements. These methods do not fail.

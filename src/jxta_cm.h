@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cm.h,v 1.18 2006/02/15 01:09:39 slowhog Exp $
+ * $Id: jxta_cm.h,v 1.20 2006/06/16 01:50:47 mmx2005 Exp $
  */
 #ifndef __JXTA_CM_H__
 #define __JXTA_CM_H__
@@ -135,7 +135,7 @@ JXTA_DECLARE(Jxta_status) jxta_cm_create_folder(Jxta_cm * self, char *folder_nam
  * @param Jxta_cm (A ptr to) the cm object to apply the operation to
  * @param adv_descriptor - This is the name space and advertisement type
  *                         "namespace:advertisement type"
- * @param keys the element/attribute pairs that define the indexes of the advetisement
+ * @param keys the element/attribute pairs that define the indexes of the advertisement
  * @return Jxta_status JXTA_SUCCESS if the schema was created ok.
 */
 JXTA_DECLARE(Jxta_status) jxta_cm_create_adv_indexes(Jxta_cm * self, char *folder_name, Jxta_vector * keys);
@@ -247,7 +247,7 @@ JXTA_DECLARE(Jxta_advertisement **) jxta_cm_sql_query(Jxta_cm * self, const char
  * @param folder_name the name of the folder
  * @param where - A WHERE clause SQL string.
  * @return A null terminated list of Jxta_advertisement* each pointing
- * a composite advertiswement of the entries ordered by the advid.
+ * a composite advertisement of the entries ordered by the advid.
  */
 JXTA_DECLARE(Jxta_object **) jxta_cm_sql_query_srdi(Jxta_cm * self, const char *folder_name, JString * where);
 
@@ -319,7 +319,7 @@ JXTA_DECLARE(unsigned long) jxta_cm_hash(const char *str, size_t len);
 
 
 /* temporary workaround for closing the database.
- * The cm will be freed automatically when group stoping realy works
+ * The cm will be freed automatically when group stopping really works
  */
 JXTA_DECLARE(void) jxta_cm_close(Jxta_cm * cm);
 
@@ -353,15 +353,7 @@ JXTA_DECLARE(void) jxta_cm_remove_srdi_entries(Jxta_cm * self, JString * peerid)
  * @return a vector od SRDIElementEntry
  */
 JXTA_DECLARE(Jxta_vector *) jxta_cm_get_srdi_delta_entries(Jxta_cm * self, JString * folder_name);
-/**
- * Remove the SRDI entries for the specified peer
- * 
- * @param Jxta_cm instance
- * @param const char * id - Peerid to remove
- * 
- *
-**/
-JXTA_DECLARE(void) jxta_cm_remove_srdi_entries(Jxta_cm * self, JString * peerid);
+
 /**
  * Function to create the proper quotes for a string in a SQL statement
  * 

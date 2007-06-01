@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_adv.h,v 1.10 2005/11/26 16:38:02 mmx2005 Exp $
+ * $Id: jxta_pipe_adv.h,v 1.11 2006/06/12 22:40:40 mmx2005 Exp $
  */
 
 /************************************************************************
@@ -201,6 +201,29 @@ JXTA_DECLARE(const char *) jxta_pipe_adv_get_Name(Jxta_pipe_adv * adv);
    **/
 
 JXTA_DECLARE(Jxta_status) jxta_pipe_adv_set_Name(Jxta_pipe_adv * adv, const char *name);
+
+  /**
+   ** Gets the description of the Pipe Advertisement.
+   **
+   ** @param adv a pointer to the Pipe Advertisement.
+   ** @returns a pointer to a null terminated string containing the description. The lifetime
+   ** of the returned string is the same as the advertisement object.
+   **/
+
+JXTA_DECLARE(const char *) jxta_pipe_adv_get_Desc(Jxta_pipe_adv * adv);
+
+  /**
+   ** Sets the description of the Pipe Advertisement.
+   **
+   ** @param adv a pointer to the Pipe Advertisement.
+   ** @param desc a pointer to a null terminated string containing the description.
+   ** @return a status: JXTA_SUCCESS when the call was successful,
+   **                   JXTA_NOMEM when the system has ran out of memory
+   **                   JXTA_INVALID_PARAMETER when an argument was invalid.
+   **/
+
+JXTA_DECLARE(Jxta_status) jxta_pipe_adv_set_Desc(Jxta_pipe_adv * adv, const char *desc);
+
   /**
    ** Return a vector of indexes to be applied to advertisement tags and attributes. 
    **
@@ -211,6 +234,7 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_adv_set_Name(Jxta_pipe_adv * adv, const char
    ** @return Jxta_vector: return a vector of element/attribute pairs in Jxta_index struct.
    **
   **/
+
 JXTA_DECLARE(Jxta_vector *) jxta_pipe_adv_get_indexes(Jxta_advertisement *);
 
 #ifdef __cplusplus

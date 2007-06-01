@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_config_adv.h,v 1.13 2006/02/01 23:34:43 slowhog Exp $
+ * $Id: jxta_rdv_config_adv.h,v 1.14 2006/06/14 21:03:42 slowhog Exp $
  */
 
 
@@ -137,7 +137,7 @@ JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_auto_rdv_interval(Jxta_RdvConfig
 JXTA_DECLARE(void) jxta_RdvConfig_set_auto_rdv_interval(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff auto_rdv_interval);
 
 JXTA_DECLARE(Jxta_boolean) jxta_RdvConfig_use_only_seeds(Jxta_RdvConfigAdvertisement *);
-JXTA_DECLARE(void) jxta_RdvConfig_set_use_only_sees(Jxta_RdvConfigAdvertisement *, Jxta_boolean);
+JXTA_DECLARE(void) jxta_RdvConfig_set_use_only_seeds(Jxta_RdvConfigAdvertisement *, Jxta_boolean);
 
 JXTA_DECLARE(Jxta_vector *) jxta_RdvConfig_get_seeds(Jxta_RdvConfigAdvertisement *);
 JXTA_DECLARE(void) jxta_RdvConfig_add_seed(Jxta_RdvConfigAdvertisement *, Jxta_endpoint_address *);

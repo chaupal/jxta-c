@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_constants.h,v 1.2 2006/01/26 20:27:12 lankes Exp $
+ * $Id: jxta_constants.h,v 1.3 2006/06/01 02:41:32 mmx2005 Exp $
  */
 #ifndef __JXTA_CONSTANTS_H__
 #define __JXTA_CONSTANTS_H__
@@ -85,8 +85,8 @@ JXTA_DECLARE(Jxta_status) jxta_get_JXTA_TTL_EXPIRED(void);
 JXTA_DECLARE(int) jxta_get_DISC_PEER(void);
 JXTA_DECLARE(int) jxta_get_DISC_GROUP(void);
 JXTA_DECLARE(int) jxta_get_DISC_ADV(void);
-JXTA_DECLARE(long long) jxta_get_DEFAULT_LIFETIME(void);
-JXTA_DECLARE(long long) jxta_get_DEFAULT_EXPIRATION(void);
+JXTA_DECLARE(Jxta_time_diff) jxta_get_DEFAULT_LIFETIME(void);
+JXTA_DECLARE(Jxta_time_diff) jxta_get_DEFAULT_EXPIRATION(void);
 
 JXTA_DECLARE(unsigned int) jxta_get_config_adhoc(void);
 JXTA_DECLARE(unsigned int) jxta_get_config_edge(void);

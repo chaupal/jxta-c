@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_callback.h,v 1.2 2005/11/17 08:18:18 slowhog Exp $
+ * $Id: jxta_callback.h,v 1.3 2006/05/13 10:34:01 slowhog Exp $
  */
 
 
@@ -83,7 +83,7 @@ typedef struct _jxta_callback Jxta_callback;
  * @return Jxta_status Return JXTA_SUCCESS is successfully handled. Other possible return values is a contract between the service
  * and the callback function
  */
-typedef Jxta_boolean (JXTA_STDCALL *Jxta_callback_func)(Jxta_object * obj, void *arg);
+typedef Jxta_status(JXTA_STDCALL * Jxta_callback_func) (Jxta_object * obj, void *arg);
 
 /************************************************************************
  ** Allocates a new Jxta_callback. This is a Jxta_object and reference counting applies.
@@ -95,7 +95,7 @@ typedef Jxta_boolean (JXTA_STDCALL *Jxta_callback_func)(Jxta_object * obj, void 
  ** @param arg is an optional value which will be passed back to the callback function.
  ** @returns JXTA_SUCCESS if successfully created, JXTA_NOMEM if out of memory.
  *************************************************************************/
-JXTA_DECLARE(Jxta_status) jxta_callback_new(Jxta_callback **instance, Jxta_callback_func func, void *arg);
+JXTA_DECLARE(Jxta_status) jxta_callback_new(Jxta_callback ** instance, Jxta_callback_func func, void *arg);
 
 /************************************************************************
  ** Ask the callback to process an event
@@ -109,6 +109,9 @@ JXTA_DECLARE(Jxta_status) jxta_callback_new(Jxta_callback **instance, Jxta_callb
  ** otherwise.
  *************************************************************************/
 JXTA_DECLARE(Jxta_status) jxta_callback_process_object(Jxta_callback * me, Jxta_object * object);
+
+/* temporary callback function to transform a listerner function */
+Jxta_status JXTA_STDCALL listener_callback(Jxta_object * obj, void *arg);
 
 #ifdef __cplusplus
 #if 0

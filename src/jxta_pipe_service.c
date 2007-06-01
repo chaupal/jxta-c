@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_service.c,v 1.26 2005/10/27 01:55:28 slowhog Exp $
+ * $Id: jxta_pipe_service.c,v 1.27 2006/06/15 08:12:48 mmx2005 Exp $
  */
 
 static const char *__log_cat = "PIPE";
@@ -1014,6 +1014,17 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_get_remote_peers(Jxta_pipe * self, Jxta_vect
     }
 
     return self->get_remote_peers(self, vector);
+}
+
+JXTA_DECLARE(Jxta_status) jxta_pipe_get_pipeadv(Jxta_pipe * self, Jxta_pipe_adv ** pipeadv)
+{
+
+    if (self == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument\n");
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    return self->get_pipeadv(self, pipeadv);
 }
 
 

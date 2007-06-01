@@ -79,7 +79,7 @@ typedef enum Jxta_log_levels Jxta_log_level;
  *
  * @return Status code
  */
-typedef Jxta_status(JXTA_STDCALL * Jxta_log_callback) (void *user_data, const char *cat, int level, const char *fmt, va_list ap);
+typedef Jxta_status(JXTA_STDCALL * Jxta_log_callback) (void *user_data, const char *cat, int level, const char *msg);
 
 JXTA_DECLARE(Jxta_status) jxta_log_initialize(void);
 JXTA_DECLARE(void) jxta_log_terminate(void);
@@ -180,7 +180,7 @@ JXTA_DECLARE(Jxta_status) jxta_log_file_close(Jxta_log_file * self);
  * @param void *userdata, the pointer to the Jxta_log_file structure
  */
 JXTA_DECLARE(Jxta_status)
-    jxta_log_file_append(void *user_data, const char *cat, int level, const char *fmt, va_list ap);
+    jxta_log_file_append(void *user_data, const char *cat, int level, const char *msg);
 
 /**
  * Set the selector for the log file
@@ -197,6 +197,23 @@ JXTA_DECLARE(Jxta_status) jxta_log_file_attach_selector(Jxta_log_file * self, Jx
 * of the current source file and line. Useful for some log messages.
 **/
 #define FILEANDLINE "[" __FILE__ ":" _STR(__LINE__) "] "
+
+#ifndef JXTA_DEPRECATED_API
+
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199409L)
+#define JXTA_DEPRECATED_API() \
+    jxta_log_append("JXTA", JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Deprecated API %s called.\n", __func__)
+
+#elif (__GNUC__ >= 2)
+#define JXTA_DEPRECATED_API() \
+    jxta_log_append("JXTA", JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Deprecated API %s called.\n", __PRETTY_FUNCTION__)
+
+#else
+#define JXTA_DEPRECATED_API() \
+    jxta_log_append("JXTA", JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Deprecated API called.\n")
+
+#endif /* Compiler versions */
+#endif /* JXTA_DEPRECATED_API */
 
 #ifdef __cplusplus
 #if 0

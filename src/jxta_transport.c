@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport.c,v 1.19 2005/12/31 11:04:26 mmx2005 Exp $
+ * $Id: jxta_transport.c,v 1.20 2006/03/29 21:49:17 slowhog Exp $
  */
 
 static const char *__log_cat = "TRANSPORT";
@@ -63,7 +63,7 @@ static void jxta_transport_event_delete(Jxta_object * me)
 {
     Jxta_transport_event *me2 = (Jxta_transport_event *) me;
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "EVENT: Transport event [%p] delete \n", me);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "EVENT: Transport event [%pp] delete \n", me);
 
     if (NULL != me2->peer_id) {
         JXTA_OBJECT_RELEASE(me2->peer_id);
@@ -87,7 +87,7 @@ Jxta_transport_event* jxta_transport_event_new(Jxta_transport_event_type event_t
 
     JXTA_OBJECT_INIT(me, jxta_transport_event_delete, NULL);
     me->type = event_type;
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, FILEANDLINE "EVENT: Create a new transport event [%p] with type %d\n", 
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, FILEANDLINE "EVENT: Create a new transport event [%pp] with type %d\n", 
                     me, event_type);
     return me;
 }

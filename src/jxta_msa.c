@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_msa.c,v 1.23 2006/02/18 00:32:52 slowhog Exp $
+ * $Id: jxta_msa.c,v 1.24 2006/04/08 06:44:16 mmx2005 Exp $
  */
 
 static const char *const __log_cat = "MSA";
@@ -512,7 +512,7 @@ static const Kwdtab MSA_tags[] = {
     {"Vers", Vers_, *handleVers, NULL, NULL},
     {"Desc", Desc_, *handleDesc, NULL, NULL},
     {"Parm", Parm_, *handleParm, NULL, NULL},
-    {"PipeAdvertisement", PipeAdvertisement_, *handlePipeAdvertisement, NULL, NULL},
+    {"jxta:PipeAdvertisement", PipeAdvertisement_, *handlePipeAdvertisement, NULL, NULL},
     {"Proxy", Proxy_, *handleProxy, NULL, NULL},
     {"Auth", Auth_, *handleAuth, NULL, NULL},
     {NULL, 0, 0, NULL, NULL}
@@ -563,8 +563,6 @@ JXTA_DECLARE(Jxta_status) jxta_MSA_get_xml(Jxta_MSA * ad, JString ** string)
     jstring_append_2(tmp, "</Proxy>\n");
 
     if (ad->PipeAdvertisement) {
-        jstring_append_2(tmp, "<PipeAdvertisement>");
-
         jxta_pipe_adv_get_xml(ad->PipeAdvertisement, &pipeadv_str);
         if (pipeadv_str) {
             status = jxta_xml_util_encode_jstring(pipeadv_str, &pipeadv_des);
@@ -574,8 +572,6 @@ JXTA_DECLARE(Jxta_status) jxta_MSA_get_xml(Jxta_MSA * ad, JString ** string)
             }
             JXTA_OBJECT_RELEASE(pipeadv_str);
         }
-
-        jstring_append_2(tmp, "</PipeAdvertisement>\n");
     }
 
     jstring_append_2(tmp, "<Auth>");

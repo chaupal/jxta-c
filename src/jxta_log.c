@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * $Id: jxta_log.c,v 1.25 2006/02/18 14:57:32 lankes Exp $
+ * $Id: jxta_log.c,v 1.30 2006/05/27 00:12:07 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -49,8 +49,7 @@ static char const *const _jxta_log_level_labels[JXTA_LOG_LEVEL_MAX] = {
     "paranoid"
 };
 
-JXTA_DECLARE(Jxta_status)
-    jxta_log_initialize()
+JXTA_DECLARE(Jxta_status) jxta_log_initialize()
 {
     Jxta_status rv;
 
@@ -79,8 +78,7 @@ JXTA_DECLARE(Jxta_status)
     return JXTA_SUCCESS;
 }
 
-JXTA_DECLARE(void)
-    jxta_log_terminate()
+JXTA_DECLARE(void) jxta_log_terminate()
 {
     if (!_jxta_log_initialized) {
         return;
@@ -98,38 +96,67 @@ JXTA_DECLARE(void)
     _jxta_log_pool = NULL;
 }
 
-JXTA_DECLARE(void)
-    jxta_log_using(Jxta_log_callback log_cb, void *user_data)
+JXTA_DECLARE(void) jxta_log_using(Jxta_log_callback log_cb, void *user_data)
 {
     _jxta_log_func = log_cb;
     _jxta_log_user_data = user_data;
 }
 
-Jxta_status jxta_log_append(const char *cat, int level, const char *fmt, ...)
+JXTA_DECLARE(Jxta_status) jxta_log_append(const char *cat, int level, const char *fmt, ...)
 {
     Jxta_status rv;
     va_list ap;
-
-    rv = JXTA_SUCCESS;
-
-    if (NULL != _jxta_log_func) {
-        va_start(ap, fmt);
-        rv = (*_jxta_log_func) (_jxta_log_user_data, cat, level, fmt, ap);
-        va_end(ap);
+    char *message;
+    int length;
+    
+    if (NULL == _jxta_log_func) {
+        return JXTA_SUCCESS;
     }
+
+    va_start(ap, fmt);
+    length = apr_vsnprintf(NULL, 0, fmt, ap) + 1;
+    message = malloc(sizeof(char) * length);
+    if (message == NULL) {
+       return JXTA_NOMEM;
+    }
+    va_end(ap);
+    va_start(ap, fmt);
+    apr_vsnprintf(message, length, fmt, ap);
+    va_end(ap);
+
+    rv = (*_jxta_log_func) (_jxta_log_user_data, cat, level, message);
+    free(message);
 
     return rv;
 }
 
-JXTA_DECLARE(Jxta_status)
-    jxta_log_appendv(const char *cat, int level, const char *fmt, va_list ap)
+JXTA_DECLARE(Jxta_status) jxta_log_appendv(const char *cat, int level, const char *fmt, va_list ap)
 {
-    Jxta_status rv;
-
-    rv = JXTA_SUCCESS;
+    Jxta_status rv = JXTA_SUCCESS;
+    char *message;
+    int length;
+    va_list ap2;
+    
+#if (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)) || defined(va_copy)
+    va_copy(ap2, ap);
+#elif defined(__va_copy)
+    __va_copy(ap2, ap);
+#else
+    memcpy(&ap2, &ap, sizeof(va_list));
+#endif
 
     if (NULL != _jxta_log_func) {
-        rv = (*_jxta_log_func) (_jxta_log_user_data, cat, level, fmt, ap);
+        length = apr_vsnprintf(NULL, 0, fmt, ap) + 1;
+        message = malloc(sizeof(char) * length);
+        if (message == NULL) {
+           return JXTA_NOMEM;
+        }
+        apr_vsnprintf(message, length, fmt, ap2);
+        va_end(ap2);
+
+        rv = (*_jxta_log_func) (_jxta_log_user_data, cat, level, message);
+
+        free(message);
     }
 
     return rv;
@@ -166,7 +193,7 @@ static void free_categories(Jxta_log_selector * self)
     for (i = 0; i < self->category_count; i++) {
         free((void *) self->categories[i]);
     }
-    free((void*) self->categories);
+    free((void *) self->categories);
 
     self->categories = NULL;
     self->category_size = 0;
@@ -286,7 +313,7 @@ static Jxta_status add_category(Jxta_log_selector * self, const char *cat)
 
     if (self->category_size <= self->category_count) {
         i = self->category_size + JXTA_LOG_CAT_GROWTH_RATE;
-        p = realloc((void *)self->categories, i * sizeof(char *));
+        p = realloc((void *) self->categories, i * sizeof(char *));
         if (NULL == p) {
             return JXTA_NOMEM;
         }
@@ -341,6 +368,9 @@ static Jxta_status parse_categories(Jxta_log_selector * self, const char *cat, s
 
         size = q - cat + 1;
         r = calloc(size + 1, sizeof(char));
+        if (r == NULL) {
+            return JXTA_NOMEM;
+        }
         strncpy(r, cat, size);
         rv = add_category(self, r);
         if (JXTA_SUCCESS != rv) {
@@ -581,7 +611,7 @@ JXTA_DECLARE(Jxta_boolean)
         return FALSE;
     }
 
-    rv = ((size_t)(locate_category(self, cat, 0)) == self->category_count) ?
+    rv = ((size_t) (locate_category(self, cat, 0)) == self->category_count) ?
         ((self->negative_category_list) ? TRUE : FALSE) : ((self->negative_category_list) ? FALSE : TRUE);
 
     jpr_thread_mutex_unlock(self->mutex);
@@ -666,11 +696,11 @@ JXTA_DECLARE(Jxta_status)
 }
 
 JXTA_DECLARE(Jxta_status)
-    jxta_log_file_append(void *user_data, const char *cat, int level, const char *fmt, va_list ap)
+    jxta_log_file_append(void *user_data, const char *cat, int level, const char *msg)
 {
     Jxta_log_file *self;
     Jxta_log_selector *sel;
-    Jxta_status rv;
+    Jxta_status rv = JXTA_SUCCESS;
     apr_time_exp_t tm;
     char tm_str[16];
     apr_size_t tm_str_sz;
@@ -697,65 +727,16 @@ JXTA_DECLARE(Jxta_status)
     apr_time_exp_lt(&tm, apr_time_now());
     apr_strftime(tm_str, &tm_str_sz, 32, "%m/%d %H:%M:%S", &tm);
 #ifdef WIN32
-    fprintf(self->thefile, "[%s]-%s-[%s:%d][TID: %u] - ", cat, _jxta_log_level_labels[level], tm_str, tm.tm_usec, GetCurrentThreadId());
+    fprintf(self->thefile, "[%s]-%s-[%s:%d][TID: %u] - %s", cat, _jxta_log_level_labels[level], tm_str, tm.tm_usec,
+            GetCurrentThreadId(), msg);
 #else
-    fprintf(self->thefile, "[%s]-%s-[%s:%d][TID: %p] - ", cat, _jxta_log_level_labels[level], tm_str, tm.tm_usec, apr_os_thread_current());
+    fprintf(self->thefile, "[%s]-%s-[%s:%d][TID: %p] - %s", cat, _jxta_log_level_labels[level], tm_str, tm.tm_usec,
+            apr_os_thread_current(), msg);
 #endif
-    rv = (vfprintf(self->thefile, fmt, ap) < 0) ? JXTA_FAILED : JXTA_SUCCESS;
     fflush(self->thefile);
 
     jpr_thread_mutex_unlock(self->mutex);
     return rv;
-}
-
-/*
- * JXTA.NET need following helper functions to create log messages. 
- */
-
-/* Define the type of JXTA.NET's callback function */
-typedef Jxta_status(JXTA_STDCALL * jxta_managed_log_callback) (const char *cat, int level, const char *msg, unsigned int thread);
-
-/* pointer to JXTA.NET's callback function */
-static jxta_managed_log_callback _managed_log_func = NULL;
-
-/* native callback function, which creates the log message and calls the JXTA.NET's callback function */
-static int JXTA_STDCALL jxta_managed_log_callback_func(void *user_data, const char *cat, int level, const char *fmt, va_list ap)
-{
-	int length = 0;
-	char *message = 0;
-
-#ifdef WIN32
-	length = _vscprintf(fmt, ap) + 1;
-	
-	message = malloc(length);
-
-	_vsnprintf(message, length, fmt, ap);
-
-	if (_managed_log_func != NULL)
-		return _managed_log_func(cat, level, message, GetCurrentThreadId());
-	else return -1;
-#else
-	length =  vsnprintf(NULL, 0, fmt, ap) + 1;
-	
-	message = malloc(sizeof(char) * length);
-
-	vsnprintf(message, length, fmt, ap);
-
-	if (_managed_log_func != NULL)
-		return _managed_log_func(cat, level, message, apr_os_thread_current());
-	else return -1;
-#endif
-}
-
-/* function to register JXTA.NET's callback function */
-JXTA_DECLARE(void) jxta_managed_log_using(jxta_managed_log_callback log_cb)
-{
-	_managed_log_func = log_cb;
-
-	if (log_cb != NULL)
-		jxta_log_using(jxta_managed_log_callback_func, NULL);
-	else
-		jxta_log_using(NULL, NULL);
 }
 
 /* vi: set sw=4 ts=4 tw=130 et: */

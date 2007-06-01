@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_netpg.c,v 1.69 2006/02/17 18:24:08 slowhog Exp $
+ * $Id: jxta_netpg.c,v 1.70 2006/05/16 00:58:12 slowhog Exp $
  */
 
 /*
@@ -224,6 +224,7 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before init :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(self));
 
+    peergroup_init((Jxta_PG *) self, NULL);
     /* Must read the PlatformConfig file to start the proper net peergroup */
     config_adv = jxta_PlatformConfig_read("PlatformConfig");
 

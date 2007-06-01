@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object.c,v 1.49 2005/11/17 01:18:32 slowhog Exp $
+ * $Id: jxta_object.c,v 1.52 2006/06/13 22:50:29 slowhog Exp $
  */
 
 static const char *__log_cat = "OBJECT";
@@ -140,7 +140,7 @@ Jxta_status jxta_object_initialize(void)
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Cannot allocate pool for jxta_object_mutex\n");
         return res;
     }
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, FILEANDLINE "Allocated pool fot jxta_object_mutex\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "Allocated pool fot jxta_object_mutex\n");
 
     /* Create the mutex */
     res = apr_thread_mutex_create(&jxta_object_mutex, APR_THREAD_MUTEX_NESTED, jxta_object_pool);
@@ -150,7 +150,7 @@ Jxta_status jxta_object_initialize(void)
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Cannot create jxta_object_mutex\n");
         return res;
     }
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, FILEANDLINE "Allocated the global jxta_object_mutex\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "Allocated the global jxta_object_mutex\n");
 
 #ifdef KDB_SERVER
     start_kdb_server();
@@ -259,7 +259,7 @@ JXTA_DECLARE(Jxta_boolean) _jxta_object_check_valid(Jxta_object * obj, const cha
     res = ((obj->_refCount > 0) && (obj->_refCount < MAX_REF_COUNT));
     if (!res) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,
-                        FILEANDLINE "from [%s:%d] *********** Object [%p] is not valid (ref count is %d)\n", file, line, obj,
+                        FILEANDLINE "from [%s:%d] *********** Object [%pp] is not valid (ref count is %d)\n", file, line, obj,
                         obj->_refCount);
 #ifdef INVALID_IS_FATAL
         abort();
@@ -298,7 +298,7 @@ static Jxta_boolean jxta_object_check_initialized(Jxta_object * obj, const char 
     }
 
     if (0 == (obj->_bitset & JXTA_OBJECT_INITED_BIT)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "from [%s:%d] *********** Object [%p] not initialized\n",
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "from [%s:%d] *********** Object [%pp] not initialized\n",
                         file, line, obj);
 #ifdef INVALID_IS_FATAL
         abort();
@@ -308,7 +308,7 @@ static Jxta_boolean jxta_object_check_initialized(Jxta_object * obj, const char 
     }
 #ifdef JXTA_OBJECT_CHECK_INITIALIZED_ENABLE
     if (obj->_initialized != JXTA_OBJECT_MAGIC_NUMBER) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "from [%s:%d] *********** Object [%p] not initialized\n",
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "from [%s:%d] *********** Object [%pp] not initialized\n",
                         file, line, obj);
 #ifdef INVALID_IS_FATAL
         abort();
@@ -333,7 +333,7 @@ static Jxta_boolean jxta_object_check_uninitialized(Jxta_object * obj, const cha
     }
 #ifdef JXTA_OBJECT_CHECK_INITIALIZED_ENABLE
     if (obj->_initialized == JXTA_OBJECT_MAGIC_NUMBER) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "from [%s:%d] *********** Object [%p] already initialized\n",
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "from [%s:%d] *********** Object [%pp] already initialized\n",
                         file, line, obj);
 #ifdef INVALID_IS_FATAL
         abort();
@@ -408,7 +408,7 @@ JXTA_DECLARE(void *) _jxta_object_init(Jxta_object * obj, unsigned int flags, JX
 
     jxta_object_set_initialized(obj, file, line);
     if (0 != (obj->_bitset & JXTA_OBJECT_SHARE_TRACK)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "[%s:%d] INIT obj[%p]\n", file, line, obj);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "[%s:%d] INIT obj[%pp]\n", file, line, obj);
     }
 
     return obj;
@@ -416,6 +416,10 @@ JXTA_DECLARE(void *) _jxta_object_init(Jxta_object * obj, unsigned int flags, JX
 
 JXTA_DECLARE(void *) _jxta_object_share(Jxta_object * obj, const char *file, int line)
 {
+    if (NULL == obj) {
+        return NULL;
+    }
+
     jxta_object_mutexGet();
 
     if (jxta_object_check_initialized(obj, file, line)) {
@@ -428,7 +432,7 @@ JXTA_DECLARE(void *) _jxta_object_share(Jxta_object * obj, const char *file, int
         }
 
         if (0 != (obj->_bitset & JXTA_OBJECT_SHARE_TRACK)) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "[%s:%d] SHARE obj[%p]=%d\n", file, line, obj, newRefCount);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "[%s:%d] SHARE obj[%pp]=%d\n", file, line, obj, newRefCount);
         }
     }
 
@@ -467,7 +471,7 @@ JXTA_DECLARE(int) _jxta_object_release(Jxta_object * obj, const char *file, int 
     }
 
     if (0 != (obj->_bitset & JXTA_OBJECT_SHARE_TRACK)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "[%s:%d] RELEASE obj[%p]=%d\n", file, line, obj, newRefCount);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "[%s:%d] RELEASE obj[%pp]=%d\n", file, line, obj, newRefCount);
     }
 
     jxta_object_mutexRel();

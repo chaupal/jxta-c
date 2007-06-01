@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_module.h,v 1.8 2005/09/21 21:16:47 slowhog Exp $
+ * $Id: jxta_module.h,v 1.9 2006/05/16 00:58:12 slowhog Exp $
  */
 
 #ifndef JXTA_MODULE_H
@@ -76,7 +76,7 @@ extern "C" {
  */
 #ifndef JXTA_PG_FORW
 #define JXTA_PG_FORW
-typedef struct _jxta_PG Jxta_PG;
+typedef struct jxta_PG Jxta_PG;
 #endif
 
 typedef struct _jxta_module Jxta_module;

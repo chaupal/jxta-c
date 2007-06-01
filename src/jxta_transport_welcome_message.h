@@ -1,5 +1,6 @@
-/* 
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights reserved.
+/*
+ * Copyright (c) 2002 Sun Microsystems, Inc.  All rights
+ * reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,7 +30,7 @@
  *    nor may "JXTA" appear in their name, without prior written
  *    permission of Sun.
  *
- * THIS SOFTWARE IS PROVIDED AS IS'' AND ANY EXPRESSED OR IMPLIED
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
  * DISCLAIMED.  IN NO EVENT SHALL SUN MICROSYSTEMS OR
@@ -50,58 +51,55 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: main.cpp,v 1.4 2002/04/25 21:59:14 wiarda Exp $
+ * $Id: jxta_transport_welcome_message.h,v 1.2 2006/06/01 04:29:44 mmx2005 Exp $
  */
 
-#include <qapplication.h>
-#include <qframe.h> 
-#include <stdio.h>
-#include <iostream>
+#ifndef __JXTA_TRANSPORT_WELCOME_MESSAGE_H__
+#define __JXTA_TRANSPORT_WELCOME_MESSAGE_H__
 
-#include "ConfigDialog.h"
-#include "util.h"
+#include "jxta_apr.h"
+#include "jxta_endpoint_address.h"
 
-#include <apr_general.h>
-#include "c_wrapper.h"
+#ifdef __cplusplus
+extern "C" {
+#if 0
+};
+#endif
+#endif
 
-int main( int argc, char **argv ){
-  QApplication qtApplication(argc, argv); 
+#define MAX_WELCOME_MSG_SIZE 4096
 
-   apr_initialize();
-  void * peerAd = w_jxta_PA_new();
-  FILE *advfile;
+enum Jxta_welcome_message_versions {
+    JXTA_WELCOME_MESSAGE_VERSION_UNKNOWN,
+    JXTA_WELCOME_MESSAGE_VERSION_1_1,
+    JXTA_WELCOME_MESSAGE_VERSION_3_0
+};
 
-  if (peerAd == NULL) {
-     cout<<"Could not create the ad"<<endl;
-     return 1;
-  }
+typedef enum Jxta_welcome_message_versions Jxta_welcome_message_version;
 
-  advfile = fopen ("PlatformConfig", "r");
-  if (advfile != NULL) {
-     w_jxta_PA_parse_file(peerAd,advfile);
-     fclose(advfile);
-  }
+typedef const struct _welcome_message Jxta_welcome_message;
 
-  // set the application style
-   updateLookAndFeel(&qtApplication);
-    
+JXTA_DECLARE(Jxta_welcome_message *) welcome_message_new_1(Jxta_endpoint_address * dest_addr, Jxta_endpoint_address * public_addr,
+                                             JString *peerid, Jxta_boolean noprop, int message_version );
+JXTA_DECLARE( Jxta_welcome_message *) welcome_message_new_2(JString * welcome_str);
 
-  JxtaConfigDialog * d = new JxtaConfigDialog(0,"Configuration Dialog",peerAd);
-  if( d->exec() == d->OKAY){
-        advfile = fopen ("PlatformConfig", "w");
-        if (advfile == NULL) {
-          cout<<"Could not write the configuration file"<<endl;
-          return 1;
-	}
-       fprintf(advfile,"%s",w_jxta_PA_get_xml(peerAd));
-       fclose(advfile);     
-  }
-  delete d;
+JXTA_DECLARE(Jxta_endpoint_address *) welcome_message_get_publicaddr(Jxta_welcome_message * me);
+
+JXTA_DECLARE(Jxta_endpoint_address *) welcome_message_get_destaddr(Jxta_welcome_message * me);
+
+JXTA_DECLARE(JString *) welcome_message_get_peerid(Jxta_welcome_message * me);
+
+JXTA_DECLARE(int) welcome_message_get_message_version(Jxta_welcome_message * me);
+
+JXTA_DECLARE(JString *) welcome_message_get_welcome(Jxta_welcome_message * me);
+
+#ifdef __cplusplus
+#if 0
+{
+#endif
 }
+#endif
 
+#endif /* __JXTA_TRANSPORT_TCP_CONNECTION_H__ */
 
-
-
-
-
-
+/* vi: set ts=4 sw=4 tw=130 et: */

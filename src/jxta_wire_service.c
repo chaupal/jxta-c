@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_wire_service.c,v 1.42 2005/12/22 05:02:36 mmx2005 Exp $
+ * $Id: jxta_wire_service.c,v 1.47 2006/06/15 08:12:48 mmx2005 Exp $
  */
 
 static const char *__log_cat = "WireService";
@@ -73,6 +73,7 @@ static const char *__log_cat = "WireService";
 #include "jxta_message.h"
 #include "jxta_wm.h"
 #include "jxta_rdv_service_private.h"
+#include "jxta_endpoint_service_priv.h"
 
 #define WIRE_SERVICE_NAME   "jxta.service.wirepipe"
 #define WM_NAME             "jxta:JxtaWireHeader"
@@ -89,11 +90,10 @@ typedef struct {
     Jxta_hashtable *listeners;
     apr_thread_mutex_t *mutex;
     apr_pool_t *pool;
-    Jxta_listener *listener;
     char *groupid;
     Jxta_PGID *gid;
     Jxta_vector *cacheMsgIds;
-
+    void *ep_cookie;
 } Jxta_wire_service;
 
 typedef struct {
@@ -122,7 +122,7 @@ typedef struct {
 typedef struct {
     JXTA_OBJECT_HANDLE;
     Jxta_pipe_adv *adv;
-    Jxta_listener *listener;
+    void *ep_cookie;
     Jxta_vector *listeners;
 } Jxta_wire_session;
 
@@ -138,21 +138,22 @@ static Jxta_status wire_set_pipe_resolver(Jxta_pipe_service_impl *, Jxta_pipe_re
 static Jxta_wire_outputpipe *wire_outputpipe_new(Jxta_wire_service *, Jxta_PG *, Jxta_pipe_adv * adv);
 static Jxta_wire_inputpipe *wire_inputpipe_new(Jxta_wire_service *, Jxta_PG *, Jxta_pipe_adv * adv);
 static Jxta_pipe *jxta_wire_pipe_new_instance(Jxta_wire_service *, Jxta_PG *, Jxta_pipe_adv * adv);
+
 static Jxta_status wire_pipe_get_outputpipe(Jxta_pipe *, Jxta_outputpipe **);
 static Jxta_status wire_pipe_get_inputpipe(Jxta_pipe *, Jxta_inputpipe **);
 static Jxta_status wire_pipe_get_remote_peers(Jxta_pipe *, Jxta_vector **);
-static void JXTA_STDCALL wire_service_endpoint_listener(Jxta_object * obj, void *arg);
-static Jxta_status notify_local_listeners(Jxta_wire_service * me, const char * pipe_id, Jxta_message * msg);
-static Jxta_status notify_remote_listeners(Jxta_wire_service * me, const char * pipe_id, Jxta_message * msg);
+static Jxta_status wire_pipe_get_pipeadv(Jxta_pipe *, Jxta_pipe_adv **);
+
+static Jxta_status JXTA_STDCALL wire_service_endpoint_cb(Jxta_object * obj, void *arg);
+static Jxta_status notify_local_listeners(Jxta_wire_service * me, const char *pipe_id, Jxta_message * msg);
+static Jxta_status notify_remote_listeners(Jxta_wire_service * me, const char *pipe_id, Jxta_message * msg);
 
 static void jxta_wire_service_free(Jxta_object * obj)
 {
 
     Jxta_wire_service *self = (Jxta_wire_service *) obj;
 
-    jxta_endpoint_service_remove_listener(self->endpoint, WIRE_SERVICE_NAME, self->groupid);
-    jxta_listener_stop(self->listener);
-    JXTA_OBJECT_RELEASE(self->listener);
+    endpoint_service_remove_recipient(self->endpoint, self->ep_cookie);
 
     JXTA_OBJECT_RELEASE(self->endpoint);
     self->endpoint = NULL;
@@ -186,6 +187,11 @@ static void jxta_wire_service_free(Jxta_object * obj)
     if (self->generic_resolver != NULL) {
         JXTA_OBJECT_RELEASE(self->generic_resolver);
         self->generic_resolver = NULL;
+    }
+
+    if(self->rdv){
+        JXTA_OBJECT_RELEASE(self->rdv);
+        self->rdv = NULL;
     }
 
     if (self->pool != NULL) {
@@ -258,11 +264,8 @@ Jxta_pipe_service_impl *jxta_wire_service_new_instance(Jxta_pipe_service * pipe_
     strcpy(self->groupid, &tmpid[9]);
     JXTA_OBJECT_RELEASE(tmp);
 
-    self->listener = jxta_listener_new(wire_service_endpoint_listener, (void *) self, 10, 100);
-
-    jxta_endpoint_service_add_listener(self->endpoint, WIRE_SERVICE_NAME, self->groupid, self->listener);
-
-    jxta_listener_start(self->listener);
+    endpoint_service_add_recipient(self->endpoint, &self->ep_cookie, WIRE_SERVICE_NAME, self->groupid, wire_service_endpoint_cb,
+                                   self);
 
     /* Initialize the VTBL */
 
@@ -286,7 +289,7 @@ static char *wire_get_name(Jxta_pipe_service_impl * obj)
 
     Jxta_wire_service *self = (Jxta_wire_service *) obj;
     if (self == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid argument\n");       
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid argument\n");
         return NULL;
     }
 
@@ -305,11 +308,11 @@ wire_timed_connect(Jxta_pipe_service_impl * obj, Jxta_pipe_adv * adv, Jxta_time_
         return JXTA_INVALID_ARGUMENT;
     }
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "wire_timed_connect\n");    
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "wire_timed_connect\n");
 
     *pipe = jxta_wire_pipe_new_instance(self, self->group, adv);
     if (*pipe == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot create a wire pipe\n");        
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot create a wire pipe\n");
         return JXTA_NOMEM;
     }
 
@@ -344,16 +347,16 @@ wire_connect(Jxta_pipe_service_impl * obj, Jxta_pipe_adv * adv, Jxta_time_diff t
     }
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "wire_connect\n");
-    
+
     pipe = jxta_wire_pipe_new_instance(self, self->group, adv);
     if (pipe == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot create a wire pipe\n");        
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot create a wire pipe\n");
         return JXTA_NOMEM;
     }
 
     event = jxta_pipe_connect_event_new(JXTA_PIPE_CONNECTED, pipe);
     JXTA_OBJECT_RELEASE(pipe);
-    jxta_listener_schedule_object(listener, (Jxta_object *) event);
+    jxta_listener_process_object(listener, (Jxta_object *) event);
     JXTA_OBJECT_RELEASE(event);
     return JXTA_SUCCESS;
 }
@@ -363,7 +366,7 @@ static Jxta_status wire_timed_accept(Jxta_pipe_service_impl * obj, Jxta_pipe_adv
 
     Jxta_wire_service *self = (Jxta_wire_service *) obj;
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "wire_timed_accept\n");    
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "wire_timed_accept\n");
     if (self == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid argument\n");
         return JXTA_INVALID_ARGUMENT;
@@ -374,7 +377,7 @@ static Jxta_status wire_timed_accept(Jxta_pipe_service_impl * obj, Jxta_pipe_adv
         return JXTA_NOMEM;
     }
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "wire_timed_accept return JXTA_SUCCESS\n");
-    
+
     return JXTA_SUCCESS;
 }
 
@@ -507,7 +510,7 @@ static Jxta_boolean check_wire_header(Jxta_wire_service * self, Jxta_message * m
     srcPeer = JxtaWire_get_SrcPeer(*wm);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "SrcPeer = %s\n", srcPeer ? srcPeer : "NULL");
-    
+
     if (NULL != srcPeer) {
         jxta_PG_get_PID(self->group, &peer_id);
         jxta_id_from_cstr(&src_pid, srcPeer);
@@ -516,7 +519,7 @@ static Jxta_boolean check_wire_header(Jxta_wire_service * self, Jxta_message * m
             goto FINAL_EXIT;
         }
     }
-    
+
     ttl = JxtaWire_get_TTL(*wm);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "TTL = %d\n", ttl);
 
@@ -565,22 +568,22 @@ static JxtaWire *get_new_wire_header(char *srcPeer, Jxta_vector * visitedPeer, i
     return wm;
 }
 
-static Jxta_status notify_local_listeners(Jxta_wire_service * me, const char * pipe_id, Jxta_message * msg)
+static Jxta_status notify_local_listeners(Jxta_wire_service * me, const char *pipe_id, Jxta_message * msg)
 {
     Jxta_wire_session *session = NULL;
     Jxta_status res;
     Jxta_listener *listener = NULL;
     unsigned int i;
-    
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG , "Notify local listeners for pipe Id %s\n", pipe_id);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Notify local listeners for pipe Id %s\n", pipe_id);
 
     res = jxta_hashtable_get(me->listeners, pipe_id, strlen(pipe_id), JXTA_OBJECT_PPTR(&session));
     if (res == JXTA_SUCCESS) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG , "Found a listener\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Found a listener\n");
         for (i = 0; i < jxta_vector_size(session->listeners); ++i) {
             res = jxta_vector_get_object_at(session->listeners, JXTA_OBJECT_PPTR(&listener), i);
             if (res != JXTA_SUCCESS) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,"failed to get listener at position %u\n", i);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "failed to get listener at position %u\n", i);
                 continue;
             }
 
@@ -609,7 +612,7 @@ static Jxta_status notify_local_listeners(Jxta_wire_service * me, const char * p
 /**
  * FIXME: SRDI should support primary key. SRDI does not support primary key now, query only for Pipe ID. 
  */
-static Jxta_status notify_remote_listeners(Jxta_wire_service * me, const char * pipe_id, Jxta_message * msg)
+static Jxta_status notify_remote_listeners(Jxta_wire_service * me, const char *pipe_id, Jxta_message * msg)
 {
     Jxta_status res = JXTA_SUCCESS;
     Jxta_vector *peers = NULL;
@@ -620,7 +623,7 @@ static Jxta_status notify_remote_listeners(Jxta_wire_service * me, const char * 
     peers = jxta_srdi_searchSrdi(srdi, "JxtaPipeResolver", NULL, "Id", pipe_id);
     JXTA_OBJECT_RELEASE(srdi);
     if (NULL == peers) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG , "No remote listeners.\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No remote listeners.\n");
         return JXTA_SUCCESS;
     }
 
@@ -631,7 +634,7 @@ static Jxta_status notify_remote_listeners(Jxta_wire_service * me, const char * 
 
         jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer_id), i);
         jxta_id_to_jstring(peer_id, &peer_id_jstring);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG , "notify remote peer %s\n", jstring_get_string(peer_id_jstring));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "notify remote peer %s\n", jstring_get_string(peer_id_jstring));
 
         destAddr = jxta_endpoint_address_new_3(peer_id, WIRE_SERVICE_NAME, me->groupid);
         if (JXTA_SUCCESS != jxta_endpoint_service_send(me->group, me->endpoint, msg, destAddr)) {
@@ -704,7 +707,7 @@ static Jxta_status wire_service_propagate(Jxta_wire_service * self, char *id, Jx
     return res;
 }
 
-static void JXTA_STDCALL wire_service_message_listener(Jxta_object * obj, void *arg)
+static Jxta_status JXTA_STDCALL wire_service_message_cb(Jxta_object * obj, void *arg)
 {
     Jxta_message *msg = (Jxta_message *) obj;
     Jxta_wire_session *session = (Jxta_wire_session *) arg;
@@ -712,7 +715,7 @@ static void JXTA_STDCALL wire_service_message_listener(Jxta_object * obj, void *
     Jxta_status res;
     JxtaWire *wm;
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG , "wire_service got incoming message\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "wire_service got incoming message\n");
     JXTA_OBJECT_CHECK_VALID(msg);
 
     if (check_wire_header(NULL, msg, &wm)) {
@@ -723,7 +726,7 @@ static void JXTA_STDCALL wire_service_message_listener(Jxta_object * obj, void *
         for (i = 0; i < jxta_vector_size(session->listeners); ++i) {
             res = jxta_vector_get_object_at(session->listeners, JXTA_OBJECT_PPTR(&listener), i);
             if (res != JXTA_SUCCESS) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG , "failed\n");
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "failed\n");
                 continue;
             }
 
@@ -736,18 +739,20 @@ static void JXTA_STDCALL wire_service_message_listener(Jxta_object * obj, void *
                     jxta_listener_process_object(listener, (Jxta_object *) dup_msg);
                     JXTA_OBJECT_RELEASE(dup_msg);
                 } else {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG , "Cannot duplicate message\n");
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Cannot duplicate message\n");
                 }
                 JXTA_OBJECT_RELEASE(listener);
             }
         }
         JXTA_OBJECT_RELEASE(wm);
     } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG , "No Propagation header - discard,\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No Propagation header - discard,\n");
     }
+
+    return JXTA_SUCCESS;
 }
 
-static void JXTA_STDCALL wire_service_endpoint_listener(Jxta_object * obj, void *arg)
+static Jxta_status JXTA_STDCALL wire_service_endpoint_cb(Jxta_object * obj, void *arg)
 {
     Jxta_message *msg = (Jxta_message *) obj;
     Jxta_wire_service *self = (Jxta_wire_service *) arg;
@@ -775,6 +780,7 @@ static void JXTA_STDCALL wire_service_endpoint_listener(Jxta_object * obj, void 
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No Propagation endpoint header - discard,\n");
     }
+    return JXTA_SUCCESS;
 }
 
 static void wire_session_free(Jxta_object * obj)
@@ -796,6 +802,7 @@ static Jxta_wire_session *wire_session_new(void)
 {
     Jxta_wire_session *self = (Jxta_wire_session *) calloc(1, sizeof(Jxta_wire_session));
     JXTA_OBJECT_INIT(self, wire_session_free, NULL);
+    self->listeners = jxta_vector_new(1);
     return self;
 }
 
@@ -804,34 +811,23 @@ static Jxta_status wire_service_add_listener(Jxta_wire_service * self, Jxta_pipe
     Jxta_wire_session *session = NULL;
     Jxta_status res;
     Jxta_pipe_resolver *pipe_resolver = self->generic_resolver;
-
     const char *id = jxta_pipe_adv_get_Id((Jxta_pipe_adv *) adv);
 
     apr_thread_mutex_lock(self->mutex);
     res = jxta_hashtable_get(self->listeners, id, strlen(id), JXTA_OBJECT_PPTR(&session));
     if (res != JXTA_SUCCESS) {
-        Jxta_listener *tmp = NULL;
-
         /* There is no session yet for this id. Create a new one */
         session = wire_session_new();
-        session->listeners = jxta_vector_new(1);
         JXTA_OBJECT_SHARE(adv);
         session->adv = adv;
-        /* Create our own listener, and connect it to the Rendezvous Service */
-        tmp = jxta_listener_new((Jxta_listener_func) wire_service_message_listener, (void *) session, 1, 10);
-        if (tmp == NULL) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Cannot create listener\n");
-            JXTA_OBJECT_RELEASE(session);
-            return JXTA_NOMEM;
-        }
-        session->listener = tmp;
-        res = jxta_rdv_service_add_propagate_listener((Jxta_rdv_service *) self->rdv, WIRE_SERVICE_NAME, id, tmp);
+        /* Create our own callback, and connect it to the endpoint Service */
+        res = endpoint_service_add_recipient(self->endpoint, &session->ep_cookie, WIRE_SERVICE_NAME, id, wire_service_message_cb,
+                                             session);
         if (res != JXTA_SUCCESS) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Cannot add propagate listener reason= %d\n", res);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Cannot add propagate callback, reason= %d\n", res);
             JXTA_OBJECT_RELEASE(session);
             return res;
         }
-        jxta_listener_start(tmp);
         jxta_hashtable_put(self->listeners, id, strlen(id), (Jxta_object *) session);
         JXTA_OBJECT_RELEASE(session);
     }
@@ -884,22 +880,12 @@ static Jxta_status wire_service_remove_listener(Jxta_wire_service * self, Jxta_p
 
     if (jxta_vector_size(session->listeners) == 0) {
         /* No more need to keep the session alive */
-
+        res = endpoint_service_remove_recipient(self->endpoint, session->ep_cookie);
         if (res != JXTA_SUCCESS) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Cannot remove propagate listener reason= %d\n", res);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Cannot remove propagate callback, reason= %d\n", res);
         }
-
-        res = jxta_rdv_service_remove_propagate_listener((Jxta_rdv_service *) self->rdv,
-                                                         WIRE_SERVICE_NAME, id, session->listener);
-        if (res != JXTA_SUCCESS) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Cannot remove propagate listener reason= %d\n", res);
-        }
-
-	jxta_listener_stop(session->listener);
-	JXTA_OBJECT_RELEASE(session->listener);
 
         res = jxta_pipe_resolver_send_srdi_message(pipe_resolver, adv, NULL, FALSE);
-
     }
 
     JXTA_OBJECT_RELEASE(session);
@@ -955,6 +941,7 @@ static Jxta_pipe *jxta_wire_pipe_new_instance(Jxta_wire_service * pipe_service, 
     self->generic.get_outputpipe = wire_pipe_get_outputpipe;
     self->generic.get_inputpipe = wire_pipe_get_inputpipe;
     self->generic.get_remote_peers = wire_pipe_get_remote_peers;
+    self->generic.get_pipeadv = wire_pipe_get_pipeadv;
     return (Jxta_pipe *) self;
 }
 
@@ -1004,6 +991,19 @@ static Jxta_status wire_pipe_get_remote_peers(Jxta_pipe * self, Jxta_vector ** v
     return JXTA_NOTIMP;
 }
 
+static Jxta_status wire_pipe_get_pipeadv(Jxta_pipe * obj, Jxta_pipe_adv **pipeadv)
+{
+    Jxta_wire_pipe *self = (Jxta_wire_pipe *) obj;
+
+    if(self->adv == NULL){
+        return JXTA_FAILED;
+    }
+
+    JXTA_OBJECT_SHARE(self->adv);   
+    *pipeadv = self->adv;
+
+    return JXTA_SUCCESS;    
+}
 
 /****************************************************************
  ** Jxta_wire_inputpipe implementation
@@ -1070,6 +1070,7 @@ static Jxta_status inputpipe_add_listener(Jxta_inputpipe * obj, Jxta_listener * 
     return JXTA_SUCCESS;
 }
 
+/* FIXME: seems like it does not really remove listener from session. That only been done when the input pipe is removed. */
 static Jxta_status inputpipe_remove_listener(Jxta_inputpipe * obj, Jxta_listener * listener)
 {
 

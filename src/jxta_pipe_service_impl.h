@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_service_impl.h,v 1.10 2005/11/27 02:40:42 mmx2005 Exp $
+ * $Id: jxta_pipe_service_impl.h,v 1.12 2006/06/16 05:44:55 mmx2005 Exp $
  */
 
 
@@ -157,6 +157,8 @@ struct _jxta_pipe {
     Jxta_status(*get_inputpipe) (Jxta_pipe * pipe, Jxta_inputpipe ** ip);
 
     Jxta_status(*get_remote_peers) (Jxta_pipe * pipe, Jxta_vector ** vector);
+
+    Jxta_status(*get_pipeadv) (Jxta_pipe * pipe, Jxta_pipe_adv ** pipeadv);
 };
 
 struct _jxta_inputpipe {
@@ -262,7 +264,7 @@ Jxta_status jxta_pipe_resolver_local_resolve(Jxta_pipe_resolver * resolver, Jxta
    ** block until the timeout is reached.
    ** 
    ** @param service instance of the Pipe Service
-   ** @param adv a pointer to the pipe advertisment
+   ** @param adv a pointer to the pipe advertisement
    ** @param timeout waiting time in micro-seconds. If timeout is set to zero, the function
    **                will return immediately, and peers will be set to NULL. This is typical
    **                when a revolve listener has been set, and the query has to be sent.

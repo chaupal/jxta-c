@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_service_priv.h,v 1.3 2005/09/23 18:06:47 slowhog Exp $
+ * $Id: jxta_endpoint_service_priv.h,v 1.4 2006/05/16 00:58:12 slowhog Exp $
  */
 
 #ifndef JXTA_ENDPOINT_SERVICE_PRIV_H
@@ -74,7 +74,28 @@ extern "C" {
  * operation is applied.
  * @param Jxta_transport_event* e pointer to the Jxta_transport_event object
  */
-void jxta_endpoint_service_transport_event(Jxta_endpoint_service * me, Jxta_transport_event *e);
+void jxta_endpoint_service_transport_event(Jxta_endpoint_service * me, Jxta_transport_event * e);
+
+/**
+ * Adds a callback to a specific service and parameters.
+ *
+ * @param me pointer to the instance of the endpoint service.
+ * @param recipient pointer to a string containing the recipient portion of an endpoint address
+ * @param cb is a pointer to the Jxta_callback handles messages delivered to the endpoint address. Set to NULL to ignore messages
+ * for the recipient.
+ *
+ * @see Jxta_endpoint_address
+ * @returns JXTA_SUCCESS if the callback is successfully installed
+ *          JXTA_BUSY if there was already a callback registered
+ *          JXTA_FAILED for other errors
+ */
+Jxta_status endpoint_service_add_recipient(Jxta_endpoint_service * me, void **cookie, const char *name, const char *param,
+                                           Jxta_callback_func f, void *arg);
+
+Jxta_status endpoint_service_remove_recipient(Jxta_endpoint_service * me, void *cookie);
+Jxta_status endpoint_service_remove_recipient_by_addr(Jxta_endpoint_service * me, const char *name, const char *param);
+
+Jxta_status endpoint_service_demux(Jxta_endpoint_service * me, const char *name, const char *param, Jxta_message * msg);
 
 #ifdef __cplusplus
 #if 0

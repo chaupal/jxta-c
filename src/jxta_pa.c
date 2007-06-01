@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pa.c,v 1.87 2006/02/18 00:32:52 slowhog Exp $
+ * $Id: jxta_pa.c,v 1.88 2006/05/23 17:36:45 slowhog Exp $
  */
 
 static const char *const __log_cat = "PA";
@@ -290,7 +290,7 @@ JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_PA_add_relay_address(Jxta_PA * ad, 
     for (i = 0; i < sz; i++) {
         jxta_vector_get_object_at(svcs, (Jxta_object **) (void *) &svc, i);
         route = jxta_svc_get_RouteAdvertisement(svc);
-
+        JXTA_OBJECT_RELEASE(svc);
         /*
          * the only service service which has a route is the endpoint
          * service which is the service where we want to modify the route
@@ -306,7 +306,6 @@ JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_PA_add_relay_address(Jxta_PA * ad, 
             JXTA_OBJECT_RELEASE(ap);
             break;
         }
-        JXTA_OBJECT_RELEASE(svc);
     }
 
     return route;

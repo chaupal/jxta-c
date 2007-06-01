@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_relay.c,v 1.52 2006/03/13 19:45:41 slowhog Exp $
+ * $Id: jxta_relay.c,v 1.54 2006/05/23 17:37:17 slowhog Exp $
  */
 #include <stdlib.h> /* for atoi */
 
@@ -78,6 +78,7 @@
 #include "jxta_object_type.h"
 #include "jxta_peer.h"
 #include "jxta_peer_private.h"
+#include "jxta_endpoint_service_priv.h"
 
 static const char *__log_cat = "RELAY";
 
@@ -147,9 +148,10 @@ struct _jxta_transport_relay {
     Jxta_vector *TcpRelays;
     Jxta_vector *peers;
     Jxta_endpoint_service *endpoint;
-    Jxta_listener *listener_service;
     apr_thread_t *thread;
     volatile Jxta_boolean running;
+
+    void *ep_cookie;
 };
 
 typedef struct _jxta_transport_relay _jxta_transport_relay;
@@ -190,7 +192,7 @@ static Jxta_boolean allow_overload_p(Jxta_transport * tr);
 static Jxta_boolean allow_routing_p(Jxta_transport * tr);
 static Jxta_boolean connection_oriented_p(Jxta_transport * tr);
 
-static void JXTA_STDCALL relay_transport_client_listener(Jxta_object * obj, void *arg);
+static Jxta_status JXTA_STDCALL relay_transport_client_cb(Jxta_object * obj, void *arg);
 static void *APR_THREAD_FUNC connect_relay_thread(apr_thread_t * thread, void *arg);
 static void check_relay_lease(_jxta_transport_relay * self, _jxta_peer_relay_entry * peer);
 static void connect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_entry * peer);
@@ -253,7 +255,7 @@ static _jxta_peer_relay_entry *relay_entry_construct(_jxta_peer_relay_entry * se
 {
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Constructing ...\n");
 
-    self = (_jxta_peer_relay_entry*)peer_entry_construct((_jxta_peer_entry *) self);
+    self = (_jxta_peer_relay_entry *) peer_entry_construct((_jxta_peer_entry *) self);
 
     if (NULL != self) {
         self->thisType = "_jxta_peer_relay_entry";
@@ -274,11 +276,14 @@ static void relay_entry_destruct(_jxta_peer_relay_entry * self)
 static _jxta_peer_relay_entry *relay_entry_new(void)
 {
     _jxta_peer_relay_entry *self = (_jxta_peer_relay_entry *) malloc(sizeof(_jxta_peer_relay_entry));
+    if (self == NULL) {
+        return NULL;
+    }
 
     /* Initialize the object */
     memset(self, 0, sizeof(_jxta_peer_relay_entry));
     JXTA_OBJECT_INIT(self, relay_entry_delete, 0);
-    PEER_ENTRY_VTBL(self) = (Jxta_Peer_entry_methods*)&JXTA_RELAY_ENTRY_METHODS;
+    PEER_ENTRY_VTBL(self) = (Jxta_Peer_entry_methods *) & JXTA_RELAY_ENTRY_METHODS;
 
     return relay_entry_construct(self);
 }
@@ -350,7 +355,7 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
         return JXTA_CONFIG_NOTFOUND;
     }
 
-    jxta_PA_get_Svc_with_id(conf_adv,assigned_id,&svc);
+    jxta_PA_get_Svc_with_id(conf_adv, assigned_id, &svc);
     JXTA_OBJECT_RELEASE(conf_adv);
 
     if (svc == NULL)
@@ -414,6 +419,12 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     jxta_id_get_uniqueportion(id, &uniquePid);
     tmp = jstring_get_string(uniquePid);
     self->peerid = malloc(strlen(tmp) + 1);
+    if (self->peerid == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        JXTA_OBJECT_RELEASE(id);
+        JXTA_OBJECT_RELEASE(uniquePid);
+        return JXTA_NOMEM;
+    }
     strcpy(self->peerid, tmp);
     JXTA_OBJECT_RELEASE(uniquePid);
     JXTA_OBJECT_RELEASE(id);
@@ -425,6 +436,12 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     jxta_id_get_uniqueportion(pgid, &uniquePGid);
     tmp = jstring_get_string(uniquePGid);
     self->groupid = malloc(strlen(tmp) + 1);
+    if (self->groupid == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        JXTA_OBJECT_RELEASE(uniquePGid);
+        JXTA_OBJECT_RELEASE(pgid);
+        return JXTA_NOMEM;
+    }
     strcpy(self->groupid, tmp);
     JXTA_OBJECT_RELEASE(uniquePGid);
     JXTA_OBJECT_RELEASE(pgid);
@@ -434,6 +451,11 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
      */
     jxta_id_get_uniqueportion(assigned_id, &mid);
     self->assigned_id = malloc(strlen(jstring_get_string(mid)) + 1);
+    if (self->assigned_id == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        JXTA_OBJECT_RELEASE(mid);
+        return JXTA_NOMEM;
+    }
     strcpy(self->assigned_id, jstring_get_string(mid));
     JXTA_OBJECT_RELEASE(mid);
 
@@ -477,6 +499,7 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
 static Jxta_status start(Jxta_module * module, const char *argv[])
 {
     _jxta_transport_relay *self = PTValid(module, _jxta_transport_relay);
+    Jxta_status rv;
 
     if (self->Is_Server) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Relay server is not supported yet!\n");
@@ -493,11 +516,10 @@ static Jxta_status start(Jxta_module * module, const char *argv[])
     jxta_endpoint_service_add_transport(self->endpoint, (Jxta_transport *) self);
 
     /* 
-     *  we need to register the relay endpoint listener
+     *  we need to register the relay endpoint callback
      */
-    self->listener_service = jxta_listener_new(relay_transport_client_listener, (void *) self, 1, 1);
-    jxta_listener_start(self->listener_service);
-    jxta_endpoint_service_add_listener(self->endpoint, (char *) self->assigned_id, NULL, self->listener_service);
+    rv = endpoint_service_add_recipient(self->endpoint, &self->ep_cookie, self->assigned_id, NULL, relay_transport_client_cb,
+                                        self);
 
     /*
      * Go ahead an start the Relay connect thread
@@ -517,20 +539,12 @@ static void stop(Jxta_module * module)
 
     _jxta_transport_relay *self = PTValid(module, _jxta_transport_relay);
 
-    if (jxta_module_state(module) != JXTA_MODULE_STARTED) {
-        return;
-    }
-
     if (!self->Is_Client) {
         return;
     }
 
+    endpoint_service_remove_recipient(self->endpoint, self->ep_cookie);
     jxta_endpoint_service_remove_transport(self->endpoint, (Jxta_transport *) self);
-
-    jxta_endpoint_service_remove_listener(self->endpoint, (char *) self->assigned_id, NULL);
-    jxta_listener_stop(self->listener_service);
-    JXTA_OBJECT_RELEASE(self->listener_service);
-    self->listener_service = NULL;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Signal thread to exit...\n");
     apr_thread_mutex_lock(self->stop_mutex);
@@ -625,7 +639,7 @@ _jxta_transport_relay *jxta_transport_relay_construct(Jxta_transport * relay, Jx
     _jxta_transport_relay *self = NULL;
 
     PTValid(methods, Jxta_transport_methods);
-    self = (_jxta_transport_relay*)jxta_transport_construct(relay, (Jxta_transport_methods const *) methods);
+    self = (_jxta_transport_relay *) jxta_transport_construct(relay, (Jxta_transport_methods const *) methods);
     self->_super.direction = JXTA_OUTBOUND;
 
     if (NULL != self) {
@@ -641,7 +655,9 @@ _jxta_transport_relay *jxta_transport_relay_construct(Jxta_transport * relay, Jx
         self->HttpRelays = NULL;
         self->TcpRelays = NULL;
         self->peers = jxta_vector_new(1);
-        self->listener_service = NULL;
+        if (self->peers == NULL) {
+            return NULL;
+        }
     }
 
     return self;
@@ -713,9 +729,16 @@ static void relay_free(Jxta_object * obj)
 Jxta_transport_relay *jxta_transport_relay_new_instance(void)
 {
     _jxta_transport_relay *self = (_jxta_transport_relay *) malloc(sizeof(_jxta_transport_relay));
+    if (self == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        return NULL;
+    }
     memset(self, 0, sizeof(_jxta_transport_relay));
     JXTA_OBJECT_INIT(self, relay_free, NULL);
-    jxta_transport_relay_construct((Jxta_transport*)self, &JXTA_TRANSPORT_RELAY_METHODS);
+    if (!jxta_transport_relay_construct((Jxta_transport *) self, &JXTA_TRANSPORT_RELAY_METHODS)) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        return NULL;
+    }
 
     return (Jxta_transport_relay *) self;
 }
@@ -728,7 +751,7 @@ Jxta_transport_relay *jxta_transport_relay_new_instance(void)
  **   - get the lease from the relay server.
  **   - get a disconnect from the relay server.
  **/
-static void JXTA_STDCALL relay_transport_client_listener(Jxta_object * obj, void *arg)
+static Jxta_status JXTA_STDCALL relay_transport_client_cb(Jxta_object * obj, void *arg)
 {
     Jxta_message *msg = (Jxta_message *) obj;
     _jxta_transport_relay *self = PTValid(arg, _jxta_transport_relay);
@@ -764,7 +787,7 @@ static void JXTA_STDCALL relay_transport_client_listener(Jxta_object * obj, void
      * we are already connected
      */
     if (connected) {
-        return;
+        return JXTA_SUCCESS;
     }
 
     jxta_message_get_element_1(msg, RELAY_LEASE_RESPONSE, &el);
@@ -775,6 +798,12 @@ static void JXTA_STDCALL relay_transport_client_listener(Jxta_object * obj, void
          */
         bytes = jxta_message_element_get_value(el);
         response = jstring_new_3(bytes);
+        if (response == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+            JXTA_OBJECT_RELEASE(el);
+            JXTA_OBJECT_RELEASE(bytes);
+            return JXTA_NOMEM;
+        }
         res = (char *) jstring_get_string(response);
 
         if (strcmp(res, RELAY_RESPONSE_CONNECTED) == 0) {
@@ -792,6 +821,8 @@ static void JXTA_STDCALL relay_transport_client_listener(Jxta_object * obj, void
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "No relay response element\n");
     }
+
+    return JXTA_SUCCESS;
 }
 
 
@@ -809,6 +840,13 @@ Jxta_boolean is_contain_address(Jxta_endpoint_address * addr, Jxta_RdvAdvertisem
     apa = jxta_RouteAdvertisement_get_Dest(route);
     dest = jxta_AccessPointAdvertisement_get_EndpointAddresses(apa);
     saddr = jxta_endpoint_address_to_string(addr);
+    if (saddr == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory");
+        JXTA_OBJECT_RELEASE(route);
+        JXTA_OBJECT_RELEASE(apa);
+        JXTA_OBJECT_RELEASE(dest);
+        return res;
+    }
 
     for (i = 0; i < jxta_vector_size(dest); i++) {
         jxta_vector_get_object_at(dest, JXTA_OBJECT_PPTR(&js_addr), i);
@@ -853,20 +891,20 @@ static void update_relay_peer_connection(_jxta_transport_relay * self, Jxta_RdvA
             /*
              *  Mark the peer entry has connected
              */
-            PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer*)peer);
+            PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer *) peer);
 
             /*
              * Reset the flag to our last succeeded lease renewal state
              */
             peer->is_connected = TRUE;
-            PEER_ENTRY_VTBL(peer)->jxta_peer_set_expires((Jxta_peer*)peer, jpr_time_now() + lease);
-            peer->connectTime = PEER_ENTRY_VTBL(peer)->jxta_peer_get_expires((Jxta_peer*)peer) - RELAY_LEASE_RENEWAL_DELAY;
+            PEER_ENTRY_VTBL(peer)->jxta_peer_set_expires((Jxta_peer *) peer, jpr_time_now() + lease);
+            peer->connectTime = PEER_ENTRY_VTBL(peer)->jxta_peer_get_expires((Jxta_peer *) peer) - RELAY_LEASE_RENEWAL_DELAY;
 
             jxta_endpoint_service_set_relay(self->endpoint,
                                             jxta_endpoint_address_get_protocol_name(((_jxta_peer_entry *) peer)->address),
                                             jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) peer)->address));
 
-            PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
+            PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
             JXTA_OBJECT_RELEASE(peer);
             return;
         }
@@ -893,6 +931,12 @@ Jxta_RdvAdvertisement *extract_relay_adv(Jxta_message * msg)
             bytes = jxta_message_element_get_value(el);
             value = jstring_new_3(bytes);
             relayAdv = jxta_RdvAdvertisement_new();
+            if (value == NULL || relayAdv == NULL) {
+                JXTA_OBJECT_RELEASE(el);
+                JXTA_OBJECT_RELEASE(bytes);
+                JXTA_OBJECT_RELEASE(value);
+                return NULL;
+            }
             jxta_RdvAdvertisement_parse_charbuffer(relayAdv, jstring_get_string(value), jstring_length(value));
 
             JXTA_OBJECT_RELEASE(el);
@@ -919,6 +963,11 @@ static Jxta_time extract_lease_value(Jxta_message * msg)
             value = jxta_message_element_get_value(el);
             length = jxta_bytevector_size(value);
             bytes = malloc(length + 1);
+            if (bytes == NULL) {
+                JXTA_OBJECT_RELEASE(value);
+                JXTA_OBJECT_RELEASE(el);
+                return 0;
+            }
 
             jxta_bytevector_get_bytes_at(value, (unsigned char *) bytes, 0, length);
             bytes[length] = 0;
@@ -1013,7 +1062,7 @@ static void *APR_THREAD_FUNC connect_relay_thread(apr_thread_t * thread, void *a
     /* initial connect to relay seed */
 
     for (i = 0; i < jxta_vector_size(self->TcpRelays); i++) {
-        seed = (Jxta_peer*)relay_entry_new();
+        seed = (Jxta_peer *) relay_entry_new();
         jxta_vector_get_object_at(self->TcpRelays, JXTA_OBJECT_PPTR(&addr), i);
         addr_a = jstring_new_2("tcp://");
         jstring_append_1(addr_a, addr);
@@ -1028,7 +1077,7 @@ static void *APR_THREAD_FUNC connect_relay_thread(apr_thread_t * thread, void *a
     }
 
     for (i = 0; i < jxta_vector_size(self->HttpRelays); i++) {
-        seed = (Jxta_peer*)relay_entry_new();
+        seed = (Jxta_peer *) relay_entry_new();
         jxta_vector_get_object_at(self->HttpRelays, JXTA_OBJECT_PPTR(&addr), i);
         addr_a = jstring_new_2("http://");
         jstring_append_1(addr_a, addr);
@@ -1188,7 +1237,7 @@ static void check_relay_lease(_jxta_transport_relay * self, _jxta_peer_relay_ent
      * check if the peer has still a valid relay
      */
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer*)peer);
+    PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer *) peer);
 
     add = jxta_endpoint_service_get_relay_addr(self->endpoint);
     if (add == NULL) {
@@ -1197,7 +1246,7 @@ static void check_relay_lease(_jxta_transport_relay * self, _jxta_peer_relay_ent
         peer->try_connect = FALSE;
         peer->connectTime = 0;
         peer->connectRetryDelay = RELAY_MIN_RETRY_DELAY;
-        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
+        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
 
         /*
          * remove the relay address from our local route
@@ -1212,7 +1261,7 @@ static void check_relay_lease(_jxta_transport_relay * self, _jxta_peer_relay_ent
         free(add);
     }
 
-    expires = PEER_ENTRY_VTBL(peer)->jxta_peer_get_expires((Jxta_peer*)peer);
+    expires = PEER_ENTRY_VTBL(peer)->jxta_peer_get_expires((Jxta_peer *) peer);
 
     /* Check if the peer really still has a lease */
     if (expires < currentTime) {
@@ -1225,13 +1274,13 @@ static void check_relay_lease(_jxta_transport_relay * self, _jxta_peer_relay_ent
          **/
         peer->connectTime = currentTime;
         peer->connectRetryDelay = 0;
-        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
+        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
         return;
     }
     /* We still have a lease. Is it time to renew it ? */
     if ((expires - currentTime) <= RELAY_RENEWAL_DELAY) {
         peer->connectTime = currentTime;
-        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
+        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "relay connection reconnect\n");
 
@@ -1242,7 +1291,7 @@ static void check_relay_lease(_jxta_transport_relay * self, _jxta_peer_relay_ent
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "relay connection check ok %s\n",
                     jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) peer)->address));
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
+    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
     return;
 }
 
@@ -1251,7 +1300,7 @@ static void check_relay_connect(_jxta_transport_relay * self, _jxta_peer_relay_e
 
     Jxta_time currentTime = jpr_time_now();
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer*)peer);
+    PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer *) peer);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Relay->connect in= %" APR_INT64_T_FMT "ms\n",
                     (peer->connectTime - currentTime));
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "       RetryDelay= %" APR_INT64_T_FMT "ms\n", peer->connectRetryDelay);
@@ -1271,12 +1320,12 @@ static void check_relay_connect(_jxta_transport_relay * self, _jxta_peer_relay_e
              ** likely that the peer is still not reachable. 
              **/
             peer->connectTime = currentTime;
-            PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
+            PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
             return;
         }
     } else {
         /* Time to try a connection */
-        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
+        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
 
         /*
          * NOTE: 20050607 tra
@@ -1292,7 +1341,7 @@ static void check_relay_connect(_jxta_transport_relay * self, _jxta_peer_relay_e
             reconnect_to_relay(self, peer);
         return;
     }
-    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
+    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
     return;
 }
 
@@ -1340,11 +1389,11 @@ static void connect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_entr
     JxtaEndpointMessenger *endpoint_messenger = NULL;
     Jxta_endpoint_address *addr = NULL;
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer*)peer);
+    PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer *) peer);
 
     if (peer->connectTime > currentTime) {
         /* Not time yet to try to connect */
-        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
+        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
         return;
     }
 
@@ -1371,23 +1420,37 @@ static void connect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_entr
 
     peer->connectTime = currentTime + peer->connectRetryDelay;
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
+    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
 
     /**
      ** Create a message with a connection request and build the request.
      **/
     msg = jxta_message_new();
+    if (msg == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        return;
+    }
 
     /**
      ** Set the destination address of the message.
      **/
 
     tmp = jstring_new_2(JXTA_ENDPOINT_SERVICE_NAME);
+    if (tmp == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        JXTA_OBJECT_RELEASE(msg);
+        return;
+    }
     jstring_append_2(tmp, ":");
     jstring_append_2(tmp, self->groupid);
 
-
     tmp1 = jstring_new_2(self->assigned_id);
+    if (tmp1 == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        JXTA_OBJECT_RELEASE(msg);
+        JXTA_OBJECT_RELEASE(tmp);
+        return;
+    }
     jstring_append_2(tmp1, "/");
     jstring_append_2(tmp1, (char *) RELAY_CONNECT_REQUEST);
     jstring_append_2(tmp1, ",");
@@ -1398,6 +1461,13 @@ static void connect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_entr
     destAddr = jxta_endpoint_address_new_2(jxta_endpoint_address_get_protocol_name(((_jxta_peer_entry *) peer)->address),
                                            jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) peer)->address),
                                            jstring_get_string(tmp), jstring_get_string(tmp1));
+    if (destAddr == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        JXTA_OBJECT_RELEASE(msg);
+        JXTA_OBJECT_RELEASE(tmp);
+        JXTA_OBJECT_RELEASE(tmp1);
+        return;
+    }
 
     send_message_to_peer(self, destAddr, msg);
 
@@ -1418,11 +1488,11 @@ static void reconnect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_en
     JxtaEndpointMessenger *endpoint_messenger = NULL;
     Jxta_endpoint_address *addr = NULL;
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer*)peer);
+    PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer *) peer);
 
     if (peer->connectTime > currentTime) {
         /* Not time yet to try to connect */
-        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
+        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
         return;
     }
 
@@ -1444,28 +1514,49 @@ static void reconnect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_en
 
     peer->connectTime = currentTime + peer->connectRetryDelay;
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
+    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer *) peer);
 
     /**
      ** Create a message with a connection request and build the request.
      **/
     msg = jxta_message_new();
+    if (msg == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        return;
+    }
 
     /**
      ** Set the destination address of the message.
      **/
     tmp = jstring_new_2(JXTA_ENDPOINT_SERVICE_NAME);
+    if (tmp == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        JXTA_OBJECT_RELEASE(msg);
+        return;
+    }
     jstring_append_2(tmp, ":");
     jstring_append_2(tmp, self->groupid);
 
-
     tmp1 = jstring_new_2(self->assigned_id);
+    if (tmp1 == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        JXTA_OBJECT_RELEASE(msg);
+        JXTA_OBJECT_RELEASE(tmp);
+        return;
+    }
     jstring_append_2(tmp1, "/");
     jstring_append_2(tmp1, self->peerid);
 
     destAddr = jxta_endpoint_address_new_2(jxta_endpoint_address_get_protocol_name(((_jxta_peer_entry *) peer)->address),
                                            jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) peer)->address),
                                            jstring_get_string(tmp), jstring_get_string(tmp1));
+    if (destAddr == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
+        JXTA_OBJECT_RELEASE(msg);
+        JXTA_OBJECT_RELEASE(tmp);
+        JXTA_OBJECT_RELEASE(tmp1);
+        return;
+    }
 
     send_message_to_peer(self, destAddr, msg);
 

@@ -50,12 +50,11 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta.c,v 1.14 2006/02/15 01:09:37 slowhog Exp $
+ * $Id: jxta.c,v 1.15 2006/03/23 02:26:04 slowhog Exp $
  */
 
 #include "jxta_apr.h"
 #include "jpr/jpr_core.h"
-#include "jxta.h"
 #include "jxta_log.h"
 #include "jxta_private.h"
 #include "jxta_advertisement_priv.h"

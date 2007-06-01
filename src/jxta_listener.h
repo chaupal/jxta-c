@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_listener.h,v 1.7 2005/11/16 20:10:40 lankes Exp $
+ * $Id: jxta_listener.h,v 1.9 2006/06/17 09:24:13 mmx2005 Exp $
  */
 
 
@@ -83,6 +83,7 @@
 #ifndef JXTA_LISTENER_H
 #define JXTA_LISTENER_H
 
+#include "jxta_apr.h"
 #include "jxta_object.h"
 
 
@@ -159,7 +160,7 @@ JXTA_DECLARE(void) jxta_listener_stop(Jxta_listener * listener);
 /************************************************************************
  ** Schedule an event to the listener
  ** The event is either queued to be processed by the next available thread.
- ** Jxta_listener_scheduled_object is guaranted to not be blocking.
+ ** Jxta_listener_scheduled_object is guaranteed to not be blocking.
  **
  ** @param listener a pointer to the listener to use.
  ** @param object a pointer to the Jxta_object to schedule. Note that the
@@ -175,7 +176,7 @@ JXTA_DECLARE(Jxta_status)
 /************************************************************************
  ** Process an event to the listener
  ** The calling thread invokes the listener function itself. This is
- ** not guaranted to be a non blocking operation, and in fact, caller of
+ ** not guaranteed to be a non blocking operation, and in fact, caller of
  ** this method should expect it to be potentially blocking.
  **
  ** @param listener a pointer to the listener to use.
@@ -187,11 +188,12 @@ JXTA_DECLARE(Jxta_status)
 JXTA_DECLARE(Jxta_status)
     jxta_listener_process_object(Jxta_listener * listener, Jxta_object * object);
 
+JXTA_DECLARE(Jxta_status) jxta_listener_pool_object(Jxta_listener * listener, Jxta_object * object, apr_thread_pool_t *tpool);
 
 /************************************************************************
- ** Returns the number of objects that are currentely in the queue.
+ ** Returns the number of objects that are currently in the queue.
  ** @param listener a pointer to the listener to use.
- ** @return the number of object that are currentley in the queue.
+ ** @return the number of object that are currently in the queue.
  *************************************************************************/
 JXTA_DECLARE(int) jxta_listener_queue_size(Jxta_listener * listener);
 
@@ -204,7 +206,7 @@ JXTA_DECLARE(int) jxta_listener_queue_size(Jxta_listener * listener);
  ** @param self pointer to the Jxta_listener
  ** @param timeout delay maximum to wait for.
  ** @param obj return value: the event object
- ** @return JXTA_SUCCESS when succesfull,
+ ** @return JXTA_SUCCESS when successful,
  **         JXTA_BUSY when a handler function has already been set.
  **/
 JXTA_DECLARE(Jxta_status)

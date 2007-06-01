@@ -50,13 +50,13 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object_ptrwrapper.c,v 1.7 2005/06/16 23:11:45 slowhog Exp $
+ * $Id: jxta_object_ptrwrapper.c,v 1.8 2006/03/23 02:26:04 slowhog Exp $
  */
 
 #include <stdlib.h>
 #include <string.h>
 
-#include "jxta.h"
+#include "jxta_object.h"
 #include "jxta_object_ptrwrapper.h"
 
 struct _JxtaObjectPtrWrapper {
@@ -75,7 +75,7 @@ JxtaObjectPtrWrapper jxta_object_ptrwrapper_new(void *ptr, Jxta_boolean callfree
 
     memset(wrapper, 0xda, sizeof(struct _JxtaObjectPtrWrapper));
 
-    JXTA_OBJECT_INIT((void *) wrapper, callfree ? free : NULL, ptr);
+    JXTA_OBJECT_INIT((void *) wrapper, callfree ? (JXTA_OBJECT_FREE_FUNC) free : NULL, ptr);
 
     wrapper->usr.ptr = ptr;
 

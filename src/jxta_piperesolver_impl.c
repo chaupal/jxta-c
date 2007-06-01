@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_piperesolver_impl.c,v 1.42 2006/03/15 09:05:01 slowhog Exp $
+ * $Id: jxta_piperesolver_impl.c,v 1.44 2006/06/16 06:20:23 mmx2005 Exp $
  */
 
 #include <limits.h>
@@ -1128,7 +1128,7 @@ static void JXTA_STDCALL response_listener(Jxta_object * obj, void *arg)
 
     msg = jxta_piperesolver_msg_new();
     jxta_piperesolver_msg_parse_charbuffer(msg,
-                                           (const char *) jstring_get_string(queryString),
+                                           jstring_get_string(queryString),
                                            strlen(jstring_get_string(queryString)));
 
     publish_peer_adv(self, msg);
@@ -1235,7 +1235,7 @@ static void JXTA_STDCALL response_listener(Jxta_object * obj, void *arg)
         event = jxta_pipe_resolver_event_new(JXTA_PIPE_RESOLVER_RESOLVED, req->adv, tmpVector);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Invoke listener req= %x\n", req);
         JXTA_OBJECT_CHECK_VALID(req->listener);
-        jxta_listener_schedule_object(req->listener, (Jxta_object *) event);
+        jxta_listener_process_object(req->listener, (Jxta_object *) event);
 
         JXTA_OBJECT_RELEASE(event);
         JXTA_OBJECT_RELEASE(tmpVector);

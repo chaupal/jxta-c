@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rsrdi.h,v 1.6 2005/09/21 21:16:50 slowhog Exp $
+ * $Id: jxta_rsrdi.h,v 1.7 2006/06/16 09:10:39 mmx2005 Exp $
  */
 
 
@@ -75,8 +75,8 @@ typedef struct _ResolverSrdi ResolverSrdi;
 JXTA_DECLARE(ResolverSrdi *) jxta_resolver_srdi_new(void);
 
 /**
- * create a new ResolverSrdi object with inital given values
- * @param handlername associated with the message
+ * create a new ResolverSrdi object with initial given values
+ * @param handler name associated with the message
  * @param message
  * @return pointer to the resolver message object
  */
@@ -90,10 +90,10 @@ void jxta_resolver_srdi_free(ResolverSrdi *);
 
 /**
  * @param ResolverSrdi the resolver message object
- * return a JString represntation of the message
- * it is the responsiblity of the caller to release the JString object
+ * return a JString representation of the message
+ * it is the responsibility of the caller to release the JString object
  * @param adv a pointer to the message.
- * @return JString representaion of the message
+ * @return JString representation of the message
  */
 Jxta_status jxta_resolver_srdi_get_xml(ResolverSrdi *, JString **);
 
@@ -129,9 +129,9 @@ JXTA_DECLARE(JString *) jxta_resolver_srdi_get_credential(ResolverSrdi *);
 JXTA_DECLARE(void) jxta_resolver_srdi_set_credential(ResolverSrdi *, JString *);
 
 /**
- * get the message handlername
+ * get the message handler name
  * @param ResolverSrdi the resolver message object
- * @param JString pointer to JString to retrun the handlername pointer
+ * @param JString pointer to JString to return the handler name pointer
  */
 
 JXTA_DECLARE(void) jxta_resolver_srdi_get_handlername(ResolverSrdi *, JString ** str);

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http_poller.c,v 1.30 2006/02/15 01:09:49 slowhog Exp $
+ * $Id: jxta_transport_http_poller.c,v 1.31 2006/06/14 17:48:15 slowhog Exp $
  */
 
 static const char *__log_cat = "HTTP_POLLER";
@@ -388,8 +388,6 @@ static void *APR_THREAD_FUNC http_poller_body(apr_thread_t * t, void *arg)
      */
     jxta_endpoint_service_set_relay(poller->service, NULL, NULL);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Poller thread is stopping\n");
-
-    apr_thread_exit(t, APR_SUCCESS);
 
     /* NOTREACHED */
     return NULL;

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_discovery_service.h,v 1.12 2006/02/17 18:22:28 slowhog Exp $
+ * $Id: jxta_discovery_service.h,v 1.13 2006/06/16 02:52:29 mmx2005 Exp $
  */
 
 /**
@@ -174,8 +174,8 @@ typedef struct _Jxta_discovery_listener Jxta_discovery_listener;
  * @param  Jxta_discovery_service the service 
  * @param  peerid peerid of the peer to send the query to. A NULL ID causes a propagation
  * @param  type  DISC_PEER, DISC_GROUP, or DISC_ADV
- * @param  attribute  attribute name to narrow disocvery to
- * @param  value value of attribute to narrow disocvery to
+ * @param  attribute  attribute name to narrow discovery to
+ * @param  value value of attribute to narrow discovery to
  * @param  threshold the upper limit of responses from one peer
  * @param  listener the listener which will be called back when responses are received
  * @return query id
@@ -209,8 +209,8 @@ JXTA_DECLARE(Jxta_status) discovery_service_cancel_remote_query(Jxta_discovery_s
  * Retrieve Stored Peer, Group, and General JXTA Advertisements
  * @param  Jxta_discovery_service the service 
  * @param  type  DISC_PEER, DISC_GROUP, or DISC_ADV
- * @param  attribute  attribute name to narrow disocvery to
- * @param  value value of attribute to narrow disocvery to
+ * @param  attribute  attribute name to narrow discovery to
+ * @param  value value of attribute to narrow discovery to
  * @param  advertisements pointer to the Jxta_vector to return
  * @return Jxta_status
  * @see Jxta_status

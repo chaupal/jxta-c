@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: dummypg_test.c,v 1.19 2005/09/23 20:07:13 slowhog Exp $
+ * $Id: dummypg_test.c,v 1.20 2006/05/16 00:58:13 slowhog Exp $
  */
 
 /*
@@ -553,6 +553,7 @@ Jxta_dummypg *jxta_dummypg_new_instance(void)
     Jxta_dummypg *self = (Jxta_dummypg *) malloc(sizeof(Jxta_dummypg));
     JXTA_OBJECT_INIT(self, myFree, 0);
     jxta_dummypg_construct(self, &jxta_dummypg_methods);
+    peergroup_init(self, NULL);
     return self;
 }
 

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_client.c,v 1.163 2006/02/07 07:53:30 slowhog Exp $
+ * $Id: jxta_rdv_service_client.c,v 1.169 2006/06/15 22:55:58 slowhog Exp $
  **/
 
 
@@ -87,6 +87,7 @@ static const char *__log_cat = "RdvClient";
 #include "jxta_peerview_priv.h"
 #include "jxta_rdv_service_private.h"
 #include "jxta_rdv_service_provider_private.h"
+#include "jxta_endpoint_service_priv.h"
 
 /**
  * "Normal" time the background thread sleeps between runs. "Normal" usually
@@ -183,6 +184,7 @@ struct _jxta_rdv_service_client {
     apr_thread_mutex_t *periodicMutex;
     volatile apr_thread_t *periodicThread;
 
+    void *ep_cookie;
     /* configuration */
 
     char *groupiduniq;
@@ -194,8 +196,7 @@ struct _jxta_rdv_service_client {
     Jxta_listener *listener_service;
 
     /* state */
-
-    Jxta_hashtable *rdvs;
+    Jxta_hashtable *rdvs;       /* connected rdv servers */
 };
 
 /**
@@ -222,7 +223,7 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
                         const char *serviceParam);
 
 static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *self);
-static void JXTA_STDCALL client_listener(Jxta_object * msg, void *arg);
+static Jxta_status JXTA_STDCALL client_cb(Jxta_object * msg, void *arg);
 
 static _jxta_peer_rdv_entry *get_peer_entry(_jxta_rdv_service_client * self, Jxta_id * peerid, Jxta_boolean create);
 
@@ -462,12 +463,15 @@ static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service 
     self->groupiduniq = strdup(jstring_get_string(tmp));
     JXTA_OBJECT_RELEASE(tmp);
     jxta_PG_get_configadv(group, &conf_adv);
-    jxta_PG_get_parentgroup(group, &parentgroup);
 
-    if (NULL == conf_adv && NULL != parentgroup) {
-        jxta_PG_get_configadv(parentgroup, &conf_adv);
-        JXTA_OBJECT_RELEASE(parentgroup);
+    if (NULL == conf_adv) {
+        jxta_PG_get_parentgroup(group, &parentgroup);
+        if (parentgroup) {
+            jxta_PG_get_configadv(parentgroup, &conf_adv);
+            JXTA_OBJECT_RELEASE(parentgroup);
+        }
     }
+
     if (conf_adv != NULL) {
         Jxta_svc *svc = NULL;
 
@@ -508,17 +512,6 @@ static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service 
         jxta_RdvConfig_set_max_retry_delay(rdvConfig, MAX_RETRY_DELAY);
     }
 
-    /**
-     ** Add the Rendezvous Service Endpoint Listener
-     **/
-
-    self->listener_service = jxta_listener_new(client_listener, (void *) self, 10, 100);
-
-    jxta_endpoint_service_add_listener(provider->service->endpoint, JXTA_RDV_SERVICE_NAME, self->groupiduniq,
-                                       self->listener_service);
-
-    jxta_listener_start(self->listener_service);
-
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Rendezvous Client initialized for group %s\n", self->groupiduniq);
 
     return JXTA_SUCCESS;
@@ -535,6 +528,12 @@ static Jxta_status start(Jxta_rdv_service_provider * provider)
 {
     Jxta_status res = JXTA_SUCCESS;
     _jxta_rdv_service_client *self = (_jxta_rdv_service_client *) PTValid(provider, _jxta_rdv_service_client);
+
+    /**
+     ** Add the Rendezvous Service Endpoint callback
+     **/
+    endpoint_service_add_recipient(provider->service->endpoint, &self->ep_cookie, JXTA_RDV_SERVICE_NAME, self->groupiduniq,
+                                   client_cb, self);
 
     jxta_rdv_service_provider_lock_priv(provider);
 
@@ -592,13 +591,7 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
 
     jxta_rdv_service_provider_unlock_priv(provider);
 
-    jxta_endpoint_service_remove_listener(provider->service->endpoint, JXTA_RDV_SERVICE_NAME, self->groupiduniq);
-
-    if (self->listener_service) {
-        jxta_listener_stop(self->listener_service);
-        JXTA_OBJECT_RELEASE(self->listener_service);
-        self->listener_service = NULL;
-    }
+    endpoint_service_remove_recipient(provider->service->endpoint, self->ep_cookie);
 
     /* Release the services object this instance was using */
     if (self->discovery != NULL) {
@@ -860,7 +853,7 @@ static Jxta_status process_connected_reply(_jxta_rdv_service_client * self, Jxta
     _jxta_peer_rdv_entry *peer;
     Jxta_Rendezvous_event_type lease_event;
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Processing rdv message [%p]\n", msg);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Processing rdv message [%pp]\n", msg);
 
     el = NULL;
     status = jxta_message_get_element_2(msg, JXTA_RDV_NS_NAME, JXTA_RDV_CONNECTED_REPLY_ELEMENT_NAME, &el);
@@ -1030,7 +1023,7 @@ static Jxta_status process_connected_reply(_jxta_rdv_service_client * self, Jxta
  **   - grant of lease from the rendezvous peer.
  **   - deny of a lease.
  **/
-static void JXTA_STDCALL client_listener(Jxta_object * obj, void *arg)
+static Jxta_status JXTA_STDCALL client_cb(Jxta_object * obj, void *arg)
 {
     Jxta_message *msg = (Jxta_message *) obj;
     _jxta_rdv_service_client *self = (_jxta_rdv_service_client *) PTValid(arg, _jxta_rdv_service_client);
@@ -1051,6 +1044,7 @@ static void JXTA_STDCALL client_listener(Jxta_object * obj, void *arg)
 
         JXTA_OBJECT_RELEASE(el);
     }
+    return res;
 }
 
 /**
@@ -1104,7 +1098,7 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
         Jxta_time_diff connect_normal = 0;
         Jxta_vector *rdvs;
         rdvs = jxta_hashtable_values_get(self->rdvs);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Rendezvous Client Periodic RUN.\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Rendezvous Client for PG %s: Periodic RUN start.\n", self->groupiduniq);
         for (i = 0; i < jxta_vector_size(rdvs); i++) {
             _jxta_peer_rdv_entry *peer;
 
@@ -1194,7 +1188,8 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
                     seeds = NULL;
                 }
             } else {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Looking for seed RDV for the peergroup\n");
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Looking for seed RDV for the peergroup: %s\n",
+                                self->groupiduniq);
 
                 jxta_peerview_send_rdv_request(((Jxta_rdv_service_provider *) self)->peerview, FALSE, FALSE);
 
@@ -1355,6 +1350,11 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
     if (NULL != candidate) {
         JXTA_OBJECT_RELEASE(candidate);
         candidate = NULL;
+    }
+
+    if (NULL != rdvAdvs) {
+        JXTA_OBJECT_RELEASE(rdvAdvs);
+        rdvAdvs = NULL;
     }
 
     apr_thread_mutex_unlock(self->periodicMutex);

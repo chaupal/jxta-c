@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dq.c,v 1.45 2006/02/18 00:32:51 slowhog Exp $
+ * $Id: jxta_dq.c,v 1.50 2006/06/14 11:52:31 mmx2005 Exp $
  */
 
 #include <stdio.h>
@@ -64,6 +64,9 @@
 #include "jxta_advertisement.h"
 #include "jxta_discovery_service.h"
 #include "jxta_apr.h"
+
+static const char *__log_cat = "DiscoveryQuery";
+
 
 /** Each of these corresponds to a tag in the
  * xml ad.
@@ -114,11 +117,15 @@ static void handleType(void *userdata, const XML_Char * cd, int len)
     /* XXXX hamada@jxta.org this can be cleaned up once parsing is corrected */
     if (len > 0) {
         tok = malloc(len + 1);
+        if (tok == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory\n");
+            return;
+        }
         memset(tok, 0, len + 1);
         extract_char_data(cd, len, tok);
         if (*tok != '\0') {
             ad->Type = (short) strtol(cd, NULL, 0);
-            JXTA_LOG("Type is :%d\n", ad->Type);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Type is :%d\n", ad->Type);
         }
         free(tok);
     }
@@ -131,11 +138,15 @@ static void handleThreshold(void *userdata, const XML_Char * cd, int len)
     /* XXXX hamada@jxta.org this can be cleaned up once parsing is corrected */
     if (len > 0) {
         tok = malloc(len + 1);
+        if (tok == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory\n");
+            return;
+        }
         memset(tok, 0, len + 1);
         extract_char_data(cd, len, tok);
         if (*tok != '\0') {
             ad->Threshold = (int) strtol(cd, NULL, 0);
-            JXTA_LOG("Threshold is :%d\n", ad->Threshold);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Threshold is :%d\n", ad->Threshold);
         }
         free(tok);
     }
@@ -143,10 +154,16 @@ static void handleThreshold(void *userdata, const XML_Char * cd, int len)
 
 static void handlePeerAdv(void *userdata, const XML_Char * cd, int len)
 {
-
     if (len != 0) {
         Jxta_DiscoveryQuery *ad = (Jxta_DiscoveryQuery *) userdata;
-        jstring_append_0((JString *) ad->PeerAdv, cd, len);
+        if (NULL != ad->PeerAdv) {
+            JXTA_OBJECT_RELEASE(ad->PeerAdv);
+        }
+        ad->PeerAdv = jstring_new_1(len + 1);
+        if (NULL == ad->PeerAdv) {
+            return;
+        }
+        jstring_append_0(ad->PeerAdv, cd, len);
     }
 }
 
@@ -204,25 +221,29 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_query_set_threshold(Jxta_DiscoveryQuery
 
 JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_peeradv(Jxta_DiscoveryQuery * ad, JString ** padv)
 {
-    if (ad->PeerAdv) {
-        jstring_trim(ad->PeerAdv);
-        JXTA_OBJECT_SHARE(ad->PeerAdv);
+    if (NULL == ad->PeerAdv) {
+        return JXTA_ITEM_NOTFOUND;
     }
+
+    jstring_trim(ad->PeerAdv);
+    JXTA_OBJECT_SHARE(ad->PeerAdv);
     *padv = ad->PeerAdv;
     return JXTA_SUCCESS;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_discovery_query_set_peeradv(Jxta_DiscoveryQuery * ad, JString * padv)
 {
-    if (ad == NULL || padv == NULL) {
+    if (ad == NULL) {
         return JXTA_INVALID_ARGUMENT;
     }
     if (ad->PeerAdv != NULL) {
         JXTA_OBJECT_RELEASE(ad->PeerAdv);
         ad->PeerAdv = NULL;
     }
-    JXTA_OBJECT_SHARE(padv);
     ad->PeerAdv = padv;
+    if (NULL != padv) {
+        JXTA_OBJECT_SHARE(padv);
+    }
     return JXTA_SUCCESS;
 }
 
@@ -318,8 +339,16 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_xml(Jxta_DiscoveryQuery * adv
     Jxta_status status;
 
     char *buf = calloc(1, 128);
-
+    if (buf == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory\n");
+        return JXTA_NOMEM;
+    }
     doc = jstring_new_2("<?xml version=\"1.0\"?>\n");
+    if (doc == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory\n");
+        free(buf);
+        return JXTA_NOMEM;
+    }
     jstring_append_2(doc, "<!DOCTYPE jxta:DiscoveryQuery>");
     jstring_append_2(doc, "<jxta:DiscoveryQuery>\n");
 
@@ -339,7 +368,7 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_xml(Jxta_DiscoveryQuery * adv
         jstring_append_2(doc, "<PeerAdv>");
         status = jxta_xml_util_encode_jstring(adv->PeerAdv, &tmps);
         if (status != JXTA_SUCCESS) {
-            JXTA_LOG("error encoding the PeerAdv, retrun status :%d\n", status);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "error encoding the PeerAdv, return status :%d\n", status);
             JXTA_OBJECT_RELEASE(doc);
             return status;
         }
@@ -363,7 +392,7 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_xml(Jxta_DiscoveryQuery * adv
         jstring_append_2(doc, "<ExtendedQuery>");
         status = jxta_xml_util_encode_jstring(adv->ExtendedQuery, &tmps);
         if (status != JXTA_SUCCESS) {
-            JXTA_LOG("error encoding the Extended query, retrun status :%d\n", status);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "error encoding the Extended query, return status :%d\n", status);
             JXTA_OBJECT_RELEASE(doc);
             return status;
         }
@@ -389,6 +418,10 @@ JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new(void)
 
     Jxta_DiscoveryQuery *ad;
     ad = (Jxta_DiscoveryQuery *) malloc(sizeof(Jxta_DiscoveryQuery));
+    if (ad == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory\n");
+        return NULL;
+    }
     memset(ad, 0xda, sizeof(Jxta_DiscoveryQuery));
 
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
@@ -399,10 +432,15 @@ JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new(void)
 
     ad->Type = 0;
     ad->Threshold = 0;
-    ad->PeerAdv = jstring_new_0();
+    ad->PeerAdv = NULL;
     ad->Attr = jstring_new_0();
     ad->Value = jstring_new_0();
     ad->ExtendedQuery = jstring_new_0();
+    if (ad->Attr == NULL || ad->Value == NULL || ad->ExtendedQuery == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory\n");
+        JXTA_OBJECT_RELEASE(ad);
+        return NULL;
+    }
     return ad;
 }
 
@@ -418,6 +456,10 @@ JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new_1(short type, const
 
     Jxta_DiscoveryQuery *ad;
     ad = (Jxta_DiscoveryQuery *) malloc(sizeof(Jxta_DiscoveryQuery));
+    if (ad == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory\n");
+        return NULL;
+    }
     memset(ad, 0xda, sizeof(Jxta_DiscoveryQuery));
 
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
@@ -429,9 +471,16 @@ JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new_1(short type, const
     ad->Type = type;
     ad->Threshold = threshold;
     ad->PeerAdv = peeradv;
-    JXTA_OBJECT_SHARE(peeradv);
+    if (peeradv) {
+        JXTA_OBJECT_SHARE(peeradv);
+    }
     ad->Attr = jstring_new_2(attr);
     ad->Value = jstring_new_2(value);
+    if (ad->Attr == NULL || ad->Value == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory\n");
+        JXTA_OBJECT_RELEASE(ad);
+        return NULL;
+    }
     ad->ExtendedQuery = NULL;
     return ad;
 }
@@ -441,6 +490,10 @@ JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new_2(const char *query
 
     Jxta_DiscoveryQuery *ad;
     ad = (Jxta_DiscoveryQuery *) malloc(sizeof(Jxta_DiscoveryQuery));
+    if (ad == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory\n");
+        return NULL;
+    }
     memset(ad, 0xda, sizeof(Jxta_DiscoveryQuery));
 
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
@@ -452,8 +505,15 @@ JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new_2(const char *query
     ad->Type = DISC_ADV;
     ad->Threshold = threshold;
     ad->PeerAdv = peeradv;
-    JXTA_OBJECT_SHARE(peeradv);
+    if (peeradv) { 
+        JXTA_OBJECT_SHARE(peeradv);
+    }
     ad->ExtendedQuery = jstring_new_2(query);
+    if (ad->ExtendedQuery == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory\n");
+        JXTA_OBJECT_RELEASE(ad);
+        return NULL;
+    }
     ad->Attr = NULL;
     ad->Value = NULL;
     return ad;
@@ -484,7 +544,7 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_query_parse_charbuffer(Jxta_DiscoveryQu
 {
 
     jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
-    /* xxx when the above returns a status we should return it, forr now return success */
+    /* xxx when the above returns a status we should return it, for now return success */
     return JXTA_SUCCESS;
 }
 
@@ -492,7 +552,7 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_query_parse_file(Jxta_DiscoveryQuery * 
 {
 
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
-    /* xxx when the above returns a status we should return it, forr now return success */
+    /* xxx when the above returns a status we should return it, for now return success */
     return JXTA_SUCCESS;
 }
 

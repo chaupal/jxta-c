@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rq.h,v 1.10 2005/09/21 22:56:48 mathieu Exp $
+ * $Id: jxta_rq.h,v 1.11 2006/06/15 19:19:28 mmx2005 Exp $
  */
 
 
@@ -80,7 +80,7 @@ JXTA_DECLARE_DATA const int JXTA_INVALID_QUERY_ID;
 JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new(void);
 
 /**
- * create a new ResolverQuery object with inital given values
+ * create a new ResolverQuery object with initial given values
  * @param handlername associated with the query
  * @param query
  * @param src_peerid  the originator's peerid
@@ -98,10 +98,10 @@ void jxta_resolver_query_free(ResolverQuery * ad);
 
 /**
  * @param ResolverQuery the resolver query object
- * return a JString represntation of the advertisement
- * it is the responsiblity of the caller to release the JString object
+ * return a JString representation of the advertisement
+ * it is the responsibility of the caller to release the JString object
  * @param adv a pointer to the advertisement.
- * @return JString representaion of the advertisement
+ * @return JString representation of the advertisement
  */
 JXTA_DECLARE(Jxta_status) jxta_resolver_query_get_xml(ResolverQuery * adv, JString ** document);
 
@@ -167,7 +167,7 @@ JXTA_DECLARE(void) jxta_resolver_query_set_src_peer_route(ResolverQuery * ad, Jx
 /**
  * get the message handlername
  * @param ResolverQuery the resolver query object
- * @param JString pointer to JString to retrun the handlername pointer
+ * @param JString pointer to JString to return the handlername pointer
  */
 
 JXTA_DECLARE(void) jxta_resolver_query_get_handlername(ResolverQuery * ad, JString ** str);

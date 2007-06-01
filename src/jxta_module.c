@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_module.c,v 1.24 2006/03/14 18:07:40 slowhog Exp $
+ * $Id: jxta_module.c,v 1.26 2006/05/26 02:13:54 bondolo Exp $
  */
 
 #include <stdio.h>
@@ -63,8 +63,9 @@
 #include "jxta_errno.h"
 #include "jxta_module.h"
 #include "jxta_module_private.h"
+#include "jxta_log.h"
 
-
+static const char *__log_cat = "MODULE";
 /**
  * The base class ctor (not public: the only public way to make a new module
  * is to instantiate one of the derived types).
@@ -194,6 +195,10 @@ JXTA_DECLARE(void) jxta_module_stop(Jxta_module * module)
 {
     _jxta_module *self = PTValid(module, _jxta_module);
 
+    /*FIXME: we really want to be more restrictive. don't stop if not started. */
+    if (JXTA_MODULE_STARTED != self->state) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Trying to stop a module which has not started successfully.\n");
+    }
     self->state = JXTA_MODULE_STOPPING;
     JXTA_MODULE_VTBL(self)->stop(self);
     self->state = JXTA_MODULE_STOPPED;
