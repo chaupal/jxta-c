@@ -50,24 +50,51 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxtaapr.h,v 1.5 2005/04/08 19:38:12 slowhog Exp $
+ * $Id: jxta_srdi_config_adv.h,v 1.2 2005/11/08 00:29:13 exocetrick Exp $
  */
 
-#ifndef __JXTAPR_H__
-#define __JXTAPR_H__
+
+#ifndef JXTA_SRDICONFIGADVERTISEMENT_H__
+#define JXTA_SRDICONFIGADVERTISEMENT_H__
+
+#include "jxta_types.h"
+#include "jxta_advertisement.h"
+#include "jxta_endpoint_address.h"
+#include "jxta_vector.h"
+
+#ifdef __cplusplus
+extern "C" {
+#if 0
+};
+#endif
+#endif
+typedef struct _jxta_SrdiConfigAdvertisement Jxta_SrdiConfigAdvertisement;
+
+# define DEFAULT_REPLICATION_THRESHOLD 4
+
+JXTA_DECLARE(Jxta_SrdiConfigAdvertisement *) jxta_SrdiConfigAdvertisement_new(void);
+JXTA_DECLARE(Jxta_status) jxta_SrdiConfigAdvertisement_get_xml(Jxta_SrdiConfigAdvertisement *, JString **);
+JXTA_DECLARE(void) jxta_SrdiConfigAdvertisement_parse_charbuffer(Jxta_SrdiConfigAdvertisement *, const char *, size_t len);
+JXTA_DECLARE(void) jxta_SrdiConfigAdvertisement_parse_file(Jxta_SrdiConfigAdvertisement *, FILE * stream);
+JXTA_DECLARE(Jxta_vector *) jxta_SrdiConfigAdvertisement_get_indexes(void);
+
+JXTA_DECLARE(void) jxta_srdi_config_set_no_range(Jxta_SrdiConfigAdvertisement * adv, Jxta_boolean tf);
+JXTA_DECLARE(Jxta_boolean) jxta_srdi_cfg_get_no_range(Jxta_SrdiConfigAdvertisement * adv);
+JXTA_DECLARE(void) jxta_srdi_config_set_replication_threshold(Jxta_SrdiConfigAdvertisement * adv, int threshold);
+JXTA_DECLARE(int) jxta_srdi_cfg_get_replication_threshold(Jxta_SrdiConfigAdvertisement * adv);
 
 /**
- * Those includes are related to the Apache Portable Runtime (APR).
- * Please refer to http://www.apache.org for more information on the APR.
- **/
-#include <apr.h>
-#include <apr_strings.h>
-#include <apr_hash.h>
-#include <apr_portable.h>
-#include <apr_time.h>
-#include <apr_thread_mutex.h>
-#include <apr_network_io.h>
-#include <apr_thread_cond.h>
-#include <apr_thread_proc.h>
-#include "jpr/jpr_apr_wrapper.h"
+*   For other advertisement types which want to parse SrdiConfig as a sub-section.    
+**/
+void handleJxta_SrdiConfigAdvertisement(void *userdata, const XML_Char * cd, int len);
+
+#ifdef __cplusplus
+#if 0
+{
 #endif
+}
+#endif
+
+#endif /* JXTA_SRDICONFIGADVERTISEMENT_H__  */
+
+/* vim: set ts=4 sw=4 et tw=130: */

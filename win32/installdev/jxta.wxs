@@ -347,8 +347,8 @@
 			      src='..\..\src\jdlist.h' Vital='yes' />
 			    <File Id='jstring.h' Name='jstring.h' LongName='jstring.h' DiskId='1'
 			      src='..\..\src\jstring.h' Vital='yes' />
-				<File Id='jxtaapr.h' Name='apr.h' LongName='jxtaapr.h' DiskId='1'
-			      src='..\..\src\jxtaapr.h' Vital='yes' />
+				<File Id='jxta_apr.h' Name='apr.h' LongName='jxta_apr.h' DiskId='1'
+			      src='..\..\src\jxta_apr.h' Vital='yes' />
                 <File Id='jxta_advertisement.h' Name='advert.h' LongName='jxta_advertisement.h' DiskId='1'
 			      src='..\..\src\jxta_advertisement.h' Vital='yes' />
 				<File Id='jxta_apa.h' Name='apa.h' LongName='jxta_apa.h' DiskId='1'

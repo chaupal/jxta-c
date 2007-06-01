@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: endpoint_test.c,v 1.24 2005/04/14 21:10:50 bondolo Exp $
+ * $Id: endpoint_test.c,v 1.27 2005/11/16 20:10:43 lankes Exp $
  */
 
 #include <stdio.h>
@@ -58,7 +58,7 @@
 #include "jxta.h"
 #include "jxta_peergroup.h"
 
-#include "../src/jxta_private.h" 
+#include "../src/jxta_private.h"
 
 /****************************************************************
  **
@@ -72,48 +72,47 @@
 #define ENDPOINT_TEST_SERVICE_NAME "jxta:EndpointTest"
 #define ENDPOINT_TEST_SERVICE_PARAMS "EndpointTestParams"
 
-Jxta_PG* pg = NULL;
-apr_pool_t* pool;
-Jxta_endpoint_service* endpoint = NULL;
-Jxta_endpoint_address* hostAddr;
+Jxta_PG *pg = NULL;
+apr_pool_t *pool;
+Jxta_endpoint_service *endpoint = NULL;
+Jxta_endpoint_address *hostAddr;
 
-Jxta_transport* http_transport;
+Jxta_transport *http_transport;
 
-void
-listener (Jxta_object* msg, void* cookie) {
+void JXTA_STDCALL listener(Jxta_object * msg, void *cookie)
+{
 
-  printf("Received a message\n");
+    printf("Received a message\n");
 }
 
-void
-init(void) {
-  Jxta_status res;
-  Jxta_listener* endpoint_listener = NULL;
+void init(void)
+{
+    Jxta_status res;
+    Jxta_listener *endpoint_listener = NULL;
 
-  apr_pool_create (&pool, NULL);
+    apr_pool_create(&pool, NULL);
 
   /**
    ** Get the endpoint srvce from the net pg.
    **/
-  
-  res = jxta_PG_new_netpg(&pg);
 
-  if (res != JXTA_SUCCESS) {
-      printf("jxta_PG_netpg_new failed with error: %ld\n", res);
-      exit(res);
-  }
+    res = jxta_PG_new_netpg(&pg);
 
-  jxta_PG_get_endpoint_service(pg, &endpoint);
+    if (res != JXTA_SUCCESS) {
+        printf("jxta_PG_netpg_new failed with error: %ld\n", res);
+        exit(res);
+    }
 
-  /* sets and endpoint listener */
-  endpoint_listener = jxta_listener_new (listener, NULL, 1, 0);
-  
-  jxta_endpoint_service_add_listener (endpoint,
-				      (char*) ENDPOINT_TEST_SERVICE_NAME,
-				      (char*) ENDPOINT_TEST_SERVICE_PARAMS,
-				      endpoint_listener);
+    jxta_PG_get_endpoint_service(pg, &endpoint);
 
-  jxta_listener_start(endpoint_listener);
+    /* sets and endpoint listener */
+    endpoint_listener = jxta_listener_new(listener, NULL, 1, 0);
+
+    jxta_endpoint_service_add_listener(endpoint,
+                                       (char *) ENDPOINT_TEST_SERVICE_NAME,
+                                       (char *) ENDPOINT_TEST_SERVICE_PARAMS, endpoint_listener);
+
+    jxta_listener_start(endpoint_listener);
 }
 
 
@@ -125,73 +124,66 @@ init(void) {
  **/
 
 
-apr_status_t
-readMessageBytes (void* stream, char* buf, apr_size_t len) {
-
-  fread ((void*) buf,(size_t) len, 1, (FILE*) stream);
-  return APR_SUCCESS;
-}
-
-apr_status_t
-writeMessageBytes (void* stream, char* buf, apr_size_t len) {
-
-  fwrite ((void *) buf, (size_t) len, 1, (FILE*) stream);
-  return APR_SUCCESS; 
-}
-
-int
-main (int argc, char **argv)
+apr_status_t readMessageBytes(void *stream, char *buf, apr_size_t len)
 {
-   Jxta_message* msg;
-   char* host;
+
+    fread((void *) buf, (size_t) len, 1, (FILE *) stream);
+    return APR_SUCCESS;
+}
+
+apr_status_t writeMessageBytes(void *stream, char *buf, apr_size_t len)
+{
+
+    fwrite((void *) buf, (size_t) len, 1, (FILE *) stream);
+    return APR_SUCCESS;
+}
+
+int main(int argc, char **argv)
+{
+    Jxta_message *msg;
+    char *host;
 
 #ifndef WIN32
-   struct sigaction sa;
+    struct sigaction sa;
 
-   sa.sa_flags = 0;
-   sa.sa_handler = SIG_IGN;
-   sigaction(SIGPIPE, &sa, NULL);
+    sa.sa_flags = 0;
+    sa.sa_handler = SIG_IGN;
+    sigaction(SIGPIPE, &sa, NULL);
 #endif
 
-   if(argc > 2) {
-       printf("usage: endpoint_test ip:port>\n");
-       return -1;
-   }
+    if (argc > 2) {
+        printf("usage: endpoint_test ip:port>\n");
+        return -1;
+    }
 
-   if (argc == 1) {
-     host = "127.0.0.1:9700";
-   } else {
-     host = argv[1];
-   }
+    if (argc == 1) {
+        host = "127.0.0.1:9700";
+    } else {
+        host = argv[1];
+    }
 
-   jxta_initialize();
+    jxta_initialize();
 
-   /* Initialise the endpoint and http service, set the endpoint listener */
-   init();
+    /* Initialise the endpoint and http service, set the endpoint listener */
+    init();
 
-   /* Builds the destination address */
-    hostAddr =  jxta_endpoint_address_new2 ("http",
-					    host,
-					    ENDPOINT_TEST_SERVICE_NAME,
-					    ENDPOINT_TEST_SERVICE_PARAMS);
+    /* Builds the destination address */
+    hostAddr = jxta_endpoint_address_new_2("http", host, ENDPOINT_TEST_SERVICE_NAME, ENDPOINT_TEST_SERVICE_PARAMS);
 
     /* Builds a message (empty) and sends it */
     msg = jxta_message_new();
 
-    jxta_endpoint_service_send (pg,
-				endpoint,
-				msg,
-				hostAddr);
-   
+    jxta_endpoint_service_send(pg, endpoint, msg, hostAddr);
 
-    JXTA_OBJECT_RELEASE (msg);
+
+    JXTA_OBJECT_RELEASE(msg);
 
     /* Sleep a bit to let the endpoint works */
-    apr_sleep (1 * 60 * 1000 * 1000);
+    apr_sleep(1 * 60 * 1000 * 1000);
 
-   apr_pool_destroy(pool);
-   jxta_terminate();
+    apr_pool_destroy(pool);
+    jxta_terminate();
 
-   return 0;
-   
+    return 0;
+
 }

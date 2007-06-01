@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tcp_private.h,v 1.11 2005/09/13 16:26:02 slowhog Exp $
+ * $Id: jxta_transport_tcp_private.h,v 1.13 2005/09/23 18:06:48 slowhog Exp $
  */
 
 #ifndef __JXTA_TRANSPORT_TCP_PRIVATE_H__
@@ -72,9 +72,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _jxta_transport_tcp Jxta_transport_tcp;
 typedef struct _tcp_messenger TcpMessenger;
 typedef struct _jxta_transport_tcp_connection Jxta_transport_tcp_connection;
@@ -99,8 +100,7 @@ Jxta_endpoint_address *jxta_transport_tcp_get_public_addr(Jxta_transport_tcp * t
 
 Jxta_boolean jxta_transport_tcp_get_allow_multicast(Jxta_transport_tcp * tp);
 
-void jxta_tcp_got_inbound_connection(Jxta_transport_tcp * me, Jxta_transport_tcp_connection * conn, 
-                                     Jxta_endpoint_address * addr);
+void jxta_tcp_got_inbound_connection(Jxta_transport_tcp * me, Jxta_transport_tcp_connection * conn);
 
 #ifdef __cplusplus
 #if 0

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_advertisement.h,v 1.24 2005/08/30 04:28:23 exocetrick Exp $
+ * $Id: jxta_advertisement.h,v 1.27 2005/10/05 03:14:52 exocetrick Exp $
  */
 
 /**
@@ -138,9 +138,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _jxta_advertisement Jxta_advertisement;
 typedef struct _jxta_advertisement_new_func_struct Jxta_advertisement_new_func_struct;
 typedef struct _jxta_index Jxta_index;
@@ -250,13 +251,14 @@ struct _jxta_advertisement {
     JxtaAdvertisementGetIDFunc get_id;
     JxtaAdvertisementGetIndexFunc get_indexes;
     const char **atts;
-    Jxta_vector *attList;
     Kwdtab *dispatch_table;
     Jxta_advertisement_node_handler curr_handler;
     int depth;
     JString *name_space;
     JString *accum;
+    const char *currElement;
     char *local_id;
+
     /*
      * The following is used when this base class is used directly
      * to handle a document that may contain any number of unknown
@@ -266,10 +268,7 @@ struct _jxta_advertisement {
      * jxta_advertisement for that particular usage.
      */
     Jxta_vector *adv_list;
-
     Jxta_advertisement_node_handler *handler_stk;
-
-    Jxta_hashtable *jht;
     XML_Parser parser;
 
 };
@@ -279,7 +278,9 @@ struct _jxta_index {
     JString *element;
     JString *attribute;
     char *parm;
+    Jxta_object *range;
 };
+
 
 /** Private. */
 
@@ -499,6 +500,7 @@ JXTA_DECLARE(void) jxta_advertisement_get_advs(Jxta_advertisement * ad, Jxta_vec
  * @return Jxta_advertisement* a pointer to the newly created advertisement.
  */
 JXTA_DECLARE(Jxta_advertisement *) jxta_advertisement_new(void);
+
 
 #ifdef __cplusplus
 #if 0

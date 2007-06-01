@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dq.h,v 1.7 2005/08/03 05:51:15 slowhog Exp $
+ * $Id: jxta_dq.h,v 1.8 2005/09/21 21:16:46 slowhog Exp $
  */
 
 
@@ -64,9 +64,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _Jxta_DiscoveryQuery Jxta_DiscoveryQuery;
 
 

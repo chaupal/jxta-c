@@ -26,9 +26,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 struct Jxta_log_selector {
     size_t category_count;
     size_t category_size;
@@ -52,8 +53,8 @@ struct Jxta_log_file {
 #if 0
 {
 #endif
-}   /* extern "C" */
-#endif
+}
+#endif /* extern "C" */
 
 #endif /* __JXTA_LOG_PRIV_H__ */
 

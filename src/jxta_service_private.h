@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_service_private.h,v 1.17 2005/04/10 00:25:59 bondolo Exp $
+ * $Id: jxta_service_private.h,v 1.18 2005/09/21 21:16:50 slowhog Exp $
  */
 
 #ifndef JXTA_SERVICE_PRIVATE_H
@@ -72,9 +72,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 /**
  * The methods that a Jxta_service must implement.
  * All Jxta_service and derivates have a pointer to such an
@@ -101,7 +102,8 @@ extern "C" {
  *   jxta_service_get_interface_impl
  * }
  * </pre>
- **/ struct _jxta_service_methods {
+ **/
+struct _jxta_service_methods {
     Extends(Jxta_module_methods);
 
     /* An implementation of Jxta_service_get_MIA */
@@ -231,3 +233,5 @@ extern Jxta_advertisement *jxta_service_get_MIA_priv(_jxta_service * svc);
 #endif
 
 #endif /* JXTA_SERVICE_PRIVATE_H */
+
+/* vim: set ts=4 sw=4 et tw=130: */

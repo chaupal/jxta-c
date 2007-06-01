@@ -50,11 +50,11 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_membership_service_null.c,v 1.13 2005/08/03 05:51:16 slowhog Exp $
+ * $Id: jxta_membership_service_null.c,v 1.14 2005/10/27 01:55:26 slowhog Exp $
  */
 
 #include <assert.h>
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 #include "jpr/jpr_excep_proto.h"
 

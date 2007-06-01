@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_test_adv.h,v 1.7 2005/08/03 05:51:20 slowhog Exp $
+ * $Id: jxta_test_adv.h,v 1.9 2005/09/25 03:55:46 exocetrick Exp $
  */
 
 /************************************************************************
@@ -66,14 +66,16 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
   /**
    ** Jxta_test_adv
    **
    ** Definition of the opaque type of the JXTA Test Advertisement.
-   **/ typedef struct _jxta_test_adv Jxta_test_adv;
+   **/
+typedef struct _jxta_test_adv Jxta_test_adv;
 
   /**
    ** Creates a new test advertisement object. The object is created
@@ -185,7 +187,7 @@ JXTA_DECLARE(Jxta_status) jxta_test_adv_set_Id(Jxta_test_adv * adv, const char *
    **                   JXTA_INVALID_PARAMETER when an argument was invalid.
    **/
 
-JXTA_DECLARE(Jxta_status) jxta_test_adv_set_IdAttr(Jxta_test_adv * ad, const char *val);
+JXTA_DECLARE(Jxta_status) jxta_test_adv_set_IdAttr(Jxta_test_adv * ad, const char *val, const char *range);
 
   /**
    ** Sets the IdAttr1 of the Id element of the Test Advertisement.
@@ -266,6 +268,8 @@ JXTA_DECLARE(Jxta_status) jxta_test_adv_set_Name(Jxta_test_adv * adv, const char
 
 JXTA_DECLARE(Jxta_status) jxta_test_adv_set_NameAttr1(Jxta_test_adv * ad, const char *val);
 
+JXTA_DECLARE(Jxta_status) jxta_test_adv_set_GenericNumeric(Jxta_test_adv * ad, const char *val, const char *range);
+
   /**
    ** Return a vector of indexes to be applied to advertisement tags and attributes. 
    **
@@ -277,6 +281,26 @@ JXTA_DECLARE(Jxta_status) jxta_test_adv_set_NameAttr1(Jxta_test_adv * ad, const 
    **
   **/
 JXTA_DECLARE(Jxta_vector *) jxta_test_adv_get_indexes(Jxta_advertisement *);
+/**
+ * Adds a range value to an element/attribute. These are for numeric values so the 
+ * range can be used to index and replicate the values.
+ * 
+ * @param Jxta_advertisement * adv - Advertisement pointer
+ * @param const char * ename - Element name
+ * @param const char * attr -  attribute name
+ * @param const char * range - Range in "(xxxx, yyyy)" format x and y can be an integer or float
+ * 
+ * @return Jxta_status 
+ */
+JXTA_DECLARE(Jxta_status) jxta_test_adv_add_range(Jxta_test_adv *adv, const char *ename, const char *attr, const char *range) ;
+
+/**
+ * Return a vector of Jxta_range elements
+ * @param Jxta_advertisement *ad - Advertisement
+ * @return Jxta_vector *
+ */
+ 
+JXTA_DECLARE(Jxta_vector *) jxta_test_adv_get_ranges(Jxta_test_adv * ad);
 
 #ifdef __cplusplus
 #if 0

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_service_private.h,v 1.9 2005/06/16 23:11:50 slowhog Exp $
+ * $Id: jxta_resolver_service_private.h,v 1.11 2005/11/24 00:20:22 mmx2005 Exp $
  */
 
 
@@ -71,9 +71,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 struct _jxta_resolver_service {
     Extends(Jxta_service);
 
@@ -86,7 +87,7 @@ struct _jxta_resolver_service_methods {
     Extends(Jxta_service_methods);
 
     /* resolver methods */
-    Jxta_status(*registerQueryHandler) (Jxta_resolver_service * service, JString * name, Jxta_listener * handler);
+    Jxta_status(*registerQueryHandler) (Jxta_resolver_service * service, JString * name, Jxta_callback * handler);
 
     Jxta_status(*unregisterQueryHandler) (Jxta_resolver_service * service, JString * name);
 

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: whisp.c,v 1.10 2005/09/07 22:21:09 slowhog Exp $
+ * $Id: whisp.c,v 1.12 2005/11/15 18:41:35 slowhog Exp $
  */
 
 /*
@@ -395,7 +395,7 @@ void find_or_create_message_pipe(void)
     status = discovery_service_get_local_advertisements(discoSvc, DISC_ADV, "Name", pipeName, &pipeAds);
     assert(status == JXTA_SUCCESS);
     if (pipeAds && jxta_vector_size(pipeAds) > 0) {
-        status = jxta_vector_get_object_at(pipeAds, (Jxta_object **) & messagePipeAd, 0);
+        status = jxta_vector_get_object_at(pipeAds, JXTA_OBJECT_PPTR(&messagePipeAd), 0);
         pipe_advertisement_print_description(stdout, messagePipeAd);
         JXTA_OBJECT_RELEASE(pipeAds);
     } else {
@@ -568,7 +568,7 @@ void user_peers(void)
             Jxta_pipe_adv *ad = NULL;
             Jxta_status status;
 
-            status = jxta_vector_get_object_at(pipeAds, (Jxta_object **) & ad, i);
+            status = jxta_vector_get_object_at(pipeAds, JXTA_OBJECT_PPTR(&ad), i);
             assert(JXTA_SUCCESS == status);
             pipe_advertisement_print_description(stdout, ad);
             if (ad)
@@ -594,7 +594,7 @@ void user_groups(void)
             Jxta_PGA *ad = NULL;
             Jxta_status status;
 
-            status = jxta_vector_get_object_at(groupAds, (Jxta_object **) & ad, i);
+            status = jxta_vector_get_object_at(groupAds, JXTA_OBJECT_PPTR(&ad), i);
             assert(JXTA_SUCCESS == status);
             group_advertisement_print_description(stdout, ad);
             if (ad)
@@ -775,7 +775,7 @@ void user_send_message(JString * recipient, JString * message)
 
     printf("send to `%s` the message `%s`\n", jstring_get_string(recipient), jstring_get_string(message));
 
-    status = jxta_vector_get_object_at(pipeAds, (Jxta_object **) & context->recipientPipeAd, index);
+    status = jxta_vector_get_object_at(pipeAds, JXTA_OBJECT_PPTR(&context->recipientPipeAd), index);
     assert(JXTA_SUCCESS == status);
 
     context->message = message;
@@ -933,7 +933,7 @@ Jxta_PGA *find_subgroup_advertisement(JString * groupName)
 
         size = jxta_vector_size(ads);
         for (i = 0; i < size; i++) {
-            status = jxta_vector_get_object_at(ads, (Jxta_object **) & groupAd, 0);
+            status = jxta_vector_get_object_at(ads, JXTA_OBJECT_PPTR(&groupAd), 0);
             assert(JXTA_SUCCESS == status);
 
             if (TRUE == group_advertisement_is_valid(groupAd)) {
@@ -1070,7 +1070,7 @@ int index_of_pipe_ad_with_name(JString * recipient)
         /* read each pipe ad name and compare to nickname */
         Jxta_pipe_adv *ad = NULL;
 
-        jxta_vector_get_object_at(pipeAds, (Jxta_object **) & ad, i);
+        jxta_vector_get_object_at(pipeAds, JXTA_OBJECT_PPTR(&ad), i);
         if (0 == strncmp(jstring_get_string(fullName), jxta_pipe_adv_get_Name(ad), length)) {
             break;
         }
@@ -1120,12 +1120,6 @@ void rdv_event_received(Jxta_object * obj, void *arg)
         printf("JXTA_RDV_DISCONNECTED");
         JXTA_OBJECT_RELEASE(rdv);
         break;
-    case JXTA_RDV_LEASE_REQUEST:
-        printf("JXTA_RDV_LEASE_REQUEST");
-        break;
-    case JXTA_RDV_LEASE_GRANTED:
-        printf("JXTA_RDV_LEASE_GRANTED");
-        break;
     default:
         printf("nature of event unknown!");
         break;
@@ -1160,7 +1154,7 @@ void discovery_response_received(Jxta_object * obj, void *arg)
 
             Jxta_pipe_adv *ad = NULL;
 
-            status = jxta_vector_get_object_at(newAds, (Jxta_object **) & ad, i);
+            status = jxta_vector_get_object_at(newAds, JXTA_OBJECT_PPTR(&ad), i);
             assert(JXTA_SUCCESS == status);
 #if 0
       discovery_service_publish(discoSvc, (Jxta_advertisement *)ad, DISC_ADV, MESSAGE_PIPE_LIFETIME, MESSAGE_PIPE_LIFETIME);
@@ -1197,7 +1191,7 @@ void discovery_response_received(Jxta_object * obj, void *arg)
 
             Jxta_PGA *ad = NULL;
 
-            status = jxta_vector_get_object_at(newAds, (Jxta_object **) & ad, i);
+            status = jxta_vector_get_object_at(newAds, JXTA_OBJECT_PPTR(&ad), i);
             assert(JXTA_SUCCESS == status);
             printf("\n");
             group_advertisement_print_description(stdout, ad);

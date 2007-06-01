@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service.h,v 1.17 2005/08/31 06:19:41 slowhog Exp $
+ * $Id: jxta_rdv_service.h,v 1.21 2005/10/13 20:35:56 mathieu Exp $
  */
 
 #ifndef __JXTA_RDV_SERVICE_H__
@@ -62,6 +62,7 @@
 #include "jxta_message.h"
 #include "jxta_peer.h"
 #include "jxta_rdv_config_adv.h"
+#include "jxta_peerview.h"
 
 /**
  *
@@ -73,11 +74,12 @@
 extern "C" {
 #endif
 #if 0
-}
+};
 #endif
     /*
      * API types.
-     */ typedef Jxta_service Jxta_rdv_service;
+     */ 
+typedef Jxta_service Jxta_rdv_service;
 
   /**
    * The Rendezvous Service event types
@@ -321,6 +323,19 @@ JXTA_DECLARE(Jxta_time_diff) jxta_rdv_service_auto_interval(Jxta_rdv_service * r
      * should maintain its' current configuration.
      **/
 JXTA_DECLARE(void) jxta_rdv_service_set_auto_interval(Jxta_rdv_service * rdv, Jxta_time_diff interval);
+
+    /**
+     * Get the peerview of the peer.
+     * WARNING: correctness of algorithms should never and ever rely on 
+     * the behavior of the peeview. Before using this, you should ask 
+     * yourself if it is really needed and share your concerns. One use case
+     * is for benchmarking purpose, ie to understand the knowledge of peers
+     * of others and explain results.
+     *
+     * @param rdv a pointer to the instance of the Rendezvous Service
+     * @return The peerview of the peer
+     */
+JXTA_DECLARE(Jxta_peerview *) jxta_rdv_service_get_peerview(Jxta_rdv_service * rdv);
 
 #ifdef __cplusplus
 #if 0

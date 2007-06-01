@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: peers.c,v 1.10 2005/08/24 07:09:42 lankes Exp $
+ * $Id: peers.c,v 1.11 2005/11/15 18:41:30 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -196,7 +196,7 @@ void jxta_peers_start(Jxta_object * appl, int argv, char **arg)
                 /* Create the shell object for the peer */
                 sprintf(buf, "peer%d", i);
                 name = jstring_new_2(buf);
-                jxta_vector_get_object_at(res_vec, (Jxta_object **) & padv, i);
+                jxta_vector_get_object_at(res_vec, JXTA_OBJECT_PPTR(&padv), i);
                 env_type = jstring_new_2("PeerAdvertisement");
                 sh_obj = JxtaShellObject_new(name, (Jxta_object *) padv, env_type);
                 JXTA_OBJECT_RELEASE(env_type);

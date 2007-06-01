@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_message.h,v 1.5 2005/06/16 23:11:44 slowhog Exp $
+ * $Id: jxta_message.h,v 1.6 2005/09/21 21:16:47 slowhog Exp $
  */
 
 #ifndef __JXTAMSG_H__
@@ -69,14 +69,16 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 /**
 *  JXTA messages are opaque JXTA objects. Jxta messages are not thread-safe.
 *  You must provide your own locking if you wish to use mutable messages from
 *  multiple threads.
-**/ typedef struct _Jxta_message const Jxta_message;
+**/
+typedef struct _Jxta_message const Jxta_message;
 
 /**
 *  JXTA elements are opaque JXTA objects. Jxta elements are effectively 

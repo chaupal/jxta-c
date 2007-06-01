@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rdvstatus.c,v 1.21 2005/09/02 08:56:45 slowhog Exp $
+ * $Id: rdvstatus.c,v 1.24 2005/11/24 04:17:50 mmx2005 Exp $
  */
 
 
@@ -68,6 +68,7 @@
 #include "jxta_shell_application.h"
 #include "jxta_shell_getopt.h"
 #include "jxta_rdv_service_private.h"
+#include "jxta_peerview_priv.h"
 #include "rdvstatus.h"
 
 static Jxta_PG *group;
@@ -168,7 +169,7 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
         Jxta_boolean connected = FALSE;
         Jxta_time currentTime = jpr_time_now();
 
-        err = jxta_vector_get_object_at(peers, (Jxta_object **) & peer, i);
+        err = jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer), i);
         if (err != JXTA_SUCCESS) {
             jstring_append_2(outputLine, "Failed getting a peer.\n");
             res = FALSE;
@@ -203,7 +204,7 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
         if (expires >= currentTime) {
             expires -= currentTime;
 
-            sprintf(linebuff, "\t" JPR_DIFF_TIME_FMT "ms", expires);
+            sprintf(linebuff, "\t" JPR_ABS_TIME_FMT "ms", expires);
         } else {
             sprintf(linebuff, "\t(expired)");
         }
@@ -247,7 +248,7 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
         Jxta_time expires = 0;
         Jxta_boolean connected = FALSE;
 
-        err = jxta_vector_get_object_at(peers, (Jxta_object **) & peer, i);
+        err = jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer), i);
         if (err != JXTA_SUCCESS) {
             jstring_append_2(outputLine, "Failed getting a peer.\n");
             res = FALSE;

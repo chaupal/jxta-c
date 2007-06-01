@@ -50,24 +50,22 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pga.h,v 1.7 2005/08/03 05:51:17 slowhog Exp $
+ * $Id: jxta_pga.h,v 1.9 2005/11/26 07:37:21 mmx2005 Exp $
  */
-
 
 #ifndef JXTA_PGA_H__
 #define JXTA_PGA_H__
 
 #include "jxta_advertisement.h"
-
 #include "jstring.h"
-
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 #if 0
-}
+};
 #endif
+
 typedef struct _jxta_PGA Jxta_PGA;
 
 /**
@@ -79,7 +77,6 @@ typedef struct _jxta_PGA Jxta_PGA;
  */
 JXTA_DECLARE(Jxta_PGA *) jxta_PGA_new(void);
 
-
 /**
  * Gets the xml representation of the peer group advertisement.
  *
@@ -90,7 +87,6 @@ JXTA_DECLARE(Jxta_PGA *) jxta_PGA_new(void);
  * @return void Doesn't return anything.
  */
 JXTA_DECLARE(Jxta_status) jxta_PGA_get_xml(Jxta_PGA * ad, JString ** string);
-
 
 /**
  * Wrapper for jxta_advertisement_parse_charbuffer,
@@ -107,7 +103,6 @@ JXTA_DECLARE(Jxta_status) jxta_PGA_get_xml(Jxta_PGA * ad, JString ** string);
  */
 JXTA_DECLARE(void) jxta_PGA_parse_charbuffer(Jxta_PGA * ad, const char *buf, int len);
 
-
 /**
  * Wrapper for jxta_advertisement_parse_file,
  * when call completes, the xml representation of a 
@@ -121,18 +116,15 @@ JXTA_DECLARE(void) jxta_PGA_parse_charbuffer(Jxta_PGA * ad, const char *buf, int
  */
 JXTA_DECLARE(void) jxta_PGA_parse_file(Jxta_PGA * ad, FILE * stream);
 
-
 /**
  * This function is an artifact of the generating script.
  */
 JXTA_DECLARE(char *) jxta_PGA_get_Jxta_PGA(Jxta_PGA * ad);
 
-
 /**
  * This function is an artifact of the generating script.
  */
 JXTA_DECLARE(void) jxta_PGA_set_Jxta_PGA(Jxta_PGA * ad, char *name);
-
 
 /**
  * Function gets the Jxta_id associated with the peer 
@@ -186,7 +178,6 @@ JXTA_DECLARE(void) jxta_PGA_set_MSID(Jxta_PGA * ad, Jxta_id * id);
  */
 JXTA_DECLARE(JString *) jxta_PGA_get_Name(Jxta_PGA * ad);
 
-
 /**
  * Sets the peer group name.
  *
@@ -196,7 +187,6 @@ JXTA_DECLARE(JString *) jxta_PGA_get_Name(Jxta_PGA * ad);
  * @return void Doesn't return anything.
  */
 JXTA_DECLARE(void) jxta_PGA_set_Name(Jxta_PGA * ad, JString * name);
-
 
 /**
  * Gets the peer group description.
@@ -217,21 +207,18 @@ JXTA_DECLARE(JString *) jxta_PGA_get_Desc(Jxta_PGA * ad);
  */
 JXTA_DECLARE(void) jxta_PGA_set_Desc(Jxta_PGA * ad, JString * desc);
 
-  /**
-   ** Return a vector of indexes to be applied to advertisement tags and attributes. 
-   **
-   ** The vector returns element/attribute pairs contained in a Jxta_index entry. If the
-   ** attribute is NULL then the index is applied to the element. If an attribute is 
-   ** desired the element name and attribute name are specified.
-   **
-   ** @return Jxta_vector: return a vector of element/attribute pairs in Jxta_index struct.
-   **
-  **/
+/**
+ ** Return a vector of indexes to be applied to advertisement tags and attributes. 
+ **
+ ** The vector returns element/attribute pairs contained in a Jxta_index entry. If the
+ ** attribute is NULL then the index is applied to the element. If an attribute is 
+ ** desired the element name and attribute name are specified.
+ **
+ ** @return Jxta_vector: return a vector of element/attribute pairs in Jxta_index struct.
+ **
+ **/
 
 JXTA_DECLARE(Jxta_vector *) jxta_PGA_get_indexes(Jxta_advertisement *);
-
-
-
 
 #ifdef __cplusplus
 #if 0

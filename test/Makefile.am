@@ -49,6 +49,7 @@ bin_PROGRAMS = jstring_test	    \
 	       unit_test_runner	    \
 	       jxta_bidipipe_test   \
 	       jxta_bench_comm	    \
+	       jxta_bench_pipe_resolution \
 	       jxta_log_unit_test   \
 	       jxta_server_tunnel   \
 	       jxta_client_tunnel   \
@@ -70,6 +71,7 @@ jxta_log_unit_test_SOURCES = jxta_log_unit_test.c
 
 jxta_bidipipe_test_SOURCES = jxta_bidipipe_test.c
 jxta_bench_comm_SOURCES = jxta_bench_comm.c
+jxta_bench_pipe_resolution_SOURCES = jxta_bench_pipe_resolution.c
 jxta_server_tunnel_SOURCES = jxta_server_tunnel.c
 jxta_client_tunnel_SOURCES = jxta_client_tunnel.c
 

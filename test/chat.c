@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: chat.c,v 1.31 2005/05/11 05:51:24 slowhog Exp $
+ * $Id: chat.c,v 1.35 2005/11/16 20:10:43 lankes Exp $
  */
 
 
@@ -79,332 +79,315 @@
 #include "apr_time.h"
 
 
-Jxta_listener* listener = NULL;
+Jxta_listener *listener = NULL;
 
-static const char * DEFAULT_ADV_FILENAME= "netchat.adv";
-static const char * SENDERNAME          = "JxtaTalkSenderName";
-static const char * SENDERGROUPNAME     = "GrpName";
-static const char * SENDERMESSAGE       = "JxtaTalkSenderMessage";
-static const char * MYGROUPNAME         = "NetPeerGroup";
+static const char *DEFAULT_ADV_FILENAME = "netchat.adv";
+static const char *SENDERNAME = "JxtaTalkSenderName";
+static const char *SENDERGROUPNAME = "GrpName";
+static const char *SENDERMESSAGE = "JxtaTalkSenderMessage";
+static const char *MYGROUPNAME = "NetPeerGroup";
 
-static void
-send_message (Jxta_outputpipe* op, char* userName, char* userMessage) {
+static void send_message(Jxta_outputpipe * op, char *userName, char *userMessage)
+{
 
-  Jxta_message* msg = jxta_message_new();
-  Jxta_message_element* el = NULL;
-  char* pt = NULL;
-  Jxta_status res;
+    Jxta_message *msg = jxta_message_new();
+    Jxta_message_element *el = NULL;
+    char *pt = NULL;
+    Jxta_status res;
 
-  /*
-  JXTA_LOG ("Send message from [%s] msg=[%s]\n", userName, userMessage);
-  */  
-  printf ("Send message from [%s] msg=[%s]\n", userName, userMessage);
+    /*
+       JXTA_LOG ("Send message from [%s] msg=[%s]\n", userName, userMessage);
+     */
+    printf("Send message from [%s] msg=[%s]\n", userName, userMessage);
 
-  JXTA_OBJECT_CHECK_VALID (op);
+    JXTA_OBJECT_CHECK_VALID(op);
 
-  pt = malloc (strlen (userName) + 1);
-  strcpy (pt, userName);
+    pt = malloc(strlen(userName) + 1);
+    strcpy(pt, userName);
 
-  el =  jxta_message_element_new_1 ((char*) SENDERNAME,
-				  (char*) "text/plain",
-				  pt,
-				  strlen (pt),
-				  NULL );
+    el = jxta_message_element_new_1((char *) SENDERNAME, (char *) "text/plain", pt, strlen(pt), NULL);
 
-  jxta_message_add_element       (msg, el);
+    jxta_message_add_element(msg, el);
 
-  JXTA_OBJECT_RELEASE (el);
+    JXTA_OBJECT_RELEASE(el);
 
-free(pt);
+    free(pt);
 
-  pt = malloc (strlen (MYGROUPNAME) + 1);
-  strcpy (pt,MYGROUPNAME);
-  
-  el =  jxta_message_element_new_1 ((char*) SENDERGROUPNAME,
-				  (char*) "text/plain",
-				  pt,
-				  strlen (pt),
-				  NULL );
-  
-  jxta_message_add_element       (msg, el);
+    pt = malloc(strlen(MYGROUPNAME) + 1);
+    strcpy(pt, MYGROUPNAME);
 
-  JXTA_OBJECT_RELEASE (el);
+    el = jxta_message_element_new_1((char *) SENDERGROUPNAME, (char *) "text/plain", pt, strlen(pt), NULL);
 
-free(pt);
+    jxta_message_add_element(msg, el);
 
-  el =  jxta_message_element_new_1 ((char*) SENDERMESSAGE,
-				  (char*) "text/plain",
-				  userMessage,
-				  strlen (userMessage),
-				  NULL );
+    JXTA_OBJECT_RELEASE(el);
 
-  jxta_message_add_element       (msg, el);
+    free(pt);
 
-  JXTA_OBJECT_RELEASE (el);
+    el = jxta_message_element_new_1((char *) SENDERMESSAGE, (char *) "text/plain", userMessage, strlen(userMessage), NULL);
 
-  /*
-  JXTA_LOG ("Sending message\n");
-   */  
-  printf ("Sending message\n");
+    jxta_message_add_element(msg, el);
 
-  res = jxta_outputpipe_send (op, msg);
-  if (res != JXTA_SUCCESS) {
-    printf ("sending failed: %d\n", (int) res);
-  }
-  JXTA_OBJECT_CHECK_VALID (msg);
-  JXTA_OBJECT_RELEASE (msg); msg = NULL;
-}
+    JXTA_OBJECT_RELEASE(el);
 
+    /*
+       JXTA_LOG ("Sending message\n");
+     */
+    printf("Sending message\n");
 
-static void
-processIncomingMessage (Jxta_message* msg) {
-
-  JString* groupname = NULL;
-  JString* senderName = NULL;
-  JString* message = NULL;
-  Jxta_message_element* el = NULL;
-
-  jxta_message_get_element_1 (msg, SENDERGROUPNAME, &el );
-    
-  if (el) {
-    Jxta_bytevector* val = jxta_message_element_get_value(el);
-    groupname = jstring_new_3( val );
-    JXTA_OBJECT_RELEASE(val); val = NULL;
-    
-    JXTA_OBJECT_RELEASE (el);
-  }
-
-  el = NULL;
-  jxta_message_get_element_1 (msg, SENDERMESSAGE, &el);
-    
-  if (el) {
-    Jxta_bytevector* val = jxta_message_element_get_value(el);
-    message = jstring_new_3( val );
-    JXTA_OBJECT_RELEASE(val); val = NULL;
-    
-    JXTA_OBJECT_RELEASE (el);
-  }
-
-  el = NULL;
-  jxta_message_get_element_1 (msg, SENDERNAME, &el);
-    
-  if (el) {
-    Jxta_bytevector* val = jxta_message_element_get_value(el);
-    senderName = jstring_new_3( val );
-    JXTA_OBJECT_RELEASE(val); val = NULL;
-    
-    JXTA_OBJECT_RELEASE (el);
-  }
-
-  if (message) {
-    fprintf (stdout,"\n##############################################################\n");
-    fprintf (stdout,"CHAT MESSAGE (group= %s) from %s :\n",
-	    jstring_get_string(groupname), senderName == NULL ? "Unknown" : jstring_get_string(senderName));
-    fprintf (stdout,"%s\n", jstring_get_string(message) );
-    fprintf (stdout,"##############################################################\n\n");
-    fflush(stdout);
-  }
-}
-
-static void
-message_listener (Jxta_object* obj, void* arg) {
-  Jxta_message* msg = (Jxta_message*) obj;
-
-  processIncomingMessage (msg);
-}
-
-
-static char*
-get_user_string (void) {
-
-  int   capacity = 8192;
-  char* pt = malloc (capacity);
-  int   got = 0;
-
-  memset (pt, 0, 256);
-
-  if (fgets (pt, 8192, stdin) != NULL) {
-    if (strlen (pt) > 1) {
-      pt [strlen (pt) - 1] = 0; /* Strip off last /n */
-      return pt;
+    res = jxta_outputpipe_send(op, msg);
+    if (res != JXTA_SUCCESS) {
+        printf("sending failed: %d\n", (int) res);
     }
-  }
-  free (pt);
-  return NULL;
+    JXTA_OBJECT_CHECK_VALID(msg);
+    JXTA_OBJECT_RELEASE(msg);
+    msg = NULL;
 }
 
-static void
-process_user_input (Jxta_outputpipe* pipe, char* userName) {
 
-  char* userMessage = NULL;
+static void processIncomingMessage(Jxta_message * msg)
+{
+
+    JString *groupname = NULL;
+    JString *senderName = NULL;
+    JString *message = NULL;
+    Jxta_message_element *el = NULL;
+
+    jxta_message_get_element_1(msg, SENDERGROUPNAME, &el);
+
+    if (el) {
+        Jxta_bytevector *val = jxta_message_element_get_value(el);
+        groupname = jstring_new_3(val);
+        JXTA_OBJECT_RELEASE(val);
+        val = NULL;
+
+        JXTA_OBJECT_RELEASE(el);
+    }
+
+    el = NULL;
+    jxta_message_get_element_1(msg, SENDERMESSAGE, &el);
+
+    if (el) {
+        Jxta_bytevector *val = jxta_message_element_get_value(el);
+        message = jstring_new_3(val);
+        JXTA_OBJECT_RELEASE(val);
+        val = NULL;
+
+        JXTA_OBJECT_RELEASE(el);
+    }
+
+    el = NULL;
+    jxta_message_get_element_1(msg, SENDERNAME, &el);
+
+    if (el) {
+        Jxta_bytevector *val = jxta_message_element_get_value(el);
+        senderName = jstring_new_3(val);
+        JXTA_OBJECT_RELEASE(val);
+        val = NULL;
+
+        JXTA_OBJECT_RELEASE(el);
+    }
+
+    if (message) {
+        fprintf(stdout, "\n##############################################################\n");
+        fprintf(stdout, "CHAT MESSAGE (group= %s) from %s :\n",
+                jstring_get_string(groupname), senderName == NULL ? "Unknown" : jstring_get_string(senderName));
+        fprintf(stdout, "%s\n", jstring_get_string(message));
+        fprintf(stdout, "##############################################################\n\n");
+        fflush(stdout);
+    }
+}
+
+static void JXTA_STDCALL message_listener(Jxta_object * obj, void *arg)
+{
+    Jxta_message *msg = (Jxta_message *) obj;
+
+    processIncomingMessage(msg);
+}
+
+
+static char *get_user_string(void)
+{
+
+    int capacity = 8192;
+    char *pt = malloc(capacity);
+    int got = 0;
+
+    memset(pt, 0, 256);
+
+    if (fgets(pt, 8192, stdin) != NULL) {
+        if (strlen(pt) > 1) {
+            pt[strlen(pt) - 1] = 0;     /* Strip off last /n */
+            return pt;
+        }
+    }
+    free(pt);
+    return NULL;
+}
+
+static void process_user_input(Jxta_outputpipe * pipe, char *userName)
+{
+
+    char *userMessage = NULL;
 
   /**
    ** Let every else start...
    **/
-  printf ("Welcome to JXTA-C Chat, %s\n", userName);
-  printf ("Type a '.' at begining of line to quit.\n");
-  for(;;) {
+    printf("Welcome to JXTA-C Chat, %s\n", userName);
+    printf("Type a '.' at begining of line to quit.\n");
+    for (;;) {
 
-    userMessage = get_user_string ();
-    if (userMessage != NULL)
-    if (userMessage[0] == '.') {
-      free (userMessage);
-      break;
+        userMessage = get_user_string();
+        if (userMessage != NULL)
+            if (userMessage[0] == '.') {
+                free(userMessage);
+                break;
+            }
+        if (userMessage != NULL) {
+            send_message(pipe, userName, userMessage);
+        }
     }
-    if (userMessage != NULL){
-	    send_message (pipe, userName, userMessage);
-    }
-  }
 }
 
 
-Jxta_boolean 
-chat_run (int argc, char **argv) {
+Jxta_boolean chat_run(int argc, char **argv)
+{
 
-  Jxta_pipe_service * pipe_service = NULL;
-  Jxta_pipe*          pipe = NULL;
-  Jxta_inputpipe    * ip   = NULL;
-  Jxta_outputpipe   * op   = NULL;
-  char              * userName = NULL;
-  char              * rdvAddr = NULL;
-  Jxta_PG           * pg = NULL;
-  Jxta_pipe_adv     * adv = NULL;
-  Jxta_rdv_service  * rdv = NULL;
-  FILE *file;
-  Jxta_status res = 0;
+    Jxta_pipe_service *pipe_service = NULL;
+    Jxta_pipe *pipe = NULL;
+    Jxta_inputpipe *ip = NULL;
+    Jxta_outputpipe *op = NULL;
+    char *userName = NULL;
+    char *rdvAddr = NULL;
+    Jxta_PG *pg = NULL;
+    Jxta_pipe_adv *adv = NULL;
+    Jxta_rdv_service *rdv = NULL;
+    FILE *file;
+    Jxta_status res = 0;
 
-  if ((argc < 2) || (argc > 3)) {
-    printf ("Syntax: chat user_name [rdv]\n");
-    exit (0);
-  }
+    if ((argc < 2) || (argc > 3)) {
+        printf("Syntax: chat user_name [rdv]\n");
+        exit(0);
+    }
 
-  userName = argv[1];
-  if (argc == 3) {
-    rdvAddr = argv[2];
-  } else {
-    rdvAddr = "127.0.0.1:9700";
-  }
+    userName = argv[1];
+    if (argc == 3) {
+        rdvAddr = argv[2];
+    } else {
+        rdvAddr = "127.0.0.1:9700";
+    }
 
-  res = jxta_PG_new_netpg (&pg);
+    res = jxta_PG_new_netpg(&pg);
 
+    if (res != JXTA_SUCCESS) {
+        printf("jxta_PG_netpg_new failed with error: %ld\n", res);
+    }
 
-  if (res != JXTA_SUCCESS) {
-    printf("jxta_PG_netpg_new failed with error: %ld\n", res);
-  }
-
-  jxta_PG_get_pipe_service (pg, &pipe_service);
-  jxta_PG_get_rendezvous_service (pg, &rdv);
+    jxta_PG_get_pipe_service(pg, &pipe_service);
+    jxta_PG_get_rendezvous_service(pg, &rdv);
 
   /**
    ** If a rendezvous has been specified, add it to the rendezvous service.
    **/
-  if (rdvAddr != NULL) {
-    Jxta_peer* peer = jxta_peer_new();
-    Jxta_endpoint_address* addr = jxta_endpoint_address_new2 ((char*) "http",
-							      rdvAddr,
-							      NULL,
-							      NULL);
-    jxta_peer_set_address (peer, addr);
+    if (rdvAddr != NULL) {
+        Jxta_peer *peer = jxta_peer_new();
+        Jxta_endpoint_address *addr = jxta_endpoint_address_new_2((char *) "http",
+                                                                  rdvAddr,
+                                                                  NULL,
+                                                                  NULL);
+        jxta_peer_set_address(peer, addr);
 
-    jxta_rdv_service_add_peer (rdv, peer);
-    JXTA_OBJECT_RELEASE (addr);
-    JXTA_OBJECT_RELEASE (peer);
-  }
+        jxta_rdv_service_add_peer(rdv, peer);
+        JXTA_OBJECT_RELEASE(addr);
+        JXTA_OBJECT_RELEASE(peer);
+    }
 
   /**
    ** Create a listener for the myJXTA messages
    **/
-  listener = jxta_listener_new ((Jxta_listener_func) message_listener,
-				NULL,
-				1,
-				200);
-  if (listener == NULL) {
+    listener = jxta_listener_new((Jxta_listener_func) message_listener, NULL, 1, 200);
+    if (listener == NULL) {
 /*
      JXTA_LOG ("Cannot create listener\n");
      */
-     printf("Cannot create listener\n");
+        printf("Cannot create listener\n");
 
-    return FALSE;
-  }
+        return FALSE;
+    }
 
   /**
    ** Get the pipe advertisement.
    **/
 
-  adv = jxta_pipe_adv_new();
-  file = fopen (DEFAULT_ADV_FILENAME, "r");
-  if (file == NULL)
-  {
-    printf("Cannot open %s\n", DEFAULT_ADV_FILENAME);
-    return FALSE;
-  }
-  jxta_pipe_adv_parse_file (adv, file);
-  fclose(file);
-  
+    adv = jxta_pipe_adv_new();
+    file = fopen(DEFAULT_ADV_FILENAME, "r");
+    if (file == NULL) {
+        printf("Cannot open %s\n", DEFAULT_ADV_FILENAME);
+        return FALSE;
+    }
+    jxta_pipe_adv_parse_file(adv, file);
+    fclose(file);
+
   /**
    ** Get the pipe
    **/
-  res = jxta_pipe_service_timed_accept (pipe_service,
-					adv,
-					1000,
-					&pipe);
+    res = jxta_pipe_service_timed_accept(pipe_service, adv, 1000, &pipe);
 
-  if (res != JXTA_SUCCESS) {
-     /*
-    JXTA_LOG ("Cannot get pipe reason= %d\n", res);
-    */
-     printf("Cannot get pipe reason= %d\n", res);
+    if (res != JXTA_SUCCESS) {
+        /*
+           JXTA_LOG ("Cannot get pipe reason= %d\n", res);
+         */
+        printf("Cannot get pipe reason= %d\n", (int) res);
 
-    return FALSE;
-  }
-
-  res = jxta_pipe_get_outputpipe (pipe, &op);
-  
-  if (res != JXTA_SUCCESS) {
-    //JXTA_LOG ("Cannot get outputpipe reason= %d\n", res);
-    printf ("Cannot get outputpipe reason= %d\n", res);
-    return FALSE;
-  }
+        return FALSE;
+    }
 
 
-  res = jxta_pipe_get_inputpipe (pipe,	&ip);
-  
-  if (res != JXTA_SUCCESS) {
-    //JXTA_LOG ("Cannot get inputpipe reason= %d\n", res);
-    printf ("Cannot get inputpipe reason= %d\n", res);
-    return FALSE;
-  }
+    res = jxta_pipe_get_outputpipe(pipe, &op);
 
-  res = jxta_inputpipe_add_listener (ip, listener);
+    if (res != JXTA_SUCCESS) {
+        //JXTA_LOG ("Cannot get outputpipe reason= %d\n", res);
+        printf("Cannot get outputpipe reason= %d\n", res);
+        return FALSE;
+    }
 
-  if (res != JXTA_SUCCESS) {
-    //JXTA_LOG ("Cannot add listener reason= %d\n", res);
-    printf ("Cannot add listener reason= %d\n", res);
-    return FALSE;
-  }
 
-  jxta_listener_start (listener);
-  
-  process_user_input (op, userName);
+    res = jxta_pipe_get_inputpipe(pipe, &ip);
 
-  return TRUE;
+    if (res != JXTA_SUCCESS) {
+        //JXTA_LOG ("Cannot get inputpipe reason= %d\n", res);
+        printf("Cannot get inputpipe reason= %d\n", res);
+        return FALSE;
+    }
+
+    res = jxta_inputpipe_add_listener(ip, listener);
+
+    if (res != JXTA_SUCCESS) {
+        //JXTA_LOG ("Cannot add listener reason= %d\n", res);
+        printf("Cannot add listener reason= %d\n", res);
+        return FALSE;
+    }
+
+    jxta_listener_start(listener);
+
+    process_user_input(op, userName);
+
+    return TRUE;
 }
 
 
 #ifdef STANDALONE
-int
-main (int argc, char **argv) {
+int main(int argc, char **argv)
+{
     int r;
-
+    Jxta_status status;
     jxta_initialize();
-    r = (int)chat_run(argc, argv);
+    status = chat_run(argc, argv);
     jxta_terminate();
+    if (JXTA_SUCCESS == status)
+        r = 0;
+    else
+        r = -1;
     return r;
 }
 #endif
-
-
-
-
-
-

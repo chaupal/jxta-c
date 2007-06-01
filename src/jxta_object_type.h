@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object_type.h,v 1.8 2005/06/16 23:11:45 slowhog Exp $
+ * $Id: jxta_object_type.h,v 1.11 2005/11/17 04:23:36 slowhog Exp $
  */
 
 #ifndef JXTA_OBJECT_TYPE_H
@@ -61,9 +61,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 /**
 *   Change the following to <tt>#define NO_RUNTIME_TYPE_CHECK</tt> to disable the
 *   runtime type checking of Jxta objects provided by the PTValid macro.
@@ -89,9 +90,9 @@ extern "C" {
  * simply "type somename".
  */
 #ifndef NO_RUNTIME_TYPE_CHECK
-#define Extends(type) type name2(_jxta_base_, type); const char* thisType
+#define Extends(type) type _super; const char* thisType
 #else
-#define Extends(type) type name2(_jxta_base_, type);
+#define Extends(type) type _super
 #endif
 /**
  * Use this macro to add the runtime type checking field without deriving from
@@ -117,8 +118,9 @@ extern "C" {
  * @param file the source file in which the test is occuring.
  * @param file the source file line at which the test is occuring.
  * @return a pointer to the object. If object type does not match then function does not return.
- **/ JXTA_DECLARE(void *) jxta_assert_same_type(const void *object, const char *object_type, const char *want_type,
-                                                const char *file, int line);
+ **/
+JXTA_DECLARE(void *) jxta_assert_same_type(const void *object, const char *object_type, const char *want_type,
+                                           const char *file, int line);
 
 /**
  * This macro checks that the given object is of the given type.

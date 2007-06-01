@@ -50,12 +50,12 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: pa_adv_test.c,v 1.21 2005/04/17 14:22:19 lankes Exp $
+ * $Id: pa_adv_test.c,v 1.24 2005/11/15 18:41:34 slowhog Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h> 
+#include <sys/types.h>
 #include <sys/stat.h>
 
 #include <apr_general.h>
@@ -67,47 +67,45 @@
 #include <jxta_id.h>
 #include <jxta_routea.h>
 
-Jxta_boolean
-pa_test(int argc, char **argv)
+Jxta_boolean pa_test(int argc, char **argv)
 {
-   Jxta_vector* services;
-   Jxta_PA * ad;
-   FILE *testfile;
-   JString * js;
-   int sz;
-   int i;
+    Jxta_vector *services;
+    Jxta_PA *ad;
+    FILE *testfile;
+    JString *js;
+    int sz;
+    int i;
 
-   if(argc != 2) {
+    if (argc != 2) {
 
-       printf("usage: ad <filename>\n");
-       return FALSE;
-   }
+        printf("usage: ad <filename>\n");
+        return FALSE;
+    }
 
-   ad = jxta_PA_new();
+    ad = jxta_PA_new();
 
-   testfile = fopen (argv[1], "r");
-   if (testfile == NULL)
-   {
-	   printf("could not open %s\n", argv[1]);
-	   return FALSE;
-   }
+    testfile = fopen(argv[1], "r");
+    if (testfile == NULL) {
+        printf("could not open %s\n", argv[1]);
+        return FALSE;
+    }
 
-   jxta_PA_parse_file(ad,testfile);
+    jxta_PA_parse_file(ad, testfile);
 
-   fclose(testfile);
+    fclose(testfile);
 
-   jxta_PA_get_xml(ad, &js);
+    jxta_PA_get_xml(ad, &js);
 
-   fprintf(stdout,"%s\n",jstring_get_string(js));
+    fprintf(stdout, "%s\n", jstring_get_string(js));
 
-   JXTA_OBJECT_RELEASE(js);
+    JXTA_OBJECT_RELEASE(js);
 
 
-   /*
-    * Get svcs, to check accessors.
-    */
-   services = jxta_PA_get_Svc(ad);
-   sz = jxta_vector_size(services);
+    /*
+     * Get svcs, to check accessors.
+     */
+    services = jxta_PA_get_Svc(ad);
+    sz = jxta_vector_size(services);
 
     /* Svc is a self standing obj, so its get_xml routine has to
      * have the expected behaviour wrt to the allocation of the return
@@ -115,66 +113,66 @@ pa_test(int argc, char **argv)
      * an append option, we have to take it and append it manually.
      * That'll do for now.
      */
-   for (i = 0; i < sz; ++i) {  
-       Jxta_svc * svc;
-       Jxta_id* clid;
-       JString* cert;
-       Jxta_HTTPTransportAdvertisement* hta;
-       Jxta_TCPTransportAdvertisement* tta;
-       Jxta_RouteAdvertisement* routea;
+    for (i = 0; i < sz; ++i) {
+        Jxta_svc *svc;
+        Jxta_id *clid;
+        JString *cert;
+        Jxta_HTTPTransportAdvertisement *hta;
+        Jxta_TCPTransportAdvertisement *tta;
+        Jxta_RouteAdvertisement *routea;
 
-       jxta_vector_get_object_at(services, (Jxta_object**) &svc, i);
-       clid = jxta_svc_get_MCID(svc);
-       cert = jxta_svc_get_RootCert(svc);
-       hta = jxta_svc_get_HTTPTransportAdvertisement(svc);
-       tta = jxta_svc_get_TCPTransportAdvertisement(svc);
-       routea = jxta_svc_get_RouteAdvertisement(svc);
+        jxta_vector_get_object_at(services, JXTA_OBJECT_PPTR(&svc), i);
+        clid = jxta_svc_get_MCID(svc);
+        cert = jxta_svc_get_RootCert(svc);
+        hta = jxta_svc_get_HTTPTransportAdvertisement(svc);
+        tta = jxta_svc_get_TCPTransportAdvertisement(svc);
+        routea = jxta_svc_get_RouteAdvertisement(svc);
 
-       if (clid != NULL) {
-	   JString* ids = NULL;
-	   jxta_id_to_jstring( clid, &ids );
-	   printf("class id: %s\n", jstring_get_string(ids));
-	   JXTA_OBJECT_RELEASE(ids);
-	   JXTA_OBJECT_RELEASE(clid);
-       }
+        if (clid != NULL) {
+            JString *ids = NULL;
+            jxta_id_to_jstring(clid, &ids);
+            printf("class id: %s\n", jstring_get_string(ids));
+            JXTA_OBJECT_RELEASE(ids);
+            JXTA_OBJECT_RELEASE(clid);
+        }
 
-       if (cert != NULL) {
-	   printf("cert: %s\n", jstring_get_string(cert));
-	   JXTA_OBJECT_RELEASE(cert);
-       }
+        if (cert != NULL) {
+            printf("cert: %s\n", jstring_get_string(cert));
+            JXTA_OBJECT_RELEASE(cert);
+        }
 
-       /* Tired, I'll just dump the hta and tta as is for now */
-       if (hta != 0) {
-	   JString* dump;
-	   jxta_HTTPTransportAdvertisement_get_xml(hta, &dump);
-	   printf("Http Transport Adv:\n%s\n", jstring_get_string(dump));
-	   JXTA_OBJECT_RELEASE(dump);
-	   JXTA_OBJECT_RELEASE(hta);
-       }
+        /* Tired, I'll just dump the hta and tta as is for now */
+        if (hta != 0) {
+            JString *dump;
+            jxta_HTTPTransportAdvertisement_get_xml(hta, &dump);
+            printf("Http Transport Adv:\n%s\n", jstring_get_string(dump));
+            JXTA_OBJECT_RELEASE(dump);
+            JXTA_OBJECT_RELEASE(hta);
+        }
 
-       if (tta != 0) {
-	   JString* dump;
-	   jxta_TCPTransportAdvertisement_get_xml(tta, &dump);
-	   printf("Tcp Transport Adv:\n%s\n", jstring_get_string(dump));
-	   JXTA_OBJECT_RELEASE(dump);
-	   JXTA_OBJECT_RELEASE(tta);
-       }
+        if (tta != 0) {
+            JString *dump;
+            jxta_TCPTransportAdvertisement_get_xml(tta, &dump);
+            printf("Tcp Transport Adv:\n%s\n", jstring_get_string(dump));
+            JXTA_OBJECT_RELEASE(dump);
+            JXTA_OBJECT_RELEASE(tta);
+        }
 
-       if (routea != 0) {
-	 JString* dump;
-	 jxta_RouteAdvertisement_get_xml(routea, &dump);
-	 printf("Route Adv:\n%s\n", jstring_get_string(dump));
-	 JXTA_OBJECT_RELEASE(dump);
-	 JXTA_OBJECT_RELEASE(routea);
-       }
+        if (routea != 0) {
+            JString *dump;
+            jxta_RouteAdvertisement_get_xml(routea, &dump);
+            printf("Route Adv:\n%s\n", jstring_get_string(dump));
+            JXTA_OBJECT_RELEASE(dump);
+            JXTA_OBJECT_RELEASE(routea);
+        }
 
-       JXTA_OBJECT_RELEASE(svc);
-   }
-   JXTA_OBJECT_RELEASE(services);
-   JXTA_OBJECT_RELEASE(ad);
+        JXTA_OBJECT_RELEASE(svc);
+    }
+    JXTA_OBJECT_RELEASE(services);
+    JXTA_OBJECT_RELEASE(ad);
 
-   /* FIXME: Figure out a sensible way to test xml processing. */
-   return FALSE;
+    /* FIXME: Figure out a sensible way to test xml processing. */
+    return FALSE;
 }
 
 
@@ -183,12 +181,16 @@ pa_test(int argc, char **argv)
 
 
 
-int
-main (int argc, char **argv) {
+int main(int argc, char **argv)
+{
     int rv;
 
     jxta_initialize();
-    rv = pa_test(argc,argv);
+    rv = pa_test(argc, argv);
     jxta_terminate();
+    if (TRUE == rv)
+        rv = 0;
+    else
+        rv = -1;
     return rv;
 }

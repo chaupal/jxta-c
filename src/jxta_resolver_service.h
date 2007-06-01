@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_service.h,v 1.6 2005/08/03 08:44:50 lankes Exp $
+ * $Id: jxta_resolver_service.h,v 1.8 2005/11/23 16:07:01 slowhog Exp $
  */
 
 #ifndef JXTA_RESOLVER_SERVICE_H
@@ -63,6 +63,7 @@
 #include "jxta_rr.h"
 #include "jxta_rsrdi.h"
 #include "jxta_id.h"
+#include "jxta_callback.h"
 #include "jxta_listener.h"
 
 
@@ -119,9 +120,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _jxta_resolver_service Jxta_resolver_service;
 
 /**
@@ -135,7 +137,8 @@ typedef struct _jxta_resolver_service Jxta_resolver_service;
  * @see Jxta_status
  *
  */
-JXTA_DECLARE(Jxta_status) jxta_resolver_service_registerQueryHandler(Jxta_resolver_service * service, JString * name, Jxta_listener * handler);
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_registerQueryHandler(Jxta_resolver_service * service, JString * name,
+                                                                     Jxta_callback * handler);
 
 /**
  * unregisters a given Resolver Query Handler.
@@ -158,7 +161,8 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_unregisterQueryHandler(Jxta_reso
  * @see Jxta_status
  *
  */
-JXTA_DECLARE(Jxta_status) jxta_resolver_service_registerSrdiHandler(Jxta_resolver_service * service, JString * name, Jxta_listener * handler);
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_registerSrdiHandler(Jxta_resolver_service * service, JString * name,
+                                                                    Jxta_listener * handler);
 
 /**
  * unregisters a given Resolver Query Handler.
@@ -180,7 +184,8 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_unregisterSrdiHandler(Jxta_resol
  * @return Jxta_status
  * @see Jxta_status
  */
-JXTA_DECLARE(Jxta_status) jxta_resolver_service_registerResHandler(Jxta_resolver_service * service, JString * name, Jxta_listener * handler);
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_registerResHandler(Jxta_resolver_service * service, JString * name,
+                                                                   Jxta_listener * handler);
 
 /**
  * unregisters a given Resolver Response Handler.
@@ -204,7 +209,8 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_unregisterResHandler(Jxta_resolv
  * @see Jxta_status
  */
 
-JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendQuery(Jxta_resolver_service * service, ResolverQuery * query, Jxta_id * peerid);
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendQuery(Jxta_resolver_service * service, ResolverQuery * query,
+                                                          Jxta_id * peerid);
 
 /**
  * send a response to a peer
@@ -215,7 +221,8 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendQuery(Jxta_resolver_service 
  * @return Jxta_status
  * @see Jxta_status
  */
-JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendResponse(Jxta_resolver_service * service, ResolverResponse * response, Jxta_id * peerid);
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendResponse(Jxta_resolver_service * service, ResolverResponse * response,
+                                                             Jxta_id * peerid);
 /**
  * For Services that wish to implement a ResolverService Service they must
  * implement this interface Sends query to the specified address.
@@ -228,7 +235,8 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendResponse(Jxta_resolver_servi
  * @see Jxta_status
  */
 
-JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendSrdi(Jxta_resolver_service * service, ResolverSrdi * message, Jxta_id * peerid);
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendSrdi(Jxta_resolver_service * service, ResolverSrdi * message,
+                                                         Jxta_id * peerid);
 
 #ifdef __cplusplus
 #if 0

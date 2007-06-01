@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_service_impl.h,v 1.7 2005/06/16 23:11:47 slowhog Exp $
+ * $Id: jxta_pipe_service_impl.h,v 1.10 2005/11/27 02:40:42 mmx2005 Exp $
  */
 
 
@@ -66,17 +66,17 @@
 #include "jxta_peer.h"
 #include "jxta_message.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
 /**
    ** Type of an instance of a pipe
    ** A Jxta_pipe is a Jxta_object.
-   **/ typedef struct _jxta_pipe Jxta_pipe;
+   **/ 
+typedef struct _jxta_pipe Jxta_pipe;
 
 
   /**
@@ -99,8 +99,6 @@ typedef struct _jxta_pipe_resolver Jxta_pipe_resolver;
    **/
 typedef struct _jxta_pipe_service_impl Jxta_pipe_service_impl;
 
-
-
   /**
    ** Type of the JXTA Pipe Service.
    ** A Jxta_pipe_service is a Jxta_object.
@@ -122,7 +120,6 @@ struct _jxta_pipe_service_impl {
      Jxta_status(*timed_accept) (Jxta_pipe_service_impl * service,
                                  Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_pipe ** pipe);
 
-
      Jxta_status(*deny) (Jxta_pipe_service_impl * service, Jxta_pipe_adv * adv);
 
      Jxta_status(*add_accept_listener) (Jxta_pipe_service_impl * service, Jxta_pipe_adv * adv, Jxta_listener * listener);
@@ -132,9 +129,9 @@ struct _jxta_pipe_service_impl {
      Jxta_status(*get_pipe_resolver) (Jxta_pipe_service_impl * service, Jxta_pipe_resolver ** resolver);
 
      Jxta_status(*set_pipe_resolver) (Jxta_pipe_service_impl * service, Jxta_pipe_resolver * jnew, Jxta_pipe_resolver ** old);
+
+     Jxta_status(*check_listener) (Jxta_pipe_service_impl * service, const char * id);
 };
-
-
 
 struct _jxta_pipe_resolver {
 
@@ -151,19 +148,16 @@ struct _jxta_pipe_resolver {
     Jxta_status(*send_srdi) (Jxta_pipe_resolver * resolver, Jxta_pipe_adv * adv, Jxta_id * dest, Jxta_boolean adding);
 };
 
-
 struct _jxta_pipe {
 
     JXTA_OBJECT_HANDLE;
 
     Jxta_status(*get_outputpipe) (Jxta_pipe * pipe, Jxta_outputpipe ** op);
 
-
     Jxta_status(*get_inputpipe) (Jxta_pipe * pipe, Jxta_inputpipe ** ip);
 
     Jxta_status(*get_remote_peers) (Jxta_pipe * pipe, Jxta_vector ** vector);
 };
-
 
 struct _jxta_inputpipe {
 
@@ -206,7 +200,6 @@ struct _jxta_outputpipe {
 
 typedef struct _jxta_pipe_resolver_event Jxta_pipe_resolver_event;
 
-
   /**
    ** Create a Jxta_pipe_resolver_event
    **
@@ -231,7 +224,7 @@ int jxta_pipe_resolver_event_get_event(Jxta_pipe_resolver_event * self);
    **
    ** @param self the event
    ** @param peers returned value: a vector that contains the list of Jxta_peer that have been found.
-   ** @return JXTA_SUCCESS when succesfull.
+   ** @return JXTA_SUCCESS when successful.
    **         JXTA_FAILED when the event was not associated to any pipe.
    **/
 Jxta_status jxta_pipe_resolver_event_get_peers(Jxta_pipe_resolver_event * self, Jxta_vector ** peers);
@@ -241,22 +234,22 @@ Jxta_status jxta_pipe_resolver_event_get_peers(Jxta_pipe_resolver_event * self, 
    **
    ** @param self the event
    ** @param adv returned value: a Jxta_pipe_adv.
-   ** @return JXTA_SUCCESS when succesfull.
+   ** @return JXTA_SUCCESS when successful.
    **         JXTA_FAILED when the event was not associated to any advertisement.
    **/
 Jxta_status jxta_pipe_resolver_event_get_adv(Jxta_pipe_resolver_event * self, Jxta_pipe_adv ** adv);
 
   /**
-   ** Query the Pipe Service Resolver for a particular pipe adverisement. The
+   ** Query the Pipe Service Resolver for a particular pipe advertisement. The
    ** Pipe Resolver will only search in its own local cache.
    ** 
    ** @param service instance of the Pipe Service
-   ** @param adv a pointer to the pipe advertismeent
+   ** @param adv a pointer to the pipe advertisement
    ** @param peers returned value: a vector containing a list of pointers to Jxta_peers
    **                              which are listening for the given pipe advertisement.
    **                              The vector can be empty or NULL.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid.
    **                          JXTA_FAILED when there is no local listener.
@@ -264,12 +257,12 @@ Jxta_status jxta_pipe_resolver_event_get_adv(Jxta_pipe_resolver_event * self, Jx
 Jxta_status jxta_pipe_resolver_local_resolve(Jxta_pipe_resolver * resolver, Jxta_pipe_adv * adv, Jxta_vector ** peers);
 
   /**
-   ** Remote query the Pipe Service Resolver for a particular pipe adverisement. The
+   ** Remote query the Pipe Service Resolver for a particular pipe advertisement. The
    ** Pipe Resolver will issue a query and send it to other peers. This function will
    ** block until the timeout is reached.
    ** 
    ** @param service instance of the Pipe Service
-   ** @param adv a pointer to the pipe advertismeent
+   ** @param adv a pointer to the pipe advertisment
    ** @param timeout waiting time in micro-seconds. If timeout is set to zero, the function
    **                will return immediately, and peers will be set to NULL. This is typical
    **                when a revolve listener has been set, and the query has to be sent.
@@ -278,7 +271,7 @@ Jxta_status jxta_pipe_resolver_local_resolve(Jxta_pipe_resolver * resolver, Jxta
    **                              which are listening for the given pipe advertisement.
    **                              The vector can be empty or NULL.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid.
    **                          JXTA_TIMEOUT when the pipe could not be resolved.
@@ -288,12 +281,12 @@ Jxta_status jxta_pipe_resolver_timed_remote_resolve(Jxta_pipe_resolver * resolve
                                                     Jxta_time_diff timeout, Jxta_peer * dest, Jxta_vector ** peers);
 
   /**
-   ** Remote query the Pipe Service Resolver for a particular pipe adverisement. The
+   ** Remote query the Pipe Service Resolver for a particular pipe advertisement. The
    ** Pipe Resolver will issue a query and send it to other peers. This function will
    ** block until the timeout is reached.
    ** 
    ** @param service instance of the Pipe Service
-   ** @param adv a pointer to the pipe advertismeent
+   ** @param adv a pointer to the pipe advertisement
    ** @param timeout waiting time in micro-seconds. If timeout is set to zero, the function
    **                will return immediately, and peers will be set to NULL. This is typical
    **                when a revolve listener has been set, and the query has to be sent.
@@ -302,7 +295,7 @@ Jxta_status jxta_pipe_resolver_timed_remote_resolve(Jxta_pipe_resolver * resolve
    **                 jxta_pipe_resolver_event. At least one event will be received at the
    **                 timeout is reached.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid.
    **/
@@ -310,15 +303,14 @@ Jxta_status jxta_pipe_resolver_remote_resolve(Jxta_pipe_resolver * resolver,
                                               Jxta_pipe_adv * adv,
                                               Jxta_time_diff timeout, Jxta_peer * dest, Jxta_listener * listener);
 
-
   /**
    ** Send a SrdiMessage of the pipe instance to a rendezvous peer
    **
    ** @param service instance of the Pipe Service
-   ** @param adv a pointer to the pipe advertismeent
+   ** @param adv a pointer to the pipe advertisement
    ** @param dest if non NULL, dest is the destination of the pipe resolver query.
    ** @param adding TRUE when creating a new pipe, FALSE when closing the pipe
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid.
    **/
@@ -335,7 +327,6 @@ Jxta_status jxta_pipe_resolver_send_srdi_message(Jxta_pipe_resolver * resolver,
    **/
 char *jxta_pipe_service_impl_get_name(Jxta_pipe_service_impl * service);
 
-
   /**
    ** Try to synchronously connect to the remote end of a pipe.
    ** If peers is set to a vector containing a list of Jxta_peers*,
@@ -344,12 +335,12 @@ char *jxta_pipe_service_impl_get_name(Jxta_pipe_service_impl * service);
    ** the type of type. Unicast typically can only connect to a single peer.
    **
    ** @param service pointer to the Pipe Service
-   ** @param adv Pipe Advertisment of the pipe to connect to.
+   ** @param adv Pipe Advertisement of the pipe to connect to.
    ** @param timeout timeout in micro-seconds
    ** @param peers optional vector of pointers to Jxta_peer.
    ** @param pipe returned value, a pipe connected to a remote end.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_TIMEOUT when the timeout has been reached and no connection
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid
@@ -365,9 +356,9 @@ Jxta_status jxta_pipe_service_impl_timed_connect(Jxta_pipe_service_impl * servic
    ** The pipe is marked as not being able to receive connections.
    **
    ** @param service pointer to the Pipe Service
-   ** @param adv Pipe Advertisment of the pipe to connect to.
+   ** @param adv Pipe Advertisement of the pipe to connect to.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid
    **                          JXTA_NOTIMP when the pipe advertisement is for a unsupported type of pipe
    **/
@@ -381,7 +372,7 @@ Jxta_status jxta_pipe_service_impl_deny(Jxta_pipe_service_impl * service, Jxta_p
    ** the type of type. Unicast typically can only connect to a single peer.
    **
    ** The listener which is associated to the connect request is guaranteed to
-   ** be called exactely once. If the timeout is reached before a connection
+   ** be called exactly once. If the timeout is reached before a connection
    ** was established, the listener is invoked with an error event.
    ** Connection events are objects (that need to be released after used),
    ** of type Jxta_pipe_connect_event.
@@ -390,12 +381,12 @@ Jxta_status jxta_pipe_service_impl_deny(Jxta_pipe_service_impl * service, Jxta_p
    ** (the listener object is released).
    **
    ** @param service pointer to the Pipe Service
-   ** @param adv Pipe Advertisment of the pipe to connect to.
+   ** @param adv Pipe Advertisement of the pipe to connect to.
    ** @param timeout timeout in micro-seconds
    ** @param peers optional vector of pointers to Jxta_peer.
    ** @param pipe returned value, a pipe connected to a remote end.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid
    **                          JXTA_NOTIMP when the pipe advertisement is for a unsupported type of pipe
@@ -415,11 +406,11 @@ Jxta_status jxta_pipe_service_impl_connect(Jxta_pipe_service_impl * service,
    ** the pipe is released, or jxta_pipe_service_deny() is called.
    **
    ** @param service pointer to the Pipe Service
-   ** @param adv Pipe Advertisment of the pipe to connect to.
+   ** @param adv Pipe Advertisement of the pipe to connect to.
    ** @param timeout timeout in micro-seconds
    ** @param pipe returned value, a pipe connected to a remote end.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid
    **                          JXTA_NOTIMP when the pipe advertisement is for a unsupported type of pipe
    **                          JXTA_NOMEM when the system is running out of memory.
@@ -427,7 +418,6 @@ Jxta_status jxta_pipe_service_impl_connect(Jxta_pipe_service_impl * service,
    **/
 Jxta_status jxta_pipe_service_impl_timed_accept(Jxta_pipe_service_impl * service,
                                                 Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_pipe ** pipe);
-
 
   /**
    ** Accept by setting a connection listener.
@@ -438,10 +428,10 @@ Jxta_status jxta_pipe_service_impl_timed_accept(Jxta_pipe_service_impl * service
    ** connect event can be generated.
    **
    ** @param service pointer to the Pipe Service
-   ** @param adv Pipe Advertisment of the pipe to connect to.
+   ** @param adv Pipe Advertisement of the pipe to connect to.
    ** @param listener a Jxta_listener which will handle the connect events.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid
    **                          JXTA_NOTIMP when the pipe advertisement is for a unsupported type of pipe
    **                          JXTA_NOMEM when the system is running out of memory.
@@ -456,10 +446,10 @@ Jxta_status jxta_pipe_service_impl_add_accept_listener(Jxta_pipe_service_impl * 
    ** The listener is removed, and the pipe is set to deny incoming connection.
    **
    ** @param service pointer to the Pipe Service
-   ** @param adv Pipe Advertisment of the pipe to connect to.
+   ** @param adv Pipe Advertisement of the pipe to connect to.
    ** @param listener a Jxta_listener which will handle the connect events.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_INVALID_ARGUMENT when the pipe advertisement is invalid
    **                          JXTA_NOTIMP when the pipe advertisement is for a unsupported type of pipe
    **/
@@ -472,7 +462,7 @@ Jxta_status jxta_pipe_service_impl_remove_accept_listener(Jxta_pipe_service_impl
    ** @param service pointer to the Pipe Service
    ** @param resolver returned value:  a pointer to a pointer to a Jxta_pipe_resolver
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_NOMEM when the system is running out of memory.
    **/
 Jxta_status jxta_pipe_service_impl_get_pipe_resolver(Jxta_pipe_service_impl * service, Jxta_pipe_resolver ** resolver);
@@ -485,15 +475,19 @@ Jxta_status jxta_pipe_service_impl_get_pipe_resolver(Jxta_pipe_service_impl * se
    ** @param old returned value: if non NULL, old will contain a pointer
    **                            to the previous pipe resolver.
    **
-   ** @return an error status. JXTA_SUCCESS when successfull.
+   ** @return an error status. JXTA_SUCCESS when successful.
    **                          JXTA_NOMEM when the system is running out of memory.
    **                          JXTA_VIOLATION when changing the default pipe is not authorized
    **/
 Jxta_status jxta_pipe_service_impl_set_pipe_resolver(Jxta_pipe_service_impl * service,
                                                      Jxta_pipe_resolver * jnew, Jxta_pipe_resolver ** old);
 
+/**
+ * Check if there is a local listener. 
+ */
+Jxta_status jxta_pipe_service_impl_check_listener(Jxta_pipe_service_impl * service, const char * id);
 
-
+Jxta_pipe_service_impl *get_impl_by_adv(Jxta_pipe_service * self, Jxta_pipe_adv *adv);
 
 #endif
 

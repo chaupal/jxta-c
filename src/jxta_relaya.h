@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_relaya.h,v 1.7 2005/08/03 05:51:18 slowhog Exp $
+ * $Id: jxta_relaya.h,v 1.8 2005/09/21 21:16:50 slowhog Exp $
  */
 
 
@@ -62,9 +62,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _jxta_RelayAdvertisement Jxta_RelayAdvertisement;
 
 JXTA_DECLARE(Jxta_RelayAdvertisement *) jxta_RelayAdvertisement_new(void);

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_excep.h,v 1.4 2005/04/28 09:56:31 lankes Exp $
+ * $Id: jpr_excep.h,v 1.5 2005/11/21 01:32:08 mmx2005 Exp $
  */
 
 #ifndef JPR_EXCEP_H
@@ -137,6 +137,8 @@ JPR_DECLARE_DATA int _jpr_withinFuncTryBlk_;
         _jpr_ExceptionControlT_ UNUSED__ _jpr_throwIsPermitted_; \
         _jpr_ExceptionControlT_ UNUSED__ _jpr_invokeesMayThrow_; \
         int UNUSED__ _jpr_withinFuncTryBlk_ = 1; \
+        memset(&_jpr_invokeesMayThrow_ , 0, sizeof(_jpr_ExceptionControlT_)); \
+        memset(&_jpr_throwIsPermitted_ , 0, sizeof(_jpr_ExceptionControlT_)); \
 
 #define Catch _jpr_threadPopCtx(); } else goto jxta_unique_with_number(__LINE__); \
     } \

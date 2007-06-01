@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dr_priv.h,v 1.1 2005/08/29 06:38:07 slowhog Exp $
+ * $Id: jxta_dr_priv.h,v 1.2 2005/09/21 21:16:46 slowhog Exp $
  */
 
 
@@ -60,7 +60,7 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
 

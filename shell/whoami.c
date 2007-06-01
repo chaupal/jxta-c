@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: whoami.c,v 1.4 2005/08/24 01:21:23 slowhog Exp $
+ * $Id: whoami.c,v 1.5 2005/11/15 18:41:31 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -284,7 +284,7 @@ void jxta_whoami_start(Jxta_object * appl, int argv, char **arg)
         for (eachCred = 0; eachCred < jxta_vector_size(creds); eachCred++) {
             Jxta_credential *aCred = NULL;
 
-            res = jxta_vector_get_object_at(creds, (Jxta_object **) & aCred, eachCred);
+            res = jxta_vector_get_object_at(creds, JXTA_OBJECT_PPTR(&aCred), eachCred);
 
             if ((JXTA_SUCCESS != res) || (NULL == aCred) || !JXTA_OBJECT_CHECK_VALID(aCred)) {
                 jstring_append_2(outputLine, "# could not get credential\n");

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: peers.c,v 1.13 2005/08/03 08:10:22 lankes Exp $
+ * $Id: peers.c,v 1.16 2005/10/27 09:44:56 lankes Exp $
  */
 
 #include <stdio.h>
@@ -62,76 +62,67 @@
 #include "jxta_errno.h"
 #include "jxta_peergroup.h"
 #include "jxta_object.h"
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 #ifdef WIN32
-static char*	optarg = NULL;		// global argument pointer
-static int		optind = 0; 		// global argv index
+static char *optarg = NULL;     /* global argument pointer */
+static int optind = 0;  /* global argv index */
 
-static int getopt(int argc, char* argv[], char* optstring)
+static int getopt(int argc, char *argv[], char *optstring)
 {
-	static char*	next = NULL;
-	char			c;
-	char*			cp = NULL;
+    static char *next = NULL;
+    char c;
+    char *cp = NULL;
 
-	if (optind == 0)
-		next = NULL;
+    if (optind == 0)
+        next = NULL;
 
-	optarg = NULL;
+    optarg = NULL;
 
-	if (next == NULL || *next == '\0')
-	{
-		if (optind == 0)
-			optind++;
+    if (next == NULL || *next == '\0') {
+        if (optind == 0)
+            optind++;
 
-		if (optind >= argc || argv[optind][0] != '-' || argv[optind][1] == '\0')
-		{
-			optarg = NULL;
-			if (optind < argc)
-				optarg = argv[optind];
-			return EOF;
-		}
+        if (optind >= argc || argv[optind][0] != '-' || argv[optind][1] == '\0') {
+            optarg = NULL;
+            if (optind < argc)
+                optarg = argv[optind];
+            return EOF;
+        }
 
-		if (strcmp(argv[optind], "--") == 0)
-		{
-			optind++;
-			optarg = NULL;
-			if (optind < argc)
-				optarg = argv[optind];
-			return EOF;
-		}
+        if (strcmp(argv[optind], "--") == 0) {
+            optind++;
+            optarg = NULL;
+            if (optind < argc)
+                optarg = argv[optind];
+            return EOF;
+        }
 
-		next = argv[optind];
-		next++;	
-		optind++;
-	}
+        next = argv[optind];
+        next++;
+        optind++;
+    }
 
-	c = *next++;
-	cp = strchr(optstring, c);
+    c = *next++;
+    cp = strchr(optstring, c);
 
-	if (cp == NULL || c == ':')
-		return '?';
+    if (cp == NULL || c == ':')
+        return '?';
 
-	cp++;
-	if (*cp == ':')
-	{
-		if (*next != '\0')
-		{
-			optarg = next;
-			next = NULL;
-		}
-		else if (optind < argc)
-		{
-			optarg = argv[optind];
-			optind++;
-		}
-		else
-		{
-			return '?';
-		}
-	}
+    cp++;
+    if (*cp == ':') {
+        if (*next != '\0') {
+            optarg = next;
+            next = NULL;
+        } else if (optind < argc) {
+            optarg = argv[optind];
+            optind++;
+        } else {
+            return '?';
+        }
+    }
 
-	return c;
+    return c;
 }
 #endif
 
@@ -141,97 +132,109 @@ static int getopt(int argc, char* argv[], char* optstring)
  *
  */
 
-static void help (void) {
-	fprintf(stdout,"peers - discover peers \n\n");
-	fprintf(stdout,"SYNOPSIS\n");
-	fprintf(stdout,"    peers [-p peerid name attribute]\n");
-	fprintf(stdout,"           [-n n] limit the number of responses to n from a single peer\n");
-	fprintf(stdout,"           [-r] discovers peer groups using remote propagation\n");
-	fprintf(stdout,"           [-l] displays peer id as a hex string\n");
-	fprintf(stdout,"           [-a] specify Attribute name to limit discovery to\n");
-	fprintf(stdout,"           [-v] specify Attribute value to limit discovery to. wild card is allowed\n");
-	fprintf(stdout,"           [-f] flush peer advertisements\n");
+static void help(void)
+{
+    fprintf(stdout, "peers - discover peers \n\n");
+    fprintf(stdout, "SYNOPSIS\n");
+    fprintf(stdout, "    peers [-p peerid name attribute]\n");
+    fprintf(stdout, "           [-n n] limit the number of responses to n from a single peer\n");
+    fprintf(stdout, "           [-r] discovers peer groups using remote propagation\n");
+    fprintf(stdout, "           [-l] displays peer id as a hex string\n");
+    fprintf(stdout, "           [-a] specify Attribute name to limit discovery to\n");
+    fprintf(stdout, "           [-v] specify Attribute value to limit discovery to. wild card is allowed\n");
+    fprintf(stdout, "           [-f] flush peer advertisements\n");
 }
 
 int main(int argc, char *argv[])
 {
-	Jxta_PG* pg;
-	Jxta_discovery_service* discovery;
-	Jxta_status status;
-	Jxta_endpoint_address* addr = NULL;
-	int c;
-	Jxta_boolean rf=FALSE;
-	Jxta_boolean pf=FALSE;
-	JString * pid = jstring_new_0();
-	JString * attr= jstring_new_0();
-	JString * value= jstring_new_0();
+    Jxta_PG *pg;
+    Jxta_discovery_service *discovery;
+    Jxta_status status;
+    int c;
+    Jxta_boolean rf = FALSE;
+    Jxta_boolean pf = FALSE;
+    JString *pid = jstring_new_0();
+    JString *attr = jstring_new_0();
+    JString *value = jstring_new_0();
 
-	long responses = 10;
+    long responses = 10;
 
-	long qid=-1;
+    long qid = -1;
 
-	while (1) {
-		c = getopt(argc,argv,"rflhp:n:a:v:");
-		if (c == -1) {
-			break;
-		}
-		switch (c) {
-		case 'r' : rf=TRUE;
-			break;
+    while (1) {
+        c = getopt(argc, argv, "rflhp:n:a:v:");
+        if (c == -1) {
+            break;
+        }
+        switch (c) {
+        case 'r':
+            rf = TRUE;
+            break;
 
-		case 'f' : break;
-		case 'l' : break;
+        case 'f':
+            break;
+        case 'l':
+            break;
 
-		case 'p' : pf=TRUE;
-			jstring_append_2(pid,optarg);
-			/*fprintf(stdout,"%s\n",optarg);*/
-			break;
+        case 'p':
+            pf = TRUE;
+            jstring_append_2(pid, optarg);
+            /*fprintf(stdout,"%s\n",optarg); */
+            break;
 
-		case 'n' : responses = strtol(optarg, NULL, 0);
-			/*fprintf(stdout,"%ld\n",responses);*/
-			break;
+        case 'n':
+            responses = strtol(optarg, NULL, 0);
+            /*fprintf(stdout,"%ld\n",responses); */
+            break;
 
-		case 'a' : jstring_append_2(attr, optarg);
-			/*fprintf(stdout,"Attribute :%s\n",optarg);*/
-			break;
-		case 'v' : jstring_append_2(value,optarg);
-			/*fprintf(stdout,"Value :%s\n",optarg);*/
-			break;
-		case 'h' :
-		case '?' : help();
-			exit(0);
-			break;
+        case 'a':
+            jstring_append_2(attr, optarg);
+            /*fprintf(stdout,"Attribute :%s\n",optarg); */
+            break;
+        case 'v':
+            jstring_append_2(value, optarg);
+            /*fprintf(stdout,"Value :%s\n",optarg); */
+            break;
+        case 'h':
+        case '?':
+            help();
+            return 0;
+            break;
 
-		default: fprintf(stderr,"getopt error 0%o \n",c);
-		}
-	}
+        default:
+            fprintf(stderr, "getopt error 0%o \n", c);
+        }
+    }
 
 
-	jxta_initialize();
-	status = jxta_PG_new_netpg(&pg);
-	if (status != JXTA_SUCCESS) {
-		fprintf(stderr,"peers: jxta_PG_netpg_new failed with error: %ld\n", status);
-	}
+    jxta_initialize();
+    status = jxta_PG_new_netpg(&pg);
+    if (status != JXTA_SUCCESS) {
+        fprintf(stderr, "peers: jxta_PG_netpg_new failed with error: %ld\n", status);
+    }
 
-	jxta_PG_get_discovery_service(pg, &discovery);
+    jxta_PG_get_discovery_service(pg, &discovery);
 
-	if (rf) {
-                apr_sleep ((Jpr_interval_time) 5 *1000 *1000);
-		fprintf(stdout,"sending a discovery query");
-		qid=discovery_service_get_remote_advertisements(discovery,
-		                jxta_id_nullID, DISC_PEER, jstring_get_string(attr),
-		                jstring_get_string(value), responses, NULL);
+    if (rf) {
+        apr_sleep((Jpr_interval_time) 5 * 1000 * 1000);
+        fprintf(stdout, "sending a discovery query");
+        qid = discovery_service_get_remote_advertisements(discovery,
+                                                          jxta_id_nullID, DISC_PEER, jstring_get_string(attr),
+                                                          jstring_get_string(value), responses, NULL);
 
-		fprintf(stderr,"Sent discovery query qid = %ld\n", qid);
-                apr_sleep ((Jpr_interval_time) 7 *1000*1000);
-	}
-	JXTA_OBJECT_RELEASE(discovery);
-	jxta_module_stop((Jxta_module*) pg);
-	JXTA_OBJECT_RELEASE(pg);
-	if (pid)   JXTA_OBJECT_RELEASE(pid);
-	if (attr)  JXTA_OBJECT_RELEASE(attr);
-	if (value) JXTA_OBJECT_RELEASE(value);
+        fprintf(stderr, "Sent discovery query qid = %ld\n", qid);
+        apr_sleep((Jpr_interval_time) 7 * 1000 * 1000);
+    }
+    JXTA_OBJECT_RELEASE(discovery);
+    jxta_module_stop((Jxta_module *) pg);
+    JXTA_OBJECT_RELEASE(pg);
+    if (pid)
+        JXTA_OBJECT_RELEASE(pid);
+    if (attr)
+        JXTA_OBJECT_RELEASE(attr);
+    if (value)
+        JXTA_OBJECT_RELEASE(value);
 
-	jxta_terminate();
-	return 0;
+    jxta_terminate();
+    return 0;
 }

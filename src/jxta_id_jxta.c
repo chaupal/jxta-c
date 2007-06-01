@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_id_jxta.c,v 1.18 2005/07/22 03:12:51 slowhog Exp $
+ * $Id: jxta_id_jxta.c,v 1.21 2005/11/25 23:53:35 mmx2005 Exp $
  */
 
 
@@ -90,7 +90,7 @@ static Jxta_status newPipeid2(Jxta_id ** pipe, Jxta_id * pg, unsigned char const
 static Jxta_status newModuleclassid1(Jxta_id ** mcid);
 static Jxta_status newModuleclassid2(Jxta_id ** mcid, Jxta_id * base);
 static Jxta_status newModulespecid(Jxta_id ** msid, Jxta_id * mcid);
-static Jxta_status newFromString(Jxta_id ** id, JString * jid);
+static Jxta_status new_from_str(Jxta_id ** id, const char * str, size_t len);
 static Jxta_status getUniqueportion(Jxta_id * jid, JString ** uniq);
 static void doDelete(Jxta_object * jid);
 static Jxta_boolean equals(Jxta_id * jid1, Jxta_id * jid2);
@@ -238,36 +238,31 @@ static Jxta_status newModulespecid(Jxta_id ** msid, Jxta_id * mcid)
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static Jxta_status newFromString(Jxta_id ** id, JString * jid)
+static Jxta_status new_from_str(Jxta_id ** id, const char * str, size_t len)
 {
-    const char *unique;
     Jxta_status res;
+    _jxta_id_jxta *me;
 
+    if (NULL == str) {
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    me = (_jxta_id_jxta *) malloc(sizeof(_jxta_id_jxta));
     /*  alloc, smear and init   */
-    _jxta_id_jxta *me = (_jxta_id_jxta *) malloc(sizeof(_jxta_id_jxta));
 
     if (NULL == me)
         return JXTA_NOMEM;
 
     memset(me, 0xdb, sizeof(_jxta_id_jxta));
 
-    JXTA_OBJECT_INIT(me, doDelete, 0);
     me->common.formatter = &jxta_format;
-
-    unique = jstring_get_string(jid);
-    if (NULL == unique) {
-        res = JXTA_INVALID_ARGUMENT;
-        goto Common_Exit;
+    me->uniquevalue = calloc(len + 1, sizeof(char));
+    if (NULL == me->uniquevalue) {
+        free(me);
+        return JXTA_NOMEM;
     }
-
-    unique = strchr(unique, '-');
-    if (NULL == unique) {
-        res = JXTA_INVALID_ARGUMENT;
-        goto Common_Exit;
-    }
-
-    unique++;
-    me->uniquevalue = strdup(unique);
+    strncpy((char *) me->uniquevalue, str, len);
+    JXTA_OBJECT_INIT(me, doDelete, 0);
 
     *id = translateToWellKnown((Jxta_id *) me);
 
@@ -277,12 +272,9 @@ static Jxta_status newFromString(Jxta_id ** id, JString * jid)
      * If they're one and the same, the following operation has no effect.
      */
     JXTA_OBJECT_SHARE(*id);
-
-    res = JXTA_SUCCESS;
-
-  Common_Exit:
     JXTA_OBJECT_RELEASE(me);
 
+    res = JXTA_SUCCESS;
     return res;
 }
 
@@ -384,7 +376,7 @@ JXTAIDFormat jxta_format = {
     newModuleclassid1,
     newModuleclassid2,
     newModulespecid,
-    newFromString,
+    new_from_str,
     getUniqueportion,
     equals,
     hashcode
@@ -396,3 +388,5 @@ JXTAIDFormat jxta_format = {
 #endif
 }
 #endif
+
+/* vim: set ts=4 sw=4 et tw=130: */

@@ -50,12 +50,28 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_provider.h,v 1.1 2005/01/28 23:49:07 bondolo Exp $
+ * $Id: jxta_rdv_service_provider.h,v 1.2 2005/09/21 21:16:50 slowhog Exp $
  */
 
 #ifndef __JXTA_RDV_SERVICE_PROVIDER_H__
 #define __JXTA_RDV_SERVICE_PROVIDER_H__
 
+#ifdef __cplusplus
+extern "C" {
+#if 0
+};
+#endif
+#endif
+
 typedef struct _jxta_rdv_service_provider Jxta_rdv_service_provider;
 
+#ifdef __cplusplus
+#if 0
+{
 #endif
+}
+#endif
+
+#endif
+
+/* vim: set ts=4 sw=4 et tw=130: */

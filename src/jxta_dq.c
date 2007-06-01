@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dq.c,v 1.42 2005/08/18 19:01:50 slowhog Exp $
+ * $Id: jxta_dq.c,v 1.44 2005/11/22 22:00:57 mmx2005 Exp $
  */
 
 #include <stdio.h>
@@ -63,7 +63,7 @@
 #include "jxta_xml_util.h"
 #include "jxta_advertisement.h"
 #include "jxta_discovery_service.h"
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -110,7 +110,6 @@ static void handleJxta_DiscoveryQuery(void *userdata, const XML_Char * cd, int l
 {
     /*Jxta_DiscoveryQuery * ad = (Jxta_DiscoveryQuery*)userdata; */
 }
-
 
 static void handleType(void *userdata, const XML_Char * cd, int len)
 {
@@ -178,7 +177,6 @@ static void handleExtendedQuery(void *userdata, const XML_Char * cd, int len)
         jstring_append_0((JString *) ad->ExtendedQuery, cd, len);
     }
 }
-
 
 JXTA_DECLARE(short) jxta_discovery_query_get_type(Jxta_DiscoveryQuery * ad)
 {
@@ -298,7 +296,6 @@ Jxta_status jxta_discovery_query_set_extended_query(Jxta_DiscoveryQuery * ad, JS
     return JXTA_SUCCESS;
 }
 
-
 /** Now, build an array of the keyword structs.  Since
  * a top-level, or null state may be of interest, 
  * let that lead off.  Then, walk through the enums,
@@ -318,11 +315,8 @@ static const Kwdtab Jxta_DiscoveryQuery_tags[] = {
     {NULL, 0, 0, NULL, NULL}
 };
 
-
-
 JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_xml(Jxta_DiscoveryQuery * adv, JString ** document)
 {
-
 
     JString *doc;
     JString *tmps = NULL;
@@ -389,8 +383,6 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_xml(Jxta_DiscoveryQuery * adv
     return JXTA_SUCCESS;
 }
 
-
-
 /** Get a new instance of the ad.
  * The memory gets shredded going in to 
  * a value that is easy to see in a debugger,
@@ -407,7 +399,10 @@ JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new(void)
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
                                   "jxta:DiscoveryQuery",
                                   Jxta_DiscoveryQuery_tags,
-                                  jxta_discovery_query_get_xml, NULL, NULL, (FreeFunc) jxta_discovery_query_free);
+                                  (JxtaAdvertisementGetXMLFunc) jxta_discovery_query_get_xml, 
+                                  NULL, 
+                                  NULL, 
+                                  (FreeFunc) jxta_discovery_query_free);
 
     ad->Type = 0;
     ad->Threshold = 0;
@@ -428,7 +423,6 @@ JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new_1(short type, const
                                                                JString * peeradv)
 {
 
-
     Jxta_DiscoveryQuery *ad;
     ad = (Jxta_DiscoveryQuery *) malloc(sizeof(Jxta_DiscoveryQuery));
     memset(ad, 0xda, sizeof(Jxta_DiscoveryQuery));
@@ -436,7 +430,10 @@ JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new_1(short type, const
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
                                   "jxta:DiscoveryQuery",
                                   Jxta_DiscoveryQuery_tags,
-                                  jxta_discovery_query_get_xml, NULL, NULL, (FreeFunc) jxta_discovery_query_free);
+                                  (JxtaAdvertisementGetXMLFunc)jxta_discovery_query_get_xml, 
+                                  NULL, 
+                                  NULL, 
+                                  (FreeFunc) jxta_discovery_query_free);
 
     ad->Type = type;
     ad->Threshold = threshold;
@@ -451,7 +448,6 @@ JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new_1(short type, const
 JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new_2(const char *query, int threshold, JString * peeradv)
 {
 
-
     Jxta_DiscoveryQuery *ad;
     ad = (Jxta_DiscoveryQuery *) malloc(sizeof(Jxta_DiscoveryQuery));
     memset(ad, 0xda, sizeof(Jxta_DiscoveryQuery));
@@ -459,7 +455,10 @@ JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new_2(const char *query
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
                                   "jxta:DiscoveryQuery",
                                   Jxta_DiscoveryQuery_tags,
-                                  jxta_discovery_query_get_xml, NULL, NULL, (FreeFunc) jxta_discovery_query_free);
+                                  (JxtaAdvertisementGetXMLFunc)jxta_discovery_query_get_xml, 
+                                  NULL, 
+                                  NULL, 
+                                  (FreeFunc) jxta_discovery_query_free);
 
     ad->Type = DISC_ADV;
     ad->Threshold = threshold;

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: endpoint_stress_test.c,v 1.20 2005/04/14 21:10:50 bondolo Exp $
+ * $Id: endpoint_stress_test.c,v 1.22 2005/09/23 20:09:01 slowhog Exp $
  */
 
 #include "jxta.h"
@@ -61,7 +61,7 @@
 #include "jxta_peergroup.h"
 #include "jxta_endpoint_service.h"
 #include "jxta_transport.h"
-#include "../src/jxta_private.h" 
+#include "../src/jxta_private.h"
 #include "jxta_listener.h"
 
 
@@ -69,55 +69,54 @@
 #define ENDPOINT_TEST_SERVICE_PARAMS "EndpointTestParams"
 
 
-extern Jxta_endpoint_service* jxta_endpoint_service_new_instance (void);
+extern Jxta_endpoint_service *jxta_endpoint_service_new_instance(void);
 
-Jxta_PG* pg;
-apr_pool_t            *pool;
+Jxta_PG *pg;
+apr_pool_t *pool;
 Jxta_endpoint_service *endpoint = NULL;
 Jxta_endpoint_address *hostAddr;
 Jxta_endpoint_address *localEndpointAddr;
-Jxta_transport        *http_transport;
-apr_thread_mutex_t    *mutex;
-apr_thread_cond_t     *cond; 
-int                    thread_count;
-int                    loop_count;
+Jxta_transport *http_transport;
+apr_thread_mutex_t *mutex;
+apr_thread_cond_t *cond;
+int thread_count;
+int loop_count;
 
-static void test_thread_done (void);
+static void test_thread_done(void);
 
-void
-listener (Jxta_object* obj, void* cookie) {
-  
-  printf("Received a message\n");
+void listener(Jxta_object * obj, void *cookie)
+{
+
+    printf("Received a message\n");
 }
 
-void
-init(void) {
+void init(void)
+{
     Jxta_status res;
-    Jxta_listener* endpoint_listener = NULL;
+    Jxta_listener *endpoint_listener = NULL;
 
-    apr_pool_create (&pool, NULL);
-    
+    apr_pool_create(&pool, NULL);
+
   /**
    ** Get the endpoint srvce from the net pg.
    **/
-  
-  res = jxta_PG_new_netpg(&pg);
-  if (res != JXTA_SUCCESS) {
-      printf("jxta_PG_netpg_new failed with error: %ld\n", res);
-      exit(res);
-  }
 
-  jxta_PG_get_endpoint_service(pg, &endpoint);
+    res = jxta_PG_new_netpg(&pg);
+    if (res != JXTA_SUCCESS) {
+        printf("jxta_PG_netpg_new failed with error: %ld\n", res);
+        exit(res);
+    }
 
-  /* sets and endpoint listener */
-  endpoint_listener = jxta_listener_new (listener, NULL, 1, 0);
-  
-  jxta_endpoint_service_add_listener (endpoint,
-				      (char*) ENDPOINT_TEST_SERVICE_NAME,
-				      (char*) ENDPOINT_TEST_SERVICE_PARAMS,
-				      endpoint_listener);
+    jxta_PG_get_endpoint_service(pg, &endpoint);
 
-  jxta_listener_start(endpoint_listener);
+    /* sets and endpoint listener */
+    endpoint_listener = jxta_listener_new(listener, NULL, 1, 0);
+
+    jxta_endpoint_service_add_listener(endpoint,
+                                       (char *) ENDPOINT_TEST_SERVICE_NAME,
+                                       (char *) ENDPOINT_TEST_SERVICE_PARAMS, endpoint_listener);
+
+    jxta_listener_start(endpoint_listener);
 }
 
 
@@ -129,185 +128,166 @@ init(void) {
  **/
 
 
-Jxta_status
-readMessageBytes (void* stream, char* buf, apr_size_t len) {
-
-  fread ((void*) buf,(size_t) len, 1, (FILE*) stream);
-  return APR_SUCCESS;
-}
-
-apr_status_t
-writeMessageBytes (void* stream, char* buf, apr_size_t len) {
-
-  fwrite ((void *) buf, (size_t) len, 1, (FILE*) stream);
-  return APR_SUCCESS; 
-}
-
-
-apr_thread_t**
-spawn_threads (int        n,
-               apr_thread_start_t thread_func,
-               void       *arg,
-               apr_pool_t *pool)
+Jxta_status readMessageBytes(void *stream, char *buf, apr_size_t len)
 {
-  int i;
-  apr_thread_t **threads = (apr_thread_t **) malloc (n * 
-						     sizeof (apr_thread_t *));
 
-  for (i = 0;  i < n;  i++) {
-    
-    apr_thread_create (&threads[i],
-                       NULL,
-                       thread_func,
-                       arg,
-                       pool);
-  }
+    fread((void *) buf, (size_t) len, 1, (FILE *) stream);
+    return APR_SUCCESS;
+}
 
-  return threads;
+apr_status_t writeMessageBytes(void *stream, char *buf, apr_size_t len)
+{
+
+    fwrite((void *) buf, (size_t) len, 1, (FILE *) stream);
+    return APR_SUCCESS;
 }
 
 
-void * APR_THREAD_FUNC
-single_test (apr_thread_t *thread, void *arg)
+apr_thread_t **spawn_threads(int n, apr_thread_start_t thread_func, void *arg, apr_pool_t * pool)
 {
-  char            *msg_dir = (char *) arg;
-  DIR             *dir     = opendir (msg_dir);
-  struct dirent   *entry;
-  FILE            *file;
-  Jxta_message*   *msg;
-  int              i;
-  
-  if (dir) {
-    for (i = 0;  i < loop_count;  i++) {
-    printf ("Opened directory %s\n", msg_dir);
+    int i;
+    apr_thread_t **threads = (apr_thread_t **) malloc(n * sizeof(apr_thread_t *));
 
-    while ((entry = readdir (dir))) {
-      if (strncmp (entry->d_name, "jxta_message*", 12) == 0) {
+    for (i = 0; i < n; i++) {
 
-          
-        char *filename = (char *) malloc (strlen (msg_dir) + 1 +
-					    strlen (entry->d_name) + 1);
+        apr_thread_create(&threads[i], NULL, thread_func, arg, pool);
+    }
 
-	sprintf (filename, "%s/%s", msg_dir, entry->d_name);
+    return threads;
+}
 
-	file = fopen (filename, "r");
 
-	if (file) {
-	  printf ("Opened message file %s\n", filename);
-	  msg = jxta_message_new ();
-          printf ("Allocated msg %p\n", msg);
-	  jxta_message_read (msg,
-			     "application/x-jxta-msg",
-                              readMessageBytes,
-			     (void *)file);
-          printf ("Read into msg %p\n", msg);
-          if (strstr (entry->d_name, "output")) {
-            printf ("It's an output message, sending it.\n");
-	    jxta_endpoint_service_send (pg, endpoint, msg, hostAddr);
+void *APR_THREAD_FUNC single_test(apr_thread_t * thread, void *arg)
+{
+    char *msg_dir = (char *) arg;
+    DIR *dir = opendir(msg_dir);
+    struct dirent *entry;
+    FILE *file;
+    Jxta_message **msg;
+    int i;
+
+    if (dir) {
+        for (i = 0; i < loop_count; i++) {
+            printf("Opened directory %s\n", msg_dir);
+
+            while ((entry = readdir(dir))) {
+                if (strncmp(entry->d_name, "jxta_message*", 12) == 0) {
+
+
+                    char *filename = (char *) malloc(strlen(msg_dir) + 1 + strlen(entry->d_name) + 1);
+
+                    sprintf(filename, "%s/%s", msg_dir, entry->d_name);
+
+                    file = fopen(filename, "r");
+
+                    if (file) {
+                        printf("Opened message file %s\n", filename);
+                        msg = jxta_message_new();
+                        printf("Allocated msg %p\n", msg);
+                        jxta_message_read(msg, "application/x-jxta-msg", readMessageBytes, (void *) file);
+                        printf("Read into msg %p\n", msg);
+                        if (strstr(entry->d_name, "output")) {
+                            printf("It's an output message, sending it.\n");
+                            jxta_endpoint_service_send(pg, endpoint, msg, hostAddr);
 /*         } else if (strstr (entry->d_name, "input")) {
             printf ("It's a sample input message, demuxing it.\n");
             jxta_endpoint_service_demux (endpoint, msg);
-*/          }
+*/ }
 
-	  JXTA_OBJECT_RELEASE (msg);
-	  fclose (file);
-	}
-      }
-    } 
-    rewinddir (dir);
+                        JXTA_OBJECT_RELEASE(msg);
+                        fclose(file);
+                    }
+                }
+            }
+            rewinddir(dir);
+        }
+
+        closedir(dir);
+
+        test_thread_done();
+
+    } else {
+        printf("Unable to open message directory.");
     }
 
-    closedir (dir);
- 
-    test_thread_done ();
-
-  } else {
-    printf ("Unable to open message directory.");
-  }
-
-  return NULL;
+    return NULL;
 }
 
 
-static void
-test_thread_done ()
+static void test_thread_done()
 {
-  apr_thread_mutex_lock (mutex);
-  printf ("signaling thread done.\n");
-  thread_count --;
-  apr_thread_cond_signal (cond);
-  apr_thread_mutex_unlock (mutex);
+    apr_thread_mutex_lock(mutex);
+    printf("signaling thread done.\n");
+    thread_count--;
+    apr_thread_cond_signal(cond);
+    apr_thread_mutex_unlock(mutex);
 }
 
-int
-main (int argc, char **argv)
+int main(int argc, char **argv)
 {
-  char        *host;
-  char        *msg_dir;
+    char *host;
+    char *msg_dir;
 
 #ifndef WIN32
-  struct sigaction sa;
+    struct sigaction sa;
 
-  sa.sa_flags = 0;
-  sa.sa_handler = SIG_IGN;
-  sigaction(SIGPIPE, &sa, NULL);
+    sa.sa_flags = 0;
+    sa.sa_handler = SIG_IGN;
+    sigaction(SIGPIPE, &sa, NULL);
 #endif
 
 
-  if(argc != 5) {
-    printf("usage: endpoint_test ip:port message_dir thread_count loop_count\n");
-    return -1;
-  }
+    if (argc != 5) {
+        printf("usage: endpoint_test ip:port message_dir thread_count loop_count\n");
+        return -1;
+    }
 
-  jxta_initialize();
+    jxta_initialize();
 
-  host         = argv[1];
-  msg_dir      = argv[2];
-  thread_count = atoi (argv[3]);
-  loop_count   = atoi (argv[4]);
+    host = argv[1];
+    msg_dir = argv[2];
+    thread_count = atoi(argv[3]);
+    loop_count = atoi(argv[4]);
 
-  printf ("using ip:port=%s msg_dir=%s thread_count=%d loop_count=%d\n", 
-	  host, msg_dir, thread_count, loop_count);
+    printf("using ip:port=%s msg_dir=%s thread_count=%d loop_count=%d\n", host, msg_dir, thread_count, loop_count);
 
-  /* Initialise the endpoint and http service, set the endpoint listener */
-  init();
+    /* Initialise the endpoint and http service, set the endpoint listener */
+    init();
 
-  /* Builds the destination address */
-  hostAddr =  jxta_endpoint_address_new2 ((char *)"http",
-					  host,
-					  (char *)ENDPOINT_TEST_SERVICE_NAME,
-					  (char *)ENDPOINT_TEST_SERVICE_PARAMS);
+    /* Builds the destination address */
+    hostAddr = jxta_endpoint_address_new_2((char *) "http",
+                                           host, (char *) ENDPOINT_TEST_SERVICE_NAME, (char *) ENDPOINT_TEST_SERVICE_PARAMS);
 
-  /* Builds a message (empty) and sends it */
-  /* msg = jxta_message_new(pool);
-    
-  jxta_endpoint_service_send (endpoint,
-  msg,
-  hostAddr);
-    
-  JXTA_OBJECT_RELEASE (msg);
-  */
+    /* Builds a message (empty) and sends it */
+    /* msg = jxta_message_new(pool);
+
+       jxta_endpoint_service_send (endpoint,
+       msg,
+       hostAddr);
+
+       JXTA_OBJECT_RELEASE (msg);
+     */
 
 
-  apr_thread_mutex_create (&mutex, APR_THREAD_MUTEX_DEFAULT, pool);
-  apr_thread_cond_create (&cond, pool);
+    apr_thread_mutex_create(&mutex, APR_THREAD_MUTEX_DEFAULT, pool);
+    apr_thread_cond_create(&cond, pool);
 
-  spawn_threads (thread_count, single_test, msg_dir, pool);
+    spawn_threads(thread_count, single_test, msg_dir, pool);
 
-  apr_thread_mutex_lock (mutex);
-  while (thread_count > 0) {
-    apr_thread_cond_wait (cond, mutex);
-    printf ("woke up from wait with thread_count = %d\n", thread_count);
-  } 
-  apr_thread_mutex_unlock (mutex);
- 
-  /* Sleep a bit to let the endpoint works */
-  apr_sleep (1 * 60 * 1000 * 1000); 
+    apr_thread_mutex_lock(mutex);
+    while (thread_count > 0) {
+        apr_thread_cond_wait(cond, mutex);
+        printf("woke up from wait with thread_count = %d\n", thread_count);
+    }
+    apr_thread_mutex_unlock(mutex);
 
-  apr_thread_mutex_destroy (mutex);
-  apr_thread_cond_destroy (cond);
-  apr_pool_destroy(pool);
+    /* Sleep a bit to let the endpoint works */
+    apr_sleep(1 * 60 * 1000 * 1000);
 
-  jxta_terminate();
-  return 0;
+    apr_thread_mutex_destroy(mutex);
+    apr_thread_cond_destroy(cond);
+    apr_pool_destroy(pool);
+
+    jxta_terminate();
+    return 0;
 }

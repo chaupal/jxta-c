@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pg_test.c,v 1.5 2005/04/07 22:58:54 slowhog Exp $
+ * $Id: jxta_pg_test.c,v 1.7 2005/10/27 09:44:56 lankes Exp $
  */
 
 #include "jxta.h"
@@ -60,48 +60,42 @@
 #include "jxta_rdv_service.h"
 #include "jxta_resolver_service.h"
 #include "jxta_object.h"
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 int main(int argc, char *argv[])
 {
-    Jxta_PG* netpg;
-    Jxta_PG* pg;
-    Jxta_PGA* pga;
-    JString* pgas;
-    Jxta_endpoint_service* endp;
-    Jxta_rdv_service* rdv;
-    Jxta_resolver_service* resolver;
+    Jxta_PG *netpg;
+    Jxta_PG *pg;
+    Jxta_PGA *pga;
+    JString *pgas;
+    Jxta_endpoint_service *endp;
+    Jxta_rdv_service *rdv;
+    Jxta_resolver_service *resolver;
     Jxta_status res;
-    JString* newpg_name;
-    JString* newpg_desc;
-    Jxta_MIA* newpg_impl;
-    Jxta_MIA* mia;
-    JString* mias;
-    JString* compat1;
-    JString* compat2;
-    Jxta_id* test_gid = NULL;
-    Jxta_PG* same_pg = NULL;
+    JString *newpg_name;
+    JString *newpg_desc;
+    Jxta_MIA *newpg_impl;
+    Jxta_MIA *mia;
+    JString *mias;
+    JString *compat1;
+    JString *compat2;
+    Jxta_id *test_gid = NULL;
+    Jxta_PG *same_pg = NULL;
 
     jxta_initialize();
 
     res = jxta_PG_new_netpg(&netpg);
     if (res != JXTA_SUCCESS) {
-	printf("jxta_PG_new_netpg failed with error: %ld\n", res);
+        printf("jxta_PG_new_netpg failed with error: %ld\n", res);
     }
 
     jxta_PG_get_genericpeergroupMIA(netpg, &newpg_impl);
     newpg_name = jstring_new_2("jice_test_pg");
     newpg_desc = jstring_new_2("testing generic pg creation in C");
-    res = jxta_PG_newfromimpl(netpg,
-			      NULL,
-			      (Jxta_advertisement*) newpg_impl,
-			      newpg_name,
-			      newpg_desc,
-			      NULL,
-			      &pg);
+    res = jxta_PG_newfromimpl(netpg, NULL, (Jxta_advertisement *) newpg_impl, newpg_name, newpg_desc, NULL, &pg);
 
     if (res != JXTA_SUCCESS) {
-	printf("jxta_PG_newfromimpl failed with error: %ld\n", res);
+        printf("jxta_PG_newfromimpl failed with error: %ld\n", res);
     }
 
     jxta_PG_get_rendezvous_service(pg, &rdv);
@@ -112,17 +106,11 @@ int main(int argc, char *argv[])
     jxta_PG_get_GID(pg, &test_gid);
     jxta_PGA_get_xml(pga, &pgas);
     jxta_PG_get_compatstatement(pg, &compat1);
-    jxta_service_get_MIA((Jxta_service*) pg, (Jxta_advertisement**) &mia);
+    jxta_service_get_MIA((Jxta_service *) pg, (Jxta_advertisement **) & mia);
     jxta_MIA_get_xml(mia, &mias);
     compat2 = jxta_MIA_get_Comp(mia);
 
-    jxta_PG_newfromimpl(netpg,
-			test_gid,
-			(Jxta_advertisement*) newpg_impl,
-			newpg_name,
-			newpg_desc,
-			NULL,
-			&same_pg);
+    jxta_PG_newfromimpl(netpg, test_gid, (Jxta_advertisement *) newpg_impl, newpg_name, newpg_desc, NULL, &same_pg);
 
     printf("PGA:\n%s\n", jstring_get_string(pgas));
     printf("Compat:\n%s\n", jstring_get_string(compat1));
@@ -130,7 +118,8 @@ int main(int argc, char *argv[])
     printf("Compatibility test: %s\n", jxta_PG_is_compatible(netpg, compat2) ? "Compat" : "Incompat");
     printf("Registry test: %s\n", same_pg == pg ? "passed" : "failed");
 
-    if (same_pg != NULL) JXTA_OBJECT_RELEASE(same_pg);
+    if (same_pg != NULL)
+        JXTA_OBJECT_RELEASE(same_pg);
     JXTA_OBJECT_RELEASE(test_gid);
     JXTA_OBJECT_RELEASE(endp);
     JXTA_OBJECT_RELEASE(rdv);
@@ -145,14 +134,13 @@ int main(int argc, char *argv[])
     JXTA_OBJECT_RELEASE(compat1);
     JXTA_OBJECT_RELEASE(compat2);
 
-    printf("start another peer and look for groups.\n"
-	   "type q<return> when done\n");
+    printf("start another peer and look for groups.\n" "type q<return> when done\n");
     while (getchar() != 'q');
-    
-    jxta_module_stop((Jxta_module*) pg);
+
+    jxta_module_stop((Jxta_module *) pg);
     JXTA_OBJECT_RELEASE(pg);
 
-    jxta_module_stop((Jxta_module*) netpg);
+    jxta_module_stop((Jxta_module *) netpg);
     JXTA_OBJECT_RELEASE(netpg);
 
     jxta_terminate();

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http_client.c,v 1.23 2005/08/18 19:01:51 slowhog Exp $
+ * $Id: jxta_transport_http_client.c,v 1.24 2005/10/27 01:55:31 slowhog Exp $
  */
 
 static const char *__log_cat = "HTTP_CLIENT";
@@ -62,7 +62,7 @@ static const char *__log_cat = "HTTP_CLIENT";
 #include "jxta_errno.h"
 #include "jxta_string.h"
 #include "jxta_transport_http_client.h"
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 /******************************************************************************/
 /*                                                                            */

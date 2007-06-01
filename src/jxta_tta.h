@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tta.h,v 1.7 2005/08/03 05:51:21 slowhog Exp $
+ * $Id: jxta_tta.h,v 1.8 2005/09/21 21:16:52 slowhog Exp $
  */
 
 
@@ -62,9 +62,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _jxta_TCPTransportAdvertisement Jxta_TCPTransportAdvertisement;
 
 JXTA_DECLARE(Jxta_TCPTransportAdvertisement *) jxta_TCPTransportAdvertisement_new(void);
@@ -120,3 +121,5 @@ JXTA_DECLARE(Jxta_vector *) jxta_TCPTransportAdvertisement_get_indexes(Jxta_adve
 #endif
 
 #endif /* JXTA_TCPTRANSPORTADVERTISEMENT_H__  */
+
+/* vim: set ts=4 sw=4 et tw=130: */

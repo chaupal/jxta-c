@@ -1,7 +1,7 @@
 
 AM_CPPFLAGS = -I${prefix}/include
 
-AM_CFLAGS = -Wall -pedantic -Wno-long-long -Wstrict-prototypes -Wwrite-strings -Wpointer-arith -g
+AM_CFLAGS = -Wall -pedantic -Wno-long-long -Wstrict-prototypes -Wwrite-strings -Wpointer-arith
 
 lib_LTLIBRARIES = libjxtautf.la
 

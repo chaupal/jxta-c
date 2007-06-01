@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_discovery_test.c,v 1.2 2005/03/22 03:49:57 bondolo Exp $
+ * $Id: jxta_discovery_test.c,v 1.4 2005/10/13 17:07:38 exocetrick Exp $
  */
 
 
@@ -64,16 +64,14 @@
  */
 
 
-Jxta_boolean 
-jxta_discovery_test(void) {
-
-	return TRUE;
+int jxta_discovery_test(void)
+{
+    return 0;
 }
 
 
-int
-main (int argc, char **argv) {
+int main(int argc, char **argv)
+{
 
-     return (int) jxta_discovery_test();
+    return jxta_discovery_test();
 }
-

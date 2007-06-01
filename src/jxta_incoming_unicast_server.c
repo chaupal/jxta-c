@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_incoming_unicast_server.c,v 1.25 2005/09/13 16:26:02 slowhog Exp $
+ * $Id: jxta_incoming_unicast_server.c,v 1.28 2005/11/22 22:00:58 mmx2005 Exp $
  */
 
 static const char *__log_cat = "TCP_UNICAST";
@@ -249,9 +249,8 @@ static void *APR_THREAD_FUNC unicast_accept_thread(apr_thread_t * tid, void *arg
 
     while (self->connected) {
         Jxta_transport_tcp_connection *conn;
-        Jxta_endpoint_address *dest;
-        TcpMessenger *messenger;
         apr_socket_t *input_socket = NULL;
+        char *ipaddr = NULL;
 
         status = apr_socket_accept(&input_socket, self->srv_socket, self->pool);
         if (APR_SUCCESS != status) {
@@ -272,8 +271,10 @@ static void *APR_THREAD_FUNC unicast_accept_thread(apr_thread_t * tid, void *arg
 
         JXTA_OBJECT_CHECK_VALID(conn);
 
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Incoming connection [%p] from %s:%d\n", conn,
-                        jxta_transport_tcp_connection_get_ipaddr(conn), jxta_transport_tcp_connection_get_port(conn));
+        ipaddr = jxta_transport_tcp_connection_get_ipaddr(conn), jxta_transport_tcp_connection_get_port(conn);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Incoming connection [%p] from %s:%d\n", conn,ipaddr);
+	    if (ipaddr != NULL) 
+            free(ipaddr);
 
         if (JXTA_SUCCESS != status) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Start connection [%p] failed. Closing socket.\n", conn);
@@ -284,9 +285,7 @@ static void *APR_THREAD_FUNC unicast_accept_thread(apr_thread_t * tid, void *arg
             continue;
         }
 
-        dest = jxta_transport_tcp_connection_get_destaddr(conn);
-        jxta_tcp_got_inbound_connection(self->tp, conn, dest);
-        JXTA_OBJECT_RELEASE(dest);
+        jxta_tcp_got_inbound_connection(self->tp, conn);
         JXTA_OBJECT_RELEASE(conn);
         input_socket = NULL;
     }

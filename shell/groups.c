@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: groups.c,v 1.12 2005/08/31 23:30:31 slowhog Exp $
+ * $Id: groups.c,v 1.15 2005/11/26 05:57:54 mmx2005 Exp $
  */
 
 #include <stdio.h>
@@ -81,7 +81,10 @@ JxtaShellApplication *jxta_groups_new(Jxta_PG * pg,
                                       jxta_groups_start, (shell_application_stdin) jxta_groups_process_input);
     group = pg;
     environment = env;
-    env_type = jstring_new_2("GroupAdvertisement");
+
+    if( env_type == NULL )
+        env_type = jstring_new_2("GroupAdvertisement");
+
     return app;
 }
 
@@ -188,15 +191,15 @@ void jxta_groups_start(Jxta_object * appl, int argv, char **arg)
             for (i = 0; i < jxta_vector_size(res_vec); i++) {
                 sprintf(buf, "group%d", i);
                 name = jstring_new_2(buf);
-                JXTA_OBJECT_SHARE(name);
-                jxta_vector_get_object_at(res_vec, (Jxta_object **) & pgadv, i);
+                jxta_vector_get_object_at(res_vec, JXTA_OBJECT_PPTR(&pgadv), i);
                 JXTA_OBJECT_SHARE(pgadv);
-                sh_obj = JxtaShellObject_new(name, pgadv, env_type);
+                sh_obj = JxtaShellObject_new(name, (Jxta_object *) pgadv, env_type);
                 JxtaShellEnvironment_add_0(environment, sh_obj);
+                JXTA_OBJECT_RELEASE(sh_obj);
                 JXTA_OBJECT_RELEASE(pgadv);
                 JXTA_OBJECT_RELEASE(name);
 
-                                /** And print the information to the screen */
+                /** And print the information to the screen */
                 name = jxta_PGA_get_Name(pgadv);
                 printf("group%d: %s\n", i, jstring_get_string(name));
                 JXTA_OBJECT_RELEASE(name);

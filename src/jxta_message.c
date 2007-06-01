@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_message.c,v 1.44 2005/09/10 01:04:55 slowhog Exp $
+ * $Id: jxta_message.c,v 1.46 2005/11/21 01:19:23 mmx2005 Exp $
  */
 
 static const char *__log_cat = "MESSAGE";
@@ -169,7 +169,7 @@ JXTA_DECLARE(Jxta_message *) jxta_message_clone(Jxta_message * old)
 
     for (eachElement = jxta_vector_size(old->usr.elements) - 1; eachElement >= 0; eachElement--) {
         Jxta_message_element *anElement = NULL;
-        if (JXTA_SUCCESS != jxta_vector_get_object_at(old->usr.elements, (Jxta_object **) & anElement, eachElement))
+        if (JXTA_SUCCESS != jxta_vector_get_object_at(old->usr.elements, JXTA_OBJECT_PPTR(&anElement), eachElement))
             continue;
 
         if ((NULL == anElement) || !JXTA_OBJECT_CHECK_VALID(anElement)) {
@@ -337,7 +337,7 @@ JXTA_DECLARE(Jxta_status) jxta_message_set_source(Jxta_message * msg, Jxta_endpo
     el = jxta_message_element_new_2(MESSAGE_SOURCE_NS, MESSAGE_SOURCE_NAME, "text/plain", el_value, strlen(el_value), NULL);
 
     if (NULL != el) {
-        (void) jxta_message_remove_element_2(msg, MESSAGE_SOURCE_NS, MESSAGE_SOURCE_NAME);
+        jxta_message_remove_element_2(msg, MESSAGE_SOURCE_NS, MESSAGE_SOURCE_NAME);
 
         res = jxta_message_add_element(msg, el);
         JXTA_OBJECT_RELEASE(el);
@@ -411,7 +411,7 @@ JXTA_DECLARE(Jxta_vector *) jxta_message_get_elements_of_namespace(Jxta_message 
         Jxta_status res;
         Jxta_message_element *anElement = NULL;
 
-        res = jxta_vector_get_object_at(msg->usr.elements, (Jxta_object **) & anElement, eachElement);
+        res = jxta_vector_get_object_at(msg->usr.elements, JXTA_OBJECT_PPTR(&anElement), eachElement);
 
         if ((JXTA_SUCCESS != res) || (NULL == anElement) || !JXTA_OBJECT_CHECK_VALID(anElement)) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Ignoring bad message element\n");
@@ -500,7 +500,7 @@ JXTA_DECLARE(Jxta_status)
     for (eachElement = jxta_vector_size(msg->usr.elements) - 1; eachElement >= 0; eachElement--) {
         Jxta_message_element *anElement = NULL;
 
-        res = jxta_vector_get_object_at(msg->usr.elements, (Jxta_object **) & anElement, eachElement);
+        res = jxta_vector_get_object_at(msg->usr.elements, JXTA_OBJECT_PPTR(&anElement), eachElement);
 
         if ((JXTA_SUCCESS != res) || (NULL == anElement) || !JXTA_OBJECT_CHECK_VALID(anElement)) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Ignoring bad message element\n");
@@ -558,7 +558,7 @@ JXTA_DECLARE(Jxta_status) jxta_message_remove_element(Jxta_message * msg, Jxta_m
     for (eachElement = jxta_vector_size(msg->usr.elements) - 1; eachElement >= 0; eachElement--) {
         Jxta_message_element *anElement = NULL;
 
-        res = jxta_vector_get_object_at(msg->usr.elements, (Jxta_object **) & anElement, eachElement);
+        res = jxta_vector_get_object_at(msg->usr.elements, JXTA_OBJECT_PPTR(&anElement), eachElement);
 
         if ((JXTA_SUCCESS != res) || (NULL == anElement) || !JXTA_OBJECT_CHECK_VALID(anElement)) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Ignoring bad message element\n");
@@ -621,7 +621,7 @@ JXTA_DECLARE(Jxta_status) jxta_message_remove_element_2(Jxta_message * msg, char
         Jxta_status res;
         Jxta_message_element *anElement = NULL;
 
-        res = jxta_vector_get_object_at(msg->usr.elements, (Jxta_object **) & anElement, eachElement);
+        res = jxta_vector_get_object_at(msg->usr.elements, JXTA_OBJECT_PPTR(&anElement), eachElement);
 
         if ((JXTA_SUCCESS != res) || (NULL == anElement) || !JXTA_OBJECT_CHECK_VALID(anElement)) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Ignoring bad message element\n");
@@ -1066,7 +1066,7 @@ JXTA_DECLARE(Jxta_status) jxta_message_write(Jxta_message * msg, char const *mim
     for (eachElement = jxta_vector_size(msg->usr.elements) - 1; eachElement >= 0; eachElement--) {
         Jxta_message_element *anElement = NULL;
 
-        res = jxta_vector_get_object_at(msg->usr.elements, (Jxta_object **) & anElement, eachElement);
+        res = jxta_vector_get_object_at(msg->usr.elements, JXTA_OBJECT_PPTR(&anElement), eachElement);
 
         if ((JXTA_SUCCESS != res) || (NULL == anElement) || !JXTA_OBJECT_CHECK_VALID(anElement)) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Ignoring bad message element\n");
@@ -1153,7 +1153,7 @@ JXTA_DECLARE(Jxta_status) jxta_message_write(Jxta_message * msg, char const *mim
             uint32_t el_length;
             uint8_t el_nsid = (uint8_t) eachNS;
 
-            res = jxta_vector_get_object_at(elementsOfNS, (Jxta_object **) & anElement, eachElement);
+            res = jxta_vector_get_object_at(elementsOfNS, JXTA_OBJECT_PPTR(&anElement), eachElement);
 
             if ((JXTA_SUCCESS != res) || (NULL == anElement) || !JXTA_OBJECT_CHECK_VALID(anElement)) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Ignoring bad message element\n");

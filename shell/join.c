@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: join.c,v 1.10 2005/09/01 21:45:19 slowhog Exp $
+ * $Id: join.c,v 1.11 2005/11/15 18:41:30 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -216,7 +216,7 @@ void jxta_join_start(Jxta_object * appl, int argc, char **argv)
         for (eachItem = 0; eachItem < jxta_vector_size(groups); eachItem++) {
             JxtaShellObject *object = NULL;
 
-            jxta_vector_get_object_at(groups, (Jxta_object **) & object, eachItem);
+            jxta_vector_get_object_at(groups, JXTA_OBJECT_PPTR(&object), eachItem);
 
             if ((NULL != object)) {
                 JString *itsName = JxtaShellObject_name(object);

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_piperesolver_msg.c,v 1.16 2005/08/03 05:51:17 slowhog Exp $
+ * $Id: jxta_piperesolver_msg.c,v 1.17 2005/10/18 01:22:19 mathieu Exp $
  */
 
 
@@ -206,9 +206,8 @@ static void handleCached(void *userdata, const XML_Char * cd, int len)
         if (strcmp(tok, "true") == 0) {
             ad->Cached = TRUE;
         }
-    } else {
-        free(tok);
-    }
+    } 
+    free(tok);
 }
 
 static void handlePeer(void *userdata, const XML_Char * cd, int len)

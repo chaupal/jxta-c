@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_svc.h,v 1.6 2005/06/16 23:11:53 slowhog Exp $
+ * $Id: jxta_svc.h,v 1.8 2005/11/04 22:13:27 exocetrick Exp $
  */
 
 
@@ -61,15 +61,17 @@
 #include "jxta_hta.h"
 #include "jxta_tta.h"
 #include "jxta_rdv_config_adv.h"
+#include "jxta_srdi_config_adv.h"
 #include "jxta_relaya.h"
 #include "jxta_routea.h"
 
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _jxta_svc Jxta_svc;
 
 JXTA_DECLARE(Jxta_svc *) jxta_svc_new(void);
@@ -172,6 +174,18 @@ JXTA_DECLARE(void) jxta_svc_set_RdvConfig(Jxta_svc *, Jxta_RdvConfigAdvertisemen
  * Unlike similar accessors in other advs, this one may return NULL if
  * there is no such element.
  */
+JXTA_DECLARE(Jxta_SrdiConfigAdvertisement *) jxta_svc_get_SrdiConfig(Jxta_svc *);
+
+/*
+ * Unlike similar mutators in other advs, it is valid to pass NULL as a means
+ * to remove the element.
+ */
+JXTA_DECLARE(void) jxta_svc_set_SrdiConfig(Jxta_svc *, Jxta_SrdiConfigAdvertisement *);
+
+/*
+ * Unlike similar accessors in other advs, this one may return NULL if
+ * there is no such element.
+ */
 JXTA_DECLARE(Jxta_RelayAdvertisement *) jxta_svc_get_RelayAdvertisement(Jxta_svc *);
 
 /*
@@ -200,3 +214,5 @@ JXTA_DECLARE(void) jxta_svc_set_RootCert(Jxta_svc *, JString *);
 #endif
 
 #endif /* Svc_H__  */
+
+/* vim: set ts=4 sw=4 et tw=130: */

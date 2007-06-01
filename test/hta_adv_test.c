@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: hta_adv_test.c,v 1.11 2005/04/17 14:22:18 lankes Exp $
+ * $Id: hta_adv_test.c,v 1.12 2005/09/23 20:07:13 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -58,49 +58,48 @@
 #include "jxta_hta.h"
 
 
-Jxta_boolean
-hta_test(int argc, char ** argv) {
+Jxta_boolean hta_test(int argc, char **argv)
+{
 
-   JString * js;
-   Jxta_HTTPTransportAdvertisement * hta;
-   FILE *testfile;
+    JString *js;
+    Jxta_HTTPTransportAdvertisement *hta;
+    FILE *testfile;
 
-   if(argc != 2)
-     {
-       printf("usage: ad <filename>\n");
-       return -1;
-     }
+    if (argc != 2) {
+        printf("usage: ad <filename>\n");
+        return -1;
+    }
 
-   printf("here\n");
+    printf("here\n");
 
     jxta_initialize();
 
-   hta = jxta_HTTPTransportAdvertisement_new();
+    hta = jxta_HTTPTransportAdvertisement_new();
 
-   testfile = fopen (argv[1], "r");
-   jxta_HTTPTransportAdvertisement_parse_file(hta, testfile);
-   fclose(testfile);
+    testfile = fopen(argv[1], "r");
+    jxta_HTTPTransportAdvertisement_parse_file(hta, testfile);
+    fclose(testfile);
 
-   js = jstring_new_0();
+    js = jstring_new_0();
 
 
-   jxta_HTTPTransportAdvertisement_get_xml(hta,&js);
+    jxta_HTTPTransportAdvertisement_get_xml(hta, &js);
 
-   fprintf(stdout,"%s",jstring_get_string(js));
+    fprintf(stdout, "%s", jstring_get_string(js));
 
-   JXTA_OBJECT_RELEASE(hta);
+    JXTA_OBJECT_RELEASE(hta);
 
-   jxta_terminate();
-   return 0;
+    jxta_terminate();
+    return 0;
 
 
 }
 
 
 #ifdef STANDALONE
-int
-main (int argc, char **argv) {
+int main(int argc, char **argv)
+{
 
-  return hta_test(argc,argv);
+    return hta_test(argc, argv);
 }
 #endif

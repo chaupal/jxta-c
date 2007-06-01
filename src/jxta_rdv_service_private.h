@@ -50,14 +50,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_private.h,v 1.30 2005/09/15 21:54:00 slowhog Exp $
+ * $Id: jxta_rdv_service_private.h,v 1.33 2005/11/23 03:12:50 slowhog Exp $
  */
 
 
 #ifndef JXTA_RDV_SERVICE_PRIVATE_H
 #define JXTA_RDV_SERVICE_PRIVATE_H
 
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 #include "jxta_pipe_adv.h"
 #include "jxta_rdv_service.h"
 #include "jxta_service_private.h"
@@ -76,12 +76,14 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
     /**
      ** Name of the service (as being used in forming the Endpoint Address).
-     **/ extern const char JXTA_RDV_NS_NAME[];
+     **/
+extern const char JXTA_RDV_NS_NAME[];
 extern const char JXTA_RDV_SERVICE_NAME[];
 extern const char JXTA_RDV_PROPAGATE_ELEMENT_NAME[];
 extern const char JXTA_RDV_PROPAGATE_SERVICE_NAME[];
@@ -163,10 +165,21 @@ typedef struct _jxta_rdv_service _jxta_rdv_service;
 **/
 JXTA_DECLARE(void) jxta_rdv_generate_event(_jxta_rdv_service * rdv, Jxta_Rendezvous_event_type event, Jxta_id * id);
 
-JXTA_DECLARE(Jxta_endpoint_service *) jxta_rdv_service_get_endpoint_priv(_jxta_rdv_service * rdv);
+Jxta_endpoint_service * jxta_rdv_service_endpoint_svc(_jxta_rdv_service * rdv);
 
 JXTA_DECLARE(Jxta_peerview *) jxta_rdv_service_get_peerview_priv(_jxta_rdv_service * rdv);
 
+/**
+*   define the instantiator method for creating a rdv client. This should come from a header file.
+**/ 
+extern Jxta_rdv_service_provider* jxta_rdv_service_client_new(void);
+
+/**
+*   define the instantiator method for creating a rdv server. This should come from a header file.
+**/
+extern Jxta_rdv_service_provider* jxta_rdv_service_server_new(void);
+
+extern _jxta_rdv_service *jxta_rdv_service_construct(_jxta_rdv_service * rdv, const _jxta_rdv_service_methods * methods);
 /**
  * Create a new message id
  * 

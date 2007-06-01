@@ -50,8 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pa.c,v 1.78 2005/08/18 22:22:40 slowhog Exp $
+ * $Id: jxta_pa.c,v 1.85 2005/12/11 22:46:15 mmx2005 Exp $
  */
+
+static const char *const __log_cat = "PA";
 
 #include <stdio.h>
 #include <string.h>
@@ -86,7 +88,6 @@ extern "C" {
     Svc_
 };
 
-
 /** This is the representation of the 
  * actual ad in the code.  It should
  * stay opaque to the programmer, and be 
@@ -115,7 +116,7 @@ static void jxta_PA_delete(Jxta_PA *);
 static void handleJxta_PA(void *userdata, const XML_Char * cd, int len)
 {
     /* Jxta_PA * ad = (Jxta_PA*)userdata; */
-    JXTA_LOG("In Jxta_PA element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG , "In Jxta_PA element\n");
 }
 
 /*
@@ -208,8 +209,6 @@ static void handleGID(void *userdata, const XML_Char * cd, int len)
     /*  printf("In GID element\n"); */
 }
 
-
-
 static void handleName(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_PA *ad = (Jxta_PA *) userdata;
@@ -259,19 +258,17 @@ static void handleDbg(void *userdata, const XML_Char * cd, int len)
     JXTA_OBJECT_RELEASE(dbg);
 }
 
-
 static void handleSvc(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_PA *ad = (Jxta_PA *) userdata;
     Jxta_svc *svc = jxta_svc_new();
 
-    JXTA_LOG("Begin pa handleSvc (end tag may not show)\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG , "Begin pa handleSvc (end tag may not show)\n");
 
     jxta_vector_add_object_last(ad->svclist, (Jxta_object *) svc);
     JXTA_OBJECT_RELEASE(svc);
 
     jxta_advertisement_set_handlers((Jxta_advertisement *) svc, ((Jxta_advertisement *) ad)->parser, (Jxta_advertisement *) ad);
-
 }
 
  /** The get/set functions represent the public
@@ -297,7 +294,7 @@ JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_PA_add_relay_address(Jxta_PA * ad, 
     sz = jxta_vector_size(svcs);
 
     for (i = 0; i < sz; i++) {
-        jxta_vector_get_object_at(svcs, (Jxta_object **) & svc, i);
+        jxta_vector_get_object_at(svcs, (Jxta_object**)(void*)&svc, i);
         route = jxta_svc_get_RouteAdvertisement(svc);
 
         /*
@@ -310,7 +307,7 @@ JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_PA_add_relay_address(Jxta_PA * ad, 
             ap = jxta_RouteAdvertisement_get_Dest(routeRelay);
             jxta_AccessPointAdvertisement_set_PID(ap, pid);
             jxta_RouteAdvertisement_add_first_hop(route, ap);
-            JXTA_OBJECT_RELEASE(svc);
+            JXTA_OBJECT_RELEASE(pid);
             JXTA_OBJECT_RELEASE(routeRelay);
             JXTA_OBJECT_RELEASE(ap);
             break;
@@ -323,18 +320,17 @@ JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_PA_add_relay_address(Jxta_PA * ad, 
 
 JXTA_DECLARE(Jxta_status) jxta_PA_remove_relay_address(Jxta_PA * ad, Jxta_id * relayid)
 {
-
     int sz;
     int i;
     Jxta_RouteAdvertisement *route = NULL;
     Jxta_svc *svc;
     Jxta_vector *hops = jxta_vector_new(0);
-
     Jxta_vector *svcs = ad->svclist;
+
     sz = jxta_vector_size(svcs);
 
     for (i = 0; i < sz; i++) {
-        jxta_vector_get_object_at(svcs, (Jxta_object **) & svc, i);
+        jxta_vector_get_object_at(svcs, (Jxta_object**)(void*)&svc, i);
         route = jxta_svc_get_RouteAdvertisement(svc);
 
         /*
@@ -368,11 +364,10 @@ JXTA_DECLARE(Jxta_id *) jxta_PA_get_GID(Jxta_PA * ad)
 
 static char *JXTA_STDCALL jxta_PA_get_PID_string(Jxta_advertisement * ad)
 {
-
     char *res;
     JString *js = NULL;
-    jxta_id_to_jstring(((Jxta_PA *) ad)->PID, &js);
 
+    jxta_id_to_jstring(((Jxta_PA *) ad)->PID, &js);
     res = strdup(jstring_get_string(js));
     JXTA_OBJECT_RELEASE(js);
     return res;
@@ -413,7 +408,6 @@ static char *JXTA_STDCALL jxta_PA_get_Name_string(Jxta_advertisement * ad)
 {
     return strdup(jstring_get_string(((Jxta_PA *) ad)->Name));
 }
-
 
 JXTA_DECLARE(void) jxta_PA_set_Name(Jxta_PA * ad, JString * name)
 {
@@ -457,19 +451,16 @@ JXTA_DECLARE(JString *) jxta_PA_get_Dbg(Jxta_PA * ad)
     return ad->Dbg;
 }
 
-
 static char *JXTA_STDCALL jxta_PA_get_Dbg_string(Jxta_advertisement * ad)
 {
     return strdup(jstring_get_string(((Jxta_PA *) ad)->Dbg));
 }
-
 
 JXTA_DECLARE(void) jxta_PA_set_Dbg(Jxta_PA * ad, JString * dbg)
 {
     JXTA_OBJECT_SHARE(dbg);
     JXTA_OBJECT_RELEASE(ad->Dbg);
     ad->Dbg = dbg;
-
 }
 
 /*
@@ -480,6 +471,31 @@ JXTA_DECLARE(Jxta_vector *) jxta_PA_get_Svc(Jxta_PA * ad)
 {
     JXTA_OBJECT_SHARE(ad->svclist);
     return ad->svclist;
+}
+
+JXTA_DECLARE(void) jxta_PA_get_Svc_with_id(Jxta_PA * ad, Jxta_id * id, Jxta_svc** svc)
+{
+    unsigned int i;
+    unsigned int sz;
+    Jxta_vector *svcs=NULL;
+
+    svcs = jxta_PA_get_Svc(ad);
+    sz = jxta_vector_size(svcs);
+    *svc=NULL;
+    for (i = 0; i < sz; i++) {
+        Jxta_id *mcid;
+        Jxta_svc *tmpsvc = NULL;
+        jxta_vector_get_object_at(svcs, JXTA_OBJECT_PPTR(&tmpsvc), i);
+        mcid = jxta_svc_get_MCID(tmpsvc);
+        if (jxta_id_equals(mcid, id)) {
+            *svc = tmpsvc;
+            JXTA_OBJECT_RELEASE(mcid);
+            break;
+        }
+        JXTA_OBJECT_RELEASE(mcid);
+        JXTA_OBJECT_RELEASE(tmpsvc);
+    }
+    JXTA_OBJECT_RELEASE(svcs);
 }
 
 JXTA_DECLARE(void) jxta_PA_set_Svc(Jxta_PA * ad, Jxta_vector * svclist)
@@ -498,6 +514,7 @@ void svc_printer(Jxta_PA * ad, JString * js)
     int sz;
     int i;
     Jxta_vector *svcs = ad->svclist;
+
     sz = jxta_vector_size(svcs);
 
     /* Svc is a self standing obj, so its get_xml routine has to
@@ -510,8 +527,8 @@ void svc_printer(Jxta_PA * ad, JString * js)
         Jxta_svc *svc;
         JString *tmp;
 
-        JXTA_LOG("Jxta_PA: printing a Svc\n");
-        jxta_vector_get_object_at(svcs, (Jxta_object **) & svc, i);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG , "Jxta_PA: printing a Svc\n");
+        jxta_vector_get_object_at(svcs, (Jxta_object **)(void*)&svc, i);
 
         jxta_svc_get_xml(svc, &tmp);
         jstring_append_1(js, tmp);
@@ -519,8 +536,6 @@ void svc_printer(Jxta_PA * ad, JString * js)
         JXTA_OBJECT_RELEASE(tmp);
     }
 }
-
-
 
 /** Now, build an array of the keyword structs.  Since 
  * a top-level, or null state may be of interest, 
@@ -582,7 +597,6 @@ JXTA_DECLARE(Jxta_status) jxta_PA_get_xml(Jxta_PA * ad, JString ** xml)
     jstring_append_1(string, ad->Dbg);
     jstring_append_2(string, "</Dbg>\n");
 
-
     svc_printer(ad, string);
 
     jstring_append_2(string, "</jxta:PA>\n");
@@ -591,7 +605,6 @@ JXTA_DECLARE(Jxta_status) jxta_PA_get_xml(Jxta_PA * ad, JString ** xml)
 
     return JXTA_SUCCESS;
 }
-
 
 /** Get a new instance of the ad. 
  * The memory gets shredded going in to 
@@ -609,7 +622,8 @@ JXTA_DECLARE(Jxta_PA *) jxta_PA_new()
                                   jxta_PA_tags,
                                   (JxtaAdvertisementGetXMLFunc) jxta_PA_get_xml,
                                   (JxtaAdvertisementGetIDFunc) jxta_PA_get_PID,
-                                  (JxtaAdvertisementGetIndexFunc) jxta_PA_get_indexes, (FreeFunc) jxta_PA_delete);
+                                  (JxtaAdvertisementGetIndexFunc) jxta_PA_get_indexes, 
+                                  (FreeFunc) jxta_PA_delete);
 
     /* Fill in the required initialization code here. */
 
@@ -630,7 +644,6 @@ JXTA_DECLARE(Jxta_PA *) jxta_PA_new()
     return ad;
 }
 
-
 /** Shred the memory going out.  Again,
  * if there ever was a segfault (unlikely,
  * of course), the hex value dddddddd will 
@@ -639,7 +652,6 @@ JXTA_DECLARE(Jxta_PA *) jxta_PA_new()
  */
 static void jxta_PA_delete(Jxta_PA * ad)
 {
-
     JXTA_OBJECT_RELEASE(ad->Name);
     JXTA_OBJECT_RELEASE(ad->Desc);
     JXTA_OBJECT_RELEASE(ad->PID);
@@ -658,7 +670,6 @@ static void jxta_PA_delete(Jxta_PA * ad)
  * Callback to return the elements and attributes for indexing
  *
  */
-
 JXTA_DECLARE(Jxta_vector *) jxta_PA_get_indexes(Jxta_advertisement * dummy)
 {
     static const char *idx[][2] = {
@@ -671,16 +682,13 @@ JXTA_DECLARE(Jxta_vector *) jxta_PA_get_indexes(Jxta_advertisement * dummy)
     return jxta_advertisement_return_indexes(idx[0]);
 }
 
-
 JXTA_DECLARE(Jxta_status) jxta_PA_parse_charbuffer(Jxta_PA * ad, const char *buf, int len)
 {
-
     return jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
 
 JXTA_DECLARE(void) jxta_PA_parse_file(Jxta_PA * ad, FILE * stream)
 {
-
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
 

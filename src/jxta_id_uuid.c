@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_id_uuid.c,v 1.20 2005/08/18 19:01:50 slowhog Exp $
+ * $Id: jxta_id_uuid.c,v 1.22 2005/11/06 00:59:50 slowhog Exp $
  */
 
 static const char *__log_cat = "ENDPOINT";
@@ -71,7 +71,7 @@ static const char *__log_cat = "ENDPOINT";
 #include "jxta_log.h"
 #include "jxta_objecthashtable.h"
 #include "jxta_id_priv.h"
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
     /******************************************************************************/
     /*                                                                            */
@@ -196,7 +196,7 @@ static Jxta_status newPipeid2(Jxta_id ** pipe, Jxta_id * pg, unsigned char const
 static Jxta_status newModuleclassid1(Jxta_id ** mcid);
 static Jxta_status newModuleclassid2(Jxta_id ** mcid, Jxta_id * base);
 static Jxta_status newModulespecid(Jxta_id ** msid, Jxta_id * mcid);
-static Jxta_status newFromString(Jxta_id ** id, JString * jid);
+static Jxta_status new_from_str(Jxta_id ** id, const char * str, size_t len);
 static Jxta_status getUniqueportion(Jxta_id * jid, JString ** uniq);
 static void doDelete(Jxta_object * jid);
 static Jxta_boolean equals(Jxta_id * jid1, Jxta_id * jid2);
@@ -601,35 +601,21 @@ static Jxta_status newModulespecid(Jxta_id ** msid, Jxta_id * mcid)
     return JXTA_SUCCESS;
 }
 
-    /******************************************************************************/
-    /*                                                                            */
-    /******************************************************************************/
-static Jxta_status newFromString(Jxta_id ** id, JString * jid)
+/*
+ * param str: the JXTAIDUNIQ portion(after '-')
+ */
+static Jxta_status new_from_str(Jxta_id ** id, const char * str, size_t len)
 {
-    char const *srcString;
     char tmp[3] = { '\0', '\0', '\0' };
     unsigned int eachByte;
-    size_t srcLen;
     Jxta_id *result;
     _jxta_id_uuid *me;
 
-    srcString = jstring_get_string(jid);
-
-    if (NULL == srcString) {
+    if (NULL == str) {
         return JXTA_INVALID_ARGUMENT;
     }
 
-    srcString = strchr(srcString, '-');
-
-    if (NULL == srcString) {
-        return JXTA_INVALID_ARGUMENT;
-    }
-
-    srcString++;    /* skip the dash */
-
-    srcLen = strlen(srcString);
-
-    if (0 != (srcLen % 2)) {
+    if (len < (2 * FLAGSIZE) || 0 != (len % 2)) {
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -642,24 +628,21 @@ static Jxta_status newFromString(Jxta_id ** id, JString * jid)
     memset(me, 0xdb, sizeof(_jxta_id_uuid));
 
     JXTA_OBJECT_INIT(me, doDelete, 0);
-
     me->common.formatter = &uuid_format;
-
     memset(me->data, 0, IDBYTEARRAYSIZE);
 
-
     /*  do all but the last flags */
-    for (eachByte = 0; eachByte < (srcLen / 2) - FLAGSIZE; eachByte++) {
-        tmp[0] = srcString[eachByte * 2U];
-        tmp[1] = srcString[eachByte * 2U + 1U];
+    for (eachByte = 0; eachByte < (len / 2) - FLAGSIZE; eachByte++) {
+        tmp[0] = str[eachByte * 2U];
+        tmp[1] = str[eachByte * 2U + 1U];
 
         me->data[eachByte] = (unsigned char) strtoul(tmp, NULL, 16);
     }
 
     /*  do the flags  */
     for (eachByte = 0; eachByte < FLAGSIZE; eachByte++) {
-        tmp[0] = srcString[srcLen - (FLAGSIZE + eachByte) * 2U];
-        tmp[1] = srcString[srcLen - (FLAGSIZE + eachByte) * 2U + 1U];
+        tmp[0] = str[len - (FLAGSIZE + eachByte) * 2U];
+        tmp[1] = str[len - (FLAGSIZE + eachByte) * 2U + 1U];
 
         me->data[FLAGSOFFSET + eachByte] = (unsigned char) strtoul(tmp, NULL, 16);
     }
@@ -784,8 +767,10 @@ JXTAIDFormat uuid_format = {
     newModuleclassid1,
     newModuleclassid2,
     newModulespecid,
-    newFromString,
+    new_from_str,
     getUniqueportion,
     equals,
     hashcode
 };
+
+/* vim: set ts=4 sw=4 et tw=130: */

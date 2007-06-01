@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tutorial_shared.c,v 1.4 2005/01/18 19:06:08 Mathieu Exp $
+ * $Id: jxta_tutorial_shared.c,v 1.5 2005/11/15 18:41:35 slowhog Exp $
  */
 
 /*
@@ -194,7 +194,7 @@ Jxta_peer *group_get_rendezvous_peer(Jxta_PG * group)
     /* find a rendezvous -- always returns the first one found or NULL */
     size = jxta_vector_size(peers);
     for (i = 0; i < size; i++) {
-        jxta_vector_get_object_at(peers, (Jxta_object **) & peer, i);
+        jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer), i);
         if (TRUE == jxta_rdv_service_peer_is_connected(rdvSvc, peer)) {
             rdvPeer = peer;
             break;
@@ -233,7 +233,7 @@ Jxta_boolean group_wait_for_network(Jxta_PG * group)
     assert(rdv);
 
     jxta_rdv_service_add_event_listener(rdv, "NULL", NULL, networkListener);
-    status = jxta_listener_wait_for_event(networkListener, TEN_SECONDS_IN_uS, (Jxta_object **) & event);
+    status = jxta_listener_wait_for_event(networkListener, TEN_SECONDS_IN_uS, JXTA_OBJECT_PPTR(&event));
     assert(JXTA_SUCCESS == status);
 
     /* if we don't connect after the timeout (ten seconds) then give up */

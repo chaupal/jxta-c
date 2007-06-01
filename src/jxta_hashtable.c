@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_hashtable.c,v 1.28 2005/08/28 07:07:42 slowhog Exp $
+ * $Id: jxta_hashtable.c,v 1.29 2005/10/27 01:55:26 slowhog Exp $
  */
 
 
@@ -67,7 +67,7 @@
 #include <limits.h>
 #include <stdlib.h>
 
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 #include "jxta_log.h"
 #include "jxta_errno.h"

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_netpg_private.h,v 1.13 2005/06/16 23:11:45 slowhog Exp $
+ * $Id: jxta_netpg_private.h,v 1.14 2005/09/21 21:16:48 slowhog Exp $
  */
 
 #ifndef JXTA_NETPG_PRIVATE_H
@@ -63,17 +63,19 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 /*
  * Note: Jxta_netpg does not normaly need to be public, unless the
  * group has some extra features available to applications. That's why
  * there is no separate incomplete type declaration in a public
  * header file. Here we only export this type to subclassers.
- */ typedef struct _jxta_netpg Jxta_netpg;
-struct _jxta_netpg {
+ */
+typedef struct _jxta_netpg Jxta_netpg;
 
+struct _jxta_netpg {
     Extends(Jxta_stdpg);
 
 

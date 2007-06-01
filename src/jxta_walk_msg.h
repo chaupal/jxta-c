@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_walk_msg.h,v 1.4 2005/08/03 05:51:21 slowhog Exp $
+ * $Id: jxta_walk_msg.h,v 1.5 2005/09/21 21:16:52 slowhog Exp $
  */
 
 
@@ -64,9 +64,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 enum Walk_directions {
     WALK_UP = 1,
     WALK_DOWN = 2,
@@ -107,3 +108,5 @@ JXTA_DECLARE(void) LimitedRangeRdvMessage_set_SrcSvcParams(LimitedRangeRdvMessag
 #endif
 
 #endif /* __RENDEZVOUSWALKMESSAGE_H__  */
+
+/* vim: set ts=4 sw=4 et tw=130: */

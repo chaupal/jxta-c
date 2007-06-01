@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_application.c,v 1.7 2005/08/24 01:21:20 slowhog Exp $
+ * $Id: jxta_shell_application.c,v 1.8 2005/11/17 04:21:53 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -263,7 +263,7 @@ Jxta_status JxtaShellApplication_println(JxtaShellApplication * app, JString * i
     return result;
 }
 
-void JxtaShellApplication_listenerFunction(Jxta_object * obj, void *arg)
+void JXTA_STDCALL JxtaShellApplication_listenerFunction(Jxta_object * obj, void *arg)
 {
     JxtaShellApplication *app = (JxtaShellApplication *) arg;
     JString *message = (JString *) obj;

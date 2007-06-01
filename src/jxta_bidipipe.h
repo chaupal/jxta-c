@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bidipipe.h,v 1.7 2005/08/03 05:51:14 slowhog Exp $
+ * $Id: jxta_bidipipe.h,v 1.8 2005/09/21 21:16:46 slowhog Exp $
  */
 
 #ifndef __JXTA_BIDIPIPE_H__
@@ -66,8 +66,9 @@
 extern "C" {
 #endif
 #if 0                           /* to cheat indent */
-}
+};
 #endif
+
 typedef struct Jxta_bidipipe Jxta_bidipipe;
 
 enum Jxta_bidipipe_states {

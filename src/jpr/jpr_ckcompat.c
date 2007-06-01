@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_ckcompat.c,v 1.5 2005/02/08 22:48:34 bondolo Exp $
+ * $Id: jpr_ckcompat.c,v 1.7 2005/11/16 23:00:14 slowhog Exp $
  */
 
 /*
@@ -65,6 +65,8 @@
 #include <apr_errno.h>
 #include <apr.h>
 #include <apr_network_io.h>
+
+#include <string.h>
 
 #include "jpr_errno.h"
 #include "jpr_types.h"
@@ -85,11 +87,11 @@
 #error "JPR_END_USEERR != APR_OS_START_CANONERR check that jpr_errno.h is compatible with APR"
 #endif
 
-void mustCompile()
+void mustCompile(void)
 {
     apr_status_t s1 = JPR_SUCCESS;
     Jpr_status s2 = APR_SUCCESS;
-    apr_in_addr_t a1 = { 0 };
+    apr_in_addr_t a1;
     Jpr_in_addr a2 = 0;
     apr_port_t p1 = 0;
     Jpr_port p2 = 0;
@@ -103,6 +105,7 @@ void mustCompile()
     t1 = t2;
     t2 = t1;
 
+    memset(&a1, 0, sizeof(apr_in_addr_t));
     a1.s_addr = a2;
     a2 = a1.s_addr;
 

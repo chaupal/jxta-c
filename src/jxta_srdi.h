@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi.h,v 1.8 2005/08/03 05:51:19 slowhog Exp $
+ * $Id: jxta_srdi.h,v 1.10 2005/09/25 03:55:46 exocetrick Exp $
  */
 
 
@@ -66,9 +66,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _Jxta_SRDIMessage Jxta_SRDIMessage;
 typedef struct _jxta_EntryElement Jxta_SRDIEntryElement;
 
@@ -83,6 +84,7 @@ struct _jxta_EntryElement {
     JString *value;
     JString *nameSpace;
     JString *advId;
+    JString *range;
 };
 
 /**
@@ -262,7 +264,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_1(JString * key, JSt
  * @return Jxta_SRDIEntryElement 
  */
 JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_2(JString * key, JString * value, JString * nameSpace,
-                                                              JString * advId, Jxta_expiration_time expiration);
+                                                              JString * advId, JString * range, Jxta_expiration_time expiration);
 
 #ifdef __cplusplus
 #if 0

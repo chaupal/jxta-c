@@ -51,91 +51,92 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: http_client_test.c,v 1.11 2005/04/17 14:22:18 lankes Exp $
+ * $Id: http_client_test.c,v 1.12 2005/09/23 20:07:13 slowhog Exp $
  */
 
 
 #include "jxta.h"
 #include "../src/jxta_transport_http_client.h"
 
-int main (int argc, char** argv) {
+int main(int argc, char **argv)
+{
 
-  apr_uri_t uri;
-  apr_pool_t *pool;
-  HttpClient     *con;
-  HttpRequest    *req;
-  HttpResponse   *res;
-  /* char *content_length_header; */
-  /* apr_ssize_t content_length; */
-  char           buf[8192];
-  apr_ssize_t buf_size = 8192;
-  int i;
+    apr_uri_t uri;
+    apr_pool_t *pool;
+    HttpClient *con;
+    HttpRequest *req;
+    HttpResponse *res;
+    /* char *content_length_header; */
+    /* apr_ssize_t content_length; */
+    char buf[8192];
+    apr_ssize_t buf_size = 8192;
+    int i;
 
     jxta_initialize();
-  
-  if (argc < 2) {
-    printf("Usage: ./http_test <uri>\n");
-    printf("HTTP example: ./http_client http://127.0.0.1:80/~user/index.html\n");
-    printf("HTTP example: ./http_client http://127.0.0.1:80/\n");
-    exit(0);
-  }
-  
-  apr_pool_create (&pool, NULL);
 
-  apr_uri_parse (pool, argv[1], &uri);
+    if (argc < 2) {
+        printf("Usage: ./http_test <uri>\n");
+        printf("HTTP example: ./http_client http://127.0.0.1:80/~user/index.html\n");
+        printf("HTTP example: ./http_client http://127.0.0.1:80/\n");
+        exit(0);
+    }
 
-  con = http_client_new (NULL, 0, uri.hostname, uri.port, NULL );
-  
+    apr_pool_create(&pool, NULL);
 
-  if (APR_SUCCESS == http_client_connect (con)) {
+    apr_uri_parse(pool, argv[1], &uri);
 
-    for (i = 0;  i < 5;  i++) {
+    con = http_client_new(NULL, 0, uri.hostname, uri.port, NULL);
 
-      req = http_client_start_request (con, "GET", uri.path, NULL);
 
-      res = http_request_done (req);
+    if (APR_SUCCESS == http_client_connect(con)) {
+
+        for (i = 0; i < 5; i++) {
+
+            req = http_client_start_request(con, "GET", uri.path, NULL);
+
+            res = http_request_done(req);
 
 /*      printf ("Response status: %s %d %s\n", 
 	      res->protocol, 
 	      res->status,
 	      res->status_msg);
 */
-      /*
-      if (res->status == HTTP_NOT_CONNECTED) {
-      */
-      if (http_response_get_status(res) == HTTP_NOT_CONNECTED) {
-	http_client_close (con);
-	if (APR_SUCCESS == http_client_connect (con)) {
-	  printf ("reconnected\n");
-	  continue;
-	} else {
-	  printf ("couldn't reconnect\n");
-	  break;
-	}
-      } else { 
+            /*
+               if (res->status == HTTP_NOT_CONNECTED) {
+             */
+            if (http_response_get_status(res) == HTTP_NOT_CONNECTED) {
+                http_client_close(con);
+                if (APR_SUCCESS == http_client_connect(con)) {
+                    printf("reconnected\n");
+                    continue;
+                } else {
+                    printf("couldn't reconnect\n");
+                    break;
+                }
+            } else {
 
 /*	printf ("Response Headers: %s\n", res->headers);
        	printf ("Response Content-Length: %d\n", res->content_length);
 */
-	while (APR_SUCCESS ==http_response_read(res, buf, &buf_size)){
-	  
-	  printf ("Response read %d bytes\n", buf_size);
-	
-	  buf[buf_size] = '\0';
-	  
-	  printf ("%s\n",buf); 
-	  
-	  buf_size = 8192;
-	}
-      }
+                while (APR_SUCCESS == http_response_read(res, buf, &buf_size)) {
 
-      apr_sleep (10);
+                    printf("Response read %d bytes\n", buf_size);
+
+                    buf[buf_size] = '\0';
+
+                    printf("%s\n", buf);
+
+                    buf_size = 8192;
+                }
+            }
+
+            apr_sleep(10);
+        }
+    } else {
+        printf("Could not connect.");
+
     }
-  } else {
-    printf ("Could not connect.");
-    
-  }
 
     jxta_terminate();
-  return 0;
+    return 0;
 }

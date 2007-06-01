@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_address.h,v 1.14 2005/07/26 01:30:59 slowhog Exp $
+ * $Id: jxta_endpoint_address.h,v 1.17 2005/10/28 22:30:02 mathieu Exp $
  */
 
 
@@ -60,21 +60,23 @@
 
 #include "jxta_object.h"
 #include "jstring.h"
+#include "jxta_id.h"
 
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 /**
  ** Jxta_endpoint_address is the incomplete type refering to an object
  ** containing a JXTA Endpoint Address.
  **
  ** This is a Jxta_object: JXTA_OBJECT_SHARE and JXTA_OBJECT_RELEASE
  ** must be used when necessary.
- **/ typedef const struct _jxta_endpoint_address Jxta_endpoint_address;
-
+ **/
+typedef const struct _jxta_endpoint_address Jxta_endpoint_address;
 
 /**
  ** Creates a new Jxta_endpoint_address of a URI.
@@ -98,7 +100,7 @@ JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new(const char *s);
  ** @return an Jxta_endpoint_address* pointing to the new Jxta_endpoint_addres.
  ** NULL is returned when the URI was incorrect.
  **/
-JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new1(JString * s);
+JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new_1(JString * s);
 
 /**
  ** Creates a new Jxta_endpoint_address.
@@ -113,16 +115,28 @@ JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new1(JString * s);
  ** @return an Jxta_endpoint_address* pointing to the new Jxta_endpoint_address.
  ** NULL is returned when the URI was incorrect.
  **/
-JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new2(const char *protocol_name,
-                                                                 const char *protocol_address,
-                                                                 const char *service_name, const char *service_params);
+JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new_2(const char *protocol_name,
+                                                                  const char *protocol_address,
+                                                                  const char *service_name, const char *service_params);
+
+/**
+ ** Creates a new Jxta_endpoint_address with a peer ID.
+ **
+ ** @param peer_id a pointer to the peer ID
+ ** @param service_name name of the service
+ ** @param service_param parameter of the service
+ ** @return an Jxta_endpoint_address* pointing to the new Jxta_endpoint_addres.
+ ** NULL is returned when the URI was incorrect.
+ **/
+JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new_3(Jxta_id * peer_id,
+                                                                  const char *service_name, const char *service_params);
 
 /**
  ** Get the protocol name.
  **
  ** The pointer returned by this function points to an internal buffer of the
  ** Jxta_endpoint_address, which is valid only as long as the Jxta_endpoint_address
- ** is valid.
+ ** is valid. 
  **
  ** @param addr pointer to a Jxta_endpoint_address.
  ** @returns a pointer to a string containing the protocol name.
@@ -184,6 +198,26 @@ JXTA_DECLARE(size_t) jxta_endpoint_address_size(Jxta_endpoint_address * addr);
 JXTA_DECLARE(char *) jxta_endpoint_address_to_string(Jxta_endpoint_address * addr);
 
 /**
+ ** Returns a newly created null terminated string that contains the TCP:port
+ ** address of the Jxta_endpoint_address. The string returned by this
+ ** function must be freed using free()
+ **
+ ** @param addr pointer to a Jxta_endpoint_address.
+ ** @returns a pointer to a string containing the TCP:port address only
+ **/
+JXTA_DECLARE(char *) jxta_endpoint_address_get_transport_addr(Jxta_endpoint_address * addr);
+
+/**
+ * Used internally by JXTA when direction communications between peers are available.
+ * Returns only the service name and service params. The string returned by this function 
+ * must be freed using free()
+ *
+ * @param addr pointer to a Jxta_endpoint_address.
+ * @returns a pointer to a string containing the service name and param part of the address only
+ */
+JXTA_DECLARE(char *) jxta_endpoint_address_get_recipient_cstr(Jxta_endpoint_address * addr);
+
+/**
  ** Checks of two Jxta_endpoint_address refers to the same Endpoint Address.
  **
  ** @param addr1 pointer to a Jxta_endpoint_address
@@ -192,15 +226,9 @@ JXTA_DECLARE(char *) jxta_endpoint_address_to_string(Jxta_endpoint_address * add
  **/
 JXTA_DECLARE(Jxta_boolean) jxta_endpoint_address_equals(Jxta_endpoint_address * addr1, Jxta_endpoint_address * addr2);
 
-/**
- ** Get the transport protocol portion of an endpoint address as a NULL-terminate string. The caller is responsible to call free()
- ** function on the returned string.
- **
- ** @param me pointer to a Jxta_endpoint_address
- ** @return A pointer to a NULL terminate string containe protocol portion.
- **/
-JXTA_DECLARE(char *) jxta_endpoint_address_get_transport_addr(Jxta_endpoint_address * me);
-
+/* deprecated APIs */
+#define jxta_endpoint_address_new1 jxta_endpoint_address_new_1
+#define jxta_endpoint_address_new2 jxta_endpoint_address_new_2
 
 #ifdef __cplusplus
 #if 0

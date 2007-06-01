@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_membership_service.h,v 1.6 2005/06/16 23:11:44 slowhog Exp $
+ * $Id: jxta_membership_service.h,v 1.7 2005/09/21 21:16:47 slowhog Exp $
  */
 
 
@@ -66,27 +66,26 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _jxta_membership_service const Jxta_membership_service;
 
 typedef struct _jxta_membership_authenticator const Jxta_membership_authenticator;
 
-JXTA_DECLARE(Jxta_status)
-    jxta_membership_service_apply(Jxta_membership_service * self, Jxta_credential * authCred, Jxta_membership_authenticator ** auth);
+JXTA_DECLARE(Jxta_status) jxta_membership_service_apply(Jxta_membership_service * self, Jxta_credential * authCred,
+                                                        Jxta_membership_authenticator ** auth);
 
-JXTA_DECLARE(Jxta_status)
-    jxta_membership_service_join(Jxta_membership_service * self, Jxta_membership_authenticator * auth, Jxta_credential ** newcred);
+JXTA_DECLARE(Jxta_status) jxta_membership_service_join(Jxta_membership_service * self, Jxta_membership_authenticator * auth,
+                                                       Jxta_credential ** newcred);
 
-JXTA_DECLARE(Jxta_status)
-    jxta_membership_service_resign(Jxta_membership_service * self);
+JXTA_DECLARE(Jxta_status) jxta_membership_service_resign(Jxta_membership_service * self);
 
-JXTA_DECLARE(Jxta_status)
-    jxta_membership_service_get_currentcreds(Jxta_membership_service * self, Jxta_vector ** creds);
+JXTA_DECLARE(Jxta_status) jxta_membership_service_get_currentcreds(Jxta_membership_service * self, Jxta_vector ** creds);
 
-JXTA_DECLARE(Jxta_status)
-    jxta_membership_service_makecred(Jxta_membership_service * self, JString * somecred, Jxta_credential ** cred);
+JXTA_DECLARE(Jxta_status) jxta_membership_service_makecred(Jxta_membership_service * self, JString * somecred,
+                                                           Jxta_credential ** cred);
 
 
 #ifdef __cplusplus

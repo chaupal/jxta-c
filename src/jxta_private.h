@@ -50,21 +50,22 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_private.h,v 1.19 2005/06/16 23:11:48 slowhog Exp $
+ * $Id: jxta_private.h,v 1.21 2005/10/27 01:55:28 slowhog Exp $
  **/
 #ifndef __JXTA_PRIVATE_H__
 #define __JXTA_PRIVATE_H__
 
 #include <apr_uuid.h>
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 #include "jxta_message.h"
 
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _JxtaRelayService JxtaRelayService;
 
 JxtaRelayService *jxta_relay_service_new(apr_pool_t * pool);

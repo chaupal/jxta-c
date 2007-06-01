@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_stdpg_private.h,v 1.8 2005/06/16 23:11:52 slowhog Exp $
+ * $Id: jxta_stdpg_private.h,v 1.11 2005/10/13 19:52:35 mathieu Exp $
  */
 
 #ifndef JXTA_STDPG_PRIVATE_H
@@ -64,15 +64,18 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 /*
  * Note: Jxta_stdpg does not normaly need to be public, unless the
  * group has some extra features available to applications. That's why
  * there is no separate incomplete type declaration in a public
  * header file. Here we only export this type to subclassers.
- */ typedef struct _jxta_stdpg Jxta_stdpg;
+ */
+typedef struct _jxta_stdpg Jxta_stdpg;
+
 struct _jxta_stdpg {
 
     Extends(Jxta_PG);
@@ -100,12 +103,15 @@ struct _jxta_stdpg {
     Jxta_rdv_service *rendezvous;
     Jxta_peerinfo_service *peerinfo;
     Jxta_srdi_service *srdi;
+    Jxta_cm *cm;
 
-    /*
-     * The table of all services (not in use yet).
+    /**
+     * The tables of all custom-services 
      */
-    Jxta_hashtable *services;
-
+    Jxta_hashtable *services;        /** This hashtable contains (MSID, Jxta_module) */
+    Jxta_hashtable *services_name;   /** This hashtable contains (MSID, code_to_load as jstring) */ 
+    apr_hash_t     *services_handle; /** This hashtable contains (MSID, apr_handle to the lib) */ 
+    apr_pool_t *pool;
 };
 
 /*
@@ -173,6 +179,13 @@ Jxta_status jxta_stdpg_init_modules(Jxta_module * self);
  */
 void jxta_stdpg_start_modules(Jxta_module * self);
 
+/**
+ * Set the config adv for this peer group.
+ * This is mainly used by net peer group
+ * to give the stdpg group, access to the 
+ * PlatformConfig file.
+ */
+void jxta_stdpg_set_configadv(Jxta_module * self, Jxta_PA * config_adv);
 
 #ifdef __cplusplus
 #if 0

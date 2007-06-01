@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta.c,v 1.11 2005/06/16 23:11:39 slowhog Exp $
+ * $Id: jxta.c,v 1.13 2005/11/12 18:09:37 exocetrick Exp $
  */
 
 #include <apr_general.h>
@@ -58,6 +58,7 @@
 #include "jxta.h"
 #include "jxta_log.h"
 #include "jxta_private.h"
+#include "jxta_advertisement_priv.h"
 
 /**
  * Briefly, touching jxta jxta touches apr, which requires a call
@@ -65,6 +66,7 @@
  */
 
 static unsigned int _jxta_initialized = 0;
+int _jxta_return = 1;
 #ifdef WIN32
 static int _targc = 0;
 static char **_targv = NULL;
@@ -93,6 +95,7 @@ JXTA_DECLARE(void) jxta_initialize(void)
     jpr_initialize();
     jxta_object_initialize();
     jxta_log_initialize();
+    jxta_advertisement_register_global_handlers();
     jxta_PG_module_initialize();
 }
 

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tcp_message_packet_header.h,v 1.4 2005/06/16 23:11:53 slowhog Exp $
+ * $Id: jxta_tcp_message_packet_header.h,v 1.6 2005/11/03 07:31:51 mathieu Exp $
  */
 
 #ifndef __JXTA_MESSAGE_PACKET_HEADER_H__
@@ -62,9 +62,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 #ifndef JXTA_LONG_LONG
 #ifdef WIN32
 typedef LONGLONG JXTA_LONG_LONG;
@@ -75,16 +76,13 @@ typedef long long JXTA_LONG_LONG;
 
 #define	APP_MSG		 "application/x-jxta-msg"
 
-
-
+#define HEADER_BUFSIZE  1024
 
 /********************************************************************************/
 /*                                                                              */
 /********************************************************************************/
-Jxta_status JXTA_STDCALL message_packet_header_read(ReadFunc read_func, void *stream, JXTA_LONG_LONG * msg_size,
+Jxta_status JXTA_STDCALL message_packet_header_read(char *header_buf, ReadFunc read_func, void *stream, JXTA_LONG_LONG * msg_size,
                                                     Jxta_boolean is_multicast, char **src_addr);
-
-
 
 /********************************************************************************/
 /*                                                                              */

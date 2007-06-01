@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_walk_msg.c,v 1.7 2005/08/18 19:01:52 slowhog Exp $
+ * $Id: jxta_walk_msg.c,v 1.9 2005/11/23 22:09:03 exocetrick Exp $
  */
 
 static const char *__log_cat = "WalkMsg";
@@ -62,7 +62,7 @@ static const char *__log_cat = "WalkMsg";
 #include "jxta_log.h"
 #include "jstring.h"
 #include "jxta_xml_util.h"
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 #include "jxta_walk_msg.h"
 
@@ -144,8 +144,9 @@ static void handleDir(void *userdata, const XML_Char * cd, int len)
 static void handleSrcPeerID(void *userdata, const XML_Char * cd, int len)
 {
     LimitedRangeRdvMessage *ad = (LimitedRangeRdvMessage *) userdata;
-
-    ad->src_peer_id = jstring_new_1(len);
+    if (NULL == ad->src_peer_id) {
+        ad->src_peer_id = jstring_new_1(len);
+    }
     jstring_append_0(ad->src_peer_id, cd, len);
     jstring_trim(ad->src_peer_id);
 }
@@ -153,8 +154,9 @@ static void handleSrcPeerID(void *userdata, const XML_Char * cd, int len)
 static void handleSrcSvcName(void *userdata, const XML_Char * cd, int len)
 {
     LimitedRangeRdvMessage *ad = (LimitedRangeRdvMessage *) userdata;
-
-    ad->svc_name = jstring_new_1(len);
+    if (NULL == ad->svc_name) {
+        ad->svc_name = jstring_new_1(len);
+    }
     jstring_append_0(ad->svc_name, cd, len);
     jstring_trim(ad->svc_name);
 }
@@ -162,8 +164,9 @@ static void handleSrcSvcName(void *userdata, const XML_Char * cd, int len)
 static void handleSrcSvcParams(void *userdata, const XML_Char * cd, int len)
 {
     LimitedRangeRdvMessage *ad = (LimitedRangeRdvMessage *) userdata;
-
-    ad->svc_params = jstring_new_1(len);
+    if (NULL == ad->svc_params) {
+        ad->svc_params = jstring_new_1(len);
+    }
     jstring_append_0(ad->svc_params, cd, len);
     jstring_trim(ad->svc_params);
 }

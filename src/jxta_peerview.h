@@ -50,71 +50,55 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peerview.h,v 1.11 2005/08/31 06:19:40 slowhog Exp $
+ * $Id: jxta_peerview.h,v 1.15 2005/10/27 01:55:28 slowhog Exp $
  */
 
 
 #ifndef JXTA_PEERVIEW_H
 #define JXTA_PEERVIEW_H
 
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 #include "jxta_id.h"
-#include "jxta_pipe_adv.h"
-#include "jxta_peergroup.h"
+#include "jxta_listener.h"
+#include "jxta_vector.h"
 
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
-    /**
-     ** Name of the service (as being used in forming the Endpoint Address).
-     **/ extern const char JXTA_PEERVIEW_NAME[];
-extern const char JXTA_PEERVIEW_RDVADV_ELEMENT_NAME[];
-extern const char JXTA_PEERVIEW_RDVRESP_ELEMENT_NAME[];
-extern const char JXTA_PEERVIEW_FAILURE_ELEMENT_NAME[];
-extern const char JXTA_PEERVIEW_CACHED_ELEMENT_NAME[];
-extern const char JXTA_PEERVIEW_EDGE_ELEMENT_NAME[];
-extern const char JXTA_PEERVIEW_RESPONSE_ELEMENT_NAME[];
 
 typedef struct _jxta_peerview const Jxta_peerview;
 
-JXTA_DECLARE(Jxta_peerview *) jxta_peerview_new(void);
+/**
+ * The Peerview event types
+ **/
+typedef enum Jxta_Peerview_event_types {
+    JXTA_PEERVIEW_ADD = 1,
+    JXTA_PEERVIEW_REMOVE = 2
+} Jxta_Peerview_event_type;
 
 /**
-*   Initializes the Peerview. The Peerview is usable if init succeeds.
-*
-*   @param pv    The peerview.
-*   @param group The group in which the peerview is operating.
-**/
-JXTA_DECLARE(Jxta_status) jxta_peerview_init(Jxta_peerview * pv, Jxta_PG * group, JString * name);
+ *    The event structure
+ */
+typedef struct _jxta_peerview_event {
+    JXTA_OBJECT_HANDLE;
+    Jxta_Peerview_event_type event;
+    Jxta_id *pid;
+} Jxta_peerview_event;
 
-JXTA_DECLARE(Jxta_status) jxta_peerview_start(Jxta_peerview * pv);
-
-JXTA_DECLARE(Jxta_status) jxta_peerview_stop(Jxta_peerview * peerview);
-
-JXTA_DECLARE(Jxta_status) jxta_peerview_send_rdv_probe(Jxta_peerview * self, Jxta_endpoint_address * dest);
-
-JXTA_DECLARE(Jxta_status) jxta_peerview_send_rdv_request(Jxta_peerview * pv, Jxta_boolean announce, Jxta_boolean failure);
-
-JXTA_DECLARE(Jxta_status) jxta_peerview_add_seed(Jxta_peerview * peerview, Jxta_peer * peer);
 
 JXTA_DECLARE(Jxta_status) jxta_peerview_get_localview(Jxta_peerview * pv, Jxta_vector ** view);
+
 JXTA_DECLARE(unsigned int) jxta_peerview_get_localview_size(Jxta_peerview * pv);
 
-JXTA_DECLARE(Jxta_status) jxta_peerview_probe_cached_rdvadv(Jxta_peerview * pv, Jxta_RdvAdvertisement * rdva );
+JXTA_DECLARE(Jxta_status) jxta_peerview_add_event_listener(Jxta_peerview * pv, const char *serviceName,
+							   const char *serviceParam, void *listener);
 
-JXTA_DECLARE(Jxta_status) jxta_peerview_get_down_peer(Jxta_peerview * pv, Jxta_peer ** peer);
-JXTA_DECLARE(Jxta_status) jxta_peerview_get_self_peer(Jxta_peerview * pv, Jxta_peer ** peer);
-JXTA_DECLARE(Jxta_status) jxta_peerview_get_up_peer(Jxta_peerview * pv, Jxta_peer ** peer);
-
-JXTA_DECLARE(JString *) jxta_peerview_get_name(Jxta_peerview * pv);
-
-JXTA_DECLARE(Jxta_boolean) jxta_peerview_get_happy_size(Jxta_peerview * pv);
-
-JXTA_DECLARE(Jxta_vector *) jxta_peerview_get_seeds(Jxta_peerview * self);
+JXTA_DECLARE(Jxta_status) jxta_peerview_remove_event_listener(Jxta_peerview * pv, const char *serviceName,
+							      const char *serviceParam, Jxta_listener **listener);
 
 #ifdef __cplusplus
 #if 0

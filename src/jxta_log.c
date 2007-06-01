@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * $Id: jxta_log.c,v 1.18 2005/08/03 05:51:16 slowhog Exp $
+ * $Id: jxta_log.c,v 1.20 2005/11/22 22:00:58 mmx2005 Exp $
  */
 
 #include <stdio.h>
@@ -412,7 +412,7 @@ JXTA_DECLARE(void)
 JXTA_DECLARE(Jxta_status)
     jxta_log_selector_add_category(Jxta_log_selector * self, const char *cat)
 {
-    int i;
+    unsigned int i;
     void *p = NULL;
     Jxta_status rv;
 
@@ -449,7 +449,7 @@ JXTA_DECLARE(Jxta_status)
 JXTA_DECLARE(Jxta_status)
     jxta_log_selector_remove_category(Jxta_log_selector * self, const char *cat)
 {
-    int i;
+    unsigned int i;
 
     if (NULL == self) {
         return JXTA_INVALID_ARGUMENT;
@@ -584,7 +584,7 @@ JXTA_DECLARE(Jxta_boolean)
         return FALSE;
     }
 
-    rv = (locate_category(self, cat, 0) == self->category_count) ?
+    rv = ((size_t)(locate_category(self, cat, 0)) == self->category_count) ?
         ((self->negative_category_list) ? TRUE : FALSE) : ((self->negative_category_list) ? FALSE : TRUE);
 
     jpr_thread_mutex_unlock(self->mutex);
@@ -700,9 +700,9 @@ JXTA_DECLARE(Jxta_status)
     apr_time_exp_lt(&tm, apr_time_now());
     apr_strftime(tm_str, &tm_str_sz, 32, "%m/%d %H:%M:%S", &tm);
 #ifdef WIN32
-    fprintf(self->thefile, "[%s]-%s-[%s][TID: %u] - ", cat, _jxta_log_level_labels[level], tm_str, GetCurrentThreadId());
+    fprintf(self->thefile, "[%s]-%s-[%s:%d][TID: %u] - ", cat, _jxta_log_level_labels[level], tm_str, tm.tm_usec, GetCurrentThreadId());
 #else
-    fprintf(self->thefile, "[%s]-%s-[%s][TID: %p] - ", cat, _jxta_log_level_labels[level], tm_str, apr_os_thread_current());
+    fprintf(self->thefile, "[%s]-%s-[%s:%d][TID: %p] - ", cat, _jxta_log_level_labels[level], tm_str, tm.tm_usec, apr_os_thread_current());
 #endif
     rv = (vfprintf(self->thefile, fmt, ap) < 0) ? JXTA_FAILED : JXTA_SUCCESS;
     fflush(self->thefile);

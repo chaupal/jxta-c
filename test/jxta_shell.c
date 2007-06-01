@@ -60,32 +60,32 @@ static char *line_read = (char *) NULL;
 /* Read a string, and return a pointer to it.
  * Returns NULL on EOF. 
  */
-char *
-rl_gets () {
+char *rl_gets()
+{
 
-   if (line_read) {
-	free (line_read);
-	line_read = (char *) NULL;
-   }
+    if (line_read) {
+        free(line_read);
+        line_read = (char *) NULL;
+    }
 
-   line_read = readline (prompt);
+    line_read = readline(prompt);
 
-   if (line_read && *line_read) {
-      add_history (line_read);
-   }
+    if (line_read && *line_read) {
+        add_history(line_read);
+    }
 
-   return (line_read);
+    return (line_read);
 }
 
 
 /* Leftover from original work.  Could be useful,
  * delete later if not.
  */
-void 
-getenv_func (char *args) {
+void getenv_func(char *args)
+{
 
-   printf ("Executed getenv, args: %s\n", args);
-   printf ("%s\n", getenv ("PATH"));
+    printf("Executed getenv, args: %s\n", args);
+    printf("%s\n", getenv("PATH"));
 }
 
 
@@ -93,49 +93,49 @@ getenv_func (char *args) {
 
 struct _command_tab {
 
-   char *command;
-   void *(*command_func) (char *);
+    char *command;
+    void *(*command_func) (char *);
 };
 
 
 
-void
-rdvstatus_func() {
-  printf("rdvstatus: \n");
+void rdvstatus_func()
+{
+    printf("rdvstatus: \n");
 }
 
 
-void
-peers_func() {
-  printf("peers: \n");
+void peers_func()
+{
+    printf("peers: \n");
 }
 
 
-void
-groups_func() {
-  printf("groups: \n");
+void groups_func()
+{
+    printf("groups: \n");
 }
 
 
-void
-join_func() {
-  printf("join: \n");
+void join_func()
+{
+    printf("join: \n");
 }
 
 
-void
-talk_func() {
-  printf("talk: \n");
+void talk_func()
+{
+    printf("talk: \n");
 }
 
 
 struct _command_tab com_tab[] = {
-   {"rdvstatus", *rdvstatus_func},
-   {"peers", *peers_func},
-   {"groups", *groups_func},
-   {"join", *join_func},
-   {"talk",*talk_func},
-   {NULL, NULL}
+    {"rdvstatus", *rdvstatus_func},
+    {"peers", *peers_func},
+    {"groups", *groups_func},
+    {"join", *join_func},
+    {"talk", *talk_func},
+    {NULL, NULL}
 };
 
 
@@ -145,47 +145,47 @@ struct _command_tab com_tab[] = {
  * then match it against commands in the dispatch 
  * table.
  */
-static int
-dispatch (char *line) {
+static int dispatch(char *line)
+{
 
-   int i = 0;
-   char *command = NULL;
-   char *args = NULL;
+    int i = 0;
+    char *command = NULL;
+    char *args = NULL;
 
-   if (strlen(line) == 0) {
-      return 0;
-   }
-   
-   command = strtok (line, " ");
-   args = strtok (NULL, "\n");
+    if (strlen(line) == 0) {
+        return 0;
+    }
 
-   while (com_tab[i].command != NULL) {
-      if (!strcmp (command, com_tab[i].command)) {
-         com_tab[i].command_func (args);
-	 return 1;
-      }
-      i++;
-   }
+    command = strtok(line, " ");
+    args = strtok(NULL, "\n");
 
-   printf ("%s: command not found\n", command);
-   return 0;
+    while (com_tab[i].command != NULL) {
+        if (!strcmp(command, com_tab[i].command)) {
+            com_tab[i].command_func(args);
+            return 1;
+        }
+        i++;
+    }
+
+    printf("%s: command not found\n", command);
+    return 0;
 }
 
 
 
 extern char **environ;
 
-int
-main () {
+int main()
+{
 
-   char *line;
-   int retval;
+    char *line;
+    int retval;
 
-   while (1) {
-       line = rl_gets ();
-       if (line)
-        retval = dispatch (line);
-   }
+    while (1) {
+        line = rl_gets();
+        if (line)
+            retval = dispatch(line);
+    }
 
-   return 0;
+    return 0;
 }

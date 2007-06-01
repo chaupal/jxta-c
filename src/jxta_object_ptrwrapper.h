@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object_ptrwrapper.h,v 1.5 2005/06/16 23:11:45 slowhog Exp $
+ * $Id: jxta_object_ptrwrapper.h,v 1.6 2005/09/21 21:16:48 slowhog Exp $
  */
 
 #ifndef __JXTAPTRWRAPPER_H__
@@ -64,9 +64,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _JxtaObjectPtrWrapper const *JxtaObjectPtrWrapper;
 
     /**

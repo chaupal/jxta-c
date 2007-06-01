@@ -50,9 +50,8 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pa.h,v 1.9 2005/08/18 22:22:40 slowhog Exp $
+ * $Id: jxta_pa.h,v 1.12 2005/11/26 07:28:37 mmx2005 Exp $
  */
-
 
 #ifndef JXTA_PA_H
 #define JXTA_PA_H
@@ -61,19 +60,19 @@
 #include "jxta_advertisement.h"
 #include "jxta_id.h"
 #include "jxta_rdv.h"
-
+#include "jxta_svc.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 #if 0
-}
+};
 #endif
+
 typedef struct _jxta_PA Jxta_PA;
 
 #define PA_EXPIRATION_LIFE  (Jxta_expiration_time)  (1000L * 60L * 60L * 24L)   /* 1 day */
 #define PA_REMOTE_EXPIRATION (Jxta_expiration_time) (1000L * 60L * 60L * 2L)    /* 2 hours */
-
 
 /**
  * Allocate a new peer advertisement Jxta_PA.
@@ -83,8 +82,6 @@ typedef struct _jxta_PA Jxta_PA;
  * @return Pointer to peer advertisement Jxta_PA.
  */
 JXTA_DECLARE(Jxta_PA *) jxta_PA_new(void);
-
-
 
 /**
  * Constructs a representation of a peer advertisement in
@@ -149,7 +146,6 @@ JXTA_DECLARE(void) jxta_PA_parse_file(Jxta_PA *, FILE * stream);
  */
 JXTA_DECLARE(Jxta_id *) jxta_PA_get_PID(Jxta_PA *);
 
-
 /**
  * Sets a Jxta_id associated with a peer advertisement.
  *
@@ -160,7 +156,6 @@ JXTA_DECLARE(Jxta_id *) jxta_PA_get_PID(Jxta_PA *);
  */
 JXTA_DECLARE(void) jxta_PA_set_PID(Jxta_PA *, Jxta_id *);
 
-
 /**
  * Gets the group Jxta_id associated with the peer advertisement.
  *
@@ -169,7 +164,6 @@ JXTA_DECLARE(void) jxta_PA_set_PID(Jxta_PA *, Jxta_id *);
  * @return Jxta_id * pointer to peer group id.
  */
 JXTA_DECLARE(Jxta_id *) jxta_PA_get_GID(Jxta_PA *);
-
 
 /**
  * Sets the peer group id associated with the peer advertisement.
@@ -181,7 +175,6 @@ JXTA_DECLARE(Jxta_id *) jxta_PA_get_GID(Jxta_PA *);
  * @return void Doesn't return anything.
  */
 JXTA_DECLARE(void) jxta_PA_set_GID(Jxta_PA *, Jxta_id *);
-
 
 /**
  * Gets the name of the peer.
@@ -202,7 +195,6 @@ JXTA_DECLARE(JString *) jxta_PA_get_Name(Jxta_PA *);
  */
 JXTA_DECLARE(void) jxta_PA_set_Name(Jxta_PA *, JString *);
 
-
 /**
  * Gets the peer description.
  *
@@ -222,11 +214,10 @@ JXTA_DECLARE(JString *) jxta_PA_get_Desc(Jxta_PA * ad);
  */
 JXTA_DECLARE(void) jxta_PA_set_Desc(Jxta_PA * ad, JString * desc);
 
-
 /**
  * Gets the debugging status for the peer advertisement.
  *
- * @param Jxta_PA * peer advertisment.
+ * @param Jxta_PA * peer advertisement.
  *
  * @return JString * containing peer debugging status.
  */
@@ -235,7 +226,7 @@ JXTA_DECLARE(JString *) jxta_PA_get_Dbg(Jxta_PA *);
 /**
  * Sets the debugging status for the peer advertisement.
  *
- * @param Jxta_PA * peer advertisment.
+ * @param Jxta_PA * peer advertisement.
  * @param JString * containing peer debugging status.
  *
  * @return void Doesn't return anything.
@@ -252,6 +243,15 @@ JXTA_DECLARE(void) jxta_PA_set_Dbg(Jxta_PA *, JString *);
 JXTA_DECLARE(Jxta_vector *) jxta_PA_get_Svc(Jxta_PA *);
 
 /**
+ * Get a particular service with the service ID
+ *
+ * @param Jxta_PA * peer advertisement.
+ * @param Jxta_id * Id requested
+ * @param Jxta_svc ** location to store the service
+ */
+JXTA_DECLARE(void) jxta_PA_get_Svc_with_id(Jxta_PA *, Jxta_id *, Jxta_svc **);
+
+/**
  * Sets the services parameters.
  *
  * @param Jxta_PA * peer advertisement
@@ -263,7 +263,6 @@ JXTA_DECLARE(Jxta_vector *) jxta_PA_get_Svc(Jxta_PA *);
  */
 JXTA_DECLARE(void) jxta_PA_set_Svc(Jxta_PA *, Jxta_vector *);
 
-
 /**
  * Add first hop to route advertisement of the endpoint service
  *
@@ -274,7 +273,6 @@ JXTA_DECLARE(void) jxta_PA_set_Svc(Jxta_PA *, Jxta_vector *);
  */
 JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_PA_add_relay_address(Jxta_PA *, Jxta_RdvAdvertisement *);
 
-
 /**
  * Remove the endpoint relay address
  *
@@ -284,7 +282,6 @@ JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_PA_add_relay_address(Jxta_PA *, Jxt
  * @return Jxta_status
  */
 JXTA_DECLARE(Jxta_status) jxta_PA_remove_relay_address(Jxta_PA *, Jxta_id *);
-
 
 #ifdef __cplusplus
 #if 0

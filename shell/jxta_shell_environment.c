@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_environment.c,v 1.6 2005/08/24 01:31:11 slowhog Exp $
+ * $Id: jxta_shell_environment.c,v 1.7 2005/11/15 18:41:30 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -99,7 +99,7 @@ JxtaShellEnvironment *JxtaShellEnvironment_new(JxtaShellEnvironment * parent)
 
             for (i = 0; i < max; i++) {
                 obj = 0;
-                jxta_vector_get_object_at(list, (Jxta_object **) & obj, i);
+                jxta_vector_get_object_at(list, JXTA_OBJECT_PPTR(&obj), i);
                 if (obj != 0) {
                     JxtaShellEnvironment_add_0(env, obj);
                     JXTA_OBJECT_RELEASE(obj);
@@ -186,7 +186,7 @@ JxtaShellObject *JxtaShellEnvironment_get(JxtaShellEnvironment * env, JString * 
     if (env == 0 || env->list == 0 || name == 0)
         return found;
 
-    jxta_objecthashtable_get(env->list, (Jxta_object *) name, (Jxta_object **) & found);
+    jxta_objecthashtable_get(env->list, (Jxta_object *) name, JXTA_OBJECT_PPTR(&found));
     return found;
 }
 
@@ -235,7 +235,7 @@ void JxtaShellEnvironment_delete_type(JxtaShellEnvironment * env, JString * type
         for (eachItem = 0; eachItem < jxta_vector_size(list); eachItem++) {
             JxtaShellObject *object = NULL;
 
-            jxta_vector_get_object_at(list, (Jxta_object **) & object, eachItem);
+            jxta_vector_get_object_at(list, JXTA_OBJECT_PPTR(&object), eachItem);
 
             if ((NULL != object)) {
                 JString *itsType = JxtaShellObject_type(object);
@@ -272,7 +272,7 @@ Jxta_vector *JxtaShellEnvironment_get_of_type(JxtaShellEnvironment * env, JStrin
         for (eachItem = 0; eachItem < jxta_vector_size(list); eachItem++) {
             JxtaShellObject *object = NULL;
 
-            jxta_vector_get_object_at(list, (Jxta_object **) & object, eachItem);
+            jxta_vector_get_object_at(list, JXTA_OBJECT_PPTR(&object), eachItem);
 
             if ((NULL != object)) {
                 JString *itsType = JxtaShellObject_type(object);

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup_private.h,v 1.20 2005/06/16 23:11:46 slowhog Exp $
+ * $Id: jxta_peergroup_private.h,v 1.22 2005/09/22 03:26:39 exocetrick Exp $
  */
 
 #ifndef JXTA_PEERGROUP_PRIVATE_H
@@ -73,17 +73,18 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 /**
  * A Jxta_PG is a Jxta_service plus a thisType field of "Jxta_peergroup".
  * The set of methods is assigned to the base Jxta_module.
  * The set of methods is a superset of the set of methods of Jxta_service.
  * After allocating such an object, one must apply JXTA_OBJECT_INIT() and
  * jxta_PG_construct to it.
- */ struct _jxta_PG {
-
+ */
+struct _jxta_PG {
     Extends(Jxta_service);
 
     /* Implementors put their stuff after that */
@@ -169,6 +170,8 @@ struct _jxta_PG_methods {
      Jxta_status(*add_relay_address) (Jxta_PG * self, Jxta_RdvAdvertisement * relay);
      Jxta_status(*remove_relay_address) (Jxta_PG * self, Jxta_id * relayid);
     void (*get_srdi_service) (Jxta_PG * self, Jxta_srdi_service ** srdi);
+    void (*set_cache_manager) (Jxta_PG * self, Jxta_cm *cm);
+    void (*get_cache_manager) (Jxta_PG * self, Jxta_cm **cm);
 };
 
 /**

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_netpg.c,v 1.65 2005/09/07 00:12:38 slowhog Exp $
+ * $Id: jxta_netpg.c,v 1.66 2005/10/13 19:52:32 mathieu Exp $
  */
 
 /*
@@ -90,6 +90,7 @@ static const char *__log_cat = "NETPG";
 #include "jxta_svc.h"
 #include "jxta_hta.h"
 #include "jxta_mia.h"
+#include "jxta_platformconfig.h"
 
 #ifndef UNUSED
 #ifdef __GNUC__
@@ -197,23 +198,25 @@ static void netpg_stop(Jxta_module * self)
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Stopped.\n");
 }
 
-static void get_netpg_mia(Jxta_PG * self, Jxta_MIA ** mia)
+JXTA_DECLARE(Jxta_MIA *) jxta_get_netpeergroupMIA(void)
 {
     JString *code;
     JString *desc;
+    Jxta_MIA *mia = NULL;
 
-    jxta_stdpg_methods.get_genericpeergroupMIA(self, mia);
+    jxta_stdpg_methods.get_genericpeergroupMIA(NULL, &mia);
 
     code = jstring_new_2("builtin:netpg");
     desc = jstring_new_2("Net Peer Group native implementation");
 
-    jxta_MIA_set_Code(*mia, code);
-    jxta_MIA_set_Desc(*mia, desc);
+    jxta_MIA_set_Code(mia, code);
+    jxta_MIA_set_Desc(mia, desc);
 
     JXTA_OBJECT_RELEASE(code);
     JXTA_OBJECT_RELEASE(desc);
 
-    jxta_MIA_set_MSID(*mia, jxta_ref_netpeergroup_specid);
+    jxta_MIA_set_MSID(mia, jxta_ref_netpeergroup_specid);
+    return mia;
 }
 
 
@@ -228,12 +231,27 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
 {
     Jxta_boolean release_mia = FALSE;
     Jxta_status rv = JXTA_SUCCESS;
+    Jxta_PA *config_adv = NULL;
 
     const char *noargs[] = { NULL };
     Jxta_netpg *it = (Jxta_netpg *) self;
     PTValid(self, Jxta_netpg);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before init :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(self));
+
+    /**
+     * Must read the PlatformConfig file to start the proper net peergroup
+     */
+    config_adv = jxta_PlatformConfig_read("PlatformConfig");
+    /** If we have no PlatformConfig file, create one and exit */
+    if (config_adv == NULL) { 
+      config_adv = jxta_PlatformConfig_create_default();
+      jxta_PlatformConfig_write(config_adv, "PlatformConfig");
+      JXTA_OBJECT_RELEASE(config_adv);
+      printf("A new configuration file has been output to \"PlatformConfig\".\n");
+      printf("Please edit relevant elements before starting Jxta again.\n");
+      exit(0);
+    }
 
     /*
      * If we're used as the root group (normaly always) and if
@@ -247,20 +265,35 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
         JString *name;
         JString *desc;
 
-        assigned_id = jxta_id_defaultNetPeerGroupID;
+	assigned_id = jxta_PA_get_GID(config_adv);
+
+	/**
+	 * We are simulating the old behaviour
+	 * if jxta-Null is set read from the platformConfig
+	 * well then set the default NetPeerGroupId 
+	 */
+	if (jxta_id_equals(assigned_id, jxta_id_nullID)) {
+	  JXTA_OBJECT_RELEASE(assigned_id);
+	  assigned_id = jxta_id_defaultNetPeerGroupID;
+	}
+
         /*
          * Whatever mia was given to us, we have not counted a
          * ref on it, so it does not need to be released
          * However, the one we make here comes with a count for us,
          * so we'll have to release it when we're done.
          */
-        get_netpg_mia((Jxta_PG *) it, (Jxta_MIA **) & impl_adv);
-        release_mia = TRUE;
+	if (impl_adv == NULL) {
+	  impl_adv = (Jxta_advertisement *) jxta_get_netpeergroupMIA();
+	} 
+	
+	release_mia = TRUE;
 
         name = jstring_new_2("NetPeerGroup");
         desc = jstring_new_2("NetPeerGroup by default");
-
+	
         jxta_stdpg_methods.set_labels((Jxta_PG *) it, name, desc);
+
         JXTA_OBJECT_RELEASE(name);
         JXTA_OBJECT_RELEASE(desc);
     }
@@ -271,6 +304,8 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
      */
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before super group init :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(self));
+    jxta_stdpg_set_configadv(self, config_adv); 
+    JXTA_OBJECT_RELEASE(config_adv);
     jxta_stdpg_init_group(self, group, assigned_id, impl_adv);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count after super group init :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(self));
@@ -311,7 +346,9 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before super modules init :%d.\n",
                         JXTA_OBJECT_GET_REFCOUNT(self));
+
         jxta_stdpg_init_modules_e(self, MayThrow);
+
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count after super modules init :%d.\n",
                         JXTA_OBJECT_GET_REFCOUNT(self));
 
@@ -395,7 +432,6 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
 
     return JXTA_SUCCESS;
 }
-
 
 /*
  * Note: The following could be in a .h so that subclassers get a static

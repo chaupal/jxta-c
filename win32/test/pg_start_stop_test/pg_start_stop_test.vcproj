@@ -19,8 +19,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\src,$(APACHE2)\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;STANDALONE"
+				AdditionalIncludeDirectories="..\..\..\src,$(APACHE2)\include;$(XML2)\include"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;STANDALONE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				MinimalRebuild="TRUE"
 				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="3"
@@ -82,8 +82,8 @@ copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(Configur
 			<Tool
 				Name="VCCLCompilerTool"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\..\..\src,$(APACHE2)\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;STANDALONE"
+				AdditionalIncludeDirectories="..\..\..\src,$(APACHE2)\include;$(XML2)\include"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;STANDALONE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="FALSE"

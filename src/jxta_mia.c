@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_mia.c,v 1.26 2005/08/03 05:51:16 slowhog Exp $
+ * $Id: jxta_mia.c,v 1.27 2005/11/22 22:00:58 mmx2005 Exp $
  */
 
 
@@ -95,7 +95,6 @@ extern "C" {
     MCID_,
     Svc_
 };
-
 
 /** This is the representation of the 
  * actual ad in the code.  It should
@@ -301,8 +300,6 @@ static void handleMSID(void *userdata, const XML_Char * cd, int len)
     JXTA_LOG("In MSID element\n");
 }
 
-
-
 static void handleCode(void *userdata, const XML_Char * cd, int len)
 {
     JString *tmp;
@@ -480,25 +477,20 @@ static void handleParm(void *userdata, const XML_Char * cd, int len)
     JXTA_LOG("In Parm element\n");
 }
 
-
-
 /** The get/set functions represent the public
  * interface to the ad class, that is, the API.
  */
-JXTA_DECLARE(char *)
-    jxta_MIA_get_jxta_MIA(Jxta_MIA * ad)
+JXTA_DECLARE(char *) jxta_MIA_get_jxta_MIA(Jxta_MIA * ad)
 {
     return NULL;
 }
 
-JXTA_DECLARE(void)
-    jxta_MIA_set_jxta_MIA(Jxta_MIA * ad, char *name)
+JXTA_DECLARE(void)jxta_MIA_set_jxta_MIA(Jxta_MIA * ad, char *name)
 {
 
 }
 
-JXTA_DECLARE(Jxta_id *)
-    jxta_MIA_get_MSID(Jxta_MIA * ad)
+JXTA_DECLARE(Jxta_id *) jxta_MIA_get_MSID(Jxta_MIA * ad)
 {
     JXTA_OBJECT_SHARE(ad->MSID);
     return ad->MSID;
@@ -509,6 +501,7 @@ static char *JXTA_STDCALL jxta_get_msid_string(Jxta_MIA * ad)
     JString *msids = NULL;
     char *tmps;
     Jxta_status status;
+
     status = jxta_id_to_jstring(ad->MSID, &msids);
     if (status != JXTA_SUCCESS) {
         JXTA_OBJECT_RELEASE(msids);
@@ -519,38 +512,33 @@ static char *JXTA_STDCALL jxta_get_msid_string(Jxta_MIA * ad)
     return tmps;
 }
 
-JXTA_DECLARE(void)
-    jxta_MIA_set_MSID(Jxta_MIA * ad, Jxta_id * id)
+JXTA_DECLARE(void) jxta_MIA_set_MSID(Jxta_MIA * ad, Jxta_id * id)
 {
     JXTA_OBJECT_SHARE(id);
     JXTA_OBJECT_RELEASE(ad->MSID);
     ad->MSID = id;
 }
 
-JXTA_DECLARE(JString *)
-    jxta_MIA_get_Comp(Jxta_MIA * ad)
+JXTA_DECLARE(JString *) jxta_MIA_get_Comp(Jxta_MIA * ad)
 {
     JXTA_OBJECT_SHARE(ad->Comp);
     return ad->Comp;
 }
 
-JXTA_DECLARE(void)
-    jxta_MIA_set_Comp(Jxta_MIA * ad, JString * str)
+JXTA_DECLARE(void) jxta_MIA_set_Comp(Jxta_MIA * ad, JString * str)
 {
     JXTA_OBJECT_SHARE(str);
     JXTA_OBJECT_RELEASE(ad->Comp);
     ad->Comp = str;
 }
 
-JXTA_DECLARE(JString *)
-    jxta_MIA_get_Code(Jxta_MIA * ad)
+JXTA_DECLARE(JString *) jxta_MIA_get_Code(Jxta_MIA * ad)
 {
     JXTA_OBJECT_SHARE(ad->Code);
     return ad->Code;
 }
 
-JXTA_DECLARE(void)
-    jxta_MIA_set_Code(Jxta_MIA * ad, JString * str)
+JXTA_DECLARE(void) jxta_MIA_set_Code(Jxta_MIA * ad, JString * str)
 {
     JXTA_OBJECT_SHARE(str);
     JXTA_OBJECT_RELEASE(ad->Code);
@@ -564,60 +552,51 @@ JXTA_DECLARE(JString *)
     return ad->PURI;
 }
 
-JXTA_DECLARE(void)
-    jxta_MIA_set_PURI(Jxta_MIA * ad, JString * str)
+JXTA_DECLARE(void) jxta_MIA_set_PURI(Jxta_MIA * ad, JString * str)
 {
     JXTA_OBJECT_SHARE(str);
     JXTA_OBJECT_RELEASE(ad->PURI);
     ad->PURI = str;
 }
 
-JXTA_DECLARE(JString *)
-    jxta_MIA_get_Prov(Jxta_MIA * ad)
+JXTA_DECLARE(JString *) jxta_MIA_get_Prov(Jxta_MIA * ad)
 {
     JXTA_OBJECT_SHARE(ad->Prov);
     return ad->Prov;
 }
 
-JXTA_DECLARE(void)
-    jxta_MIA_set_Prov(Jxta_MIA * ad, JString * str)
+JXTA_DECLARE(void) jxta_MIA_set_Prov(Jxta_MIA * ad, JString * str)
 {
     JXTA_OBJECT_SHARE(str);
     JXTA_OBJECT_RELEASE(ad->Prov);
     ad->Prov = str;
 }
 
-JXTA_DECLARE(JString *)
-    jxta_MIA_get_Desc(Jxta_MIA * ad)
+JXTA_DECLARE(JString *) jxta_MIA_get_Desc(Jxta_MIA * ad)
 {
     JXTA_OBJECT_SHARE(ad->Desc);
     return ad->Desc;
 }
 
-JXTA_DECLARE(void)
-    jxta_MIA_set_Desc(Jxta_MIA * ad, JString * str)
+JXTA_DECLARE(void) jxta_MIA_set_Desc(Jxta_MIA * ad, JString * str)
 {
     JXTA_OBJECT_SHARE(str);
     JXTA_OBJECT_RELEASE(ad->Desc);
     ad->Desc = str;
 }
 
-JXTA_DECLARE(JString *)
-    jxta_MIA_get_Parm(Jxta_MIA * ad)
+JXTA_DECLARE(JString *) jxta_MIA_get_Parm(Jxta_MIA * ad)
 {
     JXTA_OBJECT_SHARE(ad->Parm);
     return ad->Parm;
 }
 
-JXTA_DECLARE(void)
-    jxta_MIA_set_Parm(Jxta_MIA * ad, JString * str)
+JXTA_DECLARE(void) jxta_MIA_set_Parm(Jxta_MIA * ad, JString * str)
 {
     JXTA_OBJECT_SHARE(str);
     JXTA_OBJECT_RELEASE(ad->Parm);
     ad->Parm = str;
 }
-
-
 
 /** Now, build an array of the keyword structs.  Since 
  * a top-level, or null state may be of interest, 
@@ -643,14 +622,10 @@ static const Kwdtab jxta_MIA_tags[] = {
     {NULL, 0, 0, NULL, NULL}
 };
 
-
-JXTA_DECLARE(Jxta_status)
-    jxta_MIA_get_xml(Jxta_MIA * ad, JString ** string)
+JXTA_DECLARE(Jxta_status) jxta_MIA_get_xml(Jxta_MIA * ad, JString ** string)
 {
-
     JString *mcids;
     JString *tmp = jstring_new_0();
-
 
     jstring_append_2(tmp, "<?xml version=\"1.0\"?>" "<!DOCTYPE jxta:MIA>" "<jxta:MIA xmlns:jxta=\"http://jxta.org\">\n");
 
@@ -691,18 +666,16 @@ JXTA_DECLARE(Jxta_status)
     return JXTA_SUCCESS;
 }
 
-
 /** Get a new instance of the ad. 
  * The memory gets shredded going in to 
  * a value that is easy to see in a debugger,
  * just in case there is a segfault (not that 
  * that would ever happen, but in case it ever did.)
  */
-JXTA_DECLARE(Jxta_MIA *)
-    jxta_MIA_new()
+JXTA_DECLARE(Jxta_MIA *) jxta_MIA_new()
 {
-
     Jxta_MIA *ad;
+
     ad = (Jxta_MIA *) malloc(sizeof(Jxta_MIA));
     memset(ad, 0, sizeof(Jxta_MIA));
 
@@ -711,7 +684,8 @@ JXTA_DECLARE(Jxta_MIA *)
                                   jxta_MIA_tags,
                                   (JxtaAdvertisementGetXMLFunc) jxta_MIA_get_xml,
                                   (JxtaAdvertisementGetIDFunc) jxta_MIA_get_MSID,
-                                  (JxtaAdvertisementGetIndexFunc) jxta_MIA_get_indexes, (FreeFunc) jxta_MIA_delete);
+                                  (JxtaAdvertisementGetIndexFunc) jxta_MIA_get_indexes, 
+                                  (FreeFunc) jxta_MIA_delete);
 
     /* Fill in the required initialization code here. */
     JXTA_OBJECT_SHARE(jxta_id_nullID);
@@ -750,8 +724,7 @@ static void jxta_MIA_delete(Jxta_MIA * ad)
     free(ad);
 }
 
-JXTA_DECLARE(Jxta_vector *)
-    jxta_MIA_get_indexes(Jxta_advertisement * dummy)
+JXTA_DECLARE(Jxta_vector *) jxta_MIA_get_indexes(Jxta_advertisement * dummy)
 {
     const char *idx[][2] = {
         {"MSID", NULL},
@@ -760,18 +733,13 @@ JXTA_DECLARE(Jxta_vector *)
     return jxta_advertisement_return_indexes(idx[0]);
 }
 
-JXTA_DECLARE(void)
-    jxta_MIA_parse_charbuffer(Jxta_MIA * ad, const char *buf, int len)
+JXTA_DECLARE(void) jxta_MIA_parse_charbuffer(Jxta_MIA * ad, const char *buf, int len)
 {
-
     jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
 
-
-
 JXTA_DECLARE(void) jxta_MIA_parse_file(Jxta_MIA * ad, FILE * stream)
 {
-
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
 

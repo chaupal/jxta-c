@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_hta.c,v 1.55 2005/08/18 19:01:50 slowhog Exp $
+ * $Id: jxta_hta.c,v 1.56 2005/10/27 01:55:26 slowhog Exp $
  */
 
 
@@ -67,7 +67,7 @@
 
 #include "jpr/jpr_apr_wrapper.h"
 
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 #include "jxta_errno.h"
 #include "jxta_debug.h"
 #include "jxta_advertisement.h"

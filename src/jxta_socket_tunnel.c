@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_socket_tunnel.c,v 1.18 2005/08/03 05:51:19 slowhog Exp $
+ * $Id: jxta_socket_tunnel.c,v 1.19 2005/11/16 20:10:42 lankes Exp $
  */
 
 #include <ctype.h>
@@ -226,7 +226,7 @@ static Jxta_status bind_socket(apr_socket_t * s, apr_sockaddr_t * addr)
     return rv;
 }
 
-static void listener_func(Jxta_object * obj, void *arg)
+static void JXTA_STDCALL listener_func(Jxta_object * obj, void *arg)
 {
     Jxta_socket_tunnel *self = (Jxta_socket_tunnel *) arg;
     Jxta_message *msg = (Jxta_message *) obj;

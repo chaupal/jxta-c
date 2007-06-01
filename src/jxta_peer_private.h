@@ -50,14 +50,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peer_private.h,v 1.13 2005/07/22 03:12:53 slowhog Exp $
+ * $Id: jxta_peer_private.h,v 1.15 2005/10/27 01:55:27 slowhog Exp $
  */
 
 
 #ifndef __JXTA_PEER_PRIVATE_H__
 #define __JXTA_PEER_PRIVATE_H__
 
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 #include "jxta_peer.h"
 #include "jxta_object_type.h"
@@ -69,12 +69,14 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 /**
 * The set of methods that a Peer_entry object must implement.
-**/ typedef struct Jxta_Peer_entry_methods {
+**/
+typedef struct Jxta_Peer_entry_methods {
     Extends_nothing;            /* could extend Jxta_object but that'd be overkill */
 
     Jxta_status(JXTA_STDCALL * jxta_peer_lock) (Jxta_peer * p);

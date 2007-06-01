@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bidipipe_test.c,v 1.6 2005/05/20 04:44:31 slowhog Exp $
+ * $Id: jxta_bidipipe_test.c,v 1.9 2005/11/16 20:10:43 lankes Exp $
  */
 
 #include <apr_thread_proc.h>
@@ -75,7 +75,7 @@ static struct _app {
 } app;
 
 
-void clt_listener_func(Jxta_object * obj, void *arg)
+void JXTA_STDCALL clt_listener_func(Jxta_object * obj, void *arg)
 {
     Jxta_message *msg = (Jxta_message *) obj;
 
@@ -89,7 +89,7 @@ void clt_listener_func(Jxta_object * obj, void *arg)
     jxta_message_print(msg);
 }
 
-void svr_listener_func(Jxta_object * obj, void *arg)
+void JXTA_STDCALL svr_listener_func(Jxta_object * obj, void *arg)
 {
     Jxta_message *msg = (Jxta_message *) obj;
 
@@ -103,7 +103,7 @@ void svr_listener_func(Jxta_object * obj, void *arg)
     jxta_message_print(msg);
 }
 
-void * APR_THREAD_FUNC svr_thread_func(apr_thread_t * thread, void *arg)
+void *APR_THREAD_FUNC svr_thread_func(apr_thread_t * thread, void *arg)
 {
     Jxta_pipe_adv *pipe_adv = (Jxta_pipe_adv *) arg;
     Jxta_bidipipe *svr = NULL;
@@ -164,16 +164,16 @@ int main(int argc, char *argv[])
     Jxta_discovery_service *discovery;
 
     if (argc < 2) {
-        printf("Usage: %s adv_file_name\n", argv[0]);
-        exit(1);
+        printf("Err- 1 Usage: %s adv_file_name\n", argv[0]);
+        return 1;
     }
 
     jxta_initialize();
 
     log_s = jxta_log_selector_new_and_set("*.*", &res);
     if (NULL == log_s) {
-        printf("failed to init log selector.\n");
-        exit(-1);
+        printf("Err- 2 failed to init log selector.\n");
+        return 2;
     }
 
     jxta_log_file_open(&log_f, "-");
@@ -190,8 +190,8 @@ int main(int argc, char *argv[])
 
     res = jxta_PG_new_netpg(&app.pg);
     if (res != JXTA_SUCCESS) {
-        printf("jxta_PG_new_netpg failed with error: %ld\n", res);
-        exit(-1);
+        printf("Err- 3 jxta_PG_new_netpg failed with error: %ld\n", res);
+        return 3;
     }
 
     jxta_PG_get_discovery_service(app.pg, &discovery);
@@ -199,36 +199,40 @@ int main(int argc, char *argv[])
     adv = jxta_pipe_adv_new();
     f = fopen(argv[1], "r");
     if (NULL == f) {
-        printf("Failed to open pipe advertisement file %s\n", argv[1]);
+        printf("Err- 4 Failed to open pipe advertisement file %s\n", argv[1]);
+        return 4;
     }
 
     jxta_pipe_adv_parse_file(adv, f);
     fclose(f);
 
-    res = discovery_service_publish(discovery, adv, DISC_ADV, 5L * 60L * 1000L, 5L * 60L * 1000L);
+    res = discovery_service_publish(discovery, (Jxta_advertisement *) adv, DISC_ADV, 5L * 60L * 1000L, 5L * 60L * 1000L);
     if (JXTA_SUCCESS != res) {
         jxta_log_append(BIDITEST_LOG, JXTA_LOG_LEVEL_ERROR, "Failed to publish pipe advertisement\n");
-        exit(-3);
+        printf("Err- 5 Failed to publish pipe advertisement\n");
+        return 5;
     }
 
     JXTA_OBJECT_RELEASE(discovery);
 
     res = apr_thread_create(&svr_thread, NULL, svr_thread_func, adv, pool);
     if (APR_SUCCESS != res) {
-        printf("Failed to create server thread with error: %ld\n", res);
-        exit(-2);
+        printf("Err- 6 Failed to create server thread with error: %ld\n", res);
+        return 6;
     }
 
     clt = jxta_bidipipe_new(app.pg);
     if (NULL == clt) {
         jxta_log_append(BIDITEST_LOG, JXTA_LOG_LEVEL_ERROR, "Failed to create client pipe\n");
-        exit(-3);
+        printf("Err- 7 Failed to create client pipe\n");
+        return 7;
     }
 
     clt_listener = jxta_listener_new(clt_listener_func, clt, 1, 30);
     if (NULL == clt_listener) {
         jxta_log_append(BIDITEST_LOG, JXTA_LOG_LEVEL_ERROR, "Failed to create client listener\n");
-        exit(-4);
+        printf("Err- 8 Failed to create client listener\n");
+        return 8;
     }
     jxta_listener_start(clt_listener);
 
@@ -238,8 +242,8 @@ int main(int argc, char *argv[])
     printf("Try to connect for 5 sec...\n");
     res = jxta_bidipipe_connect(clt, adv, clt_listener, 5L * 1000L * 1000L);
     if (JXTA_SUCCESS != res) {
-        printf("Failed to connect to server pipe with error: %ld\n", res);
-        exit(-5);
+        printf("Err- 9 Failed to connect to server pipe with error: %ld\n", res);
+        return 9;
     }
 
     JXTA_OBJECT_RELEASE(adv);
@@ -256,6 +260,7 @@ int main(int argc, char *argv[])
         res = jxta_bidipipe_send(clt, msg);
         if (JXTA_SUCCESS != res) {
             jxta_log_append(BIDITEST_LOG, JXTA_LOG_LEVEL_ERROR, "Sending message failed with error %ld\n", res);
+            printf("Err- Sending message failed with error %ld\n", res);
         }
         /* Without sleep will cause segfault */
         apr_sleep(50L * 1000L);

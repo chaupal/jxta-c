@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_id.c,v 1.16 2005/07/22 03:12:51 slowhog Exp $
+ * $Id: jxta_id.c,v 1.19 2005/11/26 18:03:59 exocetrick Exp $
  */
 
 
@@ -59,24 +59,22 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
+#include <jxta_apr.h>
 
 #include <jxta.h>
 #include <jxta_id.h>
 
 #include "jxta_id_priv.h"
 
-
-
 const char *jxta_id_URIENCODINGNAME = "urn";
-
 const char *jxta_id_URNNAMESPACE = "jxta";
+const char *jxta_id_PREFIX = "urn:jxta:";
+const size_t jxta_id_PREFIX_LENGTH = 9;
 
 extern JXTAIDFormat uuid_format;
-
 extern JXTAIDFormat jxta_format;
-
 static JXTAIDFormat *newInstances = &uuid_format;
-
 static JXTAIDFormat *idformats[] = {
     &uuid_format, &jxta_format, NULL
 };
@@ -277,97 +275,64 @@ JXTA_DECLARE(Jxta_status) jxta_id_modulespecid_new(Jxta_id ** msid, Jxta_id * mc
     return (mcid->formatter->fmt_newModulespecid) (msid, mcid);
 }
 
-JXTA_DECLARE(Jxta_status) jxta_id_from_jstring(Jxta_id ** id, JString * jid)
+JXTA_DECLARE(Jxta_status) jxta_id_from_str(Jxta_id ** id, const char * id_str, size_t len)
 {
-    Jxta_status err;
-    char const *srcString = NULL;
-    char const *srcCurrent = NULL;
-    char *workingCopy = NULL;
-    char *current = NULL;
+    Jxta_status err=JXTA_SUCCESS;
+    const char *fmt = NULL;
+    size_t offset;
     int eachFormat;
 
+    assert(id_str);
+
+    if (jxta_id_PREFIX_LENGTH > len) {
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    if (0 != strncasecmp(id_str, jxta_id_PREFIX, jxta_id_PREFIX_LENGTH)) {
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    /*  now get the id format using the original string. */
+    fmt = id_str + jxta_id_PREFIX_LENGTH;
+    len -= jxta_id_PREFIX_LENGTH;
+    for (offset = 0; offset < len; ++offset) {
+        if (fmt[offset] == '-') break;
+    }
+
+    if (offset >= len) {
+        return JXTA_INVALID_ARGUMENT;
+    }
+    len -= (offset + 1);
+
+    for (eachFormat = 0; NULL != idformats[eachFormat]; eachFormat++) {
+        if (0 == strncmp(idformats[eachFormat]->fmt, fmt, offset)) {
+            err = idformats[eachFormat]->fmt_from_str(id, fmt + (offset + 1), len);
+            break;
+        }
+    }
+
+    if (NULL == idformats[eachFormat]) {
+        *id = NULL;
+        return JXTA_NOTIMP;
+    }
+
+    return err;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_id_from_cstr(Jxta_id ** id, const char * id_cstr)
+{
+    return jxta_id_from_str(id, id_cstr, strlen(id_cstr));
+}
+
+JXTA_DECLARE(Jxta_status) jxta_id_from_jstring(Jxta_id ** id, JString * jid)
+{
     if (NULL == id)
         return JXTA_INVALID_ARGUMENT;
 
     if (!JXTA_OBJECT_CHECK_VALID(jid))
         return JXTA_INVALID_ARGUMENT;
 
-    /*  make a working copy in a char array. */
-    /*  FIXME 20020126 bondolo@jxta.org we should be doing UTF8 decode and % chars here */
-    workingCopy = (char *) malloc(jstring_length(jid) + 1);
-
-    if (NULL == workingCopy)
-        return JXTA_NOMEM;
-
-    srcString = jstring_get_string(jid);
-    memcpy(workingCopy, srcString, jstring_length(jid));
-    *(workingCopy + (ptrdiff_t) jstring_length(jid)) = '\0';
-
-    /*  lowercase the string. */
-    for (current = workingCopy; 0 != *current; current++)
-        *current = (char) tolower(*current);
-
-    /*  check the protocol */
-    if (0 != strncmp(workingCopy, jxta_id_URIENCODINGNAME, strlen(jxta_id_URIENCODINGNAME))) {
-        err = JXTA_INVALID_ARGUMENT;
-        goto ERROR_EXIT;
-    }
-
-    /*  check for the colon */
-    current = workingCopy + (ptrdiff_t) strlen(jxta_id_URIENCODINGNAME);
-    if (':' != *current) {
-        err = JXTA_INVALID_ARGUMENT;
-        goto ERROR_EXIT;
-    }
-
-    /*  check the urn namespace */
-    current++;
-    if (0 != strncmp(current, jxta_id_URNNAMESPACE, strlen(jxta_id_URNNAMESPACE))) {
-        err = JXTA_INVALID_ARGUMENT;
-        goto ERROR_EXIT;
-    }
-
-    /*  check for the next colon */
-    current += (ptrdiff_t) strlen(jxta_id_URNNAMESPACE);
-    if (':' != *current) {
-        err = JXTA_INVALID_ARGUMENT;
-        goto ERROR_EXIT;
-    }
-
-    /*  now get the id format using the original string. */
-    current++;
-    srcString += (current - workingCopy);
-    srcCurrent = strchr(srcString, '-');
-
-    if (NULL == srcCurrent) {
-        err = JXTA_INVALID_ARGUMENT;
-        goto ERROR_EXIT;
-    }
-
-    for (eachFormat = 0; NULL != idformats[eachFormat]; eachFormat++) {
-        if (0 == strncmp(idformats[eachFormat]->fmt, srcString, (size_t) (srcCurrent - srcString))) {
-            err = idformats[eachFormat]->fmt_fromString(id, jid);
-            goto COMMON_EXIT;
-        }
-    }
-
-    /*  XXX 20020127 bondolo@jxta.org Could handle with unknown format here like J2SE Does */
-
-    /*  FIXME 20020124 bondolo@jxta.org Not clear how to set an error. */
-    /*  FIXME 20020131 jice@jxta.org By our current conventions, either you throw it or you return */
-    /*  it; in which case the result has to go through a return value pointer. */
-    err = JXTA_NOTIMP;
-    goto COMMON_EXIT;
-
-  ERROR_EXIT:
-
-
-  COMMON_EXIT:
-    if (NULL != workingCopy)
-        free(workingCopy);
-    workingCopy = NULL;
-
-    return err;
+    return jxta_id_from_str(id, jstring_get_string(jid), jstring_length(jid));
 }
 
 JXTA_DECLARE(char const *) jxta_id_get_idformat(Jxta_id * jid)
@@ -449,3 +414,5 @@ JXTA_DECLARE(unsigned int) jxta_id_hashcode(Jxta_id * jid)
 
     return (jid->formatter->fmt_hashcode) (jid);
 }
+
+/* vim: set ts=4 sw=4 et tw=130: */

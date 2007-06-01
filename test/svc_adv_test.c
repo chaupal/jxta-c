@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: svc_adv_test.c,v 1.8 2005/04/17 14:22:20 lankes Exp $
+ * $Id: svc_adv_test.c,v 1.10 2005/10/13 17:07:41 exocetrick Exp $
  */
 
-   
+
 /* 
 * The following command will compile the output from the script 
 * given the apr is installed correctly.
@@ -63,7 +63,7 @@
   `/usr/local/apache2/bin/apr-config --cflags --includes --libs` \
   -lexpat -L/usr/local/apache2/lib/ -lapr
 */
- 
+
 #include <stdio.h>
 #include <string.h>
 #include "jxta.h"
@@ -71,34 +71,36 @@
 
 
 #ifdef STANDALONE
-int
-main (int argc, char **argv) {
-   Jxta_svc * ad;
-   FILE *testfile;
-   JString* js;
+int main(int argc, char **argv)
+{
+    Jxta_svc *ad;
+    FILE *testfile;
+    JString *js;
 
-   if(argc != 2)
-     {
-       printf("usage: ad <filename>\n");
-       return -1;
-     }
+    if (argc != 2) {
+        printf("usage: ad <filename>\n");
+        return -1;
+    }
 
     jxta_initialize();
 
-   ad = jxta_svc_new();
+    ad = jxta_svc_new();
 
-   testfile = fopen (argv[1], "r");
-   jxta_svc_parse_file(ad, testfile);
-   fclose(testfile);
+    testfile = fopen(argv[1], "r");
+    if (NULL == testfile) {
+        return -2;
+    }
+    jxta_svc_parse_file(ad, testfile);
+    fclose(testfile);
 
-   js = jstring_new_1(1024);   
-   jxta_advertisement_get_xml((Jxta_advertisement*)ad,&js);
-   fprintf(stdout,"%s",jstring_get_string(js));
+    js = jstring_new_1(1024);
+    jxta_advertisement_get_xml((Jxta_advertisement *) ad, &js);
+    fprintf(stdout, "%s", jstring_get_string(js));
 
-   JXTA_OBJECT_RELEASE(js);
-   JXTA_OBJECT_RELEASE(ad);
+    JXTA_OBJECT_RELEASE(js);
+    JXTA_OBJECT_RELEASE(ad);
 
-   jxta_terminate();
-   return 0;
+    jxta_terminate();
+    return 0;
 }
 #endif

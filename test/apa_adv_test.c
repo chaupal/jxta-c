@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: apa_adv_test.c,v 1.5 2005/04/07 22:58:52 slowhog Exp $
+ * $Id: apa_adv_test.c,v 1.7 2005/10/13 17:07:37 exocetrick Exp $
  */
 
 #include <stdio.h>
@@ -58,46 +58,46 @@
 #include "jxta_apa.h"
 
 
-Jxta_boolean
-accessPointa_test(int argc, char ** argv) {
+int accessPointa_test(int argc, char **argv)
+{
 
-   Jxta_AccessPointAdvertisement * ad;
-   FILE *testfile;
-   JString * js;
 
-   if(argc != 2)
-     {
-       printf("usage: ad <filename>\n");
-       return -1;
-     }
+    Jxta_AccessPointAdvertisement *ad;
+    FILE *testfile;
+    JString *js;
 
-   jxta_initialize();
+    if (argc != 2) {
+        printf("usage: ad <filename>\n");
+        return -1;
+    }
 
-   ad = jxta_AccessPointAdvertisement_new();
+    jxta_initialize();
 
-   testfile = fopen (argv[1], "r");
-   jxta_AccessPointAdvertisement_parse_file(ad, testfile);
-   fclose(testfile);
+    ad = jxta_AccessPointAdvertisement_new();
 
-   js = jstring_new_1(1024);
-   
-   jxta_advertisement_get_xml((Jxta_advertisement*)ad,&js);
+    testfile = fopen(argv[1], "r");
+    jxta_AccessPointAdvertisement_parse_file(ad, testfile);
+    fclose(testfile);
 
-   fprintf(stdout,"%s",jstring_get_string(js));
+    js = jstring_new_1(1024);
 
-   JXTA_OBJECT_RELEASE(js);
+    jxta_advertisement_get_xml((Jxta_advertisement *) ad, &js);
 
-   jxta_terminate();
-   return 0;
+    fprintf(stdout, "%s", jstring_get_string(js));
+
+    JXTA_OBJECT_RELEASE(js);
+
+    jxta_terminate();
+    return 0;
 }
 
 
 
 #ifdef STANDALONE
-int
-main (int argc, char **argv) {
+int main(int argc, char **argv)
+{
 
-  return accessPointa_test(argc,argv);
+    return accessPointa_test(argc, argv);
 }
 #endif
 

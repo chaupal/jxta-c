@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http_poller.c,v 1.26 2005/08/18 19:01:51 slowhog Exp $
+ * $Id: jxta_transport_http_poller.c,v 1.29 2005/10/17 06:54:04 mathieu Exp $
  */
 
 static const char *__log_cat = "HTTP_POLLER";
@@ -95,6 +95,7 @@ struct _HttpPoller {
     apr_thread_t *tid;
 
     Jxta_PG *group;
+    char *relay_address;
     Jxta_endpoint_service *service;
     HttpClient *htcli;
     char *addr;
@@ -122,8 +123,23 @@ JXTA_DECLARE(HttpPoller *) http_poller_new(Jxta_PG * group,
     HttpPoller *poller = (HttpPoller *) calloc(1, sizeof(HttpPoller));
 
     if (NULL != poller) {
+        Jxta_id *groupId;
+        JString *tmp;
+
         JXTA_OBJECT_INIT(poller, http_poller_free, 0);
         poller->group = group;
+	jxta_PG_get_GID(group, &groupId);
+	if (jxta_id_equals(groupId, jxta_id_defaultNetPeerGroupID)) {
+	  tmp = jstring_new_2("jxta-NetGroup");
+	} else {
+	  jxta_id_get_uniqueportion(groupId, &tmp);
+	}
+	JXTA_OBJECT_RELEASE(groupId);
+	poller->relay_address = malloc(strlen(RELAY_PREFIX_ADDRESS) + jstring_length(tmp) + strlen(RELAY_SUFFIX_ADDRESS) + 1);
+	strcpy(poller->relay_address, RELAY_PREFIX_ADDRESS);
+	strcat(poller->relay_address, jstring_get_string(tmp));
+	strcat(poller->relay_address, RELAY_SUFFIX_ADDRESS);
+	JXTA_OBJECT_RELEASE(tmp);
         poller->service = service;
         poller->htcli = http_client_new(proxy_host, proxy_port, host, port, NULL);
         poller->uri = uri;
@@ -154,6 +170,7 @@ static void http_poller_free(Jxta_object * obj)
     if (poller->htcli != NULL)
         http_client_free(poller->htcli);
 
+    free(poller->relay_address);
     free(poller->addr);
     free(poller);
 }
@@ -259,7 +276,7 @@ static void *APR_THREAD_FUNC http_poller_body(apr_thread_t * t, void *arg)
      * in that case.
      */
     apr_snprintf(uri, sizeof(uri),"%s%s?%s,%s://%s/%s/%s,%s,%s", poller->uri, poller->peerid, REQUEST_TIMEOUT,
-            PROTOCOL_NAME, poller->addr, RELAY_ADDRESS, "connect", LEASE_REQUEST, LAZY_CLOSE);
+            PROTOCOL_NAME, poller->addr, poller->relay_address, "connect", LEASE_REQUEST, LAZY_CLOSE);
 
     req = http_client_start_request(poller->htcli, "GET", uri, cmd);
     http_request_set_header(req, "User-Agent", PACKAGE_STRING);
@@ -317,7 +334,7 @@ static void *APR_THREAD_FUNC http_poller_body(apr_thread_t * t, void *arg)
          * check if we got a message for us
          */
         apr_snprintf(uri_msg, sizeof(uri_msg),"%s%s?%s,%s://%s/%s/", poller->uri, poller->peerid,
-                REQUEST_TIMEOUT, PROTOCOL_NAME, poller->addr, RELAY_ADDRESS);
+                REQUEST_TIMEOUT, PROTOCOL_NAME, poller->addr, poller->relay_address);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Polling for a new message\n");
         req = http_client_start_request(poller->htcli, "POST", uri_msg, cmd);
 

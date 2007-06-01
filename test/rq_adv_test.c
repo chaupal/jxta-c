@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rq_adv_test.c,v 1.13 2005/04/17 14:22:19 lankes Exp $
+ * $Id: rq_adv_test.c,v 1.14 2005/09/23 20:07:16 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -58,43 +58,42 @@
 #include "jxta_rq.h"
 #include "jstring.h"
 
-Jxta_boolean
-rq_test(int argc, char ** argv) {
+Jxta_boolean rq_test(int argc, char **argv)
+{
 
-   ResolverQuery * ad;
-   FILE *testfile;
-   JString * doc;
+    ResolverQuery *ad;
+    FILE *testfile;
+    JString *doc;
 
-   if(argc != 2)
-     {
-       printf("usage: ad <filename>\n");
-       return -1;
-     }
+    if (argc != 2) {
+        printf("usage: ad <filename>\n");
+        return -1;
+    }
 
     jxta_initialize();
 
-   ad = jxta_resolver_query_new();
+    ad = jxta_resolver_query_new();
 
-   testfile = fopen (argv[1], "r");
-   jxta_resolver_query_parse_file(ad, testfile);
-   fclose(testfile);
-   /* printout the doc */
-   jxta_resolver_query_get_xml (ad, & doc);
-   fprintf(stdout,"%s\n",jstring_get_string(doc)); 
-   jxta_resolver_query_free(ad);
-   JXTA_OBJECT_RELEASE(doc);
+    testfile = fopen(argv[1], "r");
+    jxta_resolver_query_parse_file(ad, testfile);
+    fclose(testfile);
+    /* printout the doc */
+    jxta_resolver_query_get_xml(ad, &doc);
+    fprintf(stdout, "%s\n", jstring_get_string(doc));
+    jxta_resolver_query_free(ad);
+    JXTA_OBJECT_RELEASE(doc);
 
-   jxta_terminate();
-   return 0;
+    jxta_terminate();
+    return 0;
 }
 
 
 
 
 #ifdef STANDALONE
-int
-main (int argc, char **argv) {
+int main(int argc, char **argv)
+{
 
-  return rq_test(argc,argv);
+    return rq_test(argc, argv);
 }
 #endif

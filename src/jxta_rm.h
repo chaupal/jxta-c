@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rm.h,v 1.6 2005/08/03 05:51:18 slowhog Exp $
+ * $Id: jxta_rm.h,v 1.8 2005/09/29 22:01:01 bondolo Exp $
  */
 
 
@@ -63,37 +63,45 @@
 
 #ifdef __cplusplus
 extern "C" {
+#if 0
+};
+#endif
 #endif
 
-    typedef struct _EndpointRouterMessage EndpointRouterMessage;
+typedef struct _EndpointRouterMessage EndpointRouterMessage;
 
-    JXTA_DECLARE(EndpointRouterMessage *) EndpointRouterMessage_new(void);
-    JXTA_DECLARE(void) EndpointRouterMessage_set_handlers(EndpointRouterMessage *, XML_Parser, void *);
-    void EndpointRouterMessage_delete(EndpointRouterMessage *);
-    JXTA_DECLARE(Jxta_status) EndpointRouterMessage_get_xml(EndpointRouterMessage *, JString ** xml);
-    JXTA_DECLARE(void) EndpointRouterMessage_parse_charbuffer(EndpointRouterMessage *, const char *, int len);
-    JXTA_DECLARE(void) EndpointRouterMessage_parse_file(EndpointRouterMessage *, FILE * stream);
+JXTA_DECLARE(EndpointRouterMessage *) EndpointRouterMessage_new(void);
+JXTA_DECLARE(void) EndpointRouterMessage_set_handlers(EndpointRouterMessage *, XML_Parser, void *);
+void EndpointRouterMessage_delete(EndpointRouterMessage *);
+JXTA_DECLARE(Jxta_status) EndpointRouterMessage_get_xml(EndpointRouterMessage *, JString ** xml);
+JXTA_DECLARE(Jxta_status) EndpointRouterMessage_parse_charbuffer(EndpointRouterMessage *, const char *, int len);
+JXTA_DECLARE(Jxta_status) EndpointRouterMessage_parse_file(EndpointRouterMessage *, FILE * stream);
 
-    JXTA_DECLARE(char *) EndpointRouterMessage_get_EndpointRouterMessage(EndpointRouterMessage *);
-    JXTA_DECLARE(void) EndpointRouterMessage_set_EndpointRouterMessage(EndpointRouterMessage *, char *);
+JXTA_DECLARE(char *) EndpointRouterMessage_get_EndpointRouterMessage(EndpointRouterMessage *);
+JXTA_DECLARE(void) EndpointRouterMessage_set_EndpointRouterMessage(EndpointRouterMessage *, char *);
 
-    JXTA_DECLARE(Jxta_endpoint_address *) EndpointRouterMessage_get_Src(EndpointRouterMessage *);
-    JXTA_DECLARE(void) EndpointRouterMessage_set_Src(EndpointRouterMessage *, Jxta_endpoint_address *);
+JXTA_DECLARE(Jxta_endpoint_address *) EndpointRouterMessage_get_Src(EndpointRouterMessage *);
+JXTA_DECLARE(void) EndpointRouterMessage_set_Src(EndpointRouterMessage *, Jxta_endpoint_address *);
 
-    JXTA_DECLARE(Jxta_endpoint_address *) EndpointRouterMessage_get_Dest(EndpointRouterMessage *);
-    JXTA_DECLARE(void) EndpointRouterMessage_set_Dest(EndpointRouterMessage *, Jxta_endpoint_address *);
+JXTA_DECLARE(Jxta_endpoint_address *) EndpointRouterMessage_get_Dest(EndpointRouterMessage *);
+JXTA_DECLARE(void) EndpointRouterMessage_set_Dest(EndpointRouterMessage *, Jxta_endpoint_address *);
 
-    JXTA_DECLARE(Jxta_endpoint_address *) EndpointRouterMessage_get_Last(EndpointRouterMessage *);
-    JXTA_DECLARE(void) EndpointRouterMessage_set_Last(EndpointRouterMessage *, Jxta_endpoint_address *);
+JXTA_DECLARE(Jxta_endpoint_address *) EndpointRouterMessage_get_Last(EndpointRouterMessage *);
+JXTA_DECLARE(void) EndpointRouterMessage_set_Last(EndpointRouterMessage *, Jxta_endpoint_address *);
 
-    JXTA_DECLARE(Jxta_vector *) EndpointRouterMessage_get_GatewayForward(EndpointRouterMessage *);
-    JXTA_DECLARE(void) EndpointRouterMessage_set_GatewayForward(EndpointRouterMessage *, Jxta_vector *);
+JXTA_DECLARE(Jxta_vector *) EndpointRouterMessage_get_GatewayForward(EndpointRouterMessage *);
+JXTA_DECLARE(void) EndpointRouterMessage_set_GatewayForward(EndpointRouterMessage *, Jxta_vector *);
 
-    JXTA_DECLARE(Jxta_vector *) EndpointRouterMessage_get_GatewayReverse(EndpointRouterMessage *);
-    JXTA_DECLARE(void) EndpointRouterMessage_set_GatewayReverse(EndpointRouterMessage *, Jxta_vector *);
+JXTA_DECLARE(Jxta_vector *) EndpointRouterMessage_get_GatewayReverse(EndpointRouterMessage *);
+JXTA_DECLARE(void) EndpointRouterMessage_set_GatewayReverse(EndpointRouterMessage *, Jxta_vector *);
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
 #endif /* __EndpointRouterMessage_H__  */
+
+/* vim: set ts=4 sw=4 et tw=130: */

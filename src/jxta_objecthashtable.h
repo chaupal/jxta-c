@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_objecthashtable.h,v 1.6 2005/07/22 03:12:52 slowhog Exp $
+ * $Id: jxta_objecthashtable.h,v 1.7 2005/09/21 21:16:48 slowhog Exp $
  */
 
 
@@ -77,15 +77,16 @@
 
 #ifdef __cplusplus
 extern "C" {
-
     /* avoid confusing indenters */
 #if 0
-}
+};
 #endif
 #endif
+
 /*
  * The opaque type definition.
- */ typedef struct _Jxta_objecthashtable const Jxta_objecthashtable;
+ */
+typedef struct _Jxta_objecthashtable const Jxta_objecthashtable;
 
 
 /************************************************************************
@@ -276,5 +277,6 @@ JXTA_DECLARE(unsigned int) jxta_objecthashtable_simplehash(const void *key, size
 }
 #endif
 
-
 #endif /* JXTA_HASH_H */
+
+/* vim: set sw=4 ts=4 et tw=130: */

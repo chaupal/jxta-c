@@ -50,23 +50,23 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: timer_test.c,v 1.3 2002/02/19 16:46:08 ddoolin Exp $
+ * $Id: timer_test.c,v 1.4 2005/09/23 20:07:16 slowhog Exp $
  */
 
 #include "timer.h"
 
 
 
-int
-test_timer(void) {
+int test_timer(void)
+{
 
-  Timer * t = timer_new();
+    Timer *t = timer_new();
 
-  timer_start(t);
-  timer_stop(t);
-  timer_delete_1(t);
+    timer_start(t);
+    timer_stop(t);
+    timer_delete_1(t);
 
-  return 1;
+    return 1;
 }
 
 
@@ -77,10 +77,10 @@ test_timer(void) {
  * runs, doesn't leak memory.
  */
 #ifdef STANDALONE
-int 
-main(int argc, char ** argv) {
+int main(int argc, char **argv)
+{
 
-  return test_timer();
+    return test_timer();
 
 }
 #endif

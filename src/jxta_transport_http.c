@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http.c,v 1.65 2005/08/18 19:01:51 slowhog Exp $
+ * $Id: jxta_transport_http.c,v 1.68 2005/11/22 23:44:46 mmx2005 Exp $
  */
 
 static const char *__log_cat = "HTTP_TRANSPORT";
@@ -298,7 +298,7 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     for (i = 0; i < sz; i++) {
         Jxta_id *mcid;
         Jxta_svc *tmpsvc = NULL;
-        jxta_vector_get_object_at(svcs, (Jxta_object **) & tmpsvc, i);
+        jxta_vector_get_object_at(svcs, JXTA_OBJECT_PPTR(&tmpsvc), i);
         mcid = jxta_svc_get_MCID(tmpsvc);
         if (jxta_id_equals(mcid, assigned_id)) {
             svc = tmpsvc;
@@ -335,7 +335,7 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     for (i = 0; i < sz; i++) {
         Jxta_id *mcid;
         Jxta_svc *tmpsvc = NULL;
-        jxta_vector_get_object_at(svcs, (Jxta_object **) & tmpsvc, i);
+        jxta_vector_get_object_at(svcs, JXTA_OBJECT_PPTR(&tmpsvc), i);
         mcid = jxta_svc_get_MCID(tmpsvc);
         if (jxta_id_equals(mcid, jxta_relayproto_classid_get())) {
             svc = tmpsvc;
@@ -576,6 +576,9 @@ void jxta_transport_http_construct(Jxta_transport_http * self, Jxta_transport_ht
 {
     PTValid(methods, Jxta_transport_methods);
     jxta_transport_construct((Jxta_transport *) self, (Jxta_transport_methods *) methods);
+    self->_super.metric = 2; /* value decided as JSE implemetnation */
+    self->_super.direction = JXTA_OUTBOUND;
+
     self->thisType = "Jxta_transport_http";
 
     self->address = NULL;
@@ -644,7 +647,7 @@ Jxta_transport_http *jxta_transport_http_new_instance(void)
     Jxta_transport_http *self = (Jxta_transport_http *) malloc(sizeof(Jxta_transport_http));
     memset(self, 0, sizeof(Jxta_transport_http));
     JXTA_OBJECT_INIT(self, http_free, NULL);
-    jxta_transport_http_construct(self, &jxta_transport_http_methods);
+    jxta_transport_http_construct(self, (Jxta_transport_http_methods *) &jxta_transport_http_methods);
     return self;
 }
 
@@ -671,7 +674,7 @@ static Jxta_status messenger_send(JxtaEndpointMessenger * mes, Jxta_message * ms
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "proxy %s:%d\n", self->proxy_host, self->proxy_port);
     }
 
-    con = http_client_new(self->proxy_host, self->proxy_port, self->host, self->port, NULL);
+    con = http_client_new(self->proxy_host, (Jxta_port)self->proxy_port, self->host, (Jxta_port)self->port, NULL);
     if (con == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "http: messenger_send failed creating a new http_client\n");
         JXTA_OBJECT_RELEASE(msg);
@@ -842,8 +845,9 @@ static HttpClientMessenger *http_client_messenger_new(Jxta_transport_http * tp, 
 
     self->poller = http_poller_new(self->tp->group,
                                    self->tp->endpoint,
-                                   self->proxy_host, self->proxy_port,
-                                   self->host, self->port, "/", self->tp->peerid, self->tp->pool);
+                                   self->proxy_host, (Jxta_port)self->proxy_port,
+                                   self->host, (Jxta_port)self->port, "/", 
+                                   self->tp->peerid, (Jxta_pool*) self->tp->pool);
 
     if (APR_SUCCESS != http_poller_start(self->poller)) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "HTTP poller failed in http_transport_init\n");
@@ -877,8 +881,6 @@ static HttpClientMessenger *http_client_messenger_new(Jxta_transport_http * tp, 
  ** for jxta-c, this temporary implementation uses the existing Jxta_vector.
  ** When hastable will be available, this implementation should use it.
  **/
-
-
 
 /******************************************************************************/
 /*                                                                            */
@@ -916,7 +918,7 @@ static HttpClientMessenger *get_http_client_messenger(Jxta_transport_http * tp, 
          ** If the messenger retrieved is not the right messenger, the object
          ** needs to be released.
          **/
-        res = jxta_vector_get_object_at(tp->clientMessengers, (Jxta_object **) & messenger, i);
+        res = jxta_vector_get_object_at(tp->clientMessengers, JXTA_OBJECT_PPTR(&messenger), i);
         if (res != JXTA_SUCCESS) {
             continue;
         }

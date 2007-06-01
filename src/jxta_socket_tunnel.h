@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_socket_tunnel.h,v 1.5 2005/08/03 05:51:19 slowhog Exp $
+ * $Id: jxta_socket_tunnel.h,v 1.6 2005/09/21 21:16:51 slowhog Exp $
  */
 
 #ifndef __JXTA_SOCKET_TUNNEL_H__
@@ -63,8 +63,9 @@
 extern "C" {
 #endif
 #if 0                           /* to cheat indent */
-}
+};
 #endif
+
 typedef struct Jxta_socket_tunnel Jxta_socket_tunnel;
 
 /**

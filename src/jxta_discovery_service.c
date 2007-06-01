@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_discovery_service.c,v 1.19 2005/08/29 22:49:04 slowhog Exp $
+ * $Id: jxta_discovery_service.c,v 1.21 2005/11/26 12:11:46 mmx2005 Exp $
  */
 
 #include "jxta_discovery_service_private.h"
@@ -61,8 +61,8 @@
  */
 void jxta_discovery_service_construct(Jxta_discovery_service * service, Jxta_discovery_service_methods * methods)
 {
-
     PTValid(methods, Jxta_discovery_service_methods);
+
     jxta_service_construct((Jxta_service *) service, (Jxta_service_methods *) methods);
     service->thisType = "Jxta_discovery_service";
 }
@@ -150,7 +150,6 @@ JXTA_DECLARE(Jxta_status)
 
 }
 
-
 JXTA_DECLARE(Jxta_status)
     discovery_service_add_discovery_listener(Jxta_discovery_service * service, Jxta_discovery_listener * listener)
 {
@@ -158,7 +157,6 @@ JXTA_DECLARE(Jxta_status)
     return VTBL->add_listener(service, listener);
 
 }
-
 
 JXTA_DECLARE(Jxta_status)
     discovery_service_remove_discovery_listener(Jxta_discovery_service * service, Jxta_discovery_listener * listener)
@@ -168,14 +166,12 @@ JXTA_DECLARE(Jxta_status)
 
 }
 
-
 JXTA_DECLARE(Jxta_status)
     discovery_service_get_lifetime(Jxta_discovery_service * service, short type, Jxta_id * advId, Jxta_expiration_time * exp)
 {
     PTValid(service, Jxta_discovery_service);
     return VTBL->getLifetime(service, type, advId, exp);
 }
-
 
 JXTA_DECLARE(Jxta_status)
     discovery_service_get_expiration(Jxta_discovery_service * service, short type, Jxta_id * advId, Jxta_expiration_time * exp)

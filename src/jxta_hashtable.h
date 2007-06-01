@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_hashtable.h,v 1.8 2005/06/16 23:11:42 slowhog Exp $
+ * $Id: jxta_hashtable.h,v 1.9 2005/09/21 21:16:47 slowhog Exp $
  */
 
 
@@ -73,15 +73,16 @@
 
 #ifdef __cplusplus
 extern "C" {
-
-    /* avoid confusing indenters */
+/* avoid confusing indenters */
 #if 0
-}
+};
 #endif
 #endif
+
 /**
  * A Jxta_hashtable is a Jxta_object that manages a hash table of Jxta_objects.
- **/ typedef struct _jxta_hashtable Jxta_hashtable;
+ **/
+typedef struct _jxta_hashtable Jxta_hashtable;
 
 
 /**

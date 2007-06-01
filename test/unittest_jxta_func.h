@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: unittest_jxta_func.h,v 1.2 2005/04/17 14:22:20 lankes Exp $
+ * $Id: unittest_jxta_func.h,v 1.3 2005/10/13 17:07:41 exocetrick Exp $
  */
 
 
@@ -72,19 +72,15 @@ extern "C" {
 }
 #endif
 #endif
-
-/* Functions that can be used to run test functions */
-
-/**
+                                                      /* Functions that can be used to run test functions *//**
  * A structure that gives a char buffer to write or read from
  * and a position denoting the current read/write position
- */
-struct _read_write_test_buffer{ 
-  char * buffer;      /* The buffer to read or write */
-  long position;      /* The current position */
+ */ struct _read_write_test_buffer {
+    char *buffer;       /* The buffer to read or write */
+    long position;      /* The current position */
 };
 
-typedef struct _read_write_test_buffer read_write_test_buffer; 
+typedef struct _read_write_test_buffer read_write_test_buffer;
 
 
 /** 
@@ -92,8 +88,8 @@ typedef struct _read_write_test_buffer read_write_test_buffer;
  * and status information
  */
 struct _funcs {
-  Jxta_boolean (*test)(void);
-  const char * states;
+    Jxta_boolean(*test) (void);
+    const char *states;
 };
 
 
@@ -108,10 +104,7 @@ struct _funcs {
 *
 * @return TRUE if all tests run successfully, FALSE otherwise
 */
-Jxta_boolean run_testfunctions(const struct _funcs testfunc[],
-			       int * tests_run,
-			       int * tests_passed,
-			       int * tests_failed);
+Jxta_boolean run_testfunctions(const struct _funcs testfunc[], int *tests_run, int *tests_passed, int *tests_failed);
 
 
 /** 
@@ -123,7 +116,7 @@ Jxta_boolean run_testfunctions(const struct _funcs testfunc[],
  * @param argc the number of command line arguments
  * @param argv the array of command line arguments
  */
-int  main_test_function(const struct _funcs testfunc[],int argc, char ** argv);
+int main_test_function(const struct _funcs testfunc[], int argc, char **argv);
 
 /**
  *  Implementation of SendFunc, used for unit test, that writes the 
@@ -139,8 +132,7 @@ int  main_test_function(const struct _funcs testfunc[],int argc, char ** argv);
  * 
  *  @return always returns JXTA_SUCCESS
  */
-Jxta_status JXTA_STDCALL
-sendFunction(void *stream, const char *buf, size_t len, unsigned int flag);
+Jxta_status JXTA_STDCALL sendFunction(void *stream, const char *buf, size_t len, unsigned int flag);
 
 /**
  * Implementation of  WriteFunc, used for unit test, that writes the 
@@ -152,8 +144,7 @@ sendFunction(void *stream, const char *buf, size_t len, unsigned int flag);
  *         
  *  @return always returns JXTA_SUCCESS
  */
-Jxta_status JXTA_STDCALL
-writeFunction(void *stream, const char *buf, size_t len);
+Jxta_status JXTA_STDCALL writeFunction(void *stream, const char *buf, size_t len);
 
 
 
@@ -168,8 +159,7 @@ writeFunction(void *stream, const char *buf, size_t len);
  * 
  *  @return always returns JXTA_SUCCESS
  */
-Jxta_status JXTA_STDCALL
-readFromStreamFunction(void *stream, char *buf, size_t len);
+Jxta_status JXTA_STDCALL readFromStreamFunction(void *stream, char *buf, size_t len);
 
 #ifdef __cplusplus
 }

@@ -72,9 +72,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 #define ENHANCED_QUERY_LOG "QueryLog"
 struct _jxta_query_context {
     JXTA_OBJECT_HANDLE;
@@ -90,7 +91,9 @@ struct _jxta_query_context {
     JString *origQuery;         /* initial query */
     JString *element;           /* The current element */
     JString *attribName;        /* current attribute name */
+    Jxta_boolean negative;      /* Sign for numeric value */
     JString *value;             /* The current query value */
+    Jxta_boolean hasNumeric;    /* there is a numeric in the query */
     JString *sqlcmd;            /* build the SQL command here */
     JString *sqloper;           /* don't think we need this yet */
     JString *level2;            /* The level 2 element */
@@ -114,6 +117,9 @@ struct _jxta_query_element {
     JString *jBoolean;
     JString *jOper;
     JString *jName;
+    Jxta_boolean negative;
+    Jxta_boolean isNumeric;
+    Jxta_boolean hasWildcard;
     JString *jValue;
 };
 
@@ -132,7 +138,6 @@ JXTA_DECLARE(Jxta_status)
 
 
 JXTA_DECLARE(void) jxta_query_build_SQL_operator(JString * elem, JString * sqloper, JString * value, JString * result);
-
 
 /************************************************************************
  * 									*

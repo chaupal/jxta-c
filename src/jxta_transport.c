@@ -51,10 +51,46 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport.c,v 1.13 2005/08/03 05:51:20 slowhog Exp $
+ * $Id: jxta_transport.c,v 1.18 2005/11/25 07:50:01 mmx2005 Exp $
  */
 
+static const char *__log_cat = "TRANSPORT";
+
 #include "jxta_transport_private.h"
+#include "jxta_log.h"
+
+static void jxta_transport_event_delete(Jxta_object * me)
+{
+    Jxta_transport_event *me2 = (Jxta_transport_event *) me;
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "EVENT: Transport event [%p] delete \n", me);
+
+    if (NULL != me2->peer_id) {
+        JXTA_OBJECT_RELEASE(me2->peer_id);
+    }
+    if (NULL != me2->dest_addr) {
+        JXTA_OBJECT_RELEASE(me2->dest_addr);
+    }
+
+    free(me2);
+}
+
+Jxta_transport_event* jxta_transport_event_new(Jxta_transport_event_type event_type)
+{
+    Jxta_transport_event *me = NULL;
+
+    me = (Jxta_transport_event *) calloc(1, sizeof(Jxta_transport_event));
+    if (NULL == me) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Could not alloc transport event");
+        return NULL;
+    }
+
+    JXTA_OBJECT_INIT(me, jxta_transport_event_delete, NULL);
+    me->type = event_type;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, FILEANDLINE "EVENT: Create a new transport event [%p] with type %d\n", 
+                    me, event_type);
+    return me;
+}
 
 /**
  * The base transport ctor (not public: the only public way to make a new transport
@@ -64,9 +100,11 @@ Jxta_transport *jxta_transport_construct(Jxta_transport * self, Jxta_transport_m
 {
 
     PTValid(methods, Jxta_transport_methods);
-    jxta_module_construct(self, (Jxta_module_methods const *) methods);
+    jxta_module_construct((Jxta_module *) self, (Jxta_module_methods const *) methods);
 
     self->thisType = "Jxta_transport";
+    self->metric = 0;
+    self->direction = JXTA_OUTBOUND;
 
     return self;
 }
@@ -78,6 +116,11 @@ Jxta_transport *jxta_transport_construct(Jxta_transport * self, Jxta_transport_m
 void jxta_transport_destruct(Jxta_transport * self)
 {
     jxta_module_destruct((Jxta_module *) self);
+}
+
+int jxta_transport_metric_get(Jxta_transport * me)
+{
+    return me->metric;
 }
 
 /**
@@ -108,8 +151,18 @@ JXTA_DECLARE(Jxta_endpoint_address *) jxta_transport_publicaddr_get(Jxta_transpo
 /******************************************************************************/
 JXTA_DECLARE(JxtaEndpointMessenger *) jxta_transport_messenger_get(Jxta_transport * self, Jxta_endpoint_address * there)
 {
+    char *ea_str = NULL;
+
     PTValid(self, Jxta_transport);
-    return VTBL->messenger_get(self, there);
+    if (VTBL->messenger_get) {
+        return VTBL->messenger_get(self, there);
+    } else {
+        ea_str = jxta_endpoint_address_to_string(there);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE 
+                        ": Calling abstract method jxta_transport_messenger_get for EA: %s\n", ea_str ? ea_str : "NULL");
+        if (ea_str) JXTA_OBJECT_RELEASE(ea_str);
+        return NULL;
+    }
 }
 
 /******************************************************************************/
@@ -157,6 +210,15 @@ JXTA_DECLARE(Jxta_boolean) jxta_transport_connection_oriented_p(Jxta_transport *
     return VTBL->connection_oriented_p(self);
 }
 
+JXTA_DECLARE(Jxta_boolean) jxta_transport_allow_inbound(Jxta_transport * me)
+{
+    return (me->direction & JXTA_INBOUND);
+}
+
+JXTA_DECLARE(Jxta_boolean) jxta_transport_allow_outbound(Jxta_transport * me)
+{
+    return (me->direction & JXTA_OUTBOUND);
+}
 
 /*
  * NB the functions above constitute the interface. There are no default implementations
@@ -164,3 +226,5 @@ JXTA_DECLARE(Jxta_boolean) jxta_transport_connection_oriented_p(Jxta_transport *
  * is no new_instance function either.
  * No one is supposed to create a object of this exact class.
  */
+
+/* vim: set ts=4 sw=4 et tw=130: */

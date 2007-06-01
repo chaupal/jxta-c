@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: publish.c,v 1.5 2005/08/24 01:21:22 slowhog Exp $
+ * $Id: publish.c,v 1.7 2005/11/15 18:41:31 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -71,7 +71,9 @@
 #include "jxta_endpoint_service.h"
 #include "jxta_vector.h"
 #include "jxta_hashtable.h"
+#include "jxta_advertisement.h"
 #include "jxta_test_adv.h"
+#include "jxta_range.h"
 
 #include "apr_time.h"
 
@@ -80,14 +82,12 @@
 
 static Jxta_PG *group;
 static JxtaShellEnvironment *environment;
-static JString *env_type = NULL;
 static Jxta_discovery_service *discovery = NULL;
 static Jxta_pipe_service *pipe_service = NULL;
 static JString *peerName = NULL;
 static char *userName = NULL;
-static Jxta_hashtable *listeners = NULL;
 
-static void create_adv(char *userName);
+static void create_adv(const char *userName, Jxta_boolean remote);
 
 JxtaShellApplication *publish_new(Jxta_PG * pg,
                                   Jxta_listener * standout,
@@ -102,22 +102,20 @@ JxtaShellApplication *publish_new(Jxta_PG * pg,
         return 0;
     JxtaShellApplication_setFunctions(app,
                                       (Jxta_object *) app,
-                                      publish_print_help, publish_start, (shell_application_stdin) publish_process_input);
+                                      (shell_application_printHelp) publish_print_help,
+                                      (shell_application_start) publish_start, (shell_application_stdin) publish_process_input);
     group = pg;
 
     jxta_PG_get_discovery_service(group, &discovery);
     jxta_PG_get_pipe_service(group, &pipe_service);
     jxta_PG_get_peername(group, &peerName);
 
-    listeners = jxta_hashtable_new(0);
-
     environment = env;
-    env_type = jstring_new_2("TestAdvertisement");
     return app;
 }
 
 
-void publish_process_input(Jxta_object * appl, JString * inputLine)
+void publish_process_input(JxtaShellApplication * appl, JString * inputLine)
 {
 
     JxtaShellApplication *app = (JxtaShellApplication *) appl;
@@ -125,51 +123,61 @@ void publish_process_input(Jxta_object * appl, JString * inputLine)
 }
 
 
-void publish_start(Jxta_object * appl, int argv, char **arg)
+void publish_start(JxtaShellApplication * appl, int argv, const char **arg)
 {
 
     /*  JxtaShellApplication * app = (JxtaShellApplication*)appl; */
     JxtaShellGetopt *opt = JxtaShellGetopt_new(argv, arg, (char *) "hl:t:r:");
-    JString *userName = NULL;
+    JString *jUserName = NULL;
+    Jxta_boolean publishRemote = FALSE;
 
     while (1) {
         int type = JxtaShellGetopt_getNext(opt);
         int error = 0;
 
-        if (type == -1)
-            break;
-        switch (type) {
-
-        case 'r':
-            userName = JxtaShellGetopt_getOptionArgument(opt);
-            create_adv((char *) jstring_get_string(userName));
-            JXTA_OBJECT_RELEASE(userName);
-            break;
-
-        case 'h':
-            publish_print_help(appl);
-            break;
-        default:
-            publish_print_help(appl);
-            error = 1;
-            break;
-        }
-        if (error != 0) {
-            break;
-        }
+    if( type == -1) break;
+    switch(type){
+    
+    case 'r':
+      publishRemote = TRUE;
+      jUserName = JxtaShellGetopt_getOptionArgument(opt);
+      break;
+    case 'h':
+      publish_print_help(appl);
+      break;
+    case 'l':
+      jUserName = JxtaShellGetopt_getOptionArgument(opt);
+      break;
+    default:
+      publish_print_help(appl);
+      error = 1;
+      break;
     }
-
+    if( error != 0) {
+      break;
+    }
+    }
+    if (NULL != jUserName) {
+        create_adv (jstring_get_string(jUserName), publishRemote);
+        JXTA_OBJECT_RELEASE(jUserName);
+    }
+    if (discovery)
+        JXTA_OBJECT_RELEASE(discovery);
+    if (pipe_service)
+        JXTA_OBJECT_RELEASE(pipe_service);
+    if (peerName)
+        JXTA_OBJECT_RELEASE(peerName);    
     JxtaShellGetopt_delete(opt);
     JxtaShellApplication_terminate(appl);
 }
 
-void publish_print_help(Jxta_object * appl)
+void publish_print_help(JxtaShellApplication * appl)
 {
 
     JxtaShellApplication *app = (JxtaShellApplication *) appl;
     JString *inputLine = jstring_new_2("publish - publish to another JXTA user \n\n");
     jstring_append_2(inputLine, "SYNOPSIS\n");
-    jstring_append_2(inputLine, "    publish [-r Name value]\n");
+    jstring_append_2(inputLine, "    publish [-r Name -l Name]\n");
     if (app != 0) {
         JXTA_OBJECT_SHARE(inputLine);
         JxtaShellApplication_print(app, inputLine);
@@ -178,7 +186,7 @@ void publish_print_help(Jxta_object * appl)
 }
 
 
-static void create_adv(char *userName)
+static void create_adv(const char *userName, Jxta_boolean remote)
 {
 
     Jxta_test_adv *adv = NULL;
@@ -187,37 +195,68 @@ static void create_adv(char *userName)
     char *publishUserName = malloc(50 + strlen(userName));
     Jxta_status res;
     Jxta_id *gid = NULL;
+    Jxta_vector *ranges=NULL;
 
     sprintf(publishUserName, "JxtaTestAdvertisement.%s", userName);
 
     jxta_PG_get_GID(group, &gid);
-
     jxta_id_pipeid_new_1(&pipeid, gid);
-
+    JXTA_OBJECT_RELEASE(gid);
     JXTA_OBJECT_CHECK_VALID(pipeid);
-
     jxta_id_to_jstring(pipeid, &tmpString);
-
+    JXTA_OBJECT_RELEASE(pipeid);
     JXTA_OBJECT_CHECK_VALID(tmpString);
 
-    adv = jxta_test_adv_new();
-    jxta_test_adv_set_Id(adv, (char *) jstring_get_string(tmpString));
-    jxta_test_adv_set_IdAttr(adv, "this is from publish");
+    adv = jxta_test_adv_new(); 
+    jxta_test_adv_set_Id (adv, (char*) jstring_get_string (tmpString));
+    jxta_test_adv_set_IdAttr(adv, "#200.35", "(-100 :: 400)");
     jxta_test_adv_set_IdAttr1(adv, "this is the second attribute");
-    jxta_test_adv_set_Type(adv, (char *) JXTA_UNICAST_PIPE);
-    jxta_test_adv_set_Name(adv, publishUserName);
+    jxta_test_adv_set_Type (adv, (char*) JXTA_UNICAST_PIPE);
+    jxta_test_adv_set_Name (adv, publishUserName);
     jxta_test_adv_set_NameAttr1(adv, "this is from publish and is the attribute");
-/*  jxta_test_adv_set_NameAttr2(adv, "this is for attribute 2 from the publish"); */
+    jxta_test_adv_set_GenericNumeric(adv, "#600", "(300 :: 900)");
 
     free(publishUserName);
     JXTA_OBJECT_RELEASE(tmpString);
+    if (remote)  {
+        res = discovery_service_remote_publish(discovery,
+                                  NULL,
+                                  (Jxta_advertisement *) adv,
+                                  DISC_ADV,
+                                  DEFAULT_TIMEOUT);
 
-    res = discovery_service_publish(discovery, (Jxta_advertisement *) adv, DISC_ADV, DEFAULT_TIMEOUT, DEFAULT_TIMEOUT);
+    } else {
+        res = discovery_service_publish(discovery,
+                                  (Jxta_advertisement *) adv,
+                                  DISC_ADV,
+                                  DEFAULT_TIMEOUT,
+                                  DEFAULT_TIMEOUT);
+    }
+    /* res = discovery_service_publish(discovery, (Jxta_advertisement *) adv, DISC_ADV, DEFAULT_TIMEOUT, DEFAULT_TIMEOUT); */
 
     if (res != JXTA_SUCCESS) {
-        printf("publish failed\n");
+      printf ("publish failed\n");
+    } else {
+      printf ("Publish Complete\n");
     }
-
-
+  
+    /* ranges = jxta_test_adv_get_ranges(adv); */
+    ranges = jxta_range_get_ranges();
+    if (NULL != ranges) {
+        unsigned int i;
+        for (i=0; i < jxta_vector_size(ranges); i++) {
+            Jxta_range* rge;
+            if (JXTA_SUCCESS == jxta_vector_get_object_at(ranges, JXTA_OBJECT_PPTR(&rge), i )) {
+                printf ("Range Published %s %s low: %f high:%f \n"
+                        , jxta_range_get_element(rge)
+                        , jxta_range_get_attribute(rge)
+                        , jxta_range_get_low(rge)
+                        , jxta_range_get_high(rge) );
+                JXTA_OBJECT_RELEASE(rge);
+            }
+        }
+        JXTA_OBJECT_RELEASE(ranges);
+    }
+    JXTA_OBJECT_RELEASE(adv);
     printf("done.\n");
 }

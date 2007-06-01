@@ -50,29 +50,20 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_wm.c,v 1.20 2005/08/26 02:39:46 slowhog Exp $
+ * $Id: jxta_wm.c,v 1.23 2005/11/14 10:11:30 slowhog Exp $
  */
 
-
-/*
- * The following command will compile the output from the script 
- * given the apr is installed correctly.
- */
-
-/*
- * gcc -DSTANDALONE jxta_advertisement.c DiscoveryResponse.c  -o PA \
- * `/usr/local/apache2/bin/apr-config --cflags --includes --libs` \
- * -lexpat -L/usr/local/apache2/lib/ -lapr
- */
+static const char *const __log_cat = "WireMessage";
 
 #include <stdio.h>
 #include <string.h>
+
 #include "jxta_wm.h"
 #include "jxta_errno.h"
-#include "jxta_debug.h"
+#include "jxta_log.h"
 #include "jxta_xml_util.h"
 #include "jstring.h"
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -116,6 +107,8 @@ struct _JxtaWire {
 static void handleJxtaWire(void *userdata, const XML_Char * cd, int len)
 {
     /* JxtaWire * ad = (JxtaWire*)userdata; */
+    
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Begining parse of JxtaWire\n");
 }
 
 static void handleSrcPeer(void *userdata, const XML_Char * cd, int len)
@@ -197,7 +190,7 @@ static void handleVisitedPeer(void *userdata, const XML_Char * cd, int len)
 
         if (strlen(tok) != 0) {
             JString *pt = jstring_new_2(tok);
-            JXTA_LOG("VisitedPeer: [%s]\n", tok);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "VisitedPeer: [%s]\n", tok);
             jxta_vector_add_object_last(ad->VisitedPeer, (Jxta_object *) pt);
             /* The vector shares automatically the object. We must release */
             JXTA_OBJECT_RELEASE(pt);
@@ -373,14 +366,14 @@ JXTA_DECLARE(Jxta_status) JxtaWire_get_xml(JxtaWire * ad, JString ** xml)
         JString *path;
         Jxta_status res;
 
-        res = jxta_vector_get_object_at(ad->VisitedPeer, (Jxta_object **) & path, i);
+        res = jxta_vector_get_object_at(ad->VisitedPeer, JXTA_OBJECT_PPTR(&path), i);
         if ((res == JXTA_SUCCESS) && (path != NULL)) {
             jstring_append_2(string, "<VisitedPeer>");
             jstring_append_2(string, jstring_get_string(path));
             jstring_append_2(string, "</VisitedPeer>\n");
             JXTA_OBJECT_RELEASE(path);
         } else {
-            JXTA_LOG("Failed to get VisitedPeer from vector\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to get VisitedPeer from vector\n");
         }
     }
     jstring_append_2(string, "</JxtaWire>\n");
@@ -461,30 +454,6 @@ JXTA_DECLARE(void) JxtaWire_parse_file(JxtaWire * ad, FILE * stream)
 
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
-
-#ifdef STANDALONE
-int main(int argc, char **argv)
-{
-    JxtaWire *ad;
-    FILE *testfile;
-
-    if (argc != 2) {
-        printf("usage: ad <filename>\n");
-        return -1;
-    }
-
-    ad = JxtaWire_new();
-
-    testfile = fopen(argv[1], "r");
-    JxtaWire_parse_file(ad, testfile);
-    fclose(testfile);
-
-    /* JxtaWire_print_xml(ad,fprintf,stdout); */
-    JxtaWire_delete(ad);
-
-    return 0;
-}
-#endif
 
 #ifdef __cplusplus
 #if 0

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_config_adv.h,v 1.11 2005/05/22 18:58:23 lankes Exp $
+ * $Id: jxta_rdv_config_adv.h,v 1.12 2005/09/21 21:16:49 slowhog Exp $
  */
 
 
@@ -65,7 +65,7 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
 typedef struct _jxta_RdvConfigAdvertisement Jxta_RdvConfigAdvertisement;
@@ -124,3 +124,5 @@ void handleJxta_RdvConfigAdvertisement(void *userdata, const XML_Char * cd, int 
 #endif
 
 #endif /* JXTA_RDVCONFIGADVERTISEMENT_H__  */
+
+/* vim: set ts=4 sw=4 et tw=130: */

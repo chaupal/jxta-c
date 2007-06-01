@@ -50,13 +50,13 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: queue.c,v 1.20 2005/08/03 05:51:21 slowhog Exp $
+ * $Id: queue.c,v 1.21 2005/10/27 01:55:32 slowhog Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 #include "jdlist.h"
 #include "queue.h"

@@ -54,12 +54,23 @@
 
 /* some useful defines for SQL */
 
+#ifndef __JXTA_SQL_H__
+#define __JXTA_SQL_H__
+
+#ifdef __cplusplus
+extern "C" {
+#if 0
+};
+#endif
+#endif
+
 #define SQL_SELECT " SELECT "
 #define SQL_UPDATE " UPDATE "
 #define SQL_INSERT_INTO " INSERT INTO "
 #define SQL_DROP_TABLE "DROP TABLE "
 #define SQL_DELETE "DELETE FROM "
 #define SQL_SET " SET "
+#define SQL_PRAGMA " PRAGMA "
 #define SQL_VALUES " VALUES "
 #define SQL_FROM " FROM "
 #define SQL_JOIN " JOIN "
@@ -90,18 +101,26 @@
 #define SQL_INDEX_ON " ON "
 #define SQL_END_SEMI ";"
 
-#define SQL_VALUE(st, v) jstring_append_2(st, "'"); \
-                         jxta_sql_escape_and_wc_value(v, FALSE); \
-                         jstring_append_1(st, v); \
-			 jstring_append_2(st, "'");
+#define SQL_VALUE(st, v) jxta_sql_escape_and_wc_value(v, FALSE); \
+                         jxta_sql_numeric_quote(st, v, FALSE);
+                         
+#define SQL_NUMERIC_VALUE(st, v) jxta_sql_numeric_quote(st, v, TRUE);
 
+/* SQL column identifiers */
+ 
 #define SQL_VARCHAR_64 " varchar(64) "
 #define SQL_VARCHAR_128 " varchar(128) "
 #define SQL_VARCHAR_256 " varchar(256) "
 #define SQL_VARCHAR_4K " varchar(4096) "
 #define SQL_VARCHAR_8K " varchar(8192) "
 #define SQL_VARCHAR_16K " varchar(16384) "
-#define SQL_INTEGER " integer "
+#define SQL_VARCHAR_128_PRIMARY " varchar(128) PRIMARY KEY "
+
+#define SQL_TEXT " TEXT "
+#define SQL_REAL " REAL "
+#define SQL_INTEGER " INTEGER "
+#define SQL_BLOB " BLOB "
+
 
 /* these are specific to SQLite */
 
@@ -113,4 +132,16 @@
 
 #define SQL_COLUMN_Name " name "
 
-Jxta_boolean jxta_sql_escape_and_wc_value(JString * jStr, Jxta_boolean replace);
+JXTA_DECLARE(Jxta_boolean) jxta_sql_escape_and_wc_value(JString * jStr, Jxta_boolean replace);
+JXTA_DECLARE(void) jxta_sql_numeric_quote(JString *jDest, JString *jStr, Jxta_boolean isNumeric) ;
+
+#ifdef __cplusplus
+#if 0
+{
+#endif
+}
+#endif
+
+#endif
+
+/* vim: set ts=4 sw=4 et tw=130: */

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_module.h,v 1.7 2005/08/03 05:51:16 slowhog Exp $
+ * $Id: jxta_module.h,v 1.8 2005/09/21 21:16:47 slowhog Exp $
  */
 
 #ifndef JXTA_MODULE_H
@@ -67,9 +67,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 /**
  * Do not include jxta_peergroup header: c/cpp induced circular dependency.
  */

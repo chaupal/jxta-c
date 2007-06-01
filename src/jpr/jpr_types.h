@@ -51,14 +51,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_types.h,v 1.12 2005/09/03 02:02:37 slowhog Exp $
+ * $Id: jpr_types.h,v 1.13 2005/11/09 09:59:23 slowhog Exp $
  */
 
 #ifndef JPR_TYPES_H
 #define JPR_TYPES_H
 
 #ifndef JPR_DECLARE
-#ifdef WIN32 
+#ifdef WIN32
 #ifdef JPR_STATIC
 #define JPR_DECLARE(type) extern type __stdcall
 #define JPR_DECLARE_DATA  extern
@@ -91,7 +91,7 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
 
@@ -179,6 +179,9 @@ JPR_DECLARE(Jpr_absolute_time) jpr_time_now(void);
 #define jpr_time_now() ((Jpr_absolute_time) (apr_time_now()/1000UL))
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 

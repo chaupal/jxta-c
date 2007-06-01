@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: pg_start_stop_test.c,v 1.5 2005/05/27 20:41:42 slowhog Exp $
+ * $Id: pg_start_stop_test.c,v 1.8 2005/11/17 03:46:27 slowhog Exp $
  */
 
 #include <apr_time.h>
@@ -60,21 +60,22 @@
 #include "jxta_rdv_service.h"
 
 /* rerutn number of connected peers, minus number in case of errors */
-int display_peers(Jxta_rdv_service* rdv) {
+int display_peers(Jxta_rdv_service * rdv)
+{
     int res = 0;
-    Jxta_peer* peer = NULL;
-    Jxta_id* pid = NULL;
-    Jxta_PA*      adv = NULL;
-    JString*  string = NULL;
+    Jxta_peer *peer = NULL;
+    Jxta_id *pid = NULL;
+    Jxta_PA *adv = NULL;
+    JString *string = NULL;
     Jxta_time expires = 0;
     Jxta_boolean connected = FALSE;
     Jxta_status err;
-    Jxta_vector* peers = NULL;
+    Jxta_vector *peers = NULL;
     Jxta_time currentTime;
     int i;
-    char  linebuff[1024];
-    JString * outputLine = jstring_new_0();
-    JString * disconnectedMessage = jstring_new_2("Status: NOT CONNECTED\n");
+    char linebuff[1024];
+    JString *outputLine = jstring_new_0();
+    JString *disconnectedMessage = jstring_new_2("Status: NOT CONNECTED\n");
 
     /* Get the list of peers */
     err = jxta_rdv_service_get_peers(rdv, &peers);
@@ -85,7 +86,7 @@ int display_peers(Jxta_rdv_service* rdv) {
     }
 
     for (i = 0; i < jxta_vector_size(peers); ++i) {
-        err = jxta_vector_get_object_at(peers,(Jxta_object**) &peer, i);
+        err = jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer), i);
         if (err != JXTA_SUCCESS) {
             jstring_append_2(outputLine, "Failed getting a peer.\n");
             res = -2;
@@ -142,15 +143,11 @@ int display_peers(Jxta_rdv_service* rdv) {
 #ifndef WIN32
 
                 sprintf(linebuff, "\nLease expires in %lld hour(s) %lld minute(s) %lld second(s)\n",
-                         (Jxta_time) hours,
-                         (Jxta_time) minutes,
-                         (Jxta_time) seconds);
+                        (Jxta_time) hours, (Jxta_time) minutes, (Jxta_time) seconds);
 #else
 
                 sprintf(linebuff, "\nLease expires in %I64d hour(s) %I64d minute(s) %I64d second(s)\n",
-                         (Jxta_time) hours,
-                         (Jxta_time) minutes,
-                         (Jxta_time) seconds);
+                        (Jxta_time) hours, (Jxta_time) minutes, (Jxta_time) seconds);
 #endif
 
                 jstring_append_2(outputLine, linebuff);
@@ -161,8 +158,8 @@ int display_peers(Jxta_rdv_service* rdv) {
     }
     JXTA_OBJECT_RELEASE(peers);
 
-Common_Exit:
-    if(jstring_length(outputLine) > 0) {
+  Common_Exit:
+    if (jstring_length(outputLine) > 0) {
         printf(jstring_get_string(outputLine));
     } else {
         printf(jstring_get_string(disconnectedMessage));
@@ -175,7 +172,7 @@ Common_Exit:
 
 int main(int argc, char **argv)
 {
-	int a; 
+    int a;
     Jxta_PG *pg;
     int peer_cnt, retry;
     Jxta_rdv_service *rdv;
@@ -191,8 +188,7 @@ int main(int argc, char **argv)
     jxta_log_using(jxta_log_file_append, f);
 
     a = 1;
-	while(a--) 
-	{
+    while (a--) {
         /* Create and start peer group */
         jxta_PG_new_netpg(&pg);
 
@@ -201,20 +197,19 @@ int main(int argc, char **argv)
 
         for (retry = 3; 0 == peer_cnt && retry > 0; --retry) {
             printf("waiting for 3 seconds to see if RDV connects...\n");
-            apr_sleep((Jxta_time)3000000L);
+            apr_sleep((Jxta_time) 3000000L);
             peer_cnt = display_peers(rdv);
         }
 
         JXTA_OBJECT_RELEASE(rdv);
 
-        // stop peer group
         printf("Stopping PeerGroup ...\n");
-        jxta_module_stop((Jxta_module *)pg);
-        // release jxta instance here
+        jxta_module_stop((Jxta_module *) pg);
+
         printf("PeerGroup Ref Count after stop :%d.\n", JXTA_OBJECT_GET_REFCOUNT(pg));
         JXTA_OBJECT_RELEASE(pg);
         pg = NULL;
-	}
+    }
 
     jxta_log_using(NULL, NULL);
     jxta_log_file_close(f);

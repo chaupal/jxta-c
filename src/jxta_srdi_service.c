@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi_service.c,v 1.5 2005/06/16 23:11:52 slowhog Exp $
+ * $Id: jxta_srdi_service.c,v 1.9 2005/11/23 16:07:03 slowhog Exp $
  */
 
 #include "jxta_srdi_service_private.h"
@@ -65,7 +65,6 @@ void jxta_srdi_service_construct(Jxta_srdi_service * service, Jxta_srdi_service_
     PTValid(methods, Jxta_srdi_service_methods);
     jxta_service_construct((Jxta_service *) service, (Jxta_service_methods *) methods);
     service->thisType = "Jxta_srdi_service";
-/*    discovery_service_get_remote_advertisementsdiscovery_service_get_remote_advertisements */
 }
 
 /**
@@ -124,11 +123,19 @@ JXTA_DECLARE(Jxta_status)
 }
 
 JXTA_DECLARE(Jxta_peer *)
-    jxta_srdi_getReplicaPeer(Jxta_srdi_service * service, Jxta_resolver_service * resolver, Jxta_object * peerview,
+    jxta_srdi_getReplicaPeer(Jxta_srdi_service * service, Jxta_resolver_service * resolver, Jxta_peerview * peerview,
                          const char *expression)
 {
     PTValid(service, Jxta_srdi_service);
     return VTBL->getReplicaPeer(service, resolver, peerview, expression);
+}
+
+JXTA_DECLARE(Jxta_peer *)
+    jxta_srdi_getNumericReplica(Jxta_srdi_service * service, Jxta_resolver_service * resolver, Jxta_peerview * peerview,
+                            Jxta_object * rge, const char * value)
+{
+    PTValid(service, Jxta_srdi_service);
+    return VTBL->getNumericReplica(service, resolver, peerview, rge, value);
 }
 
 JXTA_DECLARE(Jxta_status)
@@ -139,4 +146,11 @@ JXTA_DECLARE(Jxta_status)
 {
     PTValid(service, Jxta_srdi_service);
     return VTBL->forwardSrdiMessage(service, resolver, peer, srcPid, primaryKey, secondarykey, value, expiration);
+}
+
+JXTA_DECLARE(Jxta_vector *) jxta_srdi_searchSrdi(Jxta_srdi_service * service, const char * handler, const char * ns, 
+						 const char *attr, const char *val)
+{
+    PTValid(service, Jxta_srdi_service);
+    return VTBL->searchSrdi(service, handler, ns, attr, val);
 }

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdvclient_test.c,v 1.21 2005/04/14 21:10:51 bondolo Exp $
+ * $Id: jxta_rdvclient_test.c,v 1.25 2005/11/15 18:41:33 slowhog Exp $
  */
 
 
@@ -65,163 +65,169 @@
 
 #include "apr_time.h"
 
-#define WAIT_TIME (15 * 60 * 1000 * 1000) /* 15 minutes */
+#define WAIT_TIME (15 * 60 * 1000 * 1000)       /* 15 minutes */
 
 
-Jxta_boolean display_peers (Jxta_rdv_service* rdv) {
+Jxta_boolean display_peers(Jxta_rdv_service * rdv)
+{
 
-  Jxta_peer* peer = NULL;
-  Jxta_id* pid = NULL;
-  Jxta_PA*      adv = NULL;
-  JString*  string = NULL;
-  Jxta_time expires = 0;
-  Jxta_boolean connected = FALSE;
-  Jxta_status err;
-  Jxta_vector* peers = NULL;
-  Jxta_time currentTime;
-  Jxta_endpoint_address* addr;
-  int i;
+    Jxta_peer *peer = NULL;
+    Jxta_id *pid = NULL;
+    Jxta_PA *adv = NULL;
+    JString *string = NULL;
+    Jxta_expiration_time expires = 0;
+    Jxta_boolean connected = FALSE;
+    Jxta_status err;
+    Jxta_vector *peers = NULL;
+    Jxta_expiration_time currentTime;
+    Jxta_endpoint_address *addr;
+    unsigned int i;
 
-  /* Get the list of peers */
-  err = jxta_rdv_service_get_peers (rdv, &peers);
-  if (err != JXTA_SUCCESS) {
-    printf ("Failed getting the peers. reason= %d\n", (int) err);
-    return FALSE;
-  }
-  for (i = 0; i < jxta_vector_size (peers); ++i) {
-
-    err = jxta_vector_get_object_at (peers, (Jxta_object**) &peer, i);
+    /* Get the list of peers */
+    err = jxta_rdv_service_get_peers(rdv, &peers);
     if (err != JXTA_SUCCESS) {
-      printf ("Failed getting a peer. reason= %d\n", (int) err);
-      return FALSE;
+        printf("Failed getting the peers. reason= %d\n", (int) err);
+        return FALSE;
     }
+    for (i = 0; i < jxta_vector_size(peers); ++i) {
 
-    err = jxta_peer_get_address (peer, &addr);
-    if (err != JXTA_SUCCESS) {
-      printf ("Failed getting the rdv address . reason= %d\n", (int) err);
-      return FALSE;
-    }
- 
-    printf("\nRDV Addr: %s\n", jxta_endpoint_address_to_string(addr));
-	   
-    connected = jxta_rdv_service_peer_is_connected (rdv, peer);
-    printf ("Status: %s\n", connected ? "CONNECTED" : "NOT CONNECTED");
+        /* Get the list of peers */
+        err = jxta_rdv_service_get_peers(rdv, &peers);
+        if (err != JXTA_SUCCESS) {
+            printf("Failed getting the peers. reason= %d\n", (int) err);
+            return FALSE;
+        }
+        for (i = 0; i < jxta_vector_size(peers); ++i) {
 
-    if (connected) {
-      err = jxta_peer_get_adv (peer, &adv);
-      if (err == JXTA_SUCCESS) {
-	if (adv != NULL) {
-	  string = jxta_PA_get_Name (adv);
-	  printf ("Name: %s\n", jstring_get_string (string));
-	  JXTA_OBJECT_RELEASE (string);
-	  JXTA_OBJECT_RELEASE (adv);
-	}
-      }
-      err = jxta_peer_get_peerid (peer, &pid);
-      if (err == JXTA_SUCCESS) {
-	if (pid != NULL) {
-	  jxta_id_to_jstring ( pid, &string );
-	  printf ("PeerId: %s\n", jstring_get_string (string));
-	  JXTA_OBJECT_RELEASE (string);
-	}
-      }
-      
-      expires = jxta_rdv_service_peer_get_expires (rdv, peer);
-      
-      if (connected && (expires >= 0)) {
-	Jxta_time hours = 0;
-	Jxta_time minutes = 0;
-	Jxta_time seconds = 0;
-	
-	currentTime = apr_time_now();
-	if (expires < currentTime) {
-	  expires = 0;
-	} else {
-	  expires -= currentTime;
-	}
-	
-	expires = expires / (1000 * 1000);
-	
-	
-      hours = (Jxta_time) (expires / (Jxta_time) (60 * 60));
-      expires -= hours * 60 * 60 * 1000 * 1000;
-      
-      minutes = expires / 60;
-      expires -= minutes * 60;
-      
-      seconds = expires;
-      
-      printf ("Lease expires in %lld hour(s) %lld minute(s) %lld second(s)\n",
-	      (Jxta_time) hours,
-	      (Jxta_time) minutes,
-	      (Jxta_time) seconds);
-      }
+            err = jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer), i);
+            if (err != JXTA_SUCCESS) {
+                printf("Failed getting a peer. reason= %d\n", (int) err);
+                return FALSE;
+            }
+
+            err = jxta_peer_get_address(peer, &addr);
+            if (err != JXTA_SUCCESS) {
+                printf("Failed getting the rdv address . reason= %d\n", (int) err);
+                return FALSE;
+            }
+
+            printf("\nRDV Addr: %s\n", jxta_endpoint_address_to_string(addr));
+
+            connected = jxta_rdv_service_peer_is_connected(rdv, peer);
+            fprintf(stderr, "Status: %s\n", connected ? "CONNECTED" : "NOT CONNECTED");
+
+            if (connected) {
+                err = jxta_peer_get_adv(peer, &adv);
+                if (err == JXTA_SUCCESS) {
+                    if (adv != NULL) {
+                        string = jxta_PA_get_Name(adv);
+                        printf("Name: %s\n", jstring_get_string(string));
+                        JXTA_OBJECT_RELEASE(string);
+                        JXTA_OBJECT_RELEASE(adv);
+                    }
+                }
+                err = jxta_peer_get_peerid(peer, &pid);
+                if (err == JXTA_SUCCESS) {
+                    if (pid != NULL) {
+                        jxta_id_to_jstring(pid, &string);
+                        printf("PeerId: %s\n", jstring_get_string(string));
+                        JXTA_OBJECT_RELEASE(string);
+                    }
+                }
+
+                expires = jxta_rdv_service_peer_get_expires(rdv, peer);
+
+                if (connected && (expires >= 0)) {
+                    Jxta_time hours = 0;
+                    Jxta_time minutes = 0;
+                    Jxta_time seconds = 0;
+
+                    currentTime = apr_time_now();
+                    if (expires < currentTime) {
+                        expires = 0;
+                    } else {
+                        expires -= currentTime;
+                    }
+
+                    expires = expires / (1000 * 1000);
+
+
+                    hours = (Jxta_time) (expires / (Jxta_time) (60 * 60));
+                    expires -= hours * 60 * 60 * 1000 * 1000;
+
+                    minutes = expires / 60;
+                    expires -= minutes * 60;
+
+                    seconds = expires;
+
+                    printf("Lease expires in %lld hour(s) %lld minute(s) %lld second(s)\n",
+                           (Jxta_time) hours, (Jxta_time) minutes, (Jxta_time) seconds);
+                }
+            }
+        }
     }
-  }
-  return TRUE;
+    return TRUE;
 }
 
-Jxta_boolean 
-jxta_rdv_service_client_test(int argc, char** argv) {
+Jxta_boolean jxta_rdv_service_client_test(int argc, char **argv)
+{
 
-  Jxta_rdv_service* rdv;
-  Jxta_status err;
-  Jxta_PG* pg;
-  char*    rdvAddr = NULL;
+    Jxta_rdv_service *rdv;
+    Jxta_status err;
+    Jxta_PG *pg;
+    char *rdvAddr = NULL;
 
-  if (argc == 2) {
-    rdvAddr = argv[1];
-  } else {
-    rdvAddr = (char *) "127.0.0.1:9700";
-  }
+    if (argc == 2) {
+        rdvAddr = argv[1];
+    } else {
+        rdvAddr = (char *) "127.0.0.1:9700";
+    }
 
-  err = jxta_PG_new_netpg (&pg);
+    err = jxta_PG_new_netpg(&pg);
 
-  if (err != JXTA_SUCCESS) {
-    printf("jxta_PG_netpg_new failed with error: %ld\n", err);
-    return FALSE;
-  }
-  jxta_PG_get_rendezvous_service (pg, &rdv);
+    if (err != JXTA_SUCCESS) {
+        printf("jxta_PG_netpg_new failed with error: %ld\n", err);
+        return FALSE;
+    }
+    jxta_PG_get_rendezvous_service(pg, &rdv);
 
-  {
-    Jxta_peer* peer = jxta_peer_new();
-    Jxta_endpoint_address* addr = jxta_endpoint_address_new2 ((char *) "http",
-							      rdvAddr,
-							      NULL,
-							      NULL);
-    jxta_peer_set_address (peer, addr);
-  
-    jxta_rdv_service_add_peer (rdv, peer);
-    JXTA_OBJECT_RELEASE (addr);
-    JXTA_OBJECT_RELEASE (peer);
-  }
+    {
+        Jxta_peer *peer = jxta_peer_new();
+        Jxta_endpoint_address *addr = jxta_endpoint_address_new_2((char *) "http",
+                                                                  rdvAddr,
+                                                                  NULL,
+                                                                  NULL);
+        jxta_peer_set_address(peer, addr);
 
-  /* Wait a bit */
-  apr_sleep (5 * 1000 * 1000);
-  if (!display_peers (rdv)) {
-    return FALSE;
-  }
-  /* Wait to let the protocols run */
-  apr_sleep (WAIT_TIME);
-  return TRUE;
+        jxta_rdv_service_add_peer(rdv, peer);
+        JXTA_OBJECT_RELEASE(addr);
+        JXTA_OBJECT_RELEASE(peer);
+    }
+
+    /* Wait a bit */
+    apr_sleep(5 * 1000 * 1000);
+    if (!display_peers(rdv)) {
+        return FALSE;
+    }
+    /* Wait to let the protocols run */
+    apr_sleep(WAIT_TIME);
+    return TRUE;
 }
 
 
 #ifdef STANDALONE
-int
-main (int argc, char **argv) {
+int main(int argc, char **argv)
+{
     int rv;
 
-  printf("STARTING TEST\n");
-  jxta_initialize();
-  rv = (int)jxta_rdv_service_client_test(argc, argv);
-  jxta_terminate();
-  return rv;
+    printf("STARTING TEST\n");
+    jxta_initialize();
+    rv = (int) jxta_rdv_service_client_test(argc, argv);
+    jxta_terminate();
+    if (TRUE == rv)
+        rv = 0;
+    else
+        rv = -1;
+    return rv;
 }
 #endif
-
-
-
-
-
-

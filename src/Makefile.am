@@ -1,6 +1,6 @@
 SUBDIRS = jpr unicode
 
-AM_CPPFLAGS = @APR_CPPFLAGS@ @XML2_CPPFLAGS@ @SQLITE_CPPFLAGS@
+AM_CPPFLAGS = @APR_CPPFLAGS@ @XML2_CPPFLAGS@ @SQLITE_CPPFLAGS@ 
 
 AM_CFLAGS = -DTARGET_ARCH_OS_PLATFORM=\"$(target)\" -Wall -W -pedantic -Wno-long-long -Wstrict-prototypes -Wwrite-strings -Wpointer-arith
 
@@ -12,7 +12,7 @@ include_HEADERS = EndpointRouter.h          \
                   jdlist.h                  \
                   jstring.h                 \
                   jxta_advertisement.h      \
-                  jxtaapr.h                 \
+                  jxta_apr.h                 \
                   jxta_bytevector.h         \
                   jxta_cm.h                 \
                   jxta_cred.h               \
@@ -43,6 +43,8 @@ include_HEADERS = EndpointRouter.h          \
                   jxta_object_ptrwrapper.h  \
                   jxta_pa.h                 \
                   jxta_peergroup.h          \
+		  jxta_netpg.h		    \
+                  jxta_platformconfig.h     \
                   jxta_peer.h               \
                   jxta_peerview.h           \
                   jxta_peer_private.h       \
@@ -53,12 +55,15 @@ include_HEADERS = EndpointRouter.h          \
                   jxta_pipe_service_impl.h  \
                   jxta_rdv.h                \
                   jxta_rdv_service.h        \
-                  jxta_rdv_service_provider.h        \
+                  jxta_rdv_service_provider.h \
                   jxta_resolver_service.h   \
                   jxta_rq.h                 \
                   jxta_rr.h                 \
                   jxta_rsrdi.h              \
                   jxta_srdi.h               \
+                  jxta_srdi_config_adv.h    \
+                  jxta_srdi_service.h       \
+                  jxta_srdi_service_private.h \
                   jxta_service.h            \
                   jxta_string.h             \
                   jxta_svc.h                \
@@ -91,10 +96,10 @@ include_HEADERS = EndpointRouter.h          \
 		  jxta_rdv_config_adv.h \
                   jxta_query.h \
 		  jxta_sql.h \
-		  jxta_srdi_service.h \
-		  jxta_srdi_service_private.h \
 		  jxta_test_adv.h \
-		  jxta_proffer.h 
+		  jxta_proffer.h \
+                  jxta_range.h \
+		  jxta_callback.h
 
 
 libjxta_la_SOURCES = jstring.c                      \
@@ -126,6 +131,7 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_discovery_service.c       \
                      jxta_peerinfo_service.c        \
                      jxta_advertisement.c           \
+		     jxta_advertisement_priv.h      \
                      jxta_rdv_service.c             \
                      jxta_rdv_service_provider.c    \
                      jxta_endpoint_service.c        \
@@ -148,8 +154,10 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_xml_util.c                \
                      jxta_stdpg.c                   \
                      jxta_netpg.c                   \
+                     jxta_platformconfig.c          \
                      jxta_peer.c                    \
                      jxta_peerview.c                \
+		     jxta_peerview_priv.h           \
                      jxta_peergroup.c               \
                      jxta_service.c                 \
                      jxta_module.c                  \
@@ -210,9 +218,14 @@ libjxta_la_SOURCES = jstring.c                      \
 		     jxta_log_priv.h			  \
 		     jxta_log.c				\
 		     jxta_bidipipe.c			\
-		     jxta_socket_tunnel.c \
-                     jxta_query.c \
-		     jxta_srdi_service.c \
-		     jxta_srdi_service_ref.c \
-		     jxta_proffer.c 
+		     jxta_socket_tunnel.c               \
+                     jxta_query.c                       \
+		     jxta_srdi_service.c                \
+		     jxta_srdi_service_ref.c            \
+                     jxta_srdi_config_adv.c             \
+		     jxta_proffer.c                     \
+                     jxta_range.c                       \
+		     jxta_util_priv.h                   \
+		     jxta_util_priv.c \
+		     jxta_callback.c
 

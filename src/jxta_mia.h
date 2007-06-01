@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_mia.h,v 1.6 2005/08/03 05:51:16 slowhog Exp $
+ * $Id: jxta_mia.h,v 1.7 2005/09/21 21:16:47 slowhog Exp $
  */
 
 
@@ -63,9 +63,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _jxta_MIA Jxta_MIA;
 
 JXTA_DECLARE(Jxta_MIA *) jxta_MIA_new(void);
@@ -98,8 +99,8 @@ JXTA_DECLARE(void) jxta_MIA_set_Desc(Jxta_MIA *, JString *);
 JXTA_DECLARE(JString *) jxta_MIA_get_Parm(Jxta_MIA *);
 JXTA_DECLARE(void) jxta_MIA_set_Parm(Jxta_MIA *, JString *);
 
-JXTA_DECLARE(Jxta_vector *) jxta_MIA_get_indexes(Jxta_advertisement *); 
- 
+JXTA_DECLARE(Jxta_vector *) jxta_MIA_get_indexes(Jxta_advertisement *);
+
 #ifdef __cplusplus
 #if 0
 {

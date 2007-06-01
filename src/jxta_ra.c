@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_ra.c,v 1.7 2005/06/16 23:11:48 slowhog Exp $
+ * $Id: jxta_ra.c,v 1.8 2005/11/14 10:11:27 slowhog Exp $
  */
 
 
@@ -337,7 +337,7 @@ void httpRelay_printer(Jxta_RelayAdvertisement * ad, JString * js)
     for (i = 0; i < sz; ++i) {
         JString *relay;
 
-        jxta_vector_get_object_at(relays, (Jxta_object **) & relay, i);
+        jxta_vector_get_object_at(relays, JXTA_OBJECT_PPTR(&relay), i);
         jstring_append_2(js, "<httpaddress>");
         jstring_append_1(js, relay);
         jstring_append_2(js, "</httpaddress>\n");
@@ -357,7 +357,7 @@ void tcpRelay_printer(Jxta_RelayAdvertisement * ad, JString * js)
     for (i = 0; i < sz; ++i) {
         JString *relay;
 
-        jxta_vector_get_object_at(relays, (Jxta_object **) & relay, i);
+        jxta_vector_get_object_at(relays, JXTA_OBJECT_PPTR(&relay), i);
         jstring_append_2(js, "<tcpaddress>");
         jstring_append_1(js, relay);
         jstring_append_2(js, "</tcpaddress>\n");

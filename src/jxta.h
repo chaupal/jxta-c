@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta.h,v 1.9 2005/07/22 03:12:49 slowhog Exp $
+ * $Id: jxta.h,v 1.10 2005/09/21 21:16:47 slowhog Exp $
  */
 
 #ifndef __JXTA_H__
@@ -81,12 +81,14 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 /**
  * @todo Add documentation.
- */ JXTA_DECLARE(void) jxta_initialize(void);
+ */
+JXTA_DECLARE(void) jxta_initialize(void);
 
 /**
  * @todo Add documentation.

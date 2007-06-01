@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_server.c,v 1.24 2005/09/10 03:20:29 bondolo Exp $
+ * $Id: jxta_rdv_service_server.c,v 1.39 2005/12/15 03:40:21 slowhog Exp $
  **/
 
 
@@ -65,8 +65,9 @@
 static const char *__log_cat = "RdvServer";
 
 #include <limits.h>
+#include <assert.h>
 
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 #include "jxta_log.h"
 #include "jxta_object.h"
@@ -80,10 +81,11 @@ static const char *__log_cat = "RdvServer";
 #include "jxta_peerview.h"
 #include "jxta_id.h"
 #include "jxta_peer_private.h"
+#include "jxta_peerview_priv.h"
 #include "jxta_rdv_service_private.h"
 #include "jxta_rdv_service_provider_private.h"
 #include "jxta_walk_msg.h"
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -92,6 +94,7 @@ extern "C" {
 #endif
 #endif
 static const char *LIMITEDRANGEWALKELEMENT = "LimitedRangeRdvMessage";
+
 /**
  * Interval between background thread check iterations. Measured in relative microseconds.
  **/
@@ -105,7 +108,7 @@ static const int DEFAULT_MAX_CLIENTS = 200;
 /**
 *    Default duration of leases measured in relative milliseconds.
 **/
-static const Jxta_time_diff DEFAULT_LEASE_DURATION = (((Jxta_time_diff) 20) * 60 * 1000L);      /* 20 Minutes */
+static const Jxta_time_diff DEFAULT_LEASE_DURATION = (((Jxta_time_diff) 20) * 60 * 1000L);  /* 20 Minutes */
 
 /**
 *    Public typedef for the rdv server provider.
@@ -136,7 +139,7 @@ struct _jxta_rdv_service_server {
     Jxta_discovery_service *discovery;
 
     /* configuration */
-    char *groupid;
+    char *groupiduniq;
     Jxta_PID *localPeerId;
     JString *localPeerIdJString;
 
@@ -179,7 +182,6 @@ typedef struct _jxta_client_entry_methods _jxta_client_entry_methods;
  * Forward definition to make the compiler happy
  **/
 
-Jxta_rdv_service_server *jxta_rdv_service_server_new(void);
 static _jxta_rdv_service_server *jxta_rdv_service_server_construct(_jxta_rdv_service_server * self,
                                                                    const _jxta_rdv_service_provider_methods * methods);
 static void rdv_server_delete(Jxta_object * provider);
@@ -195,8 +197,8 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
                         const char *serviceParam);
 
 static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *self);
-static void server_listener(Jxta_object * msg, void *arg);
-static void walker_listener(Jxta_object * obj, void *arg);
+static void JXTA_STDCALL server_listener(Jxta_object * msg, void *arg);
+static void JXTA_STDCALL walker_listener(Jxta_object * obj, void *me);
 
 static Jxta_status send_connect_reply(_jxta_rdv_service_server * self, _jxta_peer_client_entry * client);
 static _jxta_peer_client_entry *get_peer_entry(_jxta_rdv_service_server * self, Jxta_id * peerid, Jxta_boolean create);
@@ -282,7 +284,7 @@ static void client_entry_destruct(_jxta_peer_client_entry * self)
 /**
  * Standard instantiator
  */
-Jxta_rdv_service_server *jxta_rdv_service_server_new(void)
+Jxta_rdv_service_provider *jxta_rdv_service_server_new(void)
 {
     /* Allocate an instance of this service */
     _jxta_rdv_service_server *self = (_jxta_rdv_service_server *) calloc(1, sizeof(_jxta_rdv_service_server));
@@ -295,7 +297,7 @@ Jxta_rdv_service_server *jxta_rdv_service_server_new(void)
     JXTA_OBJECT_INIT(self, rdv_server_delete, 0);
 
     /* call the hierarchy of ctors. */
-    return (Jxta_rdv_service_server *) jxta_rdv_service_server_construct(self, &JXTA_RDV_SERVICE_SERVER_METHODS);
+    return (Jxta_rdv_service_provider *) jxta_rdv_service_server_construct(self, &JXTA_RDV_SERVICE_SERVER_METHODS);
 }
 
 /*
@@ -366,7 +368,7 @@ static void Jxta_rdv_service_server_destruct(_jxta_rdv_service_server * rdv)
     /* Release our reference to the group and impl_adv. del our id */
 
     /* Free the string that contains the name of the instance */
-    free(self->groupid);
+    free(self->groupiduniq);
 
     apr_thread_mutex_destroy(self->mutex);
     apr_thread_mutex_destroy(self->periodicMutex);
@@ -422,7 +424,7 @@ static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service 
     jxta_id_get_uniqueportion(gid, &string);
     jxta_id_to_jstring(gid, &gidString);
     JXTA_OBJECT_RELEASE(gid);
-    self->groupid = strdup(jstring_get_string(string));
+    self->groupiduniq = strdup(jstring_get_string(string));
     JXTA_OBJECT_RELEASE(string);
 
     /* Build the JString that contains the string representation of the ID */
@@ -433,7 +435,7 @@ static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service 
      */
     self->listener_service = jxta_listener_new(server_listener, (void *) self, 10, 50);
 
-    jxta_endpoint_service_add_listener(service->endpoint, JXTA_RDV_SERVICE_NAME, self->groupid, self->listener_service);
+    jxta_endpoint_service_add_listener(service->endpoint, JXTA_RDV_SERVICE_NAME, self->groupiduniq, self->listener_service);
 
     jxta_listener_start(self->listener_service);
 
@@ -451,7 +453,7 @@ static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service 
 
     assignedID = jxta_service_get_assigned_ID_priv((Jxta_service *) service);
     jxta_id_to_jstring(assignedID, &self->walkerParam);
-    jstring_append_2(self->walkerParam, self->groupid);
+    jstring_append_2(self->walkerParam, self->groupiduniq);
 
     jxta_endpoint_service_add_listener(service->endpoint, jstring_get_string(self->walkerSvc),
                                        jstring_get_string(self->walkerParam), self->listener_walker);
@@ -475,7 +477,7 @@ static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service 
         for (i = 0; i < sz; i++) {
             Jxta_id *mcid;
             Jxta_svc *tmpsvc = NULL;
-            jxta_vector_get_object_at(svcs, (Jxta_object **) & tmpsvc, i);
+            jxta_vector_get_object_at(svcs, JXTA_OBJECT_PPTR(&tmpsvc), i);
             mcid = jxta_svc_get_MCID(tmpsvc);
             if (jxta_id_equals(mcid, jxta_rendezvous_classid)) {
                 svc = tmpsvc;
@@ -508,7 +510,7 @@ static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service 
 
     JXTA_OBJECT_RELEASE(rdvConfig);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Inited for %s\n", self->groupid);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Inited for %s\n", self->groupiduniq);
 
     return JXTA_SUCCESS;
 }
@@ -536,13 +538,13 @@ static Jxta_status start(Jxta_rdv_service_provider * provider)
     /* Mark the service as running now. */
     self->running = TRUE;
 
-    apr_thread_create(&self->periodicThread, NULL,      /* no attr */
+    apr_thread_create((apr_thread_t **) & self->periodicThread, NULL,   /* no attr */
                       (apr_thread_start_t) periodic_thread_main, (void *) JXTA_OBJECT_SHARE(self),
                       jxta_rdv_service_provider_get_pool_priv(provider));
 
     apr_thread_mutex_unlock(self->periodicMutex);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, FILEANDLINE "Started for %s\n", self->groupid);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, FILEANDLINE "Started for %s\n", self->groupiduniq);
 
     jxta_rdv_service_provider_unlock_priv(provider);
 
@@ -576,18 +578,18 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
 
     /* We need to tell the background thread that it has to die. */
     apr_thread_mutex_lock(self->periodicMutex);
-
     self->running = FALSE;
     apr_thread_cond_signal(self->periodicCond);
     apr_thread_mutex_unlock(self->periodicMutex);
+
+    jxta_rdv_service_provider_unlock_priv(provider);
 
     res = jxta_peerview_stop(((Jxta_rdv_service_provider *) self)->peerview);
 
     jxta_endpoint_service_remove_listener(provider->service->endpoint, jstring_get_string(self->walkerSvc),
                                           jstring_get_string(self->walkerParam));
 
-
-    jxta_endpoint_service_remove_listener(provider->service->endpoint, JXTA_RDV_SERVICE_NAME, self->groupid);
+    jxta_endpoint_service_remove_listener(provider->service->endpoint, JXTA_RDV_SERVICE_NAME, self->groupiduniq);
 
     jxta_listener_stop(self->listener_service);
 
@@ -610,9 +612,7 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
 
     res = jxta_rdv_service_provider_stop(provider);
 
-    jxta_rdv_service_provider_unlock_priv(provider);
-
-    apr_thread_join(&res, self->periodicThread);
+    apr_thread_join(&res, (apr_thread_t *) self->periodicThread);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Stopped.\n");
 
@@ -660,9 +660,21 @@ static Jxta_status get_peers(Jxta_rdv_service_provider * provider, Jxta_vector *
 static Jxta_status propagate(Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
                              const char *serviceParam, int ttl)
 {
-    (void *) walk(provider, msg, serviceName, serviceParam);
+    Jxta_status res;
 
-    return jxta_rdv_service_provider_prop_to_peers(provider, msg, serviceName, serviceParam, ttl);
+    res = walk(provider, msg, serviceName, serviceParam);
+
+    res = jxta_rdv_service_provider_update_prophdr(provider, msg, serviceName, serviceParam, ttl);
+
+    if (JXTA_SUCCESS == res) {
+        /* Send the message to ourself */
+        jxta_rdv_service_provider_prop_listener((Jxta_object *) msg, provider);
+
+        res = jxta_rdv_service_provider_prop_to_peers(provider, msg, TRUE);
+
+    }
+
+    return res;
 }
 
 /**
@@ -690,20 +702,25 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
 
     msg = jxta_message_clone(msg);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Walking [%p]\n", msg);
-
     res = jxta_message_get_element_2(msg, JXTA_RDV_NS_NAME, LIMITEDRANGEWALKELEMENT, &el);
 
     if ((JXTA_SUCCESS != res) || (NULL == el)) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Initiate a walk for msg[%p]\n", msg);
         LimitedRangeRdvMessage_set_TTL(header, local_view_size);
         LimitedRangeRdvMessage_set_direction(header, WALK_BOTH);
         LimitedRangeRdvMessage_set_SrcPeerID(header, jstring_get_string(self->localPeerIdJString));
         LimitedRangeRdvMessage_set_SrcSvcName(header, serviceName);
         LimitedRangeRdvMessage_set_SrcSvcParams(header, serviceParam);
+        el = jxta_message_element_new_2(JXTA_RDV_NS_NAME, "RdvWalkSvcName", "text/plain", serviceName, strlen(serviceName), NULL);
+        jxta_message_add_element(msg, el);
+        el = jxta_message_element_new_2(JXTA_RDV_NS_NAME, "RdvWalkSvcParam", "text/plain", serviceParam, strlen(serviceParam),
+                                        NULL);
+        jxta_message_add_element(msg, el);
     } else {
         JString *string;
         Jxta_bytevector *bytes = jxta_message_element_get_value(el);
 
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Continue to walk for msg[%p]\n", msg);
         jxta_message_remove_element(msg, el);
         JXTA_OBJECT_RELEASE(el);
         string = jstring_new_3(bytes);
@@ -713,7 +730,6 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
         JXTA_OBJECT_RELEASE(string);
         if (JXTA_SUCCESS != res) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Could not parse walk header [%p]\n", msg);
-            JXTA_OBJECT_RELEASE(msg);
             goto Common_exit;
         }
     }
@@ -726,8 +742,9 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
 
     LimitedRangeRdvMessage_set_TTL(header, useTTL);
 
-    if (useTTL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Walk TTL expired for [%p]\n", msg);
+    if (useTTL < 1) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Walk msg[%p] stopped: TTL %d expired with local view size %d\n", msg,
+                        useTTL, local_view_size);
         goto Common_exit;
     }
 
@@ -757,16 +774,21 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
         res = jxta_peerview_get_up_peer(provider->peerview, &peer);
 
         if (NULL != peer) {
-            destAddr = jxta_endpoint_address_new2(jxta_endpoint_address_get_protocol_name(((_jxta_peer_entry *) peer)->address),
-                                                  jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) peer)->
-                                                                                             address), self->walkerSvc,
-                                                  self->walkerParam);
+            JString *pidString;
+            jxta_id_to_jstring(jxta_peer_get_peerid_priv(peer), &pidString);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Walk the query UP %s\n", jstring_get_string(pidString));
+            destAddr = jxta_endpoint_address_new_2(jxta_endpoint_address_get_protocol_name(((_jxta_peer_entry *) peer)->address),
+                                                   jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) peer)->
+                                                                                              address),
+                                                   jstring_get_string(self->walkerSvc), jstring_get_string(self->walkerParam));
             JXTA_OBJECT_RELEASE(peer);
+            JXTA_OBJECT_RELEASE(pidString);
 
             /* Send the message */
             res =
                 jxta_endpoint_service_send(jxta_service_get_peergroup_priv
                                            ((_jxta_service *) provider->service), provider->service->endpoint, newmsg, destAddr);
+            JXTA_OBJECT_RELEASE(destAddr);
         }
 
         JXTA_OBJECT_RELEASE(newmsg);
@@ -796,16 +818,20 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
         res = jxta_peerview_get_down_peer(provider->peerview, &peer);
 
         if (NULL != peer) {
-            destAddr = jxta_endpoint_address_new2(jxta_endpoint_address_get_protocol_name(((_jxta_peer_entry *) peer)->address),
-                                                  jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) peer)->
-                                                                                             address), self->walkerSvc,
-                                                  self->walkerParam);
+            JString *pidString;
+            jxta_id_to_jstring(jxta_peer_get_peerid_priv(peer), &pidString);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Walk the query DOWN %s\n", jstring_get_string(pidString));
+            destAddr = jxta_endpoint_address_new_2(jxta_endpoint_address_get_protocol_name(((_jxta_peer_entry *) peer)->address),
+                                                   jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) peer)->
+                                                                                              address),
+                                                   jstring_get_string(self->walkerSvc), jstring_get_string(self->walkerParam));
             JXTA_OBJECT_RELEASE(peer);
-
+            JXTA_OBJECT_RELEASE(pidString);
             /* Send the message */
             res =
                 jxta_endpoint_service_send(jxta_service_get_peergroup_priv
                                            ((_jxta_service *) provider->service), provider->service->endpoint, newmsg, destAddr);
+            JXTA_OBJECT_RELEASE(destAddr);
         }
 
         JXTA_OBJECT_RELEASE(newmsg);
@@ -828,7 +854,7 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
     @param arg The rdv service server object
 
  **/
-static void server_listener(Jxta_object * obj, void *arg)
+static void JXTA_STDCALL server_listener(Jxta_object * obj, void *arg)
 {
     Jxta_status res = JXTA_SUCCESS;
     Jxta_message *msg = (Jxta_message *) obj;
@@ -882,7 +908,8 @@ static void server_listener(Jxta_object * obj, void *arg)
 
         if (NULL != client) {
             Jxta_Rendezvous_event_type lease_event =
-                jxta_peer_get_expires((Jxta_peer *) client) != JPR_ABSOLUTE_TIME_MAX ? JXTA_RDV_CLIENT_RECONNECTED : JXTA_RDV_CLIENT_CONNECTED;
+                jxta_peer_get_expires((Jxta_peer *) client) !=
+                JPR_ABSOLUTE_TIME_MAX ? JXTA_RDV_CLIENT_RECONNECTED : JXTA_RDV_CLIENT_CONNECTED;
             jxta_peer_set_adv((Jxta_peer *) client, client_PA);
             jxta_peer_set_expires((Jxta_peer *) client, jpr_time_now() + self->OFFERED_LEASE_DURATION);
 
@@ -940,9 +967,9 @@ static Jxta_status send_connect_reply(_jxta_rdv_service_server * self, _jxta_pee
     jxta_message_add_element(msg, el);
     JXTA_OBJECT_RELEASE(el);
 
-    destAddr = jxta_endpoint_address_new2(jxta_endpoint_address_get_protocol_name(((_jxta_peer_entry *) client)->address),
-                                          jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) client)->address),
-                                          JXTA_RDV_SERVICE_NAME, self->groupid);
+    destAddr = jxta_endpoint_address_new_2(jxta_endpoint_address_get_protocol_name(((_jxta_peer_entry *) client)->address),
+                                           jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) client)->address),
+                                           JXTA_RDV_SERVICE_NAME, self->groupiduniq);
 
     res = jxta_endpoint_service_send(jxta_service_get_peergroup_priv((_jxta_service *) provider->service),
                                      provider->service->endpoint, msg, destAddr);
@@ -1007,7 +1034,7 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
         for (i = 0; i < sz; i++) {
             _jxta_peer_client_entry *peer;
 
-            res = jxta_vector_get_object_at(clients, (Jxta_object **) & peer, i);
+            res = jxta_vector_get_object_at(clients, JXTA_OBJECT_PPTR(&peer), i);
             if (res != JXTA_SUCCESS) {
                 /* We should print a LOG here. Just continue for the time being */
                 continue;
@@ -1016,7 +1043,7 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
             if (!check_peer_lease(peer)) {
                 /** No lease left. Get rid of this peer **/
                 JString *uniq;
-                    
+
                 jxta_id_get_uniqueportion(jxta_peer_get_peerid_priv((Jxta_peer *) peer), &uniq);
 
                 res = jxta_hashtable_del(self->clients, jstring_get_string(uniq), jstring_length(uniq) + 1, NULL);
@@ -1097,7 +1124,7 @@ static _jxta_peer_client_entry *get_peer_entry(_jxta_rdv_service_server * self, 
 
     jxta_rdv_service_provider_lock_priv((Jxta_rdv_service_provider *) self);
 
-    res = jxta_hashtable_get(self->clients, jstring_get_string(uniq), jstring_length(uniq) + 1, (Jxta_object **) & peer);
+    res = jxta_hashtable_get(self->clients, jstring_get_string(uniq), jstring_length(uniq) + 1, JXTA_OBJECT_PPTR(&peer));
 
     found = res == JXTA_SUCCESS;
 
@@ -1109,24 +1136,25 @@ static _jxta_peer_client_entry *get_peer_entry(_jxta_rdv_service_server * self, 
         if (peer == NULL) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Cannot create a _jxta_peer_rdv_entry\n");
         } else {
-            Jxta_endpoint_address *clientAddr = jxta_endpoint_address_new2("jxta", jstring_get_string(uniq), NULL, NULL);
+            Jxta_endpoint_address *clientAddr = jxta_endpoint_address_new_2("jxta", jstring_get_string(uniq), NULL, NULL);
 
             jxta_peer_set_address((Jxta_peer *) peer, clientAddr);
             jxta_peer_set_peerid((Jxta_peer *) peer, peerid);
             jxta_peer_set_expires((Jxta_peer *) peer, JPR_ABSOLUTE_TIME_MAX);
 
             jxta_hashtable_put(self->clients, jstring_get_string(uniq), jstring_length(uniq) + 1, (Jxta_object *) peer);
+            JXTA_OBJECT_RELEASE(clientAddr);
         }
     }
 
     jxta_rdv_service_provider_unlock_priv((Jxta_rdv_service_provider *) self);
 
-    free(uniq);
+    JXTA_OBJECT_RELEASE(uniq);
 
     return peer;
 }
 
-/**
+/*
     Message Handler for the walker protocol.
     
     Listener for :
@@ -1134,28 +1162,33 @@ static _jxta_peer_client_entry *get_peer_entry(_jxta_rdv_service_server * self, 
         
     @param obj The message object.
     @param arg The rdv service server object
-
- **/
-static void walker_listener(Jxta_object * obj, void *arg)
+    @remarks When a walk message was received, what the listener will do is simply pass it to the handler based on the destination
+             of the internal message. The handler then should decide what to do, it can continue the walk by pass the msg with
+             walk header back to rdv.
+ */
+static void JXTA_STDCALL walker_listener(Jxta_object * obj, void *me)
 {
     Jxta_status res = JXTA_SUCCESS;
     Jxta_message *msg = (Jxta_message *) obj;
-    Jxta_rdv_service_provider *provider = PTValid(arg, _jxta_rdv_service_provider);
-    _jxta_rdv_service_server *self = PTValid(arg, _jxta_rdv_service_server);
+    Jxta_rdv_service_provider *provider = PTValid(me, _jxta_rdv_service_provider);
+    _jxta_rdv_service_server *_self = PTValid(me, _jxta_rdv_service_server);
+    LimitedRangeRdvMessage *header = NULL;
     Jxta_message_element *el = NULL;
     Jxta_bytevector *bytes;
     JString *string;
-    LimitedRangeRdvMessage *header;
+    int ttl;
+    Jxta_endpoint_address *realDest = NULL;
+    const char *svc_name = NULL;
 
+    assert(NULL != msg);
     JXTA_OBJECT_CHECK_VALID(msg);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Rendezvous Service walker received a message [%p]\n", msg);
 
     res = jxta_message_get_element_2(msg, JXTA_RDV_NS_NAME, LIMITEDRANGEWALKELEMENT, &el);
-
     if ((JXTA_SUCCESS != res) || (NULL == el)) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Walk header missing. Ignoring message [%p]\n", msg);
-        goto Common_Exit;
+        goto FINAL_EXIT;
     }
 
     bytes = jxta_message_element_get_value(el);
@@ -1166,20 +1199,63 @@ static void walker_listener(Jxta_object * obj, void *arg)
 
     res = LimitedRangeRdvMessage_parse_charbuffer(header, jstring_get_string(string), jstring_length(string));
     JXTA_OBJECT_RELEASE(string);
-    if (JXTA_SUCCESS == res) {
-
-        if (LimitedRangeRdvMessage_get_TTL(header) > 0) {
-            res =
-                propagate(provider, msg, LimitedRangeRdvMessage_get_SrcSvcName(header),
-                          LimitedRangeRdvMessage_get_SrcSvcParams(header), 1);
-        }
-
-        JXTA_OBJECT_RELEASE(header);
+    if (JXTA_SUCCESS != res) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Failed parsing walker message[%p] %d\n", msg, res);
+        goto FINAL_EXIT;
     }
 
-  Common_Exit:
-    if (res != JXTA_SUCCESS) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Failed processing walker message [%p] %d\n", msg, res);
+    ttl = LimitedRangeRdvMessage_get_TTL(header);
+    if (ttl <= 0) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, FILEANDLINE "Walker message[%p] with nonsense TTL %d, drop it.\n",
+                        msg, ttl);
+        goto FINAL_EXIT;
+    }
+
+    /* work around the JSE walk implementation and previous C implementation */
+    res = jxta_message_get_element_2(msg, JXTA_RDV_NS_NAME, "RdvWalkSvcName", &el);
+    if (JXTA_SUCCESS == res) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Walker message[%p] has RdvWalkSvcName element.\n", msg);
+        bytes = jxta_message_element_get_value(el);
+        JXTA_OBJECT_RELEASE(el);
+        string = jstring_new_3(bytes);
+        JXTA_OBJECT_RELEASE(bytes);
+        svc_name = strdup(jstring_get_string(string));
+        JXTA_OBJECT_RELEASE(string);
+        if (NULL == svc_name) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE
+                            "Cannot get svc name in walker msg, could be out of memory.\n");
+            goto FINAL_EXIT;
+        }
+        res = jxta_message_get_element_2(msg, JXTA_RDV_NS_NAME, "RdvWalkSvcParam", &el);
+        if (JXTA_SUCCESS != res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, FILEANDLINE
+                            "Cannot get the RdvWalkSvcParam element in an ealier verion of walker msg, discard.\n");
+            goto FINAL_EXIT;
+        }
+        bytes = jxta_message_element_get_value(el);
+        JXTA_OBJECT_RELEASE(el);
+        string = jstring_new_3(bytes);
+        JXTA_OBJECT_RELEASE(bytes);
+        realDest = jxta_endpoint_address_new_2("jxta", _self->groupiduniq, svc_name, jstring_get_string(string));
+        JXTA_OBJECT_RELEASE(string);
+        free(svc_name);
+    } else {
+        realDest = jxta_endpoint_address_new_2("jxta", _self->groupiduniq, LimitedRangeRdvMessage_get_SrcSvcName(header),
+                                               LimitedRangeRdvMessage_get_SrcSvcParams(header));
+    }
+
+    if (NULL == realDest) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Failed to extract endpoint address from walker msg[%p]\n",
+                        msg);
+        goto FINAL_EXIT;
+    }
+
+    jxta_endpoint_service_demux_addr(jxta_rdv_service_endpoint_svc(provider->service), realDest, msg);
+    JXTA_OBJECT_RELEASE(realDest);
+
+  FINAL_EXIT:
+    if (NULL != header) {
+        JXTA_OBJECT_RELEASE(header);
     }
 }
 

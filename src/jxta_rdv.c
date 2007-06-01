@@ -50,8 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv.c,v 1.46 2005/09/10 01:25:14 slowhog Exp $
+ * $Id: jxta_rdv.c,v 1.50 2005/11/26 08:18:06 mmx2005 Exp $
  */
+ 
+static const char *const __log_cat = "RdvAdv";
 
 #include <stdio.h>
 #include <string.h>
@@ -74,7 +76,6 @@ enum tokentype {
     Route_
 };
 
-
 /** This is the representation of the
  * actual ad in the code.  It should
  * stay opaque to the programmer, and be 
@@ -94,7 +95,6 @@ static Jxta_status jxta_RdvAdvertisement_getxml(Jxta_RdvAdvertisement * self, Jx
 static Jxta_status jxta_RdvAdvertisement_getxml_1(Jxta_RdvAdvertisement * self, Jxta_write_func func, void *stream);
 static Jxta_RdvAdvertisement *jxta_RdvAdvertisement_construct(Jxta_RdvAdvertisement * self);
 static void jxta_RdvAdvertisement_destruct(Jxta_RdvAdvertisement * ad);
-static void jxta_RdvAdvertisement_delete(Jxta_RdvAdvertisement * ad);
 
 /** Handler functions.  Each of these is responsible for
  * dealing with all of the character data associated with the 
@@ -103,7 +103,7 @@ static void jxta_RdvAdvertisement_delete(Jxta_RdvAdvertisement * ad);
 static void handleRdvAdvertisement(void *userdata, const XML_Char * cd, int len)
 {
     /* RdvAdvertisement * ad = (Jxta_RdvAdvertisement*)userdata; */
-    JXTA_LOG("In RdvAdvertisement element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "In RdvAdvertisement element\n");
 }
 
 static void handleName(void *userdata, const XML_Char * cd, int len)
@@ -140,9 +140,8 @@ static void handleRdvGroupId(void *userdata, const XML_Char * cd, int len)
         JXTA_OBJECT_RELEASE(gid);
     }
 
-    JXTA_LOG("In RdvGroupId element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In RdvGroupId element\n");
 }
-
 
 static void handleRdvPeerId(void *userdata, const XML_Char * cd, int len)
 {
@@ -167,7 +166,7 @@ static void handleRdvPeerId(void *userdata, const XML_Char * cd, int len)
         JXTA_OBJECT_RELEASE(gid);
     }
 
-    JXTA_LOG("In RdvPeerId element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In RdvPeerId element\n");
 }
 
 
@@ -184,21 +183,17 @@ static void handleService(void *userdata, const XML_Char * cd, int len)
 
 static void handleRoute(void *userdata, const XML_Char * cd, int len)
 {
-
     Jxta_RdvAdvertisement *ad = (Jxta_RdvAdvertisement *) userdata;
     Jxta_RouteAdvertisement *ra;
 
     ra = jxta_RouteAdvertisement_new();
-
     jxta_RdvAdvertisement_set_Route(ad, ra);
     JXTA_OBJECT_RELEASE(ra);
 
-    JXTA_LOG("Begin  handleRouteAdvertisement" " (end may not show)\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Begin handleRouteAdvertisement" " (end may not show)\n");
 
     jxta_advertisement_set_handlers((Jxta_advertisement *) ra, ((Jxta_advertisement *) ad)->parser, (void *) ad);
-
 }
-
 
 /** The get/set functions represent the public
  * interface to the ad class, that is, the API.
@@ -209,9 +204,9 @@ JXTA_DECLARE(char *) jxta_RdvAdvertisement_get_Name(Jxta_RdvAdvertisement * ad)
     return strdup(jstring_get_string(ad->Name));
 }
 
-static char *JXTA_STDCALL jxta_RdvAdvertisement_get_Name_string(Jxta_RdvAdvertisement * ad)
+static char *JXTA_STDCALL jxta_RdvAdvertisement_get_Name_string(Jxta_advertisement * ad)
 {
-    return strdup(jstring_get_string(ad->Name));
+    return strdup(jstring_get_string( ((Jxta_RdvAdvertisement *)ad)->Name));
 }
 
 JXTA_DECLARE(void) jxta_RdvAdvertisement_set_Name(Jxta_RdvAdvertisement * ad, const char *name)
@@ -224,7 +219,6 @@ JXTA_DECLARE(void) jxta_RdvAdvertisement_set_Name(Jxta_RdvAdvertisement * ad, co
     }
     ad->Name = jstring_new_2(name);
 }
-
 
 JXTA_DECLARE(char *) jxta_RdvAdvertisement_get_Service(Jxta_RdvAdvertisement * ad)
 {
@@ -340,7 +334,6 @@ static const Kwdtab RdvAdvertisement_tags[] = {
     {NULL, 0, 0, NULL, NULL}
 };
 
-
 JXTA_DECLARE(Jxta_status) jxta_RdvAdvertisement_get_xml(Jxta_RdvAdvertisement * ad, JString ** string)
 {
     Jxta_status status;
@@ -361,7 +354,6 @@ static Jxta_status jxta_RdvAdvertisement_getxml(Jxta_RdvAdvertisement * self, Jx
 {
     static const char *XMLDECL = "<?xml version=\"1.0\"?>\n\n";
     static const char *DOCTYPEDECL = "<!DOCTYPE jxta:RdvAdvertisement>\n\n";
-
     Jxta_status res;
 
     if (!JXTA_OBJECT_CHECK_VALID(self))
@@ -415,7 +407,6 @@ static Jxta_status jxta_RdvAdvertisement_getxml_1(Jxta_RdvAdvertisement * self, 
         NULL, NULL, NULL, NULL, NULL, NULL
     };
     int eachParam = 0;
-
     JString *tmp = NULL;
 
     if (!JXTA_OBJECT_CHECK_VALID(self))
@@ -450,16 +441,20 @@ static Jxta_status jxta_RdvAdvertisement_getxml_1(Jxta_RdvAdvertisement * self, 
     /* service param */
     params[3] = strdup(jstring_get_string(self->Service));
 
-    /* route param */
-    res = jxta_RouteAdvertisement_get_xml(self->route, &tmp);
+    /* The route should not be NULL but it has happened and this insures no segfault */
+    if (NULL != self->route) {
+        /* route param */
+        res = jxta_RouteAdvertisement_get_xml(self->route, &tmp);
 
-    if (JXTA_SUCCESS != res)
-        goto Common_Exit;
+        if (JXTA_SUCCESS != res)
+            goto Common_Exit;
 
-    params[4] = strdup(jstring_get_string(tmp));
-    JXTA_OBJECT_RELEASE(tmp);
+        params[4] = strdup(jstring_get_string(tmp));
+        JXTA_OBJECT_RELEASE(tmp);
+    } else {
+        params[4] = NULL;
+    }
     tmp = NULL;
-
 
     /* write it! */
     while (NULL != *eachPart) {
@@ -481,12 +476,13 @@ static Jxta_status jxta_RdvAdvertisement_getxml_1(Jxta_RdvAdvertisement * self, 
     tmp = NULL;
 
     for (eachParam = 0; eachParam < (sizeof(params) / sizeof(const char *)); eachParam++) {
+        if (NULL != params[eachParam]) {
         free((void *) params[eachParam]);
+        }
         params[eachParam] = NULL;
     }
 
     return res;
-
 }
 
 /** 
@@ -494,10 +490,9 @@ static Jxta_status jxta_RdvAdvertisement_getxml_1(Jxta_RdvAdvertisement * self, 
  **/
 JXTA_DECLARE(Jxta_RdvAdvertisement *) jxta_RdvAdvertisement_new(void)
 {
-
     Jxta_RdvAdvertisement *ad = (Jxta_RdvAdvertisement *) calloc(1, sizeof(Jxta_RdvAdvertisement));
 
-    JXTA_OBJECT_INIT(ad, jxta_RdvAdvertisement_delete, 0);
+    JXTA_OBJECT_INIT(ad, (JXTA_OBJECT_FREE_FUNC) jxta_RdvAdvertisement_delete, 0);
 
     return jxta_RdvAdvertisement_construct(ad);
 }
@@ -506,9 +501,11 @@ static Jxta_RdvAdvertisement *jxta_RdvAdvertisement_construct(Jxta_RdvAdvertisem
 {
     self = (Jxta_RdvAdvertisement *) jxta_advertisement_construct((Jxta_advertisement *) self,
                                                                   "jxta:RdvAdvertisement",
-                                                                  RdvAdvertisement_tags, jxta_RdvAdvertisement_get_xml,
+                                                                  RdvAdvertisement_tags, 
+                                                                  (JxtaAdvertisementGetXMLFunc)jxta_RdvAdvertisement_get_xml,
                                                                   /* FIXME, need a decision on which ID to return, if any for now none */
-                                                                  NULL, jxta_RendezvousAdvertisement_get_indexes);
+                                                                  NULL, 
+                                                                  jxta_RendezvousAdvertisement_get_indexes);
 
     if (NULL != self) {
         self->Name = jstring_new_0();
@@ -558,6 +555,7 @@ JXTA_DECLARE(Jxta_vector *) jxta_RendezvousAdvertisement_get_indexes(Jxta_advert
     const char *idx[][2] = {
         {"RdvGroupId", NULL},
         {"Name", NULL},
+        {"RdvServiceName", NULL},
         {NULL, NULL}
     };
     return jxta_advertisement_return_indexes(idx[0]);
@@ -567,7 +565,6 @@ JXTA_DECLARE(Jxta_status) jxta_RdvAdvertisement_parse_charbuffer(Jxta_RdvAdverti
 {
     return jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
-
 
 JXTA_DECLARE(Jxta_status) jxta_RdvAdvertisement_parse_file(Jxta_RdvAdvertisement * ad, FILE * stream)
 {

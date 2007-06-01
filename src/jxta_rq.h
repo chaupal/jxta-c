@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rq.h,v 1.7 2005/08/03 05:51:18 slowhog Exp $
+ * $Id: jxta_rq.h,v 1.10 2005/09/21 22:56:48 mathieu Exp $
  */
 
 
@@ -59,14 +59,19 @@
 
 #include "jxta_routea.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _ResolverQuery ResolverQuery;
+
+/**
+ * Defines invalid query id
+ */
+JXTA_DECLARE_DATA const int JXTA_INVALID_QUERY_ID;
 
 /**
  * create a new ResolverQuery object

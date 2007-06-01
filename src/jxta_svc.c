@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_svc.c,v 1.48 2005/08/15 22:30:52 bondolo Exp $
+ * $Id: jxta_svc.c,v 1.50 2005/11/04 22:13:26 exocetrick Exp $
  */
 
 static const char *__log_cat = "SVCADV";
@@ -73,6 +73,7 @@ static const char *__log_cat = "SVCADV";
 #include "jxta_tta.h"
 #include "jxta_hta.h"
 #include "jxta_rdv_config_adv.h"
+#include "jxta_srdi_config_adv.h"
 #include "jxta_relaya.h"
 #include  "jxta_routea.h"
 #include "jxta_xml_util.h"
@@ -99,6 +100,7 @@ extern "C" {
     RelayAdvertisement_,
     RouteAdvertisement_,
     RdvConfigAdvertisement_,
+    SrdiConfigAdvertisement_,
     isClient_,
     isServer_,
     httpaddress_,
@@ -121,11 +123,13 @@ struct _jxta_svc {
     Jxta_RelayAdvertisement *relaya;
     Jxta_RouteAdvertisement *route;
     Jxta_RdvConfigAdvertisement *rdvConfig;
+    Jxta_SrdiConfigAdvertisement *srdiConfig;
 };
 
 /* forward decl for un-exported function */
 static void jxta_svc_delete(Jxta_svc *);
 static void handleRdvConfigAdv(void *userdata, const XML_Char * cd, int len);
+static void handleSrdiConfigAdv(void *userdata, const XML_Char * cd, int len);
 
 /** Handler functions.  Each of these is responsible for 
  * dealing with all of the character data associated with the 
@@ -234,7 +238,7 @@ static void handleAddr(void *userdata, const XML_Char * cd, int len)
     jstring_trim(addr);
 
     if (jstring_length(addr) != 0) {
-        Jxta_endpoint_address *ea = jxta_endpoint_address_new1(addr);
+        Jxta_endpoint_address *ea = jxta_endpoint_address_new_1(addr);
 
         jxta_RdvConfig_add_seed(ad->rdvConfig, ea);
 
@@ -343,6 +347,61 @@ static void handleRdvConfigAdv(void *userdata, const XML_Char * cd, int len)
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "END Svc handleRdvConfig\n");
 }
 
+static void handleSrdiConfigAdv(void *userdata, const XML_Char * cd, int len)
+{
+    Jxta_svc *ad = (Jxta_svc *) userdata;
+    Jxta_SrdiConfigAdvertisement *srdiConfig = jxta_SrdiConfigAdvertisement_new();
+
+    jxta_svc_set_SrdiConfig(ad, srdiConfig);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Begin Svc handleSrdiConfig\n");
+
+    jxta_advertisement_set_handlers((Jxta_advertisement *) srdiConfig, ((Jxta_advertisement *) ad)->parser, (void *) ad);
+
+    ((Jxta_advertisement *) srdiConfig)->atts = ((Jxta_advertisement *) ad)->atts;
+    handleJxta_SrdiConfigAdvertisement(srdiConfig, cd, len);
+    JXTA_OBJECT_RELEASE(srdiConfig);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "END Svc handleSrdiConfig\n");
+}
+static void handleReplicationThreshold(void *userdata, const XML_Char * cd, int len)
+{
+    Jxta_svc *ad = (Jxta_svc*) userdata;
+    Jxta_SrdiConfigAdvertisement *srdiConfig;
+    if (NULL == ad->srdiConfig) {
+        printf("creating another srdi config - handle replication threshold\n");
+        srdiConfig = jxta_SrdiConfigAdvertisement_new();
+        jxta_svc_set_SrdiConfig(ad, srdiConfig);
+        JXTA_OBJECT_RELEASE(srdiConfig);
+
+    }
+    jxta_srdi_config_set_replication_threshold(ad->srdiConfig, atoi((const char *) cd));
+}
+static void handleNoRangeReplication(void *userdata, const XML_Char *cd, int len)
+{
+    Jxta_svc *ad = (Jxta_svc*) userdata;
+    Jxta_SrdiConfigAdvertisement *srdiConfig;
+    const char **atts;
+    if (NULL == ad->srdiConfig) {
+        srdiConfig = jxta_SrdiConfigAdvertisement_new();
+        printf("creating another srdi config - handle no range replication\n");
+        jxta_svc_set_SrdiConfig(ad, srdiConfig);
+        JXTA_OBJECT_RELEASE(srdiConfig);
+        
+    }
+    atts = ((Jxta_advertisement *) ad)->atts;
+
+    while (atts && *atts) {
+        if (0 == strcmp(*atts, "withValue")) {
+            if (!strcmp(atts[1], "true")) {
+                jxta_srdi_config_set_no_range(ad->srdiConfig, TRUE);
+            } else {
+                jxta_srdi_config_set_no_range(ad->srdiConfig, FALSE);
+            }
+        }
+        atts += 2;
+    }
+}
 static void handleRelayAdvertisement(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_svc *ad = (Jxta_svc *) userdata;
@@ -648,6 +707,25 @@ JXTA_DECLARE(void) jxta_svc_set_RdvConfig(Jxta_svc * ad, Jxta_RdvConfigAdvertise
     }
 }
 
+JXTA_DECLARE(Jxta_SrdiConfigAdvertisement *) jxta_svc_get_SrdiConfig(Jxta_svc * ad)
+{
+    if (ad->srdiConfig != NULL) {
+        JXTA_OBJECT_SHARE(ad->srdiConfig);
+    }
+    return ad->srdiConfig;
+}
+
+JXTA_DECLARE(void) jxta_svc_set_SrdiConfig(Jxta_svc * ad, Jxta_SrdiConfigAdvertisement * srdiConfig)
+{
+    if (ad->srdiConfig != NULL) {
+        JXTA_OBJECT_RELEASE(ad->srdiConfig);
+        ad->srdiConfig = NULL;
+    }
+
+    if (srdiConfig != NULL) {
+        ad->srdiConfig = JXTA_OBJECT_SHARE(srdiConfig);
+    }
+}
 JXTA_DECLARE(JString *) jxta_svc_get_RootCert(Jxta_svc * ad)
 {
     if (ad->RootCert != NULL)
@@ -681,6 +759,9 @@ static const Kwdtab Svc_tags[] = {
     {"Addr", Addr_, *handleAddr, NULL, NULL},
     {"Rdv", Rdv_, *handleRdv, NULL, NULL},
     {"jxta:RdvConfig", RdvConfigAdvertisement_, *handleRdvConfigAdv, NULL, NULL},
+    {"jxta:SrdiConfig", SrdiConfigAdvertisement_, *handleSrdiConfigAdv, NULL, NULL},
+    {"ReplicationThreshold", 1, *handleReplicationThreshold, NULL, NULL},
+    {"NoRangeReplication", 1, *handleNoRangeReplication, NULL, NULL},
     {"jxta:TCPTransportAdvertisement", TCPTransportAdvertisement_, *handleTCPTransportAdvertisement, NULL, NULL},
     {"jxta:HTTPTransportAdvertisement", HTTPTransportAdvertisement_, *handleHTTPTransportAdvertisement, NULL, NULL},
     {"jxta:RA", RouteAdvertisement_, *handleRouteAdvertisement, NULL, NULL},
@@ -781,6 +862,13 @@ JXTA_DECLARE(Jxta_status) jxta_svc_get_xml(Jxta_svc * ad, JString ** result)
         jstring_append_1(string, tmp);
         JXTA_OBJECT_RELEASE(tmp);
     }
+    
+    if (ad->srdiConfig != NULL) {
+        JString *tmp;
+        jxta_SrdiConfigAdvertisement_get_xml(ad->srdiConfig, &tmp);
+        jstring_append_1(string, tmp);
+        JXTA_OBJECT_RELEASE(tmp);
+    }
 
     jstring_append_2(string, "</Parm>\n");
     jstring_append_2(string, "</Svc>\n");
@@ -813,6 +901,7 @@ static Jxta_svc *jxta_svc_construct(Jxta_svc * self)
         self->relaya = NULL;
         self->route = NULL;
         self->rdvConfig = NULL;
+        self->srdiConfig = NULL;
     }
 
     return self;
@@ -822,7 +911,7 @@ JXTA_DECLARE(Jxta_svc *) jxta_svc_new(void)
 {
     Jxta_svc *ad = (Jxta_svc *) calloc(1, sizeof(Jxta_svc));
 
-    JXTA_OBJECT_INIT(ad, jxta_svc_delete, 0);
+    JXTA_OBJECT_INIT(ad, (JXTA_OBJECT_FREE_FUNC) jxta_svc_delete, NULL);
 
     return jxta_svc_construct(ad);
 }
@@ -849,7 +938,8 @@ static void jxta_svc_delete(Jxta_svc * ad)
         JXTA_OBJECT_RELEASE(ad->route);
     if (ad->rdvConfig != NULL)
         JXTA_OBJECT_RELEASE(ad->rdvConfig);
-
+    if (ad->srdiConfig != NULL)
+        JXTA_OBJECT_RELEASE(ad->srdiConfig);
     jxta_advertisement_destruct((Jxta_advertisement *) ad);
     memset(ad, 0xdd, sizeof(Jxta_svc));
     free(ad);

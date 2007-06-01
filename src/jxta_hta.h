@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_hta.h,v 1.8 2005/08/03 05:51:16 slowhog Exp $
+ * $Id: jxta_hta.h,v 1.9 2005/09/21 21:16:47 slowhog Exp $
  */
 
 
@@ -63,9 +63,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _jxta_HTTPTransportAdvertisement Jxta_HTTPTransportAdvertisement;
 
 JXTA_DECLARE(Jxta_HTTPTransportAdvertisement *) jxta_HTTPTransportAdvertisement_new(void);

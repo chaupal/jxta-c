@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_service.h,v 1.7 2005/07/22 03:12:53 slowhog Exp $
+ * $Id: jxta_pipe_service.h,v 1.8 2005/09/21 21:16:49 slowhog Exp $
  */
 
 
@@ -69,12 +69,15 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 /****************************************************
  ** Jxta_pipe_connect_event API
- ****************************************************//**
+****************************************************/
+
+/**
  ** The following is the predefined standard event types.
  ** Specific pipe implementation can use types higher than
  ** JXTA_INPUTPIPE_USER_BASE.

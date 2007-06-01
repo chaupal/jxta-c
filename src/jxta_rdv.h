@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv.h,v 1.10 2005/08/03 05:51:18 slowhog Exp $
+ * $Id: jxta_rdv.h,v 1.11 2005/09/21 21:16:49 slowhog Exp $
  */
 
 
@@ -64,14 +64,16 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 /**
  ** Jxta_RdvAdvertisement
  **
  ** Definition of the opaque type of the JXTA RendezVous Advertisement
- **/ typedef struct _jxta_RdvAdvertisement Jxta_RdvAdvertisement;
+ **/
+typedef struct _jxta_RdvAdvertisement Jxta_RdvAdvertisement;
 
 /**
  ** Creates a new rendezvous advertisement object. The object is created

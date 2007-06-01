@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_discovery_service_private.h,v 1.16 2005/08/29 22:49:04 slowhog Exp $
+ * $Id: jxta_discovery_service_private.h,v 1.19 2005/11/26 12:11:47 mmx2005 Exp $
  */
 
 
@@ -72,9 +72,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 struct _jxta_discovery_service {
     Extends(Jxta_service);
 
@@ -111,7 +112,7 @@ struct _jxta_discovery_service_methods {
                                   Jxta_id * peerid, Jxta_advertisement * adv, short type, Jxta_expiration_time lifetimeForOthers);
 
      Jxta_status(*flush) (Jxta_discovery_service * self, char *id, short type);
-
+     
      Jxta_status(*add_listener) (Jxta_discovery_service * self, Jxta_discovery_listener * listener);
 
      Jxta_status(*remove_listener) (Jxta_discovery_service * self, Jxta_discovery_listener * listener);
@@ -128,7 +129,7 @@ struct _jxta_discovery_service_methods {
 extern void jxta_discovery_service_construct(Jxta_discovery_service * service, Jxta_discovery_service_methods * methods);
 
 /**
- * The base rsesolver service dtor (Not public, not virtual. Only called by
+ * The base resolver service dtor (Not public, not virtual. Only called by
  * subclassers). We just pass it along.
  */
 extern void jxta_discovery_service_destruct(Jxta_discovery_service * service);

@@ -50,12 +50,12 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bytevector.c,v 1.19 2005/09/12 07:02:43 slowhog Exp $
+ * $Id: jxta_bytevector.c,v 1.20 2005/10/27 01:55:24 slowhog Exp $
  */
 
 #include <stdlib.h>
 
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 /* #include "jxta_object.h" */
 #include "jxta_errno.h"
 #include "jxta_debug.h"

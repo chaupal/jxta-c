@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_client_tunnel.c,v 1.5 2005/04/22 01:26:21 slowhog Exp $
+ * $Id: jxta_client_tunnel.c,v 1.6 2005/09/23 20:07:14 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     Jxta_PG *pg;
     Jxta_status rv;
     int ch;
-    char *tmp; 
+    char *tmp;
     FILE *f;
     Jxta_log_file *log_f;
     Jxta_log_selector *log_s;
@@ -133,8 +133,8 @@ int main(int argc, char *argv[])
 
     jxta_log_append(CLT_TUNNEL_TEST_LOG, JXTA_LOG_LEVEL_TRACE, "Quit command issued\n");
     if (jxta_socket_tunnel_is_established(tun)) {
-            jxta_log_append(CLT_TUNNEL_TEST_LOG, JXTA_LOG_LEVEL_TRACE, "Teardown tunnel ...\n");
-            jxta_socket_tunnel_teardown(tun);
+        jxta_log_append(CLT_TUNNEL_TEST_LOG, JXTA_LOG_LEVEL_TRACE, "Teardown tunnel ...\n");
+        jxta_socket_tunnel_teardown(tun);
     }
     jxta_log_append(CLT_TUNNEL_TEST_LOG, JXTA_LOG_LEVEL_TRACE, "Delete socket tunnel\n");
     jxta_socket_tunnel_delete(tun);

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_relay.c,v 1.41 2005/08/18 22:43:05 slowhog Exp $
+ * $Id: jxta_relay.c,v 1.46 2005/11/16 20:10:41 lankes Exp $
  */
 #include <stdlib.h> /* for atoi */
 
@@ -194,7 +194,7 @@ static Jxta_boolean allow_overload_p(Jxta_transport * tr);
 static Jxta_boolean allow_routing_p(Jxta_transport * tr);
 static Jxta_boolean connection_oriented_p(Jxta_transport * tr);
 
-static void relay_transport_client_listener(Jxta_object * obj, void *arg);
+static void JXTA_STDCALL relay_transport_client_listener(Jxta_object * obj, void *arg);
 static void *APR_THREAD_FUNC connect_relay_thread(apr_thread_t * thread, void *arg);
 static void check_relay_lease(_jxta_transport_relay * self, _jxta_peer_relay_entry * peer);
 static void connect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_entry * peer);
@@ -257,7 +257,7 @@ static _jxta_peer_relay_entry *relay_entry_construct(_jxta_peer_relay_entry * se
 {
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Constructing ...\n");
 
-    self = peer_entry_construct((_jxta_peer_entry *) self);
+    self = (_jxta_peer_relay_entry*)peer_entry_construct((_jxta_peer_entry *) self);
 
     if (NULL != self) {
         self->thisType = "_jxta_peer_relay_entry";
@@ -282,7 +282,7 @@ static _jxta_peer_relay_entry *relay_entry_new(void)
     /* Initialize the object */
     memset(self, 0, sizeof(_jxta_peer_relay_entry));
     JXTA_OBJECT_INIT(self, relay_entry_delete, 0);
-    PEER_ENTRY_VTBL(self) = &JXTA_RELAY_ENTRY_METHODS;
+    PEER_ENTRY_VTBL(self) = (Jxta_Peer_entry_methods*)&JXTA_RELAY_ENTRY_METHODS;
 
     return relay_entry_construct(self);
 }
@@ -362,7 +362,7 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     for (i = 0; i < sz; i++) {
         Jxta_id *mcid;
         Jxta_svc *tmpsvc = NULL;
-        jxta_vector_get_object_at(svcs, (Jxta_object **) & tmpsvc, i);
+        jxta_vector_get_object_at(svcs, JXTA_OBJECT_PPTR(&tmpsvc), i);
         mcid = jxta_svc_get_MCID(tmpsvc);
         if (jxta_id_equals(mcid, assigned_id)) {
             svc = tmpsvc;
@@ -476,14 +476,14 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
 
     sz = jxta_vector_size(self->HttpRelays);
     for (i = 0; i < sz; ++i) {
-        jxta_vector_get_object_at(self->HttpRelays, (Jxta_object **) & relay, i);
+        jxta_vector_get_object_at(self->HttpRelays, JXTA_OBJECT_PPTR(&relay), i);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "http://%s\n", jstring_get_string(relay));
         JXTA_OBJECT_RELEASE(relay);
     }
 
     sz = jxta_vector_size(self->TcpRelays);
     for (i = 0; i < sz; ++i) {
-        jxta_vector_get_object_at(self->TcpRelays, (Jxta_object **) & relay, i);
+        jxta_vector_get_object_at(self->TcpRelays, JXTA_OBJECT_PPTR(&relay), i);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "tcp://%s\n", jstring_get_string(relay));
         JXTA_OBJECT_RELEASE(relay);
     }
@@ -642,11 +642,11 @@ _jxta_transport_relay *jxta_transport_relay_construct(Jxta_transport * relay, Jx
     _jxta_transport_relay *self = NULL;
 
     PTValid(methods, Jxta_transport_methods);
-    self = jxta_transport_construct(relay, (Jxta_transport_methods const *) methods);
+    self = (_jxta_transport_relay*)jxta_transport_construct(relay, (Jxta_transport_methods const *) methods);
+    self->_super.direction = JXTA_OUTBOUND;
 
     if (NULL != self) {
         self->thisType = "_jxta_transport_relay";
-
         self->address = NULL;
         self->peerid = NULL;
         self->groupid = NULL;
@@ -733,7 +733,7 @@ Jxta_transport_relay *jxta_transport_relay_new_instance(void)
     _jxta_transport_relay *self = (_jxta_transport_relay *) malloc(sizeof(_jxta_transport_relay));
     memset(self, 0, sizeof(_jxta_transport_relay));
     JXTA_OBJECT_INIT(self, relay_free, NULL);
-    jxta_transport_relay_construct(self, &JXTA_TRANSPORT_RELAY_METHODS);
+    jxta_transport_relay_construct((Jxta_transport*)self, &JXTA_TRANSPORT_RELAY_METHODS);
 
     return (Jxta_transport_relay *) self;
 }
@@ -746,7 +746,7 @@ Jxta_transport_relay *jxta_transport_relay_new_instance(void)
  **   - get the lease from the relay server.
  **   - get a disconnect from the relay server.
  **/
-static void relay_transport_client_listener(Jxta_object * obj, void *arg)
+static void JXTA_STDCALL relay_transport_client_listener(Jxta_object * obj, void *arg)
 {
     Jxta_message *msg = (Jxta_message *) obj;
     _jxta_transport_relay *self = PTValid(arg, _jxta_transport_relay);
@@ -763,7 +763,7 @@ static void relay_transport_client_listener(Jxta_object * obj, void *arg)
     JXTA_OBJECT_CHECK_VALID(self);
 
     for (i = 0; i < jxta_vector_size(self->peers); ++i) {
-        status = jxta_vector_get_object_at(self->peers, (Jxta_object **) & peer, i);
+        status = jxta_vector_get_object_at(self->peers, JXTA_OBJECT_PPTR(&peer), i);
         if (status != JXTA_SUCCESS) {
             /* We should print a LOG here. Just continue for the time being */
             continue;
@@ -829,7 +829,7 @@ Jxta_boolean is_contain_address(Jxta_endpoint_address * addr, Jxta_RdvAdvertisem
     saddr = jxta_endpoint_address_to_string(addr);
 
     for (i = 0; i < jxta_vector_size(dest); i++) {
-        jxta_vector_get_object_at(dest, (Jxta_object **) & js_addr, i);
+        jxta_vector_get_object_at(dest, JXTA_OBJECT_PPTR(&js_addr), i);
         if (strncmp(saddr, jstring_get_string(js_addr), (strlen(saddr) - 2)) == 0) {
             res = TRUE;
             JXTA_OBJECT_RELEASE(js_addr);
@@ -857,7 +857,7 @@ static void update_relay_peer_connection(_jxta_transport_relay * self, Jxta_RdvA
 
     for (i = 0; i < jxta_vector_size(self->peers); i++) {
 
-        res = jxta_vector_get_object_at(self->peers, (Jxta_object **) & peer, i);
+        res = jxta_vector_get_object_at(self->peers, JXTA_OBJECT_PPTR(&peer), i);
         if (res != JXTA_SUCCESS) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot get peer from vector peers\n");
             break;
@@ -871,20 +871,20 @@ static void update_relay_peer_connection(_jxta_transport_relay * self, Jxta_RdvA
             /*
              *  Mark the peer entry has connected
              */
-            PEER_ENTRY_VTBL(peer)->jxta_peer_lock(peer);
+            PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer*)peer);
 
             /*
              * Reset the flag to our last succeeded lease renewal state
              */
             peer->is_connected = TRUE;
-            PEER_ENTRY_VTBL(peer)->jxta_peer_set_expires(peer, jpr_time_now() + lease);
-            peer->connectTime = PEER_ENTRY_VTBL(peer)->jxta_peer_get_expires(peer) - RELAY_LEASE_RENEWAL_DELAY;
+            PEER_ENTRY_VTBL(peer)->jxta_peer_set_expires((Jxta_peer*)peer, jpr_time_now() + lease);
+            peer->connectTime = PEER_ENTRY_VTBL(peer)->jxta_peer_get_expires((Jxta_peer*)peer) - RELAY_LEASE_RENEWAL_DELAY;
 
             jxta_endpoint_service_set_relay(self->endpoint,
                                             jxta_endpoint_address_get_protocol_name(((_jxta_peer_entry *) peer)->address),
                                             jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) peer)->address));
 
-            PEER_ENTRY_VTBL(peer)->jxta_peer_unlock(peer);
+            PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
             JXTA_OBJECT_RELEASE(peer);
             return;
         }
@@ -1031,8 +1031,8 @@ static void *APR_THREAD_FUNC connect_relay_thread(apr_thread_t * thread, void *a
     /* initial connect to relay seed */
 
     for (i = 0; i < jxta_vector_size(self->TcpRelays); i++) {
-        seed = relay_entry_new();
-        jxta_vector_get_object_at(self->TcpRelays, (Jxta_object **) & addr, i);
+        seed = (Jxta_peer*)relay_entry_new();
+        jxta_vector_get_object_at(self->TcpRelays, JXTA_OBJECT_PPTR(&addr), i);
         addr_a = jstring_new_2("tcp://");
         jstring_append_1(addr_a, addr);
         addr_e = jxta_endpoint_address_new((char *) jstring_get_string(addr_a));
@@ -1048,8 +1048,8 @@ static void *APR_THREAD_FUNC connect_relay_thread(apr_thread_t * thread, void *a
     }
 
     for (i = 0; i < jxta_vector_size(self->HttpRelays); i++) {
-        seed = relay_entry_new();
-        jxta_vector_get_object_at(self->HttpRelays, (Jxta_object **) & addr, i);
+        seed = (Jxta_peer*)relay_entry_new();
+        jxta_vector_get_object_at(self->HttpRelays, JXTA_OBJECT_PPTR(&addr), i);
         addr_a = jstring_new_2("http://");
         jstring_append_1(addr_a, addr);
         addr_e = jxta_endpoint_address_new((char *) jstring_get_string(addr_a));
@@ -1086,7 +1086,7 @@ static void *APR_THREAD_FUNC connect_relay_thread(apr_thread_t * thread, void *a
         nbOfConnectedPeers = 0;
 
         for (i = 0; i < jxta_vector_size(self->peers); ++i) {
-            res = jxta_vector_get_object_at(self->peers, (Jxta_object **) & peer, i);
+            res = jxta_vector_get_object_at(self->peers, JXTA_OBJECT_PPTR(&peer), i);
             if (res != JXTA_SUCCESS) {
                 /* We should print a LOG here. Just continue for the time being */
                 continue;
@@ -1115,7 +1115,7 @@ static void *APR_THREAD_FUNC connect_relay_thread(apr_thread_t * thread, void *a
 
         for (i = 0; i < jxta_vector_size(self->peers); ++i) {
 
-            res = jxta_vector_get_object_at(self->peers, (Jxta_object **) & peer, i);
+            res = jxta_vector_get_object_at(self->peers, JXTA_OBJECT_PPTR(&peer), i);
             if (res != JXTA_SUCCESS) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot get peer from vector peers\n");
                 continue;
@@ -1161,7 +1161,7 @@ static void *APR_THREAD_FUNC connect_relay_thread(apr_thread_t * thread, void *a
          */
         nbOfConnectedPeers = 0;
         for (i = 0; i < jxta_vector_size(self->peers); ++i) {
-            res = jxta_vector_get_object_at(self->peers, (Jxta_object **) & peer, i);
+            res = jxta_vector_get_object_at(self->peers, JXTA_OBJECT_PPTR(&peer), i);
             if (res != JXTA_SUCCESS) {
                 /* We should print a LOG here. Just continue for the time being */
                 continue;
@@ -1186,7 +1186,7 @@ static void *APR_THREAD_FUNC connect_relay_thread(apr_thread_t * thread, void *a
         if (nbOfConnectedPeers < MIN_NB_OF_CONNECTED_RELAYS) {
             sz = jxta_vector_size(self->peers);
             for (i = 0; i < sz; i++) {
-                jxta_vector_get_object_at(self->peers, (Jxta_object **) & peer, i);
+                jxta_vector_get_object_at(self->peers, JXTA_OBJECT_PPTR(&peer), i);
                 check_relay_connect(self, peer, nbOfConnectedPeers);
                 connect_seed = TRUE;
                 JXTA_OBJECT_RELEASE(peer);
@@ -1211,7 +1211,7 @@ static void check_relay_lease(_jxta_transport_relay * self, _jxta_peer_relay_ent
      * check if the peer has still a valid relay
      */
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_lock(peer);
+    PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer*)peer);
 
     add = jxta_endpoint_service_get_relay_addr(self->endpoint);
     if (add == NULL) {
@@ -1220,7 +1220,7 @@ static void check_relay_lease(_jxta_transport_relay * self, _jxta_peer_relay_ent
         peer->try_connect = FALSE;
         peer->connectTime = 0;
         peer->connectRetryDelay = RELAY_MIN_RETRY_DELAY;
-        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock(peer);
+        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
 
         /*
          * remove the relay address from our local route
@@ -1235,7 +1235,7 @@ static void check_relay_lease(_jxta_transport_relay * self, _jxta_peer_relay_ent
         free(add);
     }
 
-    expires = PEER_ENTRY_VTBL(peer)->jxta_peer_get_expires(peer);
+    expires = PEER_ENTRY_VTBL(peer)->jxta_peer_get_expires((Jxta_peer*)peer);
 
     /* Check if the peer really still has a lease */
     if (expires < currentTime) {
@@ -1248,13 +1248,13 @@ static void check_relay_lease(_jxta_transport_relay * self, _jxta_peer_relay_ent
          **/
         peer->connectTime = currentTime;
         peer->connectRetryDelay = 0;
-        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock(peer);
+        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
         return;
     }
     /* We still have a lease. Is it time to renew it ? */
     if ((expires - currentTime) <= RELAY_RENEWAL_DELAY) {
         peer->connectTime = currentTime;
-        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock(peer);
+        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "relay connection reconnect\n");
 
@@ -1265,7 +1265,7 @@ static void check_relay_lease(_jxta_transport_relay * self, _jxta_peer_relay_ent
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "relay connection check ok %s\n",
                     jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) peer)->address));
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock(peer);
+    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
     return;
 }
 
@@ -1274,7 +1274,7 @@ static void check_relay_connect(_jxta_transport_relay * self, _jxta_peer_relay_e
 
     Jxta_time currentTime = jpr_time_now();
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_lock(peer);
+    PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer*)peer);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Relay->connect in= %" APR_INT64_T_FMT "ms\n",
                     (peer->connectTime - currentTime));
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "       RetryDelay= %" APR_INT64_T_FMT "ms\n", peer->connectRetryDelay);
@@ -1294,12 +1294,12 @@ static void check_relay_connect(_jxta_transport_relay * self, _jxta_peer_relay_e
              ** likely that the peer is still not reachable. 
              **/
             peer->connectTime = currentTime;
-            PEER_ENTRY_VTBL(peer)->jxta_peer_unlock(peer);
+            PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
             return;
         }
     } else {
         /* Time to try a connection */
-        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock(peer);
+        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
 
         /*
          * NOTE: 20050607 tra
@@ -1315,7 +1315,7 @@ static void check_relay_connect(_jxta_transport_relay * self, _jxta_peer_relay_e
             reconnect_to_relay(self, peer);
         return;
     }
-    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock(peer);
+    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
     return;
 }
 
@@ -1359,16 +1359,15 @@ static void connect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_entr
     Jxta_endpoint_address *destAddr = NULL;
     JString *tmp = NULL;
     JString *tmp1 = NULL;
-    JString *request = NULL;
     Jxta_transport *transport = NULL;
     JxtaEndpointMessenger *endpoint_messenger = NULL;
     Jxta_endpoint_address *addr = NULL;
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_lock(peer);
+    PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer*)peer);
 
     if (peer->connectTime > currentTime) {
         /* Not time yet to try to connect */
-        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock(peer);
+        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
         return;
     }
 
@@ -1395,18 +1394,12 @@ static void connect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_entr
 
     peer->connectTime = currentTime + peer->connectRetryDelay;
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock(peer);
+    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
 
     /**
      ** Create a message with a connection request and build the request.
      **/
     msg = jxta_message_new();
-
-    request = jstring_new_2(RELAY_CONNECT_REQUEST);
-    jstring_append_2(request, ",");
-    jstring_append_2(request, LEASE_REQUEST);
-    jstring_append_2(request, ",");
-    jstring_append_2(request, LAZY_CLOSE);
 
     /**
      ** Set the destination address of the message.
@@ -1425,16 +1418,15 @@ static void connect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_entr
     jstring_append_2(tmp1, ",");
     jstring_append_2(tmp1, (char *) LAZY_CLOSE);
 
-    destAddr = jxta_endpoint_address_new2(jxta_endpoint_address_get_protocol_name(((_jxta_peer_entry *) peer)->address),
-                                          jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) peer)->address),
-                                          jstring_get_string(tmp), jstring_get_string(tmp1));
+    destAddr = jxta_endpoint_address_new_2(jxta_endpoint_address_get_protocol_name(((_jxta_peer_entry *) peer)->address),
+                                           jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) peer)->address),
+                                           jstring_get_string(tmp), jstring_get_string(tmp1));
 
     send_message_to_peer(self, destAddr, msg);
 
     JXTA_OBJECT_RELEASE(destAddr);
     JXTA_OBJECT_RELEASE(tmp);
     JXTA_OBJECT_RELEASE(tmp1);
-    JXTA_OBJECT_RELEASE(request);
     JXTA_OBJECT_RELEASE(msg);
 }
 
@@ -1442,20 +1434,18 @@ static void reconnect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_en
 {
     Jxta_time currentTime = jpr_time_now();
     Jxta_message *msg = NULL;
-    Jxta_message_element *msgElem = NULL;
     Jxta_endpoint_address *destAddr = NULL;
     JString *tmp = NULL;
     JString *tmp1 = NULL;
-    JString *request = NULL;
     Jxta_transport *transport = NULL;
     JxtaEndpointMessenger *endpoint_messenger = NULL;
     Jxta_endpoint_address *addr = NULL;
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_lock(peer);
+    PEER_ENTRY_VTBL(peer)->jxta_peer_lock((Jxta_peer*)peer);
 
     if (peer->connectTime > currentTime) {
         /* Not time yet to try to connect */
-        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock(peer);
+        PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
         return;
     }
 
@@ -1477,24 +1467,12 @@ static void reconnect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_en
 
     peer->connectTime = currentTime + peer->connectRetryDelay;
 
-    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock(peer);
+    PEER_ENTRY_VTBL(peer)->jxta_peer_unlock((Jxta_peer*)peer);
 
     /**
      ** Create a message with a connection request and build the request.
      **/
     msg = jxta_message_new();
-
-    request = jstring_new_2(RELAY_CONNECT_REQUEST);
-    jstring_append_2(request, ",");
-    jstring_append_2(request, LEASE_REQUEST);
-    jstring_append_2(request, ",");
-    jstring_append_2(request, LAZY_CLOSE);
-
-    msgElem = jxta_message_element_new_1(RELAY_LEASE_REQUEST,
-                                         "text/plain", (char *) jstring_get_string(request), jstring_length(request), NULL);
-
-    jxta_message_add_element(msg, msgElem);
-    JXTA_OBJECT_RELEASE(msgElem);
 
     /**
      ** Set the destination address of the message.
@@ -1508,13 +1486,12 @@ static void reconnect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_en
     jstring_append_2(tmp1, "/");
     jstring_append_2(tmp1, self->peerid);
 
-    destAddr = jxta_endpoint_address_new2(jxta_endpoint_address_get_protocol_name(((_jxta_peer_entry *) peer)->address),
-                                          jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) peer)->address),
-                                          jstring_get_string(tmp), jstring_get_string(tmp1));
+    destAddr = jxta_endpoint_address_new_2(jxta_endpoint_address_get_protocol_name(((_jxta_peer_entry *) peer)->address),
+                                           jxta_endpoint_address_get_protocol_address(((_jxta_peer_entry *) peer)->address),
+                                           jstring_get_string(tmp), jstring_get_string(tmp1));
 
     send_message_to_peer(self, destAddr, msg);
 
-    JXTA_OBJECT_RELEASE(request);
     JXTA_OBJECT_RELEASE(tmp);
     JXTA_OBJECT_RELEASE(tmp1);
     JXTA_OBJECT_RELEASE(destAddr);

@@ -50,133 +50,152 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: dr_adv_test.c,v 1.17 2005/04/17 14:22:18 lankes Exp $
+ * $Id: dr_adv_test.c,v 1.20 2005/11/15 18:41:33 slowhog Exp $
  */
- 
+
 #include <stdio.h>
 #include "jxta.h"
 #include "jxta_dr.h"
 #include "jxta_pa.h"
+#include "jxta_pipe_adv.h"
 
-Jxta_boolean
-dr_type_test(Jxta_DiscoveryResponse * ad, short truetype) {
+Jxta_boolean dr_type_test(Jxta_DiscoveryResponse * ad, short truetype)
+{
 
     Jxta_boolean passed = TRUE;
 
     short type = jxta_discovery_response_get_type(ad);
     if (type == truetype) {
-        fprintf(stderr,"Passed dr_type_test\n");
+        printf("Passed dr_type_test\n");
     } else {
-        fprintf(stderr,"Failed dr_type_test %d\n", type);
+        printf("Failed dr_type_test %d\n", type);
         passed = FALSE;
     }
 
     return passed;
 }
 
-Jxta_boolean
-dr_count_test(Jxta_DiscoveryResponse * ad, int truecount) {
+Jxta_boolean dr_count_test(Jxta_DiscoveryResponse * ad, int truecount)
+{
 
     Jxta_boolean passed = TRUE;
 
     int count = jxta_discovery_response_get_count(ad);
     if (count == truecount) {
-        fprintf(stderr,"Passed dr_count_test\n");
+        printf("Passed dr_count_test\n");
     } else {
-        fprintf(stderr,"Failed dr_count_test %d\n", count);
+        printf("Failed dr_count_test %d\n", count);
         passed = FALSE;
     }
 
     return passed;
 }
 
-Jxta_boolean
-dr_response_test(Jxta_DiscoveryResponse * ad) {
-    int count = jxta_discovery_response_get_count(ad);
-    int i = 0;
+Jxta_boolean dr_response_test(Jxta_DiscoveryResponse * ad)
+{
+    unsigned int count;
+    unsigned int i = 0;
+
     Jxta_boolean passed = FALSE;
-    Jxta_vector * responses = NULL;
-    Jxta_vector * advertisements = NULL;
-    Jxta_advertisement * adv = NULL;
-    JString* id_string = NULL;
-    JString* adv_string = NULL;
-    Jxta_id* id = NULL;
-    
+    Jxta_vector *responses = NULL;
+    Jxta_vector *advertisements = NULL;
+    Jxta_advertisement *adv = NULL;
+    JString *id_string = NULL;
+    JString *adv_string = NULL;
+    Jxta_id *id = NULL;
+
+    count = jxta_discovery_response_get_count(ad);
     jxta_discovery_response_get_responses(ad, &responses);
     jxta_discovery_response_get_advertisements(ad, &advertisements);
-    for (i =0; i< jxta_vector_size(advertisements) ; i++) {
-        jxta_vector_get_object_at(advertisements,
-                                 (Jxta_object**) &adv,
-                                  i);
+    for (i = 0; i < jxta_vector_size(advertisements); i++) {
+        jxta_vector_get_object_at(advertisements, JXTA_OBJECT_PPTR(&adv), i);
         jxta_advertisement_get_xml(adv, &adv_string);
-        fprintf(stdout,"%s\n",jstring_get_string(adv_string));
+        fprintf(stdout, "%s\n", jstring_get_string(adv_string));
         id = jxta_advertisement_get_id(adv);
-        jxta_id_to_jstring(id,&id_string);
-        printf("Advertisement ID=%s\n",jstring_get_string(id_string));
+        jxta_id_to_jstring(id, &id_string);
+        printf("Advertisement ID=%s\n", jstring_get_string(id_string));
     }
     if (jxta_vector_size(responses) == count && jxta_vector_size(advertisements) == count) {
         passed = TRUE;
-        fprintf(stderr,"Passed dr_response_test\n");
+        printf("Passed dr_response_test\n");
     } else {
-        fprintf(stderr,"Failed dr_response_test count =%d, response count =%d parsed count =%d\n", count, jxta_vector_size(responses),jxta_vector_size(advertisements));
+        printf("Failed dr_response_test count =%d, response count =%d parsed count =%d\n", count,
+               jxta_vector_size(responses), jxta_vector_size(advertisements));
     }
     return passed;
 }
 
 
-Jxta_boolean
-dr_pa_test(Jxta_DiscoveryResponse * ad) {
+Jxta_boolean dr_pa_test(Jxta_DiscoveryResponse * ad)
+{
 
     Jxta_boolean passed = TRUE;
-    Jxta_PA * pa = jxta_PA_new();
+    Jxta_PA *pa = jxta_PA_new();
     Jxta_advertisement *padv = jxta_advertisement_new();
-    JString * js = jstring_new_0();
-    JString * pabuf = NULL;
+    JString *js = jstring_new_0();
+    JString *pabuf = NULL;
 
     jxta_discovery_response_get_peer_advertisement(ad, &padv);
     jxta_discovery_response_get_peeradv(ad, &pabuf);
-    jxta_PA_parse_charbuffer(pa, jstring_get_string (pabuf) , jstring_length(pabuf));
+    jxta_PA_parse_charbuffer(pa, jstring_get_string(pabuf), jstring_length(pabuf));
     jxta_PA_get_xml(pa, &js);
-    fprintf(stdout,"%s\n",jstring_get_string(js));
+    fprintf(stdout, "%s\n", jstring_get_string(js));
     return passed;
 }
 
 
 
-Jxta_boolean
-dr_adv_test(int argc, char ** argv) {
+Jxta_boolean dr_adv_test(int argc, char **argv)
+{
 
-    Jxta_DiscoveryResponse * ad = jxta_discovery_response_new();
+    Jxta_DiscoveryResponse *ad = jxta_discovery_response_new();
     FILE *testfile;
-    JString * js = jstring_new_0();
-    char * pabuf;
+    Jxta_boolean ret = TRUE;
+    JString *js = jstring_new_0();
 
-    if(argc != 2) {
+    if (argc != 2) {
         printf("usage: ad <filename>\n");
-        return -1;
+        return FALSE;
     }
-
-    testfile = fopen (argv[1], "r");
+    testfile = fopen(argv[1], "r");
+    if (NULL == testfile)
+        return FALSE;
     jxta_discovery_response_parse_file(ad, testfile);
     fclose(testfile);
-    dr_type_test(ad, 2);
-    dr_count_test(ad, 3);
-    dr_pa_test(ad);
-    dr_response_test(ad);
+    while (TRUE) {
+        ret = dr_type_test(ad, 2);
+        if (FALSE == ret)
+            break;
+        ret = dr_count_test(ad, 3);
+        if (FALSE == ret)
+            break;
+        ret = dr_pa_test(ad);
+        if (FALSE == ret)
+            break;
+        ret = dr_response_test(ad);
+        break;
+    }
     jxta_discovery_response_get_xml(ad, &js);
-    fprintf(stdout,"%s\n",jstring_get_string(js));
+    if (NULL == js)
+        return FALSE;
+    fprintf(stdout, "%s\n", jstring_get_string(js));
     jxta_discovery_response_free(ad);
 
-    return FALSE;
+    return ret;
 }
 
-int
-main (int argc, char **argv) {
+int main(int argc, char **argv)
+{
 
     int retval;
 
     jxta_initialize();
-    retval = dr_adv_test(argc,argv);
+    jxta_advertisement_register_global_handler("jxta:PipeAdvertisement", (const JxtaAdvertisementNewFunc) jxta_pipe_adv_new);
+    retval = dr_adv_test(argc, argv);
     jxta_terminate();
+    if (TRUE == retval)
+        retval = 0;
+    else
+        retval = -1;
     return retval;
 }

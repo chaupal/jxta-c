@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_adv.h,v 1.8 2005/08/03 05:51:17 slowhog Exp $
+ * $Id: jxta_pipe_adv.h,v 1.10 2005/11/26 16:38:02 mmx2005 Exp $
  */
 
 /************************************************************************
@@ -66,14 +66,16 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
   /**
    ** Jxta_pipe_adv
    **
    ** Definition of the opaque type of the JXTA Pipe Advertisement.
-   **/ typedef struct _jxta_pipe_adv Jxta_pipe_adv;
+   **/
+typedef struct _jxta_pipe_adv Jxta_pipe_adv;
 
   /**
    ** Creates a new pipe advertisement object. The object is created
@@ -91,7 +93,7 @@ JXTA_DECLARE(Jxta_pipe_adv *) jxta_pipe_adv_new(void);
    ** @param adv a pointer to the advertisement object.
    ** @param xml return value: a pointer to a pointer which will the generated XML
    ** @return a status: JXTA_SUCCESS when the call was successful,
-   **                   JXTA_NOMEM when the system has ran out of memeory
+   **                   JXTA_NOMEM when the system has ran out of memory
    **                   JXTA_INVALID_PARAMETER when an argument was invalid.
    **/
 
@@ -105,7 +107,7 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_adv_get_xml(Jxta_pipe_adv * adv, JString ** 
    ** @param buffer a pointer to the buffer where the advertisement is stored.
    ** @param len size of the buffer
    ** @return a status: JXTA_SUCCESS when the call was successful,
-   **                   JXTA_NOMEM when the system has ran out of memeory
+   **                   JXTA_NOMEM when the system has ran out of memory
    **                   JXTA_INVALID_PARAMETER when an argument was invalid.
    **/
 
@@ -116,9 +118,9 @@ JXTA_DECLARE(void) jxta_pipe_adv_parse_charbuffer(Jxta_pipe_adv *, const char *b
    ** a FILE.
    **
    ** @param adv a pointer to the advertisement object.
-   ** @param stream the stream to get the advertisment from.
+   ** @param stream the stream to get the advertisement from.
    ** @return a status: JXTA_SUCCESS when the call was successful,
-   **                   JXTA_NOMEM when the system has ran out of memeory
+   **                   JXTA_NOMEM when the system has ran out of memory
    **                   JXTA_INVALID_PARAMETER when an argument was invalid.
    **/
 
@@ -149,7 +151,7 @@ JXTA_DECLARE(Jxta_id *) jxta_pipe_adv_get_pipeid(Jxta_pipe_adv * adv);
    ** @param adv a pointer to the Pipe Advertisement.
    ** @param id a pointer to a null terminated string containing the id.
    ** @return a status: JXTA_SUCCESS when the call was successful,
-   **                   JXTA_NOMEM when the system has ran out of memeory
+   **                   JXTA_NOMEM when the system has ran out of memory
    **                   JXTA_INVALID_PARAMETER when an argument was invalid.
    **/
 
@@ -172,7 +174,7 @@ JXTA_DECLARE(const char *) jxta_pipe_adv_get_Type(Jxta_pipe_adv * adv);
    ** @param adv a pointer to the Pipe Advertisement.
    ** @param type a pointer to a null terminated string containing the type.
    ** @return a status: JXTA_SUCCESS when the call was successful,
-   **                   JXTA_NOMEM when the system has ran out of memeory
+   **                   JXTA_NOMEM when the system has ran out of memory
    **                   JXTA_INVALID_PARAMETER when an argument was invalid.
    **/
 
@@ -194,7 +196,7 @@ JXTA_DECLARE(const char *) jxta_pipe_adv_get_Name(Jxta_pipe_adv * adv);
    ** @param adv a pointer to the Pipe Advertisement.
    ** @param name a pointer to a null terminated string containing the name.
    ** @return a status: JXTA_SUCCESS when the call was successful,
-   **                   JXTA_NOMEM when the system has ran out of memeory
+   **                   JXTA_NOMEM when the system has ran out of memory
    **                   JXTA_INVALID_PARAMETER when an argument was invalid.
    **/
 

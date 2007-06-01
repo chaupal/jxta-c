@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bench_comm.c,v 1.8 2005/09/07 19:10:18 slowhog Exp $
+ * $Id: jxta_bench_comm.c,v 1.10 2005/11/16 20:10:43 lankes Exp $
  */
 
 /**
@@ -161,7 +161,7 @@ static const char *REFLECTOR_PIPE_ADV_FILENAME = "reflector_pipe.adv";
 /**
  * Forward definition to make the compilor happy
  **/
-static void message_listener(Jxta_object * obj, void *arg);
+static void JXTA_STDCALL message_listener(Jxta_object * obj, void *arg);
 static Jxta_message *create_payload(void);
 static Jxta_status send_message(Jxta_message * message);
 static void start_pipe_work(void);
@@ -169,7 +169,7 @@ static void start_endpoint_work(void);
 static void compute_performance(apr_time_t t_begin, apr_time_t t_end);
 static void end_test(void);
 
-static void edge_rdv_listener(Jxta_object * obj, void *arg)
+static void JXTA_STDCALL edge_rdv_listener(Jxta_object * obj, void *arg)
 {
     JString *string = NULL;
     Jxta_rdv_event *rdv_event = (Jxta_rdv_event *) obj;
@@ -242,7 +242,7 @@ static void start_endpoint_work(void)
 }
 
 /** Used to get the outputpipe **/
-static void connect_listener(Jxta_object * obj, void *arg)
+static void JXTA_STDCALL connect_listener(Jxta_object * obj, void *arg)
 {
     Jxta_pipe_connect_event *connect_event = (Jxta_pipe_connect_event *) obj;
     Jxta_message *message = NULL;
@@ -274,7 +274,7 @@ static void connect_listener(Jxta_object * obj, void *arg)
     }
 }
 
-static void message_listener(Jxta_object * obj, void *arg)
+static void JXTA_STDCALL message_listener(Jxta_object * obj, void *arg)
 {
     Jxta_message *message = (Jxta_message *) obj;
 
@@ -508,7 +508,7 @@ static void init_pipe_work(void)
 
 static void init_endpoint_work(void)
 {
-    dest_address = jxta_endpoint_address_new2((char *) "tcp", endpoint_dest_address, (char *) SERVICE_NAME, (char *) "p");
+    dest_address = jxta_endpoint_address_new_2((char *) "tcp", endpoint_dest_address, (char *) SERVICE_NAME, (char *) "p");
 
     assert(jxta_endpoint_service_add_listener(endpoint_service, SERVICE_NAME, (char *) "p", incoming_listener) == JXTA_SUCCESS);
 }

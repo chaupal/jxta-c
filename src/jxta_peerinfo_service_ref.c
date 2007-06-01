@@ -50,11 +50,11 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peerinfo_service_ref.c,v 1.10 2005/03/25 02:32:02 hamada Exp $
+ * $Id: jxta_peerinfo_service_ref.c,v 1.11 2005/10/27 01:55:27 slowhog Exp $
  */
 
 
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 #include "jpr/jpr_excep.h"
 

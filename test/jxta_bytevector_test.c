@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bytevector_test.c,v 1.7 2005/03/22 16:23:46 bondolo Exp $
+ * $Id: jxta_bytevector_test.c,v 1.8 2005/09/23 20:07:13 slowhog Exp $
  */
 
 #include <stdlib.h>
@@ -69,31 +69,31 @@
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean 
-test_bytevector_new_0(void) {
-  Jxta_bytevector *jbv = jxta_bytevector_new_0();
-  JString *js;
-  
-  if( NULL == jbv )
-    return FALSE;
-    
-  if ( 0 != jxta_bytevector_size( jbv ) ){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
-  
-  /* 
-  *   Check that the content of the bytevector is as expected  - i.e. 
-  *  jstring_new_3 returns NULL as there are not data 
-  */
-  js = jstring_new_3(jbv);
-  JXTA_OBJECT_RELEASE( jbv);
-  if( js != NULL){
-    JXTA_OBJECT_RELEASE(js);
-    return FALSE;
-  }
+Jxta_boolean test_bytevector_new_0(void)
+{
+    Jxta_bytevector *jbv = jxta_bytevector_new_0();
+    JString *js;
 
-  return TRUE;
+    if (NULL == jbv)
+        return FALSE;
+
+    if (0 != jxta_bytevector_size(jbv)) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+
+    /* 
+     *   Check that the content of the bytevector is as expected  - i.e. 
+     *  jstring_new_3 returns NULL as there are not data 
+     */
+    js = jstring_new_3(jbv);
+    JXTA_OBJECT_RELEASE(jbv);
+    if (js != NULL) {
+        JXTA_OBJECT_RELEASE(js);
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 /**
@@ -101,31 +101,31 @@ test_bytevector_new_0(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean 
-test_bytevector_new_1(void) {
-  Jxta_bytevector *jbv = jxta_bytevector_new_1(100);
-  JString *js;
-  
-  if( NULL == jbv )
-    return FALSE;
-    
-  if ( 0 != jxta_bytevector_size( jbv ) ){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
+Jxta_boolean test_bytevector_new_1(void)
+{
+    Jxta_bytevector *jbv = jxta_bytevector_new_1(100);
+    JString *js;
 
-  /* 
-  *   Check that the content of the bytevector is as expected  - i.e. 
-  *  jstring_new_3 returns NULL as there are not data 
-  */
-  js = jstring_new_3(jbv);
-  JXTA_OBJECT_RELEASE( jbv);
-  if( js != NULL){
-    JXTA_OBJECT_RELEASE(js);
-    return FALSE;
-  }
-  
-  return TRUE;
+    if (NULL == jbv)
+        return FALSE;
+
+    if (0 != jxta_bytevector_size(jbv)) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+
+    /* 
+     *   Check that the content of the bytevector is as expected  - i.e. 
+     *  jstring_new_3 returns NULL as there are not data 
+     */
+    js = jstring_new_3(jbv);
+    JXTA_OBJECT_RELEASE(jbv);
+    if (js != NULL) {
+        JXTA_OBJECT_RELEASE(js);
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 
@@ -134,45 +134,45 @@ test_bytevector_new_1(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean 
-test_bytevector_new_2(void) {
-  unsigned char * source;
-  size_t size = 3;
-  Jxta_bytevector *jbv;
-  JString *js;
-  
-  source = (unsigned char*)malloc( sizeof(char) * 3);
-  if( source == NULL){
-     return FALSE;
-  }
-  source[0] = 'a';
-  source[1] = 'b';
-  source[2] = 'c';
+Jxta_boolean test_bytevector_new_2(void)
+{
+    unsigned char *source;
+    size_t size = 3;
+    Jxta_bytevector *jbv;
+    JString *js;
 
-  jbv = jxta_bytevector_new_2(source,size,100);
-  if( NULL == jbv )
-    return FALSE;
-    
-  if ( size != jxta_bytevector_size( jbv ) ){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
-  
-  /* Check that the content of the bytevector is as expected  */
-  js = jstring_new_3(jbv);
-  JXTA_OBJECT_RELEASE( jbv);
-  if( js == NULL){
-    return FALSE;
-  }
-  if( 0 != strcmp( "abc", jstring_get_string(js) ) ){
-     JXTA_OBJECT_RELEASE(js);
-     return FALSE;
-  }
-  
-  /* Release the allocated string */
-  JXTA_OBJECT_RELEASE(js);
+    source = (unsigned char *) malloc(sizeof(char) * 3);
+    if (source == NULL) {
+        return FALSE;
+    }
+    source[0] = 'a';
+    source[1] = 'b';
+    source[2] = 'c';
 
-  return TRUE;
+    jbv = jxta_bytevector_new_2(source, size, 100);
+    if (NULL == jbv)
+        return FALSE;
+
+    if (size != jxta_bytevector_size(jbv)) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+
+    /* Check that the content of the bytevector is as expected  */
+    js = jstring_new_3(jbv);
+    JXTA_OBJECT_RELEASE(jbv);
+    if (js == NULL) {
+        return FALSE;
+    }
+    if (0 != strcmp("abc", jstring_get_string(js))) {
+        JXTA_OBJECT_RELEASE(js);
+        return FALSE;
+    }
+
+    /* Release the allocated string */
+    JXTA_OBJECT_RELEASE(js);
+
+    return TRUE;
 }
 
 
@@ -181,30 +181,31 @@ test_bytevector_new_2(void) {
  * string. This is a helper function
  * 
  */
-Jxta_bytevector * get_jxta_bytevector_object(const char * buffer){
-  unsigned char * source;
-  size_t size = strlen(buffer);
-  Jxta_bytevector *jbv;
-  
-  source = (unsigned char*)malloc( sizeof(char) * (size +1) );
-  if( source == NULL){
-     return NULL;
-  }  
-  source[0] = '\0';
-  strcat(source,buffer);
+Jxta_bytevector *get_jxta_bytevector_object(const char *buffer)
+{
+    unsigned char *source;
+    size_t size = strlen(buffer);
+    Jxta_bytevector *jbv;
 
-  jbv = jxta_bytevector_new_2(source,size,100);
-  if( NULL == jbv ){
-    JXTA_OBJECT_RELEASE(jbv);
-    return NULL;
-  }
+    source = (unsigned char *) malloc(sizeof(char) * (size + 1));
+    if (source == NULL) {
+        return NULL;
+    }
+    source[0] = '\0';
+    strcat(source, buffer);
 
-  if ( size != jxta_bytevector_size( jbv ) ){
-    JXTA_OBJECT_RELEASE( jbv);
-    return NULL;
-  }
+    jbv = jxta_bytevector_new_2(source, size, 100);
+    if (NULL == jbv) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return NULL;
+    }
 
-  return jbv;
+    if (size != jxta_bytevector_size(jbv)) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return NULL;
+    }
+
+    return jbv;
 
 }
 
@@ -213,33 +214,32 @@ Jxta_bytevector * get_jxta_bytevector_object(const char * buffer){
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean 
-test_bytevector_clear(void) {
-  Jxta_bytevector *jbv;
-  JString *js;
-  Jxta_status status;
-  
+Jxta_boolean test_bytevector_clear(void)
+{
+    Jxta_bytevector *jbv;
+    JString *js;
+    Jxta_status status;
 
-  jbv = get_jxta_bytevector_object("yahoo!");
-  if( NULL == jbv ){
-    return FALSE;
-  }
-  
-  /* Now clear the vector and test that the result is as expected */
-  status = jxta_bytevector_clear(jbv,50);
-  if( (status != JXTA_SUCCESS) ||
-      (0 !=  jxta_bytevector_size( jbv )) ){
-      JXTA_OBJECT_RELEASE( jbv);
-      return FALSE;
-  }
-  js = jstring_new_3(jbv);
-  JXTA_OBJECT_RELEASE( jbv);
-  if( js != NULL){
-    JXTA_OBJECT_RELEASE(js);
-    return FALSE;
-  }
 
-  return TRUE;
+    jbv = get_jxta_bytevector_object("yahoo!");
+    if (NULL == jbv) {
+        return FALSE;
+    }
+
+    /* Now clear the vector and test that the result is as expected */
+    status = jxta_bytevector_clear(jbv, 50);
+    if ((status != JXTA_SUCCESS) || (0 != jxta_bytevector_size(jbv))) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+    js = jstring_new_3(jbv);
+    JXTA_OBJECT_RELEASE(jbv);
+    if (js != NULL) {
+        JXTA_OBJECT_RELEASE(js);
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 
@@ -248,55 +248,55 @@ test_bytevector_clear(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean 
-test_bytevector_add_byte_at(void) {
-  Jxta_bytevector *jbv;
-  JString *js;
-  Jxta_status status;
-  
-  jbv = get_jxta_bytevector_object("yahoo!");
-  if( NULL == jbv ){
-    return FALSE;
-  }
+Jxta_boolean test_bytevector_add_byte_at(void)
+{
+    Jxta_bytevector *jbv;
+    JString *js;
+    Jxta_status status;
+
+    jbv = get_jxta_bytevector_object("yahoo!");
+    if (NULL == jbv) {
+        return FALSE;
+    }
 
   /** Try it with a valid argument */
-  status = jxta_bytevector_add_byte_at(jbv,'1',1);
-  if( status != JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
-  status = jxta_bytevector_add_byte_at(jbv,'5',5);
-  if( status != JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
+    status = jxta_bytevector_add_byte_at(jbv, '1', 1);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+    status = jxta_bytevector_add_byte_at(jbv, '5', 5);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
 
   /** Try it with an  invalid argument */
-  status = jxta_bytevector_add_byte_at(jbv,'1',-1);
-  if( status == JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
-  status = jxta_bytevector_add_byte_at(jbv,'5',20);
-  if( status == JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
+    status = jxta_bytevector_add_byte_at(jbv, '1', -1);
+    if (status == JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+    status = jxta_bytevector_add_byte_at(jbv, '5', 20);
+    if (status == JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
 
 
-  /* Check that the content of the bytevector is as expected  */
-  js = jstring_new_3(jbv); 
-  JXTA_OBJECT_RELEASE( jbv);
-  if( js == NULL){
-    return FALSE;
-  }
-  if( 0 != strcmp( "y1aho5o!", jstring_get_string(js) ) ){
-     JXTA_OBJECT_RELEASE(js);
-     return FALSE;
-  }
-  JXTA_OBJECT_RELEASE(js);
+    /* Check that the content of the bytevector is as expected  */
+    js = jstring_new_3(jbv);
+    JXTA_OBJECT_RELEASE(jbv);
+    if (js == NULL) {
+        return FALSE;
+    }
+    if (0 != strcmp("y1aho5o!", jstring_get_string(js))) {
+        JXTA_OBJECT_RELEASE(js);
+        return FALSE;
+    }
+    JXTA_OBJECT_RELEASE(js);
 
-  return TRUE;
+    return TRUE;
 }
 
 
@@ -305,36 +305,36 @@ test_bytevector_add_byte_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean 
-test_bytevector_add_byte_first(void) {
-  Jxta_bytevector *jbv;
-  JString *js;
-  Jxta_status status;
-  
-  jbv = get_jxta_bytevector_object("yahoo!");
-  if( NULL == jbv ){
-    return FALSE;
-  }
+Jxta_boolean test_bytevector_add_byte_first(void)
+{
+    Jxta_bytevector *jbv;
+    JString *js;
+    Jxta_status status;
 
-  status = jxta_bytevector_add_byte_first(jbv,'1');
-  if( status != JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
+    jbv = get_jxta_bytevector_object("yahoo!");
+    if (NULL == jbv) {
+        return FALSE;
+    }
 
-  /* Check that the content of the bytevector is as expected  */
-  js = jstring_new_3(jbv); 
-  JXTA_OBJECT_RELEASE( jbv); 
-  if( js == NULL){
-    return FALSE;
-  }
-  if( 0 != strcmp( "1yahoo!", jstring_get_string(js) ) ){
-     JXTA_OBJECT_RELEASE(js);
-     return FALSE;
-  }
-  JXTA_OBJECT_RELEASE(js);
+    status = jxta_bytevector_add_byte_first(jbv, '1');
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
 
-  return TRUE;
+    /* Check that the content of the bytevector is as expected  */
+    js = jstring_new_3(jbv);
+    JXTA_OBJECT_RELEASE(jbv);
+    if (js == NULL) {
+        return FALSE;
+    }
+    if (0 != strcmp("1yahoo!", jstring_get_string(js))) {
+        JXTA_OBJECT_RELEASE(js);
+        return FALSE;
+    }
+    JXTA_OBJECT_RELEASE(js);
+
+    return TRUE;
 }
 
 
@@ -343,36 +343,36 @@ test_bytevector_add_byte_first(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean 
-test_bytevector_add_byte_last(void) {
-  Jxta_bytevector *jbv;
-  JString *js;
-  Jxta_status status;
-  
-  jbv = get_jxta_bytevector_object("yahoo!");
-  if( NULL == jbv ){
-    return FALSE;
-  }
+Jxta_boolean test_bytevector_add_byte_last(void)
+{
+    Jxta_bytevector *jbv;
+    JString *js;
+    Jxta_status status;
 
-  status = jxta_bytevector_add_byte_last(jbv,'x');
-  if( status != JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
+    jbv = get_jxta_bytevector_object("yahoo!");
+    if (NULL == jbv) {
+        return FALSE;
+    }
 
-  /* Check that the content of the bytevector is as expected  */
-  js = jstring_new_3(jbv); 
-  JXTA_OBJECT_RELEASE( jbv); 
-  if( js == NULL){
-    return FALSE;
-  }
-  if( 0 != strcmp( "yahoo!x", jstring_get_string(js) ) ){
-     JXTA_OBJECT_RELEASE(js);
-     return FALSE;
-  }
-  JXTA_OBJECT_RELEASE(js);
+    status = jxta_bytevector_add_byte_last(jbv, 'x');
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
 
-  return TRUE;
+    /* Check that the content of the bytevector is as expected  */
+    js = jstring_new_3(jbv);
+    JXTA_OBJECT_RELEASE(jbv);
+    if (js == NULL) {
+        return FALSE;
+    }
+    if (0 != strcmp("yahoo!x", jstring_get_string(js))) {
+        JXTA_OBJECT_RELEASE(js);
+        return FALSE;
+    }
+    JXTA_OBJECT_RELEASE(js);
+
+    return TRUE;
 }
 
 
@@ -381,62 +381,62 @@ test_bytevector_add_byte_last(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean 
-test_bytevector_add_bytes_at(void) {
-  Jxta_bytevector *jbv;
-  JString *js;
-  Jxta_status status;
-  static const unsigned char * source = "abcd";
-  size_t size = 2;
-  
-  jbv = get_jxta_bytevector_object("123456");
-  if( NULL == jbv ){
-    return FALSE;
-  }
+Jxta_boolean test_bytevector_add_bytes_at(void)
+{
+    Jxta_bytevector *jbv;
+    JString *js;
+    Jxta_status status;
+    static const unsigned char *source = "abcd";
+    size_t size = 2;
+
+    jbv = get_jxta_bytevector_object("123456");
+    if (NULL == jbv) {
+        return FALSE;
+    }
 
   /** Try it with a valid argument */
-  status = jxta_bytevector_add_bytes_at(jbv,source,0,size);
-  if( status != JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
-  status = jxta_bytevector_add_bytes_at(jbv,source,4,size);
-  if( status != JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
-  status = jxta_bytevector_add_bytes_at(jbv,source,10,size);
-  if( status != JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
+    status = jxta_bytevector_add_bytes_at(jbv, source, 0, size);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+    status = jxta_bytevector_add_bytes_at(jbv, source, 4, size);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+    status = jxta_bytevector_add_bytes_at(jbv, source, 10, size);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
 
   /** Try it with an  invalid argument */
-  status = jxta_bytevector_add_bytes_at(jbv,source,-1,size);
-  if( status == JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
-  status = jxta_bytevector_add_bytes_at(jbv,source,20,size);
-  if( status == JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
+    status = jxta_bytevector_add_bytes_at(jbv, source, -1, size);
+    if (status == JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+    status = jxta_bytevector_add_bytes_at(jbv, source, 20, size);
+    if (status == JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
 
 
-  /* Check that the content of the bytevector is as expected  */
-  js = jstring_new_3(jbv); 
-  JXTA_OBJECT_RELEASE( jbv);
-  if( js == NULL){
-    return FALSE;
-  }
-  if( 0 != strcmp( "ab12ab3456ab", jstring_get_string(js) ) ){
-     JXTA_OBJECT_RELEASE(js);
-     return FALSE;
-  }
-  JXTA_OBJECT_RELEASE(js);
+    /* Check that the content of the bytevector is as expected  */
+    js = jstring_new_3(jbv);
+    JXTA_OBJECT_RELEASE(jbv);
+    if (js == NULL) {
+        return FALSE;
+    }
+    if (0 != strcmp("ab12ab3456ab", jstring_get_string(js))) {
+        JXTA_OBJECT_RELEASE(js);
+        return FALSE;
+    }
+    JXTA_OBJECT_RELEASE(js);
 
-  return TRUE;
+    return TRUE;
 }
 
 /**
@@ -444,71 +444,71 @@ test_bytevector_add_bytes_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean 
-test_bytevector_add_bytevector_at(void) {
-  Jxta_bytevector *jbv,*inset;
-  JString *js;
-  Jxta_status status;
-  
-  jbv = get_jxta_bytevector_object("123456");
-  if( NULL == jbv ){
-    return FALSE;
-  }
-  inset = get_jxta_bytevector_object("ab");
-  if( NULL == inset ){
-   JXTA_OBJECT_RELEASE(inset);
-    return FALSE;
-  }
+Jxta_boolean test_bytevector_add_bytevector_at(void)
+{
+    Jxta_bytevector *jbv, *inset;
+    JString *js;
+    Jxta_status status;
+
+    jbv = get_jxta_bytevector_object("123456");
+    if (NULL == jbv) {
+        return FALSE;
+    }
+    inset = get_jxta_bytevector_object("ab");
+    if (NULL == inset) {
+        JXTA_OBJECT_RELEASE(inset);
+        return FALSE;
+    }
 
   /** Try it with a valid argument */
-  status = jxta_bytevector_add_bytevector_at(jbv,inset,0);
-  if( status != JXTA_SUCCESS){ 
-    JXTA_OBJECT_RELEASE( jbv);
-    JXTA_OBJECT_RELEASE( inset);
-    return FALSE;
-  }
-  status = jxta_bytevector_add_bytevector_at(jbv,inset,4);
-  if( status != JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    JXTA_OBJECT_RELEASE( inset);
-    return FALSE;
-  }
-  status = jxta_bytevector_add_bytevector_at(jbv,inset,10);
-  if( status != JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    JXTA_OBJECT_RELEASE( inset);
-    return FALSE;
-  }
+    status = jxta_bytevector_add_bytevector_at(jbv, inset, 0);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        JXTA_OBJECT_RELEASE(inset);
+        return FALSE;
+    }
+    status = jxta_bytevector_add_bytevector_at(jbv, inset, 4);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        JXTA_OBJECT_RELEASE(inset);
+        return FALSE;
+    }
+    status = jxta_bytevector_add_bytevector_at(jbv, inset, 10);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        JXTA_OBJECT_RELEASE(inset);
+        return FALSE;
+    }
 
   /** Try it with an  invalid argument */
-  status = jxta_bytevector_add_bytevector_at(jbv,inset,20);
-  if( status == JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    JXTA_OBJECT_RELEASE( inset);
-    return FALSE;
-  }
-  status = jxta_bytevector_add_bytevector_at(jbv,inset,-1);
-  if( status == JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    JXTA_OBJECT_RELEASE( inset);
-    return FALSE;
-  }
+    status = jxta_bytevector_add_bytevector_at(jbv, inset, 20);
+    if (status == JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        JXTA_OBJECT_RELEASE(inset);
+        return FALSE;
+    }
+    status = jxta_bytevector_add_bytevector_at(jbv, inset, -1);
+    if (status == JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        JXTA_OBJECT_RELEASE(inset);
+        return FALSE;
+    }
 
 
-  /* Check that the content of the bytevector is as expected  */
-  js = jstring_new_3(jbv); 
-  JXTA_OBJECT_RELEASE( jbv);
-  JXTA_OBJECT_RELEASE( inset);
-  if( js == NULL){
-    return FALSE;
-  }
-  if( 0 != strcmp( "ab12ab3456ab", jstring_get_string(js) ) ){
-     JXTA_OBJECT_RELEASE(js);
-     return FALSE;
-  }
-  JXTA_OBJECT_RELEASE(js);
+    /* Check that the content of the bytevector is as expected  */
+    js = jstring_new_3(jbv);
+    JXTA_OBJECT_RELEASE(jbv);
+    JXTA_OBJECT_RELEASE(inset);
+    if (js == NULL) {
+        return FALSE;
+    }
+    if (0 != strcmp("ab12ab3456ab", jstring_get_string(js))) {
+        JXTA_OBJECT_RELEASE(js);
+        return FALSE;
+    }
+    JXTA_OBJECT_RELEASE(js);
 
-  return TRUE;
+    return TRUE;
 }
 
 
@@ -517,71 +517,71 @@ test_bytevector_add_bytevector_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean 
-test_bytevector_add_partial_bytevector_at(void) {
-  Jxta_bytevector *jbv,*inset;
-  JString *js;
-  Jxta_status status;
-  
-  jbv = get_jxta_bytevector_object("123456");
-  if( NULL == jbv ){
-    return FALSE;
-  }
-  inset = get_jxta_bytevector_object("abcdef");
-  if( NULL == inset ){
-   JXTA_OBJECT_RELEASE(inset);
-    return FALSE;
-  }
+Jxta_boolean test_bytevector_add_partial_bytevector_at(void)
+{
+    Jxta_bytevector *jbv, *inset;
+    JString *js;
+    Jxta_status status;
+
+    jbv = get_jxta_bytevector_object("123456");
+    if (NULL == jbv) {
+        return FALSE;
+    }
+    inset = get_jxta_bytevector_object("abcdef");
+    if (NULL == inset) {
+        JXTA_OBJECT_RELEASE(inset);
+        return FALSE;
+    }
 
   /** Try it with a valid argument */
-  status = jxta_bytevector_add_partial_bytevector_at(jbv,inset,2,2,0);
-  if( status != JXTA_SUCCESS){ 
-    JXTA_OBJECT_RELEASE( jbv);
-    JXTA_OBJECT_RELEASE( inset);
-    return FALSE;
-  }
-  status = jxta_bytevector_add_partial_bytevector_at(jbv,inset,0,2,4);
-  if( status != JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    JXTA_OBJECT_RELEASE( inset);
-    return FALSE;
-  }
-  status = jxta_bytevector_add_partial_bytevector_at(jbv,inset,4,2,10);
-  if( status != JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    JXTA_OBJECT_RELEASE( inset);
-    return FALSE;
-  }
+    status = jxta_bytevector_add_partial_bytevector_at(jbv, inset, 2, 2, 0);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        JXTA_OBJECT_RELEASE(inset);
+        return FALSE;
+    }
+    status = jxta_bytevector_add_partial_bytevector_at(jbv, inset, 0, 2, 4);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        JXTA_OBJECT_RELEASE(inset);
+        return FALSE;
+    }
+    status = jxta_bytevector_add_partial_bytevector_at(jbv, inset, 4, 2, 10);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        JXTA_OBJECT_RELEASE(inset);
+        return FALSE;
+    }
 
   /** Try it with an  invalid argument */
-  status = jxta_bytevector_add_partial_bytevector_at(jbv,inset,100,-1,2);
-  if( status == JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    JXTA_OBJECT_RELEASE( inset);
-    return FALSE;
-  }
-  status = jxta_bytevector_add_partial_bytevector_at(jbv,inset,4,2,-11);
-  if( status == JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    JXTA_OBJECT_RELEASE( inset);
-    return FALSE;
-  }
+    status = jxta_bytevector_add_partial_bytevector_at(jbv, inset, 100, -1, 2);
+    if (status == JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        JXTA_OBJECT_RELEASE(inset);
+        return FALSE;
+    }
+    status = jxta_bytevector_add_partial_bytevector_at(jbv, inset, 4, 2, -11);
+    if (status == JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        JXTA_OBJECT_RELEASE(inset);
+        return FALSE;
+    }
 
 
-  /* Check that the content of the bytevector is as expected  */
-  js = jstring_new_3(jbv); 
-  JXTA_OBJECT_RELEASE( jbv);
-  JXTA_OBJECT_RELEASE( inset);
-  if( js == NULL){
-    return FALSE;
-  }
-  if( 0 != strcmp( "cd12ab3456ef", jstring_get_string(js) ) ){
-     JXTA_OBJECT_RELEASE(js);
-     return FALSE;
-  }
-  JXTA_OBJECT_RELEASE(js);
+    /* Check that the content of the bytevector is as expected  */
+    js = jstring_new_3(jbv);
+    JXTA_OBJECT_RELEASE(jbv);
+    JXTA_OBJECT_RELEASE(inset);
+    if (js == NULL) {
+        return FALSE;
+    }
+    if (0 != strcmp("cd12ab3456ef", jstring_get_string(js))) {
+        JXTA_OBJECT_RELEASE(js);
+        return FALSE;
+    }
+    JXTA_OBJECT_RELEASE(js);
 
-  return TRUE;
+    return TRUE;
 }
 
 
@@ -590,65 +590,53 @@ test_bytevector_add_partial_bytevector_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean 
-test_bytevector_add_from_stream_at(void) {
-  static const unsigned char * source = "abcd";
-  Jxta_bytevector *jbv;
-  JString *js;
-  Jxta_status status;
-  read_write_test_buffer stream;
-  
-  jbv = get_jxta_bytevector_object("123456");
-  if( NULL == jbv ){
-    return FALSE;
-  }
+Jxta_boolean test_bytevector_add_from_stream_at(void)
+{
+    static const unsigned char *source = "abcd";
+    Jxta_bytevector *jbv;
+    JString *js;
+    Jxta_status status;
+    read_write_test_buffer stream;
+
+    jbv = get_jxta_bytevector_object("123456");
+    if (NULL == jbv) {
+        return FALSE;
+    }
 
   /** Try it with a valid argument */
-  stream.buffer = (char*)source;
-  stream.position = 0;
-  status = jxta_bytevector_add_from_stream_at(jbv,
-					      readFromStreamFunction,
-					      (void*)(&stream),
-					      2,
-					      0);
-  if( status != JXTA_SUCCESS){ 
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
-  stream.position = 0;
-  status = jxta_bytevector_add_from_stream_at(jbv,
-					      readFromStreamFunction,
-					      (void*)(&stream),
-					      2,
-					      4);
-  if( status != JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
-  stream.position = 0;
-  status = jxta_bytevector_add_from_stream_at(jbv,
-					      readFromStreamFunction,
-					      (void*)(&stream),
-					      2,
-					      10);
-  if( status != JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
+    stream.buffer = (char *) source;
+    stream.position = 0;
+    status = jxta_bytevector_add_from_stream_at(jbv, readFromStreamFunction, (void *) (&stream), 2, 0);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+    stream.position = 0;
+    status = jxta_bytevector_add_from_stream_at(jbv, readFromStreamFunction, (void *) (&stream), 2, 4);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+    stream.position = 0;
+    status = jxta_bytevector_add_from_stream_at(jbv, readFromStreamFunction, (void *) (&stream), 2, 10);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
 
-  /* Check that the content of the bytevector is as expected  */
-  js = jstring_new_3(jbv); 
-  JXTA_OBJECT_RELEASE( jbv);
-  if( js == NULL){
-    return FALSE;
-  }
-  if( 0 != strcmp( "ab12ab3456ab", jstring_get_string(js) ) ){
-     JXTA_OBJECT_RELEASE(js);
-     return FALSE;
-  }
-  JXTA_OBJECT_RELEASE(js);
+    /* Check that the content of the bytevector is as expected  */
+    js = jstring_new_3(jbv);
+    JXTA_OBJECT_RELEASE(jbv);
+    if (js == NULL) {
+        return FALSE;
+    }
+    if (0 != strcmp("ab12ab3456ab", jstring_get_string(js))) {
+        JXTA_OBJECT_RELEASE(js);
+        return FALSE;
+    }
+    JXTA_OBJECT_RELEASE(js);
 
-  return TRUE;
+    return TRUE;
 }
 
 
@@ -657,39 +645,38 @@ test_bytevector_add_from_stream_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean 
-test_bytevector_get_byte_at(void) {
-  Jxta_bytevector *jbv;
-  Jxta_status status;
-  unsigned char byte;
-  int i;
-  
-  jbv = get_jxta_bytevector_object("ABCDEF");
-  if( NULL == jbv ){
-    return FALSE;
-  }
+Jxta_boolean test_bytevector_get_byte_at(void)
+{
+    Jxta_bytevector *jbv;
+    Jxta_status status;
+    unsigned char byte;
+    int i;
 
-  /* Try whether the right byte is returned  */
-  for( i = 0; i < 6; i++){
-     status = jxta_bytevector_get_byte_at(jbv, &byte, i);
-     if( status != JXTA_SUCCESS ||
-         byte !=  (65 + i) ){
-         JXTA_OBJECT_RELEASE( jbv);
-         return FALSE;
-     }
-  }
+    jbv = get_jxta_bytevector_object("ABCDEF");
+    if (NULL == jbv) {
+        return FALSE;
+    }
 
-  /* Try it with a wrong argument */
-  status = jxta_bytevector_get_byte_at(jbv, &byte, 20);
-  if( status == JXTA_SUCCESS){
-      JXTA_OBJECT_RELEASE( jbv);
-      return FALSE;
-  }
+    /* Try whether the right byte is returned  */
+    for (i = 0; i < 6; i++) {
+        status = jxta_bytevector_get_byte_at(jbv, &byte, i);
+        if (status != JXTA_SUCCESS || byte != (65 + i)) {
+            JXTA_OBJECT_RELEASE(jbv);
+            return FALSE;
+        }
+    }
 
-  /* Release the object */
-  JXTA_OBJECT_RELEASE(jbv);
+    /* Try it with a wrong argument */
+    status = jxta_bytevector_get_byte_at(jbv, &byte, 20);
+    if (status == JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
 
-  return TRUE;
+    /* Release the object */
+    JXTA_OBJECT_RELEASE(jbv);
+
+    return TRUE;
 }
 
 
@@ -698,53 +685,49 @@ test_bytevector_get_byte_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean 
-test_bytevector_get_bytes_at(void) {
-  Jxta_bytevector *jbv;
-  Jxta_status status;
-  unsigned char byte[100];
-  
-  jbv = get_jxta_bytevector_object("ABCDEF");
-  if( NULL == jbv ){
-    return FALSE;
-  }
+Jxta_boolean test_bytevector_get_bytes_at(void)
+{
+    Jxta_bytevector *jbv;
+    Jxta_status status;
+    unsigned char byte[100];
 
-  /* Try to copy the whole vector */
-  status = jxta_bytevector_get_bytes_at(jbv, byte,0, INT_MAX);
-  byte[6] = '\0';
-  if( status != JXTA_SUCCESS ||
-      0 != strcmp( byte,"ABCDEF") ){
-         JXTA_OBJECT_RELEASE( jbv);
-         return FALSE;
-  }
-  status = jxta_bytevector_get_bytes_at(jbv, byte,3, INT_MAX);
-  byte[3] = '\0';
-  if( status != JXTA_SUCCESS ||
-      0 != strcmp( byte,"DEF") ){
-         JXTA_OBJECT_RELEASE( jbv);
-         return FALSE;
-  }
+    jbv = get_jxta_bytevector_object("ABCDEF");
+    if (NULL == jbv) {
+        return FALSE;
+    }
 
-  /* Try to copy a portion of the vector */
-  status = jxta_bytevector_get_bytes_at(jbv, byte,0, 3);
-  byte[4] = '\0';
-  if( status != JXTA_SUCCESS ||
-      0 != strcmp( byte,"ABC") ){
-         JXTA_OBJECT_RELEASE( jbv);
-         return FALSE;
-  }
-  status = jxta_bytevector_get_bytes_at(jbv, byte,2, 2);
-  byte[2] = '\0';
-  if( status != JXTA_SUCCESS ||
-      0 != strcmp( byte,"CD") ){
-         JXTA_OBJECT_RELEASE( jbv);
-         return FALSE;
-  }
+    /* Try to copy the whole vector */
+    status = jxta_bytevector_get_bytes_at(jbv, byte, 0, INT_MAX);
+    byte[6] = '\0';
+    if (status != JXTA_SUCCESS || 0 != strcmp(byte, "ABCDEF")) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+    status = jxta_bytevector_get_bytes_at(jbv, byte, 3, INT_MAX);
+    byte[3] = '\0';
+    if (status != JXTA_SUCCESS || 0 != strcmp(byte, "DEF")) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
 
-  /* Release the object */
-  JXTA_OBJECT_RELEASE(jbv);
+    /* Try to copy a portion of the vector */
+    status = jxta_bytevector_get_bytes_at(jbv, byte, 0, 3);
+    byte[4] = '\0';
+    if (status != JXTA_SUCCESS || 0 != strcmp(byte, "ABC")) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+    status = jxta_bytevector_get_bytes_at(jbv, byte, 2, 2);
+    byte[2] = '\0';
+    if (status != JXTA_SUCCESS || 0 != strcmp(byte, "CD")) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
 
-  return TRUE;
+    /* Release the object */
+    JXTA_OBJECT_RELEASE(jbv);
+
+    return TRUE;
 }
 
 /**
@@ -752,85 +735,84 @@ test_bytevector_get_bytes_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean 
-test_bytevector_get_bytevector_at(void) {
-  Jxta_bytevector *jbv;
-  Jxta_bytevector *dest;
-  Jxta_status status;
-  JString *js;
-  
-  jbv = get_jxta_bytevector_object("ABCDEF");
-  if( NULL == jbv ){
-    return FALSE;
-  }
+Jxta_boolean test_bytevector_get_bytevector_at(void)
+{
+    Jxta_bytevector *jbv;
+    Jxta_bytevector *dest;
+    Jxta_status status;
+    JString *js;
 
-  /* Try to copy the whole vector */
-  status = jxta_bytevector_get_bytevector_at(jbv, &dest,0, INT_MAX);
-  if( status != JXTA_SUCCESS ||
-      NULL == dest           ||
-      TRUE != jxta_bytevector_equals(dest,jbv) ){
-         JXTA_OBJECT_RELEASE( jbv);
-         if( dest != NULL) JXTA_OBJECT_RELEASE( dest);
-         return FALSE;
-  }
-  JXTA_OBJECT_RELEASE( dest);
-  status = jxta_bytevector_get_bytevector_at(jbv, &dest,3, INT_MAX);
-  if( dest != NULL)  js = jstring_new_3(dest);
-  else               js = NULL;
-  if( status != JXTA_SUCCESS ||
-      NULL == dest            ||
-      NULL == js             ||
-      0 != strcmp("DEF",jstring_get_string(js)) ){
-    if( js != NULL){
-        JXTA_OBJECT_RELEASE( js);
+    jbv = get_jxta_bytevector_object("ABCDEF");
+    if (NULL == jbv) {
+        return FALSE;
     }
-    JXTA_OBJECT_RELEASE( jbv);
-    if( dest != NULL) JXTA_OBJECT_RELEASE( dest);
-    return FALSE;
-  }
-  JXTA_OBJECT_RELEASE( js);
-  JXTA_OBJECT_RELEASE( dest);
 
-
-  /* Try to copy a portion of the vector */
-  status = jxta_bytevector_get_bytevector_at(jbv, &dest,0, 3);
-  if( dest != NULL)  js = jstring_new_3(dest);
-  else               js = NULL;
-  if( status != JXTA_SUCCESS ||
-      NULL == dest           ||
-      NULL == js             ||
-      0 != strcmp("ABC",jstring_get_string(js)) ){
-    if( js != NULL){
-        JXTA_OBJECT_RELEASE( js);
+    /* Try to copy the whole vector */
+    status = jxta_bytevector_get_bytevector_at(jbv, &dest, 0, INT_MAX);
+    if (status != JXTA_SUCCESS || NULL == dest || TRUE != jxta_bytevector_equals(dest, jbv)) {
+        JXTA_OBJECT_RELEASE(jbv);
+        if (dest != NULL)
+            JXTA_OBJECT_RELEASE(dest);
+        return FALSE;
     }
-    JXTA_OBJECT_RELEASE( jbv);
-    if( dest != NULL) JXTA_OBJECT_RELEASE( dest);
-    return FALSE;
-  }
-  JXTA_OBJECT_RELEASE( js);
-  JXTA_OBJECT_RELEASE( dest);
-
-  status = jxta_bytevector_get_bytevector_at(jbv, &dest,2, 2);
-  if( dest != NULL)  js = jstring_new_3(dest);
-  else               js = NULL;
-  if( status != JXTA_SUCCESS ||
-      NULL == dest           ||
-      NULL == js             ||
-      0 != strcmp("CD",jstring_get_string(js)) ){
-    if( js != NULL){
-        JXTA_OBJECT_RELEASE( js);
+    JXTA_OBJECT_RELEASE(dest);
+    status = jxta_bytevector_get_bytevector_at(jbv, &dest, 3, INT_MAX);
+    if (dest != NULL)
+        js = jstring_new_3(dest);
+    else
+        js = NULL;
+    if (status != JXTA_SUCCESS || NULL == dest || NULL == js || 0 != strcmp("DEF", jstring_get_string(js))) {
+        if (js != NULL) {
+            JXTA_OBJECT_RELEASE(js);
+        }
+        JXTA_OBJECT_RELEASE(jbv);
+        if (dest != NULL)
+            JXTA_OBJECT_RELEASE(dest);
+        return FALSE;
     }
-    JXTA_OBJECT_RELEASE( jbv);
-    if( dest != NULL) JXTA_OBJECT_RELEASE( dest);
-    return FALSE;
-  }
-  JXTA_OBJECT_RELEASE( js);
-  JXTA_OBJECT_RELEASE(dest);
+    JXTA_OBJECT_RELEASE(js);
+    JXTA_OBJECT_RELEASE(dest);
 
-  /* Release the object */
-  JXTA_OBJECT_RELEASE(jbv);
 
-  return TRUE;
+    /* Try to copy a portion of the vector */
+    status = jxta_bytevector_get_bytevector_at(jbv, &dest, 0, 3);
+    if (dest != NULL)
+        js = jstring_new_3(dest);
+    else
+        js = NULL;
+    if (status != JXTA_SUCCESS || NULL == dest || NULL == js || 0 != strcmp("ABC", jstring_get_string(js))) {
+        if (js != NULL) {
+            JXTA_OBJECT_RELEASE(js);
+        }
+        JXTA_OBJECT_RELEASE(jbv);
+        if (dest != NULL)
+            JXTA_OBJECT_RELEASE(dest);
+        return FALSE;
+    }
+    JXTA_OBJECT_RELEASE(js);
+    JXTA_OBJECT_RELEASE(dest);
+
+    status = jxta_bytevector_get_bytevector_at(jbv, &dest, 2, 2);
+    if (dest != NULL)
+        js = jstring_new_3(dest);
+    else
+        js = NULL;
+    if (status != JXTA_SUCCESS || NULL == dest || NULL == js || 0 != strcmp("CD", jstring_get_string(js))) {
+        if (js != NULL) {
+            JXTA_OBJECT_RELEASE(js);
+        }
+        JXTA_OBJECT_RELEASE(jbv);
+        if (dest != NULL)
+            JXTA_OBJECT_RELEASE(dest);
+        return FALSE;
+    }
+    JXTA_OBJECT_RELEASE(js);
+    JXTA_OBJECT_RELEASE(dest);
+
+    /* Release the object */
+    JXTA_OBJECT_RELEASE(jbv);
+
+    return TRUE;
 }
 
 
@@ -839,63 +821,59 @@ test_bytevector_get_bytevector_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean 
-test_bytevector_write(void) {
-  Jxta_bytevector *jbv;
-  char buffer[100];
-  Jxta_status status;
-  read_write_test_buffer stream;
-  
-  jbv = get_jxta_bytevector_object("ABCDEF");
-  if( NULL == jbv ){
-    return FALSE;
-  }
+Jxta_boolean test_bytevector_write(void)
+{
+    Jxta_bytevector *jbv;
+    char buffer[100];
+    Jxta_status status;
+    read_write_test_buffer stream;
 
-  /* Try to copy the whole vector */
-  stream.buffer = buffer;
-  stream.position = 0;
-  buffer[0] = '\0';
-  status = jxta_bytevector_write(jbv,writeFunction, (void*)(&stream),0, INT_MAX);
-  buffer[6] = '\0';
-  if( status != JXTA_SUCCESS ||
-      0 != strcmp( buffer, "ABCDEF") ){
-         JXTA_OBJECT_RELEASE( jbv);
-         return FALSE;
-  }
-  buffer[0] = '\0';
-  stream.position = 0;
-  status = jxta_bytevector_write(jbv, writeFunction,(void*)(&stream), 3, INT_MAX);
-  buffer[3] = '\0';
-  if( status != JXTA_SUCCESS ||
-      0 != strcmp( buffer, "DEF") ){
-         JXTA_OBJECT_RELEASE( jbv);
-         return FALSE;
-  }
+    jbv = get_jxta_bytevector_object("ABCDEF");
+    if (NULL == jbv) {
+        return FALSE;
+    }
 
-  /* Try to copy a portion of the vector */
-  buffer[0] = '\0';
-  stream.position = 0;
-  status = jxta_bytevector_write(jbv, writeFunction, (void*)(&stream) ,0, 3);
-  buffer[3] = '\0';
-  if( status != JXTA_SUCCESS ||
-      0 != strcmp( buffer, "ABC") ){
-         JXTA_OBJECT_RELEASE( jbv);
-         return FALSE;
-  }
-  buffer[0] = '\0';
-  stream.position = 0;
-  status = jxta_bytevector_write(jbv, writeFunction,(void*)(&stream),2, 2);
-  buffer[2] = '\0';
-  if( status != JXTA_SUCCESS ||
-      0 != strcmp( buffer, "CD") ){
-         JXTA_OBJECT_RELEASE( jbv);
-         return FALSE;
-  }
+    /* Try to copy the whole vector */
+    stream.buffer = buffer;
+    stream.position = 0;
+    buffer[0] = '\0';
+    status = jxta_bytevector_write(jbv, writeFunction, (void *) (&stream), 0, INT_MAX);
+    buffer[6] = '\0';
+    if (status != JXTA_SUCCESS || 0 != strcmp(buffer, "ABCDEF")) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+    buffer[0] = '\0';
+    stream.position = 0;
+    status = jxta_bytevector_write(jbv, writeFunction, (void *) (&stream), 3, INT_MAX);
+    buffer[3] = '\0';
+    if (status != JXTA_SUCCESS || 0 != strcmp(buffer, "DEF")) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
 
-  /* Release the object */
-  JXTA_OBJECT_RELEASE(jbv);
+    /* Try to copy a portion of the vector */
+    buffer[0] = '\0';
+    stream.position = 0;
+    status = jxta_bytevector_write(jbv, writeFunction, (void *) (&stream), 0, 3);
+    buffer[3] = '\0';
+    if (status != JXTA_SUCCESS || 0 != strcmp(buffer, "ABC")) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+    buffer[0] = '\0';
+    stream.position = 0;
+    status = jxta_bytevector_write(jbv, writeFunction, (void *) (&stream), 2, 2);
+    buffer[2] = '\0';
+    if (status != JXTA_SUCCESS || 0 != strcmp(buffer, "CD")) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
 
-  return TRUE;
+    /* Release the object */
+    JXTA_OBJECT_RELEASE(jbv);
+
+    return TRUE;
 }
 
 /**
@@ -903,60 +881,60 @@ test_bytevector_write(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean 
-test_bytevector_remove_byte_at(void) {
-  Jxta_bytevector *jbv;
-  JString *js;
-  Jxta_status status;
-  
-  jbv = get_jxta_bytevector_object("abcdef");
-  if( NULL == jbv ){
-    return FALSE;
-  }
+Jxta_boolean test_bytevector_remove_byte_at(void)
+{
+    Jxta_bytevector *jbv;
+    JString *js;
+    Jxta_status status;
+
+    jbv = get_jxta_bytevector_object("abcdef");
+    if (NULL == jbv) {
+        return FALSE;
+    }
 
   /** Try it with a valid argument */
-  status = jxta_bytevector_remove_byte_at(jbv,0);
-  if( status != JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
-  status = jxta_bytevector_remove_byte_at(jbv,2);
-  if( status != JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
-  status = jxta_bytevector_remove_byte_at(jbv,3);
-  if( status != JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
+    status = jxta_bytevector_remove_byte_at(jbv, 0);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+    status = jxta_bytevector_remove_byte_at(jbv, 2);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+    status = jxta_bytevector_remove_byte_at(jbv, 3);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
 
   /** Try it with an  invalid argument */
-  status = jxta_bytevector_remove_byte_at(jbv,-1);
-  if( status == JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
-  status = jxta_bytevector_remove_byte_at(jbv,20);
-  if( status == JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
+    status = jxta_bytevector_remove_byte_at(jbv, -1);
+    if (status == JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+    status = jxta_bytevector_remove_byte_at(jbv, 20);
+    if (status == JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
 
 
-  /* Check that the content of the bytevector is as expected  */
-  js = jstring_new_3(jbv); 
-  JXTA_OBJECT_RELEASE( jbv);
-  if( js == NULL){
-    return FALSE;
-  }
-  if( 0 != strcmp( "bce", jstring_get_string(js) ) ){
-     JXTA_OBJECT_RELEASE(js);
-     return FALSE;
-  }
-  JXTA_OBJECT_RELEASE(js);
+    /* Check that the content of the bytevector is as expected  */
+    js = jstring_new_3(jbv);
+    JXTA_OBJECT_RELEASE(jbv);
+    if (js == NULL) {
+        return FALSE;
+    }
+    if (0 != strcmp("bce", jstring_get_string(js))) {
+        JXTA_OBJECT_RELEASE(js);
+        return FALSE;
+    }
+    JXTA_OBJECT_RELEASE(js);
 
-  return TRUE;
+    return TRUE;
 }
 
 
@@ -965,60 +943,60 @@ test_bytevector_remove_byte_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean 
-test_bytevector_remove_bytes_at(void) {
-  Jxta_bytevector *jbv;
-  JString *js;
-  Jxta_status status;
-  
-  jbv = get_jxta_bytevector_object("abcdefghij");
-  if( NULL == jbv ){
-    return FALSE;
-  }
+Jxta_boolean test_bytevector_remove_bytes_at(void)
+{
+    Jxta_bytevector *jbv;
+    JString *js;
+    Jxta_status status;
+
+    jbv = get_jxta_bytevector_object("abcdefghij");
+    if (NULL == jbv) {
+        return FALSE;
+    }
 
   /** Try it with a valid argument */
-  status = jxta_bytevector_remove_bytes_at(jbv,0,2);
-  if( status != JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
-  status = jxta_bytevector_remove_bytes_at(jbv,2,3);
-  if( status != JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
-  status = jxta_bytevector_remove_bytes_at(jbv,3,2);
-  if( status != JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
+    status = jxta_bytevector_remove_bytes_at(jbv, 0, 2);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+    status = jxta_bytevector_remove_bytes_at(jbv, 2, 3);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+    status = jxta_bytevector_remove_bytes_at(jbv, 3, 2);
+    if (status != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
 
   /** Try it with an  invalid argument */
-  status = jxta_bytevector_remove_bytes_at(jbv,-1,20);
-  if( status == JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
-  status = jxta_bytevector_remove_bytes_at(jbv,20,20);
-  if( status == JXTA_SUCCESS){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
+    status = jxta_bytevector_remove_bytes_at(jbv, -1, 20);
+    if (status == JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
+    status = jxta_bytevector_remove_bytes_at(jbv, 20, 20);
+    if (status == JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
 
 
-  /* Check that the content of the bytevector is as expected  */
-  js = jstring_new_3(jbv); 
-  JXTA_OBJECT_RELEASE( jbv);
-  if( js == NULL){
-    return FALSE;
-  }
-  if( 0 != strcmp( "cdh", jstring_get_string(js) ) ){
-     JXTA_OBJECT_RELEASE(js);
-     return FALSE;
-  }
-  JXTA_OBJECT_RELEASE(js);
+    /* Check that the content of the bytevector is as expected  */
+    js = jstring_new_3(jbv);
+    JXTA_OBJECT_RELEASE(jbv);
+    if (js == NULL) {
+        return FALSE;
+    }
+    if (0 != strcmp("cdh", jstring_get_string(js))) {
+        JXTA_OBJECT_RELEASE(js);
+        return FALSE;
+    }
+    JXTA_OBJECT_RELEASE(js);
 
-  return TRUE;
+    return TRUE;
 }
 
 /**
@@ -1026,31 +1004,31 @@ test_bytevector_remove_bytes_at(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean 
-test_bytevector_size(void) {
-  Jxta_bytevector *jbv;
-  
-  jbv = get_jxta_bytevector_object("123456");
-  if( NULL == jbv ){
-    return FALSE;
-  }
+Jxta_boolean test_bytevector_size(void)
+{
+    Jxta_bytevector *jbv;
 
-  /* Check that the size is correct  */
-  if( 6 != jxta_bytevector_size(jbv) ){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
+    jbv = get_jxta_bytevector_object("123456");
+    if (NULL == jbv) {
+        return FALSE;
+    }
 
-  /* Change jbv and repeat test */ 
-  jxta_bytevector_remove_bytes_at(jbv,2,2);
-  if( 4 != jxta_bytevector_size(jbv) ){
-    JXTA_OBJECT_RELEASE( jbv);
-    return FALSE;
-  }
+    /* Check that the size is correct  */
+    if (6 != jxta_bytevector_size(jbv)) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
 
-  JXTA_OBJECT_RELEASE(jbv);
+    /* Change jbv and repeat test */
+    jxta_bytevector_remove_bytes_at(jbv, 2, 2);
+    if (4 != jxta_bytevector_size(jbv)) {
+        JXTA_OBJECT_RELEASE(jbv);
+        return FALSE;
+    }
 
-  return TRUE;
+    JXTA_OBJECT_RELEASE(jbv);
+
+    return TRUE;
 }
 
 
@@ -1060,63 +1038,63 @@ test_bytevector_size(void) {
 * 
 * @return TRUE if the test run successfully, FALSE otherwise
 */
-Jxta_boolean 
-test_bytevector_equals(void) {
-  Jxta_bytevector *jb1;
-  Jxta_bytevector *jb2;
-  
-  jb1 = get_jxta_bytevector_object("abcdefg");
-  if( NULL == jb1 ){
-    return FALSE;
-  }
-  jb2 = get_jxta_bytevector_object("abcdefg");
-  if( NULL == jb2 ){
-    return FALSE;
-  }
+Jxta_boolean test_bytevector_equals(void)
+{
+    Jxta_bytevector *jb1;
+    Jxta_bytevector *jb2;
 
-  /* Try if they are equal */
-  if( TRUE != jxta_bytevector_equals(jb1, jb2) ){
-    JXTA_OBJECT_RELEASE( jb1);
-    JXTA_OBJECT_RELEASE( jb2);
-    return FALSE;
-  }
+    jb1 = get_jxta_bytevector_object("abcdefg");
+    if (NULL == jb1) {
+        return FALSE;
+    }
+    jb2 = get_jxta_bytevector_object("abcdefg");
+    if (NULL == jb2) {
+        return FALSE;
+    }
 
-  /* Change jb2 and repeat test */ 
-  jxta_bytevector_remove_bytes_at(jb2,2,2);
-  if( FALSE != jxta_bytevector_equals(jb1, jb2) ){
-    JXTA_OBJECT_RELEASE( jb1);
-    JXTA_OBJECT_RELEASE( jb2);
-    return FALSE;
-  }
+    /* Try if they are equal */
+    if (TRUE != jxta_bytevector_equals(jb1, jb2)) {
+        JXTA_OBJECT_RELEASE(jb1);
+        JXTA_OBJECT_RELEASE(jb2);
+        return FALSE;
+    }
 
-  JXTA_OBJECT_RELEASE(jb1);
-  JXTA_OBJECT_RELEASE(jb2);
+    /* Change jb2 and repeat test */
+    jxta_bytevector_remove_bytes_at(jb2, 2, 2);
+    if (FALSE != jxta_bytevector_equals(jb1, jb2)) {
+        JXTA_OBJECT_RELEASE(jb1);
+        JXTA_OBJECT_RELEASE(jb2);
+        return FALSE;
+    }
 
-  return TRUE;
+    JXTA_OBJECT_RELEASE(jb1);
+    JXTA_OBJECT_RELEASE(jb2);
+
+    return TRUE;
 }
 
 
 static struct _funcs testfunc[] = {
-  {*test_bytevector_new_0,                      "jxta_bytevector_new_0"                      },
-  {*test_bytevector_new_1,                      "jxta_bytevector_new_1"                      },
-  {*test_bytevector_new_2,                      "jxta_bytevector_new_2"                      },
-  {*test_bytevector_clear,                      "jxta_bytevector_clear"                      },
-  {*test_bytevector_add_byte_at,                "jxta_bytevector_add_byte_at"                },
-  {*test_bytevector_add_byte_first,             "jxta_bytevector_add_byte_first"             },
-  {*test_bytevector_add_byte_last,              "jxta_bytevector_add_byte_last"              },
-  {*test_bytevector_add_bytes_at,               "jxta_bytevector_add_bytes_at"               },
-  {*test_bytevector_add_bytevector_at ,         "jxta_bytevector_add_bytevector_at"          },
-  {*test_bytevector_add_partial_bytevector_at,  "jxta_bytevector_add_partial_bytevector_at"  }, 
-  /*{*test_bytevector_add_from_stream_at,         "jxta_bytevector_add_from_stream_at"         }, Discepancy between  function description and function working */
-  {*test_bytevector_get_byte_at,                "jxta_bytevector_get_byte_at"                },
-  {*test_bytevector_get_bytes_at,               "jxta_bytevector_get_bytes_at"               },
-  {*test_bytevector_get_bytevector_at,          "jxta_bytevector_get_bytevector_at"          },
-  {*test_bytevector_write,                      "jxta_bytevector_write"                      },
-  {*test_bytevector_remove_byte_at,             "jxta_bytevector_remove_byte_at"             },
-  {*test_bytevector_remove_bytes_at,            "jxta_bytevector_remove_bytes_at"            },
-  {*test_bytevector_size,                       "jxta_bytevector_size"                       },
-  {*test_bytevector_equals,                     "jxta_bytevector_equals"                     },
-  {NULL,                                        "null"                                       }
+    {*test_bytevector_new_0, "jxta_bytevector_new_0"},
+    {*test_bytevector_new_1, "jxta_bytevector_new_1"},
+    {*test_bytevector_new_2, "jxta_bytevector_new_2"},
+    {*test_bytevector_clear, "jxta_bytevector_clear"},
+    {*test_bytevector_add_byte_at, "jxta_bytevector_add_byte_at"},
+    {*test_bytevector_add_byte_first, "jxta_bytevector_add_byte_first"},
+    {*test_bytevector_add_byte_last, "jxta_bytevector_add_byte_last"},
+    {*test_bytevector_add_bytes_at, "jxta_bytevector_add_bytes_at"},
+    {*test_bytevector_add_bytevector_at, "jxta_bytevector_add_bytevector_at"},
+    {*test_bytevector_add_partial_bytevector_at, "jxta_bytevector_add_partial_bytevector_at"},
+    /*{*test_bytevector_add_from_stream_at,         "jxta_bytevector_add_from_stream_at"         }, Discepancy between  function description and function working */
+    {*test_bytevector_get_byte_at, "jxta_bytevector_get_byte_at"},
+    {*test_bytevector_get_bytes_at, "jxta_bytevector_get_bytes_at"},
+    {*test_bytevector_get_bytevector_at, "jxta_bytevector_get_bytevector_at"},
+    {*test_bytevector_write, "jxta_bytevector_write"},
+    {*test_bytevector_remove_byte_at, "jxta_bytevector_remove_byte_at"},
+    {*test_bytevector_remove_bytes_at, "jxta_bytevector_remove_bytes_at"},
+    {*test_bytevector_size, "jxta_bytevector_size"},
+    {*test_bytevector_equals, "jxta_bytevector_equals"},
+    {NULL, "null"}
 };
 
 /**
@@ -1128,18 +1106,15 @@ static struct _funcs testfunc[] = {
 *
 * @return TRUE if all tests were run successfully, FALSE otherwise
 */
-Jxta_boolean run_jxta_bytevector_tests( int * tests_run,
-				        int * tests_passed,
-				        int * tests_failed){
-  return run_testfunctions(testfunc,tests_run, tests_passed, tests_failed);
+Jxta_boolean run_jxta_bytevector_tests(int *tests_run, int *tests_passed, int *tests_failed)
+{
+    return run_testfunctions(testfunc, tests_run, tests_passed, tests_failed);
 }
 
 
 #ifdef STANDALONE
-int 
-main(int argc, char ** argv) {
-  return main_test_function(testfunc,argc,argv);
+int main(int argc, char **argv)
+{
+    return main_test_function(testfunc, argc, argv);
 }
 #endif
-
-

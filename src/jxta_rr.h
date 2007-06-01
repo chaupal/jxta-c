@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rr.h,v 1.6 2005/08/03 05:51:19 slowhog Exp $
+ * $Id: jxta_rr.h,v 1.9 2005/10/01 00:02:51 slowhog Exp $
  */
 
 
@@ -58,22 +58,23 @@
 #define __ResolverResponse_H__
 
 #include "jstring.h"
-
+#include "jxta_id.h"
 
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _ResolverResponse ResolverResponse;
 
 /**
  * create a new ResolverResponse object
  * @return pointer to the resolver response object
  */
-JXTA_DECLARE(ResolverResponse *)
-    jxta_resolver_response_new(void);
+JXTA_DECLARE(ResolverResponse *) jxta_resolver_response_new(void);
+
 /**
  * create a new ResolverResponse object with inital given values
  * @param handlername associated with the query
@@ -81,8 +82,18 @@ JXTA_DECLARE(ResolverResponse *)
  * @param qid  the originator's query id
  * @return pointer to the resolver query object
  */
-JXTA_DECLARE(ResolverResponse *)
-    jxta_resolver_response_new_1(JString * handlername, JString * response, long qid);
+JXTA_DECLARE(ResolverResponse *) jxta_resolver_response_new_1(JString * handlername, JString * response, long qid);
+
+/**
+ * Create a new ResolverResponse object with inital given values
+ * @param handlername associated with the query
+ * @param response string containing response
+ * @param qid  the originator's query id
+ * @param res_id the peer id of the responder peer
+ * @return pointer to the resolver query object
+ */
+JXTA_DECLARE(ResolverResponse *) jxta_resolver_response_new_2(JString * handlername, JString * response, long qid,
+                                                              Jxta_id * res_pid);
 
 /**
  * @param ResolverResponse the resolver response object
@@ -121,8 +132,7 @@ JXTA_DECLARE(void) jxta_resolver_response_parse_file(ResolverResponse * ad, FILE
  * @param ResolverQuery the resolver response object
  * @return Jstring the credential
  */
-JXTA_DECLARE(JString *)
-    jxta_resolver_response_get_credential(ResolverResponse * ad);
+JXTA_DECLARE(JString *) jxta_resolver_response_get_credential(ResolverResponse * ad);
 
 /**
  * set the message credential
@@ -132,12 +142,27 @@ JXTA_DECLARE(JString *)
 JXTA_DECLARE(void) jxta_resolver_response_set_credential(ResolverResponse * ad, JString * credential);
 
 /**
+ * Get the peer id of the peer that send this resolver response
+ * @param ResolverResponse the resolver response object
+ * @param Jxta_id the peer's id
+ */
+JXTA_DECLARE(Jxta_id *) jxta_resolver_response_get_res_peer_id(ResolverResponse * ad);
+
+/**
+ * Set the peer id of the peer that send this resolver response 
+ * @param Resolver the resolver response object
+ * @param Jxta_id the peer's id
+ */
+JXTA_DECLARE(void) jxta_resolver_response_set_res_peer_id(ResolverResponse * ad, Jxta_id * id);
+
+/**
  * get the message handlername
  * @param ResolverResponse the resolver response object
  * @param JString pointer to JString to retrun the handlername pointer
  * @return Jxta_id the peer's id
  */
 JXTA_DECLARE(void) jxta_resolver_response_get_handlername(ResolverResponse * ad, JString ** str);
+
 /**
  * set the message HandlerName
  * @param ResolverResponse the resolver response object

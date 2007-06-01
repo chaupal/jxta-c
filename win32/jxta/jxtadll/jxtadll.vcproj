@@ -22,7 +22,7 @@
 				Optimization="0"
 				FavorSizeOrSpeed="0"
 				AdditionalIncludeDirectories="..\..\..\src,$(APACHE2)\include;$(XML2)\include;$(ZLIB)\include;$(SQLITE3)\include;$(OPENSSL)\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;JXTA_EXPORTS;GZIP_ENABLED=1;GUNZIP_ENABLED=1;JXTA_LOG_ENABLE=1"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;JXTA_EXPORTS;GZIP_ENABLED=1;GUNZIP_ENABLED=1;JXTA_LOG_ENABLE=1;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				StringPooling="FALSE"
 				MinimalRebuild="TRUE"
 				ExceptionHandling="FALSE"
@@ -81,7 +81,7 @@
 				InlineFunctionExpansion="0"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..\..\..\src,$(APACHE2)\include;$(XML2)\include;$(ZLIB)\include;$(SQLITE3)\include;$(OPENSSL)\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;JXTA_EXPORTS;GZIP_ENABLED=1;GUNZIP_ENABLED=1"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;JXTA_EXPORTS;GZIP_ENABLED=1;GUNZIP_ENABLED=1;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				StringPooling="FALSE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="2"
@@ -163,6 +163,9 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_bytevector.c">
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_callback.c">
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_cm.c">
@@ -288,6 +291,9 @@
 				RelativePath="..\..\..\src\jxta_piperesolver_msg.c">
 			</File>
 			<File
+				RelativePath="..\..\..\src\jxta_platformconfig.c">
+			</File>
+			<File
 				RelativePath="..\..\..\src\jxta_pm.c">
 			</File>
 			<File
@@ -295,6 +301,9 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_query.c">
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_range.c">
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_rdv.c">
@@ -354,6 +363,9 @@
 				RelativePath="..\..\..\src\jxta_srdi.c">
 			</File>
 			<File
+				RelativePath="..\..\..\src\jxta_srdi_config_adv.c">
+			</File>
+			<File
 				RelativePath="..\..\..\src\jxta_srdi_service.c">
 			</File>
 			<File
@@ -402,6 +414,9 @@
 				RelativePath="..\..\..\src\jxta_unipipe_service.c">
 			</File>
 			<File
+				RelativePath="..\..\..\src\jxta_util_priv.c">
+			</File>
+			<File
 				RelativePath="..\..\..\src\jxta_vector.c">
 			</File>
 			<File
@@ -446,6 +461,9 @@
 				RelativePath="..\..\..\src\jxta_apa.h">
 			</File>
 			<File
+				RelativePath="..\..\..\src\jxta_apr.h">
+			</File>
+			<File
 				RelativePath="..\..\..\src\jxta_bidipipe.h">
 			</File>
 			<File
@@ -453,6 +471,9 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_bytevector.h">
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_callback.h">
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_cm.h">
@@ -605,6 +626,9 @@
 				RelativePath="..\..\..\src\jxta_piperesolver_msg.h">
 			</File>
 			<File
+				RelativePath="..\..\..\src\jxta_platformconfig.h">
+			</File>
+			<File
 				RelativePath="..\..\..\src\jxta_pm.h">
 			</File>
 			<File
@@ -615,6 +639,9 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_query.h">
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_range.h">
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_rdv.h">
@@ -677,6 +704,9 @@
 				RelativePath="..\..\..\src\jxta_srdi.h">
 			</File>
 			<File
+				RelativePath="..\..\..\src\jxta_srdi_config_adv.h">
+			</File>
+			<File
 				RelativePath="..\..\..\src\jxta_srdi_service.h">
 			</File>
 			<File
@@ -725,6 +755,9 @@
 				RelativePath="..\..\..\src\jxta_types.h">
 			</File>
 			<File
+				RelativePath="..\..\..\src\jxta_util_priv.h">
+			</File>
+			<File
 				RelativePath="..\..\..\src\jxta_vector.h">
 			</File>
 			<File
@@ -735,9 +768,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_xml_util.h">
-			</File>
-			<File
-				RelativePath="..\..\..\src\jxtaapr.h">
 			</File>
 			<File
 				RelativePath="..\..\..\src\localconf.h">

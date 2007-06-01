@@ -50,26 +50,19 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rm.c,v 1.37 2005/09/13 21:55:10 slowhog Exp $
+ * $Id: jxta_rm.c,v 1.39 2005/11/11 21:58:23 slowhog Exp $
  */
 
-
-/*
-* The following command will compile the output from the script 
-* given the apr is installed correctly.
-*/
-/*
-* gcc -DSTANDALONE jxta_advertisement.c DiscoveryResponse.c  -o PA \
-  `/usr/local/apache2/bin/apr-config --cflags --includes --libs` \
-  -lexpat -L/usr/local/apache2/lib/ -lapr
-*/
+static const char *const __log_cat = "RouterMessage";
 
 #include <stdio.h>
 #include <string.h>
+
 #include "jxta_errno.h"
-#include "jxta_debug.h"
+#include "jxta_log.h"
 #include "jxta_rm.h"
 #include "jxta_xml_util.h"
+#include "jxta_apa.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -113,23 +106,21 @@ struct _EndpointRouterMessage {
  */
 static void handleEndpointRouterMessage(void *userdata, const XML_Char * cd, int len)
 {
-    /* EndpointRouterMessage * ad = (EndpointRouterMessage*)userdata; */
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "%s parsing of jxta:ERM\n", 0 == len ? "Begin" : "Finish");
 }
 
 static void handleSrc(void *userdata, const XML_Char * cd, int len)
 {
     EndpointRouterMessage *ad = (EndpointRouterMessage *) userdata;
 
-    char *tok = (char *) malloc(256);
-    memset(tok, 0, 256);
-
+    char *tok = (char *) calloc(len + 1, sizeof(char));
     extract_char_data(cd, len, tok);
 
     if (strlen(tok) != 0) {
         if (ad->Src != NULL) {
             JXTA_OBJECT_RELEASE(ad->Src);
         }
-        JXTA_LOG("Src: [%s]\n", tok);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Src: [%s]\n", tok);
         ad->Src = jxta_endpoint_address_new(tok);
     }
     free(tok);
@@ -141,15 +132,14 @@ static void handleDest(void *userdata, const XML_Char * cd, int len)
     char *tok;
 
     if (len > 0) {
-        tok = (char *) malloc(len + 1);
-        memset(tok, 0, len + 1);
-
+        tok = (char *) calloc(len + 1, sizeof(char));
         extract_char_data(cd, len, tok);
+
         if (strlen(tok) != 0) {
             if (ad->Dest != NULL) {
                 JXTA_OBJECT_RELEASE(ad->Dest);
             }
-            JXTA_LOG("Dest: [%s]\n", tok);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Dest: [%s]\n", tok);
             ad->Dest = jxta_endpoint_address_new(tok);
         }
         free(tok);
@@ -162,75 +152,65 @@ static void handleLast(void *userdata, const XML_Char * cd, int len)
     char *tok;
 
     if (len > 0) {
-        tok = (char *) malloc(len + 1);
-        memset(tok, 0, len + 1);
-
+        tok = (char *) calloc(len + 1, sizeof(char));
         extract_char_data(cd, len, tok);
 
         if (strlen(tok) != 0) {
             if (ad->Last != NULL) {
                 JXTA_OBJECT_RELEASE(ad->Last);
             }
-            JXTA_LOG("Last: [%s]\n", tok);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Last: [%s]\n", tok);
             ad->Last = jxta_endpoint_address_new(tok);
         }
         free(tok);
     }
 }
 
-static void handleGatewayForward(void *userdata, const XML_Char * cd, int len)
+static void handleGatewayForward(void *me, const XML_Char * cd, int len)
 {
-    EndpointRouterMessage *ad = (EndpointRouterMessage *) userdata;
-    char *tok;
+    EndpointRouterMessage *_self = (EndpointRouterMessage *) me;
+    Jxta_AccessPointAdvertisement *apa = NULL;
 
-    if (len > 0) {
-        tok = (char *) malloc(len + 1);
-        memset(tok, 0, len + 1);
-
-        extract_char_data(cd, len, tok);
-
-        if (strlen(tok) != 0) {
-            Jxta_endpoint_address *addr = jxta_endpoint_address_new(tok);
-            JXTA_LOG("Forward Gateway: [%s]\n", tok);
-            if (addr != NULL) {
-                jxta_vector_add_object_last(ad->forwardGateways, (Jxta_object *) addr);
-                /* The vector shares automatically the object. We must release */
-                JXTA_OBJECT_RELEASE(addr);
-            }
-        }
-        free(tok);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Forward Gateway: %s\n", 0 == len ? "Begin" : "End" );
+    if (0 != len) {
+        return;
     }
+
+    apa = jxta_AccessPointAdvertisement_new();
+    if (NULL == apa) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to allocate APA\n" );
+        return;
+    }
+        
+    jxta_advertisement_set_handlers((Jxta_advertisement *) apa, ((Jxta_advertisement *) _self)->parser, (void *) _self);
+    jxta_vector_add_object_last(_self->forwardGateways, (Jxta_object *) apa);
+    JXTA_OBJECT_RELEASE(apa);
 }
 
-static void handleGatewayReverse(void *userdata, const XML_Char * cd, int len)
+static void handleGatewayReverse(void *me, const XML_Char * cd, int len)
 {
-    EndpointRouterMessage *ad = (EndpointRouterMessage *) userdata;
-    char *tok;
+    EndpointRouterMessage *_self = (EndpointRouterMessage *) me;
+    Jxta_AccessPointAdvertisement *apa = NULL;
 
-    if (len > 0) {
-        tok = (char *) malloc(len + 1);
-        memset(tok, 0, len + 1);
-
-        extract_char_data(cd, len, tok);
-
-        if (strlen(tok) != 0) {
-            Jxta_endpoint_address *addr = jxta_endpoint_address_new(tok);
-            JXTA_LOG("Reverse Gateway: [%s]\n", tok);
-            if (addr != NULL) {
-                jxta_vector_add_object_last(ad->reverseGateways, (Jxta_object *) addr);
-                /* The vector shares automatically the object. We must release */
-                JXTA_OBJECT_RELEASE(addr);
-            }
-        }
-        free(tok);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Reverse Gateway: %s\n", 0 == len ? "Begin" : "End" );
+    if (0 != len) {
+        return;
     }
+
+    apa = jxta_AccessPointAdvertisement_new();
+    if (NULL == apa) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to allocate APA\n" );
+        return;
+    }
+        
+    jxta_advertisement_set_handlers((Jxta_advertisement *) apa, ((Jxta_advertisement *) _self)->parser, (void *) _self);
+    jxta_vector_add_object_last(_self->reverseGateways, (Jxta_object *) apa);
+    JXTA_OBJECT_RELEASE(apa);
 }
 
-
-
-    /** The get/set functions represent the public
-     * interface to the ad class, that is, the API.
-     */
+/** The get/set functions represent the public
+ * interface to the ad class, that is, the API.
+ */
 JXTA_DECLARE(char *) EndpointRouterMessage_get_EndpointRouterMessage(EndpointRouterMessage * ad)
 {
     return NULL;
@@ -409,21 +389,20 @@ JXTA_DECLARE(Jxta_status) EndpointRouterMessage_get_xml(EndpointRouterMessage * 
     if (size_fwd > 0) {
         jstring_append_2(string, "<Fwd>\n");
         for (i = 0; i < size_fwd; ++i) {
-            Jxta_endpoint_address *addr = NULL;
+            Jxta_AccessPointAdvertisement *apa = NULL;
+            JString *apa_xml = NULL;
             Jxta_status res;
 
-            res = jxta_vector_get_object_at(ad->forwardGateways, (Jxta_object **) & addr, i);
-            if ((res == JXTA_SUCCESS) && (addr != NULL)) {
-                char *pt = jxta_endpoint_address_to_string(addr);
-                if (pt != NULL) {
-                    jstring_append_2(string, "<GatewayForward>");
-                    jstring_append_2(string, pt);
-                    jstring_append_2(string, "</GatewayForward>\n");
-                    free(pt);
+            res = jxta_vector_get_object_at(ad->forwardGateways, JXTA_OBJECT_PPTR(&apa), i);
+            if ((JXTA_SUCCESS == res) && (NULL != apa)) {
+                res = jxta_AccessPointAdvertisement_get_xml(apa, &apa_xml);
+                if (NULL != apa_xml) {
+                    jstring_append_1(string, apa_xml);
+                    JXTA_OBJECT_RELEASE(apa_xml);
                 }
-                JXTA_OBJECT_RELEASE(addr);
+                JXTA_OBJECT_RELEASE(apa);
             } else {
-                JXTA_LOG("Failed to get address from forward vector\n");
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Failed to get APA from forward vector\n");
             }
         }
         jstring_append_2(string, "</Fwd>\n");
@@ -435,21 +414,20 @@ JXTA_DECLARE(Jxta_status) EndpointRouterMessage_get_xml(EndpointRouterMessage * 
     if (size_rvs > 0) {
         jstring_append_2(string, "<Rvs>\n");
         for (i = 0; i < size_rvs; ++i) {
-            Jxta_endpoint_address *addr = NULL;
+            Jxta_AccessPointAdvertisement *apa = NULL;
+            JString *apa_xml = NULL;
             Jxta_status res;
 
-            res = jxta_vector_get_object_at(ad->reverseGateways, (Jxta_object **) & addr, i);
-            if ((res == JXTA_SUCCESS) && (addr != NULL)) {
-                char *pt = jxta_endpoint_address_to_string(addr);
-                if (pt != NULL) {
-                    jstring_append_2(string, "<GatewayReverse>");
-                    jstring_append_2(string, pt);
-                    jstring_append_2(string, "</GatewayReverse>\n");
-                    free(pt);
+            res = jxta_vector_get_object_at(ad->reverseGateways, JXTA_OBJECT_PPTR(&apa), i);
+            if ((JXTA_SUCCESS == res) && (NULL != apa)) {
+                res = jxta_AccessPointAdvertisement_get_xml(apa, &apa_xml);
+                if (NULL != apa_xml) {
+                    jstring_append_1(string, apa_xml);
+                    JXTA_OBJECT_RELEASE(apa_xml);
                 }
-                JXTA_OBJECT_RELEASE(addr);
+                JXTA_OBJECT_RELEASE(apa);
             } else {
-                JXTA_LOG("Failed to get address from reverseGateways\n");
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Failed to get APA from reverseGateways\n");
             }
         }
         jstring_append_2(string, "</Rvs>\n");
@@ -510,39 +488,15 @@ void EndpointRouterMessage_delete(EndpointRouterMessage * ad)
     free(ad);
 }
 
-JXTA_DECLARE(void) EndpointRouterMessage_parse_charbuffer(EndpointRouterMessage * ad, const char *buf, int len)
+JXTA_DECLARE(Jxta_status) EndpointRouterMessage_parse_charbuffer(EndpointRouterMessage * ad, const char *buf, int len)
 {
-    jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    return jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
 
-JXTA_DECLARE(void) EndpointRouterMessage_parse_file(EndpointRouterMessage * ad, FILE * stream)
+JXTA_DECLARE(Jxta_status) EndpointRouterMessage_parse_file(EndpointRouterMessage * ad, FILE * stream)
 {
-    jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    return jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
-
-#ifdef STANDALONE
-int main(int argc, char **argv)
-{
-    EndpointRouterMessage *ad;
-    FILE *testfile;
-
-    if (argc != 2) {
-        printf("usage: ad <filename>\n");
-        return -1;
-    }
-
-    ad = EndpointRouterMessage_new();
-
-    testfile = fopen(argv[1], "r");
-    EndpointRouterMessage_parse_file(ad, testfile);
-    fclose(testfile);
-
-    /* EndpointRouterMessage_print_xml(ad,fprintf,stdout); */
-    EndpointRouterMessage_delete(ad);
-
-    return 0;
-}
-#endif
 
 #if 0
 {

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jdlist.h,v 1.9 2005/06/16 23:11:38 slowhog Exp $
+ * $Id: jdlist.h,v 1.10 2005/09/21 21:16:46 slowhog Exp $
  */
 
 
@@ -64,9 +64,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _Dlist Dlist;
 
 struct _Dlist {

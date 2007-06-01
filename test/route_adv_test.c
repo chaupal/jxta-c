@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: route_adv_test.c,v 1.6 2005/04/07 22:58:56 slowhog Exp $
+ * $Id: route_adv_test.c,v 1.8 2005/10/13 17:07:40 exocetrick Exp $
  */
 
 #include <stdio.h>
@@ -58,47 +58,46 @@
 #include "jxta_routea.h"
 
 
-Jxta_boolean
-routea_test(int argc, char ** argv) {
+int routea_test(int argc, char **argv)
+{
 
-   Jxta_RouteAdvertisement * ad;
-   FILE *testfile;
-   JString * js;
+    Jxta_RouteAdvertisement *ad;
+    FILE *testfile;
+    JString *js;
 
-   if(argc != 2)
-     {
-       printf("usage: ad <filename>\n");
-       return -1;
-     }
+    if (argc != 2) {
+        printf("usage: ad <filename>\n");
+        return -1;
+    }
 
     jxta_initialize();
 
-   ad = jxta_RouteAdvertisement_new();
+    ad = jxta_RouteAdvertisement_new();
 
-   testfile = fopen (argv[1], "r");
-   jxta_RouteAdvertisement_parse_file(ad, testfile);
-   fclose(testfile);
+    testfile = fopen(argv[1], "r");
+    jxta_RouteAdvertisement_parse_file(ad, testfile);
+    fclose(testfile);
 
-   js = jstring_new_1(1024);
-   
-   jxta_advertisement_get_xml((Jxta_advertisement*)ad,&js);
+    js = jstring_new_1(1024);
 
-   fprintf(stdout,"%s",jstring_get_string(js));
+    jxta_advertisement_get_xml((Jxta_advertisement *) ad, &js);
 
-   JXTA_OBJECT_RELEASE(js);
-   JXTA_OBJECT_RELEASE(ad);
+    fprintf(stdout, "%s", jstring_get_string(js));
 
-   jxta_terminate();
-   return 0;
+    JXTA_OBJECT_RELEASE(js);
+    JXTA_OBJECT_RELEASE(ad);
+
+    jxta_terminate();
+    return 0;
 
 }
 
 
 
 #ifdef STANDALONE
-int
-main (int argc, char **argv) {
+int main(int argc, char **argv)
+{
 
-  return routea_test(argc,argv);
+    return routea_test(argc, argv);
 }
 #endif

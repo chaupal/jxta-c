@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: queue.h,v 1.5 2005/06/16 23:11:55 slowhog Exp $
+ * $Id: queue.h,v 1.6 2005/09/21 21:16:52 slowhog Exp $
  */
 
 #ifndef __QUEUE_H__
@@ -61,9 +61,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
-#endif                          /* __cplusplus */
+#endif /* __cplusplus */
+
 typedef struct _Queue Queue;
 
 Queue *queue_new(apr_pool_t * pool);
@@ -96,3 +97,5 @@ Jxta_status queue_dequeue_1(Queue * q, void **obj, apr_time_t max_time_to_wait_i
 }
 #endif /* __cplusplus */
 #endif /* __QUEUE_H__ */
+
+/* vim: set ts=4 sw=4 et tw=130: */

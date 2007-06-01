@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object.h,v 1.11 2005/07/28 00:23:36 slowhog Exp $
+ * $Id: jxta_object.h,v 1.15 2005/11/26 07:52:44 mmx2005 Exp $
  */
 
 
@@ -65,7 +65,7 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
 
@@ -78,7 +78,7 @@ extern "C" {
  ** The mechanism is simple: each object is prefixed with a handle (an instance
  ** of _jxta_object). This handle contains a reference count, which is set to 1
  ** when the object is initialized, incremented by one everytime the object is
- ** shared, decremement by one everytime the object is released. When the reference
+ ** shared, decrement by one everytime the object is released. When the reference
  ** counts drops to zero, the object is effectively freed.
  **
  ** Usage:
@@ -194,7 +194,7 @@ extern "C" {
  **/
 
 /**
- * This is the begining of the public API of the object
+ * This is the beginning of the public API of the object
  **/
 typedef struct _jxta_object Jxta_object;
 
@@ -231,7 +231,7 @@ typedef void (*JXTA_OBJECT_FREE_FUNC) (Jxta_object * data);
  *
  * @param obj pointer to the object to initialize.
  * @param pf_free pointer to the free function of the object.
- * @param cookie is void* that is not intepreted by the object management,
+ * @param cookie is void* that is not interpreted by the object management,
  *        but can be used within the free function. That can be a pointer to 
  *        a pool, or whatever, or even be null.
  * @return the created object. (same value as x)
@@ -259,7 +259,7 @@ JXTA_DECLARE(void *) JXTA_OBJECT_INIT(void *obj, JXTA_OBJECT_FREE_FUNC pf_free, 
  * @param obj pointer to the object to initialize.
  * @param flags Flags that will be set for the object.
  * @param pf_free pointer to the free function of the object.
- * @param cookie is void* that is not intepreted by the object management,
+ * @param cookie is void* that is not interpreted by the object management,
  *        but can be used within the free function. That can be a pointer to 
  *        a pool, or whatever, or even be null.
  * @return the created object. (same value as x)
@@ -277,7 +277,7 @@ JXTA_DECLARE(void *) JXTA_OBJECT_INIT_FLAGS(void *obj, unsigned int flags, JXTA_
  * @return the shared object. Same value as obj if OBJ is a valid object
  *  otherwise NULL)
  **/
-JXTA_DECLARE(Jxta_object *) JXTA_OBJECT_SHARE(Jxta_object * obj);
+JXTA_DECLARE(void *) JXTA_OBJECT_SHARE(Jxta_object * obj);
 
 /**
  * Release an object
@@ -358,6 +358,7 @@ typedef unsigned int (JXTA_STDCALL * Jxta_object_hash_func) (Jxta_object * obj);
 #include "jxta_object_priv.h"
 
 #define JXTA_OBJECT_HANDLE const Jxta_object _jxta_obj
+#define JXTA_OBJECT_PPTR(x) (Jxta_object**)(void*)(x)
 
 #ifdef __cplusplus
 #if 0

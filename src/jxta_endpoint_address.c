@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_address.c,v 1.33 2005/08/18 19:01:50 slowhog Exp $
+ * $Id: jxta_endpoint_address.c,v 1.37 2005/10/28 22:30:02 mathieu Exp $
  */
 
 static const char *__log_cat = "EA";
@@ -58,13 +58,11 @@ static const char *__log_cat = "EA";
 #include <stdlib.h>
 #include <apr_uri.h>
 
-#include "jxtaapr.h"
-
 #include "jxta_types.h"
 #include "jxta_log.h"
 #include "jxta_object.h"
 #include "jxta_endpoint_address.h"
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 struct _jxta_endpoint_address {
     JXTA_OBJECT_HANDLE;
@@ -99,9 +97,9 @@ static void jxta_endpoint_address_free(Jxta_object * obj)
     free(ea);
 }
 
-JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new2(const char *protocol_name,
-                                                                 const char *protocol_address,
-                                                                 const char *service_name, const char *service_params)
+JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new_2(const char *protocol_name,
+                                                                  const char *protocol_address,
+                                                                  const char *service_name, const char *service_params)
 {
     _jxta_endpoint_address *ea;
 
@@ -137,19 +135,20 @@ static char *trim_uri(char *uri)
     return pt;
 }
 
-JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new1(JString * s)
+JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new_1(JString * s)
 {
     return jxta_endpoint_address_new(jstring_get_string(s));
 }
 
 JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new(const char *s)
 {
-    apr_pool_t *pool;           /* (very short lived) */
+    apr_pool_t *pool;   /* (very short lived) */
     apr_uri_t uri;
 
     _jxta_endpoint_address *ea = NULL;
-    char *tmp = (char *) malloc(1);
+    char *tmp;
     char *tmp2;
+    int tmp_size = 1; /** For the \0 */
 
     if (apr_pool_create(&pool, NULL) != APR_SUCCESS) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Could not allocate pool\n");
@@ -177,48 +176,77 @@ JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new(const char *s)
     if ((uri.port_str != NULL) && (strlen(uri.port_str) > 0)) {
         int addr_len = strlen(uri.hostname) + strlen(uri.port_str) + 2;
         ea->protocol_address = (const char *) malloc(addr_len);
-        apr_snprintf((char *) ea->protocol_address, addr_len,"%s:%s", uri.hostname, uri.port_str);
+        apr_snprintf((char *) ea->protocol_address, addr_len, "%s:%s", uri.hostname, uri.port_str);
     } else {
         ea->protocol_address = strdup(uri.hostname);
     }
 
-    tmp[0] = 0;
-
     if (NULL != uri.path) {
-        tmp = (char *) realloc(tmp, strlen(tmp) + strlen(uri.path) + 1);
-        strcat(tmp, trim_uri(uri.path));
+        tmp_size += strlen(trim_uri(uri.path));
     }
-
     if (NULL != uri.query) {
-        tmp = (char *) realloc(tmp, strlen(tmp) + strlen(uri.query) + 2);
-        strcat(tmp, "?");
-        strcat(tmp, uri.query);
+        tmp_size += strlen(uri.query) + 1;
     }
-
     if (NULL != uri.fragment) {
-        tmp = (char *) realloc(tmp, strlen(tmp) + strlen(uri.fragment) + 2);
-        strcat(tmp, "#");
-        strcat(tmp, uri.fragment);
+        tmp_size += strlen(uri.fragment) + 1;
     }
 
-    tmp2 = strchr(tmp, '/');
+    if (tmp_size > 1) {
+        tmp = (char *) calloc(1, tmp_size);
 
-    if (NULL != tmp2) {
-        *tmp2 = '\0';
-        ea->service_params = strdup(tmp2 + 1);
-    } else {
-        ea->service_params = NULL;
+        if (NULL != uri.path) {
+            strcat(tmp, trim_uri(uri.path));
+        }
+        if (NULL != uri.query) {
+            strcat(tmp + strlen(tmp), "?");
+            strcat(tmp, uri.query);
+        }
+        if (NULL != uri.fragment) {
+            strcat(tmp + strlen(tmp), "#");
+            strcat(tmp, uri.fragment);
+        }
+
+        tmp2 = strchr(tmp, '/');
+
+        if (NULL != tmp2) {
+            *tmp2 = '\0';
+            ea->service_params = strdup(tmp2 + 1);
+        } else {
+            ea->service_params = NULL;
+        }
+
+        ea->service_name = ((0 == strlen(tmp)) ? NULL : strdup(tmp));
+
+        free(tmp);
     }
-
-    ea->service_name = ((0 == strlen(tmp)) ? NULL : strdup(tmp));
-
-    free(tmp);
   Common_exit:
 
     /* Done with the pool. We have our private copies on the heap. */
     apr_pool_destroy(pool);
 
     return (Jxta_endpoint_address *) ea;
+}
+
+JXTA_DECLARE(Jxta_endpoint_address *) jxta_endpoint_address_new_3(Jxta_id * peer_id, const char *service_name,
+                                                                  const char *service_params)
+{
+    JString *tmp = NULL;
+    Jxta_endpoint_address *addr = NULL;
+    char *pt;
+
+    JXTA_OBJECT_CHECK_VALID(peer_id);
+    jxta_id_get_uniqueportion(peer_id, &tmp);
+    if (tmp == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot get the unique portion of the peer id\n");
+        return NULL;
+    }
+
+    pt = (char *) jstring_get_string(tmp);
+    addr = jxta_endpoint_address_new_2((char *) "jxta", pt, service_name, service_params);
+    JXTA_OBJECT_CHECK_VALID(addr);
+
+    JXTA_OBJECT_RELEASE(tmp);
+    return addr;
 }
 
 JXTA_DECLARE(size_t) jxta_endpoint_address_size(Jxta_endpoint_address * a)
@@ -273,7 +301,6 @@ JXTA_DECLARE(char *) jxta_endpoint_address_to_string(Jxta_endpoint_address * a)
 JXTA_DECLARE(char *) jxta_endpoint_address_get_transport_addr(Jxta_endpoint_address * me)
 {
     char *str;
-    size_t c1, c2;
 
     JXTA_OBJECT_CHECK_VALID(me);
 
@@ -281,12 +308,38 @@ JXTA_DECLARE(char *) jxta_endpoint_address_get_transport_addr(Jxta_endpoint_addr
         return NULL;
     }
 
-    c1 = strlen(me->protocol_name);
-    c2 = strlen(me->protocol_address);
-    str = (char *) calloc(c1 + c2 + 4, sizeof(char));
+    str = malloc(strlen(me->protocol_name) + 3 + strlen(me->protocol_address) + 1);
+
+    if (str == NULL)
+        return NULL;
+
     strcpy(str, me->protocol_name);
-    strcpy(str + c1, "://");
-    strcpy(str + c1 + 3, me->protocol_address);
+    strcat(str, "://");
+    strcat(str, me->protocol_address);
+
+    return str;
+}
+
+JXTA_DECLARE(char *) jxta_endpoint_address_get_recipient_cstr(Jxta_endpoint_address * a)
+{
+    char *str;
+
+    JXTA_OBJECT_CHECK_VALID(a);
+
+    if ((a->service_name == NULL)) {
+        return NULL;
+    }
+
+    str = (char *) malloc(1 + strlen(a->service_name) + (a->service_params != NULL ? strlen(a->service_params) + 1 : 0) + 1);
+    if (str == NULL)
+        return NULL;
+
+    strcpy(str, "/");
+    strcat(str, a->service_name);
+    if (a->service_params != NULL) {
+        strcat(str, "/");
+        strcat(str, a->service_params);
+    }
 
     return str;
 }

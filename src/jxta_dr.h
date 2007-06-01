@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dr.h,v 1.7 2005/08/29 06:38:07 slowhog Exp $
+ * $Id: jxta_dr.h,v 1.8 2005/09/21 21:16:46 slowhog Exp $
  */
 
 
@@ -63,9 +63,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _Jxta_DiscoveryResponse Jxta_DiscoveryResponse;
 typedef struct _jxta_DiscoveryResponseElement Jxta_DiscoveryResponseElement;
 

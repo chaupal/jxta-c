@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_apa.c,v 1.14 2005/08/03 05:51:14 slowhog Exp $
+ * $Id: jxta_apa.c,v 1.18 2005/11/20 23:22:53 mmx2005 Exp $
  */
 
 static const char *__log_cat = "APA";
@@ -63,16 +63,19 @@ static const char *__log_cat = "APA";
 #include "jdlist.h"
 #include "jxta_apa.h"
 #include "jxta_xml_util.h"
+#include <assert.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 #if 0
-}
+};
 #endif
+
 /** Each of these corresponds to a tag in the 
  * xml ad.
- */ enum tokentype {
+ */
+enum tokentype {
     Null_,
     Jxta_AccessPointAdvertisement_,
     PID_,
@@ -85,7 +88,6 @@ extern "C" {
  * accessed through the get/set API.
  */
 struct _jxta_AccessPointAdvertisement {
-
     Jxta_advertisement jxta_advertisement;
     char *jxta_AccessPointAdvertisement;
     Jxta_id *PID;
@@ -163,7 +165,7 @@ JXTA_DECLARE(char *) jxta_AccessPointAdvertisement_get_Jxta_AccessPointAdvertise
     return NULL;
 }
 
-char * JXTA_STDCALL jxta_AccessPointAdvertisement_get_Jxta_AccessPointAdvertisement_string(Jxta_advertisement * ad)
+char *JXTA_STDCALL jxta_AccessPointAdvertisement_get_Jxta_AccessPointAdvertisement_string(Jxta_advertisement * ad)
 {
     return NULL;
 }
@@ -211,6 +213,42 @@ JXTA_DECLARE(void) jxta_AccessPointAdvertisement_set_EndpointAddresses(Jxta_Acce
     ad->endpoints = addresses;
 }
 
+JXTA_DECLARE(Jxta_status) jxta_AccessPointAdvertisement_add_EndpointAddress(Jxta_AccessPointAdvertisement *me, 
+                                                                            Jxta_endpoint_address *ea)
+{
+    char *cstr;
+    JString *jstr;
+
+    assert(NULL != me->endpoints);
+    cstr = jxta_endpoint_address_get_transport_addr(ea);
+    if (NULL == cstr) {
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    jstr = jstring_new_2(cstr);
+    free(cstr);
+    if (NULL == jstr) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to allocate a JString, not enough memory?\n");
+        return JXTA_NOMEM;
+    }
+    jxta_vector_add_object_last(me->endpoints, (Jxta_object*)jstr);
+    JXTA_OBJECT_RELEASE(jstr);
+
+    return JXTA_SUCCESS;
+}
+
+static char *JXTA_STDCALL jxta_AccessPointAdvertisement_get_PID_string(Jxta_advertisement * ad)
+{
+    char *res;
+    JString *js = NULL;
+    jxta_id_to_jstring(((Jxta_AccessPointAdvertisement *) ad)->PID, &js);
+
+    res = strdup(jstring_get_string(js));
+    JXTA_OBJECT_RELEASE(js);
+    return res;
+    
+}
+
 /** Now, build an array of the keyword structs.  Since 
  * a top-level, or null state may be of interest, 
  * let that lead off.  Then, walk through the enums,
@@ -224,7 +262,7 @@ static const Kwdtab Jxta_AccessPointAdvertisement_tags[] = {
     {"jxta:APA", Jxta_AccessPointAdvertisement_, *handleJxta_AccessPointAdvertisement,
      *jxta_AccessPointAdvertisement_get_Jxta_AccessPointAdvertisement_string, NULL},
 
-    {"PID", PID_, *handlePID, *jxta_AccessPointAdvertisement_get_PID, NULL},
+    {"PID", PID_, *handlePID, *jxta_AccessPointAdvertisement_get_PID_string, NULL},
     {"EA", EA_, *handleEndpoint, NULL, NULL},
     {NULL, 0, 0, NULL, NULL}
 };
@@ -245,7 +283,7 @@ void endpoints_printer(Jxta_AccessPointAdvertisement * ad, JString * js)
     for (i = 0; i < sz; ++i) {
         JString *endpoint;
 
-        jxta_vector_get_object_at(lists, (Jxta_object **) & endpoint, i);
+        jxta_vector_get_object_at(lists, JXTA_OBJECT_PPTR(&endpoint), i);
         jstring_append_2(js, "<EA>");
         jstring_append_1(js, endpoint);
         jstring_append_2(js, "</EA>\n");

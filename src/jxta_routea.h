@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_routea.h,v 1.7 2005/08/03 05:51:18 slowhog Exp $
+ * $Id: jxta_routea.h,v 1.8 2005/09/21 21:16:50 slowhog Exp $
  */
 
 
@@ -64,11 +64,13 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 #define ROUTEADV_DEFAULT_LIFETIME   (Jxta_expiration_time)  (1000L * 60L * 15L)
 #define ROUTEADV_DEFAULT_EXPIRATION  (Jxta_expiration_time)  (1000L * 60L * 15L)
+
 typedef struct _jxta_RouteAdvertisement Jxta_RouteAdvertisement;
 
 /**
@@ -77,8 +79,7 @@ typedef struct _jxta_RouteAdvertisement Jxta_RouteAdvertisement;
  * @param void takes no arguments
  * @return pointer to route advertisement Jxta_RouteAdvertisement
  */
-JXTA_DECLARE(Jxta_RouteAdvertisement *)
-    jxta_RouteAdvertisement_new(void);
+JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_RouteAdvertisement_new(void);
 
 /**
  * Constructs a representation of a route advertisement in
@@ -90,8 +91,7 @@ JXTA_DECLARE(Jxta_RouteAdvertisement *)
  *
  * @return Jxta_status 
  */
-JXTA_DECLARE(Jxta_status)
-    jxta_RouteAdvertisement_get_xml(Jxta_RouteAdvertisement *, JString **);
+JXTA_DECLARE(Jxta_status) jxta_RouteAdvertisement_get_xml(Jxta_RouteAdvertisement *, JString **);
 
 /**
  * Wrapper for jxta_advertisement_parse_charbuffer,

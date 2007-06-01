@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_service.c,v 1.18 2005/04/16 13:45:44 lankes Exp $
+ * $Id: jxta_service.c,v 1.19 2005/11/22 22:00:58 mmx2005 Exp $
  */
 
 #include "jxta_service_private.h"
@@ -89,7 +89,7 @@ void jxta_service_destruct(_jxta_service * svc)
 
     self->thisType = NULL;
 
-    jxta_module_destruct(svc);
+    jxta_module_destruct((Jxta_module *) svc);
 }
 
 /**

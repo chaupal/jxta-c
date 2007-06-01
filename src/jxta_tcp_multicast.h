@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tcp_multicast.h,v 1.3 2005/06/16 23:11:53 slowhog Exp $
+ * $Id: jxta_tcp_multicast.h,v 1.4 2005/09/21 21:16:51 slowhog Exp $
  */
 
 #ifndef __JXTA_TCP_MULTICAST_H__
@@ -65,9 +65,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _tcp_multicast TcpMulticast;
 
 

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rdvcontrol.c,v 1.1 2005/09/02 08:57:52 slowhog Exp $
+ * $Id: rdvcontrol.c,v 1.2 2005/11/24 04:17:49 mmx2005 Exp $
  */
 
 
@@ -122,9 +122,6 @@ void jxta_rdvcontrol_print_help(Jxta_object * appl)
 
 void jxta_rdvcontrol_start(Jxta_object * appl, int argc, const char **argv)
 {
-
-
-    Jxta_status res;
     JxtaShellGetopt *opt = JxtaShellGetopt_new(argc, argv, "cC:rR:");
     JxtaShellApplication *app = (JxtaShellApplication *) appl;
     JString *outputLine = jstring_new_0();
@@ -179,7 +176,7 @@ void jxta_rdvcontrol_start(Jxta_object * appl, int argc, const char **argv)
 
     jxta_rdv_service_set_config(rdv, config);
 
-    if (-1 != interval) {
+    if (-1 != auto_interval) {
         jxta_rdv_service_set_auto_interval(rdv, auto_interval);
     }
 

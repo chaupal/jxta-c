@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jstring.h,v 1.11 2005/04/30 22:04:40 bondolo Exp $
+ * $Id: jstring.h,v 1.12 2005/09/21 21:16:46 slowhog Exp $
  */
 
 
@@ -76,9 +76,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _jstring JString;
 
 /**

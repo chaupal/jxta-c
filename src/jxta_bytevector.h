@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bytevector.h,v 1.8 2005/06/16 23:11:40 slowhog Exp $
+ * $Id: jxta_bytevector.h,v 1.9 2005/11/16 22:53:53 slowhog Exp $
  */
 
 
@@ -71,15 +71,16 @@
 
 #ifdef __cplusplus
 extern "C" {
-
-    /* avoid confusing indenters */
+/* avoid confusing indenters */
 #if 0
-}
+};
 #endif
 #endif
+
 /**
  * Jxta_bytevector is the public type of the vector
- **/ typedef struct _jxta_bytevector const Jxta_bytevector;
+ **/
+typedef struct _jxta_bytevector const Jxta_bytevector;
 
 
 

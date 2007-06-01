@@ -50,58 +50,57 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: tta_adv_test.c,v 1.12 2005/04/17 14:22:20 lankes Exp $
+ * $Id: tta_adv_test.c,v 1.14 2005/10/13 17:07:41 exocetrick Exp $
  */
 
 #include <stdio.h>
 #include "jxta.h"
 #include "jxta_tta.h"
 
-Jxta_boolean
-tta_test(int argc, char ** argv) {
+int tta_test(int argc, char **argv)
+{
 
-   Jxta_TCPTransportAdvertisement * ad;
-   FILE *testfile;
-   JString * js;
+    Jxta_TCPTransportAdvertisement *ad;
+    FILE *testfile;
+    JString *js;
 
-   if(argc != 2)
-     {
-       printf("usage: ad <filename>\n");
-       return -1;
-     }
+    if (argc != 2) {
+        printf("usage: ad <filename>\n");
+        return -1;
+    }
 
     jxta_initialize();
 
-   ad = jxta_TCPTransportAdvertisement_new();
+    ad = jxta_TCPTransportAdvertisement_new();
 
-   testfile = fopen (argv[1], "r");
-   jxta_TCPTransportAdvertisement_parse_file(ad, testfile);
-   fclose(testfile);
+    testfile = fopen(argv[1], "r");
+    jxta_TCPTransportAdvertisement_parse_file(ad, testfile);
+    fclose(testfile);
 
-   js = jstring_new_1(1024);
-   
-   /*
-    jxta_TCPTransportAdvertisement_get_xml(ad,&js);
-    */
+    js = jstring_new_1(1024);
 
-   jxta_advertisement_get_xml((Jxta_advertisement*)ad,&js);
+    /*
+       jxta_TCPTransportAdvertisement_get_xml(ad,&js);
+     */
+
+    jxta_advertisement_get_xml((Jxta_advertisement *) ad, &js);
 
 
-   fprintf(stdout,"%s",jstring_get_string(js));
+    fprintf(stdout, "%s", jstring_get_string(js));
 
-   JXTA_OBJECT_RELEASE(js);
+    JXTA_OBJECT_RELEASE(js);
 
-   jxta_terminate();
-   return 0;
+    jxta_terminate();
+    return 0;
 
 }
 
 
 
 #ifdef STANDALONE
-int
-main (int argc, char **argv) {
+int main(int argc, char **argv)
+{
 
-  return tta_test(argc,argv);
+    return tta_test(argc, argv);
 }
 #endif

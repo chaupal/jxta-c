@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tcp_message_packet_header.c,v 1.10 2005/07/22 03:12:55 slowhog Exp $
+ * $Id: jxta_tcp_message_packet_header.c,v 1.11 2005/11/03 07:31:51 mathieu Exp $
  */
 
 #include <stdlib.h>
@@ -65,7 +65,17 @@
 #include "jxta_tcp_message_packet_header.h"
 #include "jxta_log.h"
 
-#define MESSAGE_PACKET_HEADER_COUNT     3
+/**
+ * New rules are:
+ * header[0] -> content-type
+ * header[1] -> content-length
+ * header[2] -> srcEA
+ */
+#define CONTENT_TYPE_HEADER 0
+#define CONTENT_LENGTH_HEADER 1
+#define SRC_EA_HEADER 2
+
+#define MESSAGE_PACKET_HEADER_COUNT 3
 
 typedef unsigned char BYTE;
 typedef unsigned short int BYTE_2;
@@ -80,17 +90,17 @@ typedef struct _message_packet_header {
 const char *MESSAGE_PACKET_HEADER[MESSAGE_PACKET_HEADER_COUNT] = { "content-type", "content-length", "srcEA" };
 const char *__log_cat = "TCP_MSG_PKT";
 
-Jxta_status JXTA_STDCALL message_packet_header_read(ReadFunc read_func, void *stream, JXTA_LONG_LONG * msg_size,
+Jxta_status JXTA_STDCALL message_packet_header_read(char *header_buf, ReadFunc read_func, void *stream, JXTA_LONG_LONG * msg_size,
                                                     Jxta_boolean is_multicast, char **src_addr)
 {
     MessagePacketHeader header[MESSAGE_PACKET_HEADER_COUNT];    /* for extra if there exists content-coding */
     Jxta_boolean saw_empty, saw_length, saw_type, saw_srcEA;
     int i, length_index = -1, srcEA_index = -1;
-    int header_count;
+    int header_count, packet_header_nb;
 
     Jxta_status res;
 
-    header_count = is_multicast ? 3 : 2;
+    header_count = is_multicast ? MESSAGE_PACKET_HEADER_COUNT : MESSAGE_PACKET_HEADER_COUNT - 1;
 
     saw_empty = FALSE;
     saw_length = FALSE;
@@ -114,45 +124,52 @@ Jxta_status JXTA_STDCALL message_packet_header_read(ReadFunc read_func, void *st
                     saw_empty = TRUE;
             }
         } else {
-            header[i].name_size = header_name_length;
-            header[i].name = (BYTE *) malloc(header[i].name_size + 1);
-            if (header[i].name == NULL) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error header name malloc()\n");
+            if (header_name_length > HEADER_BUFSIZE) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Too large header name\n");
                 return JXTA_FAILED;
             }
 
-            /* read header name */
-            res = read_func(stream, (char *) header[i].name, header[i].name_size);
+            res = read_func(stream, header_buf, header_name_length);
             if (res != JXTA_SUCCESS) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Error during read_func() \n");
-                return JXTA_FAILED;
+                return JXTA_IOERR;  /* socket receiving error */
             }
-            header[i].name[header[i].name_size] = '\0';
+            packet_header_nb = -1;
+            for (i = 0; i < MESSAGE_PACKET_HEADER_COUNT; i++) {
+                if (strncasecmp(header_buf, MESSAGE_PACKET_HEADER[i], header_name_length) == 0) {
+                    packet_header_nb = i;
+                    break;
+                }
+            }
 
-            if (apr_strnatcasecmp((char *) header[i].name, MESSAGE_PACKET_HEADER[0]) == 0) {    /* content-type */
-                if (saw_type) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Duplicate content-type header\n");
+            if (packet_header_nb == -1)
+                return JXTA_FAILED;
+
+            switch (packet_header_nb) {
+            case CONTENT_TYPE_HEADER:  /* content-type */
+                if (saw_type == TRUE) {
+                    JXTA_LOG("Duplicate content-type header\n");
                     return JXTA_FAILED;
                 }
                 saw_type = TRUE;
-            }
-            if (apr_strnatcasecmp((char *) header[i].name, MESSAGE_PACKET_HEADER[1]) == 0) {    /* content-length */
-                if (saw_length) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Duplicate content-length header\n");
+                break;
+            case CONTENT_LENGTH_HEADER:    /* content-length */
+                if (saw_length == TRUE) {
+                    JXTA_LOG("Duplicate content-length header\n");
                     return JXTA_FAILED;
                 }
                 saw_length = TRUE;
                 length_index = i;
-            }
-            if (apr_strnatcasecmp((char *) header[i].name, MESSAGE_PACKET_HEADER[2]) == 0) {    /* srcEA */
-                if (saw_srcEA) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Duplicate srcEA header\n");
+                break;
+            case SRC_EA_HEADER:    /* srcEA */
+                if (saw_srcEA == TRUE) {
+                    JXTA_LOG("Duplicate srcEA header\n");
                     return JXTA_FAILED;
                 }
                 saw_srcEA = TRUE;
                 srcEA_index = i;
+                break;
             }
-
 
             /* read header body size */
             res = read_func(stream, (char *) &header[i].value_size, 2);
@@ -184,8 +201,6 @@ Jxta_status JXTA_STDCALL message_packet_header_read(ReadFunc read_func, void *st
             if (i > header_count) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error i:%i > header count:%i\n", i, header_count);
                 for (i = 0; i < header_count; i++) {
-                    if (header[i].name != NULL)
-                        free(header[i].name);
                     if (header[i].value != NULL)
                         free(header[i].value);
                 }
@@ -200,8 +215,6 @@ Jxta_status JXTA_STDCALL message_packet_header_read(ReadFunc read_func, void *st
 
     /* free */
     for (i = 0; i < header_count; i++) {
-        if (header[i].name != NULL)
-            free(header[i].name);
         if (header[i].value != NULL)
             free(header[i].value);
     }
@@ -214,47 +227,46 @@ Jxta_status JXTA_STDCALL message_packet_header_write(WriteFunc write_func, void 
 {
     MessagePacketHeader header[MESSAGE_PACKET_HEADER_COUNT];
     BYTE empty_header = 0;
-    int i;
+    int i, j;
     int header_count;
 
-    header_count = is_multicast ? 3 : 2;
+    header_count = is_multicast ? MESSAGE_PACKET_HEADER_COUNT : MESSAGE_PACKET_HEADER_COUNT - 1;
 
     /* write message header */
     for (i = 0; i < header_count; i++) {
-        header[i].name = (BYTE *) strdup(MESSAGE_PACKET_HEADER[i]);
+        header[i].name = (BYTE *) MESSAGE_PACKET_HEADER[i];
         header[i].name_size = strlen((char *) header[i].name);
 
-        if (apr_strnatcasecmp((char *) header[i].name, "content-type") == 0) {
-            header[i].value = (BYTE *) strdup(APP_MSG); /* "application/x-jxta-msg" */
+        switch (i) {
+        case CONTENT_TYPE_HEADER:
+            header[i].value = (BYTE *) APP_MSG; /* "application/x-jxta-msg" */
             header[i].value_size = strlen((char *) header[i].value);
-        } else if (apr_strnatcasecmp((char *) header[i].name, "content-length") == 0) {
-            int j;
+            break;
+        case CONTENT_LENGTH_HEADER:
             header[i].value = (BYTE *) malloc(8);
             for (j = 0; j < 8; j++) {
                 header[i].value[j] = (BYTE) (msg_size >> ((7 - j) * 8L));   /* JXTA_LONG_LONG to bytes */
             }
             header[i].value_size = 8;
-        } else if (apr_strnatcasecmp((char *) header[i].name, "srcEA") == 0) {
-            header[i].value = (BYTE *) strdup(src_addr);
+            break;
+        case SRC_EA_HEADER:
+            header[i].value = (BYTE *) src_addr;
             header[i].value_size = strlen((char *) header[i].value);
+            break;
         }
 
         header[i].value_size = htons(header[i].value_size);
 
-        write_func(stream, (char *) &header[i].name_size, sizeof(header[i].name_size)); /* size = 1 */
+        write_func(stream, (char *) &header[i].name_size, 1);   /* size = 1 */
         write_func(stream, (char *) header[i].name, header[i].name_size);
-        write_func(stream, (char *) &header[i].value_size, sizeof(header[i].value_size));   /* size = 2 */
+        write_func(stream, (char *) &header[i].value_size, 2);  /* size = 2 */
         write_func(stream, (char *) header[i].value, ntohs(header[i].value_size));
     }
 
     write_func(stream, (char *) &empty_header, 1);
 
-    for (i = 0; i < header_count; i++) {
-        if (header[i].name)
-            free(header[i].name);
-        if (header[i].value)
-            free(header[i].value);
-    }
+    /** Free message size */
+    free(header[CONTENT_LENGTH_HEADER].value);
 
     return JXTA_SUCCESS;
 }

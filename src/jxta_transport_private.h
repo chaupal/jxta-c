@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_private.h,v 1.14 2005/09/13 16:26:02 slowhog Exp $
+ * $Id: jxta_transport_private.h,v 1.17 2005/10/17 20:51:48 slowhog Exp $
  */
 
 #ifndef JXTA_TRANSPORT_PRIVATE_H
@@ -59,6 +59,7 @@
 
 #include "jxta_transport.h"
 #include "jxta_module_private.h"
+#include "jxta_object_type.h"
 
 
 /*
@@ -71,16 +72,26 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
 
 typedef struct _jxta_transport_methods Jxta_transport_methods;
 
-typedef enum Jxta_transport_events
-{
+typedef enum Jxta_transport_event_types {
     JXTA_TRANSPORT_INBOUND_CONNECT = 0
+} Jxta_transport_event_type;
+
+typedef struct _jxta_transport_event {
+    Extends(Jxta_object);
+    Jxta_transport_event_type type;
+    /* peer id of remote peer */
+    Jxta_id *peer_id;
+    /* endpoint address in the welcome msg */
+    Jxta_endpoint_address *dest_addr;
 } Jxta_transport_event;
+
+Jxta_transport_event* jxta_transport_event_new(Jxta_transport_event_type event_type);
 
 struct _jxta_transport_methods {
     Extends(Jxta_module_methods);
@@ -90,7 +101,7 @@ struct _jxta_transport_methods {
     Jxta_endpoint_address *(*publicaddr_get) (Jxta_transport * self);
     JxtaEndpointMessenger *(*messenger_get) (Jxta_transport * self, Jxta_endpoint_address * there);
 
-     Jxta_boolean(*ping) (Jxta_transport * self, Jxta_endpoint_address * there);
+    Jxta_boolean(*ping) (Jxta_transport * self, Jxta_endpoint_address * there);
 
     void (*propagate) (Jxta_transport * self, Jxta_message * msg, const char *service_name, const char *service_params);
 
@@ -103,6 +114,8 @@ struct _jxta_transport {
     Extends(Jxta_module);
 
     /* Implementors put their stuff after self */
+    int metric;
+    Jxta_direction direction;
 };
 
 typedef struct _jxta_transport _jxta_transport;
@@ -118,6 +131,8 @@ extern Jxta_transport *jxta_transport_construct(Jxta_transport * self, Jxta_tran
  * The base transport dtor (Not public, not virtual. Only called by subclassers).
  */
 extern void jxta_transport_destruct(Jxta_transport * self);
+
+int jxta_transport_metric_get(Jxta_transport * me);
 
 #ifdef __cplusplus
 #if 0

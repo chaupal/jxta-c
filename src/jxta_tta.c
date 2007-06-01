@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tta.c,v 1.48 2005/08/18 19:01:52 slowhog Exp $
+ * $Id: jxta_tta.c,v 1.49 2005/10/27 01:55:31 slowhog Exp $
  */
 
 static const char *__log_cat = "TCPADV";
@@ -71,7 +71,7 @@ static const char *__log_cat = "TCPADV";
 #include "jxta_tta.h"
 #include "jxta_log.h"
 #include "jxta_xml_util.h"
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 #ifdef __cplusplus
 extern "C" {

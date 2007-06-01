@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_test_adv.c,v 1.11 2005/08/03 05:51:19 slowhog Exp $
+ * $Id: jxta_test_adv.c,v 1.13 2005/11/14 10:11:29 slowhog Exp $
  */
 
 
@@ -70,6 +70,8 @@
 #include "jxta_errno.h"
 #include "jxta_test_adv.h"
 #include "jxta_xml_util.h"
+#include "jxta_debug.h"
+#include "jxta_range.h"
 
 #define KWD_EXT
 
@@ -101,15 +103,23 @@ extern "C" {
         Jxta_advertisement jxta_advertisement;
         char *Id;
         char *IdAttr;
+        char *IdAttrRange;
         char *IdAttr1;
         char *Type;
         char *Name;
         char *NameAttr1;
         char *NameAttr2;
+        char *GenericNumeric;
+        char *GenericNumericRange;
+        Jxta_hashtable *rangeList;
     };
+
+#define __log_cat "DemoAdv"
 
     static void jxta_test_adv_delete(Jxta_test_adv *);
     static Jxta_test_adv *jxta_test_adv_construct(Jxta_test_adv * self);
+    static void test_adv_process_range(Jxta_test_adv * ad);
+    static char *test_adv_get_range(Jxta_test_adv * adv, const char *elem_attr);
 
     /** Handler functions.  Each of these is responsible for
      * dealing with all of the character data associated with the 
@@ -119,11 +129,15 @@ extern "C" {
      handleTestAdvertisement(void *userdata, const XML_Char * cd, int len) {
         if (userdata || cd || len) {
         }
-        /* Jxta_test_adv * ad = (Jxta_test_adv*)userdata; */ } static void
+        /* Jxta_test_adv * ad = (Jxta_test_adv*)userdata; */
+    }
+    static void
      handleId(void *userdata, const XML_Char * cd, int len) {
         Jxta_test_adv *ad = (Jxta_test_adv *) userdata;
         JString *tmp;
         char *tok;
+        if (0 == len)
+            return;
         if (ad->Id)
             free(ad->Id);
         /* Make room for a final \0 in advance; we'll likely need it. */
@@ -140,18 +154,22 @@ extern "C" {
             ad->Id = NULL;
         }
         JXTA_OBJECT_RELEASE(tmp);
+        test_adv_process_range(ad);
     }
     static void
      handleIdAttr(void *userdata, const XML_Char * cd, int len) {
-        Jxta_test_adv *ad = (Jxta_test_adv *) userdata;
+        Jxta_test_adv *ad;
         JString *tmp;
         char *tok;
-        if (ad->IdAttr)
-            free(ad->IdAttr);
-
-        /* Make room for a final \0 in advance; we'll likely need it. */
+        if (0 == len)
+            return;
+        ad = (Jxta_test_adv *) userdata;
         tmp = jstring_new_1(len + 1);
-
+        if (ad->IdAttr) {
+            jstring_append_2(tmp, ad->IdAttr);
+            free(ad->IdAttr);
+        }
+        /* Make room for a final \0 in advance; we'll likely need it. */
         jstring_append_0(tmp, (char *) cd, len);
         jstring_trim(tmp);
         ad->IdAttr = (char *) jstring_get_string(tmp);
@@ -281,7 +299,90 @@ extern "C" {
         }
         JXTA_OBJECT_RELEASE(tmp);
     }
+    static void
+     handleGenericNumeric(void *userdata, const XML_Char * cd, int len) {
+        Jxta_test_adv *ad = (Jxta_test_adv *) userdata;
+        JString *tmp;
+        char *tok;
+        if (0 == len)
+            return;
+        /* Make room for a final \0 in advance; we'll likely need it. */
+        tmp = jstring_new_1(len + 1);
+        if (ad->GenericNumeric) {
+            jstring_append_2(tmp, ad->GenericNumeric);
+            free(ad->GenericNumeric);
+        }
+        jstring_append_0(tmp, (char *) cd, len);
+        jstring_trim(tmp);
+        ad->GenericNumeric = (char *) jstring_get_string(tmp);
+        if (strlen(ad->GenericNumeric) != 0) {
+            tok = calloc(1, strlen(ad->GenericNumeric) + 1);
+            memmove(tok, ad->GenericNumeric, strlen(ad->GenericNumeric));
+            ad->GenericNumeric = tok;
+        } else {
+            ad->GenericNumeric = NULL;
+        }
+        JXTA_OBJECT_RELEASE(tmp);
+        test_adv_process_range(ad);
+    }
+    static void
+     handleDefault(void *userdata, const XML_Char * cd, int len) {
+        const char *tmpAtt;
 
+        char tmpAttribute[64];
+        Jxta_test_adv *adv;
+        Jxta_advertisement *baseAdv;
+        adv = (Jxta_test_adv *) userdata;
+        baseAdv = &adv->jxta_advertisement;
+        tmpAtt = (const char *) baseAdv->currElement;
+        memset(tmpAttribute, 0x00, 64);
+        test_adv_process_range(adv);
+    }
+
+    static void
+     test_adv_process_range(Jxta_test_adv * ad) {
+        const char *tmpAtt;
+        const char *att;
+        char tmpAttribute[64];
+        int j = 0;
+        char **atts;
+        Jxta_advertisement *baseAdv;
+        Jxta_boolean is_range = FALSE;
+        baseAdv = &ad->jxta_advertisement;
+        tmpAtt = (const char *) baseAdv->currElement;
+        memset(tmpAttribute, 0x00, 64);
+        atts = (char **) baseAdv->atts;
+        while (*atts) {
+            tmpAtt = *atts;
+            if ('r' == *tmpAtt) {
+                att = tmpAtt;
+                if (strcmp(tmpAtt, "range")) {
+                    while (*tmpAtt) {
+                        if (':' == *tmpAtt) {
+                            tmpAtt++;
+                            if (!strcmp(tmpAttribute, "range")) {
+                                j = 0;
+                                memset(tmpAttribute, 0x00, 64);
+                                for (j = 0; j < 63 && *tmpAtt; j++) {
+                                    tmpAttribute[j] = *tmpAtt++;
+                                }
+                                is_range = TRUE;
+                                jxta_test_adv_add_range(ad, baseAdv->currElement, tmpAttribute, *(atts + 1));
+                                att++;
+                                break;
+                            }
+                        }
+                        tmpAttribute[j++] = *(tmpAtt++);
+                    }
+                } else {
+                    is_range = TRUE;
+                    jxta_test_adv_add_range(ad, baseAdv->currElement, NULL, *(atts + 1));
+                    att++;
+                }
+            }
+            atts += 2;
+        }
+    }
     /** The get/set functions represent the public
      * interface to the ad class, that is, the API.
      */
@@ -339,11 +440,14 @@ extern "C" {
 
         return JXTA_SUCCESS;
     }
-    JXTA_DECLARE(Jxta_status) jxta_test_adv_set_IdAttr(Jxta_test_adv * ad, const char *val) {
+    JXTA_DECLARE(Jxta_status) jxta_test_adv_set_IdAttr(Jxta_test_adv * ad, const char *val, const char *range) {
 
         if (val != NULL) {
             ad->IdAttr = calloc(1, strlen(val) + 1);
             strcpy(ad->IdAttr, val);
+            ad->IdAttrRange = calloc(1, strlen(range) + 1);
+            strcpy(ad->IdAttrRange, range);
+            jxta_test_adv_add_range(ad, "testId", "IdAttribute", range);
         } else {
             return JXTA_INVALID_ARGUMENT;
         }
@@ -444,13 +548,43 @@ extern "C" {
 
         return JXTA_SUCCESS;
     }
+    JXTA_DECLARE(Jxta_status) jxta_test_adv_set_GenericNumeric(Jxta_test_adv * ad, const char *val, const char *range) {
+
+        if (val != NULL) {
+            ad->GenericNumeric = calloc(1, strlen(val) + 1);
+            strcpy(ad->GenericNumeric, val);
+            ad->GenericNumericRange = calloc(1, strlen(range) + 1);
+            strcpy(ad->GenericNumericRange, range);
+            jxta_test_adv_add_range(ad, "GenericNumeric", NULL, range);
+        } else {
+            return JXTA_INVALID_ARGUMENT;
+        }
+
+        return JXTA_SUCCESS;
+    }
+
+    JXTA_DECLARE(const char *) jxta_test_adv_get_GenericNumeric(Jxta_test_adv * ad) {
+        return ad->GenericNumeric;
+    }
+
+    JXTA_DECLARE(char *) jxta_test_adv_get_GenericNumeric_string(Jxta_advertisement * ad) {
+        char *res=NULL;
+        Jxta_test_adv *adv = (Jxta_test_adv *) ad;
+        if (NULL != adv->GenericNumeric) {
+            res = strdup(adv->GenericNumeric);
+        }
+        return res;
+    }
 
     char *JXTA_STDCALL jxta_test_adv_handle_parm(Jxta_advertisement * adv, const char *test) {
         if (adv) {
         }
-        printf("got the message back in the advertisement with parm ---- %s \n", (char *) test);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG
+                        , "got the message back in the advertisement with parm ---- %s \n", (char *) test);
         return strdup(test);
     }
+
+
 
     /** Now, build an array of the keyword structs.  Since
      * a top-level, or null state may be of interest, 
@@ -472,6 +606,8 @@ extern "C" {
         {"Name NameAttr2", NameAttr1_, *handleNameAttr2, NULL, jxta_test_adv_handle_parm},
         {"Name NameAttr3", NameAttr1_, *handleNameAttr1, NULL, jxta_test_adv_handle_parm},
         {"Name NameAttr4", NameAttr1_, *handleNameAttr1, NULL, jxta_test_adv_handle_parm},
+        {"GenericNumeric", Null_, *handleGenericNumeric, jxta_test_adv_get_GenericNumeric_string, NULL},
+        {"*", NameAttr1_, *handleDefault, NULL, NULL},
         {NULL, 0, 0, NULL, NULL}
     };
 
@@ -487,13 +623,24 @@ extern "C" {
 
         jstring_append_2(string, "<?xml version=\"1.0\"?>\n");
         jstring_append_2(string, "<!DOCTYPE demo:TestAdvertisement>\n");
-        jstring_append_2(string, "<demo:TestAdvertisement xmlns:demo=\"http://jxta.org\" type=\"demo:TestAdvertisement\">\n");
-        jstring_append_2(string, "<testId IdAttribute=\"");
+        jstring_append_2(string, "<demo:TestAdvertisement xmlns:demo=\"http://jxta.org\"");
+        jstring_append_2(string, " xmlns:range=\"http://jxta.org\" type=\"demo:TestAdvertisement\">\n");
+        jstring_append_2(string, "<testId ");
+        jstring_append_2(string, " IdAttribute=\"");
         jstring_append_2(string, jxta_test_adv_get_IdAttr((Jxta_test_adv *) ad));
-        jstring_append_2(string, "\" ");
+        jstring_append_2(string, "\"");
+        if (NULL == ad->IdAttrRange) {
+            ad->IdAttrRange = test_adv_get_range(ad, "testId IdAttribute");
+        }
+        if (NULL != ad->IdAttrRange) {
+            jstring_append_2(string, " range:IdAttribute=\"");
+            jstring_append_2(string, ad->IdAttrRange);
+            jstring_append_2(string, "\"");
+        }
         jstring_append_2(string, " IdAttr1=\"");
         jstring_append_2(string, jxta_test_adv_get_IdAttr1((Jxta_test_adv *) ad));
-        jstring_append_2(string, "\">");
+        jstring_append_2(string,
+                         "\" range:IdAttr1=\"(-100 :: 300)\" range:testBadOne=\" (xxx, ddd)\" range:testBadOne2=\"(xxx-xddd)\">");
         jstring_append_2(string, jxta_test_adv_get_Id((Jxta_test_adv *) ad));
         jstring_append_2(string, "</testId>\n");
         jstring_append_2(string, "<Type>");
@@ -513,6 +660,20 @@ extern "C" {
         jstring_append_2(string, "\">");
         jstring_append_2(string, jxta_test_adv_get_Name((Jxta_test_adv *) ad));
         jstring_append_2(string, "</Name>\n");
+        jstring_append_2(string, "<Empty1 range=\"(100 :: 200)\" Empty1Attribute=\"empty\">#300</Empty1>\n");
+        jstring_append_2(string, "<Empty2/>\n");
+        jstring_append_2(string, "<GenericNumeric");
+        if (NULL == ad->GenericNumericRange) {
+            ad->GenericNumericRange = test_adv_get_range(ad, "GenericNumeric");
+        }
+        if (NULL != ad->GenericNumericRange) {
+            jstring_append_2(string, " range=\"");
+            jstring_append_2(string, ad->GenericNumericRange);
+            jstring_append_2(string, "\"");
+        }
+        jstring_append_2(string, ">");
+        jstring_append_2(string, ad->GenericNumeric);
+        jstring_append_2(string, "</GenericNumeric>");
         jstring_append_2(string, "</demo:TestAdvertisement>\n");
         *xml = string;
         return JXTA_SUCCESS;
@@ -540,11 +701,23 @@ extern "C" {
         if (ad->IdAttr) {
             free(ad->IdAttr);
         }
+        if (ad->IdAttrRange) {
+            free(ad->IdAttrRange);
+        }
         if (ad->IdAttr1) {
             free(ad->IdAttr1);
         }
         if (ad->NameAttr2) {
             free(ad->NameAttr2);
+        }
+        if (ad->GenericNumeric) {
+            free(ad->GenericNumeric);
+        }
+        if (ad->GenericNumericRange) {
+            free(ad->GenericNumericRange);
+        }
+        if (ad->rangeList) {
+            JXTA_OBJECT_RELEASE(ad->rangeList);
         }
         jxta_advertisement_delete((Jxta_advertisement *) ad);
         memset(ad, 0x00, sizeof(Jxta_test_adv));
@@ -563,7 +736,7 @@ extern "C" {
         ad = (Jxta_test_adv *) calloc(1, sizeof(Jxta_test_adv));
 
 
-        JXTA_OBJECT_INIT((Jxta_advertisement *) ad, jxta_test_adv_delete, 0);
+        JXTA_OBJECT_INIT((Jxta_advertisement *) ad, (JXTA_OBJECT_FREE_FUNC) jxta_test_adv_delete, 0);
         return jxta_test_adv_construct(ad);
 
     }
@@ -606,22 +779,98 @@ extern "C" {
         jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
     }
 
+    JXTA_DECLARE(Jxta_status) jxta_test_adv_add_range(Jxta_test_adv * adv, const char *ename, const char *attr, const char *range) {
+        Jxta_status ret = JXTA_SUCCESS;
+        const char *tmp;
+        Jxta_range *rge;
+        char *full_index_name = NULL;
+
+        tmp = attr;
+        rge = jxta_range_new();
+        if (NULL == tmp) {
+            tmp = "";
+        }
+        jxta_range_add(rge, "demo:TestAdvertisement", ename, attr, range, TRUE);
+
+        if (attr != NULL) {
+            full_index_name = (char *) calloc(1, strlen(attr) + strlen(ename) + 2);
+            sprintf(full_index_name, "%s %s", ename, attr);
+        } else {
+            full_index_name = (char *) calloc(1, strlen(ename) + 1);
+            sprintf(full_index_name, "%s", ename);
+        }
+        if (NULL == adv->rangeList) {
+            adv->rangeList = jxta_hashtable_new(1);
+        }
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG
+               , "Range Published findex: %s e:%s a:%s low: %f high:%f \n", full_index_name, jxta_range_get_element(rge)
+               , jxta_range_get_attribute(rge)
+               , jxta_range_get_low(rge)
+               , jxta_range_get_high(rge));
+        jxta_hashtable_putnoreplace(adv->rangeList, full_index_name, strlen(full_index_name), (Jxta_object *) rge);
+        JXTA_OBJECT_RELEASE(rge);
+        free(full_index_name);
+        return ret;
+    }
+
+    JXTA_DECLARE(Jxta_vector *) jxta_test_adv_get_ranges(Jxta_test_adv * adv) {
+        if (NULL == adv->rangeList)
+            return NULL;
+        return jxta_hashtable_values_get(adv->rangeList);
+    }
+
+    static char *test_adv_get_range(Jxta_test_adv * adv, const char *elem_attr) {
+        Jxta_vector *ranges;
+        Jxta_status status;
+        JString *jElemAttr;
+        unsigned int i;
+        ranges = jxta_test_adv_get_ranges(adv);
+        if (NULL == ranges) return NULL;
+        for (i = 0; i < jxta_vector_size(ranges); i++) {
+            Jxta_range *rge;
+            const char *tmp;
+            status = jxta_vector_get_object_at(ranges, JXTA_OBJECT_PPTR(&rge), i);
+            if (JXTA_SUCCESS != status)
+                continue;
+            jElemAttr = jstring_new_2(jxta_range_get_element(rge));
+            if (NULL != jxta_range_get_attribute(rge)) {
+                jstring_append_2(jElemAttr, " ");
+                jstring_append_2(jElemAttr, jxta_range_get_attribute(rge));
+            }
+            tmp = jstring_get_string(jElemAttr);
+            if (!strcmp(tmp, elem_attr)) {
+                tmp = jxta_range_get_range_string(rge);
+                JXTA_OBJECT_RELEASE(rge);
+                JXTA_OBJECT_RELEASE(jElemAttr);
+                JXTA_OBJECT_RELEASE(ranges);
+                return (char *) tmp;
+            }
+            JXTA_OBJECT_RELEASE(jElemAttr);
+            JXTA_OBJECT_RELEASE(rge);
+        }
+        if (ranges) {
+            JXTA_OBJECT_RELEASE(ranges);
+        }
+        return NULL;
+    }
     void jxta_test_advertisement_idx_delete(Jxta_object * jo) {
         Jxta_index *ji = (Jxta_index *) jo;
         JXTA_OBJECT_RELEASE(ji->element);
         if (ji->attribute != NULL) {
             JXTA_OBJECT_RELEASE(ji->attribute);
         }
-
+        if (ji->range)
+            JXTA_OBJECT_RELEASE(ji->range);
         memset(ji, 0xdd, sizeof(Jxta_index));
         free(ji);
     }
 
     static
-    Jxta_vector *jxta_test_advertisement_return_indexes(const char *idx[]) {
+    Jxta_vector *jxta_test_advertisement_return_indexes(Jxta_test_adv * ad, const char *idx[]) {
         JString *element;
         JString *attribute;
-
+        Jxta_range *rge;
+        char *full_index_name = NULL;
         int i = 0;
         Jxta_vector *ireturn;
         ireturn = jxta_vector_new(0);
@@ -637,8 +886,25 @@ extern "C" {
             jIndex->element = element;
             jIndex->attribute = attribute;
             jIndex->parm = (char *) idx[i + 2];
+            if (jIndex->attribute != NULL) {
+                full_index_name =
+                    (char *) calloc(1, strlen(jstring_get_string(attribute)) + strlen(jstring_get_string(element)) + 2);
+                sprintf(full_index_name, "%s %s", jstring_get_string(element), jstring_get_string(attribute));
+            } else {
+                full_index_name = (char *) calloc(1, strlen(jstring_get_string(element)) + 1);
+                sprintf(full_index_name, "%s", jstring_get_string(element));
+            }
+            if (NULL != ad->rangeList) {
+                if (jxta_hashtable_get(ad->rangeList, full_index_name, strlen(full_index_name), JXTA_OBJECT_PPTR(&rge)) ==
+                    JXTA_SUCCESS) {
+                    jIndex->range = (Jxta_object *) rge;
+                }
+            }
             jxta_vector_add_object_last(ireturn, (Jxta_object *) jIndex);
             JXTA_OBJECT_RELEASE((Jxta_object *) jIndex);
+            free(full_index_name);
+            full_index_name = NULL;
+            rge = NULL;
         }
         return ireturn;
     }
@@ -653,11 +919,11 @@ extern "C" {
             {"testId", NULL, "3"},
             {"testId", "IdAttribute", "4"},
             {"testId", "IdAttr1", "5"},
+            {"GenericNumeric", NULL, NULL},
             {NULL, NULL, NULL}
         };
-        return jxta_test_advertisement_return_indexes(idx[0]);
+        return jxta_test_advertisement_return_indexes((Jxta_test_adv *) dummy, idx[0]);
     }
-
 
 #ifdef STANDALONE
     int

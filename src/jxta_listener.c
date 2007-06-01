@@ -51,12 +51,12 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_listener.c,v 1.36 2005/07/22 03:12:51 slowhog Exp $
+ * $Id: jxta_listener.c,v 1.38 2005/11/14 08:40:48 slowhog Exp $
  */
 
 #include <stdlib.h>
 
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 #include "jxta_debug.h"
 #include "jxta_errno.h"
@@ -91,14 +91,13 @@ static const Jxta_time_diff WAITING_DELAY = 5 * 60 * 1000 * 1000;
 
 static void _listener_stop(Jxta_listener * self)
 {
-    int i;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Stopping listener [%p], signal %u working threads\n", self,
                     self->nbOfThreads);
     self->started = FALSE;
 
-    /* To awake all waiting threads */
-    for (i = self->nbOfThreads; i > 0; i--) {
+    /* To awake only one waiting threads , other waiting threads will be awakened later*/
+    if(self->nbOfThreads > self->nbOfBusyThreads) {
         queue_enqueue(self->queue, NULL);
     }
 
@@ -326,6 +325,11 @@ static void *APR_THREAD_FUNC listener_thread_main(apr_thread_t * thread, void *a
     --self->nbOfThreads;
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Listener[%p] thread stopped, number of alive threads: %d\n", self,
                     self->nbOfThreads);
+
+    if ((!self->started) && (self->nbOfThreads > self->nbOfBusyThreads)) {    
+        queue_enqueue(self->queue, NULL);
+    }
+
     apr_thread_mutex_unlock(self->mutex);
 
     apr_thread_exit(thread, 0);

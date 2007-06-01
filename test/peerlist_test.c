@@ -50,14 +50,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: peerlist_test.c,v 1.9 2005/03/22 16:23:47 bondolo Exp $
+ * $Id: peerlist_test.c,v 1.11 2005/11/05 05:47:34 slowhog Exp $
  */
 
 
 #include "peerlist.h"
 #include "jxta_peer.h"
 #include "jxta.h"
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 
 /** An example function.  A filter for returning the 
@@ -67,68 +67,67 @@
  * lomax@jxta.org FIXME this function should do something...
  */
 
-Jxta_boolean
-get_Name(Jxta_peer * c) {
-  return TRUE;
+Jxta_boolean get_Name(Jxta_peer * c)
+{
+    return TRUE;
 }
 
 
 
 
-Jxta_boolean 
-peer_test (void) {
+Jxta_boolean peer_test(void)
+{
 
-  Jxta_boolean passed = FALSE;
-  Jxta_peer* c1;
-  Jxta_peer* c2;
-  Jxta_peer* c3;
-  Jxta_peer* c4;
-  Jxta_peer* c5;
-  Jxta_peer* c6;
+    Jxta_boolean passed = FALSE;
+    Jxta_peer *c1;
+    Jxta_peer *c2;
+    Jxta_peer *c3;
+    Jxta_peer *c4;
+    Jxta_peer *c5;
+    Jxta_peer *c6;
 
-  Peerlist * rdvlist;
-  Peerlist * cl = peerlist_new();
+    Peerlist *rdvlist;
+    Peerlist *cl = peerlist_new();
 
-  c1 = jxta_peer_new();
-  c2 = jxta_peer_new();
-  c3 = jxta_peer_new();
-  c4 = jxta_peer_new();
-  c5 = jxta_peer_new();
-  c6 = jxta_peer_new();
+    c1 = jxta_peer_new();
+    c2 = jxta_peer_new();
+    c3 = jxta_peer_new();
+    c4 = jxta_peer_new();
+    c5 = jxta_peer_new();
+    c6 = jxta_peer_new();
 
-  peerlist_add_peer(cl,c1);
-  peerlist_add_peer(cl,c2);
-  peerlist_add_peer(cl,c3);
-  peerlist_add_peer(cl,c4);
-  peerlist_add_peer(cl,c5);
-  peerlist_add_peer(cl,c6);
+    peerlist_add_peer(cl, c1);
+    peerlist_add_peer(cl, c2);
+    peerlist_add_peer(cl, c3);
+    peerlist_add_peer(cl, c4);
+    peerlist_add_peer(cl, c5);
+    peerlist_add_peer(cl, c6);
 
-  printf("Original list:\n");
-  peerlist_print(cl);
-  rdvlist = peerlist_filter(cl,(Peer_Filter_Func) get_Name);
-  printf("Filtered list:\n");
-  peerlist_print(rdvlist);
+    printf("Original list:\n");
+    peerlist_print(cl);
+    rdvlist = peerlist_filter(cl, (Peer_Filter_Func) get_Name);
+    printf("Filtered list:\n");
+    peerlist_print(rdvlist);
 
-  peerlist_delete(cl);
+    peerlist_delete(cl);
 
-  return passed;
+    return passed;
 }
 
 
 
 
 #ifdef STANDALONE
-int
-main (int argc, char ** argv) {
+int main(int argc, char **argv)
+{
 
-  if (peer_test()) {
-    printf("Passed peerlist_test\n");
-    return TRUE;
-  } else {
-    printf("Failed peerlist_test\n");
-    return FALSE;
-  }    
+    if (peer_test()) {
+        printf("Passed peerlist_test\n");
+        return TRUE;
+    } else {
+        printf("Failed peerlist_test\n");
+        return FALSE;
+    }
 
 }
 #endif
-

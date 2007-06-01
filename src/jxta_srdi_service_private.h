@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi_service_private.h,v 1.3 2005/06/13 18:12:42 exocetrick Exp $
+ * $Id: jxta_srdi_service_private.h,v 1.10 2005/11/25 23:53:35 mmx2005 Exp $
  */
 
 
@@ -61,7 +61,7 @@
 #include "jxta_object_type.h"
 #include "jxta_id.h"
 #include "jxta_peer.h"
-#include "jxta_peerview.h"
+#include "jxta_peerview_priv.h"
 #include "jxta_srdi_service.h"
 #include "jxta_service_private.h"
 /****************************************************************
@@ -71,16 +71,14 @@
  **
  ****************************************************************/
 
-
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
 struct _jxta_srdi_service {
     Extends(_jxta_service);
-
 };
 
 typedef struct _jxta_srdi_service_methods Jxta_srdi_service_methods;
@@ -97,21 +95,24 @@ struct _jxta_srdi_service_methods {
     Jxta_status(*forwardQuery_peer) (Jxta_srdi_service * self,
                                      Jxta_resolver_service * resolver, Jxta_id * peer, ResolverQuery * query);
 
-
     Jxta_status(*forwardQuery_peers) (Jxta_srdi_service * self,
                                       Jxta_resolver_service * resolver, Jxta_vector * peers, ResolverQuery * query);
-
 
     Jxta_status(*forwardQuery_threshold) (Jxta_srdi_service * self,
                                           Jxta_resolver_service * resolver,
                                           Jxta_vector * peers, ResolverQuery * query, int threshold);
 
-    Jxta_peer *(*getReplicaPeer) (Jxta_srdi_service * self, Jxta_resolver_service * resolver, Jxta_object * peerview,
+    Jxta_peer *(*getReplicaPeer) (Jxta_srdi_service * self, Jxta_resolver_service * resolver, Jxta_peerview * peerview,
                                   const char *expression);
 
-     Jxta_status(*forwardSrdiMessage) (Jxta_srdi_service * self, Jxta_resolver_service * resolver, Jxta_peer * peer,
-                                       Jxta_id * srcPid, const char *primaryKey, const char *secondarykey, const char *value,
-                                       Jxta_expiration_time expiration);
+    Jxta_peer *(*getNumericReplica) (Jxta_srdi_service * self, Jxta_resolver_service * resolver, Jxta_peerview * peerview,
+				     Jxta_object *rge, const char * value);
+    
+    Jxta_status(*forwardSrdiMessage) (Jxta_srdi_service * self, Jxta_resolver_service * resolver, Jxta_peer * peer,
+				      Jxta_id * srcPid, const char *primaryKey, const char *secondarykey, const char *value,
+				      Jxta_expiration_time expiration);
+
+    Jxta_vector * (*searchSrdi)(Jxta_srdi_service *me, const char * handler, const char *ns, const char *attr, const char *val);
 };
 
 /**
@@ -121,7 +122,7 @@ struct _jxta_srdi_service_methods {
 extern void jxta_srdi_service_construct(Jxta_srdi_service * service, Jxta_srdi_service_methods * methods);
 
 /**
- * The base rsesolver service dtor (Not public, not virtual. Only called by
+ * The base resolver service dtor (Not public, not virtual. Only called by
  * subclassers). We just pass it along.
  */
 extern void jxta_srdi_service_destruct(Jxta_srdi_service * service);

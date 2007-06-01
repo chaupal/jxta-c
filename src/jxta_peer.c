@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peer.c,v 1.17 2005/07/22 03:12:52 slowhog Exp $
+ * $Id: jxta_peer.c,v 1.18 2005/10/27 01:55:27 slowhog Exp $
  */
 
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 #include "jxta_types.h"
 #include "jxta_peer.h"
 #include "jxta_service.h"

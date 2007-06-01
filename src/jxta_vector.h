@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_vector.h,v 1.9 2005/08/31 22:50:16 bondolo Exp $
+ * $Id: jxta_vector.h,v 1.10 2005/09/21 21:16:52 slowhog Exp $
  */
 
 
@@ -74,12 +74,14 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 /**
  * Jxta_vector is the public type of the vector
- **/ typedef struct _jxta_vector Jxta_vector;
+ **/
+typedef struct _jxta_vector Jxta_vector;
 
 
 

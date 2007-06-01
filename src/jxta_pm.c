@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pm.c,v 1.31 2005/08/19 02:39:42 exocetrick Exp $
+ * $Id: jxta_pm.c,v 1.33 2005/11/14 10:11:27 slowhog Exp $
  */
 
 static const char *__log_cat = "PropMsg";
@@ -62,7 +62,7 @@ static const char *__log_cat = "PropMsg";
 #include "jxta_errno.h"
 #include "jxta_log.h"
 #include "jxta_xml_util.h"
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -329,7 +329,7 @@ JXTA_DECLARE(Jxta_status) RendezVousPropagateMessage_get_xml(RendezVousPropagate
         JString *path;
         Jxta_status res;
 
-        res = jxta_vector_get_object_at(ad->path, (Jxta_object **) & path, i);
+        res = jxta_vector_get_object_at(ad->path, JXTA_OBJECT_PPTR(&path), i);
         if ((res == JXTA_SUCCESS) && (path != NULL)) {
             jstring_append_2(string, "<Path>");
             jstring_append_2(string, jstring_get_string(path));

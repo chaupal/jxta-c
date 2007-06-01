@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_service.h,v 1.10 2005/06/16 23:11:42 slowhog Exp $
+ * $Id: jxta_endpoint_service.h,v 1.12 2005/09/29 22:21:34 bondolo Exp $
  */
 
 
@@ -72,9 +72,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 #define  JXTA_ENDPOINT_SERVICE_NAME "EndpointService"
 /**
     XXX 20050409 bondolo I'm not sure why this is public.
@@ -95,6 +96,19 @@ typedef int (*JxtaEndpointFilter) (Jxta_message * msg, void *arg);
  * @param msg (Ptr to) The message to be delivered.
  */
 JXTA_DECLARE(void) jxta_endpoint_service_demux(Jxta_endpoint_service * service, Jxta_message * msg);
+
+/*
+ * Delivers the given message to its designated listener, according to
+ * the message's destination and the listeners registered with this
+ * endpoint object.
+ *
+ * @param service Handle of the endpoint service object to which the
+ * operation is applied.
+ * @param dest The destination address of the message.
+ * @param msg The message to be delivered.
+ */
+JXTA_DECLARE(void) jxta_endpoint_service_demux_addr(Jxta_endpoint_service * service, Jxta_endpoint_address * dest,
+                                                    Jxta_message * msg);
 
 /*
  * Registers a transport protocol object with this endpoint service.

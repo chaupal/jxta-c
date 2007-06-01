@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pm.h,v 1.9 2005/08/03 05:51:18 slowhog Exp $
+ * $Id: jxta_pm.h,v 1.10 2005/09/21 21:16:49 slowhog Exp $
  */
 
 
@@ -66,9 +66,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _RendezVousPropagateMessage RendezVousPropagateMessage;
 
 JXTA_DECLARE(RendezVousPropagateMessage *) RendezVousPropagateMessage_new(void);

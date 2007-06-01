@@ -51,27 +51,12 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_builtinmodules.c,v 1.16 2005/07/22 03:12:50 slowhog Exp $
+ * $Id: jxta_builtinmodules.c,v 1.17 2005/09/29 07:27:50 slowhog Exp $
  */
 
 #include <stddef.h>
 
 #include "jxta_builtinmodules_private.h"
-
-extern void *jxta_endpoint_service_new_instance(void);
-extern void *jxta_rdv_service_new_instance(void);
-extern void *jxta_resolver_service_ref_new_instance(void);
-extern void *jxta_discovery_service_ref_new_instance(void);
-extern void *jxta_transport_http_new_instance(void);
-extern void *jxta_transport_tcp_new_instance(void);
-extern void *jxta_netpg_new_instance(void);
-extern void *jxta_stdpg_new_instance(void);
-extern void *jxta_router_client_new_instance(void);
-extern void *jxta_pipe_service_new_instance(void);
-extern void *jxta_membership_service_null_new_instance(void);
-extern void *jxta_peerinfo_service_new_instance(void);
-extern void *jxta_transport_relay_new_instance(void);
-extern void *jxta_srdi_service_ref_new_instance(void);
 
 /*
  * Placeholder for the real table, generated at link time (one day).

@@ -50,18 +50,18 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object_priv.h,v 1.10 2005/07/22 03:12:52 slowhog Exp $
+ * $Id: jxta_object_priv.h,v 1.17 2005/11/13 17:09:03 lankes Exp $
  */
 
 
 #ifndef __JXTA_OBJECTPRIV_H__
 #define  __JXTA_OBJECTPRIV_H__
 
-
+JXTA_DECLARE_DATA int _jxta_return;
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
 /**
@@ -89,7 +89,9 @@ extern "C" {
  *
  * Those defines should probably be into a more generic configuration
  * file. To be fixed. lomax@jxta.org
- **//**
+**/
+
+/**
  * This is used as a marker to see if an object has been initialized
  * or not. Any integer would work, but, in order to limit the risk
  * of a corruption of the data that might look fine, a "random" but yet
@@ -102,7 +104,7 @@ extern "C" {
  * logging an error message if that not the case (maybe a stronger
  * behavior on failure should happen).
  * Comment out the following line in order to disable that feature.
- **/
+ */
 #define JXTA_OBJECT_CHECK_INITIALIZED_ENABLE
 #define JXTA_OBJECT_CHECK_UNINITIALIZED_ENABLE
 #ifdef JXTA_OBJECT_CHECK_INITIALIZED_ENABLE
@@ -121,13 +123,18 @@ extern "C" {
 #define JXTA_OBJECT_NAME_MAYBE
 #endif
 /**
+ * The default behaviour is to NOT check if objects are valid.  
  * When defined, the macros JXTA_OBJECT_CHECK_VALID checks
  * if the object still has a positive reference count.
- **/
-#define JXTA_OBJECT_CHECK_VALID_ENABLE
+ */
+#ifndef JXTA_OBJECT_CHECKING_ENABLE
+#define JXTA_OBJECT_CHECKING_ENABLE 0
+#endif
+
 /**
  * This is the structure that is added to the begining of each object.
- **/ struct _jxta_object {
+ **/
+struct _jxta_object {
     unsigned int _bitset;
     JXTA_OBJECT_FREE_FUNC _free;
     void *_freeCookie;
@@ -137,7 +144,7 @@ extern "C" {
 #ifdef JXTA_OBJECT_CHECK_INITIALIZED_ENABLE
     unsigned int _initialized;
 #endif
-    int _refCount;              /* signed int to better detect over-release */
+    int _refCount;  /* signed int to better detect over-release */
 };
 
 typedef struct _jxta_object _jxta_object;
@@ -210,17 +217,17 @@ void *JXTA_OBJECT_GET_FREECOOKIE(Jxta_object * x);
 /**
  * Helper macros
  **/
-#define JXTA_OBJECT(x)                    ((Jxta_object*) (x))
+#define JXTA_OBJECT(x)                    ((Jxta_object*)(void*)(x))
 
 #define JXTA_OBJECT_GET_FREE_FUNC(x)      (JXTA_OBJECT(x)->_free)
 
 #define JXTA_OBJECT_GET_FREECOOKIE(x)     (JXTA_OBJECT(x)->_freeCookie)
 
-#ifdef JXTA_OBJECT_CHECK_VALID_ENABLE
+#if JXTA_OBJECT_CHECKING_ENABLE
 JXTA_DECLARE(Jxta_boolean) _jxta_object_check_valid(Jxta_object * obj, const char *file, int line);
 #define JXTA_OBJECT_CHECK_VALID(obj) _jxta_object_check_valid( JXTA_OBJECT(obj), __FILE__, __LINE__ )
 #else
-#define JXTA_OBJECT_CHECK_VALID(obj) (TRUE)
+#define JXTA_OBJECT_CHECK_VALID(obj) (_jxta_return = 1)
 #endif
 
 JXTA_DECLARE(void *) _jxta_object_init(Jxta_object *, unsigned int flags, JXTA_OBJECT_FREE_FUNC, void *, const char *, int);

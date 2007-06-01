@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_test.c,v 1.19 2005/08/03 08:10:22 lankes Exp $
+ * $Id: jxta_resolver_test.c,v 1.23 2005/10/27 09:44:56 lankes Exp $
  */
 
 #include "jxta.h"
@@ -59,77 +59,67 @@
 #include "jxta_peergroup.h"
 #include "jxta_endpoint_service.h"
 #include "jxta_object.h"
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 #ifndef WIN32
 #include <unistd.h>
 #else
-static char*	optarg = NULL;		// global argument pointer
-static int		optind = 0; 		// global argv index
-
-static int getopt(int argc, char* argv[], char* optstring)
+static char *optarg = NULL;     /* global argument pointer */
+static int optind = 0;  /* global argv index */
+static int getopt(int argc, char *argv[], char *optstring)
 {
-	static char*	next = NULL;
-	char			c;
-	char*			cp = NULL;
+    static char *next = NULL;
+    char c;
+    char *cp = NULL;
 
-	if (optind == 0)
-		next = NULL;
+    if (optind == 0)
+        next = NULL;
 
-	optarg = NULL;
+    optarg = NULL;
 
-	if (next == NULL || *next == '\0')
-	{
-		if (optind == 0)
-			optind++;
+    if (next == NULL || *next == '\0') {
+        if (optind == 0)
+            optind++;
 
-		if (optind >= argc || argv[optind][0] != '-' || argv[optind][1] == '\0')
-		{
-			optarg = NULL;
-			if (optind < argc)
-				optarg = argv[optind];
-			return EOF;
-		}
+        if (optind >= argc || argv[optind][0] != '-' || argv[optind][1] == '\0') {
+            optarg = NULL;
+            if (optind < argc)
+                optarg = argv[optind];
+            return EOF;
+        }
 
-		if (strcmp(argv[optind], "--") == 0)
-		{
-			optind++;
-			optarg = NULL;
-			if (optind < argc)
-				optarg = argv[optind];
-			return EOF;
-		}
+        if (strcmp(argv[optind], "--") == 0) {
+            optind++;
+            optarg = NULL;
+            if (optind < argc)
+                optarg = argv[optind];
+            return EOF;
+        }
 
-		next = argv[optind];
-		next++;	
-		optind++;
-	}
+        next = argv[optind];
+        next++;
+        optind++;
+    }
 
-	c = *next++;
-	cp = strchr(optstring, c);
+    c = *next++;
+    cp = strchr(optstring, c);
 
-	if (cp == NULL || c == ':')
-		return '?';
+    if (cp == NULL || c == ':')
+        return '?';
 
-	cp++;
-	if (*cp == ':')
-	{
-		if (*next != '\0')
-		{
-			optarg = next;
-			next = NULL;
-		}
-		else if (optind < argc)
-		{
-			optarg = argv[optind];
-			optind++;
-		}
-		else
-		{
-			return '?';
-		}
-	}
+    cp++;
+    if (*cp == ':') {
+        if (*next != '\0') {
+            optarg = next;
+            next = NULL;
+        } else if (optind < argc) {
+            optarg = argv[optind];
+            optind++;
+        } else {
+            return '?';
+        }
+    }
 
-	return c;
+    return c;
 }
 #endif
 
@@ -138,89 +128,90 @@ static int getopt(int argc, char* argv[], char* optstring)
  * Resolver test
  *
  */
-static void rs_wait(int msec){
-        apr_sleep ((Jpr_interval_time) msec);
+static void rs_wait(int msec)
+{
+    apr_sleep((Jpr_interval_time) msec);
 }
 
 int main(int argc, char *argv[])
 {
-    Jxta_PG* pg;
-    Jxta_resolver_service* resolver;
-    Jxta_rdv_service* rendezvous;
+    Jxta_PG *pg;
+    Jxta_resolver_service *resolver;
+    Jxta_rdv_service *rendezvous;
     Jxta_status status;
-    Jxta_endpoint_address* addr = NULL;
+    Jxta_endpoint_address *addr = NULL;
     FILE *testfile;
     int c;
-    JString * rdv = jstring_new_0(); 
-    JString * rq= jstring_new_0();
-    ResolverQuery * query;
-    	while (1) {
-		c = getopt(argc,argv,"q:r:");
-		if (c == -1) {
-			break;
-		}
-		switch (c) {
-		case 'r' :
-			jstring_append_2(rdv,optarg);
-			break;
+    JString *rdv = jstring_new_0();
+    JString *rq = jstring_new_0();
+    ResolverQuery *query;
+    while (1) {
+        c = getopt(argc, argv, "q:r:");
+        if (c == -1) {
+            break;
+        }
+        switch (c) {
+        case 'r':
+            jstring_append_2(rdv, optarg);
+            break;
 
-		case 'q' : jstring_append_2(rq,optarg);
-			break;
+        case 'q':
+            jstring_append_2(rq, optarg);
+            break;
 
-		default: fprintf(stderr,"getopt error 0%o \n",c);
-		}
-	}
+        default:
+            fprintf(stderr, "getopt error 0%o \n", c);
+        }
+    }
 
-   if(argc < 2)
-     {
-       fprintf(stderr,"jxta_resolver_test usage: jxta_resolver_test -q <query.xml> -r 127.0.0.1:9700\n");
-       return -1;
-     }
+    if (argc < 2) {
+        fprintf(stderr, "jxta_resolver_test usage: jxta_resolver_test -q <query.xml> -r 127.0.0.1:9700\n");
+        return -1;
+    }
 
     jxta_initialize();
 
     status = jxta_PG_new_netpg(&pg);
     if (status != JXTA_SUCCESS) {
-	fprintf(stderr,"jxta_resolver_test: jxta_PG_netpg_new failed with error: %ld\n", status);
+        fprintf(stderr, "jxta_resolver_test: jxta_PG_netpg_new failed with error: %ld\n", status);
     }
-    
-    jxta_PG_get_resolver_service(pg, &resolver);			
+
+    jxta_PG_get_resolver_service(pg, &resolver);
     jxta_PG_get_rendezvous_service(pg, &rendezvous);
     /* read in the query */
-    testfile = fopen (jstring_get_string(rq), "r");
+    testfile = fopen(jstring_get_string(rq), "r");
+    if (NULL == testfile)
+        return -1;
     query = jxta_resolver_query_new();
     jxta_resolver_query_parse_file(query, testfile);
     fclose(testfile);
-    
+
     {
-     Jxta_peer* peer = jxta_peer_new();
-                          addr = jxta_endpoint_address_new2 ("http",
-							      jstring_get_string(rdv),
-							      NULL,
-							      NULL);
-     jxta_peer_set_address (peer, addr);
-     jxta_rdv_service_add_peer (rendezvous, peer);
-     JXTA_OBJECT_RELEASE (addr);
-     JXTA_OBJECT_RELEASE (peer);
+        Jxta_peer *peer = jxta_peer_new();
+        addr = jxta_endpoint_address_new_2("http", jstring_get_string(rdv), NULL, NULL);
+        jxta_peer_set_address(peer, addr);
+        jxta_rdv_service_add_peer(rendezvous, peer);
+        JXTA_OBJECT_RELEASE(addr);
+        JXTA_OBJECT_RELEASE(peer);
     }
-    
-    
-    
-    fprintf(stdout,"sending %s \n",jstring_get_string(rq));
+
+
+
+    fprintf(stdout, "sending %s \n", jstring_get_string(rq));
     /* use null id to begin with. Support real addresses later */
-    status=jxta_resolver_service_sendQuery(resolver,query, jxta_id_nullID);
+    status = jxta_resolver_service_sendQuery(resolver, query, jxta_id_nullID);
     if (status != JXTA_SUCCESS) {
-	fprintf(stderr,"jxta_resolver_test: failed to send query: %ld\n", status);
-    } else  {
-	fprintf(stdout,"jxta_resolver_test: query %s sent to %s\n", jstring_get_string(rq), jstring_get_string(rdv));
+        fprintf(stderr, "jxta_resolver_test: failed to send query: %ld\n", status);
+    } else {
+        fprintf(stdout, "jxta_resolver_test: query %s sent to %s\n", jstring_get_string(rq), jstring_get_string(rdv));
     }
 #ifdef WIN32
-	Sleep(10000);
+    Sleep(10000);
 #else
     sleep(10);
 #endif
     JXTA_OBJECT_RELEASE(resolver);
-    jxta_module_stop((Jxta_module*) pg);
+    jxta_module_stop((Jxta_module *) pg);
     JXTA_OBJECT_RELEASE(pg);
 
     jxta_terminate();

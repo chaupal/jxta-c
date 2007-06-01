@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_apa.h,v 1.7 2005/08/03 05:51:14 slowhog Exp $
+ * $Id: jxta_apa.h,v 1.9 2005/11/11 21:58:23 slowhog Exp $
  */
 
 
@@ -58,13 +58,15 @@
 #define JXTA_ACCESSPOINTADVERTISEMENT_H__
 
 #include "jxta_advertisement.h"
+#include "jxta_endpoint_address.h"
 
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _jxta_AccessPointAdvertisement Jxta_AccessPointAdvertisement;
 
 JXTA_DECLARE(Jxta_AccessPointAdvertisement *) jxta_AccessPointAdvertisement_new(void);
@@ -81,7 +83,10 @@ JXTA_DECLARE(void) jxta_AccessPointAdvertisement_set_PID(Jxta_AccessPointAdverti
 
 JXTA_DECLARE(Jxta_vector *) jxta_AccessPointAdvertisement_get_EndpointAddresses(Jxta_AccessPointAdvertisement *);
 JXTA_DECLARE(void) jxta_AccessPointAdvertisement_set_EndpointAddresses(Jxta_AccessPointAdvertisement *, Jxta_vector *);
- 
+
+JXTA_DECLARE(Jxta_status) jxta_AccessPointAdvertisement_add_EndpointAddress(Jxta_AccessPointAdvertisement *me, 
+                                                                            Jxta_endpoint_address *ea);
+
 JXTA_DECLARE(Jxta_vector *) jxta_AccessPointAdvertisement_get_indexes(Jxta_advertisement *);
 
 #ifdef __cplusplus

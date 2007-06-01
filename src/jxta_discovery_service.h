@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_discovery_service.h,v 1.8 2005/08/29 22:49:04 slowhog Exp $
+ * $Id: jxta_discovery_service.h,v 1.9 2005/11/13 17:43:03 lankes Exp $
  */
 
 /**
@@ -150,7 +150,11 @@ extern "C" {
 #define DISC_PEER    0
 #define DISC_GROUP   1
 #define DISC_ADV     2
+#ifdef WIN32
+#define DEFAULT_LIFETIME (Jxta_expiration_time) (1000i64 * 60i64 * 60i64 * 24i64 * 365i64)
+#else
 #define DEFAULT_LIFETIME (Jxta_expiration_time) (1000L * 60L * 60L * 24L * 365L)
+#endif
 #define DEFAULT_EXPIRATION (Jxta_expiration_time)  (1000L * 60L * 60L * 2L)
 typedef struct _jxta_discovery_service Jxta_discovery_service;
 

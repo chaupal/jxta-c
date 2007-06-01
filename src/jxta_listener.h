@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_listener.h,v 1.5 2005/06/16 23:11:43 slowhog Exp $
+ * $Id: jxta_listener.h,v 1.7 2005/11/16 20:10:40 lankes Exp $
  */
 
 
@@ -89,17 +89,19 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 /**
  * Jxta_listener is the public type of the vector
- **/ typedef struct _jxta_listener Jxta_listener;
+ **/
+typedef struct _jxta_listener Jxta_listener;
 
 /**
  ** Prototype of the user function that eventually processes the event.
  **/
-typedef void (*Jxta_listener_func) (Jxta_object * obj, void *arg);
+typedef void (JXTA_STDCALL *Jxta_listener_func) (Jxta_object * obj, void *arg);
 
 
 /************************************************************************

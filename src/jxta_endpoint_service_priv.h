@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_service_priv.h,v 1.1 2005/09/13 16:26:02 slowhog Exp $
+ * $Id: jxta_endpoint_service_priv.h,v 1.3 2005/09/23 18:06:47 slowhog Exp $
  */
 
 #ifndef JXTA_ENDPOINT_SERVICE_PRIV_H
@@ -62,7 +62,7 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
 
@@ -72,10 +72,9 @@ extern "C" {
  * 
  * @param me Handle of the endpoint service object to which the
  * operation is applied.
- * @param Jxta_transport_event e the transport event type
- * @param data the extra data for the event type
+ * @param Jxta_transport_event* e pointer to the Jxta_transport_event object
  */
-void jxta_endpoint_service_transport_event(Jxta_endpoint_service *me, Jxta_transport_event e, void *data);
+void jxta_endpoint_service_transport_event(Jxta_endpoint_service * me, Jxta_transport_event *e);
 
 #ifdef __cplusplus
 #if 0

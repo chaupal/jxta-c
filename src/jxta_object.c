@@ -50,18 +50,16 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object.c,v 1.45 2005/08/18 19:01:50 slowhog Exp $
+ * $Id: jxta_object.c,v 1.49 2005/11/17 01:18:32 slowhog Exp $
  */
 
 static const char *__log_cat = "OBJECT";
 
 #include <stdlib.h>
 
-#include "jxtaapr.h"
-
 #include "jxta_log.h"
 #include "jxta_object.h"
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 #define MAX_REF_COUNT 10000
 
@@ -211,9 +209,7 @@ static int jxta_object_increment_refcount(Jxta_object * obj)
 {
     int count;
 
-    jxta_object_mutexGet();
     count = ++obj->_refCount;
-    jxta_object_mutexRel();
     return count;
 }
 
@@ -221,9 +217,7 @@ static int jxta_object_decrement_refcount(Jxta_object * obj)
 {
     int count;
 
-    jxta_object_mutexGet();
     count = --obj->_refCount;
-    jxta_object_mutexRel();
     return count;
 }
 
@@ -447,26 +441,33 @@ JXTA_DECLARE(int) _jxta_object_release(Jxta_object * obj, const char *file, int 
 {
     int newRefCount = -1;
 
+    if (NULL == obj) {
+        return -1;
+    }
+
     jxta_object_mutexGet();
 
-    if (_jxta_object_check_valid(obj, file, line)) {
-        if (0 == (obj->_bitset & JXTA_OBJECT_IMMUTABLE_FLAG)) {
-            newRefCount = jxta_object_decrement_refcount(JXTA_OBJECT(obj));
+    if (!JXTA_OBJECT_CHECK_VALID(obj)) {
+        jxta_object_mutexRel();
+        return newRefCount;
+    }
 
-            if (newRefCount == 0) {
+    if (0 == (obj->_bitset & JXTA_OBJECT_IMMUTABLE_FLAG)) {
+        newRefCount = jxta_object_decrement_refcount(JXTA_OBJECT(obj));
+
+        if (newRefCount == 0) {
 #ifdef JXTA_OBJECT_TRACKER
-                count_freed(obj);
+            count_freed(obj);
 #endif
 
-                jxta_object_set_uninitialized(obj, file, line);
-            }
-        } else {
-            newRefCount = 1;
+            jxta_object_set_uninitialized(obj, file, line);
         }
+    } else {
+        newRefCount = 1;
+    }
 
-        if (0 != (obj->_bitset & JXTA_OBJECT_SHARE_TRACK)) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "[%s:%d] RELEASE obj[%p]=%d\n", file, line, obj, newRefCount);
-        }
+    if (0 != (obj->_bitset & JXTA_OBJECT_SHARE_TRACK)) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "[%s:%d] RELEASE obj[%p]=%d\n", file, line, obj, newRefCount);
     }
 
     jxta_object_mutexRel();

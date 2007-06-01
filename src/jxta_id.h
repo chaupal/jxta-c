@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_id.h,v 1.7 2005/07/22 03:12:51 slowhog Exp $
+ * $Id: jxta_id.h,v 1.9 2005/11/06 00:59:50 slowhog Exp $
  */
 
 #ifndef JXTAID_H
@@ -64,9 +64,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 /**
 * JXTA ID TYPES
 **/
@@ -74,7 +75,8 @@ extern "C" {
 /**
 * Jxta ids are opaque Jxta_objects. You can use JXTA_OBJECT_RELEASE to
 * free them.
-**/ typedef const struct _jxta_id Jxta_id;
+**/
+typedef const struct _jxta_id Jxta_id;
 
 typedef Jxta_id Jxta_CID;
 typedef Jxta_id Jxta_PGID;
@@ -293,6 +295,25 @@ JXTA_DECLARE(Jxta_status) jxta_id_moduleclassid_new_2(Jxta_id ** mcid, Jxta_id *
 * @return returns JXTA_SUCCESS if successful, otherwise (unlikely) errors.
 **/
 JXTA_DECLARE(Jxta_status) jxta_id_modulespecid_new(Jxta_id ** msid, Jxta_id * mcid);
+
+/**
+* Constructs a new jxta id from a string.
+* 
+* @param id where to store the new id.
+* @param id_str  pointer to the string containing the textual representation of the ID.
+* @param len  number of characters in the string
+* @return returns JXTA_SUCCESS if successful, otherwise errors.
+**/
+JXTA_DECLARE(Jxta_status) jxta_id_from_str(Jxta_id ** id, const char * id_str, size_t len);
+
+/**
+* Constructs a new jxta id from a NULL terminate string.
+* 
+* @param id where to store the new id.
+* @param id_cstr  string containing the textual representation of the ID.
+* @return returns JXTA_SUCCESS if successful, otherwise errors.
+**/
+JXTA_DECLARE(Jxta_status) jxta_id_from_cstr(Jxta_id ** id, const char * id_cstr);
 
 /**
 * Constructs a new jxta id from a jstring.

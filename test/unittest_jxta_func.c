@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: unittest_jxta_func.c,v 1.7 2005/04/17 14:22:20 lankes Exp $
+ * $Id: unittest_jxta_func.c,v 1.8 2005/09/23 20:07:16 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -64,113 +64,107 @@
 
 #include "unittest_jxta_func.h"
 
-Jxta_boolean 
-run_testfunctions(const struct _funcs testfunc[],
-		  int * tests_run,
-		  int * tests_passed,
-		  int * tests_failed){
-  Jxta_boolean passed = TRUE;
-  int i = 0;
+Jxta_boolean run_testfunctions(const struct _funcs testfunc[], int *tests_run, int *tests_passed, int *tests_failed)
+{
+    Jxta_boolean passed = TRUE;
+    int i = 0;
 
-  while (testfunc[i].test != NULL) {
-     *tests_run += 1;
-      if (testfunc[i].test()){
-	fprintf(stdout,"Passed test_%s state test\n",testfunc[i].states);
-	*tests_passed += 1;
-      }
-      else
-	{
-	  fprintf(stdout,"Failed test_%s state test\n",testfunc[i].states);
-	  passed = FALSE;
-	  *tests_failed += 1;
-	}
-      i++;
+    while (testfunc[i].test != NULL) {
+        *tests_run += 1;
+        if (testfunc[i].test()) {
+            fprintf(stdout, "Passed test_%s state test\n", testfunc[i].states);
+            *tests_passed += 1;
+        } else {
+            fprintf(stdout, "Failed test_%s state test\n", testfunc[i].states);
+            passed = FALSE;
+            *tests_failed += 1;
+        }
+        i++;
     }
 
-  return passed;
+    return passed;
 }
 
 /** 
  * A helper function that can be called from the main function if the test programs 
  * are run as standalone application.
  */
-int  
-main_test_function(const struct _funcs testfunc[],int argc, char ** argv){
-  int run,failed,passed;
-  Jxta_boolean result;
-  
-  run = failed = passed = 0;
+int main_test_function(const struct _funcs testfunc[], int argc, char **argv)
+{
+    int run, failed, passed;
+    Jxta_boolean result;
+
+    run = failed = passed = 0;
 
     jxta_initialize();
- 
-  result = run_testfunctions(testfunc, &run, &passed, &failed);
-  fprintf(stdout,"Tests run:    %d\n",run);  
-  fprintf(stdout,"Tests passed: %d\n",passed);  
-  fprintf(stdout,"Tests failed: %d\n",failed);  
-  if( result == FALSE)
-    fprintf(stdout,"Some tests failed\n");
 
-  if( result == TRUE) run = 0;
-  else                run = -1;
+    result = run_testfunctions(testfunc, &run, &passed, &failed);
+    fprintf(stdout, "Tests run:    %d\n", run);
+    fprintf(stdout, "Tests passed: %d\n", passed);
+    fprintf(stdout, "Tests failed: %d\n", failed);
+    if (result == FALSE)
+        fprintf(stdout, "Some tests failed\n");
 
-  jxta_terminate();
-  return run;
+    if (result == TRUE)
+        run = 0;
+    else
+        run = -1;
+
+    jxta_terminate();
+    return run;
 }
 
 
 /**
  * Implemenation of SendFunc
  */
-Jxta_status JXTA_STDCALL
-sendFunction(void *stream, const char *buf, size_t len, unsigned int flag){
-  read_write_test_buffer * buffer = (read_write_test_buffer *)stream;
-  int i;
-  
-  if(flag == 1) {
-    for( i = 0; i < len; i++){
-      buffer->buffer[i + buffer->position] = buf[i];
+Jxta_status JXTA_STDCALL sendFunction(void *stream, const char *buf, size_t len, unsigned int flag)
+{
+    read_write_test_buffer *buffer = (read_write_test_buffer *) stream;
+    int i;
+
+    if (flag == 1) {
+        for (i = 0; i < len; i++) {
+            buffer->buffer[i + buffer->position] = buf[i];
+        }
+        buffer->buffer[len + buffer->position] = '\0';
+        buffer->position += len;
+    } else {
+        strcat(buffer->buffer, "flag set");
+        buffer->position += strlen(buffer->buffer);
     }
-    buffer->buffer[len + buffer->position] = '\0';
-    buffer->position += len;
-  }
-  else  {
-    strcat(buffer->buffer,"flag set");
-    buffer->position += strlen( buffer->buffer);  
-  }
-  return JXTA_SUCCESS;
+    return JXTA_SUCCESS;
 }
 
 
 /**
  * Implementation of WriteFunc
  */
-Jxta_status JXTA_STDCALL
-writeFunction(void *stream, const char *buf, size_t len){
-  read_write_test_buffer * target = (read_write_test_buffer *)stream;
-  int i;
-  
-  for( i = 0; i < len; i++){
-    target->buffer[i + target->position] = buf[i];
-  }
-  target->buffer[len + target->position] = '\0';
-  target->position += len;
-  return JXTA_SUCCESS;
+Jxta_status JXTA_STDCALL writeFunction(void *stream, const char *buf, size_t len)
+{
+    read_write_test_buffer *target = (read_write_test_buffer *) stream;
+    int i;
+
+    for (i = 0; i < len; i++) {
+        target->buffer[i + target->position] = buf[i];
+    }
+    target->buffer[len + target->position] = '\0';
+    target->position += len;
+    return JXTA_SUCCESS;
 }
 
 
 /**
  * Implemenation of ReadFunc
  */
-Jxta_status JXTA_STDCALL
-readFromStreamFunction(void *stream, char *buf, size_t len){
-  read_write_test_buffer * buffer = (read_write_test_buffer *)stream;
-  int i;
+Jxta_status JXTA_STDCALL readFromStreamFunction(void *stream, char *buf, size_t len)
+{
+    read_write_test_buffer *buffer = (read_write_test_buffer *) stream;
+    int i;
 
-  for( i = 0; i < len; i++){
-    buf[i] = buffer->buffer[i + buffer->position];
-  }
-  buffer->position += len;
-  return JXTA_SUCCESS;
+    for (i = 0; i < len; i++) {
+        buf[i] = buffer->buffer[i + buffer->position];
+    }
+    buffer->position += len;
+    return JXTA_SUCCESS;
 }
-
-

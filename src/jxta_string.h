@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_string.h,v 1.3 2005/06/16 23:11:52 slowhog Exp $
+ * $Id: jxta_string.h,v 1.4 2005/09/21 21:16:51 slowhog Exp $
  */
 
 #ifndef _JXTA_STRING_H_
@@ -58,6 +58,22 @@
 
 #include "jxta_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#if 0
+};
+#endif
+#endif
+
 JXTA_DECLARE(char *) jxta_strconcat(const char *s1, ...);
 
+#ifdef __cplusplus
+#if 0
+{
 #endif
+}
+#endif
+
+#endif
+
+/* vim: set ts=4 sw=4 et tw=130: */

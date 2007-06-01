@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_config_adv.c,v 1.24 2005/08/31 06:19:41 slowhog Exp $
+ * $Id: jxta_rdv_config_adv.c,v 1.27 2005/11/14 10:11:27 slowhog Exp $
  */
 
 static const char *const __log_cat = "RdvCfgAdv";
@@ -63,7 +63,7 @@ static const char *const __log_cat = "RdvCfgAdv";
 #include "jxta_rdv_config_adv.h"
 #include "jxta_log.h"
 #include "jxta_xml_util.h"
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -317,7 +317,7 @@ static void handleAddr(void *userdata, const XML_Char * cd, int len)
     addrStr = jstring_new_1(len);
     jstring_append_0(addrStr, cd, len);
     jstring_trim(addrStr);
-    addr = jxta_endpoint_address_new1(addrStr);
+    addr = jxta_endpoint_address_new_1(addrStr);
 
     if (seeding) {
         jxta_vector_add_object_last(ad->seeding, (Jxta_object *) addr);
@@ -425,7 +425,7 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
             Jxta_endpoint_address *addr;
             char *addrStr;
 
-            jxta_vector_get_object_at(ad->seeds, (Jxta_object **) & addr, eachSeed);
+            jxta_vector_get_object_at(ad->seeds, JXTA_OBJECT_PPTR(&addr), eachSeed);
 
             addrStr = jxta_endpoint_address_to_string(addr);
 
@@ -441,7 +441,7 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
             Jxta_endpoint_address *addr;
             char *addrStr;
 
-            jxta_vector_get_object_at(ad->seeding, (Jxta_object **) & addr, eachSeed);
+            jxta_vector_get_object_at(ad->seeding, JXTA_OBJECT_PPTR(&addr), eachSeed);
 
             addrStr = jxta_endpoint_address_to_string(addr);
 

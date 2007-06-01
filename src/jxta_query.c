@@ -4,7 +4,7 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- *
+ * 
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
  *
@@ -50,11 +50,16 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_query.c,v 1.11 2005/09/09 15:34:53 exocetrick Exp $
+ * $Id: jxta_query.c,v 1.16 2005/10/27 01:55:29 slowhog Exp $
   *
   */
 #include <stdlib.h>
-#include <jxtaapr.h>
+#include <math.h>
+#ifdef WIN32
+#include <float.h>
+#define isnan(a)      _isnan(a) 
+#endif
+#include <jxta_apr.h>
 #include "jxta_errno.h"
 #include "jxta_types.h"
 #include "jxta_query.h"
@@ -63,6 +68,7 @@
 #include "jxta_sql.h"
 #include "jxta_cm.h"
 
+#define __log_cat "QUERY"
 static void query_reset_context(Jxta_query_context * jctx);
 
 static Jxta_status query_SQL(Jxta_query_context * jctx);
@@ -140,6 +146,7 @@ JXTA_DECLARE(Jxta_query_context *) jxta_query_new(const char *q)
     jctx->element = jstring_new_0();
     jctx->attribName = jstring_new_0();
     jctx->value = jstring_new_0();
+    jctx->negative = FALSE;
     jctx->query = jstring_new_0();
     jctx->queryNameSpace = jstring_new_0();
     jctx->origQuery = jstring_new_2(q);
@@ -154,6 +161,7 @@ JXTA_DECLARE(Jxta_query_context *) jxta_query_new(const char *q)
     jctx->first = TRUE;
     jctx->levelNumber = 0;
     jctx->endOfCollection = 0;
+    jctx->hasNumeric = FALSE;
     status = query_xform_query(jctx, q);
     if (status != JXTA_SUCCESS) {
         JXTA_OBJECT_RELEASE(jctx);
@@ -164,6 +172,7 @@ JXTA_DECLARE(Jxta_query_context *) jxta_query_new(const char *q)
 
 static Jxta_query_element *query_entry_new(JString * jSQL, JString * jBoolean, JString * jOper, JString * jName, JString * jValue)
 {
+    const char *val;
     Jxta_query_element *qel = (Jxta_query_element *) calloc(1, sizeof(Jxta_query_element));
     JXTA_OBJECT_INIT(qel, (JXTA_OBJECT_FREE_FUNC) jxta_query_entry_delete, 0);
     qel->jSQL = jstring_clone(jSQL);
@@ -171,7 +180,49 @@ static Jxta_query_element *query_entry_new(JString * jSQL, JString * jBoolean, J
     qel->jOper = jstring_clone(jOper);
     qel->jName = jstring_clone(jName);
     qel->jValue = jstring_clone(jValue);
+    val = jstring_get_string(qel->jValue);
+    qel->isNumeric = FALSE;
+    if ('#' == *val) {
+        qel->isNumeric = TRUE;
+    } else {
+        qel->hasWildcard = FALSE;
+        while (*val) {
+            if ('%' == *val || '_' == *val) {
+                qel->hasWildcard = TRUE;
+                break;
+            }
+            val++;
+        }
+    }
     return qel;
+}
+static xmlGenericErrorFunc query_err_func(void *userData, const char *msg)
+{
+    xmlErrorPtr err;
+    int i;
+    char *temp;
+    char *carrot;
+    JString *errString = jstring_new_0();
+    err = xmlGetLastError();
+    if (NULL != err->str1) {
+        jstring_append_2(errString, err->str1);
+        jstring_append_2(errString, "\n");
+        carrot = calloc(1, err->int1 + 3);
+        temp = carrot;
+        for (i = 1; err->int1 > 1 && i < err->int1; i++) {
+            *temp++ = ' ';
+        }
+        *temp++ = '^';
+        *temp++ = '\n';
+        *temp = '\0';
+        jstring_append_2(errString, carrot);
+        free(carrot);
+    }
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,
+                    "error in jxta_query domain:%d --- %s line:%d position:%d\n%s",
+                    err->domain, err->message, err->line, err->int1, jstring_get_string(errString));
+    JXTA_OBJECT_RELEASE(errString);
+    return NULL;
 }
 
 JXTA_DECLARE(Jxta_status)
@@ -213,6 +264,7 @@ JXTA_DECLARE(Jxta_status)
         xmlFreeDoc(doc);
         return status;
     }
+
     if (jctx->xpathctx != NULL) {
         xmlXPathFreeContext(jctx->xpathctx);
     }
@@ -221,16 +273,17 @@ JXTA_DECLARE(Jxta_status)
     /* start at the root node */
     ctxt->node = xmlDocGetRootElement(doc);
 
+    xmlSetGenericErrorFunc(ctxt, (xmlGenericErrorFunc) query_err_func);
+
+    if (NULL != jctx->xpathcomp) {
+        xmlXPathFreeCompExpr(jctx->xpathcomp);
+        jctx->xpathcomp = NULL;
+    }
     /* compile the XPath statement */
     comp = xmlXPathCompile(BAD_CAST newQuery);
 
     /* if it compiles fine - evaluate the document */
     if (comp != NULL) {
-
-        if (NULL != jctx->xpathcomp) {
-            xmlXPathFreeCompExpr(jctx->xpathcomp);
-            jctx->xpathcomp = NULL;
-        }
         jctx->xpathcomp = comp;
 
         /* start at the root node */
@@ -249,7 +302,8 @@ JXTA_DECLARE(Jxta_status)
     } else {
         status = JXTA_INVALID_ARGUMENT;
         res = NULL;
-    }                                                                                                                                                                                          
+
+    }                                                                                                                                                         
     /* return the result */
     if (res == NULL) {
         if (bResults) {
@@ -265,7 +319,7 @@ JXTA_DECLARE(Jxta_status)
     if (doc != NULL) {
         xmlFreeDoc(doc);
     }
-    return status;                                                                                                                                                    
+    return status;                                                                                                                                            
 }
 
 
@@ -293,19 +347,24 @@ static Jxta_status query_xform_query(Jxta_query_context * jctx, const char *quer
 
     plength = strlen(prefix);
     nlength = strlen(name);
-    jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "------------------ ? level2: %s \n",
-                    jstring_get_string(jctx->level2));
+    jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG,
+                    "------------------ ? level2: %s \n", jstring_get_string(jctx->level2));
     jstring_reset(jctx->newQuery, NULL);
     if (plength > 0 && nlength > 0) {
         const char *docName;
+        docName = jstring_get_string(jctx->documentName);
+        if (strlen(docName) > 0) {
+            Jxta_boolean replaceName=FALSE;
+            Jxta_boolean replacePrefix=FALSE;
+            if ('*' == *name) replaceName = TRUE;
+            if ('*' == *prefix) replacePrefix = TRUE;
+            query_split_Ns(jctx, docName, replacePrefix, replaceName);
+            name = jstring_get_string(jctx->name);
+            prefix = jstring_get_string(jctx->prefix);
+        }
         jstring_append_2(jctx->newQuery, stringForNameSpace);
         jstring_append_2(jctx->newQuery, prefix);
         jstring_append_2(jctx->newQuery, ":");
-        docName = jstring_get_string(jctx->documentName);
-        if (strlen(docName) > 0 && '*' == *name) {
-            query_split_Ns(jctx, docName, FALSE, TRUE);
-            name = jstring_get_string(jctx->name);
-        }
         jstring_append_2(jctx->newQuery, name);
         jstring_append_2(jctx->newQuery, "\"]");
         jstring_append_2(jctx->newQuery, newQuery);
@@ -408,6 +467,8 @@ static Jxta_status query_SQL(Jxta_query_context * jctx)
 JXTA_DECLARE(void)
     jxta_query_build_SQL_operator(JString * elem, JString * sqloper, JString * value, JString * result)
 {
+    const char *val;
+    Jxta_boolean isNumeric = FALSE;
     /* for attributes the name waits */
     jstring_append_2(result, SQL_LEFT_PAREN);
     jstring_append_2(result, CM_COL_SRC);
@@ -418,7 +479,13 @@ JXTA_DECLARE(void)
     jstring_append_2(result, SQL_AND);
     jstring_append_2(result, CM_COL_SRC);
     jstring_append_2(result, SQL_DOT);
-    jstring_append_2(result, CM_COL_Value);
+    val = jstring_get_string(value);
+    if ('#' == *val) {
+        isNumeric = TRUE;
+        jstring_append_2(result, CM_COL_NumValue);
+    } else {
+        jstring_append_2(result, CM_COL_Value);
+    }
     if (jxta_sql_escape_and_wc_value(value, TRUE)) {
         if (!strcmp(jstring_get_string(sqloper), SQL_EQUAL)) {
             jstring_reset(sqloper, NULL);
@@ -429,11 +496,12 @@ JXTA_DECLARE(void)
         }
     }
     jstring_append_1(result, sqloper);
-    jstring_append_2(result, SQL_SINGLE_QUOTE);
-    jstring_append_1(result, value);
-    jstring_append_2(result, SQL_SINGLE_QUOTE);
+    if (isNumeric) {
+        SQL_NUMERIC_VALUE(result, value);
+    } else {
+        SQL_VALUE(result, value);
+    }
     jstring_append_2(result, SQL_RIGHT_PAREN);
-
 }
 
 /**
@@ -446,6 +514,7 @@ static void query_reset_context(Jxta_query_context * jctx)
     jstring_reset(jctx->name, NULL);
     jstring_reset(jctx->nameSpace, NULL);
     jstring_reset(jctx->element, NULL);
+    jctx->negative = FALSE;
     jstring_reset(jctx->value, NULL);
     jstring_reset(jctx->sqlcmd, NULL);
     jstring_reset(jctx->sqloper, NULL);
@@ -497,22 +566,33 @@ static Jxta_status query_create_SQL(Jxta_query_context * jctx, xmlXPathCompExprP
             }
             break;
         case XPATH_OP_CMP:
-            if (op->value)
+            jstring_reset(jctx->sqloper, NULL);
+            if (op->value) {
                 jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%sCMP <\n", shift);
-            else
+                jstring_append_2(jctx->sqloper, SQL_LESS_THAN);
+            } else {
                 jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%sCMP >\n", shift);
-            if (!op->value2)
+                jstring_append_2(jctx->sqloper, SQL_GREATER_THAN);
+            }
+            if (!op->value2) {
                 jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%s=\n", shift);
+                jstring_append_2(jctx->sqloper, SQL_EQUAL);
+            }
             break;
         case XPATH_OP_PLUS:
-            if (op->value == 0)
+            if (op->value == 0) {
                 jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%sPLUS -\n", shift);
-            else if (op->value == 1)
+                jctx->negative = TRUE;
+            } else if (op->value == 1) {
                 jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%sPLUS +\n", shift);
-            else if (op->value == 2)
+                jctx->negative = FALSE;
+            } else if (op->value == 2) {
                 jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%sPLUS unary -\n", shift);
-            else if (op->value == 3)
+                jctx->negative = TRUE;
+            } else if (op->value == 3) {
                 jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%sPLUS unary - -\n", shift);
+                jctx->negative = TRUE;
+            }
             break;
         case XPATH_OP_MULT:
             if (op->value == 0)
@@ -538,7 +618,8 @@ static Jxta_status query_create_SQL(Jxta_query_context * jctx, xmlXPathCompExprP
             jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%sSORT\n", shift);
             break;
 
-        case XPATH_OP_COLLECT:{
+        case XPATH_OP_COLLECT:
+            {
                 xmlXPathAxisVal axis = (xmlXPathAxisVal) op->value;
                 xmlXPathTestVal test = (xmlXPathTestVal) op->value2;
                 xmlXPathTypeVal type = (xmlXPathTypeVal) op->value3;
@@ -673,13 +754,15 @@ static Jxta_status query_create_SQL(Jxta_query_context * jctx, xmlXPathCompExprP
                 break;
 
             }
-        case XPATH_OP_VALUE:{
+        case XPATH_OP_VALUE:
+            {
                 xmlXPathObjectPtr object = (xmlXPathObjectPtr) op->value4;
 
                 jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%sELEM \n", shift);
                 query_examine_object(jctx, object, depth);
             }
-        case XPATH_OP_VARIABLE:{
+        case XPATH_OP_VARIABLE:
+            {
                 const xmlChar *prefix = (const xmlChar *) op->value5;
                 const xmlChar *name = (const xmlChar *) op->value4;
 
@@ -692,7 +775,8 @@ static Jxta_status query_create_SQL(Jxta_query_context * jctx, xmlXPathCompExprP
                                     "%sVARIABLE ---------- has no name or prefix --------\n", shift);
                 break;
             }
-        case XPATH_OP_FUNCTION:{
+        case XPATH_OP_FUNCTION:
+            {
                 int nbargs = op->value;
                 const xmlChar *prefix = (const xmlChar *) op->value5;
                 const xmlChar *name = (const xmlChar *) op->value4;
@@ -706,8 +790,8 @@ static Jxta_status query_create_SQL(Jxta_query_context * jctx, xmlXPathCompExprP
                     jstring_append_2(jctx->nameSpace, (const char *) prefix);
                     jstring_append_2(jctx->nameSpace, ":");
                     jstring_append_2(jctx->nameSpace, (const char *) name);
-                    jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%sFUNCTION %s:%s(%d args)\n", shift,
-                                    prefix, name, nbargs);
+                    jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG,
+                                    "%sFUNCTION %s:%s(%d args)\n", shift, prefix, name, nbargs);
                 } else {
                     jstring_append_2(jctx->nameSpace, (const char *) name);
                     jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%sFUNCTION %s(%d args)\n", shift, name, nbargs);
@@ -735,7 +819,8 @@ static Jxta_status query_create_SQL(Jxta_query_context * jctx, xmlXPathCompExprP
         case XPATH_OP_ARG:
             jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%sARG\n", shift);
             break;
-        case XPATH_OP_PREDICATE:{
+        case XPATH_OP_PREDICATE:
+            {
                 jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%sPREDICATE\n", shift);
                 jctx->currLevel++;
                 break;
@@ -782,7 +867,30 @@ static void query_examine_object(Jxta_query_context * jctx, xmlXPathObjectPtr cu
         jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%sObject is a XPATH_BOOLEAN : %s\n", shift, cur->stringval);
         break;
     case XPATH_NUMBER:
-        jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%sObject is a XPATH_NUMBER : %s\n", shift, cur->stringval);
+        switch (xmlXPathIsInf(cur->floatval)) {
+        case 1:
+            jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "Object is a number : Infinity\n");
+            break;
+        case -1:
+            jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "Object is a number : -Infinity\n");
+            break;
+        default:
+            if (isnan(cur->floatval)) {
+                jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "Object is a number : NaN\n");
+            } else {
+                xmlChar *fromXPath;
+                jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "Object is a number : %0g\n", cur->floatval);
+                jstring_append_2(jctx->value, "#");
+                if (TRUE == jctx->negative) {
+                    jstring_append_2(jctx->value, "-");
+                }
+                fromXPath = xmlXPathCastToString(cur);
+                jstring_append_2(jctx->value, (char const *) fromXPath);
+                xmlFree(fromXPath);
+                jctx->hasNumeric = TRUE;
+            }
+            break;
+        }
         break;
     case XPATH_POINT:
         jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%sObject is a XPATH_POINT : %s\n", shift, cur->stringval);
@@ -791,8 +899,8 @@ static void query_examine_object(Jxta_query_context * jctx, xmlXPathObjectPtr cu
         jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%sObject is a XPATH_RANGE : %s\n", shift, cur->stringval);
         break;
     case XPATH_LOCATIONSET:
-        jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%sObject is a XPATH_LOCATIONSET : %s\n", shift,
-                        cur->stringval);
+        jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG,
+                        "%sObject is a XPATH_LOCATIONSET : %s\n", shift, cur->stringval);
         break;
     case XPATH_USERS:
         jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_DEBUG, "%sObject is a XPATH_USERS : %s\n", shift, cur->stringval);

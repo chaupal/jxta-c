@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup.h,v 1.10 2005/06/16 23:11:46 slowhog Exp $
+ * $Id: jxta_peergroup.h,v 1.13 2005/10/13 19:52:33 mathieu Exp $
  */
 
 #ifndef JXTA_PEERGROUP_H
@@ -77,16 +77,15 @@
 #include "jxta_rdv.h"
 #include "jxta_srdi.h"
 #include "jxta_srdi_service.h"
-
+#include "jxta_cm.h"
 
 #ifdef __cplusplus
 extern "C" {
-
-    /* avoid confusing indenters */
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _jxta_loader Jxta_loader;
 
 /*
@@ -165,7 +164,7 @@ JXTA_DECLARE(Jxta_MSID *) jxta_genericpeergroup_specid_get(void);
 #define jxta_tcpproto_classid             jxta_tcpproto_classid_get            ()
 #define jxta_httpproto_classid            jxta_httpproto_classid_get           ()
 #define jxta_routerproto_classid          jxta_routerproto_classid_get         ()
-#define jxta_relayproto_classid          jxta_relayproto_classid_get         ()
+#define jxta_relayproto_classid           jxta_relayproto_classid_get          ()
 #define jxta_application_classid          jxta_application_classid_get         ()
 #define jxta_tlsproto_classid             jxta_tlsproto_classid_get            ()
 #define jxta_ref_platform_specid          jxta_ref_platform_specid_get         ()
@@ -619,7 +618,6 @@ JXTA_DECLARE(void) jxta_PG_get_peerinfo_service(Jxta_PG * self, Jxta_peerinfo_se
  */
 JXTA_DECLARE(void) jxta_PG_get_membership_service(Jxta_PG * self, Jxta_membership_service ** membership);
 
-
 /**
  * @param self handle of the group object to which the operation is applied.
  *
@@ -629,7 +627,9 @@ JXTA_DECLARE(void) jxta_PG_get_membership_service(Jxta_PG * self, Jxta_membershi
  */
 JXTA_DECLARE(void) jxta_PG_get_pipe_service(Jxta_PG * self, Jxta_pipe_service ** pipe);
 
-JXTA_DECLARE(void) jxta_PG_get_srdi_service(Jxta_PG * self, Jxta_srdi_service ** srdi);
+JXTA_DECLARE(void) jxta_PG_get_cache_manager(Jxta_PG * self, Jxta_cm **cm);
+
+JXTA_DECLARE(void) jxta_PG_set_cache_manager(Jxta_PG * self, Jxta_cm *cm);
 /*
  * A few convenience methods. This information is available from
  * the peer and peergroup advertisements. These methods do not fail.
@@ -795,6 +795,26 @@ JXTA_DECLARE(void) jxta_PG_get_srdi_service(Jxta_PG * self, Jxta_srdi_service **
  */
 JXTA_DECLARE(Jxta_status) jxta_PG_new_netpg(Jxta_PG ** new_netpg);
 
+/*
+ * Returns an initialized and ready to use (but not started) instance of
+ * a custom net peer group. All extra services are loaded
+ *
+ * In other words, this is a net peer group factory for custom group.
+ * The object is already shared and thus must be released
+ * after use, unless the invoking application simply terminates
+ * instead.
+ *
+ * WARNING: currently what is suppored is that you only specify your own
+ * services in the module implementation advertisement.
+ *
+ * @param new_custom_netpg pointer to a memory area where to store a reference
+ * to the newly created instance.
+ *
+ * @return Jxta_status JXTA_SUCCESS if the custom net peergroup was instantiated as
+ * described above. Otherwise, an error code is returned and *new_custom_netpg is not
+ * affected.
+ */
+JXTA_DECLARE(Jxta_status) jxta_PG_new_custom_netpg(Jxta_PG ** new_custom_netpg, Jxta_MIA * mia);
 
 /*
  * To be clean, groups should register before they complete

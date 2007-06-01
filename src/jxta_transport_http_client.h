@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http_client.h,v 1.8 2005/08/03 05:51:20 slowhog Exp $
+ * $Id: jxta_transport_http_client.h,v 1.9 2005/09/21 21:16:51 slowhog Exp $
  */
 
 #ifndef __HTTP_CLIENT_H__
@@ -72,9 +72,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _HttpClient HttpClient;
 typedef struct _HttpRequest HttpRequest;
 typedef struct _HttpResponse HttpResponse;

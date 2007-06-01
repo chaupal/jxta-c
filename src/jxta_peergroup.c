@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup.c,v 1.34 2005/06/16 23:11:46 slowhog Exp $
+ * $Id: jxta_peergroup.c,v 1.38 2005/11/22 22:00:58 mmx2005 Exp $
  */
 
 #include "apr_thread_proc.h"
@@ -124,7 +124,7 @@ JXTA_DECLARE(Jxta_status) jxta_lookup_group_instance(Jxta_id * gid, Jxta_PG ** p
     Jxta_service *tmp;
     Jxta_status res;
 
-    res = jxta_objecthashtable_get(groups_global_registry, (Jxta_object *) gid, (Jxta_object **) & tmp);
+    res = jxta_objecthashtable_get(groups_global_registry, (Jxta_object *) gid, JXTA_OBJECT_PPTR(&tmp));
 
     if (res != JXTA_SUCCESS)
         return res;
@@ -862,7 +862,6 @@ JXTA_DECLARE(void) jxta_PG_get_rendezvous_service(Jxta_PG * self, Jxta_rdv_servi
     PTValid(self, Jxta_PG);
     (VTBL->get_rendezvous_service) (self, rdv);
 }
-
 JXTA_DECLARE(void) jxta_PG_get_endpoint_service(Jxta_PG * self, Jxta_endpoint_service ** endp)
 {
     PTValid(self, Jxta_PG);
@@ -897,6 +896,19 @@ JXTA_DECLARE(void) jxta_PG_get_pipe_service(Jxta_PG * self, Jxta_pipe_service **
 {
     PTValid(self, Jxta_PG);
     (VTBL->get_pipe_service) (self, pipe);
+}
+
+JXTA_DECLARE(void) jxta_PG_get_cache_manager(Jxta_PG * self, Jxta_cm ** cm)
+{
+    PTValid(self, Jxta_PG);
+    (VTBL->get_cache_manager) (self, cm);
+   
+}
+
+JXTA_DECLARE(void) jxta_PG_set_cache_manager(Jxta_PG * self, Jxta_cm * cm)
+{
+    PTValid(self, Jxta_PG);
+    (VTBL->set_cache_manager) (self, cm);
 }
 
 JXTA_DECLARE(void) jxta_PG_get_srdi_service(Jxta_PG * self, Jxta_srdi_service ** srdi)
@@ -992,12 +1004,37 @@ JXTA_DECLARE(Jxta_status) jxta_PG_new_netpg(Jxta_PG ** new_netpg)
     return res;
 }
 
+JXTA_DECLARE(Jxta_status) jxta_PG_new_custom_netpg(Jxta_PG ** new_private_netpg, Jxta_MIA * mia)
+{
+    Jxta_PG *custom_npg = NULL;
+    Jxta_status res = JXTA_SUCCESS;
+    char *noargs[] = { NULL };
+
+    Try {
+        custom_npg = (Jxta_PG *)jxta_defloader_instantiate_e("builtin:netpg", MayThrow);
+
+        jxta_module_init_e((Jxta_module *) custom_npg, (Jxta_PG *) 0, (Jxta_id *) 0, (Jxta_advertisement*)mia, MayThrow);
+
+        res = jxta_module_start((Jxta_module *) custom_npg, noargs);
+
+        if (JXTA_SUCCESS != res)
+            Throw(res);
+    }
+    Catch {
+        if (custom_npg != NULL)
+            JXTA_OBJECT_RELEASE(custom_npg);
+        return jpr_lasterror_get();
+    }
+
+    *new_private_netpg = custom_npg;
+    return res;
+}
+
 JXTA_DECLARE(Jxta_status) jxta_PG_add_relay_address(Jxta_PG * self, Jxta_RdvAdvertisement * relay)
 {
     PTValid(self, Jxta_PG);
     return (VTBL->add_relay_address) (self, relay);
 }
-
 
 JXTA_DECLARE(Jxta_status) jxta_PG_remove_relay_address(Jxta_PG * self, Jxta_id * relayid)
 {

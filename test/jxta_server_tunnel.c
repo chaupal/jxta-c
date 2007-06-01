@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_server_tunnel.c,v 1.5 2005/04/22 01:26:21 slowhog Exp $
+ * $Id: jxta_server_tunnel.c,v 1.7 2005/10/13 17:07:39 exocetrick Exp $
  */
 
 #include <stdio.h>
@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 
     if (argc < 3) {
         printf("Usage: %s addr_spec adv_file_name\n", argv[0]);
-        exit(1);
+        return 1;
     }
 
     jxta_initialize();
@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
     }
     if (NULL == log_s) {
         printf("failed to init log selector.\n");
-        exit(-1);
+        return -1;
     }
 
     jxta_log_file_open(&log_f, "-");
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
     rv = jxta_PG_new_netpg(&pg);
     if (rv != JXTA_SUCCESS) {
         printf("jxta_PG_new_netpg failed with error: %ld\n", rv);
-        exit(-1);
+        return -1;
     }
 
     jxta_PG_get_discovery_service(pg, &discovery);
@@ -113,10 +113,10 @@ int main(int argc, char *argv[])
 
     jxta_pipe_adv_parse_file(adv, f);
 
-    rv = discovery_service_publish(discovery, adv, DISC_ADV, 5L * 60L * 1000L, 5L * 60L * 1000L);
+    rv = discovery_service_publish(discovery, (Jxta_advertisement *) adv, DISC_ADV, 5L * 60L * 1000L, 5L * 60L * 1000L);
     if (JXTA_SUCCESS != rv) {
         jxta_log_append(SVRTUNNELTEST_LOG, JXTA_LOG_LEVEL_ERROR, "Failed to publish pipe advertisement\n");
-        exit(-3);
+        return -3;
     }
 
     JXTA_OBJECT_RELEASE(discovery);
@@ -125,14 +125,14 @@ int main(int argc, char *argv[])
     rv = jxta_socket_tunnel_create(pg, argv[1], &tun);
     if (JXTA_SUCCESS != rv) {
         jxta_log_append(SVRTUNNELTEST_LOG, JXTA_LOG_LEVEL_ERROR, "Failed to create tunnel with error %ld\n", rv);
-        exit(-4);
+        return -4;
     }
 
     jxta_log_append(SVRTUNNELTEST_LOG, JXTA_LOG_LEVEL_TRACE, "Accepting tunnel ...\n");
     rv = jxta_socket_tunnel_accept(tun, adv);
     if (JXTA_SUCCESS != rv) {
         jxta_log_append(SVRTUNNELTEST_LOG, JXTA_LOG_LEVEL_ERROR, "Failed to accept tunnel with error %ld\n", rv);
-        exit(-4);
+        return -4;
     }
 
     tmp = jxta_socket_tunnel_addr_get(tun);
@@ -144,8 +144,8 @@ int main(int argc, char *argv[])
 
     jxta_log_append(SVRTUNNELTEST_LOG, JXTA_LOG_LEVEL_TRACE, "Quit command issued\n");
     if (jxta_socket_tunnel_is_established(tun)) {
-            jxta_log_append(SVRTUNNELTEST_LOG, JXTA_LOG_LEVEL_TRACE, "Teardown tunnel ...\n");
-            jxta_socket_tunnel_teardown(tun);
+        jxta_log_append(SVRTUNNELTEST_LOG, JXTA_LOG_LEVEL_TRACE, "Teardown tunnel ...\n");
+        jxta_socket_tunnel_teardown(tun);
     }
     jxta_log_append(SVRTUNNELTEST_LOG, JXTA_LOG_LEVEL_TRACE, "Delete socket tunnel\n");
     jxta_socket_tunnel_delete(tun);

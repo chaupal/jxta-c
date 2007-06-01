@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_xml_util_test.c,v 1.9 2005/04/17 14:22:19 lankes Exp $
+ * $Id: jxta_xml_util_test.c,v 1.10 2005/09/23 20:07:15 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -76,187 +76,185 @@
 /** Exercise the function for extracting ip numbers
  *  and ports from a character buffer.
  */
-Jxta_boolean 
-extract_ip_and_port_test(void) {
+Jxta_boolean extract_ip_and_port_test(void)
+{
 
-  Jxta_boolean passed = TRUE;
-  int length;
-  Jxta_in_addr ip = 0;
-  Jxta_port port = 0;
-  int addr;
-  const char * all_delims = "    \t \n";
-  const char * ip_port = "\n\n127.0.0.1:9700\t\n";
+    Jxta_boolean passed = TRUE;
+    int length;
+    Jxta_in_addr ip = 0;
+    Jxta_port port = 0;
+    int addr;
+    const char *all_delims = "    \t \n";
+    const char *ip_port = "\n\n127.0.0.1:9700\t\n";
 
-  length = strlen(all_delims);
-  extract_ip_and_port(all_delims,length,&ip,&port);
+    length = strlen(all_delims);
+    extract_ip_and_port(all_delims, length, &ip, &port);
 
-  if (ip != 0 || port != 0) {
-    printf("Failed extract_ip_and_port()\n");
-    passed = FALSE;
-  } else {
-    printf("Passed extract_ip_and_port()\n");
-  }
+    if (ip != 0 || port != 0) {
+        printf("Failed extract_ip_and_port()\n");
+        passed = FALSE;
+    } else {
+        printf("Passed extract_ip_and_port()\n");
+    }
 
-  length = strlen(ip_port);
-  extract_ip_and_port(ip_port,length,&ip,&port);
-  addr = apr_inet_addr("127.0.0.1");
-  if (addr == ip && port == 9700) {
-    printf("Passed extract_ip_and_port()\n");
-  } else {
-    printf("Failed extract_ip_and_port()\n");
-    passed = FALSE;
-  }
+    length = strlen(ip_port);
+    extract_ip_and_port(ip_port, length, &ip, &port);
+    addr = apr_inet_addr("127.0.0.1");
+    if (addr == ip && port == 9700) {
+        printf("Passed extract_ip_and_port()\n");
+    } else {
+        printf("Failed extract_ip_and_port()\n");
+        passed = FALSE;
+    }
 
-  return passed; 
+    return passed;
 }
 
 
-Jxta_boolean 
-extract_ip_test(void) {
+Jxta_boolean extract_ip_test(void)
+{
 
-  Jxta_boolean passed = TRUE;
-  int length;
-  Jxta_in_addr ip = 0;
-  int addr;
-  const char * all_delims = "    \t \n";
-  const char * ip_port = "\n\n127.0.0.1\t\n";
+    Jxta_boolean passed = TRUE;
+    int length;
+    Jxta_in_addr ip = 0;
+    int addr;
+    const char *all_delims = "    \t \n";
+    const char *ip_port = "\n\n127.0.0.1\t\n";
 
-  length = strlen(all_delims);
-  extract_ip(all_delims,length,&ip);
+    length = strlen(all_delims);
+    extract_ip(all_delims, length, &ip);
 
-  if (ip != 0) {
-    printf("Failed extract_ip_test()\n");
-    passed = FALSE;
-  } else {
-    printf("Passed extract_ip_test()\n");
-  }
+    if (ip != 0) {
+        printf("Failed extract_ip_test()\n");
+        passed = FALSE;
+    } else {
+        printf("Passed extract_ip_test()\n");
+    }
 
-  length = strlen(ip_port);
-  extract_ip(ip_port,length,&ip);
-  addr = apr_inet_addr("127.0.0.1");
-  if (addr == ip) {
-    printf("Passed extract_ip_test()\n");
-  } else {
-    printf("Failed extract_ip_test()\n");
-    passed = FALSE;
-  }
+    length = strlen(ip_port);
+    extract_ip(ip_port, length, &ip);
+    addr = apr_inet_addr("127.0.0.1");
+    if (addr == ip) {
+        printf("Passed extract_ip_test()\n");
+    } else {
+        printf("Failed extract_ip_test()\n");
+        passed = FALSE;
+    }
 
-  return passed; 
+    return passed;
 }
 
 
-Jxta_boolean
-extract_port_test(void) {
+Jxta_boolean extract_port_test(void)
+{
 
-  Jxta_boolean passed = TRUE;
-  int length;
-  Jxta_port port = 0;
-  const char * all_delims = "    \t \n";
-  const char * ip_port = "\n\n9700\t\n";
+    Jxta_boolean passed = TRUE;
+    int length;
+    Jxta_port port = 0;
+    const char *all_delims = "    \t \n";
+    const char *ip_port = "\n\n9700\t\n";
 
-  length = strlen(all_delims);
-  extract_port(all_delims,length,&port);
+    length = strlen(all_delims);
+    extract_port(all_delims, length, &port);
 
-  if (port != 0) {
-    printf("Failed extract_port_test() all delims\n");
-    passed = FALSE;
-  } else {
-    printf("Passed extract_port_test() all delims\n");
-  }
+    if (port != 0) {
+        printf("Failed extract_port_test() all delims\n");
+        passed = FALSE;
+    } else {
+        printf("Passed extract_port_test() all delims\n");
+    }
 
-  length = strlen(ip_port);
-  extract_port(ip_port,length,&port);
+    length = strlen(ip_port);
+    extract_port(ip_port, length, &port);
 
-  if (port == 9700) {
-    printf("Passed extract_port_test() port = 9700\n");
-  } else {
-    printf("Failed extract_port_test() port = 9700\n");
-    passed = FALSE;
-  }
+    if (port == 9700) {
+        printf("Passed extract_port_test() port = 9700\n");
+    } else {
+        printf("Failed extract_port_test() port = 9700\n");
+        passed = FALSE;
+    }
 
-  return passed; 
+    return passed;
 }
 
-Jxta_boolean
-extract_char_data_test(void) {
+Jxta_boolean extract_char_data_test(void)
+{
 
-  Jxta_boolean passed = TRUE;
-  const char * all_delims = "    \t \n";
-  const char * string = "  \n\n foo.bar.com \t\n  ";
-  char tok[128] = {0};
+    Jxta_boolean passed = TRUE;
+    const char *all_delims = "    \t \n";
+    const char *string = "  \n\n foo.bar.com \t\n  ";
+    char tok[128] = { 0 };
 
-  extract_char_data(all_delims,strlen(all_delims),tok);
+    extract_char_data(all_delims, strlen(all_delims), tok);
 #ifdef DEBUG
-  printf("tok: %s, length: %d\n",tok, strlen(tok));
+    printf("tok: %s, length: %d\n", tok, strlen(tok));
 #endif
-  /* This test may need to be used in other places 
-   * where tok is tested against NULL.
-   */
-  if (*tok == '\0') {
-    printf("Passed extract_char_data_test() with empty string\n");
-  } else {
-    printf("Failed extract_char_data_test() with empty string\n");
-    passed = FALSE;
-  }
+    /* This test may need to be used in other places 
+     * where tok is tested against NULL.
+     */
+    if (*tok == '\0') {
+        printf("Passed extract_char_data_test() with empty string\n");
+    } else {
+        printf("Failed extract_char_data_test() with empty string\n");
+        passed = FALSE;
+    }
 
-  extract_char_data(string,strlen(string),tok);
+    extract_char_data(string, strlen(string), tok);
 #ifdef DEBUG
-  printf("tok: %s\n",tok);
+    printf("tok: %s\n", tok);
 #endif
-  if (!strncmp("foo.bar.com",tok,strlen(string))) {
-    printf("Passed extract_char_data_test() with valid string\n");
-  } else {
-    printf("Failed extract_char_data_test() with valid string\n");
-    passed = FALSE;
-  }
+    if (!strncmp("foo.bar.com", tok, strlen(string))) {
+        printf("Passed extract_char_data_test() with valid string\n");
+    } else {
+        printf("Failed extract_char_data_test() with valid string\n");
+        passed = FALSE;
+    }
 
-  return passed;
+    return passed;
 }
 
-Jxta_boolean
-encode_xml_test(void) {
-Jxta_status res = JXTA_SUCCESS;
-const char * source = "<xml>&</xml>";
-const char * expect = "&lt;xml&gt;&amp;&lt;/xml&gt;";
-JString * input;
-JString * output = NULL;
+Jxta_boolean encode_xml_test(void)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    const char *source = "<xml>&</xml>";
+    const char *expect = "&lt;xml&gt;&amp;&lt;/xml&gt;";
+    JString *input;
+    JString *output = NULL;
 
-input = jstring_new_2( source );
+    input = jstring_new_2(source);
 
-res = jxta_xml_util_encode_jstring( input, &output );
+    res = jxta_xml_util_encode_jstring(input, &output);
 
-printf( "input='%s'\noutput='%s'\nexpect='%s'\nres=%d\n", 
-  source, jstring_get_string(output), expect, res );
-return (0 == strcmp( expect, jstring_get_string(output) ));
+    printf("input='%s'\noutput='%s'\nexpect='%s'\nres=%d\n", source, jstring_get_string(output), expect, res);
+    return (0 == strcmp(expect, jstring_get_string(output)));
 }
 
-Jxta_boolean
-decode_xml_test(void) {
-Jxta_status res = JXTA_SUCCESS;
-const char * source = "&lt;xml&gt;&amp;&lt;/xml&gt;";
-const char * expect = "<xml>&</xml>";
+Jxta_boolean decode_xml_test(void)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    const char *source = "&lt;xml&gt;&amp;&lt;/xml&gt;";
+    const char *expect = "<xml>&</xml>";
 
-JString * input;
-JString * output = NULL;
+    JString *input;
+    JString *output = NULL;
 
-input = jstring_new_2( source );
+    input = jstring_new_2(source);
 
-res = jxta_xml_util_decode_jstring( input, &output );
+    res = jxta_xml_util_decode_jstring(input, &output);
 
-printf( "input='%s'\noutput='%s'\nexpect='%s'\nres=%d\n", 
-  source, jstring_get_string(output), expect, res );
+    printf("input='%s'\noutput='%s'\nexpect='%s'\nres=%d\n", source, jstring_get_string(output), expect, res);
 
-return (0 == strcmp( expect, jstring_get_string(output) ));
+    return (0 == strcmp(expect, jstring_get_string(output)));
 }
 
 static struct _funcs testfunc[] = {
-  {*extract_ip_and_port_test,        "extract_ip_and_port_test"  },
-  {*extract_ip_test,                 "extract_ip_test"           },
-  {*extract_port_test,               "extract_port_test"         },
-  {*extract_char_data_test,          "extract_char_data_test"    },
-  {*encode_xml_test,                 "encode_xml_test"           },
-  {*decode_xml_test,                 "decode_xml_test"           },
-  {NULL,                             "null"                      }
+    {*extract_ip_and_port_test, "extract_ip_and_port_test"},
+    {*extract_ip_test, "extract_ip_test"},
+    {*extract_port_test, "extract_port_test"},
+    {*extract_char_data_test, "extract_char_data_test"},
+    {*encode_xml_test, "encode_xml_test"},
+    {*decode_xml_test, "decode_xml_test"},
+    {NULL, "null"}
 };
 
 
@@ -270,10 +268,9 @@ static struct _funcs testfunc[] = {
 *
 * @return TRUE if all tests were run successfully, FALSE otherwise
 */
-Jxta_boolean run_jxta_xml_util_tests( int * tests_run,
-				      int * tests_passed,
-				      int * tests_failed){
-  return run_testfunctions(testfunc,tests_run, tests_passed, tests_failed);
+Jxta_boolean run_jxta_xml_util_tests(int *tests_run, int *tests_passed, int *tests_failed)
+{
+    return run_testfunctions(testfunc, tests_run, tests_passed, tests_failed);
 }
 
 
@@ -282,8 +279,8 @@ Jxta_boolean run_jxta_xml_util_tests( int * tests_run,
  * be wrapped so that the linker doesn't choke.
  */
 #ifdef STANDALONE
-int 
-main(int argc, char ** argv) {
-  return main_test_function(testfunc,argc,argv);
+int main(int argc, char **argv)
+{
+    return main_test_function(testfunc, argc, argv);
 }
 #endif

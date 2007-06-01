@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_types.h,v 1.7 2005/06/16 23:11:54 slowhog Exp $
+ * $Id: jxta_types.h,v 1.8 2005/09/21 21:16:52 slowhog Exp $
  */
 
 #ifndef JXTA_TYPES_H
@@ -93,15 +93,17 @@
 extern "C" {
 #endif
 #if 0
-}
+};
 #endif
+
 /**
  * JXTA public types from the Portable Runtime (JPR)
  *
  * They are renamed here do reflect that they are part of the JXTA API, 
  * although their true definition belongs in the jpr layer. Maybe we'll
  * eventually get rid of one or the other of the names.
- **/ typedef Jpr_boolean Jxta_boolean;
+ **/
+typedef Jpr_boolean Jxta_boolean;
 typedef Jpr_status Jxta_status;
 
 /**

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi.c,v 1.21 2005/08/18 22:43:05 slowhog Exp $
+ * $Id: jxta_srdi.c,v 1.26 2005/12/15 23:26:59 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -60,17 +60,12 @@
 #include "jxta_srdi.h"
 #include "jxta_xml_util.h"
 #include "jxta_advertisement.h"
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-}
-#endif
 /** Each of these corresponds to a tag in the
  * xml ad.
- */ enum tokentype {
+ */ 
+enum tokentype {
     Null_,
     Jxta_SRDIMessage_,
     TTL_,
@@ -162,6 +157,9 @@ static void DRE_Free(Jxta_object * o)
     if (dre->advId) {
         JXTA_OBJECT_RELEASE(dre->advId);
     }
+    if (dre->range) {
+        JXTA_OBJECT_RELEASE(dre->range);
+    }
     free((void *) o);
 }
 
@@ -191,17 +189,24 @@ static void handleEntry(void *userdata, const XML_Char * cd, int len)
                 entry->key = jstring_new_1(strlen(atts[1]));
                 jstring_append_0(entry->key, atts[1], strlen(atts[1]));
             } else if (!strncmp("Expiration", *atts, strlen("Expiration"))) {
-                entry->expiration = atol(atts[1]);
+                entry->expiration = apr_atoi64(atts[1]);
             } else if (!strncmp("nSpace", *atts, strlen("nSpace"))) {
                 entry->nameSpace = jstring_new_1(strlen(atts[1]));
                 jstring_append_0(entry->nameSpace, atts[1], strlen(atts[1]));
             } else if (!strncmp("AdvId", *atts, strlen("AdvId"))) {
-                if (entry->advId == NULL) {
+                if (NULL == entry->advId) {
                     entry->advId = jstring_new_1(strlen(atts[1]));
                 } else {
                     jstring_reset(entry->advId, NULL);
                 }
                 jstring_append_0(entry->advId, atts[1], strlen(atts[1]));
+            } else if (!strncmp("Range", *atts, strlen("Range"))) {
+                if (NULL == entry->range) {
+                    entry->range = jstring_new_1(strlen(atts[1]));
+                } else {
+                    jstring_reset(entry->range, NULL);
+                }
+                jstring_append_0(entry->range, atts[1], strlen(atts[1]));
             }
             atts += 2;
         }
@@ -336,16 +341,22 @@ Jxta_status srdi_message_print(Jxta_SRDIMessage * ad, JString * js)
     for (eachElement = 0; entries != NULL && eachElement < jxta_vector_size(entries); eachElement++) {
         buf = calloc(1, 512);
         anElement = NULL;
-        jxta_vector_get_object_at(entries, (Jxta_object **) & anElement, eachElement);
+        jxta_vector_get_object_at(entries, JXTA_OBJECT_PPTR(&anElement), eachElement);
         if (NULL == anElement) {
             continue;
         }
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "srdi - key:%s AdvId:%s \n", jstring_get_string(anElement->key),
                         jstring_get_string(anElement->advId));
-        apr_snprintf(buf, 512, "<Entry SKey=\"%s\" Expiration=\"%" APR_INT64_T_FMT "\" nSpace=\"%s\" AdvId=\"%s\">\n",
+        apr_snprintf(buf, 512, "<Entry SKey=\"%s\" Expiration=\"%" APR_INT64_T_FMT "\" nSpace=\"%s\" AdvId=\"%s\"",
                      jstring_get_string(anElement->key), anElement->expiration, jstring_get_string(anElement->nameSpace),
                      jstring_get_string(anElement->advId));
         jstring_append_2(js, buf);
+        if (NULL != anElement->range) {
+            jstring_append_2(js, " Range=\"");
+            jstring_append_2(js, jstring_get_string(anElement->range));
+            jstring_append_2(js, "\"");
+        }
+        jstring_append_2(js, ">\n");
         jstring_append_1(js, anElement->value);
         jstring_append_2(js, "</Entry>\n");
         JXTA_OBJECT_RELEASE(anElement);
@@ -477,6 +488,9 @@ static void entry_element_free(Jxta_object * o)
     if (dse->nameSpace != NULL) {
         JXTA_OBJECT_RELEASE(dse->nameSpace);
     }
+    if (dse->range != NULL) {
+        JXTA_OBJECT_RELEASE(dse->range);
+    }
     if (dse->advId != NULL) {
         JXTA_OBJECT_RELEASE(dse->advId);
     }
@@ -504,7 +518,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_1(JString * key, JSt
 }
 
 JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_2(JString * key, JString * value, JString * nameSpace,
-                                                              JString * advId, Jxta_expiration_time expiration)
+                                                              JString * advId, JString * jrange, Jxta_expiration_time expiration)
 {
 
     Jxta_SRDIEntryElement *dse = jxta_srdi_new_element();
@@ -513,16 +527,12 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_2(JString * key, JSt
     dse->value = JXTA_OBJECT_SHARE(value);
     dse->nameSpace = JXTA_OBJECT_SHARE(nameSpace);
     dse->advId = JXTA_OBJECT_SHARE(advId);
+    if (jrange) {
+        dse->range = JXTA_OBJECT_SHARE(jrange);
+    }
     dse->expiration = expiration;
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "This is the spot %s \n", jstring_get_string(dse->key));
     return dse;
 }
-
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
 
 /* vi: set ts=4 sw=4 tw=130 et: */

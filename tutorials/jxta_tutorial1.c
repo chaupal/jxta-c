@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tutorial1.c,v 1.5 2005/09/07 22:21:09 slowhog Exp $
+ * $Id: jxta_tutorial1.c,v 1.6 2005/11/15 18:41:35 slowhog Exp $
  */
 
 /*
@@ -232,7 +232,7 @@ int run(void)
         JString *adString = NULL;
         Jxta_advertisement *ad = NULL;
 
-        jxta_vector_get_object_at(ads, (Jxta_object **) & ad, i);
+        jxta_vector_get_object_at(ads, JXTA_OBJECT_PPTR(&ad), i);
         jxta_advertisement_get_xml(ad, &adString);
 
         printf("\n%s", jstring_get_string(adString));

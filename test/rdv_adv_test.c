@@ -50,52 +50,51 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rdv_adv_test.c,v 1.5 2005/04/07 22:58:55 slowhog Exp $
+ * $Id: rdv_adv_test.c,v 1.6 2005/09/23 20:07:15 slowhog Exp $
  */
 
 #include <stdio.h>
 #include "jxta.h"
 #include "jxta_rdv.h"
 
-Jxta_boolean
-rdv_test(int argc, char ** argv) {
+Jxta_boolean rdv_test(int argc, char **argv)
+{
 
-   Jxta_RdvAdvertisement * ad;
-   FILE *testfile;
-   JString * js;
+    Jxta_RdvAdvertisement *ad;
+    FILE *testfile;
+    JString *js;
 
-   if(argc != 2)
-     {
-       printf("usage: ad <filename>\n");
-       return -1;
-     }
+    if (argc != 2) {
+        printf("usage: ad <filename>\n");
+        return -1;
+    }
 
     jxta_initialize();
 
-   ad = jxta_RdvAdvertisement_new();
+    ad = jxta_RdvAdvertisement_new();
 
-   testfile = fopen (argv[1], "r");
-   jxta_RdvAdvertisement_parse_file(ad, testfile);
-   fclose(testfile);
+    testfile = fopen(argv[1], "r");
+    jxta_RdvAdvertisement_parse_file(ad, testfile);
+    fclose(testfile);
 
-   js = jstring_new_1(1024);
+    js = jstring_new_1(1024);
 
-   jxta_RdvAdvertisement_get_xml((Jxta_advertisement*) ad, &js);
-   fprintf(stdout,"%s",jstring_get_string(js));
+    jxta_RdvAdvertisement_get_xml((Jxta_advertisement *) ad, &js);
+    fprintf(stdout, "%s", jstring_get_string(js));
 
-   JXTA_OBJECT_RELEASE(js);
+    JXTA_OBJECT_RELEASE(js);
 
-   jxta_terminate();
-   return 0;
+    jxta_terminate();
+    return 0;
 
 }
 
 
 
 #ifdef STANDALONE
-int
-main (int argc, char **argv) {
+int main(int argc, char **argv)
+{
 
-  return rdv_test(argc,argv);
+    return rdv_test(argc, argv);
 }
 #endif

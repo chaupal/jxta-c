@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_errno.h,v 1.4 2005/06/16 23:11:42 slowhog Exp $
+ * $Id: jxta_errno.h,v 1.6 2005/10/06 16:33:35 bondolo Exp $
  */
 
 #ifndef JXTA_ERRNO_H
@@ -71,9 +71,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
-#endif                          /* __cplusplus */
+#endif /* __cplusplus */
+
 #define JXTA_SUCCESS ((Jxta_status) JPR_SUCCESS)
 #define JXTA_START_ERROR  ((Jxta_status) JPR_START_ERROR)
 #define JXTA_START_USEERR ((Jxta_status) JPR_START_USEERR)
@@ -97,6 +98,8 @@ extern "C" {
 #define JXTA_ITEM_EXISTS ((Jxta_status) JXTA_START_ERROR + 10)
 #define JXTA_NOT_CONFIGURED ((Jxta_status) JXTA_START_ERROR + 11)
 #define JXTA_UNREACHABLE_DEST ((Jxta_status) JXTA_START_ERROR + 12)
+#define JXTA_TTL_EXPIRED ((Jxta_status) JXTA_START_ERROR + 13)
+
 #ifdef __cplusplus
 #if 0
 {

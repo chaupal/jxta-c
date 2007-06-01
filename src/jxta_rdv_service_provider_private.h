@@ -50,24 +50,31 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_provider_private.h,v 1.9 2005/06/16 23:11:49 slowhog Exp $
+ * $Id: jxta_rdv_service_provider_private.h,v 1.13 2005/11/16 20:10:41 lankes Exp $
  */
 
 #ifndef __JXTA_RDV_SERVICE_PROVIDER_PRIVATE_H__
 #define __JXTA_RDV_SERVICE_PROVIDER_PRIVATE_H__
 
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 #include "jxta_errno.h"
 #include "jxta_object.h"
 #include "jxta_object_type.h"
 #include "jxta_rdv_service_private.h"
 #include "jxta_rdv_service_provider.h"
 
+#ifdef __cplusplus
+extern "C" {
+#if 0
+};
+#endif
+#endif
+
 /**
 * The set of methods that a rdv provider object must implement.
 **/
 struct _jxta_rdv_service_provider_methods {
-    Extends_nothing;            /* could extend Jxta_object but that'd be overkill */
+    Extends_nothing;    /* could extend Jxta_object but that'd be overkill */
 
     Jxta_status(*init) (Jxta_rdv_service_provider * provider, _jxta_rdv_service * service);
     Jxta_status(*start) (Jxta_rdv_service_provider * provider);
@@ -129,7 +136,7 @@ struct _jxta_rdv_service_provider {
     apr_pool_t *pool;
 
     char *messageElementName;
-    char *groupid;
+    char *groupiduniq;
     JString *localPeerIdJString;
 
     Jxta_peerview *peerview;
@@ -176,10 +183,30 @@ extern _jxta_rdv_service *jxta_rdv_service_provider_get_service_priv(Jxta_rdv_se
 **/
 extern Jxta_peerview *jxta_rdv_service_provider_get_peerview_priv(Jxta_rdv_service_provider * provider);
 
+extern Jxta_status jxta_rdv_service_provider_update_prophdr(Jxta_rdv_service_provider * provider, Jxta_message * msg,
+                                                            const char *serviceName, const char *serviceParam, int ttl);
+
 /**
+*   Propagates a message to the set of peers associated with this rendezvous
+*   provider instance. These peers will typically be either the rdv server or
+*   rdv clients.
 **/
 extern Jxta_status jxta_rdv_service_provider_prop_to_peers(Jxta_rdv_service_provider * provider, Jxta_message * msg,
-                                                           const char *serviceName, const char *serviceParam, int ttl);
+                                                           Jxta_boolean andEndpoint);
 
+
+/**
+*   Listener for incoming propagate messages.
+**/
+extern void JXTA_STDCALL jxta_rdv_service_provider_prop_listener(Jxta_object * obj, void *arg);
+
+#ifdef __cplusplus
+#if 0
+{
+#endif
+}
+#endif
 
 #endif
+
+/* vim: set ts=4 sw=4 et tw=130: */

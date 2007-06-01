@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: search.c,v 1.16 2005/08/24 07:09:42 lankes Exp $
+ * $Id: search.c,v 1.18 2005/11/15 18:41:31 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -173,7 +173,7 @@ void jxta_search_start(Jxta_object * appl, int argv, char **arg)
         JXTA_OBJECT_RELEASE(value);
         JXTA_OBJECT_RELEASE(query);
         JXTA_OBJECT_RELEASE(infile);
-
+        JXTA_OBJECT_RELEASE(discovery);
         return;
     }
     if (rf) {
@@ -220,11 +220,10 @@ void jxta_search_start(Jxta_object * appl, int argv, char **arg)
             for (i = 0; i < jxta_vector_size(res_vec); i++) {
                 sprintf(buf, "adv%d", i);
                 name = jstring_new_2(buf);
-                JXTA_OBJECT_SHARE(name);
-                jxta_vector_get_object_at(res_vec, (Jxta_object **) & padv, i);
-                JXTA_OBJECT_SHARE(padv);
+                jxta_vector_get_object_at(res_vec, JXTA_OBJECT_PPTR(&padv), i);
                 sh_obj = JxtaShellObject_new(name, (Jxta_object *) padv, env_type);
                 JxtaShellEnvironment_add_0(environment, sh_obj);
+                JXTA_OBJECT_RELEASE(sh_obj);
                 JXTA_OBJECT_RELEASE(name);
                 JXTA_OBJECT_RELEASE(padv);
             }
@@ -239,6 +238,7 @@ void jxta_search_start(Jxta_object * appl, int argv, char **arg)
     JXTA_OBJECT_RELEASE(query);
     JXTA_OBJECT_RELEASE(infile);
     JXTA_OBJECT_RELEASE(env_type);
+    JXTA_OBJECT_RELEASE(discovery);
     JxtaShellApplication_terminate(app);
 }
 

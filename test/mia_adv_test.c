@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: mia_adv_test.c,v 1.3 2005/04/07 22:58:55 slowhog Exp $
+ * $Id: mia_adv_test.c,v 1.7 2005/11/15 18:41:34 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -63,89 +63,109 @@
 
 
 
-Jxta_boolean
-mia_test(int argc, char **argv)
+Jxta_boolean mia_test(int argc, char **argv)
 {
-   Jxta_MIA * ad;
-   Jxta_id * msid;
-   JString * field;
+    Jxta_MIA *ad;
+    unsigned int i = 0;
+    Jxta_advertisement *parm_adv;
+    Jxta_vector *parm_vector;
+    Jxta_id *msid;
+    JString *field;
 
-   FILE *testfile;
-   JString * js;
+    FILE *testfile;
+    JString *js;
 
-   if(argc != 2) {
+    if (argc != 2) {
 
-       printf("usage: ad <filename>\n");
-       return FALSE;
-   }
+        printf("usage: ad <filename>\n");
+        return FALSE;
+    }
 
-   ad = jxta_MIA_new();
+    jxta_advertisement_register_global_handler("jxta:MIA", (JxtaAdvertisementNewFunc) jxta_MIA_new);
 
-   testfile = fopen (argv[1], "r");
+    ad = jxta_MIA_new();
 
-   jxta_MIA_parse_file(ad,testfile);
+    testfile = fopen(argv[1], "r");
 
-   fclose(testfile);
+    jxta_MIA_parse_file(ad, testfile);
 
-
-   jxta_MIA_get_xml(ad, &js);
-
-   fprintf(stdout,"%s\n",jstring_get_string(js));
+    fclose(testfile);
 
 
-   JXTA_OBJECT_RELEASE(js);
+    jxta_MIA_get_xml(ad, &js);
 
-   /*
-    * Check accessors.
-    */
-   msid = jxta_MIA_get_MSID(ad);
-   jxta_id_to_jstring(msid, &field);
+    fprintf(stdout, "%s\n", jstring_get_string(js));
 
-   printf("MSID: %s\n", jstring_get_string(field));
-   JXTA_OBJECT_RELEASE(field);
 
-   field = jxta_MIA_get_Comp(ad);
-   printf("Comp: %s\n", jstring_get_string(field));
-   JXTA_OBJECT_RELEASE(field);
+    JXTA_OBJECT_RELEASE(js);
 
-   field = jxta_MIA_get_Code(ad);
-   printf("Code: %s\n", jstring_get_string(field));
-   JXTA_OBJECT_RELEASE(field);
+    /*
+     * Check accessors.
+     */
+    msid = jxta_MIA_get_MSID(ad);
+    jxta_id_to_jstring(msid, &field);
 
-   field = jxta_MIA_get_PURI(ad);
-   printf("PURI: %s\n", jstring_get_string(field));
-   JXTA_OBJECT_RELEASE(field);
+    printf("MSID: %s\n", jstring_get_string(field));
+    JXTA_OBJECT_RELEASE(field);
 
-   field = jxta_MIA_get_Prov(ad);
-   printf("Prov: %s\n", jstring_get_string(field));
-   JXTA_OBJECT_RELEASE(field);
+    field = jxta_MIA_get_Comp(ad);
+    printf("Comp: %s\n", jstring_get_string(field));
+    JXTA_OBJECT_RELEASE(field);
 
-   field = jxta_MIA_get_Desc(ad);
-   printf("Desc: %s\n", jstring_get_string(field));
-   JXTA_OBJECT_RELEASE(field);
+    field = jxta_MIA_get_Code(ad);
+    printf("Code: %s\n", jstring_get_string(field));
+    JXTA_OBJECT_RELEASE(field);
 
-   field = jxta_MIA_get_Parm(ad);
-   printf("Parm: %s\n", jstring_get_string(field));
-   JXTA_OBJECT_RELEASE(field);
+    field = jxta_MIA_get_PURI(ad);
+    printf("PURI: %s\n", jstring_get_string(field));
+    JXTA_OBJECT_RELEASE(field);
 
-   JXTA_OBJECT_RELEASE(ad);
+    field = jxta_MIA_get_Prov(ad);
+    printf("Prov: %s\n", jstring_get_string(field));
+    JXTA_OBJECT_RELEASE(field);
 
-   /* FIXME: Figure out a sensible way to test xml processing. */
-   return FALSE;
+    field = jxta_MIA_get_Desc(ad);
+    printf("Desc: %s\n", jstring_get_string(field));
+    JXTA_OBJECT_RELEASE(field);
+
+    field = jxta_MIA_get_Parm(ad);
+    printf("Parm: %s\n", jstring_get_string(field));
+
+    parm_adv = jxta_advertisement_new();
+    jxta_advertisement_parse_charbuffer(parm_adv, jstring_get_string(field), jstring_length(field));
+    jxta_advertisement_get_advs(parm_adv, &parm_vector);
+
+    for (i = 0; i < jxta_vector_size(parm_vector); i++) {
+      Jxta_MIA * parm_mia;
+      JString * parm_mia_jstring;
+
+      jxta_vector_get_object_at(parm_vector, JXTA_OBJECT_PPTR(&parm_mia), i);
+      jxta_MIA_get_xml(parm_mia, &parm_mia_jstring);
+      printf("Embbeded adv %i in PARM section is: %s\n", i, jstring_get_string(parm_mia_jstring)); 
+
+      JXTA_OBJECT_RELEASE(parm_mia);
+      JXTA_OBJECT_RELEASE(parm_mia_jstring);
+    }
+    
+    JXTA_OBJECT_RELEASE(parm_vector);
+    JXTA_OBJECT_RELEASE(field);
+    JXTA_OBJECT_RELEASE(ad);
+    JXTA_OBJECT_RELEASE(parm_adv);
+
+    /* FIXME: Figure out a sensible way to test xml processing. */
+    return TRUE;
 }
 
-
-
-
-
-
-
-int
-main (int argc, char **argv) {
+int main(int argc, char **argv)
+{
     int rv;
 
     jxta_initialize();
-    rv = mia_test(argc,argv);
+    rv = mia_test(argc, argv);
     jxta_terminate();
+    if (TRUE == rv)
+        rv = 0;
+    else
+        rv = -1;
     return rv;
 }

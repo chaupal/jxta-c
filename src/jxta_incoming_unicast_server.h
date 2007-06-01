@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_incoming_unicast_server.h,v 1.4 2005/06/16 23:11:43 slowhog Exp $
+ * $Id: jxta_incoming_unicast_server.h,v 1.5 2005/09/21 21:16:47 slowhog Exp $
  */
 
 #ifndef __JXTA_INCOMING_UNICAST_SERVER_H__
@@ -65,9 +65,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _incoming_unicast_server IncomingUnicastServer;
 
 

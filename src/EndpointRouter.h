@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: EndpointRouter.h,v 1.5 2005/08/03 05:51:14 slowhog Exp $
+ * $Id: EndpointRouter.h,v 1.6 2005/09/21 21:16:45 slowhog Exp $
  */
 
 
@@ -62,7 +62,7 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
 
@@ -107,3 +107,5 @@ JXTA_DECLARE(void) EndpointRouter_set_GatewayForward(EndpointRouter *, char *);
 #endif
 
 #endif /* __EndpointRouter_H__  */
+
+/* vim: set ts=4 sw=4 et tw=130: */

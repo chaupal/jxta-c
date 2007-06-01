@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bidipipe.c,v 1.15 2005/08/03 05:51:14 slowhog Exp $
+ * $Id: jxta_bidipipe.c,v 1.17 2005/11/16 20:10:39 lankes Exp $
  */
 
 #include <stdlib.h>
@@ -258,7 +258,7 @@ static Jxta_status handle_open_message(Jxta_bidipipe * self, Jxta_message * msg)
 
     peer_id = jxta_PA_get_PID(peer_adv);
     jxta_id_get_uniqueportion(peer_id, &s);
-    self->ep_addr = jxta_endpoint_address_new2("jxta", jstring_get_string(s), "PipeService", jxta_pipe_adv_get_Id(pipe_adv));
+    self->ep_addr = jxta_endpoint_address_new_2("jxta", jstring_get_string(s), "PipeService", jxta_pipe_adv_get_Id(pipe_adv));
 
     JXTA_OBJECT_RELEASE(peer_adv);
     JXTA_OBJECT_RELEASE(peer_id);
@@ -375,7 +375,7 @@ static Jxta_status handle_response_message(Jxta_bidipipe * self, Jxta_message * 
 
     peer_id = jxta_PA_get_PID(peer_adv);
     jxta_id_get_uniqueportion(peer_id, &s);
-    self->ep_addr = jxta_endpoint_address_new2("jxta", jstring_get_string(s), "PipeService", jxta_pipe_adv_get_Id(pipe_adv));
+    self->ep_addr = jxta_endpoint_address_new_2("jxta", jstring_get_string(s), "PipeService", jxta_pipe_adv_get_Id(pipe_adv));
 
     JXTA_OBJECT_RELEASE(peer_adv);
     JXTA_OBJECT_RELEASE(peer_id);
@@ -416,7 +416,7 @@ static Jxta_status close_pipes(Jxta_bidipipe * self)
     return JXTA_SUCCESS;
 }
 
-static void bidipipe_input_listener(Jxta_object * obj, void *arg)
+static void JXTA_STDCALL bidipipe_input_listener(Jxta_object * obj, void *arg)
 {
     Jxta_message *msg = (Jxta_message *) obj;
     Jxta_message *open_msg;

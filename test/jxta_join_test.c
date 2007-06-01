@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_join_test.c,v 1.4 2005/06/05 17:31:53 lankes Exp $
+ * $Id: jxta_join_test.c,v 1.7 2005/10/27 09:44:56 lankes Exp $
  */
 
 #include "jxta.h"
@@ -60,45 +60,43 @@
 #include "jxta_rdv_service.h"
 #include "jxta_resolver_service.h"
 #include "jxta_object.h"
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 int main(int argc, char *argv[])
 {
-    Jxta_PG* netpg;
-    Jxta_PG* pg;
-    Jxta_PGA* pga;
-    JString* pgas;
-    Jxta_endpoint_service* endp;
-    Jxta_rdv_service* rdv;
-    Jxta_resolver_service* resolver;
+    Jxta_PG *netpg;
+    Jxta_PG *pg;
+    Jxta_PGA *pga;
+    JString *pgas;
+    Jxta_endpoint_service *endp;
+    Jxta_rdv_service *rdv;
+    Jxta_resolver_service *resolver;
     Jxta_status res;
-    FILE* pgadv_file;
-
+    FILE *pgadv_file;
     pgadv_file = fopen("join_test_pga.xml", "r");
     if (pgadv_file == NULL) {
-	printf("please dump the adv of the group you want to join in"
-	       " join_test_pga.xml\n");
-	exit(1);
+        printf("please dump the adv of the group you want to join in" " join_test_pga.xml\n");
+        return -1;
     }
 
     jxta_initialize();
 
     res = jxta_PG_new_netpg(&netpg);
     if (res != JXTA_SUCCESS) {
-	printf("jxta_PG_new_netpg failed with error: %ld\n", res);
-	exit(1);
+        printf("jxta_PG_new_netpg failed with error: %ld\n", res);
+        return -2;
     }
 
     pga = jxta_PGA_new();
     jxta_PGA_parse_file(pga, pgadv_file);
 
-    res = jxta_PG_newfromadv(netpg, pga, NULL, &pg);
+    res = jxta_PG_newfromadv(netpg, (Jxta_advertisement *) pga, NULL, &pg);
 
     JXTA_OBJECT_RELEASE(pga);
 
     if (res != JXTA_SUCCESS) {
-	printf("jxta_PG_newfromadv failed with error: %ld\n", res);
-	exit(1);
+        printf("jxta_PG_newfromadv failed with error: %ld\n", res);
+        return -3;
     }
 
     jxta_PG_get_rendezvous_service(pg, &rdv);
@@ -115,13 +113,13 @@ int main(int argc, char *argv[])
     JXTA_OBJECT_RELEASE(pga);
     JXTA_OBJECT_RELEASE(pgas);
 
-    printf("type q<return> when done\n");
+    fprintf(stderr, "type q<return> when done\n");
     while (getchar() != 'q');
-    
-    jxta_module_stop((Jxta_module*) pg);
+
+    jxta_module_stop((Jxta_module *) pg);
     JXTA_OBJECT_RELEASE(pg);
 
-    jxta_module_stop((Jxta_module*) netpg);
+    jxta_module_stop((Jxta_module *) netpg);
     JXTA_OBJECT_RELEASE(netpg);
 
     jxta_terminate();

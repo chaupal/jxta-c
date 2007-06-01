@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cm.h,v 1.12 2005/08/03 05:51:15 slowhog Exp $
+ * $Id: jxta_cm.h,v 1.16 2005/11/23 15:50:32 slowhog Exp $
  */
 #ifndef JXTA_CM_H__
 #define JXTA_CM_H__
@@ -103,6 +103,8 @@ typedef struct _jxta_cm Jxta_cm;
 #define CM_COL_AdvId "AdvId"
 #define CM_COL_Name "Name"
 #define CM_COL_Value "Value"
+#define CM_COL_NumValue "NumValue"
+#define CM_COL_NumRange "RangeValue"
 #define CM_COL_TimeOut "TimeOut"
 #define CM_COL_TimeOutForOthers "TimeOutOthers"
 #define CM_COL_Advert "Advert"
@@ -177,9 +179,24 @@ JXTA_DECLARE(char **) jxta_cm_get_primary_keys(Jxta_cm * cm, char *folder_name);
 JXTA_DECLARE(Jxta_status)
     jxta_cm_save(Jxta_cm * cm, const char *folder_name, char *primary_key,
              Jxta_advertisement * adv, Jxta_expiration_time timeOutForMe, Jxta_expiration_time timeOutForOthers);
-
+/**
+ * Save the SRDI entry in the given folder.
+ *
+ * @param Jxta_cm (A ptr to) the cm object to apply the operation to
+ * @param folder_name the name of the folder
+ * @param primary_key the primary key with which to associate that advertisement.
+ * @param SRDI element - Entry should contain the advid, attr, value and timeout
+ */
 JXTA_DECLARE(Jxta_status)
     jxta_cm_save_srdi(Jxta_cm * self, JString * handler, JString * peerid, JString * primaryKey, Jxta_SRDIEntryElement * entry);
+/**
+ * Save the Replica entry in the given folder 
+ *
+ * @param Jxta_cm (A ptr to) the cm object to apply the operation to
+ * @param folder_name the name of the folder
+ * @param primary_key the primary key with which to associate that advertisement.
+ * @param SRDI element - Entry should contain the advid, attr, value and timeout
+ */
 
 JXTA_DECLARE(Jxta_status)
     jxta_cm_save_replica(Jxta_cm * self, JString * handler, JString * peerid, JString * primaryKey, Jxta_SRDIEntryElement * entry);
@@ -199,16 +216,55 @@ JXTA_DECLARE(Jxta_status)
  */
 JXTA_DECLARE(char **) jxta_cm_search(Jxta_cm * cm, char *folder_name, const char *attribute, const char *value, int n_adv);
 
-
+/**
+ * Search for advertisements that match the XPath type query.
+ * What is returned is a null terminated list of the primary keys of
+ * items that match.
+ *
+ * @param Jxta_cm (A ptr to) the cm object to apply the operation to
+ * @param folder_name the name of the folder
+ * @param query - XPath type query
+ * @param n_adv The maximum number of advs to retrieve.
+ * @return A null terminated list of char* each pointing at the primary key
+ * of one matching advertisement.
+ */
 JXTA_DECLARE(char **) jxta_cm_query(Jxta_cm * cm, char *folder_name, const char *query, int n_adv);
 
-
+/**
+ * Search for advertisements with a raw SQL query WHERE string.
+ *
+ * @param Jxta_cm (A ptr to) the cm object to apply the operation to
+ * @param folder_name the name of the folder
+ * @param where - A SQL string that is concatenated to a WHERE clause.
+ * @return A null terminated list of Jxta_advertisement* each pointing at an instance 
+ * a matching advertisement
+ */
 JXTA_DECLARE(Jxta_advertisement **) jxta_cm_sql_query(Jxta_cm * self, const char *folder_name, JString * where);
 
-
+/**
+ * Search for entries in the SRDI with a raw SQL query WHERE string.
+ *
+ * @param Jxta_cm (A ptr to) the cm object to apply the operation to
+ * @param folder_name the name of the folder
+ * @param where - A WHERE clause SQL string.
+ * @return A null terminated list of Jxta_advertisement* each pointing
+ * a composite advertiswement of the entries ordered by the advid.
+ */
 JXTA_DECLARE(Jxta_object **) jxta_cm_sql_query_srdi(Jxta_cm * self, const char *folder_name, JString * where);
 
+/**
+ * Search for entries in the Replica name space given a vector of Jxta_query_element entries .
+ * The results are filtered based on the least popular entry. When the entries are
+ * retrieved they are sorted by peerid and the AND booleans in the predicate
+ * elements. The least popular results are returned.
+ *
+ * @param Jxta_cm (A ptr to) the cm object to apply the operation to
+ * @param nameSpace - the namespace (ns:name) to be queried
+ * @param queries - A vector of SQL predicates 
+ * @return A vector of peerIds that match the entries searched.
+ */
 JXTA_DECLARE(Jxta_vector *) jxta_cm_query_replica(Jxta_cm * self, JString * nameSpace, Jxta_vector * queries);
+
 /**
  * Restore the designated advertisement from storage.
  *
@@ -278,6 +334,16 @@ JXTA_DECLARE(void) jxta_cm_close(Jxta_cm * cm);
  */
 JXTA_DECLARE(Jxta_vector *) jxta_cm_get_srdi_entries(Jxta_cm * self, JString * folder_name);
 
+/**
+ * Remove the SRDI entries for the specified peer
+ * 
+ * @param Jxta_cm instance
+ * @param const char * id - Peerid to remove
+ * 
+ *
+**/
+JXTA_DECLARE(void) jxta_cm_remove_srdi_entries(Jxta_cm * self, JString * peerid);
+
 /*
  * get the new SRDI index entry for the provided folder since
  * we last pushed them
@@ -288,7 +354,33 @@ JXTA_DECLARE(Jxta_vector *) jxta_cm_get_srdi_entries(Jxta_cm * self, JString * f
  * @return a vector od SRDIElementEntry
  */
 JXTA_DECLARE(Jxta_vector *) jxta_cm_get_srdi_delta_entries(Jxta_cm * self, JString * folder_name);
-
+/**
+ * Remove the SRDI entries for the specified peer
+ * 
+ * @param Jxta_cm instance
+ * @param const char * id - Peerid to remove
+ * 
+ *
+**/
+JXTA_DECLARE(void) jxta_cm_remove_srdi_entries(Jxta_cm * self, JString * peerid);
+/**
+ * Function to create the proper quotes for a string in a SQL statement
+ * 
+ * @param jDest - JString of the destination
+ * @param jStr - String to examine
+ * @param isNumeric - Is this a numeric string
+ *
+ * 
+**/
+JXTA_DECLARE(void) jxta_sql_numeric_quote(JString * jDest, JString * jStr, Jxta_boolean isNumeric);
+/**
+ * Set the delta record option in the CM. Deltas are created for publishing to the SRDI
+ * of the connected rendezvous.
+ * 
+ * @param Jxta_cm instance
+ * @param Jxta_boolean recordDelta - TRUE - record FALSE - stop recording
+**/
+JXTA_DECLARE(void) jxta_cm_set_delta(Jxta_cm * self, Jxta_boolean recordDelta);
 
 #ifdef __cplusplus
 #if 0

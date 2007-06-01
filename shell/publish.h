@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: publish.h,v 1.3 2005/08/24 01:21:22 slowhog Exp $
+ * $Id: publish.h,v 1.4 2005/09/25 03:55:47 exocetrick Exp $
  */
 #ifndef __JXTA_SHELL_PUBLISH_H__
 #define __JXTA_SHELL_PUBLISH_H__
@@ -74,11 +74,11 @@ JxtaShellApplication *publish_new(Jxta_PG * pg,
                                   Jxta_listener * standout,
                                   JxtaShellEnvironment * env, Jxta_object * parent, shell_application_terminate terminate);
 
-void publish_process_input(Jxta_object * app, JString * inputLine);
+void publish_process_input(JxtaShellApplication * app, JString * inputLine);
 
-void publish_start(Jxta_object * app, int argv, char **arg);
+void publish_start(JxtaShellApplication * app, int argv, const char **arg);
 
-void publish_print_help(Jxta_object * app);
+void publish_print_help(JxtaShellApplication * app);
 
 
 #ifdef __cplusplus

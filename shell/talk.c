@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: talk.c,v 1.17 2005/08/30 17:27:20 slowhog Exp $
+ * $Id: talk.c,v 1.22 2005/11/24 04:17:50 mmx2005 Exp $
  */
 
 #include <stdio.h>
@@ -93,9 +93,9 @@ static JString *peerName = NULL;
 
 static Jxta_hashtable *listeners = NULL;
 
-static void message_listener(Jxta_object * obj, void *arg);
+static void JXTA_STDCALL message_listener(Jxta_object * obj, void *arg);
 static void login_user(const char *userName);
-static void create_user(const char *userName);
+static void create_user(const char *userName, Jxta_boolean propagate);
 static void connect_to_user(const char *userName);
 static void process_user_input(Jxta_outputpipe * pipe, const char *userName);
 
@@ -136,9 +136,13 @@ void talk_process_input(Jxta_object * appl, JString * inputLine)
 
 void talk_start(Jxta_object * appl, int argv, const char **arg)
 {
+    enum operations { help, newuser, login, talk };
+
     /*  JxtaShellApplication * app = (JxtaShellApplication*)appl; */
-    JxtaShellGetopt *opt = JxtaShellGetopt_new(argv, arg, "l:t:r:");
+    JxtaShellGetopt *opt = JxtaShellGetopt_new(argv, arg, "pl:t:r:");
     JString *userName = NULL;
+    Jxta_boolean propagate = FALSE;
+    enum operations operation = help;
 
     while (TRUE) {
         int type = JxtaShellGetopt_getNext(opt);
@@ -146,42 +150,70 @@ void talk_start(Jxta_object * appl, int argv, const char **arg)
 
         if (type == -1)
             break;
+
         switch (type) {
 
         case 'l':
+            operation = login;
             userName = JxtaShellGetopt_getOptionArgument(opt);
-            login_user(jstring_get_string(userName));
-            JXTA_OBJECT_RELEASE(userName);
             break;
 
         case 't':
+            operation = talk;
             userName = JxtaShellGetopt_getOptionArgument(opt);
-            connect_to_user(jstring_get_string(userName));
-            JXTA_OBJECT_RELEASE(userName);
             break;
 
 
         case 'r':
+            operation = newuser;
             userName = JxtaShellGetopt_getOptionArgument(opt);
-            create_user(jstring_get_string(userName));
-            JXTA_OBJECT_RELEASE(userName);
             break;
 
         case 'h':
-            talk_print_help(appl);
+            operation = help;
             break;
+
+        case 'p':
+            propagate = TRUE;
+            break;
+
         default:
-            talk_print_help(appl);
             error = 1;
             break;
         }
+
         if (error != 0) {
             break;
         }
     }
 
     JxtaShellGetopt_delete(opt);
-    JxtaShellApplication_terminate(appl);
+
+    switch (operation) {
+
+    case login:
+        login_user(jstring_get_string(userName));
+        JXTA_OBJECT_RELEASE(userName);
+        break;
+
+    case talk:
+        connect_to_user(jstring_get_string(userName));
+        JXTA_OBJECT_RELEASE(userName);
+        break;
+
+
+    case newuser:
+        create_user(jstring_get_string(userName), propagate);
+        JXTA_OBJECT_RELEASE(userName);
+        break;
+
+    default:
+    case help:
+        talk_print_help(appl);
+        break;
+    }
+
+    JxtaShellApplication_terminate((JxtaShellApplication *) appl);
 
     JXTA_OBJECT_RELEASE(discovery);
     JXTA_OBJECT_RELEASE(pipe_service);
@@ -194,16 +226,16 @@ void talk_print_help(Jxta_object * appl)
     JxtaShellApplication *app = (JxtaShellApplication *) appl;
     JString *inputLine = jstring_new_2("talk - talk to another JXTA user \n\n");
     jstring_append_2(inputLine, "SYNOPSIS\n");
-    jstring_append_2(inputLine, "    talk [-t remote user]\n");
-    jstring_append_2(inputLine, "           [-l local user] login for the local user\n");
-    jstring_append_2(inputLine, "           [-r user name] register a new user\n");
-    if (app != 0) {
+    jstring_append_2(inputLine, "    talk [-t <user>] talk to a remote user.\n");
+    jstring_append_2(inputLine, "         [-l <user>] login for the local user.\n");
+    jstring_append_2(inputLine, "         [-r <user> [-p]] register a new user.\n");
+    if (app != NULL) {
         JxtaShellApplication_print(app, inputLine);
     }
     JXTA_OBJECT_RELEASE(inputLine);
 }
 
-static Jxta_pipe_adv *get_user_adv(char *userName, Jxta_time timeout)
+static Jxta_pipe_adv *get_user_adv(const char *userName, Jxta_time timeout)
 {
     char *talkUserName = malloc(50 + strlen(userName));
     Jxta_status res;
@@ -213,7 +245,41 @@ static Jxta_pipe_adv *get_user_adv(char *userName, Jxta_time timeout)
     Jxta_vector *responses = NULL;
     long query_id;
 
-    sprintf(talkUserName, "JxtaTalkUserName.%s", userName);
+    /* Some magic hackery to always have the IP2PGRP advertisement available */
+    if (0 == strcasecmp("ip2pgrp", userName)) {
+        Jxta_PGID *gid = NULL;
+        Jxta_id *pipeid = NULL;
+        JString *pipeid_jstr = NULL;
+
+        jxta_PG_get_GID(group, &gid);
+        if (JXTA_SUCCESS !=
+            jxta_id_pipeid_new_2(&pipeid, gid, "\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1", 16)) {
+            JXTA_OBJECT_RELEASE(gid);
+            printf("Fail to construct pipe ID for IP2PGRP.\n");
+            return NULL;
+        }
+        JXTA_OBJECT_RELEASE(gid);
+
+        if (JXTA_SUCCESS != jxta_id_to_jstring(pipeid, &pipeid_jstr)) {
+            JXTA_OBJECT_RELEASE(pipeid);
+            printf("Fail to construct pipe ID for IP2PGRP.\n");
+            return NULL;
+        }
+        JXTA_OBJECT_RELEASE(pipeid);
+
+        adv = jxta_pipe_adv_new();
+        jxta_pipe_adv_set_Id(adv, jstring_get_string(pipeid_jstr));
+        printf("IP2PGRP with pipe ID: %s\n", jstring_get_string(pipeid_jstr));
+        jxta_pipe_adv_set_Name(adv, "JxtaTalkUserName.IP2PGRP");
+        jxta_pipe_adv_set_Type(adv, "JxtaPropagate");
+
+        JXTA_OBJECT_RELEASE(pipeid_jstr);
+
+        return adv;
+    }
+
+    strcpy(talkUserName, "JxtaTalkUserName.");
+    strcat(talkUserName, userName);
 
     /*
      * check first our local cache
@@ -229,7 +295,7 @@ static Jxta_pipe_adv *get_user_adv(char *userName, Jxta_time timeout)
                                                                DISC_ADV, "Name", talkUserName, 1,
                                                                (Jxta_discovery_listener *) listener);
 
-        res = jxta_listener_wait_for_event(listener, timeout, (Jxta_object **) & dr);
+        res = jxta_listener_wait_for_event(listener, timeout, JXTA_OBJECT_PPTR(&dr));
         if (res != JXTA_SUCCESS) {
             printf("wait on listener failed\n");
             JXTA_OBJECT_RELEASE(listener);
@@ -250,7 +316,7 @@ static Jxta_pipe_adv *get_user_adv(char *userName, Jxta_time timeout)
             return NULL;
         }
 
-        res = jxta_vector_get_object_at(responses, (Jxta_object **) & element, 0);
+        res = jxta_vector_get_object_at(responses, JXTA_OBJECT_PPTR(&element), 0);
         if (res != JXTA_SUCCESS) {
             printf("get response failed\n");
             JXTA_OBJECT_RELEASE(responses);
@@ -267,7 +333,7 @@ static Jxta_pipe_adv *get_user_adv(char *userName, Jxta_time timeout)
         JXTA_OBJECT_RELEASE(element);
 
     } else {
-        res = jxta_vector_get_object_at(responses, (Jxta_object **) & adv, 0);
+        res = jxta_vector_get_object_at(responses, JXTA_OBJECT_PPTR(&adv), 0);
         if (res != JXTA_SUCCESS) {
             printf("get local response failed\n");
             JXTA_OBJECT_RELEASE(responses);
@@ -334,7 +400,7 @@ static void login_user(const char *userName)
     }
 }
 
-static void create_user(const char *userName)
+static void create_user(const char *userName, Jxta_boolean propagate)
 {
     Jxta_pipe_adv *adv = NULL;
     Jxta_id *pipeid = NULL;
@@ -357,13 +423,14 @@ static void create_user(const char *userName)
 
     adv = jxta_pipe_adv_new();
     jxta_pipe_adv_set_Id(adv, jstring_get_string(tmpString));
-    jxta_pipe_adv_set_Type(adv, JXTA_UNICAST_PIPE);
+    jxta_pipe_adv_set_Type(adv, propagate ? JXTA_PROPAGATE_PIPE : JXTA_UNICAST_PIPE);
     jxta_pipe_adv_set_Name(adv, talkUserName);
 
     free(talkUserName);
     JXTA_OBJECT_RELEASE(tmpString);
 
-    res = discovery_service_publish(discovery, adv, DISC_ADV, TALK_ADVERTISEMENT_LIFETIME, TALK_ADVERTISEMENT_LIFETIME);
+    res = discovery_service_publish(discovery, (Jxta_advertisement *) adv, 
+                                    DISC_ADV, TALK_ADVERTISEMENT_LIFETIME, TALK_ADVERTISEMENT_LIFETIME);
     JXTA_OBJECT_RELEASE(adv);
 
     if (res != JXTA_SUCCESS) {
@@ -421,14 +488,13 @@ static void send_message(Jxta_outputpipe * op, const char *userName, const char 
 
     JXTA_OBJECT_CHECK_VALID(op);
 
-    pt = jstring_get_string(peerName);
+    pt = (char *) jstring_get_string(peerName);
 
     el = jxta_message_element_new_1(SENDERNAME, "text/plain", pt, strlen(pt), NULL);
 
     jxta_message_add_element(msg, el);
 
     JXTA_OBJECT_RELEASE(el);
-
 
     pt = malloc(strlen(MYGROUPNAME) + 1);
     strcpy(pt, MYGROUPNAME);
@@ -455,7 +521,6 @@ static void send_message(Jxta_outputpipe * op, const char *userName, const char 
     JXTA_OBJECT_CHECK_VALID(msg);
     JXTA_OBJECT_RELEASE(msg);
 }
-
 
 static void processIncomingMessage(Jxta_message * msg)
 {
@@ -518,14 +583,13 @@ static void processIncomingMessage(Jxta_message * msg)
     }
 }
 
-static void message_listener(Jxta_object * obj, void *arg)
+static void JXTA_STDCALL message_listener(Jxta_object * obj, void *arg)
 {
     Jxta_message *msg = (Jxta_message *) obj;
 
     JXTA_OBJECT_CHECK_VALID(msg);
     processIncomingMessage(msg);
 }
-
 
 static char *get_user_string(void)
 {

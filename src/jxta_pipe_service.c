@@ -50,12 +50,12 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_service.c,v 1.24 2005/07/22 03:12:53 slowhog Exp $
+ * $Id: jxta_pipe_service.c,v 1.26 2005/10/27 01:55:28 slowhog Exp $
  */
 
 static const char *__log_cat = "PIPE";
 
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 #include "jpr/jpr_excep_proto.h"
 
 #include "jxta_errno.h"
@@ -102,10 +102,9 @@ struct _jxta_outputpipe_event {
 static Jxta_boolean add_impl(Jxta_pipe_service * self, const char *name, Jxta_pipe_service_impl * impl);
 static Jxta_boolean remove_impl(Jxta_pipe_service * self, const char *name, Jxta_pipe_service_impl * impl);
 static Jxta_pipe_service_impl *get_impl(Jxta_pipe_service * self, const char *name);
-static Jxta_pipe_service_impl *get_impl_by_adv(Jxta_pipe_service * self, Jxta_pipe_adv * adv);
 extern Jxta_pipe_service_impl *jxta_wire_service_new_instance(Jxta_pipe_service *, Jxta_PG *);
 extern Jxta_pipe_service_impl *jxta_unipipe_service_new_instance(Jxta_pipe_service *, Jxta_PG *);
-extern Jxta_pipe_resolver *jxta_piperesolver_impl_new(Jxta_PG * group);
+extern Jxta_pipe_resolver *jxta_piperesolver_new(Jxta_PG * group);
 
 static Jxta_status
 pipe_service_timed_connect(Jxta_pipe_service * self,
@@ -273,7 +272,7 @@ static Jxta_status pipe_service_set_resolver(Jxta_pipe_service * self, Jxta_pipe
     return JXTA_NOTIMP;
 }
 
-static Jxta_pipe_service_impl *get_impl_by_adv(Jxta_pipe_service * self, Jxta_pipe_adv * adv)
+Jxta_pipe_service_impl *get_impl_by_adv(Jxta_pipe_service * self, Jxta_pipe_adv * adv)
 {
     const char *name = NULL;
 
@@ -573,25 +572,25 @@ static Jxta_status jxta_pipe_service_init(Jxta_module * module, Jxta_PG * group,
  * @param this a pointer to the instance of the Rendezvous Service
  * @param argv a vector of string arguments.
  **/
-static Jxta_status start(Jxta_module * me, const char *argv[])
+static Jxta_status start(Jxta_module * module, const char *argv[])
 {
     Jxta_status res;
-    Jxta_pipe_service *me2 = (Jxta_pipe_service *) me;
+    Jxta_pipe_resolver *pipe_resolver = NULL;
+    Jxta_pipe_service *self = (Jxta_pipe_service *) module;
 
-    apr_thread_mutex_lock(me2->mutex);
+    apr_thread_mutex_lock(self->mutex);
+
     /**
      ** Create the default pipe resolver.
      **/
-    {
-        Jxta_pipe_resolver *pipe_resolver = jxta_piperesolver_impl_new(me2->group);
-        if (pipe_resolver == NULL) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Cannot allocate Pipe Resolver\n");
-        } else {
-            me2->pipe_resolver = pipe_resolver;
-        }
+    pipe_resolver = jxta_piperesolver_new(self->group);
+    if (pipe_resolver == NULL) {
+      jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Cannot allocate Pipe Resolver\n");
+    } else {
+      self->pipe_resolver = pipe_resolver;
     }
 
-    me2->impls = dl_make();
+   self->impls = dl_make();
 
     /**
      ** Creates a wire_service instance
@@ -599,8 +598,8 @@ static Jxta_status start(Jxta_module * me, const char *argv[])
     {
         Jxta_pipe_service_impl *impl = NULL;
 
-        impl = jxta_wire_service_new_instance(me2, me2->group);
-        res = jxta_pipe_service_add_impl(me2, jxta_pipe_service_impl_get_name(impl), impl);
+        impl = jxta_wire_service_new_instance(self, self->group);
+        res = jxta_pipe_service_add_impl(self, jxta_pipe_service_impl_get_name(impl), impl);
         if (res != JXTA_SUCCESS) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Cannot insert pipe impl [%s] into pipe service.\n",
                             jxta_pipe_service_impl_get_name(impl));
@@ -614,8 +613,8 @@ static Jxta_status start(Jxta_module * me, const char *argv[])
     {
         Jxta_pipe_service_impl *impl = NULL;
 
-        impl = jxta_unipipe_service_new_instance(me2, me2->group);
-        res = jxta_pipe_service_add_impl(me2, jxta_pipe_service_impl_get_name(impl), impl);
+        impl = jxta_unipipe_service_new_instance(self, self->group);
+        res = jxta_pipe_service_add_impl(self, jxta_pipe_service_impl_get_name(impl), impl);
         if (res != JXTA_SUCCESS) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Cannot insert pipe impl [%s] into pipe service.\n",
                             jxta_pipe_service_impl_get_name(impl));
@@ -625,7 +624,7 @@ static Jxta_status start(Jxta_module * me, const char *argv[])
     }
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Started.\n");
-    apr_thread_mutex_unlock(me2->mutex);
+    apr_thread_mutex_unlock(self->mutex);
     return JXTA_SUCCESS;
 }
 
@@ -966,6 +965,17 @@ jxta_pipe_service_impl_set_pipe_resolver(Jxta_pipe_service_impl * self, Jxta_pip
      ** Not implemented yet.
      **/
     return JXTA_NOTIMP;
+}
+
+Jxta_status 
+jxta_pipe_service_impl_check_listener(Jxta_pipe_service_impl * self, const char * id)
+{
+    if (self == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument\n");
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    return self->check_listener(self, id);
 }
 
 /**

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dr.c,v 1.62 2005/08/29 06:38:07 slowhog Exp $
+ * $Id: jxta_dr.c,v 1.66 2005/11/22 22:00:57 mmx2005 Exp $
  */
 
 #include <stdio.h>
@@ -58,11 +58,12 @@
 #include "jxta_errno.h"
 #include "jxta_debug.h"
 #include "jxta_dr.h"
+#include "jxta_pa.h"
 #include "jxta_dr_priv.h"
 #include "jxta_xml_util.h"
 #include "jxta_advertisement.h"
 #include "jxta_discovery_service.h"
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -151,6 +152,7 @@ static void handlePeerAdv(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_DiscoveryResponse *ad = (Jxta_DiscoveryResponse *) userdata;
     jstring_append_0((JString *) ad->PeerAdv, cd, len);
+    jstring_trim(ad->PeerAdv);
 }
 
 static void handleAttr(void *userdata, const XML_Char * cd, int len)
@@ -289,8 +291,8 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_peer_advertisement(Jxta_Di
     if (ad->peer_advertisement) {
         JXTA_OBJECT_SHARE(ad->peer_advertisement);
     } else if (jstring_length(ad->PeerAdv) > 0) {
-        ad->peer_advertisement = jxta_advertisement_new();
-        jxta_advertisement_parse_charbuffer(ad->peer_advertisement, jstring_get_string(ad->PeerAdv), jstring_length(ad->PeerAdv));
+        ad->peer_advertisement = (Jxta_advertisement *) jxta_PA_new();
+        jxta_PA_parse_charbuffer((Jxta_PA *) ad->peer_advertisement, jstring_get_string(ad->PeerAdv), jstring_length(ad->PeerAdv));
         JXTA_OBJECT_SHARE(ad->peer_advertisement);
     }
     *peer_advertisement = ad->peer_advertisement;
@@ -397,7 +399,7 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_advertisements(Jxta_Discov
         for (i = 0; i < jxta_vector_size(ad->responselist); i++) {
             Jxta_object *tmpadv = NULL;
             res = NULL;
-            jxta_vector_get_object_at(ad->responselist, (Jxta_object **) & res, i);
+            jxta_vector_get_object_at(ad->responselist, JXTA_OBJECT_PPTR(&res), i);
             if (res != NULL) {
                 radv = jxta_advertisement_new();
                 jxta_advertisement_parse_charbuffer(radv, jstring_get_string(res->response), jstring_length(res->response));
@@ -464,7 +466,7 @@ Jxta_status response_print(Jxta_DiscoveryResponse * ad, JString * js)
 
     for (eachElement = jxta_vector_size(responselist) - 1; eachElement >= 0; eachElement--) {
         Jxta_DiscoveryResponseElement *anElement = NULL;
-        jxta_vector_get_object_at(responselist, (Jxta_object **) & anElement, eachElement);
+        jxta_vector_get_object_at(responselist, JXTA_OBJECT_PPTR(&anElement), eachElement);
         if (NULL == anElement) {
             continue;
         }

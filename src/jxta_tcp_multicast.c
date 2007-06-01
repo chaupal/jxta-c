@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tcp_multicast.c,v 1.24 2005/08/18 19:01:51 slowhog Exp $
+ * $Id: jxta_tcp_multicast.c,v 1.28 2005/11/22 23:44:45 mmx2005 Exp $
  */
 
 #define BUFSIZE		8192
@@ -63,11 +63,12 @@
 #include "jpr/jpr_apr_wrapper.h"
 #include "jpr/jpr_types.h"
 
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 #include "jxta_errno.h"
 #include "jxta_log.h"
 #include "jxta_tcp_multicast.h"
 #include "jxta_endpoint_address.h"
+#include "jxta_transport_tcp_private.h"
 #include "jxta_tcp_message_packet_header.h"
 
 #ifdef WIN32
@@ -107,7 +108,7 @@ struct _tcp_multicast {
 
     STREAM *input_stream;
     STREAM *output_stream;
-    STREAM *buf_stream;
+    char *header_buf;
 
     Jxta_endpoint_service *endpoint;
 };
@@ -119,7 +120,6 @@ static int apr_socketdes_get(apr_socket_t * sock);
 static STREAM *stream_new(apr_size_t size);
 static void stream_init(STREAM * stream);
 static void stream_free(STREAM * stream);
-static void stream_print(STREAM * stream);
 
 static void tcp_multicast_free(Jxta_object * arg);
 
@@ -131,9 +131,6 @@ static Jxta_status JXTA_STDCALL msg_wireformat_size(void *arg, const char *buf, 
 static Jxta_status JXTA_STDCALL write_to_tcp_multicast_stream(void *stream, const char *buf, apr_size_t len);
 
 static Jxta_status JXTA_STDCALL tcp_multicast_read(TcpMulticast * tm, char *buf, apr_size_t * size);
-/*
-static Jxta_status tcp_multicast_unread(TcpMulticast *tm, char *buf, apr_size_t size);
-*/
 static Jxta_status tcp_multicast_read_stream_n(STREAM * stream, char *buf, apr_size_t size);
 static Jxta_status tcp_multicast_write_stream(STREAM * stream, const char *buf, apr_size_t size);
 static Jxta_status tcp_multicast_write(TcpMulticast * tm, const char *buf, apr_size_t size);
@@ -206,7 +203,7 @@ TcpMulticast *tcp_multicast_new(Jxta_transport_tcp * tp, char *ipaddr, apr_port_
     /* stream */
     self->input_stream = stream_new(self->multicast_packet_size);
     self->output_stream = stream_new(self->multicast_packet_size);
-    self->buf_stream = stream_new(self->multicast_packet_size);
+    self->header_buf = malloc(HEADER_BUFSIZE);
 
     /* apr setting */
     status = apr_pool_create(&self->pool, NULL);
@@ -272,7 +269,7 @@ static void tcp_multicast_free(Jxta_object * obj)
 
     stream_free(self->input_stream);
     stream_free(self->output_stream);
-    stream_free(self->buf_stream);
+    free(self->header_buf);
 
     JXTA_OBJECT_RELEASE(self->endpoint);
 
@@ -348,7 +345,7 @@ Jxta_boolean tcp_multicast_start(TcpMulticast * tm)
     /* It is not apr function */
     sockfd = apr_socketdes_get(self->recv_sock);
     /* ADD MEMBER; use raw function */
-    setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+    setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq));
     /* No Loopback */
     /*
        sockfd = apr_socketdes_get(self->send_sock);
@@ -420,8 +417,6 @@ static void *APR_THREAD_FUNC tcp_multicast_body(apr_thread_t * t, void *arg)
         stream->d_len = stream->d_size;
         tcp_multicast_read(self, stream->data_buf, &stream->d_len);
 
-        /*stream_print(stream); */
-
         tcp_multicast_process(self, stream);
     }
     apr_thread_exit(t, APR_SUCCESS);
@@ -446,7 +441,9 @@ static void JXTA_STDCALL tcp_multicast_process(TcpMulticast * tm, STREAM * strea
     stream->d_index += 4;
     stream->d_len -= 4;
 
-    res = message_packet_header_read(read_from_tcp_multicast_stream, (void *) stream, &msg_size, TRUE, &self->received_src_addr);
+    res =
+        message_packet_header_read(self->header_buf, read_from_tcp_multicast_stream, (void *) stream, &msg_size, TRUE,
+                                   &self->received_src_addr);
 
     /* We do not have anything with self->received_src_addr */
     /* FIXME: slowhog: what does this mean? do we want to have it but failed because bug of
@@ -515,7 +512,7 @@ Jxta_status tcp_multicast_propagate(TcpMulticast * tm, Jxta_message * msg, const
     dest_addr = (char *) malloc(len);
     apr_snprintf(dest_addr, len, "%s:%d", self->multicast_ipaddr, self->multicast_port);
     /* set destination */
-    m_addr = jxta_endpoint_address_new2("tcp", dest_addr, service_name, service_params);
+    m_addr = jxta_endpoint_address_new_2("tcp", dest_addr, service_name, service_params);
     jxta_message_set_destination(msg, m_addr);
     JXTA_OBJECT_RELEASE(m_addr);
     free(dest_addr);
@@ -531,7 +528,8 @@ Jxta_status tcp_multicast_propagate(TcpMulticast * tm, Jxta_message * msg, const
     jxta_message_write(msg, APP_MSG, msg_wireformat_size, &msg_size);
 
     src_addr = (char *) malloc(128);
-    apr_snprintf(src_addr, 128, "tcp://%s:%d", jxta_transport_tcp_local_ipaddr_cstr(self->tp), jxta_transport_tcp_get_local_port(self->tp));
+    apr_snprintf(src_addr, 128, "tcp://%s:%d", jxta_transport_tcp_local_ipaddr_cstr(self->tp),
+                 jxta_transport_tcp_get_local_port(self->tp));
 
     message_packet_header_write(msg_wireformat_size, (void *) &packet_header_size, msg_size, TRUE, src_addr);
     message_packet_header_write(write_to_tcp_multicast_stream, (void *) stream, msg_size, TRUE, src_addr);
@@ -546,7 +544,7 @@ Jxta_status tcp_multicast_propagate(TcpMulticast * tm, Jxta_message * msg, const
         return JXTA_FAILED;
     }
 
-    res = tcp_multicast_write(self, stream->data_buf, 4 + packet_header_size + msg_size);
+    res = tcp_multicast_write(self, stream->data_buf, 4 + packet_header_size + (apr_size_t)msg_size);
 
     if (res != JXTA_SUCCESS) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Failed sendto()\n");
@@ -625,22 +623,3 @@ static Jxta_status tcp_multicast_write(TcpMulticast * tm, const char *buf, apr_s
 
     return (APR_SUCCESS == status) ? JXTA_SUCCESS : JXTA_FAILED;
 }
-
-void stream_print(STREAM * stream)
-{
-    apr_size_t i; 
-    int ch;
-
-    printf("[%lu] ", stream->d_len);
-    for (i = 0; i < stream->d_len; i++) {
-        ch = stream->data_buf[i];
-        if (ch < 32) {
-            printf("%02X ", (unsigned char) ch);
-        } else {
-            printf("%c", ch);
-        }
-    }
-    printf("\n");
-}
-
-/* vim: set ts=4 sw=4 et tw=130: */

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_vector.c,v 1.30 2005/08/31 22:50:16 bondolo Exp $
+ * $Id: jxta_vector.c,v 1.31 2005/10/27 01:55:31 slowhog Exp $
  */
 
 static const char *__log_cat = "VECTOR";
@@ -59,7 +59,7 @@ static const char *__log_cat = "VECTOR";
 #include <stddef.h>
 #include <stdlib.h>
 
-#include "jxtaapr.h"
+#include "jxta_apr.h"
 
 #include "jxta_errno.h"
 #include "jxta_log.h"

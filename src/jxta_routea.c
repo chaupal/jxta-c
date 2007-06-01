@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_routea.c,v 1.15 2005/08/03 05:51:18 slowhog Exp $
+ * $Id: jxta_routea.c,v 1.16 2005/11/14 10:11:28 slowhog Exp $
  */
 
 
@@ -318,7 +318,7 @@ void hops_printer(Jxta_RouteAdvertisement * ad, JString * js)
     for (i = 0; i < sz; ++i) {
         Jxta_AccessPointAdvertisement *hop;
 
-        jxta_vector_get_object_at(lists, (Jxta_object **) & hop, i);
+        jxta_vector_get_object_at(lists, JXTA_OBJECT_PPTR(&hop), i);
         jxta_AccessPointAdvertisement_get_xml(hop, &tmp);
         jstring_append_2(js, "<Hops>");
         jstring_append_1(js, tmp);

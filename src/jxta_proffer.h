@@ -59,14 +59,21 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 typedef struct _jxta_ProfferAdvertisement Jxta_ProfferAdvertisement;
 /**
 * Create a new proffer advertisement 
 **/
 JXTA_DECLARE(Jxta_ProfferAdvertisement *) jxta_ProfferAdvertisement_new(void);
+
+/**
+* Create a new proffer advertisement to rebuild an advertisement
+* and deal with the numeric values in elements and/or attributes
+**/
+JXTA_DECLARE(Jxta_ProfferAdvertisement *) jxta_ProfferAdvertisement_new_rebuild(Jxta_advertisement *adv, const char *name, const char* xmlString);
 /**
 * The namespace is the xxx:yyyy of the advertisement.
 * 

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_objecthash_test.c,v 1.7 2005/04/17 14:22:18 lankes Exp $
+ * $Id: jxta_objecthash_test.c,v 1.10 2005/11/15 18:41:33 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -73,14 +73,15 @@ typedef struct {
     int occur;
 } Num_val;
 
-Num_val* num_val_new_object(int n) {
-    Num_val* this = (Num_val*) malloc(sizeof(Num_val));
-    if (this == NULL ) {
-	JXTA_LOG("Out of memory.\n");
-	abort();
+Num_val *num_val_new_object(int n)
+{
+    Num_val *this = (Num_val *) malloc(sizeof(Num_val));
+    if (this == NULL) {
+        JXTA_LOG("Out of memory.\n");
+        abort();
     }
     memset(this, 0, sizeof(*this));
-    JXTA_OBJECT_INIT((Jxta_object*) this, free, 0);
+    JXTA_OBJECT_INIT((Jxta_object *) this, free, 0);
     this->n = n;
     this->occur = 1;
     return this;
@@ -88,10 +89,11 @@ Num_val* num_val_new_object(int n) {
 
 /* Get the undocumented debugging tool :-) */
 extern Jxta_status JXTA_STDCALL
-jxta_objecthashtable_stupid_lookup(Jxta_objecthashtable* this, Jxta_object* key, Jxta_object** found_value);
+jxta_objecthashtable_stupid_lookup(Jxta_objecthashtable * this, Jxta_object * key, Jxta_object ** found_value);
 
 
-static Jxta_boolean test_num(void) {
+static Jxta_boolean test_num(void)
+{
 
     time_t start;
     time_t insertion;
@@ -110,208 +112,198 @@ static Jxta_boolean test_num(void) {
 
     int i;
     Jxta_status res;
-    Jxta_vector* all_vals;
+    Jxta_vector *all_vals;
 
-    Jxta_objecthashtable* hash_num = jxta_objecthashtable_new(8, jxta_bytevector_hashcode, jxta_bytevector_equals );
+    Jxta_objecthashtable *hash_num = jxta_objecthashtable_new(8, jxta_bytevector_hashcode, jxta_bytevector_equals);
 
     srand(1);
     start = time(NULL);
-    for (i = 1000000; i--> 0; ) {
-	int k = rand();
-        Jxta_bytevector* key = jxta_bytevector_new_1( sizeof(k) );
-	Num_val* old_val = 0;
-	Num_val* new_val = num_val_new_object(k);
-        
-    jxta_bytevector_add_bytes_at( key, (unsigned char*) &k, 0, sizeof(k) );
-        
-	jxta_objecthashtable_replace(hash_num, 
-            (Jxta_object*) key, (Jxta_object*) new_val, (Jxta_object**) &old_val);
-	if (old_val != NULL ) {
-	    if (old_val->n != k) {
-		JXTA_LOG("Ooops replaced the wrong value at iteration #%d (%d != %d)\n", i, old_val->n, k);
-		return FALSE;
-	    }
-		new_val->occur = old_val->occur + 1;
-	    ++duplicates;
-	    JXTA_OBJECT_RELEASE(old_val);
-	}
+    for (i = 1000000; i-- > 0;) {
+        int k = rand();
+        Jxta_bytevector *key = jxta_bytevector_new_1(sizeof(k));
+        Num_val *old_val = 0;
+        Num_val *new_val = num_val_new_object(k);
 
-	/* We do not keep a ref. The table does. */
-	JXTA_OBJECT_RELEASE(key);
-	JXTA_OBJECT_RELEASE(new_val);
+        jxta_bytevector_add_bytes_at(key, (unsigned char *) &k, 0, sizeof(k));
+
+        jxta_objecthashtable_replace(hash_num, (Jxta_object *) key, (Jxta_object *) new_val, JXTA_OBJECT_PPTR(&old_val));
+        if (old_val != NULL) {
+            if (old_val->n != k) {
+                printf("Ooops replaced the wrong value at iteration #%d (%d != %d)\n", i, old_val->n, k);
+                return FALSE;
+            }
+            new_val->occur = old_val->occur + 1;
+            ++duplicates;
+            JXTA_OBJECT_RELEASE(old_val);
+        }
+
+        /* We do not keep a ref. The table does. */
+        JXTA_OBJECT_RELEASE(key);
+        JXTA_OBJECT_RELEASE(new_val);
     }
     insertion = time(NULL) - start;
-
+    printf("replace done\n");
     /* remove every other entry */
     srand(1);
     start = time(NULL);
-    for (i = 1000000; i--> 0; ) {
-	int k = rand();
-        Jxta_bytevector* key = jxta_bytevector_new_1( sizeof(k) );
-        jxta_bytevector_add_bytes_at( key, (unsigned char*) &k, 0, sizeof(k) );
+    for (i = 1000000; i-- > 0;) {
+        int k = rand();
+        Jxta_bytevector *key = jxta_bytevector_new_1(sizeof(k));
+        jxta_bytevector_add_bytes_at(key, (unsigned char *) &k, 0, sizeof(k));
 
-	if (i%2) {
-	    Num_val* rmd;
-	    res = jxta_objecthashtable_del(hash_num, (Jxta_object*) key, (Jxta_object**) &rmd);
+        if (i % 2) {
+            Num_val *rmd;
+            res = jxta_objecthashtable_del(hash_num, (Jxta_object *) key, JXTA_OBJECT_PPTR(&rmd));
 
-	    if (res != JXTA_SUCCESS) {
-		JXTA_LOG("Ooops %d removal failed: key = %d\n", i, k);
-		JXTA_LOG("trying to lookup key\n");
-		res = jxta_objecthashtable_get(hash_num, (Jxta_object*) key, (Jxta_object**) &rmd);
-		if (res == JXTA_SUCCESS) {
-		    JXTA_OBJECT_RELEASE(rmd);
-		    JXTA_LOG("Key found: problem specific to removal\n");
-		} else {
-		    JXTA_LOG("Key not found\n");
-		    res = jxta_objecthashtable_stupid_lookup(hash_num, (Jxta_object*) key, (Jxta_object**) &rmd);
-		    if (res == JXTA_SUCCESS) {
-			if (rmd->n == k) {
-			    JXTA_LOG("The key's in the table. get screws up.\n");
-			} else {
-			    JXTA_LOG("The key's in the table but wrong val.\n");
-			}
-		    } else {
-			JXTA_LOG("The key is not in the table. So lookup is "
-			       "fine. Either del or put screws up.\n");
-		    }
-		}
-		return FALSE;
-	    }
+            if (res != JXTA_SUCCESS) {
+                printf("Ooops %d removal failed: key = %d\n", i, k);
+                printf("trying to lookup key\n");
+                res = jxta_objecthashtable_get(hash_num, (Jxta_object *) key, JXTA_OBJECT_PPTR(&rmd));
+                if (res == JXTA_SUCCESS) {
+                    JXTA_OBJECT_RELEASE(rmd);
+                    printf("Key found: problem specific to removal\n");
+                } else {
+                    printf("Key not found\n");
+                    res = jxta_objecthashtable_stupid_lookup(hash_num, (Jxta_object *) key, JXTA_OBJECT_PPTR(&rmd));
+                    if (res == JXTA_SUCCESS) {
+                        if (rmd->n == k) {
+                            printf("The key's in the table. get screws up.\n");
+                        } else {
+                            printf("The key's in the table but wrong val.\n");
+                        }
+                    } else {
+                        printf("The key is not in the table. So lookup is " "fine. Either del or put screws up.\n");
+                    }
+                }
+                return FALSE;
+            }
 
-	    if (rmd->n != k) {
-		JXTA_LOG("Ooops removed the wrong object\n");
-		return FALSE;
-	    }
+            if (rmd->n != k) {
+                printf("Ooops removed the wrong object\n");
+                return FALSE;
+            }
 
-	    if (--(rmd->occur) != 0) {
-		--duplicates;
-		jxta_objecthashtable_put(hash_num, (Jxta_object*) key,
-				   (Jxta_object*) rmd);
-	    }
-	    /* Del in both cases. We don't keep a ref, the tbl does. */
-	    JXTA_OBJECT_RELEASE(rmd);
-	}
-        
- 	JXTA_OBJECT_RELEASE(key);
-   }
+            if (--(rmd->occur) != 0) {
+                --duplicates;
+                jxta_objecthashtable_put(hash_num, (Jxta_object *) key, (Jxta_object *) rmd);
+            }
+            /* Del in both cases. We don't keep a ref, the tbl does. */
+            JXTA_OBJECT_RELEASE(rmd);
+        }
+
+        JXTA_OBJECT_RELEASE(key);
+    }
+    printf("every other done\n");
     deletion = time(NULL) - start;
 
     /* insert half a million more (no srand()) */
     start = time(NULL);
-    for (i = 500000; i--> 0; ) {
-	int k = rand();
-	Num_val* old_val = 0;
-	Num_val* new_val = num_val_new_object(k);
-        Jxta_bytevector* key = jxta_bytevector_new_1( sizeof(k) );
-        jxta_bytevector_add_bytes_at( key, (unsigned char*) &k, 0, sizeof(k) );
+    for (i = 500000; i-- > 0;) {
+        int k = rand();
+        Num_val *old_val = 0;
+        Num_val *new_val = num_val_new_object(k);
+        Jxta_bytevector *key = jxta_bytevector_new_1(sizeof(k));
+        jxta_bytevector_add_bytes_at(key, (unsigned char *) &k, 0, sizeof(k));
 
-	jxta_objecthashtable_replace(hash_num, (Jxta_object*) key,
-			       (Jxta_object*) new_val,
-			       (Jxta_object**) &old_val);
-	if (old_val != 0) {
-	    if (old_val->n != k) {
-		JXTA_LOG("Ooops replaced the wrong value\n");
-		return FALSE;
-	    }
-		new_val->occur = old_val->occur + 1;
-	    ++duplicates;
-	    JXTA_OBJECT_RELEASE(old_val);
-	}
+        jxta_objecthashtable_replace(hash_num, (Jxta_object *) key, (Jxta_object *) new_val, JXTA_OBJECT_PPTR(&old_val));
+        if (old_val != 0) {
+            if (old_val->n != k) {
+                printf("Ooops replaced the wrong value\n");
+                return FALSE;
+            }
+            new_val->occur = old_val->occur + 1;
+            ++duplicates;
+            JXTA_OBJECT_RELEASE(old_val);
+        }
 
-	/* We do not keep a ref. The table does. */
-	JXTA_OBJECT_RELEASE(key);
-	JXTA_OBJECT_RELEASE(new_val);
+        /* We do not keep a ref. The table does. */
+        JXTA_OBJECT_RELEASE(key);
+        JXTA_OBJECT_RELEASE(new_val);
     }
     reinsertion = time(NULL) - start;
-
+    printf("add more done\n");
     /* now look them all up */
     srand(1);
     start = time(NULL);
-    for (i = 1000000; i--> 0; ) {
-	int k = rand();
-        Jxta_bytevector* key = jxta_bytevector_new_1( sizeof(k) );
-        jxta_bytevector_add_bytes_at( key, (unsigned char*) &k, 0, sizeof(k) );
+    for (i = 1000000; i-- > 0;) {
+        int k = rand();
+        Jxta_bytevector *key = jxta_bytevector_new_1(sizeof(k));
+        jxta_bytevector_add_bytes_at(key, (unsigned char *) &k, 0, sizeof(k));
 
-	if (! i%2) { /* Those we did not remove :-) */
-	    Num_val* found;
-	    res = jxta_objecthashtable_get(hash_num, (Jxta_object*) key,
-						 (Jxta_object**) &found);
-	    if (res != JXTA_SUCCESS) {
-		JXTA_LOG("Ooops lookup failed (phase 1) : %d\n", k);
-		    JXTA_LOG("trying stupid lookup\n");
-		    res = jxta_objecthashtable_stupid_lookup(hash_num, (Jxta_object*) key,
-						       (Jxta_object**) &found);
-		    if (res == JXTA_SUCCESS) {
-			if (found->n == k) {
-			    JXTA_LOG("The key's in the table. get screws up.\n");
-			} else {
-			    JXTA_LOG("The key's in the table but wrong val.\n");
-			}
-		    } else {
-			JXTA_LOG("The key is not in the table. So lookup is "
-			       "fine. Either del or put screws up.\n");
-		    }
-		return FALSE;
-	    }
+        if (!i % 2) {   /* Those we did not remove :-) */
+            Num_val *found;
+            res = jxta_objecthashtable_get(hash_num, (Jxta_object *) key, JXTA_OBJECT_PPTR(&found));
+            if (res != JXTA_SUCCESS) {
+                printf("Ooops lookup failed (phase 1) : %d\n", k);
+                printf("trying stupid lookup\n");
+                res = jxta_objecthashtable_stupid_lookup(hash_num, (Jxta_object *) key, JXTA_OBJECT_PPTR(&found));
+                if (res == JXTA_SUCCESS) {
+                    if (found->n == k) {
+                        printf("The key's in the table. get screws up.\n");
+                    } else {
+                        printf("The key's in the table but wrong val.\n");
+                    }
+                } else {
+                    printf("The key is not in the table. So lookup is " "fine. Either del or put screws up.\n");
+                }
+                return FALSE;
+            }
 
-	    if (found->n != k) {
-		JXTA_LOG("Ooops found the wrong object\n");
-		return FALSE;
-	    }
+            if (found->n != k) {
+                printf("Ooops found the wrong object\n");
+                return FALSE;
+            }
 
-	    JXTA_OBJECT_RELEASE(found);
-	}
-        
-	JXTA_OBJECT_RELEASE(key);
+            JXTA_OBJECT_RELEASE(found);
+        }
+
+        JXTA_OBJECT_RELEASE(key);
     }
-    
-    for (i = 500000; i--> 0; ) {
-	int k = rand();
-	Num_val* found;
-        Jxta_bytevector* key = jxta_bytevector_new_1( sizeof(k) );
-        jxta_bytevector_add_bytes_at( key, (unsigned char*) &k, 0, sizeof(k) );
+    printf("lookup 1 done\n");
+    for (i = 500000; i-- > 0;) {
+        int k = rand();
+        Num_val *found;
+        Jxta_bytevector *key = jxta_bytevector_new_1(sizeof(k));
+        jxta_bytevector_add_bytes_at(key, (unsigned char *) &k, 0, sizeof(k));
 
-	res = jxta_objecthashtable_get(hash_num, (Jxta_object*) key, (Jxta_object**) &found);
-	if (res != JXTA_SUCCESS) {
-	    JXTA_LOG("Ooops lookup failed (phase 2) : %d\n", k);
-		    JXTA_LOG("trying stupid lookup\n");
-		    res = jxta_objecthashtable_stupid_lookup(hash_num, (Jxta_object*) key,
-						       (Jxta_object**) &found);
-		    if (res == JXTA_SUCCESS) {
-			if (found->n == k) {
-			    JXTA_LOG("The key's in the table. get screws up.\n");
-			} else {
-			    JXTA_LOG("The key's in the table but wrong val.\n");
-			}
-		    } else {
-			JXTA_LOG("The key is not in the table. So lookup is "
-			       "fine. Either del or put screws up.\n");
-		    }
-	    return FALSE;
-	}
+        res = jxta_objecthashtable_get(hash_num, (Jxta_object *) key, JXTA_OBJECT_PPTR(&found));
+        if (res != JXTA_SUCCESS) {
+            printf("Ooops lookup failed (phase 2) : %d\n", k);
+            printf("trying stupid lookup\n");
+            res = jxta_objecthashtable_stupid_lookup(hash_num, (Jxta_object *) key, JXTA_OBJECT_PPTR(&found));
+            if (res == JXTA_SUCCESS) {
+                if (found->n == k) {
+                    printf("The key's in the table. get screws up.\n");
+                } else {
+                    printf("The key's in the table but wrong val.\n");
+                }
+            } else {
+                printf("The key is not in the table. So lookup is " "fine. Either del or put screws up.\n");
+            }
+            return FALSE;
+        }
 
-	if (found->n != k) {
-	    JXTA_LOG("Ooops found the wrong object\n");
-	    return FALSE;
-	}
-	JXTA_OBJECT_RELEASE(found);
-	JXTA_OBJECT_RELEASE(key);
+        if (found->n != k) {
+            printf("Ooops found the wrong object\n");
+            return FALSE;
+        }
+        JXTA_OBJECT_RELEASE(found);
+        JXTA_OBJECT_RELEASE(key);
     }
 
     lookup = time(NULL) - start;
-
+    printf("lookup 2 done\n");
     start = time(NULL);
     all_vals = jxta_objecthashtable_values_get(hash_num);
     if (all_vals == NULL) {
-	JXTA_LOG("There was not enough memory to allocate the values vector.\n");
+        printf("There was not enough memory to allocate the values vector.\n");
     } else {
-	JXTA_LOG("Found %ld values in hashtable\n", jxta_vector_size(all_vals));
-	JXTA_OBJECT_RELEASE(all_vals);
+        printf("Found %ld values in hashtable\n", jxta_vector_size(all_vals));
+        JXTA_OBJECT_RELEASE(all_vals);
     }
     getvals = time(NULL) - start;
 
-    jxta_objecthashtable_stats(hash_num, &total_size, &usage,
-			 &occupancy, &max_occupancy, &avg_hops);
+    jxta_objecthashtable_stats(hash_num, &total_size, &usage, &occupancy, &max_occupancy, &avg_hops);
 
     /* now delete the whole table and its 1.5 Million entries. */
     start = time(NULL);
@@ -355,35 +347,34 @@ static int test_id(void) {
 *
 * @return TRUE if all tests were run successfully, FALSE otherwise
 */
-Jxta_boolean run_jxta_objecthash_tests( int * tests_run,
-				        int * tests_passed,
-				        int * tests_failed){
-  Jxta_boolean result;
-  
-  *tests_run += 1;
-  result = test_num();
- 
-  if( result == TRUE){
-    *tests_passed += 1;
-  }
-  else{
-    *tests_failed += 1;
-  }
+Jxta_boolean run_jxta_objecthash_tests(int *tests_run, int *tests_passed, int *tests_failed)
+{
+    Jxta_boolean result;
 
-  return result;
+    *tests_run += 1;
+    result = test_num();
+
+    if (result == TRUE) {
+        *tests_passed += 1;
+    } else {
+        *tests_failed += 1;
+    }
+
+    return result;
 }
 
 
 #ifdef STANDALONE
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[])
+{
     Jxta_boolean result;
     int i = 0;
 
     jxta_initialize();
 
     result = test_num();
-    if (result == FALSE)  
-	    i = -1;
+    if (result == FALSE)
+        i = -1;
 
     jxta_terminate();
     return i;

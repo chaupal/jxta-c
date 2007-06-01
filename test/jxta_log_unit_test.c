@@ -18,9 +18,9 @@
 #include "jxta_log.h"
 #include "jxta_log_priv.h"
 
-JXTA_DECLARE(Jxta_log_selector*) jxta_log_selector_new_and_set(const char *selector, Jxta_status *rv);
+JXTA_DECLARE(Jxta_log_selector *) jxta_log_selector_new_and_set(const char *selector, Jxta_status * rv);
 
-JXTA_DECLARE(Jxta_boolean) jxta_log_selector_is_selected(Jxta_log_selector *self, const char *cat, Jxta_log_level level);
+JXTA_DECLARE(Jxta_boolean) jxta_log_selector_is_selected(Jxta_log_selector * self, const char *cat, Jxta_log_level level);
 
 #include <stdio.h>
 
@@ -32,7 +32,7 @@ JXTA_DECLARE(Jxta_boolean) jxta_log_selector_is_selected(Jxta_log_selector *self
     if (TRUE == jxta_log_selector_is_selected(s, x, y)) \
         printf("Failed at line %u\n", line);
 
-static const char* _log_level_labels[JXTA_LOG_LEVEL_MAX] = {
+static const char *_log_level_labels[JXTA_LOG_LEVEL_MAX] = {
     "fatal",
     "error",
     "warning",
@@ -41,9 +41,9 @@ static const char* _log_level_labels[JXTA_LOG_LEVEL_MAX] = {
     "trace"
 };
 
-void dump_sel(Jxta_log_selector *s)
+void dump_sel(Jxta_log_selector * s)
 {
-    int i;
+    unsigned int i;
 
     printf("-------- Selector status -------\n");
     printf("Categories: %s\n", (s->negative_category_list) ? "NEG" : "POS");
@@ -65,7 +65,8 @@ int main(int argc, char **argv)
     Jxta_status rv;
 
     rv = jxta_log_initialize();
-    if (JXTA_SUCCESS != rv) return 1;
+    if (JXTA_SUCCESS != rv)
+        return -1;
 
     s = jxta_log_selector_new_and_set("a aa, b , ccc,dddd ,ee, ff.fatal - warning,debug, warning- error info , trace", &rv);
     if (JXTA_SUCCESS != rv) {
@@ -89,7 +90,8 @@ int main(int argc, char **argv)
 
     rv = jxta_log_file_open(&f, "jprlog.log");
 
-    if (JXTA_SUCCESS != rv) return 1;
+    if (JXTA_SUCCESS != rv)
+        return -1;
     jxta_log_file_attach_selector(f, s, NULL);
     jxta_log_using(jxta_log_file_append, f);
 

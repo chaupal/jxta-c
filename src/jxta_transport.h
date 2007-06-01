@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport.h,v 1.6 2005/09/13 16:26:02 slowhog Exp $
+ * $Id: jxta_transport.h,v 1.8 2005/10/17 20:51:48 slowhog Exp $
  */
 
 #ifndef JXTA_TRANSPORT_H
@@ -67,11 +67,16 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
 
 typedef struct _jxta_transport Jxta_transport;
+typedef enum _jxta_directions {
+    JXTA_INBOUND = 1,
+    JXTA_OUTBOUND = 2,
+    JXTA_BIDIRECTION = 3
+} Jxta_direction;
 
 /*
  * Transport API.
@@ -167,6 +172,24 @@ JXTA_DECLARE(Jxta_boolean) jxta_transport_allow_routing_p(Jxta_transport * that)
  * @return Jxta_boolean TRUE if connection-oriented, FALSE otherwise.
  */
 JXTA_DECLARE(Jxta_boolean) jxta_transport_connection_oriented_p(Jxta_transport * that);
+
+/*
+ * Tells if this transport allows inbound messages
+ *
+ * @param me Handle of the Jxta_transport object to whih the operation is
+ * applied.
+ * @return Jxta_boolean TRUE if inbound message is allowed, FALSE otherwise.
+ */
+JXTA_DECLARE(Jxta_boolean) jxta_transport_allow_inbound(Jxta_transport * me);
+
+/*
+ * Tells if this transport allows outbound messages
+ *
+ * @param me Handle of the Jxta_transport object to whih the operation is
+ * applied.
+ * @return Jxta_boolean TRUE if outbound message is allowed, FALSE otherwise.
+ */
+JXTA_DECLARE(Jxta_boolean) jxta_transport_allow_outbound(Jxta_transport * me);
 
 #ifdef __cplusplus
 #if 0

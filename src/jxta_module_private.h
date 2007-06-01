@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_module_private.h,v 1.20 2005/06/16 23:11:44 slowhog Exp $
+ * $Id: jxta_module_private.h,v 1.21 2005/09/21 21:16:48 slowhog Exp $
  */
 
 #ifndef JXTA_MODULE_PRIVATE_H
@@ -72,9 +72,10 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 /**
  * The set of methods that a Jxta_module must implement.
  * All Jxta_module and derivates have a pointer to such an
@@ -85,8 +86,8 @@ extern "C" {
  *
  * Do not forget to begin the initializer block with the literal
  * string "Jxta_module_methods".
- */ struct _jxta_module_methods {
-
+ */
+struct _jxta_module_methods {
     Extends_nothing;            /* could extend Jxta_object but that'd be overkill */
 
     /* An implementation of Jxta_module_init */
