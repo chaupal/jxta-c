@@ -9,5 +9,5 @@
 		<Identity>mtn1</Identity>
 	</Credential>
 	<Option type="jxta:PeerViewOptions" auto_rdv="true"/>
-	<Option type="jxta:RdvClientOptions" srdi_interval="300000"/>
+	<Option type="jxta:RdvLeaseOptions" willingness="0" suitability="99"/>
 </jxta:LeaseRequest>

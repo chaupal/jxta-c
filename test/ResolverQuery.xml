@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!DOCTYPE jxta:ResolverQuery><jxta:ResolverQuery>
+<SrcPeerRoute><jxta:RA xmlns:jxta="http://jxta.org">
+<DstPID>urn:jxta:uuid-59616261646162614E504720503250338505A1FD948A4C0DA07B9C340B469DBC03</DstPID><Dst><jxta:APA xmlns:jxta="http://jxta.org">
+<EA>pluggable://144.115.122.224:9719</EA>
+</jxta:APA>
+</Dst>
+</jxta:RA>
+</SrcPeerRoute>
+<SrcPeerID>urn:jxta:uuid-59616261646162614E504720503250338505A1FD948A4C0DA07B9C340B469DBC03</SrcPeerID>
+<HandlerName>urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000305</HandlerName>
+<QueryID>1
+</QueryID>
+<HC>0
+</HC>
+<Query>&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE jxta:DiscoveryQuery&gt;&lt;jxta:DiscoveryQuery&gt;
+&lt;Type&gt;2
+&lt;/Type&gt;
+&lt;Threshold&gt;1000
+&lt;/Threshold&gt;
+&lt;ExtendedQuery&gt;/sc:group[groupName="Thingee"]&lt;/ExtendedQuery&gt;&lt;/jxta:DiscoveryQuery&gt;</Query>
+</jxta:ResolverQuery>

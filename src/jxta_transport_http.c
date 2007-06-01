@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http.c,v 1.72 2006/09/08 19:17:56 bondolo Exp $
+ * $Id: jxta_transport_http.c,v 1.73 2006/10/31 19:51:26 bondolo Exp $
  */
 
 static const char *__log_cat = "HTTP_TRANSPORT";
@@ -311,14 +311,14 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     jxta_PA_get_Svc_with_id(conf_adv,jxta_relayproto_classid_get(),&svc);
     JXTA_OBJECT_RELEASE(conf_adv);
     if (svc == NULL) {
-        return JXTA_CONFIG_NOTFOUND;
+        return JXTA_NOT_CONFIGURED;
     }
 
     isclient = jxta_svc_get_IsClient(svc);
     JXTA_OBJECT_RELEASE(svc);
 
     if (isclient == NULL) {
-        return JXTA_CONFIG_NOTFOUND;
+        return JXTA_NOT_CONFIGURED;
     }
 
     if (strcmp(jstring_get_string(isclient), "true") != 0) {

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tcp_private.h,v 1.16 2006/09/06 00:45:00 slowhog Exp $
+ * $Id: jxta_transport_tcp_private.h,v 1.18 2007/01/16 22:27:05 slowhog Exp $
  */
 
 #ifndef __JXTA_TRANSPORT_TCP_PRIVATE_H__
@@ -77,12 +77,16 @@ extern "C" {
 #define CONNECTION_TIMEOUT	(1 * 1000 * 1000)
 #define MAX_ACCEPT_COUNT_BACKLOG	50
 
+typedef enum e_tcp_connection_state {
+    CONN_INIT = 0,
+    CONN_CONNECTING,
+    CONN_CONNECTED,
+    CONN_DISCONNECTING,
+    CONN_DISCONNECTED,
+} Tcp_connection_state;
+
 
 Jxta_transport_tcp *jxta_transport_tcp_new_instance(void);
-
-TcpMessenger *get_tcp_messenger(Jxta_transport_tcp * me, Jxta_transport_tcp_connection * conn, Jxta_endpoint_address * addr);
-
-Jxta_status jxta_transport_tcp_remove_messenger(Jxta_transport_tcp * me, Jxta_endpoint_address * addr);
 
 Jxta_endpoint_service *jxta_transport_tcp_get_endpoint_service(Jxta_transport_tcp * me);
 
@@ -99,6 +103,11 @@ Jxta_endpoint_address *jxta_transport_tcp_get_public_addr(Jxta_transport_tcp * m
 Jxta_boolean jxta_transport_tcp_get_allow_multicast(Jxta_transport_tcp * me);
 
 void tcp_got_inbound_connection(Jxta_transport_tcp * me, Jxta_transport_tcp_connection * conn);
+
+Jxta_time get_tcp_connection_last_time_used(Jxta_transport_tcp_connection * tcp_connection);
+
+Tcp_connection_state tcp_connection_state(Jxta_transport_tcp_connection *me);
+Jxta_status tcp_connection_get_messenger(Jxta_transport_tcp_connection *me, apr_interval_time_t timeout, TcpMessenger **msgr);
 
 #ifdef __cplusplus
 #if 0

@@ -51,12 +51,13 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_service_priv.h,v 1.5 2006/09/05 06:12:11 slowhog Exp $
+ * $Id: jxta_endpoint_service_priv.h,v 1.6 2006/12/23 19:53:00 slowhog Exp $
  */
 
 #ifndef JXTA_ENDPOINT_SERVICE_PRIV_H
 #define JXTA_ENDPOINT_SERVICE_PRIV_H
 
+#include "jxta_endpoint_service.h"
 #include "jxta_transport_private.h"
 
 #ifdef __cplusplus

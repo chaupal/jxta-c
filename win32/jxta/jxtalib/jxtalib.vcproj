@@ -320,6 +320,9 @@
 				RelativePath="..\..\..\src\jxta_rdv_config_adv.c">
 			</File>
 			<File
+				RelativePath="..\..\..\src\jxta_rdv_lease_options.c">
+			</File>
+			<File
 				RelativePath="..\..\..\src\jxta_rdv_service.c">
 			</File>
 			<File
@@ -682,6 +685,9 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_rdv_config_adv.h">
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_rdv_lease_options.h">
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_rdv_service.h">

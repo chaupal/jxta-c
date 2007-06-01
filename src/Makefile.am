@@ -225,6 +225,8 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_rdv_service_private.h           \
                      jxta_resolver_service_private.h      \
                      jxta_rdv_service_provider_private.h  \
+                     jxta_rdv_lease_options.h \
+                     jxta_rdv_lease_options.c \
                      jxta_service_private.h               \
                      jxta_transport_private.h             \
                      jxta_builtinmodules_private.h        \

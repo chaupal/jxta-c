@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup.c,v 1.56 2006/09/26 18:24:38 slowhog Exp $
+ * $Id: jxta_peergroup.c,v 1.58 2006/12/16 07:38:49 slowhog Exp $
  */
 static const char *__log_cat = "PG";
 
@@ -910,7 +910,7 @@ Jxta_status peergroup_stop(Jxta_PG * me)
     Jxta_status rv;
 
     jxta_PG_get_endpoint_service(me, &ep);
-    rv = endpoint_service_remove_recipient(ep, &me->ep_cookie);
+    rv = endpoint_service_remove_recipient(ep, me->ep_cookie);
     JXTA_OBJECT_RELEASE(ep);
     if (me->thd_pool) {
         apr_thread_pool_destroy(me->thd_pool);
@@ -1412,4 +1412,41 @@ JXTA_DECLARE(Jxta_status) jxta_PG_remove_recipient(Jxta_PG * me, void *cookie)
     return rv;
 }
 
+JXTA_DECLARE(Jxta_status) jxta_PG_sync_send(Jxta_PG * me, Jxta_message * msg, Jxta_id * peer_id, 
+                                            const char *svc_name, const char *svc_param)
+{
+    Jxta_endpoint_service *ep;
+    Jxta_status rv;
+    char *new_param;
+    Jxta_endpoint_address * dest;
+
+    new_param = get_service_key(svc_name, svc_param);
+    dest = jxta_endpoint_address_new_3(peer_id, me->ep_name, new_param);
+    jxta_PG_get_endpoint_service(me, &ep);
+    rv = jxta_endpoint_service_send_ex(ep, msg, dest, JXTA_TRUE);
+    free(new_param);
+    JXTA_OBJECT_RELEASE(ep);
+    JXTA_OBJECT_RELEASE(dest);
+
+    return rv;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_PG_async_send(Jxta_PG * me, Jxta_message * msg, Jxta_id * peer_id, 
+                                             const char *svc_name, const char *svc_param)
+{
+    Jxta_endpoint_service *ep;
+    Jxta_status rv;
+    char *new_param;
+    Jxta_endpoint_address * dest;
+
+    new_param = get_service_key(svc_name, svc_param);
+    dest = jxta_endpoint_address_new_3(peer_id, me->ep_name, new_param);
+    jxta_PG_get_endpoint_service(me, &ep);
+    rv = jxta_endpoint_service_send_ex(ep, msg, dest, JXTA_FALSE);
+    free(new_param);
+    JXTA_OBJECT_RELEASE(ep);
+    JXTA_OBJECT_RELEASE(dest);
+
+    return rv;
+}
 /* vim: set ts=4 sw=4 tw=130 et: */

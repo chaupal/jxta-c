@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_lease_request_msg.c,v 1.7 2006/09/21 18:02:16 bondolo Exp $
+ * $Id: jxta_lease_request_msg.c,v 1.9 2006/11/11 02:28:35 mmx2005 Exp $
  */
 
 static const char *__log_cat = "LeaseRequest";
@@ -97,6 +97,8 @@ struct _Jxta_lease_request_msg {
     Jxta_time_diff requested_lease;
     apr_uuid_t *server_adv_gen;
     unsigned int referral_advs;
+    
+    Jxta_vector *options;
 };
 
 static void lease_request_msg_delete(Jxta_object * me);
@@ -126,7 +128,6 @@ static void lease_request_msg_delete(Jxta_object * me)
 {
     Jxta_lease_request_msg *myself = (Jxta_lease_request_msg *) me;
 
-    /* Fill in the required freeing functions here. */
     JXTA_OBJECT_RELEASE(myself->client_id);
 
     if (NULL != myself->credential) {
@@ -143,6 +144,8 @@ static void lease_request_msg_delete(Jxta_object * me)
         free(myself->server_adv_gen);
         myself->server_adv_gen = NULL;
     }
+
+    JXTA_OBJECT_RELEASE(myself->options);
 
     jxta_advertisement_destruct((Jxta_advertisement *) myself);
     
@@ -181,6 +184,7 @@ static Jxta_lease_request_msg *lease_request_msg_construct(Jxta_lease_request_ms
         myself->requested_lease = 0;
         myself->server_adv_gen = NULL;
         myself->referral_advs = 0;
+        myself->options = jxta_vector_new(0);
     }
 
     return myself;
@@ -266,6 +270,8 @@ JXTA_DECLARE(Jxta_status) jxta_lease_request_msg_get_xml(Jxta_lease_request_msg 
     JString *string;
     JString *tempstr;
     char tmpbuf[256];   /* We use this buffer to store a string representation of a int */
+    unsigned int each_option;
+    unsigned int all_options;
 
     if (xml == NULL) {
         return JXTA_INVALID_ARGUMENT;
@@ -277,9 +283,6 @@ JXTA_DECLARE(Jxta_status) jxta_lease_request_msg_get_xml(Jxta_lease_request_msg 
     }
     
     string = jstring_new_0();
-
-    jstring_append_2(string, "<?xml version=\"1.0\"?>\n");
-    jstring_append_2(string, "<!DOCTYPE jxta:LeaseRequest>\n");
 
     jstring_append_2(string, "<jxta:LeaseRequest");
 
@@ -341,6 +344,28 @@ JXTA_DECLARE(Jxta_status) jxta_lease_request_msg_get_xml(Jxta_lease_request_msg 
         }
 
         jstring_append_1(string, tempstr);
+        JXTA_OBJECT_RELEASE(tempstr);
+        tempstr = NULL;
+    }
+    
+    all_options = jxta_vector_size(myself->options);
+    for( each_option = 0; each_option < all_options; each_option++ ) {
+        Jxta_advertisement * option = NULL;
+        
+        res = jxta_vector_get_object_at( myself->options, JXTA_OBJECT_PPTR(&option), each_option );
+        
+        if( JXTA_SUCCESS == res ) {
+            res = jxta_advertisement_get_xml( option, &tempstr );
+            if( JXTA_SUCCESS == res ) {
+                jstring_append_1(string, tempstr);
+                JXTA_OBJECT_RELEASE(tempstr);
+                tempstr = NULL;
+            } else {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed generating XML for option [%pp].\n", myself);
+            }
+        } else {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failed getting option [%pp].\n", myself);
+        }
     }
 
     jstring_append_2(string, "</jxta:LeaseRequest>\n");
@@ -496,6 +521,29 @@ JXTA_DECLARE(void) jxta_lease_request_msg_set_client_adv_exp(Jxta_lease_request_
     myself->client_adv_exp = expiration;
 }
 
+JXTA_DECLARE(Jxta_vector *) jxta_lease_request_msg_get_options(Jxta_lease_request_msg * myself) {
+    Jxta_vector *result = jxta_vector_new(0);
+    
+    JXTA_OBJECT_CHECK_VALID(myself);
+    
+    jxta_vector_addall_objects_last( result, myself->options );
+    
+    return result;
+}
+
+JXTA_DECLARE(void) jxta_lease_request_msg_clear_options(Jxta_lease_request_msg * myself ) {
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    jxta_vector_clear( myself->options );
+}
+
+JXTA_DECLARE(void) jxta_lease_request_msg_add_option(Jxta_lease_request_msg * myself, Jxta_advertisement *adv ) {
+    JXTA_OBJECT_CHECK_VALID(myself);
+    JXTA_OBJECT_CHECK_VALID(adv);
+
+    jxta_vector_add_object_last( myself->options, (Jxta_object*) adv );
+}
+
 /** 
 * Handler functions.  Each of these is responsible for
 * dealing with all of the character data associated with the 
@@ -618,10 +666,44 @@ static void handle_client_adv(void *me, const XML_Char * cd, int len)
 
 static void handle_option(void *me, const XML_Char * cd, int len)
 {
+    Jxta_status res = JXTA_SUCCESS;
     Jxta_lease_request_msg *myself = (Jxta_lease_request_msg *) me;
 
     if( 0 == len ) {
+        const char **atts = ((Jxta_advertisement *) myself)->atts;
+        const char *type = NULL;
+
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <Option> : [%pp]\n", myself);
+
+        /** handle attributes */
+        while (atts && *atts) {
+            if (0 == strcmp(*atts, "type")) {
+                type = atts[1];
+            } else {
+                /* just silently skip it. */
+            }
+
+            atts += 2;
+        }
+        
+        if( NULL != type ) {
+            Jxta_advertisement *new_ad = NULL;
+            
+            res = jxta_advertisement_global_handler((Jxta_advertisement *) myself, type, &new_ad);
+    
+            if( NULL != new_ad ) {
+                /* set new handlers */
+                jxta_advertisement_set_handlers(new_ad, ((Jxta_advertisement *) myself)->parser, (void *) myself);
+
+                 /* hook it into our list of advs */
+                jxta_lease_request_msg_add_option(myself, new_ad );
+                JXTA_OBJECT_RELEASE(new_ad);
+            } else {
+                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized Option %s : [%pp]\n", type, myself);
+            }
+        } else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid Option : [%pp]\n", myself);
+        }
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <Option> : [%pp]\n", myself);
     }

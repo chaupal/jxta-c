@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_service_ref.c,v 1.118 2006/10/02 21:33:51 slowhog Exp $
+ * $Id: jxta_resolver_service_ref.c,v 1.119 2007/03/19 01:00:20 mmx2005 Exp $
  */
 
 static const char *__log_cat = "RSLVR";
@@ -86,7 +86,6 @@ typedef struct {
     Jxta_PG *group;
     Jxta_rdv_service *rendezvous;
     Jxta_endpoint_service *endpoint;
-    Jxta_discovery_service *discovery;
     Jxta_hashtable *queryhandlers;
     Jxta_hashtable *responsehandlers;
     Jxta_hashtable *srdihandlers;
@@ -269,7 +268,6 @@ static Jxta_status start(Jxta_module * resolver, const char *argv[])
     if (argv) {
     }
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Starting ...\n");
-    jxta_PG_get_discovery_service(self->group, &(self->discovery));
 
     rv = endpoint_service_add_recipient(self->endpoint, &self->ep_cookies[0], self->instanceName,
                                         self->outque, resolver_service_query_cb, self);
@@ -309,11 +307,6 @@ static void stop(Jxta_module * resolver)
     rv = jxta_service_events_disconnect((Jxta_service *) self->endpoint, endpoint_event_handler, self);
     for (i = 0; i < 3; i++) {
         endpoint_service_remove_recipient(self->endpoint, self->ep_cookies[i]);
-    }
-
-    if (NULL != self->discovery) {
-        JXTA_OBJECT_RELEASE(self->discovery);
-        self->discovery = NULL;
     }
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Stopped.\n");
@@ -975,9 +968,6 @@ void jxta_resolver_service_ref_destruct(Jxta_resolver_service_ref * self)
     }
     if (self->endpoint != 0) {
         JXTA_OBJECT_RELEASE(self->endpoint);
-    }
-    if (self->discovery != 0) {
-        JXTA_OBJECT_RELEASE(self->discovery);
     }
     if (self->localPeerId != 0) {
         JXTA_OBJECT_RELEASE(self->localPeerId);

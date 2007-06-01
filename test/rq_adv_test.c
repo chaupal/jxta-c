@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright (c) 2001 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,50 +50,160 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rq_adv_test.c,v 1.15 2006/08/17 20:02:18 bondolo Exp $
+ * $Id: rq_adv_test.c,v 1.17 2006/10/30 22:54:13 bondolo Exp $
  */
 
 #include <stdio.h>
+
 #include "jxta.h"
 #include "jxta_rq.h"
-#include "jstring.h"
 
-Jxta_boolean rq_test(int argc, char **argv)
-{
+#include "unittest_jxta_func.h"
 
-    ResolverQuery *ad;
-    FILE *testfile;
-    JString *doc;
-
-    if (argc != 2) {
-        printf("usage: ad <filename>\n");
-        return -1;
+const char *test_jxta_rq_construction(void) {
+    Jxta_status result = JXTA_SUCCESS;
+    ResolverQuery *msg = jxta_resolver_query_new();
+    
+    if( NULL == msg ) {
+        return FILEANDLINE;
+    }
+    
+    if( !JXTA_OBJECT_CHECK_VALID(msg) ) {
+        return FILEANDLINE;
     }
 
-    jxta_initialize();
-
-    ad = jxta_resolver_query_new();
-
-    testfile = fopen(argv[1], "r");
-    jxta_resolver_query_parse_file(ad, testfile);
-    fclose(testfile);
-    /* printout the doc */
-    jxta_resolver_query_get_xml(ad, &doc);
-    fprintf(stdout, "%s\n", jstring_get_string(doc));
-    JXTA_OBJECT_RELEASE(ad);
-    JXTA_OBJECT_RELEASE(doc);
-
-    jxta_terminate();
-    return 0;
+    JXTA_OBJECT_RELEASE(msg);
+       
+    return NULL;
 }
 
+const char *test_jxta_rq_serialization(void) {
+    Jxta_status result = JXTA_SUCCESS;
+    ResolverQuery *msg;
+    Jxta_advertisement *raw_msg;
+    FILE *testfile;
+    JString *dump1;
+    JString *dump2;
+    Jxta_vector* child_advs = NULL;
 
+    msg = jxta_resolver_query_new();
+    
+    if( NULL == msg ) {
+        return FILEANDLINE;
+    }
 
+    testfile = fopen( "ResolverQuery.xml", "r");
+    
+    if( -1 == testfile ) {
+        return FILEANDLINE "File not found.";        
+    }
+    
+    result = jxta_resolver_query_parse_file(msg, testfile);
+    fclose(testfile);
+
+    if( JXTA_SUCCESS != result ) {
+        return FILEANDLINE;
+    }    
+
+    if( !JXTA_OBJECT_CHECK_VALID(msg) ) {
+        return FILEANDLINE;
+    }
+
+    result = jxta_resolver_query_get_xml(msg, &dump1);
+    if( JXTA_SUCCESS != result ) {
+        return FILEANDLINE;
+    }    
+    JXTA_OBJECT_RELEASE(msg);
+    msg = NULL;
+
+    msg = jxta_resolver_query_new();
+    result = jxta_resolver_query_parse_charbuffer( msg, jstring_get_string(dump1), jstring_length(dump1) );
+    if( JXTA_SUCCESS != result ) {
+        return FILEANDLINE;
+    }    
+
+    if( !JXTA_OBJECT_CHECK_VALID(msg) ) {
+        return FILEANDLINE;
+    }
+
+    result = jxta_advertisement_get_xml((Jxta_advertisement*) msg, &dump2);
+    if( JXTA_SUCCESS != result ) {
+        return FILEANDLINE;
+    }
+    
+    if( 0 != jstring_equals( dump1, dump2 ) ) {
+        return FILEANDLINE;
+    }
+    JXTA_OBJECT_RELEASE(dump2);
+        
+    jxta_advertisement_register_global_handler("jxta:ResolverQuery", (JxtaAdvertisementNewFunc) jxta_resolver_query_new);
+
+    raw_msg = jxta_advertisement_new();
+    result = jxta_advertisement_parse_charbuffer(raw_msg, jstring_get_string(dump1), jstring_length(dump1));
+
+    if( !JXTA_OBJECT_CHECK_VALID(raw_msg) ) {
+        return FILEANDLINE;
+    }
+    
+    jxta_advertisement_get_advs( raw_msg, &child_advs );
+    if( NULL == child_advs ) {
+        return FILEANDLINE;
+    }
+    
+    if( 1 != jxta_vector_size( child_advs ) ) {
+        return FILEANDLINE;
+    }
+    
+    result = jxta_vector_get_object_at( child_advs, JXTA_OBJECT_PPTR(&msg), 0 );
+    JXTA_OBJECT_RELEASE(child_advs);
+    if( JXTA_SUCCESS != result ) {
+        return FILEANDLINE;
+    }
+
+    result = jxta_advertisement_get_xml((Jxta_advertisement*) msg, &dump2);
+    if( JXTA_SUCCESS != result ) {
+        return FILEANDLINE;
+    }
+    
+    if( 0 != jstring_equals( dump1, dump2 ) ) {
+        return FILEANDLINE;
+    }
+    JXTA_OBJECT_RELEASE(dump2);
+
+    JXTA_OBJECT_RELEASE(raw_msg);
+    JXTA_OBJECT_RELEASE(msg);
+    JXTA_OBJECT_RELEASE(dump1);
+
+    return NULL;
+}
+
+static struct _funcs rq_test_funcs[] = {
+    /* First run simple construction destruction test. */
+    {*test_jxta_rq_construction, "construction/destruction for ResolverQuery"},
+
+    /* Serialization/Deserialization */
+    {*test_jxta_rq_serialization, "read/write test for ResolverQuery"},
+
+    {NULL, "null"}
+};
+
+/**
+* Run the unit tests for the jxta_pa test routines
+*
+* @param tests_run the variable in which to accumulate the number of tests run
+* @param tests_passed the variable in which to accumulate the number of tests passed
+* @param tests_failed the variable in which to accumulate the number of tests failed
+*
+* @return TRUE if all tests were run successfully, FALSE otherwise
+*/
+Jxta_boolean run_jxta_rq_tests(int *tests_run, int *tests_passed, int *tests_failed)
+{
+    return run_testfunctions(rq_test_funcs, tests_run, tests_passed, tests_failed);
+}
 
 #ifdef STANDALONE
 int main(int argc, char **argv)
 {
-
-    return rq_test(argc, argv);
+    return main_test_function(rq_test_funcs, argc, argv);
 }
 #endif

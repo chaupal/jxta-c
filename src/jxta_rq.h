@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rq.h,v 1.16 2006/08/17 01:26:07 mmx2005 Exp $
+ * $Id: jxta_rq.h,v 1.17 2006/10/30 20:41:33 bondolo Exp $
  */
 
 
@@ -108,7 +108,7 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_query_get_xml(ResolverQuery * adv, JStri
  * @param pointer to the buffer to parse
  * @param len length of the buffer
  */
-JXTA_DECLARE(void) jxta_resolver_query_parse_charbuffer(ResolverQuery * ad, const char *buf, int len);
+JXTA_DECLARE(Jxta_status) jxta_resolver_query_parse_charbuffer(ResolverQuery * ad, const char *buf, int len);
 
 /**
  * @param ResolverQuery the resolver query object
@@ -116,7 +116,7 @@ JXTA_DECLARE(void) jxta_resolver_query_parse_charbuffer(ResolverQuery * ad, cons
  * @param pointer to the FILE to parse
  * @param len length of the buffer
  */
-JXTA_DECLARE(void) jxta_resolver_query_parse_file(ResolverQuery * ad, FILE * stream);
+JXTA_DECLARE(Jxta_status) jxta_resolver_query_parse_file(ResolverQuery * ad, FILE * stream);
 
 
 /**

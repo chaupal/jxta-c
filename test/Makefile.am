@@ -5,6 +5,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/src/jpr -I$(top_srcdir)/src @APR_CPPFLAGS@ @XML2_C
 bin_PROGRAMS = jstring_test	    \
 	       msg_test		    \
 	       lease_msg_test       \
+               rdv_lease_options_test \
 	       dq_adv_test	    \
 	       dr_adv_test	    \
 	       srdi_test	    \
@@ -46,6 +47,7 @@ bin_PROGRAMS = jstring_test	    \
 	       unit_test_runner	    \
 	       jxta_bidipipe_test   \
 	       jxta_bench_comm	    \
+	       endpoint_benchmark   \
 	       jxta_bench_pipe_resolution \
 	       jxta_log_unit_test   \
 	       jxta_server_tunnel   \
@@ -63,6 +65,7 @@ jxta_log_unit_test_SOURCES = jxta_log_unit_test.c
 
 jxta_bidipipe_test_SOURCES = jxta_bidipipe_test.c
 jxta_bench_comm_SOURCES = jxta_bench_comm.c
+endpoint_benchmark_SOURCES = endpoint_benchmark.c
 jxta_bench_pipe_resolution_SOURCES = jxta_bench_pipe_resolution.c
 jxta_server_tunnel_SOURCES = jxta_server_tunnel.c
 jxta_client_tunnel_SOURCES = jxta_client_tunnel.c
@@ -107,11 +110,11 @@ lease_msg_test_SOURCES	     = lease_msg_test.c unittest_jxta_func.c
 lease_msg_test.o:  lease_msg_test.c
 	$(COMPILE) -DSTANDALONE -o lease_msg_test.o -c $(srcdir)/lease_msg_test.c
 
-rr_adv_test_SOURCES	     = rr_adv_test.c
+rr_adv_test_SOURCES	     = rr_adv_test.c unittest_jxta_func.c
 rr_adv_test.o:	rr_adv_test.c
 	$(COMPILE) -DSTANDALONE -o rr_adv_test.o -c $(srcdir)/rr_adv_test.c
 
-rq_adv_test_SOURCES	     = rq_adv_test.c
+rq_adv_test_SOURCES	     = rq_adv_test.c unittest_jxta_func.c
 rq_adv_test.o:	rq_adv_test.c
 	$(COMPILE) -DSTANDALONE -o rq_adv_test.o -c $(srcdir)/rq_adv_test.c
 
@@ -223,6 +226,11 @@ jxta_join_test_SOURCES	     = jxta_join_test.c
 jxta_join_test.o:  jxta_join_test.c
 	$(COMPILE) -DSTANDALONE -o jxta_join_test.o -c $(srcdir)/jxta_join_test.c
 
+rdv_lease_options_test_SOURCES	     = rdv_lease_options_test.c unittest_jxta_func.c
+rdv_lease_options_test.o:  rdv_lease_options_test.c 
+	$(COMPILE) -DSTANDALONE -o rdv_lease_options_test.o -c $(srcdir)/rdv_lease_options_test.c
+
+
 cm_test_SOURCES		     = cm_test.c
 cm_test.o:  cm_test.c
 	$(COMPILE) -DSTANDALONE -o cm_test.o -c $(srcdir)/cm_test.c
@@ -244,9 +252,12 @@ unit_test_runner_extra_obj = jstring_test_comp.o	    \
 			   msg_test_comp.o		    \
 			   pga_adv_test_comp.o		    \
 			   pa_adv_test_comp.o		    \
+			   rq_adv_test_comp.o               \
+			   rr_adv_test_comp.o               \
 			   dq_adv_test_comp.o               \
 			   apa_adv_test_comp.o               \
 			   route_adv_test_comp.o               \
+			   rdv_lease_options_test_comp.o            \
 			   lease_msg_test_comp.o            
 
 unit_test_runner_DEPENDENCIES = $(unit_test_runner_extra_obj)
@@ -287,3 +298,9 @@ msg_test_comp.o:  msg_test.c
 	$(COMPILE) -o msg_test_comp.o -c $(srcdir)/msg_test.c
 dq_adv_test_comp.o:  dq_adv_test.c
 	$(COMPILE) -o dq_adv_test_comp.o -c $(srcdir)/dq_adv_test.c
+rdv_lease_options_test_comp.o:  rdv_lease_options_test.c
+	$(COMPILE) -o rdv_lease_options_test_comp.o -c $(srcdir)/rdv_lease_options_test.c
+rq_adv_test_comp.o:  rq_adv_test.c
+	$(COMPILE) -o rq_adv_test_comp.o -c $(srcdir)/rq_adv_test.c
+rr_adv_test_comp.o:  rr_adv_test.c
+	$(COMPILE) -o rr_adv_test_comp.o -c $(srcdir)/rr_adv_test.c

@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
 <Wix xmlns='http://schemas.microsoft.com/wix/2003/01/wi'>
    <Product Name='JXTA-C' Id='40B9C1AD-B3D1-40A1-B856-FAE3B7C36C14'  Language='1033' 
-            Codepage='1252' Version='2.1.0' Manufacturer='Project JXTA'>
+            Codepage='1252' Version='2.5.1' Manufacturer='Project JXTA'>
       <Package Id='4E24BC14-5C6D-4585-A336-081A485D9FF8' Keywords='JXTA-C Installer'
                Description='JXTA-C Windows Installer Package'
                Comments='http://jxta-c.jxta.org'
@@ -51,8 +51,6 @@
                   src='..\test\any_adv_test\Release\any_adv_test.exe' Vital='yes' />
                 <File Id='apa_adv_test' Name='apaadv.exe' LongName='apa_adv_test.exe' DiskId='1'
                   src='..\test\apa_adv_test\Release\apa_adv_test.exe' Vital='yes' />
-                <File Id='chat' Name='chat.exe' LongName='chat.exe' DiskId='1'
-                  src='..\test\chat\Release\chat.exe' Vital='yes' />
                 <File Id='cm_test' Name='cm_test.exe' LongName='cm_test.exe' DiskId='1'
                   src='..\test\cm_test\Release\cm_test.exe' Vital='yes' />
 				<File Id='dq_adv_test' Name='dq_adv.exe' LongName='dq_adv_test.exe' DiskId='1'
@@ -111,8 +109,6 @@
                   src='..\test\pga_adv_test\Release\pga_adv_test.exe' Vital='yes' />
 				<File Id='pg_start_stop_test' Name='pg_start.exe' LongName='pg_start_stop_test.exe' DiskId='1'
                   src='..\test\pg_start_stop_test\Release\pg_start_stop_test.exe' Vital='yes' />
-				<File Id='rdvstatus' Name='rdvstat.exe' LongName='rdvstatus.exe' DiskId='1'
-                  src='..\test\rdvstatus\Release\rdvstatus.exe' Vital='yes' />
                 <File Id='rdv_adv_test' Name='rdv_adv.exe' LongName='rdv_adv_test.exe' DiskId='1'
                   src='..\test\rdv_adv_test\Release\rdv_adv_test.exe' Vital='yes' />
 				<File Id='relay_adv_test' Name='rdv_adv.exe' LongName='relay_adv_test.exe' DiskId='1'
@@ -133,8 +129,6 @@
                   src='..\test\tta_adv_test\Release\tta_adv_test.exe' Vital='yes' />
                 <File Id='xmltest' Name='xmltest.exe' LongName='xmltest.exe' DiskId='1'
                   src='..\test\xmltest\Release\xmltest.exe' Vital='yes' />
-                <File Id='peers' Name='peers.exe' LongName='peers.exe' DiskId='1'
-                  src='..\test\peers\Release\peers.exe' Vital='yes' />
                 <File Id='jxta_resolver_test' Name='resolver.exe' LongName='jxta_resolver_test.exe' DiskId='1'
                   src='..\test\jxta_resolver_test\Release\jxta_resolver_test.exe' Vital='yes' />
                 <File Id='jxta_bidipipe_test' Name='bidipipe.exe' LongName='jxta_bidipipe_test.exe' DiskId='1'
@@ -387,8 +381,6 @@
 			      src='..\..\src\jxta_hta.h' Vital='yes' />
 				<File Id='jxta_id.h' Name='id.h' LongName='jxta_id.h' DiskId='1'
 			      src='..\..\src\jxta_id.h' Vital='yes' />
-				<File Id='jxta_incoming_unicast_server.h' Name='unicsv.h' LongName='jxta_incoming_unicast_server.h' DiskId='1'
-			      src='..\..\src\jxta_incoming_unicast_server.h' Vital='yes' />
 				<File Id='jxta_listener.h' Name='listen.h' LongName='jxta_listener.h' DiskId='1'
 			      src='..\..\src\jxta_listener.h' Vital='yes' />
 				<File Id='jxta_log.h' Name='log.h' LongName='jxta_log.h' DiskId='1'
