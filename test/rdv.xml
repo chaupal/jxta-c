@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE jxta:RdvAdvertisement>
+<jxta:RdvAdvertisement xmlns:jxta="http://jxta.org">
+        <RdvGroupId>
+                urn:jxta:uuid-A9648764FECD4D9B80FF8C44D5B12BEB02
+        </RdvGroupId>
+        <RdvPeerId>
+                urn:jxta:uuid-59616261646162614A78746150325033F4058CFC7DF34C9D954CBD90FDC7DCED03
+        </RdvPeerId>
+        <RdvServiceName>
+                urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000605uuid-A9648764FECD4D9B80FF8C44D5B12BEB02
+        </RdvServiceName>
+        <Name>
+                cl
+        </Name>
+        <RdvRoute> <jxta:RA xmlns:jxta="http://jxta.org">
+                        <DstPID>
+                                urn:jxta:uuid-59616261646162614A78746150325033F4058CFC7DF34C9D954CBD90FDC7DCED03
+                        </DstPID>
+                        <Dst>
+                                <jxta:APA xmlns:jxta="http://jxta.org">
+                                        <EA>
+                                                cbjx://uuid-59616261646162614A78746150325033F4058CFC7DF34C9D954CBD90FDC7DCED03
+                                        </EA>
+                                        <EA>
+                                                jxtatls://uuid-59616261646162614A78746150325033F4058CFC7DF34C9D954CBD90FDC7DCED03
+                                        </EA>
+                                        <EA>
+                                                relay://uuid-59616261646162614A78746150325033F4058CFC7DF34C9D954CBD90FDC7DCED03
+                                        </EA>
+                                </jxta:APA>
+                        </Dst>
+                        <Hops>
+                                <jxta:APA xmlns:jxta="http://jxta.org">
+                                        <PID>
+                                                urn:jxta:uuid-59616261646162614A78746150325033AD37481E051442E6B1EBCE2A60B9350E03
+                                        </PID>
+                                        <EA>
+                                                cbjx://uuid-59616261646162614A78746150325033AD37481E051442E6B1EBCE2A60B9350E03
+                                        </EA>
+                                        <EA>
+                                                jxtatls://uuid-59616261646162614A78746150325033AD37481E051442E6B1EBCE2A60B9350E03
+                                        </EA>
+                                        <EA>
+                                                http://192.18.191.108:9700
+                                        </EA>
+                                </jxta:APA>
+                        </Hops>
+                </jxta:RA>
+        </RdvRoute>
+</jxta:RdvAdvertisement>
