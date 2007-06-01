@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+
+<jxta:HTTPTransportAdvertisement xmlns:jxta="http://jxta.org">
+   <Protocol>
+      http
+   </Protocol>
+   <InterfaceAddress>
+      127.0.0.1
+   </InterfaceAddress>
+   <ConfigMode>
+      auto
+   </ConfigMode>
+   <Port>
+      9700
+   </Port>
+   <Router>
+      209.25.154.237:9700
+   </Router>
+   <Router>
+      209.25.154.235:9700
+   </Router>
+   <Proxy>
+      myProxy.myDomain:8080
+   </Proxy>
+   <ProxyOff>
+   </ProxyOff>
+   <Server>
+      camshaft:9700
+   </Server>
+   <ServerOff>
+   </ServerOff>
+</jxta:HTTPTransportAdvertisement>
+
+

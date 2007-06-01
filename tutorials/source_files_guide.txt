@@ -1,0 +1,177 @@
+
+Organization of source files.
+
+Based on JXTA-C-map.pdf from www directory of repository.
+
+Boot (or Runtime extensions I)
+	jxta.h/c
+	jxta_debug.h/c
+	jxta_errno.h
+	jxta_types.h
+	jxta_boot.c - bootstrapping (currently does nothing)
+	jxta.c - start/stop
+	jxta_debug.c - debugging log
+	
+JXTA Object
+	jxta_object.h/c
+	jxta_object_priv.h (should this be moved to private?)
+	jxta_object_ptrwrapper.h/c
+	jxta_object_type.h/c
+	jxta_object_hashtable.h
+	jxta_objecthashtable.c
+	jxta_object.c -jxta object framework
+	jxta_object_type.c - object type
+	jxta_object_ptrwrapper.c - object pointer structure
+	jxta_objecthashtable.c -object hash reference count 
+
+Utility Classes
+	jdlist.h/c
+	jxta_hashtable.h/c
+	jstring.h/c
+	jxta_vector.h/c
+	jxta_bytevector.h/c
+
+CM
+	jxta_cm.h/c
+
+Module
+	jxta_mca.h/c
+	jxta_mia.h/c
+	jxta_module.h/c
+	jxta_module_private.h (should this be moved to private?)
+	jxta_msa.h/c
+	jxta_builtinmodules.h/c (private)
+
+Service
+	jxta_listener.h/c
+	jxta_service.h/c
+	jxta_service_private.h (should this be moved to private?)
+	jxta_svc.h/c (should this be private?)
+	jxta_defloader.h/c (private)
+
+PeerGroup
+	jxta_peergroup.h/c
+	jxta_peergroup_private.h (should this be moved to private?)
+	jxta_stdpg_private.h
+	jxta_netpg_private.h
+	jxta_pa.h/c
+	jxta_pga.h/c
+	jxta_netpg.c
+	jxta_stdpg.c
+
+Advertisement
+	jxta_advertisement.h/c
+	jxta_xml_util.h/c (should this be moved to private?)
+	xml.c
+
+Message
+	jxta_message.h/c
+
+Jxta IDs
+	jxta_id.h/c
+	jxta_id_priv.h (private)
+	jxta_id_jxta.c
+	jxta_id_uuid.c
+
+JXTA Transport
+	jxta_transport.h/c
+	jxta_transport_private.h (should this be moved to private?)
+
+HTTP Transport
+	jxta_hta.h/c
+	jxta_transport_http.c
+	jxta_transport_http_client.h/c (private)
+	jxta_transport_http_poller.h/c (private)
+
+TCP Transport
+	jxta_tta.h/c
+	jxta_incoming_unicast_server.h/c (private)
+	jxta_tcp_message_packet_header.h/c (private)
+	jxta_tcp_multicast.h/c (private)
+	jxta_transport_tcp.c
+	jxta_transport_tcp_connection.h/c (private)
+	jxta_transport_tcp_private.h (private)
+
+Relay Transport
+	jxta_relay.h/c
+	jxta_relaya.h/c
+
+Router Transport
+	jxta_apa.h/c
+	jxta_routea.h/c
+	jxta_router_client.c
+
+Endpoint
+	jxta_endpoint_address.h/c
+	jxta_endpoint_messenger.h
+	jxta_endpoint_service.h/c
+
+Rendezvous
+	jxta_rdv.h/c
+	jxta_rdv_service.h/c
+	jxta_rdv_service_private.h (should this be moved to private?)
+	jxta_pm.c
+	jxta_rdv_service_client.c
+
+Resolver
+	jxta_resolver_service.h/c
+	jxta_resolver_service_private.h (should this be moved to private?)
+	jxta_resolver_service_ref.c
+	jxta_rq.h/c
+	jxta_rr.h/c
+
+SRDI
+	jxta_rsrdi.h/c
+	jxta_srdi.h/c
+
+Discovery
+	jxta_discovery_service.h/c
+	jxta_discovery_service_private.h (should this be moved to private?)
+	jxta_discovery_service_ref.c
+	jxta_dq.h/c
+	jxta_dr.h/c
+
+Pipe
+	jxta_pipe_adv.h/c
+	jxta_pipe_service.h/c
+	jxta_pipe_service_impl.h
+	jxta_pipe_adv.c
+	jxta_piperesolver_impl.c
+	jxta_piperesolver_msg.h/c (private)
+
+Unicast Pipe
+	jxta_unipipe_service.c
+
+Propagate (Wire) Pipe
+	jxta_wire_service.c
+	jxta_wm.h/c (private)
+
+PeerInfo
+	jxta_peerinfo_service.h/c
+	jxta_peerinfo_service_private.h (should this be moved to private?)
+	jxta_peerinfo_service_ref.c
+
+Membership Authentication
+	jxta_cred.h/c
+	jxta_cred_null.h/c
+	jxta_membership_service.h/c
+	jxta_membership_service_private.h (should this be moved to private?)
+	jxta_membership_service_null.c
+
+
+Unclassified -- these don't appear in JXTA-C-map.pdf
+jxta_peer.h/c
+jxta_router_service.h
+EndpointRouter.h
+jxtaapr.h
+jxta_ra.c
+jxta_rm.h/c
+mod_jxta.c
+queue.h/c
+trailing_average.h/c
+jxta_cred_priv.h
+jxta_pm.h
+jxta_private.h
+localconf.h
+
+

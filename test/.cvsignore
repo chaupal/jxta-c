@@ -1,0 +1,2 @@
+.libs .deps *.la *.a *.lo Makefile Makefile.in  jxtaid_test jstring_test
+pa_test sa_test pga_test jxtatcptest *_test

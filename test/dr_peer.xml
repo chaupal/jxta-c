@@ -1,0 +1,676 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE jxta:DiscoveryResponse>
+
+<jxta:DiscoveryResponse xmlns:jxta="http://jxta.org">
+  <Count>
+    10
+  </Count>
+  <Type>
+    0
+  </Type>
+  <PeerAdv>
+    &lt;?xml version="1.0"?>
+
+    &lt;!DOCTYPE jxta:PA>
+
+    &lt;jxta:PA xmlns:jxta="http://jxta.org">
+    &lt;PID>
+    urn:jxta:uuid-59616261646162614A787461503250336ACC981CFAF047CFADA8A31FC6D0B88C03
+    &lt;/PID>
+    &lt;GID>
+    urn:jxta:jxta-NetGroup
+    &lt;/GID>
+    &lt;Name>
+    JXTA.ORG 237
+    &lt;/Name>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000605
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;Rdv>
+    true
+    &lt;/Rdv>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000805
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;Addr>
+    tcp://209.25.154.237:9701/
+    &lt;/Addr>
+    &lt;Addr>
+    jxtatls://uuid-59616261646162614A787461503250336ACC981CFAF047CFADA8A31FC6D0B88C03/TlsTransport/jxta-WorldGroup
+    &lt;/Addr>
+    &lt;Addr>
+    jxta://uuid-59616261646162614A787461503250336ACC981CFAF047CFADA8A31FC6D0B88C03/
+    &lt;/Addr>
+    &lt;Addr>
+    http://209.25.154.237:9700/
+    &lt;/Addr>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000105
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;RootCert>
+    MIICMjCCAZugAwIBAgIBATANBgkqhkiG9w0BAQUFADBhMRUwEwYDVQQKEwx3d3cu
+    anh0YS5vcmcxCzAJBgNVBAcTAlNGMQswCQYDVQQGEwJVUzEPMA0GA1UEAxMGcmR2
+    LUNBMR0wGwYDVQQLExRFQTM2RTUwNjNBQzk2OEExNEM1ODAeFw0wMTExMTkxNzU1
+    MjZaFw0xMTExMTkxNzU1MjZaMGExFTATBgNVBAoTDHd3dy5qeHRhLm9yZzELMAkG
+    A1UEBxMCU0YxCzAJBgNVBAYTAlVTMQ8wDQYDVQQDEwZyZHYtQ0ExHTAbBgNVBAsT
+    FEVBMzZFNTA2M0FDOTY4QTE0QzU4MIGbMAsGCSqGSIb3DQEBAQOBiwAwgYcCgYEA
+    kzn01oy3enBYc98ImXrNo+n9Koxun4r5GLPbLQoQJ+hdJU79RY7cbwPtsTNng7hn
+    61GTC1RE9Y16M2tLgmmwjX1dlQh1EmcuoD1rp7jB9Ip+ROa0WdnSxB3/h7cHO3lB
+    VABvrB4QjOs+lx0qHsJzQjw+ddeI3R42ulakieuluZ8CAREwDQYJKoZIhvcNAQEF
+    BQADgYEAieZTuk8XBNnJvYPpDVmBzk1nmpSSHeC4xtV1OyFrfiDIiQK4p8qtLxUZ
+    BdvyZE5YJPr8zmENvSv5dx0yOkWS3HiDlVhOkfAoPnri7DSGxxCTEc5ifPQjPzAV
+    x65fYnnbOk3pnvtQBataZG8oAocttg64o8OpDmi+eFqDtbygCuM=
+    &lt;/RootCert>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;/jxta:PA>
+  </PeerAdv>
+
+
+  <Attr>
+    Name
+  </Attr>
+  <Value>
+    peer*
+  </Value>
+
+
+  <Response Expiration="7200000">
+    &lt;?xml version="1.0"?>
+
+    &lt;!DOCTYPE jxta:PA>
+
+    &lt;jxta:PA xmlns:jxta="http://jxta.org">
+    &lt;PID>
+    urn:jxta:uuid-59616261646162614A787461503250336ACC981CFAF047CFADA8A31FC6D0B88C03
+    &lt;/PID>
+    &lt;GID>
+    urn:jxta:jxta-NetGroup
+    &lt;/GID>
+    &lt;Name>
+    JXTA.ORG 237
+    &lt;/Name>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000605
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;Rdv>
+    true
+    &lt;/Rdv>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000805
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;Addr>
+    tcp://209.25.154.237:9701/
+    &lt;/Addr>
+    &lt;Addr>
+    jxtatls://uuid-59616261646162614A787461503250336ACC981CFAF047CFADA8A31FC6D0B88C03/TlsTransport/jxta-WorldGroup
+    &lt;/Addr>
+    &lt;Addr>
+    jxta://uuid-59616261646162614A787461503250336ACC981CFAF047CFADA8A31FC6D0B88C03/
+    &lt;/Addr>
+    &lt;Addr>
+    http://209.25.154.237:9700/
+    &lt;/Addr>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000105
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;RootCert>
+    MIICMjCCAZugAwIBAgIBATANBgkqhkiG9w0BAQUFADBhMRUwEwYDVQQKEwx3d3cu
+    anh0YS5vcmcxCzAJBgNVBAcTAlNGMQswCQYDVQQGEwJVUzEPMA0GA1UEAxMGcmR2
+    LUNBMR0wGwYDVQQLExRFQTM2RTUwNjNBQzk2OEExNEM1ODAeFw0wMTExMTkxNzU1
+    MjZaFw0xMTExMTkxNzU1MjZaMGExFTATBgNVBAoTDHd3dy5qeHRhLm9yZzELMAkG
+    A1UEBxMCU0YxCzAJBgNVBAYTAlVTMQ8wDQYDVQQDEwZyZHYtQ0ExHTAbBgNVBAsT
+    FEVBMzZFNTA2M0FDOTY4QTE0QzU4MIGbMAsGCSqGSIb3DQEBAQOBiwAwgYcCgYEA
+    kzn01oy3enBYc98ImXrNo+n9Koxun4r5GLPbLQoQJ+hdJU79RY7cbwPtsTNng7hn
+    61GTC1RE9Y16M2tLgmmwjX1dlQh1EmcuoD1rp7jB9Ip+ROa0WdnSxB3/h7cHO3lB
+    VABvrB4QjOs+lx0qHsJzQjw+ddeI3R42ulakieuluZ8CAREwDQYJKoZIhvcNAQEF
+    BQADgYEAieZTuk8XBNnJvYPpDVmBzk1nmpSSHeC4xtV1OyFrfiDIiQK4p8qtLxUZ
+    BdvyZE5YJPr8zmENvSv5dx0yOkWS3HiDlVhOkfAoPnri7DSGxxCTEc5ifPQjPzAV
+    x65fYnnbOk3pnvtQBataZG8oAocttg64o8OpDmi+eFqDtbygCuM=
+    &lt;/RootCert>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;/jxta:PA>
+  </Response>
+
+  <Response Expiration="6886959">
+    &lt;?xml version="1.0"?>
+
+    &lt;!DOCTYPE jxta:PA>
+
+    &lt;jxta:PA xmlns:jxta="http://jxta.org">
+    &lt;PID>
+    urn:jxta:uuid-59616261646162614E50472050325033B4D7BE8AD21DB21193DE837E699E0F9803
+    &lt;/PID>
+    &lt;GID>
+    urn:jxta:jxta-NetGroup
+    &lt;/GID>
+    &lt;Name>
+    JXTA-C Testing Peer
+    &lt;/Name>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000805
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;Addr>
+    http://JxtaHttpClientuuid-59616261646162614E50472050325033B4D7BE8AD21DB21193DE837E699E0F9803
+    &lt;/Addr>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000105
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;RootCert>
+    MIICODCCAaGgAwIBAgIBATANBgkqhkiG9w0BAQUFADBkMRUwEwYDVQQKEwx3d3cu
+    anh0YS5vcmcxCzAJBgNVBAcTAlNGMQswCQYDVQQGEwJVUzESMBAGA1UEAxMJc2Vy
+    dmVyLUNBMR0wGwYDVQQLExQyMzI0RTQ0NDdCOUREQjhDREFCNzAeFw0wMjAyMDUy
+    MzI2MjlaFw0xMjAyMDUyMzI2MjlaMGQxFTATBgNVBAoTDHd3dy5qeHRhLm9yZzEL
+    MAkGA1UEBxMCU0YxCzAJBgNVBAYTAlVTMRIwEAYDVQQDEwlzZXJ2ZXItQ0ExHTAb
+    BgNVBAsTFDIzMjRFNDQ0N0I5RERCOENEQUI3MIGbMAsGCSqGSIb3DQEBAQOBiwAw
+    gYcCgYEAsWDLeJq/L3H3o/AuDeseDbtqLM+r/bllAg1ttpd/cWnXu+C1wzg9dZnC
+    bJon6FT8xZgufd3A9yrM5vyUd6jaNcZnkU9+fC8ZodUUHJuHx4sqyM+gDL51AL47
+    NGDh3jEcuA01lHplaRSqo2aNFwTFDR0EPIRZlLw6tWXkfVpTPIcCAREwDQYJKoZI
+    hvcNAQEFBQADgYEAdePNd+aI/tpl5J5zUDofAyzO1ueknjDnEO91QXh6UqBpBo5o
+    O3wZS9CDR7nhWLvtnqz20PTb6sSGW9lAl6IxLAInr7EYtX4fOVp2Eq/KydtGMSP/
+    0uZc9IwwEnYx+rGAK9uSdgzeidVywFaLIqBUes7exX6RMlpSS0MEAzNiPSo=
+    &lt;/RootCert>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;/jxta:PA>
+  </Response>
+
+  <Response Expiration="6909408">
+    &lt;?xml version="1.0"?>
+
+    &lt;!DOCTYPE jxta:PA>
+
+    &lt;jxta:PA xmlns:jxta="http://jxta.org">
+    &lt;PID>
+    urn:jxta:uuid-59616261646162614A78746150325033A3F9412D61B442D884758E81D5BB5EBA03
+    &lt;/PID>
+    &lt;GID>
+    urn:jxta:jxta-NetGroup
+    &lt;/GID>
+    &lt;Name>
+    dslab
+    &lt;/Name>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000805
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;Addr>
+    tcp://140.115.50.74:9701/
+    &lt;/Addr>
+    &lt;Addr>
+    jxtatls://uuid-59616261646162614A78746150325033A3F9412D61B442D884758E81D5BB5EBA03/TlsTransport/jxta-WorldGroup
+    &lt;/Addr>
+    &lt;Addr>
+    jxta://uuid-59616261646162614A78746150325033A3F9412D61B442D884758E81D5BB5EBA03/
+    &lt;/Addr>
+    &lt;Addr>
+    http://JxtaHttpClientuuid-59616261646162614A78746150325033A3F9412D61B442D884758E81D5BB5EBA03/
+    &lt;/Addr>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000105
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;RootCert>
+    MIICLjCCAZegAwIBAgIBATANBgkqhkiG9w0BAQUFADBfMRUwEwYDVQQKEwx3d3cu
+    anh0YS5vcmcxCzAJBgNVBAcTAlNGMQswCQYDVQQGEwJVUzENMAsGA1UEAxMEYS1D
+    QTEdMBsGA1UECxMUNTBFOUFDM0NDMDJGMkI1RkNCNzAwHhcNMDIwMzEyMTQyMjE3
+    WhcNMTIwMzEyMTQyMjE3WjBfMRUwEwYDVQQKEwx3d3cuanh0YS5vcmcxCzAJBgNV
+    BAcTAlNGMQswCQYDVQQGEwJVUzENMAsGA1UEAxMEYS1DQTEdMBsGA1UECxMUNTBF
+    OUFDM0NDMDJGMkI1RkNCNzAwgZswCwYJKoZIhvcNAQEBA4GLADCBhwKBgQC96hqR
+    oBxjNUE/xgf8hvKFG/Pnry+gzAXA/DiH2tYmrMi6oDVWkaorkE+ObB3fPDMqi+js
+    pvrwDobXW48L3CAgtcCk9NqVlAHJuhkZAd5gwchu5ZJTdZXi71OYofY27jsjHLw3
+    S5Xhp9L+1H4PmXyP1u28XG6+GfGSY3va2MrfvQIBETANBgkqhkiG9w0BAQUFAAOB
+    gQBxPFFkrG53ZoCAs1Oo++SOjneK88lMiOWXxPfr6SNewi80cswUeVqsJ3F7mQ8D
+    BWmKIefo7A4dS7rIxUS4BQn8UtbNDc70uHl0kmlWklxgMgVymHAUvrza3JT9o7GS
+    dtP4sBifcV7MpDb2j2r5ICzgoomDmMpBqZr5w3nCDDllsw==
+    &lt;/RootCert>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;/jxta:PA>
+  </Response>
+
+  <Response Expiration="7199989">
+    &lt;?xml version="1.0"?>
+
+    &lt;!DOCTYPE jxta:PA>
+
+    &lt;jxta:PA xmlns:jxta="http://jxta.org">
+    &lt;PID>
+    urn:jxta:uuid-59616261646162614A787461503250334F1D5BFE0DE748AAAA29B751EDA88C6603
+    &lt;/PID>
+    &lt;GID>
+    urn:jxta:jxta-NetGroup
+    &lt;/GID>
+    &lt;Name>
+    hamada@work
+    &lt;/Name>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000805
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;Addr>
+    jxtatls://uuid-59616261646162614A787461503250334F1D5BFE0DE748AAAA29B751EDA88C6603/TlsTransport/jxta-WorldGroup
+    &lt;/Addr>
+    &lt;Addr>
+    jxta://uuid-59616261646162614A787461503250334F1D5BFE0DE748AAAA29B751EDA88C6603/
+    &lt;/Addr>
+    &lt;Addr>
+    http://JxtaHttpClientuuid-59616261646162614A787461503250334F1D5BFE0DE748AAAA29B751EDA88C6603/
+    &lt;/Addr>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000105
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;RootCert>
+    MIICODCCAaGgAwIBAgIBATANBgkqhkiG9w0BAQUFADBkMRUwEwYDVQQKEwx3d3cu
+    anh0YS5vcmcxCzAJBgNVBAcTAlNGMQswCQYDVQQGEwJVUzESMBAGA1UEAxMJaGFt
+    YWRhLUNBMR0wGwYDVQQLExQzRkE3MDVDMTYzRjFGRThBNUJFNjAeFw0wMjAyMDYy
+    MTQyNDJaFw0xMjAyMDYyMTQyNDJaMGQxFTATBgNVBAoTDHd3dy5qeHRhLm9yZzEL
+    MAkGA1UEBxMCU0YxCzAJBgNVBAYTAlVTMRIwEAYDVQQDEwloYW1hZGEtQ0ExHTAb
+    BgNVBAsTFDNGQTcwNUMxNjNGMUZFOEE1QkU2MIGbMAsGCSqGSIb3DQEBAQOBiwAw
+    gYcCgYEAn3BWFIYYgtqZluGydCOLWk0pBqn0rEJsHc+mFM/m0rU0W2v/eVdizzoI
+    cGYRb2943rSISezBXUznp9aIHJ94xrqkTlhLsM7ngoXuDIJH7Rp44JtTydeVOmvO
+    0eR8HSQaMeLQS2uUk2ubFnyTjPiquzdn8J5sPAoA/xM+MAU5zYMCAREwDQYJKoZI
+    hvcNAQEFBQADgYEAFXJWngZirvyzqHxw5rMvylHU2/35V9VcOJ2d0SVHL7nPTqwx
+    uOpEut3EPA0354v48ffLnhNJenHxExSOQc8Q0cr5Z00LGgihUilWGlH1loqHaBaj
+    +0uWLEPqhZEH7NOB70De1RheJpp0TcuON7pQELocrjkfOfQUfzHfjlP2cZg=
+    &lt;/RootCert>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;/jxta:PA>
+  </Response>
+
+  <Response Expiration="7180784">
+    &lt;?xml version="1.0"?>
+
+    &lt;!DOCTYPE jxta:PA>
+
+    &lt;jxta:PA xmlns:jxta="http://jxta.org">
+    &lt;PID>
+    urn:jxta:uuid-59616261646162614A7874615032503359082BF4DEC24CA2A1F6A6FBA0234F6403
+    &lt;/PID>
+    &lt;GID>
+    urn:jxta:jxta-NetGroup
+    &lt;/GID>
+    &lt;Name>
+    da
+    &lt;/Name>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000805
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;Addr>
+    tcp://133.186.64.93:9701/
+    &lt;/Addr>
+    &lt;Addr>
+    jxtatls://uuid-59616261646162614A7874615032503359082BF4DEC24CA2A1F6A6FBA0234F6403/TlsTransport/jxta-WorldGroup
+    &lt;/Addr>
+    &lt;Addr>
+    jxta://uuid-59616261646162614A7874615032503359082BF4DEC24CA2A1F6A6FBA0234F6403/
+    &lt;/Addr>
+    &lt;Addr>
+    http://JxtaHttpClientuuid-59616261646162614A7874615032503359082BF4DEC24CA2A1F6A6FBA0234F6403/
+    &lt;/Addr>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000105
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;RootCert>
+    MIICNjCCAZ+gAwIBAgIBATANBgkqhkiG9w0BAQUFADBjMRUwEwYDVQQKEwx3d3cu
+    anh0YS5vcmcxCzAJBgNVBAcTAlNGMQswCQYDVQQGEwJVUzERMA8GA1UEAxMIZGFk
+    YWEtQ0ExHTAbBgNVBAsTFDhERjg1NzdCMjY1NzU1QTU5RUFGMB4XDTAyMDMwODA0
+    MjAzMVoXDTEyMDMwODA0MjAzMVowYzEVMBMGA1UEChMMd3d3Lmp4dGEub3JnMQsw
+    CQYDVQQHEwJTRjELMAkGA1UEBhMCVVMxETAPBgNVBAMTCGRhZGFhLUNBMR0wGwYD
+    VQQLExQ4REY4NTc3QjI2NTc1NUE1OUVBRjCBmzALBgkqhkiG9w0BAQEDgYsAMIGH
+    AoGBAI6eFM+5qC8qETLK4JwUT2CrsL/42bkOrPqIWcNmoJR/iuNOj52te0nt7qA6
+    bVud0WRQgeC92XFsU7aMge6preqZ58usPfqo0Pix6fxwd/VMX8+KiJC/NKugdBRh
+    mRYL3FMIsvC/PCrr64T4qsf7xearc3RzWpV2VCCQHEygAuiLAgERMA0GCSqGSIb3
+    DQEBBQUAA4GBAFNc4Qop+DTNxa1ksDfkZdhvv4QSURUKxl6iPr+CoVUNfJalPoI0
+    6g9IZqwcFN8OtfBKfQnAEvBYf/Rk6g2tXbPwn9D9ryokbSjF7UbNHzSJLsamPMR2
+    PTYleYB89iQ0vgadPMEKmBbsO9GWxl3+E2aJNVwIQBYR1zaXaqEOYk7u
+    &lt;/RootCert>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;/jxta:PA>
+  </Response>
+
+  <Response Expiration="7093645">
+    &lt;?xml version="1.0"?>
+
+    &lt;!DOCTYPE jxta:PA>
+
+    &lt;jxta:PA xmlns:jxta="http://jxta.org">
+    &lt;PID>
+    urn:jxta:uuid-59616261646162614A787461503250334EF59E176CDC4C41B31AB64FBBE97EE803
+    &lt;/PID>
+    &lt;GID>
+    urn:jxta:jxta-NetGroup
+    &lt;/GID>
+    &lt;Name>
+    trawk
+    &lt;/Name>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000805
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;Addr>
+    tcp://10.10.10.91:9701/
+    &lt;/Addr>
+    &lt;Addr>
+    jxtatls://uuid-59616261646162614A787461503250334EF59E176CDC4C41B31AB64FBBE97EE803/TlsTransport/jxta-WorldGroup
+    &lt;/Addr>
+    &lt;Addr>
+    jxta://uuid-59616261646162614A787461503250334EF59E176CDC4C41B31AB64FBBE97EE803/
+    &lt;/Addr>
+    &lt;Addr>
+    http://JxtaHttpClientuuid-59616261646162614A787461503250334EF59E176CDC4C41B31AB64FBBE97EE803/
+    &lt;/Addr>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000105
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;RootCert>
+    MIICMjCCAZugAwIBAgIBATANBgkqhkiG9w0BAQUFADBhMRUwEwYDVQQKEwx3d3cu
+    anh0YS5vcmcxCzAJBgNVBAcTAlNGMQswCQYDVQQGEwJVUzEPMA0GA1UEAxMGdHJh
+    LUNBMR0wGwYDVQQLExQwNkQzNUI2N0I4RTk4Njg4NTA1RTAeFw0wMjAxMjkyMTI3
+    MTBaFw0xMjAxMjkyMTI3MTBaMGExFTATBgNVBAoTDHd3dy5qeHRhLm9yZzELMAkG
+    A1UEBxMCU0YxCzAJBgNVBAYTAlVTMQ8wDQYDVQQDEwZ0cmEtQ0ExHTAbBgNVBAsT
+    FDA2RDM1QjY3QjhFOTg2ODg1MDVFMIGbMAsGCSqGSIb3DQEBAQOBiwAwgYcCgYEA
+    vNDe+wY6SATQ3LCbsjDAh3VCTBOj4mWnKl6MoGop2udoFocGMdn3mr4pvlb0ezUl
+    NXD0OgPPXw2tWbaYV3p2LQUNNsRvyc18w0vqueNNScla+T6TpxWtOywcZVQvBm4K
+    UebmXnEonMMbfDl4eixm41aOlSXi5JHIk78+id1pOn8CAREwDQYJKoZIhvcNAQEF
+    BQADgYEAhbhLS31D237HCwTjA4vXwx94eW9FTXPzvxv/++hlEuvnQcF+jjvOw/Ej
+    QRninwKJH84CfxtG+zEOsLROFaf9JEChSqMSNtF44t3nyKvIrkzk17vHdHiaiAr6
+    y6LKaYV7rRoVs+gHlFzYjQ8Erh9zCeRpX6Hmb54w58LOfI/l4To=
+    &lt;/RootCert>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;/jxta:PA>
+  </Response>
+
+  <Response Expiration="7154926">
+    &lt;?xml version="1.0"?>
+
+    &lt;!DOCTYPE jxta:PA>
+
+    &lt;jxta:PA xmlns:jxta="http://jxta.org">
+    &lt;PID>
+    urn:jxta:uuid-59616261646162614A787461503250334CE68D6D0EBB4023A4B98061C9D3805103
+    &lt;/PID>
+    &lt;GID>
+    urn:jxta:jxta-NetGroup
+    &lt;/GID>
+    &lt;Name>
+    Patrick
+    &lt;/Name>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000805
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;Addr>
+    tcp://192.35.94.165:9701/
+    &lt;/Addr>
+    &lt;Addr>
+    jxtatls://uuid-59616261646162614A787461503250334CE68D6D0EBB4023A4B98061C9D3805103/TlsTransport/jxta-WorldGroup
+    &lt;/Addr>
+    &lt;Addr>
+    jxta://uuid-59616261646162614A787461503250334CE68D6D0EBB4023A4B98061C9D3805103/
+    &lt;/Addr>
+    &lt;Addr>
+    http://JxtaHttpClientuuid-59616261646162614A787461503250334CE68D6D0EBB4023A4B98061C9D3805103/
+    &lt;/Addr>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000105
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;RootCert>
+    MIICQjCCAaugAwIBAgIBATANBgkqhkiG9w0BAQUFADBpMRUwEwYDVQQKEwx3d3cu
+    anh0YS5vcmcxCzAJBgNVBAcTAlNGMQswCQYDVQQGEwJVUzEXMBUGA1UEAxMOcGJl
+    YXV0ZW1lbnQtQ0ExHTAbBgNVBAsTFDJGQjQwNDFGMTBFN0Y0MDdBREIzMB4XDTAy
+    MDMxNDE3NDA1OVoXDTEyMDMxNDE3NDA1OVowaTEVMBMGA1UEChMMd3d3Lmp4dGEu
+    b3JnMQswCQYDVQQHEwJTRjELMAkGA1UEBhMCVVMxFzAVBgNVBAMTDnBiZWF1dGVt
+    ZW50LUNBMR0wGwYDVQQLExQyRkI0MDQxRjEwRTdGNDA3QURCMzCBmzALBgkqhkiG
+    9w0BAQEDgYsAMIGHAoGBAIxmiQ9x8Y0GCdbDHA8UfOCbwYI0QS1kF9S9OP82nGTE
+    g9hM7BHDuetmLjL/Clr6HxirZ1GUmRpWdiP772yJ2LF7Xv+G5D/40C/y8uvtejak
+    N2956OOJs/j3Mz+4a6PYzr5Fgt1oHvh+VUoRLfNP9ejzeLHINpxR9zrd4dFamiS9
+    AgERMA0GCSqGSIb3DQEBBQUAA4GBAFndgXO3QuiDDkwLpBFtMi7j2EcjdLkfdJz/
+    PfWfkFW/w5+2/4Z9MJprzlzJPtHK0DpjprjKh75t/i3O4V2qKVtCL7TYBUNSmpCd
+    qGX02TBSmz0kuPhdncO3DrmaSG8Lfw0px28Ye9RA8nhuKGKkaIUzc3J1XtKsk9dO
+    oMPqdFo1
+    &lt;/RootCert>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;/jxta:PA>
+  </Response>
+
+  <Response Expiration="7023216">
+    &lt;?xml version="1.0"?>
+
+    &lt;!DOCTYPE jxta:PA>
+
+    &lt;jxta:PA xmlns:jxta="http://jxta.org">
+    &lt;PID>
+    urn:jxta:uuid-59616261646162614A787461503250338A74D2958A274AF3821D83B1F7C4FEDA03
+    &lt;/PID>
+    &lt;GID>
+    urn:jxta:jxta-NetGroup
+    &lt;/GID>
+    &lt;Name>
+    Rendezvous Registrar
+    &lt;/Name>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000605
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;Rdv>
+    true
+    &lt;/Rdv>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000805
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;Addr>
+    tcp://137.79.16.76:9701/
+    &lt;/Addr>
+    &lt;Addr>
+    jxtatls://uuid-59616261646162614A787461503250338A74D2958A274AF3821D83B1F7C4FEDA03/TlsTransport/jxta-WorldGroup
+    &lt;/Addr>
+    &lt;Addr>
+    jxta://uuid-59616261646162614A787461503250338A74D2958A274AF3821D83B1F7C4FEDA03/
+    &lt;/Addr>
+    &lt;Addr>
+    http://buttons.jpl.nasa.gov:9700/
+    &lt;/Addr>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000105
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;RootCert>
+    MIICNDCCAZ2gAwIBAgIBATANBgkqhkiG9w0BAQUFADBiMRUwEwYDVQQKEwx3d3cu
+    anh0YS5vcmcxCzAJBgNVBAcTAlNGMQswCQYDVQQGEwJVUzEQMA4GA1UEAxMHb29k
+    dC1DQTEdMBsGA1UECxMUNTc2MUMzODY2QUREQ0E0N0JGQjMwHhcNMDIwMjI1MjIy
+    NzI3WhcNMTIwMjI1MjIyNzI3WjBiMRUwEwYDVQQKEwx3d3cuanh0YS5vcmcxCzAJ
+    BgNVBAcTAlNGMQswCQYDVQQGEwJVUzEQMA4GA1UEAxMHb29kdC1DQTEdMBsGA1UE
+    CxMUNTc2MUMzODY2QUREQ0E0N0JGQjMwgZswCwYJKoZIhvcNAQEBA4GLADCBhwKB
+    gQC/kYSfDzHAZ46s+anlX57imCX56dUGwp9HrNtD4/LMhl4omdEyCaHKNpMYLzxF
+    HbhK/hg8YmI8nqVL2KXbAZiM8kvn29vt5KOhbj5k8Kg2+watmd+ah/DatpZWTrlT
+    5CoYx+buoyVAZ1MepX1fG2QSTL6zIj3XJDdnBxNpD4t1IwIBETANBgkqhkiG9w0B
+    AQUFAAOBgQADq4hyAs8bl71cRkr0DUskImbDIMmYDMM4nGVaDBM1VBpHUoMNXySN
+    a7Wt3xXaYEkOAu4TiFvOwhkJG3L60/oeqfxMUHonZaJ4YfqmreUPzdCblqMZS1m4
+    HW+MhJYcKJLG3c2gx1lnyDlARdIXDGhtVozLCocJnf7nlM24fGL/fw==
+    &lt;/RootCert>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;/jxta:PA>
+  </Response>
+
+  <Response Expiration="7114906">
+    &lt;?xml version="1.0"?>
+
+    &lt;!DOCTYPE jxta:PA>
+
+    &lt;jxta:PA xmlns:jxta="http://jxta.org">
+    &lt;PID>
+    urn:jxta:uuid-59616261646162614A787461503250333B22A41D261D498DA1419E7F4ABBFD2E03
+    &lt;/PID>
+    &lt;GID>
+    urn:jxta:jxta-NetGroup
+    &lt;/GID>
+    &lt;Name>
+    fert
+    &lt;/Name>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000805
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;Addr>
+    tcp://135.207.19.46:9701/
+    &lt;/Addr>
+    &lt;Addr>
+    jxtatls://uuid-59616261646162614A787461503250333B22A41D261D498DA1419E7F4ABBFD2E03/TlsTransport/jxta-WorldGroup
+    &lt;/Addr>
+    &lt;Addr>
+    jxta://uuid-59616261646162614A787461503250333B22A41D261D498DA1419E7F4ABBFD2E03/
+    &lt;/Addr>
+    &lt;Addr>
+    http://JxtaHttpClientuuid-59616261646162614A787461503250333B22A41D261D498DA1419E7F4ABBFD2E03/
+    &lt;/Addr>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000105
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;RootCert>
+    MIICMjCCAZugAwIBAgIBATANBgkqhkiG9w0BAQUFADBhMRUwEwYDVQQKEwx3d3cu
+    anh0YS5vcmcxCzAJBgNVBAcTAlNGMQswCQYDVQQGEwJVUzEPMA0GA1UEAxMGZm9v
+    LUNBMR0wGwYDVQQLExRDNjg0MjYxODg0RjhGQjcwQkQ3NTAeFw0wMjAxMDkxNzAw
+    NTFaFw0xMjAxMDkxNzAwNTFaMGExFTATBgNVBAoTDHd3dy5qeHRhLm9yZzELMAkG
+    A1UEBxMCU0YxCzAJBgNVBAYTAlVTMQ8wDQYDVQQDEwZmb28tQ0ExHTAbBgNVBAsT
+    FEM2ODQyNjE4ODRGOEZCNzBCRDc1MIGbMAsGCSqGSIb3DQEBAQOBiwAwgYcCgYEA
+    hFYfD1KJL7w6f8m3+bEWceJDsIiwpo6Vx9FCz4V4he+W0KLaXVUkWeniSEegL7Pg
+    k1lJIaKrW4o5hPDBgD+AZ0f2xxrBmoYbj/4lXzP9am5cNzB3/GjF3tnz8Wcj49EV
+    VUkOCTvha/ibqixN+j+WgT7tmOu31rIUJDsSdkwoW4sCAREwDQYJKoZIhvcNAQEF
+    BQADgYEAaL4rXxReRGY/UyaL7RsKBsMLiDHL5OkPE5pZx0Zj9FdDOBcRjh2iRSk+
+    0pGJFzf41nn/v3DTsHODp7iOYhIVqG3Keuu8ktB2sLBwAMlItYfaVk8ElGJkVcLQ
+    aWnXmB3XZOhe9xzm5U5l69WzJqNSygzpPkO+lJw3ls8j3Id0KA0=
+    &lt;/RootCert>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;/jxta:PA>
+  </Response>
+
+  <Response Expiration="7169601">
+    &lt;?xml version="1.0"?>
+
+    &lt;!DOCTYPE jxta:PA>
+
+    &lt;jxta:PA xmlns:jxta="http://jxta.org">
+    &lt;PID>
+    urn:jxta:uuid-59616261646162614A7874615032503349953131B1AA4D78BDB1894C7C4DC36903
+    &lt;/PID>
+    &lt;GID>
+    urn:jxta:jxta-NetGroup
+    &lt;/GID>
+    &lt;Name>
+    conti
+    &lt;/Name>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000805
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;Addr>
+    tcp://137.79.16.201:9701/
+    &lt;/Addr>
+    &lt;Addr>
+    jxtatls://uuid-59616261646162614A7874615032503349953131B1AA4D78BDB1894C7C4DC36903/TlsTransport/jxta-WorldGroup
+    &lt;/Addr>
+    &lt;Addr>
+    jxta://uuid-59616261646162614A7874615032503349953131B1AA4D78BDB1894C7C4DC36903/
+    &lt;/Addr>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;Svc>
+    &lt;MCID>
+    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000105
+    &lt;/MCID>
+    &lt;Parm>
+    &lt;RootCert>
+    MIICNjCCAZ+gAwIBAgIBATANBgkqhkiG9w0BAQUFADBjMRUwEwYDVQQKEwx3d3cu
+    anh0YS5vcmcxCzAJBgNVBAcTAlNGMQswCQYDVQQGEwJVUzERMA8GA1UEAxMIa2Vs
+    bHktQ0ExHTAbBgNVBAsTFDE1NzhDQzA5NjA1QzlFNUEzQzc2MB4XDTAyMDIyODE2
+    MzQxMFoXDTEyMDIyODE2MzQxMFowYzEVMBMGA1UEChMMd3d3Lmp4dGEub3JnMQsw
+    CQYDVQQHEwJTRjELMAkGA1UEBhMCVVMxETAPBgNVBAMTCGtlbGx5LUNBMR0wGwYD
+    VQQLExQxNTc4Q0MwOTYwNUM5RTVBM0M3NjCBmzALBgkqhkiG9w0BAQEDgYsAMIGH
+    AoGBAIQsfO1MtLH+q7Fb4BF3PLRVVZyLXXMfqJ/zKckebf2g3ldtZ6lNxxHiMcxF
+    a3va3NyUpKseOaqLn+pm+HeVuai9Jb1P7TT96X52jjW13o9VNZ412xgiK9Ncl/g+
+    dKPd1HQQ9GLObfDIZ2ab1mOgTdNJmCcmsJ0WBWOTaJZCCadzAgERMA0GCSqGSIb3
+    DQEBBQUAA4GBACKlmgBlIFJhGG6JiIWTMyQ00ilXOmWbStEuJKN2Nygc/HAndplu
+    vYlKDq8Oq7OGpMvPaMnERMDl/cS/0nLsqedbl6g3EmR7rkyhAqwqLH8XcTX3q5z1
+    PNQmol3+d7OAJYlMNNnOSdRtvLINS/BkBh1XhFlRbu81QnAlJqQbqNwM
+    &lt;/RootCert>
+    &lt;/Parm>
+    &lt;/Svc>
+    &lt;/jxta:PA>
+  </Response>
+
+</jxta:DiscoveryResponse>
+

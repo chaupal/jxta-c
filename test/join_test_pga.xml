@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!DOCTYPE jxta:PGA>
+<jxta:PGA xmlns:jxta="http://jxta.org">
+        <GID>
+                urn:jxta:uuid-C4ED3CD3DC904F1CA68DD183AEC5600B02
+        </GID>
+        <MSID>
+                urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE000000010306
+        </MSID>
+        <Name>
+                test
+        </Name>
+        <Desc>
+                created by newpgrp
+        </Desc>
+</jxta:PGA>
