@@ -52,11 +52,17 @@ AC_ARG_WITH(dbm,
     db)
       dbtype='"DB"'
       ;;
+    gdbm)
+      dbtype='"GDBM"'
+      echo "WARNING"
+      echo "WARNING: the use of gdbm has only been tested with PadicoTM. If you don't understand what that means, don't use it!"
+      echo "WARNING"
+      ;;
     sdbm)
       dbtype='"SDBM"'
       ;;
     *)
-      echo "invalid dbm, only db, sdbm are supported currently."
+      echo "invalid dbm, only db, sdbm and gdbm are supported currently."
       exit 0
       ;;
     esac

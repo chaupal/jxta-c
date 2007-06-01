@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dr.c,v 1.48.2.4 2005/05/20 19:41:34 slowhog Exp $
+ * $Id: jxta_dr.c,v 1.48.2.5 2005/06/24 08:00:59 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -377,6 +377,9 @@ Jxta_status jxta_discovery_response_get_advertisements(Jxta_DiscoveryResponse * 
 
     if (jxta_vector_size(ad->advertisements) < jxta_vector_size(ad->responselist)) {
         Jxta_vector *adv_vec = NULL;
+        if (NULL != ad->advertisements) {
+            JXTA_OBJECT_RELEASE(ad->advertisements);
+        }
         ad->advertisements = jxta_vector_new(1);
         for (i = 0; i < jxta_vector_size(ad->responselist); i++) {
             Jxta_object *tmpadv = NULL;
@@ -393,11 +396,12 @@ Jxta_status jxta_discovery_response_get_advertisements(Jxta_DiscoveryResponse * 
                 /* call listener(s) if any */
                 JXTA_OBJECT_RELEASE(res);
                 JXTA_OBJECT_RELEASE(radv);
+                JXTA_OBJECT_RELEASE(tmpadv);
+                JXTA_OBJECT_RELEASE(adv_vec);
             }
         }
-        JXTA_OBJECT_SHARE(ad->advertisements);
     }
-    *advertisements = ad->advertisements;
+    *advertisements = JXTA_OBJECT_SHARE(ad->advertisements);
     return JXTA_SUCCESS;
 }
 
@@ -409,7 +413,7 @@ void jxta_discovery_response_set_advertisements(Jxta_DiscoveryResponse * ad, Jxt
     }
     if (advertisements != NULL) {
         JXTA_OBJECT_SHARE(advertisements);
-        ad->responselist = advertisements;
+        ad->advertisements = advertisements;
     }
     return;
 }

@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /O2 /D "WIN32" /D "_NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /MD /W3 /GX /Zd /O2 /I "..\..\..\lib\apache2\include" /I "..\..\..\src" /D "WIN32" /D "_NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /D /GZ /c
+# ADD CPP /nologo /MD /W3 /GX /Zd /O2 /I "..\..\..\lib\apache2\include" /I "..\..\..\src" /D "WIN32" /D "_NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -68,7 +68,7 @@ PostBuild_Cmds=copy Release\jxta.lib "c:\Program Files\Microsoft Visual Studio\V
 # PROP Intermediate_Dir "Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /GX /Zi /Od /I "..\..\..\lib\apache2\include" /I "..\..\..\src" /D "WIN32" /D "_MBCS" /D "_LIB" /YX /FD /D /GZ /c
+# ADD CPP /nologo /MDd /W3 /GX /Zi /Od /I "..\..\..\lib\apache2\include" /I "..\..\..\src" /D "WIN32" /D "_MBCS" /D "_LIB" /YX /FD  /GZ /c
 # SUBTRACT CPP /Fr
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
@@ -140,10 +140,6 @@ SOURCE=..\..\..\src\jxta_apa.c
 # Begin Source File
 
 SOURCE=..\..\..\src\jxta_bidipipe.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\..\src\jxta_boot.c
 # End Source File
 # Begin Source File
 
