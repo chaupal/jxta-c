@@ -51,14 +51,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jdlist.c,v 1.8 2005/02/16 23:26:47 bondolo Exp $
+ * $Id: jdlist.c,v 1.8.4.1 2005/05/10 06:35:18 slowhog Exp $
  */
 
 /* 
  * $Source: /cvs/jxta-c/src/jdlist.c,v $
- * $Revision: 1.8 $
- * $Date: 2005/02/16 23:26:47 $
- * $Author: bondolo $
+ * $Revision: 1.8.4.1 $
+ * $Date: 2005/05/10 06:35:18 $
+ * $Author: slowhog $
  */
 
 #include <stdio.h>    /* Basic includes and definitions */
@@ -190,7 +190,7 @@ dl_free(Dlist * l, DlFreeFunc free_val) {
     if (free_val != NULL) {
       free_val(d->val);
     } else {
-      JXTA_OBJECT_RELEASE( d->val);
+        if (NULL != d->val) JXTA_OBJECT_RELEASE( d->val);
     }
     free(d);
     d = next_node;
@@ -212,3 +212,4 @@ dl_print(Dlist * l, DLPRINTFUNC printer, void * user_data) {
   }
 }
 
+/* vim: set ts=4 sw=4 tw=130 et: */

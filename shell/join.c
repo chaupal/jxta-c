@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: join.c,v 1.4 2004/12/05 02:16:39 slowhog Exp $
+ * $Id: join.c,v 1.4.4.3 2005/06/07 23:15:53 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -175,6 +175,7 @@ void jxta_join_start(Jxta_object * appl,
         type = NULL;
 
         pga = (Jxta_PGA*) JxtaShellObject_object (object);
+	JXTA_OBJECT_RELEASE(object);
 
         /* Reuse the resource groups of our parent. */
         jxta_PG_get_resourcegroups( group, &resources );
@@ -183,6 +184,8 @@ void jxta_join_start(Jxta_object * appl,
         jxta_vector_add_object_last( resources, (Jxta_object*) group );
 
         res = jxta_PG_newfromadv ( group, (Jxta_advertisement*) pga, resources, &newPG );
+	JXTA_OBJECT_RELEASE(pga);
+	JXTA_OBJECT_RELEASE(resources);
 
         if( res != JXTA_SUCCESS ) {
             jstring_append_2 ( outputLine, "# ERROR - New from adv failed\n" );
@@ -205,6 +208,7 @@ void jxta_join_start(Jxta_object * appl,
         JXTA_OBJECT_RELEASE(var); /* release local */
 
         res = JxtaShellEnvironment_set_current_group ( environment, newPG );
+	JXTA_OBJECT_RELEASE(newPG);
 
         if ( JXTA_SUCCESS == res ) {
         jstring_append_2(outputLine, "Joined group successfully " );
@@ -212,7 +216,7 @@ void jxta_join_start(Jxta_object * appl,
     } else {
         JString *       grouptype = jstring_new_2( "Group" );
         Jxta_vector*    groups = JxtaShellEnvironment_get_of_type( environment, grouptype );
-        int             eachItem;
+        unsigned int             eachItem;
 
         jstring_append_2(outputLine, "Groups :\n" );
 
@@ -249,8 +253,13 @@ void jxta_join_start(Jxta_object * appl,
 
 
 Common_Exit:
+    if (NULL != pgadvVAR) {
+	JXTA_OBJECT_RELEASE(pgadvVAR);
+    }
     if( jstring_length( outputLine ) > 0 )
         JxtaShellApplication_print(app, outputLine );
+
+    JXTA_OBJECT_RELEASE(outputLine);
 
     JxtaShellApplication_terminate(app);
 }
@@ -270,7 +279,6 @@ void jxta_join_print_help(Jxta_object *appl) {
     jstring_append_2(inputLine,"\t-s\tshell variable in which to place the group. \n\n");
 
     if( app != NULL ) {
-        JXTA_OBJECT_SHARE(inputLine);
         JxtaShellApplication_print(app,inputLine);
     }
     JXTA_OBJECT_RELEASE(inputLine);

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_mia.c,v 1.20 2005/02/17 05:59:08 slowhog Exp $
+ * $Id: jxta_mia.c,v 1.20.4.1 2005/05/02 19:09:31 slowhog Exp $
  */
 
    
@@ -733,7 +733,6 @@ jxta_MIA_new() {
 static void
 jxta_MIA_delete (Jxta_MIA * ad) {
  /* Fill in the required freeing functions here. */ 
-
     JXTA_OBJECT_RELEASE(ad->MSID);
     JXTA_OBJECT_RELEASE(ad->Comp);
     JXTA_OBJECT_RELEASE(ad->Code);
@@ -741,6 +740,8 @@ jxta_MIA_delete (Jxta_MIA * ad) {
     JXTA_OBJECT_RELEASE(ad->Prov);
     JXTA_OBJECT_RELEASE(ad->Desc);
     JXTA_OBJECT_RELEASE(ad->Parm);
+
+    jxta_advertisement_delete((Jxta_advertisement*)ad);
 
     memset (ad, 0xdd, sizeof (Jxta_MIA));
     free (ad);

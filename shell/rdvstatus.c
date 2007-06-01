@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rdvstatus.c,v 1.12 2005/04/07 02:38:27 bondolo Exp $
+ * $Id: rdvstatus.c,v 1.12.2.2 2005/05/20 08:03:54 slowhog Exp $
  */
 
 
@@ -142,13 +142,15 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service* rdv) {
             err = jxta_peer_get_adv(peer, &adv);
             if ( (NULL != adv) && (err == JXTA_SUCCESS)) {
                 string = jxta_PA_get_Name(adv);
+		JXTA_OBJECT_RELEASE(adv);
                 sprintf(linebuff, "Name: [%s]\n", jstring_get_string(string));
                 jstring_append_2(outputLine, linebuff);
-                JXTA_OBJECT_RELEASE(adv);
+                JXTA_OBJECT_RELEASE(string);
             }
             err = jxta_peer_get_peerid(peer, &pid);
             if ( (NULL != pid) && (err == JXTA_SUCCESS)) {
                 jxta_id_to_jstring(pid, &string);
+		JXTA_OBJECT_RELEASE(pid);
                 sprintf(linebuff, "PeerId: [%s]\n", jstring_get_string(string));
                 jstring_append_2(outputLine, linebuff);
                 JXTA_OBJECT_RELEASE(string);
@@ -231,7 +233,6 @@ void jxta_rdvstatus_print_help(Jxta_object *appl) {
     jstring_append_2(inputLine,"\t-h\tthis help information. \n");
 
     if(app != NULL) {
-        JXTA_OBJECT_SHARE(inputLine);
         JxtaShellApplication_print(app,inputLine);
     }
     JXTA_OBJECT_RELEASE(inputLine);
@@ -247,6 +248,7 @@ void jxta_rdvstatus_start(Jxta_object * appl,
 
     jxta_PG_get_rendezvous_service(group, &rdv);
     display_peers(appl, rdv);
+    JXTA_OBJECT_RELEASE(rdv);
 
 Common_Exit:
     if(jstring_length(outputLine) > 0)

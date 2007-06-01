@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: talk.c,v 1.12 2005/03/28 19:30:12 bondolo Exp $
+ * $Id: talk.c,v 1.12.2.1 2005/05/06 10:42:00 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -198,7 +198,6 @@ void talk_print_help(Jxta_object * appl)
     jstring_append_2(inputLine, "           [-l local user] login for the local user\n");
     jstring_append_2(inputLine, "           [-r user name] register a new user\n");
     if (app != 0) {
-        JXTA_OBJECT_SHARE(inputLine);
         JxtaShellApplication_print(app, inputLine);
     }
     JXTA_OBJECT_RELEASE(inputLine);
@@ -519,8 +518,6 @@ static void message_listener(Jxta_object * obj, void *arg)
 
     JXTA_OBJECT_CHECK_VALID(msg);
     processIncomingMessage(msg);
-
-    JXTA_OBJECT_RELEASE(msg);
 }
 
 

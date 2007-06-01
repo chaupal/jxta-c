@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_types.h,v 1.4 2005/03/23 19:31:38 bondolo Exp $
+ * $Id: jxta_types.h,v 1.4.2.1 2005/05/27 18:56:03 slowhog Exp $
  */
 
 #ifndef JXTA_TYPES_H
@@ -100,23 +100,6 @@ typedef Jpr_expiration_time Jxta_expiration_time;
 
 typedef Jpr_port Jxta_port;
 typedef Jpr_in_addr Jxta_in_addr;
-
- /**
- * A definition of boolean that looks like a fundamental type.
- * Hopefully all boolean definitions are the same.
- *
- * XXX bondolo Defining "boolean" this way is an incredibly bad idea.
- * not only will it cause any OS typedef of boolean to be replaced by
- * Jxta_boolean. There's of course no garauntee that they are AT ALL
- * compatible. I'm only guessing, but I assume it's a #define because 
- * if boolean is typedefed then typedef boolean Jxta_boolean would produce
- * an error. This should have been a clue....
- *
- * @deprecated Will be removed. Soon. DO NOT USE!
- */
-#ifndef boolean
-#define boolean Jxta_boolean
-#endif
 
 /**
   JXTA Standard callbacks

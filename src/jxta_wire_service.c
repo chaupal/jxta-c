@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_wire_service.c,v 1.22 2005/03/26 00:32:04 bondolo Exp $
+ * $Id: jxta_wire_service.c,v 1.22.2.5 2005/05/27 06:30:47 slowhog Exp $
  */
 
 #include "jxtaapr.h"
@@ -148,7 +148,23 @@ static void jxta_wire_service_free(Jxta_object * obj)
 
     Jxta_wire_service *self = (Jxta_wire_service *) obj;
 
-    jxta_rdv_service_remove_event_listener(self->rdv, (char *) JXTA_PROPAGATE_PIPE, (char *) jstring_get_string(self->gid_str));
+    jxta_endpoint_service_remove_listener(self->endpoint, (char *) WIRE_SERVICE_NAME, self->groupid);
+    jxta_listener_stop(self->listener);
+    JXTA_OBJECT_RELEASE(self->listener);
+
+    JXTA_OBJECT_RELEASE(self->endpoint);
+    self->endpoint = NULL;
+
+    if (self->rdv != NULL) {
+        jxta_rdv_service_remove_event_listener(self->rdv, (char *) JXTA_PROPAGATE_PIPE, (char *) jstring_get_string(self->gid_str));
+        JXTA_OBJECT_RELEASE(self->rdv);
+        self->rdv = NULL;
+    }
+    if (self->rdv_listener != NULL) {
+        jxta_listener_stop(self->rdv_listener);
+        JXTA_OBJECT_RELEASE(self->rdv_listener);
+        self->rdv_listener = NULL;
+    }
 
     if (self->gid_str) {
         JXTA_OBJECT_RELEASE(self->gid_str);
@@ -160,18 +176,7 @@ static void jxta_wire_service_free(Jxta_object * obj)
         self->listeners = NULL;
     }
 
-    if (self->rdv_listener != NULL) {
-        JXTA_OBJECT_RELEASE(self->rdv_listener);
-        self->rdv_listener = NULL;
-    }
-    if (self->group != NULL) {
-        JXTA_OBJECT_RELEASE(self->group);
-        self->group = NULL;
-    }
-    if (self->rdv != NULL) {
-        JXTA_OBJECT_RELEASE(self->rdv);
-        self->rdv = NULL;
-    }
+    self->group = NULL;
 
     if (self->groupid != NULL) {
         free(self->groupid);
@@ -453,7 +458,7 @@ static Jxta_status wire_set_pipe_resolver(Jxta_pipe_service_impl * obj, Jxta_pip
 
 static Jxta_boolean wire_msgid_new(Jxta_wire_service * self, char *msgId)
 {
-    int i;
+    unsigned int i;
     JString *val = NULL;
 
     /*
@@ -628,7 +633,6 @@ static Jxta_status wire_service_propagate(Jxta_wire_service * self, char *id, Jx
 
 static void wire_service_message_listener(Jxta_object * obj, void *arg)
 {
-
     Jxta_message *msg = (Jxta_message *) obj;
     Jxta_wire_session *session = (Jxta_wire_session *) arg;
     Jxta_listener *listener = NULL;
@@ -639,7 +643,7 @@ static void wire_service_message_listener(Jxta_object * obj, void *arg)
     JXTA_OBJECT_CHECK_VALID(msg);
 
     if (check_wire_header(NULL, msg, &wm)) {
-        int i;
+        unsigned int i;
 
         JXTA_LOG("Accepting incoming message\n");
         /* We can process this message */
@@ -667,7 +671,6 @@ static void wire_service_message_listener(Jxta_object * obj, void *arg)
     } else {
         JXTA_LOG("No Propagation header - discard,\n");
     }
-    JXTA_OBJECT_RELEASE(msg);
 }
 
 static void wire_service_endpoint_listener(Jxta_object * obj, void *arg)
@@ -685,7 +688,7 @@ static void wire_service_endpoint_listener(Jxta_object * obj, void *arg)
     JXTA_OBJECT_CHECK_VALID(msg);
 
     if (check_wire_header(self, msg, &wm)) {
-        int i;
+        unsigned int i;
 
         JXTA_LOG("Accepting incoming message from endpoint\n");
         /* We can process this message */
@@ -724,10 +727,10 @@ static void wire_service_endpoint_listener(Jxta_object * obj, void *arg)
         } else {
             JXTA_LOG("Could not find a pipe Id \n");
         }
+        JXTA_OBJECT_RELEASE(wm);
     } else {
         JXTA_LOG("No Propagation endpoint header - discard,\n");
     }
-    JXTA_OBJECT_RELEASE(msg);
 }
 
 static void wire_session_free(Jxta_object * obj)
@@ -759,7 +762,7 @@ static Jxta_status wire_service_add_listener(Jxta_wire_service * self, Jxta_pipe
     Jxta_status res;
     Jxta_pipe_resolver *pipe_resolver = self->generic_resolver;
 
-    char *id = jxta_pipe_adv_get_Id((Jxta_pipe_adv *) adv);
+    const char *id = jxta_pipe_adv_get_Id((Jxta_pipe_adv *) adv);
 
     apr_thread_mutex_lock(self->mutex);
     res = jxta_hashtable_get(self->listeners, id, strlen(id), (Jxta_object **) & session);
@@ -804,9 +807,9 @@ static Jxta_status wire_service_remove_listener(Jxta_wire_service * self, Jxta_p
 
     Jxta_wire_session *session = NULL;
     Jxta_listener *tmp = NULL;
-    int i = 0;
+    unsigned int i = 0;
     Jxta_status res = JXTA_INVALID_ARGUMENT;
-    char *id = jxta_pipe_adv_get_Id((Jxta_pipe_adv *) adv);
+    const char *id = jxta_pipe_adv_get_Id((Jxta_pipe_adv *) adv);
     Jxta_pipe_resolver *pipe_resolver = self->generic_resolver;
 
     apr_thread_mutex_lock(self->mutex);
@@ -1173,7 +1176,6 @@ static Jxta_wire_outputpipe *wire_outputpipe_new(Jxta_wire_service * pipe_servic
 
 static void wire_service_rdv_listener(Jxta_object * obj, void *arg)
 {
-
     Jxta_status res = JXTA_SUCCESS;
     Jxta_wire_service *self = (Jxta_wire_service *) arg;
     char **ids = NULL;
@@ -1206,3 +1208,5 @@ static void wire_service_rdv_listener(Jxta_object * obj, void *arg)
     }
     free(ids);
 }
+
+/* vim: set ts=4 sw=4 tw=130 et: */

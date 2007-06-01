@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: whisp.c,v 1.8 2005/04/04 17:17:55 bondolo Exp $
+ * $Id: whisp.c,v 1.8.2.1 2005/05/06 10:42:11 slowhog Exp $
  */
 
 /*
@@ -1086,7 +1086,6 @@ int index_of_pipe_ad_with_name(JString * recipient)
 
 void rdv_event_received(Jxta_object * obj, void *arg)
 {
-
     Jxta_rdv_event *event = (Jxta_rdv_event *) obj;
 
     printf("\n  Received a Rendezvous Service Event: ");
@@ -1130,7 +1129,6 @@ void rdv_event_received(Jxta_object * obj, void *arg)
         printf("nature of event unknown!");
         break;
     }
-    JXTA_OBJECT_RELEASE(obj);
 
     printf("\n\n");
     print_prompt();
@@ -1216,9 +1214,6 @@ void discovery_response_received(Jxta_object * obj, void *arg)
         printf("\n\tUnrecognized ads received:\n");
     }
 
-    JXTA_OBJECT_RELEASE(obj);
-    /* don't release the newAds because we're keeping them and releasing them later */
-
     print_prompt();
 }
 
@@ -1244,8 +1239,6 @@ void pipe_accept_event_received(Jxta_object * obj, void *arg)
     } else {
         printf("\n  Apologies. Apparently we cannot receive messages.\n\n");
     }
-
-    JXTA_OBJECT_RELEASE(obj);
 
     print_prompt();
 }
@@ -1336,7 +1329,6 @@ void pipe_connect_event_received(Jxta_object * obj, void *arg)
     }
 
     JXTA_OBJECT_RELEASE(sendPipe);
-    JXTA_OBJECT_RELEASE(obj);
 
     JXTA_OBJECT_RELEASE(context->recipientPipeAd);
     JXTA_OBJECT_RELEASE(context->message);

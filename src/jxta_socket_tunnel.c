@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_socket_tunnel.c,v 1.9 2005/02/22 21:50:04 slowhog Exp $
+ * $Id: jxta_socket_tunnel.c,v 1.9.4.4 2005/06/08 23:09:50 slowhog Exp $
  */
 
 #include <ctype.h>
@@ -130,8 +130,8 @@ static Jxta_status decode_addr_spec(Jxta_socket_tunnel * self, const char *addr_
         --pe;
 
     len = pe - pb + 1;
-    /* a://b:c is at least 7 characters */
-    if (len < 7) {
+    /* a://b[:c] is at least 5 characters */
+    if (len < 5) {
         return JXTA_INVALID_ARGUMENT;
     }
 
@@ -166,18 +166,18 @@ static Jxta_status decode_addr_spec(Jxta_socket_tunnel * self, const char *addr_
     }
     self->protocol = i;
 
-    while ('\0' != *p && ':' != *p)
-        ++p;
-    if ('\0' == *p) {
-        free((void *) pb);
-        return JXTA_INVALID_ARGUMENT;
+    while ('\0' != *p && ':' != *p) ++p;
+    
+    if ('\0' == *p) { /* port number is not specified, use any available port */
+        len = 0;
+    } else {
+        *p = '\0';
+        p++;
+        len = strtol(p, NULL, 10);
     }
-    *p = '\0';
-    p++;
-    len = strtol(p, NULL, 10);
 
     jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_DEBUG, "Tunnel protocol %s at address %s with port %ld(%s)\n",
-                    pb, pe, len, p);
+                    pb, pe, len, *p ? p : "not specified");
 
     rv = apr_sockaddr_info_get(&self->sockaddr, pe, proto_params[i][0], len, 0, self->pool);
     free((void *) pb);
@@ -198,6 +198,30 @@ static Jxta_status decode_addr_spec(Jxta_socket_tunnel * self, const char *addr_
         return rv;
     }
 
+    return rv;
+}
+
+static Jxta_status bind_socket(apr_socket_t *s, apr_sockaddr_t *addr)
+{
+    Jxta_status rv;
+    char *ip;
+    apr_sockaddr_t *sa;
+
+    apr_sockaddr_ip_get(&ip, addr);
+    jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_INFO, "Binding to socket %s:%ld\n", ip, addr->port);
+    rv = apr_socket_bind(s, addr);
+    if (APR_SUCCESS != rv) {
+        jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Bind to socket failed with error %ld\n", rv);
+        return rv;
+    }
+
+    if (0 == addr->port) {
+        rv = apr_socket_addr_get(&sa, APR_LOCAL, s);
+        if (APR_SUCCESS == rv) {
+            addr->port = sa->port;
+            jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_INFO, "Bind socket to port %ld\n", addr->port);
+        }
+    }
     return rv;
 }
 
@@ -231,13 +255,11 @@ static void listener_func(Jxta_object * obj, void *arg)
     rv = jxta_message_get_element_1(msg, "DATA", &el);
     if (JXTA_SUCCESS != rv || NULL == el) {
         jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Invalid message discard\n");
-        JXTA_OBJECT_RELEASE(obj);
         return;
     }
 
     data = jxta_message_element_get_value(el);
     JXTA_OBJECT_RELEASE(el);
-    JXTA_OBJECT_RELEASE(obj);
 
     if (NULL == data) {
         jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Failed to retrieve data from message\n");
@@ -443,14 +465,7 @@ static void *APR_THREAD_FUNC pipe_accept_func(apr_thread_t * thread, void *arg)
             self->data_socket = NULL;
             break;
         case SOCK_DGRAM:
-            apr_sockaddr_ip_get(&addr, self->sockaddr);
-            jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_INFO, "Bind to socket %s:%ld\n", addr, self->sockaddr->port);
-            rv = apr_socket_bind(self->socket, self->sockaddr);
-            if (!APR_STATUS_IS_SUCCESS(rv)) {
-                jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Bind to socket failed with error %ld\n", rv);
-            } else {
-                rv = pump_datagram_socket(self);
-            }
+            rv = pump_datagram_socket(self);
             break;
         }
     }
@@ -498,16 +513,6 @@ static void *APR_THREAD_FUNC socket_accept_func(apr_thread_t * thread, void *arg
 {
     Jxta_socket_tunnel *self = (Jxta_socket_tunnel *) arg;
     Jxta_status rv;
-    char *addr;
-
-    apr_sockaddr_ip_get(&addr, self->sockaddr);
-    jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_INFO, "Bind to socket %s:%ld\n", addr, self->sockaddr->port);
-    rv = apr_socket_bind(self->socket, self->sockaddr);
-    if (!APR_STATUS_IS_SUCCESS(rv)) {
-        jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Bind to socket failed with error %ld\n", rv);
-        apr_thread_exit(thread, rv);
-        return NULL;
-    }
 
     rv = apr_socket_listen(self->socket, 1);
     if (!APR_STATUS_IS_SUCCESS(rv)) {
@@ -633,6 +638,7 @@ Jxta_status jxta_socket_tunnel_delete(Jxta_socket_tunnel * self)
     }
     self->socket = NULL;
 
+    apr_thread_mutex_unlock(self->mutex);
     apr_thread_mutex_destroy(self->mutex);
     apr_pool_destroy(self->pool);
     if (!APR_STATUS_IS_SUCCESS(rv)) {
@@ -672,10 +678,28 @@ Jxta_status jxta_socket_tunnel_establish(Jxta_socket_tunnel * self, Jxta_pipe_ad
 
     switch (proto_params[self->protocol][1]) {
     case SOCK_STREAM:
+        rv = bind_socket(self->socket, self->sockaddr);
+        if (APR_SUCCESS != rv) {
+            break;
+        }
         rv = apr_thread_create(&self->thread, NULL, socket_accept_func, self, self->pool);
+        if (APR_SUCCESS != rv) {
+            jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, 
+                            "Fail to create socket thread with error %ld\n", rv);
+        }
         break;
     case SOCK_DGRAM:
+        if (0 == self->sockaddr->port) {
+            jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_ERROR, 
+                            "UDP tunnel must assign a port number to send to\n");
+            rv = JXTA_INVALID_ARGUMENT;
+            break;
+        }
         rv = apr_thread_create(&self->thread, NULL, socket_dgram_func, self, self->pool);
+        if (APR_SUCCESS != rv) {
+            jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, 
+                            "Fail to create socket thread with error %ld\n", rv);
+        }
         break;
     default:
         rv = JXTA_INVALID_ARGUMENT;
@@ -683,7 +707,6 @@ Jxta_status jxta_socket_tunnel_establish(Jxta_socket_tunnel * self, Jxta_pipe_ad
     }
 
     if (!APR_STATUS_IS_SUCCESS(rv)) {
-        jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Fail to create socket thread with error %ld\n", rv);
         JXTA_OBJECT_RELEASE(self->listener);
         self->listener = NULL;
     }
@@ -694,13 +717,34 @@ Jxta_status jxta_socket_tunnel_establish(Jxta_socket_tunnel * self, Jxta_pipe_ad
 
 Jxta_status jxta_socket_tunnel_accept(Jxta_socket_tunnel * self, Jxta_pipe_adv * local_adv)
 {
-    Jxta_status rv;
+    Jxta_status rv = JXTA_SUCCESS;
 
     apr_thread_mutex_lock(self->mutex);
     if (NULL != self->listener) {
         jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_WARNING, "Try to use a busy tunnel\n");
         apr_thread_mutex_unlock(self->mutex);
         return JXTA_BUSY;
+    }
+
+    switch (proto_params[self->protocol][1]) {
+    case SOCK_STREAM:
+        if (0 == self->sockaddr->port) {
+            jxta_log_append(JXTA_SOCKET_TUNNEL_LOG, JXTA_LOG_LEVEL_ERROR, 
+                            "TCP tunnel must assign a port number to connect to\n");
+            rv = JXTA_INVALID_ARGUMENT;
+        }
+        break;
+    case SOCK_DGRAM:
+        rv = bind_socket(self->socket, self->sockaddr);
+        break;
+    default:
+        rv = JXTA_INVALID_ARGUMENT;
+        break;
+    }
+
+    if (JXTA_SUCCESS != rv) {
+        apr_thread_mutex_unlock(self->mutex);
+        return rv;
     }
 
     self->mode = ACCEPTING;
@@ -787,6 +831,19 @@ Jxta_status jxta_socket_tunnel_teardown(Jxta_socket_tunnel * self)
 Jxta_boolean jxta_socket_tunnel_is_established(Jxta_socket_tunnel * self)
 {
     return (NULL != self->listener);
+}
+
+char * jxta_socket_tunnel_addr_get(Jxta_socket_tunnel *self)
+{
+    size_t len;
+    char *ip;
+    char *buf;
+
+    apr_sockaddr_ip_get(&ip, self->sockaddr);
+    len = 36 + strlen(protocols[self->protocol]) + strlen(ip); /* 4 'proto://addr:port' + 32 for port */
+    buf = calloc(len + 1, sizeof(char));
+    snprintf(buf, len, "%s://%s:%u", protocols[self->protocol], ip, self->sockaddr->port);
+    return buf;
 }
 
 #if 0                           /* to cheat indent */

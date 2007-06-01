@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_thread.c,v 1.8 2005/03/24 19:35:31 slowhog Exp $
+ * $Id: jpr_thread.c,v 1.8.2.1 2005/06/10 13:34:04 mathieu Exp $
  */
 
 #include <stdio.h>
@@ -109,6 +109,7 @@ void jpr_thread_delay_terminate(void)
     apr_thread_cond_destroy(_jpr_thread_delay_cond);
     _jpr_thread_delay_cond = NULL;
 
+    apr_thread_mutex_unlock(_jpr_thread_delay_mutex);
     apr_thread_mutex_destroy(_jpr_thread_delay_mutex);
     _jpr_thread_delay_mutex = NULL;
 }

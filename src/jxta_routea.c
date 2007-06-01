@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_routea.c,v 1.9 2005/02/02 02:58:32 exocetrick Exp $
+ * $Id: jxta_routea.c,v 1.9.4.1 2005/05/10 06:35:20 slowhog Exp $
  */
 
    
@@ -235,8 +235,6 @@ jxta_RouteAdvertisement_get_DestPID(Jxta_RouteAdvertisement * ad) {
 
     if (ad->dest != NULL) {
       id = jxta_AccessPointAdvertisement_get_PID(ad->dest);
-      if (id != NULL)
-	JXTA_OBJECT_SHARE(id);
     }
     return id;
 }

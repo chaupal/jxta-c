@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: TestApplication.c,v 1.2 2004/12/05 02:16:37 slowhog Exp $
+ * $Id: TestApplication.c,v 1.2.4.2 2005/05/21 01:03:43 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -85,20 +85,20 @@ JxtaShellApplication * JxtaTestApplication_new(Jxta_PG * pg,
 
 void  JxtaTestApplication_processInput(Jxta_object * appl,
                                        JString * inputLine){
-  JxtaShellApplication * app = (JxtaShellApplication*)appl;
-  JString  *  result =  jstring_new_0(); 
-  const char* line = jstring_get_string(inputLine);
-  
-  jstring_append_2(result,"echo: ");
-  jstring_append_1(result,inputLine);
-  if(strcmp(line,"exit") == 0 && app != 0) JxtaShellApplication_terminate(app);
-  else if(strcmp(line,"JXTA>") == 0 && app != 0) JxtaShellApplication_terminate(app);
-  else{
-     JXTA_OBJECT_SHARE(result);
-     JxtaShellApplication_println(app,result);
-  }
-  JXTA_OBJECT_RELEASE(inputLine);
-  JXTA_OBJECT_RELEASE(result);
+    JxtaShellApplication * app = (JxtaShellApplication*)appl;
+    const char* line = jstring_get_string(inputLine);
+
+    if (strcmp(line,"exit") == 0 && app != 0) {
+        JxtaShellApplication_terminate(app);
+    } else if(strcmp(line,"JXTA>") == 0 && app != 0) {
+        JxtaShellApplication_terminate(app);
+    } else {
+        JString  *  result =  jstring_new_0(); 
+        jstring_append_2(result,"echo: ");
+        jstring_append_1(result,inputLine);
+        JxtaShellApplication_println(app,result);
+        JXTA_OBJECT_RELEASE(result);
+    }
 }
 
 
@@ -113,7 +113,6 @@ void JxtaTestApplication_start(Jxta_object * appl,
 
    output = jstring_new_0();
    jstring_append_2(output,"Started TestApplication with arguments\n");
-   JXTA_OBJECT_SHARE(output);
    JxtaShellApplication_print(app,output);
    JXTA_OBJECT_RELEASE(output);
 
@@ -129,16 +128,15 @@ void JxtaTestApplication_start(Jxta_object * appl,
 	  add = 2;
 	  break; 
         case 'n':
-          name =JxtaShellGetopt_getOptionArgument(opt);
+          name =JxtaShellGetopt_OptionArgument(opt);
 	  break;
        case 'v':
-          value =JxtaShellGetopt_getOptionArgument(opt);
+          value =JxtaShellGetopt_OptionArgument(opt);
 	  break;
         default:
           output = jstring_new_0();
           jstring_append_2(output,"Error:");
           jstring_append_1(output, JxtaShellGetopt_getError(opt));
-          JXTA_OBJECT_SHARE(output);
           JxtaShellApplication_println(app,output);
           JXTA_OBJECT_RELEASE(output);
           error = 1;
@@ -158,7 +156,6 @@ void JxtaTestApplication_start(Jxta_object * appl,
    if( add == 0){
        output = jstring_new_0();
        jstring_append_2(output,"Please indicate whether you want to delete or remove \n");
-       JXTA_OBJECT_SHARE(output);
        JxtaShellApplication_println(app,output);
        JXTA_OBJECT_RELEASE(output);
        JxtaTestApplication_printHelp(app);
@@ -170,7 +167,6 @@ void JxtaTestApplication_start(Jxta_object * appl,
    if( name == 0){
        output = jstring_new_0();
        jstring_append_2(output,"Please supply a name for the environment variable \n");
-       JXTA_OBJECT_SHARE(output);
        JxtaShellApplication_println(app,output);
        JXTA_OBJECT_RELEASE(output);
        JxtaTestApplication_printHelp(app);
@@ -196,7 +192,6 @@ void JxtaTestApplication_start(Jxta_object * appl,
    output = jstring_new_0();
    jstring_append_2(output,"Typed strings will be echoed back. \n");
    jstring_append_2(output,"To terminate type exit. \n");
-   JXTA_OBJECT_SHARE(output);
    JxtaShellApplication_print(app,output);
    JXTA_OBJECT_RELEASE(output);
 }
@@ -213,7 +208,6 @@ void JxtaTestApplication_printHelp(Jxta_object *appl){
 	jstring_append_2(inputLine,"Type data to stdin and press return - the application will echo it back.\n");
 	jstring_append_2(inputLine,"Typing exit will terminate \n");
 	if( app != 0){
-		JXTA_OBJECT_SHARE(inputLine);
 		JxtaShellApplication_print(app,inputLine);
 	}
 	JXTA_OBJECT_RELEASE(inputLine);

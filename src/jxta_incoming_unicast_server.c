@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_incoming_unicast_server.c,v 1.13 2005/04/01 22:29:00 slowhog Exp $
+ * $Id: jxta_incoming_unicast_server.c,v 1.13.2.2 2005/05/27 06:46:14 slowhog Exp $
  */
 
 #include "jxta_incoming_unicast_server.h"
@@ -265,13 +265,13 @@ static void *APR_THREAD_FUNC incoming_unicast_server_body(apr_thread_t * tid, vo
         dest = jxta_endpoint_address_new2(protocol_name, protocol_address, NULL, NULL);
 
         messenger = get_tcp_messenger(self->tp, conn, dest, ipaddr, port);
+        JXTA_OBJECT_RELEASE(conn);
 
         JXTA_OBJECT_CHECK_VALID(messenger);
-        tcp_messenger_start(messenger);
         free(protocol_address);
         free(protocol_name);
         JXTA_OBJECT_RELEASE(dest);
-        JXTA_OBJECT_RELEASE(messenger);
+        JXTA_OBJECT_RELEASE(messenger); /* don't worry, a ref is in tcp_transport's messenger table */
         free(ipaddr);
         input_socket = NULL;
     }

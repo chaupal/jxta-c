@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_socket_tunnel.h,v 1.1 2005/01/29 02:01:36 slowhog Exp $
+ * $Id: jxta_socket_tunnel.h,v 1.1.4.1 2005/04/22 01:51:52 slowhog Exp $
  */
 
 #ifndef __JXTA_SOCKET_TUNNEL_H__
@@ -83,6 +83,8 @@ Jxta_status jxta_socket_tunnel_teardown(Jxta_socket_tunnel * self);
 
 Jxta_boolean jxta_socket_tunnel_is_established(Jxta_socket_tunnel * self);
 
+char * jxta_socket_tunnel_addr_get(Jxta_socket_tunnel * self);
+
 #if 0                           /* to cheat indent */
 {
 #endif
@@ -90,4 +92,4 @@ Jxta_boolean jxta_socket_tunnel_is_established(Jxta_socket_tunnel * self);
 }                               /* extern "C" */
 #endif
 #endif /* __JXTA_SOCKET_TUNNEL_H__ */
-/* vi: set sw=4 ts=4 et wm=130: */
+/* vi: set sw=4 ts=4 et tw=130: */

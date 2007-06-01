@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_application.c,v 1.4 2005/03/29 21:12:11 bondolo Exp $
+ * $Id: jxta_shell_application.c,v 1.4.2.1 2005/05/06 10:41:58 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -216,6 +216,7 @@ void JxtaShellApplication_terminate(JxtaShellApplication * app)
     if (app != NULL) {
         JString *prompt = jstring_new_2("JXTA>");
         JxtaShellApplication_print(app, prompt);
+	JXTA_OBJECT_RELEASE(prompt);
         app->terminate(app->parent, app->child);
         if (app->parent != 0) {
             JXTA_OBJECT_RELEASE(app->parent);
@@ -245,9 +246,7 @@ Jxta_status JxtaShellApplication_print(JxtaShellApplication * app, JString * inp
 
     if (app != NULL && app->standout != NULL && inputLine != NULL) {
         JXTA_OBJECT_CHECK_VALID(app->standout);
-        JXTA_OBJECT_SHARE(inputLine);
         result = jxta_listener_schedule_object(app->standout, (Jxta_object *) inputLine);
-        JXTA_OBJECT_RELEASE(inputLine);
     }
     return result;
 }
@@ -259,10 +258,8 @@ Jxta_status JxtaShellApplication_println(JxtaShellApplication * app, JString * i
 
     jstring_append_1(line, inputLine);
     jstring_append_2(line, "\n");
-    JXTA_OBJECT_SHARE(line);
     result = JxtaShellApplication_print(app, line);
     JXTA_OBJECT_RELEASE(line);
-    JXTA_OBJECT_RELEASE(inputLine);
     return result;
 }
 

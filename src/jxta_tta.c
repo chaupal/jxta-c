@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tta.c,v 1.38 2005/02/24 22:51:17 slowhog Exp $
+ * $Id: jxta_tta.c,v 1.38.6.2 2005/05/20 01:05:13 slowhog Exp $
  */
 
    
@@ -475,13 +475,16 @@ jxta_TCPTransportAdvertisement_get_xml(Jxta_TCPTransportAdvertisement * ad,
 
    char addr_buf[INET_ADDRSTRLEN] = {0};
    char port[11] = {0};
+    char *tmp;
 
    JString* string = jstring_new_0();
 
    jstring_append_2(string,"<jxta:TransportAdvertisement xmlns:jxta=\"http://jxta.org\" type=\"jxta:TCPTransportAdvertisement\">\n");
    
    jstring_append_2(string,"<Protocol>");
-   jstring_append_2(string,jxta_TCPTransportAdvertisement_get_Protocol_string((Jxta_advertisement *) ad));
+   tmp = jxta_TCPTransportAdvertisement_get_Protocol_string((Jxta_advertisement *) ad);
+   jstring_append_2(string, tmp);
+   free(tmp);
    jstring_append_2(string,"</Protocol>\n");
 
    jstring_append_2(string,"<Port>");
@@ -599,7 +602,9 @@ jxta_TCPTransportAdvertisement_delete (Jxta_TCPTransportAdvertisement * ad) {
 
   JXTA_OBJECT_RELEASE(ad->Protocol);
   JXTA_OBJECT_RELEASE(ad->ConfigMode);
+  JXTA_OBJECT_RELEASE(ad->Server);
 
+  jxta_advertisement_delete((Jxta_advertisement*)ad);
   memset (ad, 0xdd, sizeof (Jxta_TCPTransportAdvertisement));
   free (ad);
 }

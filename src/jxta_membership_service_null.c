@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_membership_service_null.c,v 1.10 2005/03/25 02:32:01 hamada Exp $
+ * $Id: jxta_membership_service_null.c,v 1.10.2.1 2005/05/03 01:08:45 slowhog Exp $
  */
 
-
+#include <assert.h>
 #include "jxtaapr.h"
 
 #include "jpr/jpr_excep_proto.h"
@@ -160,6 +160,10 @@ start(Jxta_module* self, char* argv[]) {
  */
 static void
 stop (Jxta_module* membership) {
+    Jxta_membership_service_null* self = (Jxta_membership_service_null*) membership;
+
+    jxta_vector_clear( self->creds );
+
     JXTA_LOG("Stopped.\n");
     /* nothing special to stop */
 }
@@ -228,7 +232,7 @@ resign( Jxta_membership_service* svc ) {
 
     PTValid(self, Jxta_membership_service_null);
 
-    jxta_vector_clear( self->creds );
+    assert(0 == jxta_vector_size(self->creds));
 
     jxta_PG_get_GID ( self->group, &pg );
 
@@ -326,7 +330,6 @@ void jxta_membership_service_null_destruct(Jxta_membership_service_null* self) {
     PTValid(self, Jxta_membership_service_null);
 
     /* release/free/destroy our own stuff */
-
     if (NULL != self->creds) {
         JXTA_OBJECT_RELEASE (self->creds);
     }
@@ -382,7 +385,7 @@ jxta_membership_service_null_new_instance (void) {
 
     /* Initialize the object */
     memset (self, 0, sizeof (Jxta_membership_service_null));
-    JXTA_OBJECT_INIT (self, membership_free, 0);
+    JXTA_OBJECT_INIT(self, membership_free, 0);
 
     /* call the hierarchy of ctors */
     jxta_membership_service_null_construct(self,

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_advertisement.c,v 1.70 2005/03/24 01:48:12 bondolo Exp $
+ * $Id: jxta_advertisement.c,v 1.70.2.4 2005/05/06 10:42:01 slowhog Exp $
  */
 
 static const char *__log_cat = "ADV";
@@ -667,11 +667,17 @@ Jxta_vector *jxta_advertisement_get_indexes(Jxta_advertisement * ad)
     return NULL;
 }
 
+static void jxta_advertisement_free(Jxta_advertisement* me)
+{
+    jxta_advertisement_delete(me);
+    free(me);
+}
+
 Jxta_advertisement *jxta_advertisement_new(void)
 {
-    Jxta_advertisement *ad = (Jxta_advertisement *) malloc(sizeof(Jxta_advertisement));
+    Jxta_advertisement *ad = (Jxta_advertisement *) calloc(1, sizeof(Jxta_advertisement));
 
-    jxta_advertisement_initialize(ad, "jxta:any_many", NULL, NULL, NULL, NULL, (FreeFunc) jxta_advertisement_delete);
+    jxta_advertisement_initialize(ad, "jxta:any_many", NULL, NULL, NULL, NULL, (FreeFunc) jxta_advertisement_free);
 
     /*
      * adv_list is only used for base class advs created by this routine.

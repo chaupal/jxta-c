@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http_poller.h,v 1.4 2005/01/10 17:22:18 brent Exp $
+ * $Id: jxta_transport_http_poller.h,v 1.4.4.1 2005/04/20 23:47:46 slowhog Exp $
  */
 #ifndef __HTTP_POLLER_H__
 #define __HTTP_POLLER_H__
@@ -69,11 +69,10 @@ http_poller_new (Jxta_PG* group,
 		 Jxta_port  proxy_port,
 		 const char* host,
 		 Jxta_port  port,
-		 char*      uri,
-		 char*      peerid,
+		 const char*      uri,
+		 const char*      peerid,
 		 Jxta_pool* pool);
 
-void            http_poller_free          (HttpPoller* poller);
 Jxta_status     http_poller_start         (HttpPoller* poller);
 void            http_poller_stop          (HttpPoller* poller);
 Jxta_status     http_poller_join          (HttpPoller* poller);

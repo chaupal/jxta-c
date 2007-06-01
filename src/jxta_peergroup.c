@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup.c,v 1.30 2005/03/24 19:43:42 slowhog Exp $
+ * $Id: jxta_peergroup.c,v 1.30.2.1 2005/04/18 23:29:45 slowhog Exp $
  */
 
 #include "apr_thread_proc.h"
@@ -330,12 +330,6 @@ static Jxta_id* buildWellKnownID(const char* s, Throws) {
  */
 
 static void static_id_init(void) {
-
-    static int done = 0;
-
-    if (done)
-        return;
-
     Try {
 
         /**
@@ -574,7 +568,6 @@ static void static_id_init(void) {
                                                      "03"
                                                      "06", MayThrow);
 
-        done = 1;
     } Catch {
         printf("Malformed Hardcoded well-known IDs. Error %lu\n",
                jpr_lasterror_get());

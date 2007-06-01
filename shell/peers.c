@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: peers.c,v 1.6 2005/03/22 03:49:58 bondolo Exp $
+ * $Id: peers.c,v 1.6.2.1 2005/05/21 01:03:44 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -66,7 +66,6 @@
 
 static Jxta_PG * group;
 static JxtaShellEnvironment * environment;
-static JString * env_type = NULL;
 
 JxtaShellApplication * jxta_peers_new(Jxta_PG * pg,
                                       Jxta_listener* standout,
@@ -83,7 +82,6 @@ JxtaShellApplication * jxta_peers_new(Jxta_PG * pg,
 	                                  (shell_application_stdin)jxta_peers_process_input);
 	group = pg;
 	environment = env;
-	env_type = jstring_new_2("PeerAdvertisement");
 	return app;
 }
 
@@ -113,7 +111,8 @@ void jxta_peers_start(Jxta_object * appl,
 	int error = 0;
 
 	while(1){
- 	        int type = JxtaShellGetopt_getNext(opt);
+        JString *op_val = NULL;
+        int type = JxtaShellGetopt_getNext(opt);
 
 		if( type == -1) break;
 		switch(type){
@@ -125,17 +124,24 @@ void jxta_peers_start(Jxta_object * appl,
 			break;
 		case 'p':
 			pf = TRUE;
-			jstring_append_1(pid, JxtaShellGetopt_getOptionArgument(opt));
+            op_val = JxtaShellGetopt_getOptionArgument(opt);
+			jstring_append_1(pid, op_val);
+            JXTA_OBJECT_RELEASE(op_val);
 			break;
 		case 'n':
-			responses = strtol(jstring_get_string(JxtaShellGetopt_getOptionArgument(opt)),
-			                   NULL, 0);
+            op_val = JxtaShellGetopt_getOptionArgument(opt);
+			responses = strtol(jstring_get_string(op_val), NULL, 0);
+            JXTA_OBJECT_RELEASE(op_val);
 			break;
 		case 'a':
-			jstring_append_1(attr, JxtaShellGetopt_getOptionArgument(opt));
+            op_val = JxtaShellGetopt_getOptionArgument(opt);
+			jstring_append_1(attr, op_val);
+            JXTA_OBJECT_RELEASE(op_val);
 			break;
 		case 'v':
-			jstring_append_1(value, JxtaShellGetopt_getOptionArgument(opt));
+            op_val = JxtaShellGetopt_getOptionArgument(opt);
+			jstring_append_1(value, op_val);
+            JXTA_OBJECT_RELEASE(op_val);
 			break;
 		case 'h':
 			jxta_peers_print_help(appl);
@@ -183,15 +189,19 @@ void jxta_peers_start(Jxta_object * appl,
 			char buf[64];
 			JString * name = NULL;
 			JxtaShellObject * sh_obj;
+            JString *env_type;
+
 			printf("restored %d peer advertisement(s) \n",jxta_vector_size(res_vec));
 			for (i=0; i < jxta_vector_size(res_vec); i++ ){
 	 		        /* Create the shell object for the peer*/ 
 				sprintf(buf,"peer%d",i);
 				name = jstring_new_2(buf);
-                JXTA_OBJECT_SHARE(name);
 				jxta_vector_get_object_at (res_vec, (Jxta_object**)&padv, i);
+				env_type = jstring_new_2("PeerAdvertisement");
 				sh_obj = JxtaShellObject_new (name, (Jxta_object*)padv, env_type);
+				JXTA_OBJECT_RELEASE(env_type);
 				JxtaShellEnvironment_add_0(environment, sh_obj);
+                JXTA_OBJECT_RELEASE(sh_obj);
 				JXTA_OBJECT_RELEASE(name);
 				JXTA_OBJECT_RELEASE(padv);
 
@@ -205,6 +215,8 @@ void jxta_peers_start(Jxta_object * appl,
 			printf("No peer advertisements retrieved\n");
 		}
 	}
+    
+    JXTA_OBJECT_RELEASE(discovery);
 
 	JxtaShellApplication_terminate(app);
 	JXTA_OBJECT_RELEASE(pid);
@@ -229,3 +241,4 @@ void jxta_peers_print_help(Jxta_object *appl){
 	JXTA_OBJECT_RELEASE(inputLine);
 }
 
+/* vi: set ts=4 sw=4 tw=130 et: */

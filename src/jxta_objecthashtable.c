@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_objecthashtable.c,v 1.9 2005/03/29 21:12:12 bondolo Exp $
+ * $Id: jxta_objecthashtable.c,v 1.9.2.1 2005/06/08 23:09:49 slowhog Exp $
  */
 
 
@@ -148,7 +148,9 @@ static void Jxta_objecthashtable_free(Jxta_object * the_table)
     /* Free the entries */
     free(self->tbl);
 
-    /* Free the pool containing the mutex */
+    /* Free the pool and the mutex */
+    apr_thread_mutex_unlock(self->mutex);
+    apr_thread_mutex_destroy(self->mutex);
     apr_pool_destroy(self->pool);
 
     /* Free the object itself */

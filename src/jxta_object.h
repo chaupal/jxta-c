@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object.h,v 1.6 2005/03/29 19:01:53 bondolo Exp $
+ * $Id: jxta_object.h,v 1.6.2.1 2005/05/04 07:22:00 slowhog Exp $
  */
 
 
@@ -192,7 +192,11 @@ extern "C" {
  ** }
   **//**
  * This is the begining of the public API of the object
- **/ typedef struct _jxta_object Jxta_object;
+ **/
+typedef struct _jxta_object Jxta_object;
+
+extern Jxta_status jxta_object_initialize(void);
+extern void jxta_object_terminate(void);
 
 /**
  * Prototype of the free function provided by the application. 

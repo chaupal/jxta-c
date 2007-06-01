@@ -36,6 +36,7 @@ include_HEADERS = EndpointRouter.h          \
                   jxta_module.h             \
                   jxta_msa.h                \
                   jxta_object.h             \
+                  jxta_object_priv.h	    \
                   jxta_object_type.h        \
                   jxta_objecthashtable.h    \
                   jxta_object_ptrwrapper.h  \
@@ -189,7 +190,6 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_piperesolver_msg.h		  \
                      jxta_id_priv.h                       \
                      jxta_private.h                       \
-                     jxta_object_priv.h			  \
 		     jxta_log_priv.h			  \
 		     jxta_log.c				\
 		     jxta_bidipipe.c			\

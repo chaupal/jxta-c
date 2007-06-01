@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_main.c,v 1.20 2005/04/07 01:56:07 bondolo Exp $
+ * $Id: jxta_shell_main.c,v 1.20.2.3 2005/05/20 08:03:54 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -219,7 +219,6 @@ void ShellStartupApplication_stdin(Jxta_object * app, JString * inputLine)
     if (inp != NULL) {
         fprintf(stdout, "%s", inp);
         fflush(stdout);
-        JXTA_OBJECT_RELEASE(inputLine);
     }
 }
 
@@ -291,13 +290,13 @@ void ShellStartupApplication_start(Jxta_object * parent, int argv, char **arg)
             count = JxtaShellTokenizer_countTokens(tok);
             if (count == 0) {
                 printf("JXTA>");
-                free(tok);
+                JXTA_OBJECT_RELEASE(tok);
                 continue;
             } else {
                 token = JxtaShellTokenizer_nextToken(tok);
                 if (strcmp(token, "exit") == 0 || strcmp(token, "quit") == 0) {
                     free(token);
-                    free(tok);
+                    JXTA_OBJECT_RELEASE(tok);
                     break;
                 }
                 count--;
@@ -313,7 +312,7 @@ void ShellStartupApplication_start(Jxta_object * parent, int argv, char **arg)
                 ShellStartupApplication_processCommandLine(frame, token, count, arguments);
                 JXTA_OBJECT_CHECK_VALID(frame);
                 free(token);
-                free(tok);
+                JXTA_OBJECT_RELEASE(tok);
                 if (count > 0) {
                     for (i = 0; i < count; i++) {
                         free(arguments[i]);
@@ -325,6 +324,8 @@ void ShellStartupApplication_start(Jxta_object * parent, int argv, char **arg)
         }
     }
 
+    JXTA_OBJECT_RELEASE(frame->app);
+    frame->app = NULL;
     printf("Exiting Jxta shell\n");
 }
 
@@ -338,8 +339,6 @@ void ShellStartupApplication_processCommandLine(ShellStartupApplication * frame,
 
     JXTA_OBJECT_CHECK_VALID(parentObject);
 
-    JXTA_OBJECT_SHARE(parentObject);
-
     for (i = argv - 1; i >= 0; i--) {
         if (strcmp(arg[i], "|") == 0 && i + 1 < argv) {
             pipedArgv = i;
@@ -349,9 +348,6 @@ void ShellStartupApplication_processCommandLine(ShellStartupApplication * frame,
             if (c < 0)
                 c = 0;
             app = ShellStartupApplication_startApplication(frame, app, parentObject, arg[i + 1], c, pipedArg, first);
-
-            if (parentObject != NULL)
-                JXTA_OBJECT_RELEASE(parentObject);
 
             if (!first)
                 JXTA_OBJECT_RELEASE(app);
@@ -365,9 +361,6 @@ void ShellStartupApplication_processCommandLine(ShellStartupApplication * frame,
 
     if (app != NULL)
         JXTA_OBJECT_RELEASE(app);
-
-    if (parentObject != NULL)
-        JXTA_OBJECT_RELEASE(parentObject);
 }
 
 
@@ -437,7 +430,6 @@ void ShellStartupApplication_printHelp(Jxta_object * appl)
     jstring_append_2(helpLine, "\t-l file\tFile from which to read log settings.\n");
 
     if (app != NULL) {
-        JXTA_OBJECT_SHARE(helpLine);
         JxtaShellApplication_print(app, helpLine);
     } else {
         fprintf(stderr, jstring_get_string(helpLine));
@@ -491,10 +483,18 @@ JxtaShellApplication *ShellStartupApplication_loadApplication(JxtaShellApplicati
 
     while (NULL != eachCommand->name) {
         if (strcmp(app, eachCommand->name) == 0) {
-            process = eachCommand->constructor(JxtaShellApplication_peergroup(parent),
-                                               JxtaShellApplication_getSTDIN(parent),
-                                               JxtaShellApplication_getEnv(parent),
-                                               parentObject, ShellStartupApplication_spawnApplication_terminate);
+            Jxta_PG *pg;
+            Jxta_listener *std_in;
+            JxtaShellEnvironment *env;
+
+            pg = JxtaShellApplication_peergroup(parent);
+            std_in = JxtaShellApplication_getSTDIN(parent);
+            env = JxtaShellApplication_getEnv(parent);
+            process = eachCommand->constructor(pg, std_in, env, parentObject, 
+                                               ShellStartupApplication_spawnApplication_terminate);
+            JXTA_OBJECT_RELEASE(env);
+            JXTA_OBJECT_RELEASE(std_in);
+            JXTA_OBJECT_RELEASE(pg);
             break;
         }
         eachCommand++;
@@ -514,16 +514,11 @@ int main(int argc, char **argv)
     Jxta_log_selector *log_s;
     char logselector[256];
     const char *lfname = NULL;
-    const char *fname = "-";
+    const char *fname = NULL;
     JxtaShellGetopt *opts = JxtaShellGetopt_new(argc - 1, argv + 1, "f:l:v");
     int opt = -1;
     int verbosity = 0;
-
-#ifdef WIN32
-    apr_app_initialize(&argc, &argv, NULL);
-#else
-    apr_initialize();
-#endif
+    JString *tmp;
 
     jxta_initialize();
 
@@ -533,10 +528,20 @@ int main(int argc, char **argv)
             verbosity++;
             break;
         case 'f':
-            fname = strdup(jstring_get_string(JxtaShellGetopt_getOptionArgument(opts)));
+            if (fname) {
+                free(fname);
+            }
+            tmp = JxtaShellGetopt_getOptionArgument(opts);
+            fname = strdup(jstring_get_string(tmp));
+            JXTA_OBJECT_RELEASE(tmp);
             break;
         case 'l':
-            lfname = strdup(jstring_get_string(JxtaShellGetopt_getOptionArgument(opts)));
+            if (lfname) {
+                free(lfname);
+            }
+            tmp = JxtaShellGetopt_getOptionArgument(opts);
+            lfname = strdup(jstring_get_string(tmp));
+            JXTA_OBJECT_RELEASE(tmp);
             break;
         default:
             if (opt < 0) {
@@ -565,12 +570,6 @@ int main(int argc, char **argv)
         verbosity = (sizeof(verbositys) / sizeof(const char*)) - 1;
     }
 
-    status = jxta_log_initialize();
-    if (JXTA_SUCCESS != status) {
-        fprintf(stderr, "# %s - Failed to initialize logging.\n", argv[0]);
-        return -1;
-    }
-
     strcpy(logselector, "*.");
     strcat(logselector, verbositys[verbosity]);
     strcat(logselector, "-fatal");
@@ -582,10 +581,17 @@ int main(int argc, char **argv)
         exit(-1);
     }
 
-    jxta_log_file_open(&log_f, fname);
+    if (fname) {
+        jxta_log_file_open(&log_f, fname);
+        free(fname);
+    } else {
+        jxta_log_file_open(&log_f, "-");
+    }
+
     jxta_log_using(jxta_log_file_append, log_f);
     jxta_log_file_attach_selector(log_f, log_s, NULL);
 
+    /* multiple log selector is not supportted at the moment 
     if (NULL != lfname) {
         FILE *loggers = fopen(lfname, "r");
 
@@ -609,13 +615,16 @@ int main(int argc, char **argv)
             fclose(loggers);
         }
     }
-
-
     jxta_log_file_attach_selector(log_f, log_s, NULL);
+    */
 
+    if (lfname) {
+        free(lfname);
+    }
     status = jxta_PG_new_netpg(&pg);
     if (status != JXTA_SUCCESS) {
         fprintf(stderr, "# %s - jxta_PG_netpg_new failed with error: %ld\n", argv[0], status);
+        jxta_log_selector_delete(log_s);
         jxta_log_file_close(log_f);
         jxta_log_terminate();
         return -1;
@@ -631,12 +640,13 @@ int main(int argc, char **argv)
 
     JXTA_OBJECT_RELEASE(startup);
 
+    jxta_log_file_attach_selector(log_f, NULL, &log_s);
+    jxta_log_selector_delete(log_s);
     jxta_log_file_close(log_f);
-    jxta_log_terminate();
 
     jxta_terminate();
 
-    apr_terminate();
-
     return 0;
 }
+
+/* vim: set ts=4 sw=4 tw=130 et: */

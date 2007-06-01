@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pm.h,v 1.5 2005/04/06 00:38:52 bondolo Exp $
+ * $Id: jxta_pm.h,v 1.5.2.1 2005/04/20 23:47:11 slowhog Exp $
  */
 
    
@@ -71,8 +71,8 @@ RendezVousPropagateMessage * RendezVousPropagateMessage_new(void);
 void RendezVousPropagateMessage_set_handlers(RendezVousPropagateMessage *, XML_Parser, void *);
 void RendezVousPropagateMessage_delete(RendezVousPropagateMessage *);
 Jxta_status RendezVousPropagateMessage_get_xml(RendezVousPropagateMessage *, JString** xml);
-void RendezVousPropagateMessage_parse_charbuffer(RendezVousPropagateMessage *, const char *, int len); 
-void RendezVousPropagateMessage_parse_file(RendezVousPropagateMessage *, FILE * stream);
+Jxta_status RendezVousPropagateMessage_parse_charbuffer(RendezVousPropagateMessage *, const char *, int len); 
+Jxta_status RendezVousPropagateMessage_parse_file(RendezVousPropagateMessage *, FILE * stream);
  
 const char * RendezVousPropagateMessage_get_RendezVousPropagateMessage(RendezVousPropagateMessage *);
 void RendezVousPropagateMessage_set_RendezVousPropagateMessage(RendezVousPropagateMessage *, const char *);

@@ -1,1 +1,66 @@
-See http://jxta-c.jxta.org
+Linux/Solaris
+========================================================================
+On most Linux distribution, libapr was built with Berkeley DB support. I
+would recommend you to isntall the libapr distributed by your
+distribution and use Berkeley DB as the default DBM. I have tested this
+configuration with Debian and Suse(JDS does not seems to provide apr,
+however, you can try RPM from Suse 9)
+
+To test if your system have libapr installed and support Berkeley DB:
+
+$ apr-config --includedir
+
+If libapr was installed, you should see it print out the folder which
+contains the header files. On Debian, it is /usr/include/apr-0, on Suse,
+it is /usr/include/apache2.
+
+Next step, make sure that libapr was built with Berkeley DB support.
+
+grep APU_HAVE_DB /usr/include/apr-0/apu.h
+
+You will see a line like following, if the value is 1, that means
+Berkeley DB support is built into libapr. You are good to use it to
+build jxta-c.
+
+#define APU_HAVE_DB     1
+
+
+If you are using CVS, replace configure with autogen.sh in the
+following.
+
+System with libapr and Berkely DB isntalled
+------------------------------------------------------------------------
+./configure --without-apr --with-dbm=db
+make
+make install
+
+
+System without libapr, Berkeley DB or with libapr does not support
+Berkeley DB
+------------------------------------------------------------------------
+You will need a patched build of apr-util for SDBM. You can download a
+pre-built library at
+http://jxta-c.jxta.org/servlets/ProjectDocumentList.
+
+Create a lib folder in the jxta-c folder and untar the file.
+
+./configure
+make
+make install
+
+
+Windows
+========================================================================
+You will need a patched build of apr-util for SDBM. You can download a
+pre-built library at:
+
+http://jxta-c.jxta.org/files/documents/141/204/apr-0.9.6-win32.zip
+
+Create a lib folder in your jxta-c folder and unzip the file. You should
+now see a Apache2 folder within the lib folder.
+
+The jxtalib.dsp can be located in win32/jxta/jxtalib/jxtalib.dsp, and
+the shell is in win32/JxtaShell/JxtaShell.dsp. I believe you know how to
+build it from here. :-) 
+
+

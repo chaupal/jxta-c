@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi.c,v 1.9 2005/02/02 02:58:33 exocetrick Exp $
+ * $Id: jxta_srdi.c,v 1.9.4.2 2005/05/20 01:05:12 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -333,6 +333,7 @@ Jxta_status srdi_message_print(Jxta_SRDIMessage * ad, JString * js)
         jstring_append_2(js, "</Entry>\n");
         JXTA_OBJECT_RELEASE(anElement);
     }
+    JXTA_OBJECT_RELEASE(entries);
     return JXTA_SUCCESS;
 }
 
@@ -456,28 +457,17 @@ static void entry_element_free(Jxta_object * o)
 
 Jxta_SRDIEntryElement *jxta_srdi_new_element(void)
 {
-
-    Jxta_SRDIEntryElement *dse = (Jxta_SRDIEntryElement *) malloc(sizeof(Jxta_SRDIEntryElement));
-    memset(dse, 0x0, sizeof(Jxta_SRDIEntryElement));
+    Jxta_SRDIEntryElement *dse = (Jxta_SRDIEntryElement *) calloc(1, sizeof(Jxta_SRDIEntryElement));
     JXTA_OBJECT_INIT(dse, entry_element_free, 0);
     return dse;
 }
 
 Jxta_SRDIEntryElement *jxta_srdi_new_element_1(JString * key, JString * value, Jxta_expiration_time expiration)
 {
-
     Jxta_SRDIEntryElement *dse = jxta_srdi_new_element();
 
-
-    if (dse->key != NULL)
-        JXTA_OBJECT_RELEASE(dse->key);
-    if (dse->value != NULL)
-        JXTA_OBJECT_RELEASE(dse->value);
-
-    dse->key = key;
-    dse->value = value;
-    JXTA_OBJECT_SHARE(dse->key);
-    JXTA_OBJECT_SHARE(dse->value);
+    dse->key = JXTA_OBJECT_SHARE(key);
+    dse->value = JXTA_OBJECT_SHARE(value);
     dse->expiration = expiration;
     return dse;
 }

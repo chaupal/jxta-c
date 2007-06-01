@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_debug.h,v 1.5 2005/02/17 20:31:44 bondolo Exp $
+ * $Id: jxta_debug.h,v 1.5.4.2 2005/05/20 22:33:59 slowhog Exp $
  */
 
 
@@ -76,7 +76,9 @@ extern "C" {
      *
      * This will enable debug log for all the platform.
      **/
-#undef JXTA_LOG_ENABLE
+#ifndef JXTA_LOG_ENABLE
+#define JXTA_LOG_ENABLE 1
+#endif
 
     /**
     *   Record the specified message to the JXTA debug log.
@@ -95,7 +97,7 @@ extern "C" {
     **/
     int JXTA_LOG_NOLINE(const char *fmt, ...);
 
-#ifdef JXTA_LOG_ENABLE
+#if JXTA_LOG_ENABLE
 
     /**
     *   Record the specified message to the JXTA debug log, but without

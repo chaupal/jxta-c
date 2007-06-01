@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_environment.c,v 1.2 2004/06/23 03:30:55 tra Exp $
+ * $Id: jxta_shell_environment.c,v 1.2.6.1 2005/05/20 08:03:54 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -271,6 +271,7 @@ Jxta_status JxtaShellEnvironment_set_current_group( JxtaShellEnvironment * env, 
         return JXTA_SUCCESS;
 }
 
+/* vi: set ts=4 sw=4 tw=130 et: */
 
 
 

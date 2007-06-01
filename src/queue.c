@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: queue.c,v 1.16 2005/03/31 00:24:41 slowhog Exp $
+ * $Id: queue.c,v 1.16.2.1 2005/05/18 23:56:22 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -99,14 +99,17 @@ int queue_size(Queue * q) {
     return size;
 }
 
-void queue_enqueue(Queue * q, void *item) {
+int queue_enqueue(Queue * q, void *item) {
+    int size;
+
     apr_thread_mutex_lock(q->mutex);
 
     dl_insert_b(q->list, item);
-    ++q->size;
+    size = ++q->size;
     apr_thread_cond_signal(q->cond);
 
     apr_thread_mutex_unlock(q->mutex);
+    return size;
 }
 
 void *queue_dequeue(Queue * q, apr_time_t max_timeout) {

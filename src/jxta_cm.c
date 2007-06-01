@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cm.c,v 1.62 2005/03/29 21:12:12 bondolo Exp $
+ * $Id: jxta_cm.c,v 1.62.2.7 2005/06/08 23:09:48 slowhog Exp $
  */
 
 #include <stdlib.h>
@@ -130,10 +130,15 @@ static void cm_free(Jxta_object * cm)
 {
     Jxta_cm *self = (Jxta_cm *) cm;
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "CM free\n");
-    JXTA_OBJECT_RELEASE(self->folders);
+    apr_thread_mutex_lock(self->mutex);
+    if (NULL != self->folders) {
+        JXTA_OBJECT_RELEASE(self->folders);
+    }
     JXTA_OBJECT_RELEASE(self->srdi_delta);
     JXTA_OBJECT_RELEASE(self->dummy_object);
     free(self->root);
+
+    apr_thread_mutex_unlock(self->mutex);
     apr_thread_mutex_destroy(self->mutex);
     apr_pool_destroy(self->pool);
 
@@ -747,19 +752,18 @@ Jxta_status jxta_cm_create_folder(Jxta_cm * self, char *folder_name, const char 
     apr_thread_mutex_lock(self->mutex);
 
     if (jxta_hashtable_get(self->folders, folder_name, strlen(folder_name), (Jxta_object **) & folder) == JXTA_SUCCESS) {
-
         JXTA_OBJECT_RELEASE(folder);
         apr_thread_mutex_unlock(self->mutex);
         return JXTA_SUCCESS;
     }
 
-    folder = malloc(sizeof(Folder));
-    memset(folder, 0, sizeof(*folder));
+    folder = calloc(1, sizeof(Folder));
     JXTA_OBJECT_INIT(folder, folder_free, 0);
 
-    full_name = malloc(strlen(self->root) + strlen(folder_name) + 6);
+    full_name = calloc(strlen(self->root) + strlen(folder_name) + 6, sizeof(char));
 
     if (full_name == NULL) {
+        apr_thread_mutex_unlock(self->mutex);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Out of memory");
         return JXTA_NOMEM;
     }
@@ -776,6 +780,7 @@ Jxta_status jxta_cm_create_folder(Jxta_cm * self, char *folder_name, const char 
     }
 
     if (status != JXTA_SUCCESS) {
+        apr_thread_mutex_unlock(self->mutex);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to open folder: %s with error %ld\n", full_name, status);
         return status;
     }
@@ -791,6 +796,7 @@ Jxta_status jxta_cm_create_folder(Jxta_cm * self, char *folder_name, const char 
     }
 
     if (status != JXTA_SUCCESS) {
+        apr_thread_mutex_unlock(self->mutex);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to open folder: %s with error %ld\n", full_name, status);
         return status;
     }
@@ -811,9 +817,7 @@ Jxta_status jxta_cm_create_folder(Jxta_cm * self, char *folder_name, const char 
 
     JXTA_OBJECT_RELEASE(folder);
 
-
     apr_thread_mutex_unlock(self->mutex);
-
 
     return JXTA_SUCCESS;
 }
@@ -861,6 +865,8 @@ Jxta_status jxta_cm_create_adv_indexes(Jxta_cm * self, char *folder_name, Jxta_v
         }
         JXTA_OBJECT_RELEASE(ji);
     }
+
+    JXTA_OBJECT_RELEASE(folder);
     return JXTA_SUCCESS;
 }
 

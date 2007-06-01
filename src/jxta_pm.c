@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pm.c,v 1.19 2005/04/06 00:38:52 bondolo Exp $
+ * $Id: jxta_pm.c,v 1.19.2.2 2005/04/30 09:19:38 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -160,16 +160,14 @@ extern "C" {
 
         RendezVousPropagateMessage * ad = (RendezVousPropagateMessage*)userdata;
 
-        char* tok = malloc (len + 1);
-        memset (tok, 0, len + 1);
+        char* tok = calloc (len + 1, sizeof(char));
 
         extract_char_data(cd,len,tok);
 
         if (strlen (tok) != 0) {
             sscanf (tok, "%d", &ad->TTL);
-        } else {
-            free (tok);
         }
+        free (tok);
     }
 
     static void
@@ -433,20 +431,22 @@ extern "C" {
         free (ad);
     }
 
-    void
+    Jxta_status
     RendezVousPropagateMessage_parse_charbuffer(RendezVousPropagateMessage * ad, const char * buf, int len) {
 
-        jxta_advertisement_parse_charbuffer((Jxta_advertisement*)ad,buf,len);
+        return jxta_advertisement_parse_charbuffer((Jxta_advertisement*)ad,buf,len);
     }
 
 
 
-    void
+    Jxta_status
     RendezVousPropagateMessage_parse_file(RendezVousPropagateMessage * ad, FILE * stream) {
 
-        jxta_advertisement_parse_file((Jxta_advertisement*)ad, stream);
+        return jxta_advertisement_parse_file((Jxta_advertisement*)ad, stream);
     }
 
 #ifdef __cplusplus
 }
 #endif
+
+/* vim: set ts=3 sw=4 tw=130 et: */

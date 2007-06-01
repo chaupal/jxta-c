@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: msg_test.c,v 1.18 2005/03/22 16:23:47 bondolo Exp $
+ * $Id: msg_test.c,v 1.18.2.1 2005/05/24 19:24:43 slowhog Exp $
  */
 
-#define JXTA_LOG_ENABLE
+#define JXTA_LOG_ENABLE 1
 
 #include <stdio.h>
 #include "jxta.h"

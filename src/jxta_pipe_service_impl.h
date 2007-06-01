@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_service_impl.h,v 1.5 2005/03/26 00:32:03 bondolo Exp $
+ * $Id: jxta_pipe_service_impl.h,v 1.5.2.1 2005/04/14 23:05:37 slowhog Exp $
  */
 
    
@@ -556,9 +556,10 @@ extern "C" {
 #endif
 
 #ifdef __cplusplus
+#if 0
+{
+#endif
 }
 #endif
 
-
-
-
+/* vim: set ts=4 sw=4 tw=130 et: */

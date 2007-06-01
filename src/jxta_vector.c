@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_vector.c,v 1.22 2005/04/07 02:16:58 bondolo Exp $
+ * $Id: jxta_vector.c,v 1.22.2.2 2005/06/08 23:09:50 slowhog Exp $
  */
 
 static const char *__log_cat = "VECTOR";
@@ -116,6 +116,9 @@ static void jxta_vector_free(Jxta_object * vector)
     }
     /* Free the index */
     free(self->index);
+
+    apr_thread_mutex_unlock(self->mutex);
+    apr_thread_mutex_destroy(self->mutex);
     /* Free the pool containing the mutex */
     apr_pool_destroy(self->jpr_pool);
     /* Free the object itself */

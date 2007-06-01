@@ -50,18 +50,22 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http.c,v 1.51 2005/03/30 02:02:45 slowhog Exp $
+ * $Id: jxta_transport_http.c,v 1.51.2.9 2005/06/10 00:50:44 slowhog Exp $
  */
-#include <stdlib.h>             /* for atoi */
+ 
+static const char *__log_cat = "HTTP_TRANSPORT";
+
+#include <stdlib.h>     /* for atoi */
 
 #ifndef WIN32
-#include <signal.h>             /* for sigaction */
+#include <signal.h>     /* for sigaction */
 #endif
 
 #include <apr.h>
 #include <apr_strings.h>
 #include <apr_thread_proc.h>
-#include "jpr/jpr_excep.h"
+#include "jpr/jpr_apr_wrapper.h"
+#include "jpr/jpr_excep_proto.h"
 
 #include "jstring.h"
 #include "jxta_types.h"
@@ -76,7 +80,11 @@
 #include "jxta_svc.h"
 #include "jxta_hta.h"
 
-static const char *__log_cat = "HTTP_TRANSPORT";
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#else
+#define PACKAGE_STRING "jxta 2.1+"
+#endif
 
 /******************************************************************************/
 /*                                                                            */
@@ -89,9 +97,9 @@ typedef struct {
     Jxta_endpoint_address *address;
     char *peerid;
     const char *srv_host;       /* our public host name (relay only) */
-    int srv_port;               /* our public port nb (relay only) */
+    int srv_port;       /* our public port nb (relay only) */
     const char *proxy_host;     /* the proxy host we use */
-    int proxy_port;             /* the port nb there */
+    int proxy_port;     /* the port nb there */
     Jxta_boolean is_relay;
     Jxta_PG *group;
     Jxta_vector *clientMessengers;
@@ -155,8 +163,8 @@ typedef Jxta_transport_methods Jxta_transport_http_methods;
 const Jxta_transport_http_methods jxta_transport_http_methods = {
     {
      "Jxta_module_methods",
-     init,                      /* temp long name, for testing */
-     init_e,
+     init,
+     jxta_module_init_e_impl,
      start,
      stop},
     "Jxta_transport_methods",
@@ -226,6 +234,7 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     struct sigaction sa;
 
     sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
     sa.sa_handler = SIG_IGN;
     sigaction(SIGPIPE, &sa, NULL);
 #endif
@@ -300,13 +309,16 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
         JXTA_OBJECT_RELEASE(tmpsvc);
     }
 
-    if (svc == NULL)
+    if (svc == NULL) {
+        JXTA_OBJECT_RELEASE(svcs);
         return JXTA_NOT_CONFIGURED;
+    }
 
     hta = jxta_svc_get_HTTPTransportAdvertisement(svc);
     JXTA_OBJECT_RELEASE(svc);
 
     if (hta == NULL) {
+        JXTA_OBJECT_RELEASE(svcs);
         return JXTA_CONFIG_NOTFOUND;
     }
 
@@ -335,19 +347,21 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     }
     JXTA_OBJECT_RELEASE(svcs);
 
-    if (svc == NULL)
+    if (svc == NULL) {
         return JXTA_CONFIG_NOTFOUND;
+    }
 
     isclient = jxta_svc_get_IsClient(svc);
     JXTA_OBJECT_RELEASE(svc);
 
-    if (isclient == NULL)
+    if (isclient == NULL) {
         return JXTA_CONFIG_NOTFOUND;
+    }
 
     if (strcmp(jstring_get_string(isclient), "true") != 0) {
         JXTA_OBJECT_RELEASE(isclient);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Relay is disabled, so HTTP Transport is disabled\n");
-        return JXTA_SUCCESS;
+        return JXTA_NOT_CONFIGURED;
     }
 
     JXTA_OBJECT_RELEASE(isclient);
@@ -375,8 +389,8 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
         self->proxy_host = tmp_host;
         self->proxy_port = atoi(p + 1);
         JXTA_OBJECT_RELEASE(proxy);
-        JXTA_OBJECT_RELEASE(hta);
     }
+    JXTA_OBJECT_RELEASE(hta);
 
     jxta_PG_get_endpoint_service(group, &(self->endpoint));
 
@@ -416,7 +430,6 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
         return JXTA_NOMEM;
     }
 
-    jxta_endpoint_service_add_transport(self->endpoint, (Jxta_transport *) self);
     apr_thread_yield();
 
     return JXTA_SUCCESS;
@@ -425,19 +438,15 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static void init_e(Jxta_module * module, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv, Throws)
-{
-    Jxta_status res = init(module, group, assigned_id, impl_adv);
-    if (res != JXTA_SUCCESS)
-        Throw(res);
-}
-
-/******************************************************************************/
-/*                                                                            */
-/******************************************************************************/
 static Jxta_status start(Jxta_module * module, char *argv[])
 {
-    PTValid(module, Jxta_transport_http);
+    Jxta_transport_http *self;
+
+    self = (Jxta_transport_http *) module;
+    PTValid(self, Jxta_transport_http);
+
+    jxta_endpoint_service_add_transport(self->endpoint, (Jxta_transport *) self);
+
     return JXTA_SUCCESS;
 }
 
@@ -446,7 +455,12 @@ static Jxta_status start(Jxta_module * module, char *argv[])
 /******************************************************************************/
 static void stop(Jxta_module * module)
 {
-    PTValid(module, Jxta_transport_http);
+    Jxta_transport_http *self;
+
+    self = (Jxta_transport_http *) module;
+    PTValid(self, Jxta_transport_http);
+
+    jxta_endpoint_service_remove_transport(self->endpoint, (Jxta_transport *) self);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "don't know how to stop yet.\n");
 }
 
@@ -587,6 +601,7 @@ void jxta_transport_http_construct(Jxta_transport_http * self, Jxta_transport_ht
 void jxta_transport_http_destruct(Jxta_transport_http * self)
 {
     PTValid(self, Jxta_transport_http);
+
     if (self->address != NULL) {
         JXTA_OBJECT_RELEASE(self->address);
     }
@@ -601,7 +616,9 @@ void jxta_transport_http_destruct(Jxta_transport_http * self)
     if (self->peerid != NULL) {
         free(self->peerid);
     }
+
     if (self->pool) {
+        apr_thread_mutex_destroy(self->mutex);
         apr_pool_destroy(self->pool);
     }
 
@@ -671,7 +688,7 @@ static void messenger_send(JxtaEndpointMessenger * mes, Jxta_message * msg)
             char *stringBuffer = (char *) malloc(1024);
 
             req = http_client_start_request(con, "POST", "/", NULL);
-            http_request_set_header(req, "User-Agent", "JXTA-C 2.0");
+            http_request_set_header(req, "User-Agent", PACKAGE_STRING);
 
             /* Sets the source address into the message */
 
@@ -693,6 +710,7 @@ static void messenger_send(JxtaEndpointMessenger * mes, Jxta_message * msg)
             jxta_message_write(msg, "application/x-jxta-msg", write_to_http_request, req);
 
             res = http_request_done(req);
+            http_request_free(req);
 
             if (http_response_get_status(res) == HTTP_NOT_CONNECTED) {
                 http_client_close(con);
@@ -733,7 +751,8 @@ static void http_client_messenger_free(Jxta_object * addr)
     }
 
     if (NULL != self->poller) {
-        http_poller_free(self->poller);
+        http_poller_stop(self->poller);
+        JXTA_OBJECT_RELEASE(self->poller);
         self->poller = NULL;
     }
 
@@ -743,6 +762,8 @@ static void http_client_messenger_free(Jxta_object * addr)
      * the object, there is no need to unlock. 
      */
     apr_thread_mutex_lock(self->mutex);
+
+    trailing_average_free(self->trailing_average);
 
     /* Free the pool containing the mutex */
     apr_pool_destroy(self->pool);
@@ -765,7 +786,7 @@ static HttpClientMessenger *http_client_messenger_new(Jxta_transport_http * tp, 
     apr_status_t res;
 
     /* Create the object */
-    self = (HttpClientMessenger *) malloc(sizeof(HttpClientMessenger));
+    self = (HttpClientMessenger *) calloc(1, sizeof(HttpClientMessenger));
 
     if (self == NULL) {
         /* No more memory */
@@ -773,7 +794,6 @@ static HttpClientMessenger *http_client_messenger_new(Jxta_transport_http * tp, 
     }
 
     /* Initialize it. */
-    memset(self, 0, sizeof(HttpClientMessenger));
     JXTA_OBJECT_INIT(self, http_client_messenger_free, NULL);
 
     self->trailing_average = trailing_average_new(60);
@@ -813,7 +833,7 @@ static HttpClientMessenger *http_client_messenger_new(Jxta_transport_http * tp, 
      ** 2/14/2002 lomax@jxta.org FIXME
      ** a copy of the address is needed only because we are using a Jxta_vector
      ** to store messenger instead of hashtable. See other comments on that topic
-     ** bellow.
+     ** below.
      **/
     self->name = malloc(strlen(host) + 20);     /* we need to reserve space for the port */
     sprintf(self->name, "%s:%d", host, port);
@@ -821,11 +841,11 @@ static HttpClientMessenger *http_client_messenger_new(Jxta_transport_http * tp, 
     self->poller = http_poller_new(self->tp->group,
                                    self->tp->endpoint,
                                    self->proxy_host, self->proxy_port,
-                                   self->host, self->port, (char *) "/", self->tp->peerid, (Jpr_pool *) self->tp->pool);
+                                   self->host, self->port, "/", self->tp->peerid, self->tp->pool);
 
-    if (!APR_STATUS_IS_SUCCESS(http_poller_start(self->poller))) {
-        fprintf(stderr, "fatal: http poller failed in http_transport_init\n");
-        http_poller_free(self->poller);
+    if (APR_SUCCESS != http_poller_start(self->poller)) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "HTTP poller failed in http_transport_init\n");
+        JXTA_OBJECT_RELEASE(self->poller);
         self->poller = NULL;
         self->connected = FALSE;
     }

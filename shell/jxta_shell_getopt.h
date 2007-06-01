@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_getopt.h,v 1.3 2005/02/25 21:44:57 slowhog Exp $
+ * $Id: jxta_shell_getopt.h,v 1.3.4.1 2005/05/21 01:03:44 slowhog Exp $
  */
 #ifndef __JXTA_SHELL_GETOPT_H__
 #define  __JXTA_SHELL_GETOPT_H__
@@ -116,6 +116,8 @@ JxtaShellGetOptError JxtaShellGetopt_getErrorCode(const JxtaShellGetopt * opt);
 * @return  a error description
 */
 JString *JxtaShellGetopt_getError(const JxtaShellGetopt * opt);
+
+JString *JxtaShellGetopt_OptionArgument(const JxtaShellGetopt * opt);
 
 /** 
 * If the previous option had an option argument,

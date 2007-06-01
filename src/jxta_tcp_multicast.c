@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tcp_multicast.c,v 1.14 2005/03/24 18:27:17 slowhog Exp $
+ * $Id: jxta_tcp_multicast.c,v 1.14.2.3 2005/05/25 01:36:14 slowhog Exp $
  */
 
 #define BUFSIZE		8192
@@ -272,6 +272,8 @@ static void tcp_multicast_free(Jxta_object * obj)
     stream_free(self->input_stream);
     stream_free(self->output_stream);
     stream_free(self->buf_stream);
+    
+    JXTA_OBJECT_RELEASE(self->endpoint);
 
     apr_pool_destroy(self->pool);
 
@@ -413,6 +415,7 @@ static void *APR_THREAD_FUNC tcp_multicast_body(apr_thread_t * t, void *arg)
 
         tcp_multicast_process(self, stream);
     }
+    apr_thread_exit(t, APR_SUCCESS);
     return NULL;
 }
 
@@ -434,9 +437,13 @@ static void tcp_multicast_process(TcpMulticast * tm, STREAM * stream)
     stream->d_index += 4;
     stream->d_len -= 4;
 
-    res = message_packet_header_read(read_from_tcp_multicast_stream, (void *) stream, &msg_size, TRUE, self->received_src_addr);
+    res = message_packet_header_read(read_from_tcp_multicast_stream, (void *) stream, &msg_size, TRUE, &self->received_src_addr);
 
     /* We do not have anything with self->received_src_addr */
+    /* FIXME: slowhog: what does this mean? do we want to have it but failed because bug of
+       message_packet_header_read prototype before? Free the addr for now*/
+    free(self->received_src_addr);
+    self->received_src_addr = NULL;
 
     if (res != JXTA_SUCCESS) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Failed to read message packet header\n");
@@ -454,6 +461,7 @@ static void tcp_multicast_process(TcpMulticast * tm, STREAM * stream)
 
         JXTA_OBJECT_CHECK_VALID(self->endpoint);
         jxta_endpoint_service_demux(self->endpoint, msg);
+        JXTA_OBJECT_RELEASE(msg);
     }
 }
 
@@ -478,6 +486,7 @@ Jxta_status tcp_multicast_propagate(TcpMulticast * tm, Jxta_message * msg, const
     apr_size_t packet_header_size = 0;
     JXTA_LONG_LONG msg_size = (JXTA_LONG_LONG) 0;
     Jxta_status res;
+    char *tmp;
 
     JXTA_OBJECT_CHECK_VALID(self);
 
@@ -496,7 +505,7 @@ Jxta_status tcp_multicast_propagate(TcpMulticast * tm, Jxta_message * msg, const
     dest_addr = (char *) malloc(strlen(self->multicast_ipaddr) + 20);
     sprintf(dest_addr, "%s:%d", self->multicast_ipaddr, self->multicast_port);
     /* set destination */
-    m_addr = jxta_endpoint_address_new2(strdup("tcp"), dest_addr, strdup(service_name), strdup(service_params));
+    m_addr = jxta_endpoint_address_new2("tcp", dest_addr, service_name, service_params);
     jxta_message_set_destination(msg, m_addr);
     JXTA_OBJECT_RELEASE(m_addr);
     free(dest_addr);
@@ -512,7 +521,7 @@ Jxta_status tcp_multicast_propagate(TcpMulticast * tm, Jxta_message * msg, const
     jxta_message_write(msg, APP_MSG, msg_wireformat_size, &msg_size);
 
     src_addr = (char *) malloc(128);
-    sprintf(src_addr, "tcp://%s:%d", jxta_transport_tcp_get_local_ipaddr(self->tp), jxta_transport_tcp_get_local_port(self->tp));
+    sprintf(src_addr, "tcp://%s:%d", jxta_transport_tcp_local_ipaddr_cstr(self->tp), jxta_transport_tcp_get_local_port(self->tp));
 
     message_packet_header_write(msg_wireformat_size, (void *) &packet_header_size, msg_size, TRUE, src_addr);
     message_packet_header_write(write_to_tcp_multicast_stream, (void *) stream, msg_size, TRUE, src_addr);
