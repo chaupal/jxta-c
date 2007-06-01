@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi.c,v 1.26 2005/12/15 23:26:59 slowhog Exp $
+ * $Id: jxta_srdi.c,v 1.27 2006/03/14 08:52:12 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -85,7 +85,6 @@ struct _Jxta_SRDIMessage {
     int TTL;
     Jxta_id *PeerID;
     JString *PrimaryKey;
-    JString *AdvId;
     Jxta_vector *Entries;
 };
 
@@ -411,7 +410,6 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new(void)
     ad->TTL = 0;
     ad->Entries = jxta_vector_new(4);
     ad->PrimaryKey = jstring_new_0();
-    ad->AdvId = jstring_new_2("NoAdvId1");
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
                                   "jxta:GenSRDI",
                                   Jxta_SRDIMessage_tags,
@@ -440,7 +438,6 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_1(int ttl, Jxta_id * peer
     ad->Entries = entries;
     ad->TTL = ttl;
     ad->PrimaryKey = jstring_new_2(primarykey);
-    ad->AdvId = jstring_new_2("NoAdvId2");
     return ad;
 }
 
@@ -454,9 +451,6 @@ void jxta_srdi_message_free(Jxta_SRDIMessage * ad)
     }
     if (ad->Entries) {
         JXTA_OBJECT_RELEASE(ad->Entries);
-    }
-    if (ad->AdvId) {
-        JXTA_OBJECT_RELEASE(ad->AdvId);
     }
     jxta_advertisement_delete((Jxta_advertisement *) ad);
 
@@ -512,7 +506,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_1(JString * key, JSt
     dse->key = JXTA_OBJECT_SHARE(key);
     dse->value = JXTA_OBJECT_SHARE(value);
     dse->nameSpace = JXTA_OBJECT_SHARE(nameSpace);
-    dse->advId = jstring_new_2("NoAdvId3");
+    dse->advId = JXTA_OBJECT_SHARE(value);
     dse->expiration = expiration;
     return dse;
 }
@@ -526,7 +520,11 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_2(JString * key, JSt
     dse->key = JXTA_OBJECT_SHARE(key);
     dse->value = JXTA_OBJECT_SHARE(value);
     dse->nameSpace = JXTA_OBJECT_SHARE(nameSpace);
-    dse->advId = JXTA_OBJECT_SHARE(advId);
+    if (advId) {
+        dse->advId = JXTA_OBJECT_SHARE(advId);
+    } else {
+        dse->advId = JXTA_OBJECT_SHARE(value);
+    }
     if (jrange) {
         dse->range = JXTA_OBJECT_SHARE(jrange);
     }

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_discovery_service.h,v 1.9 2005/11/13 17:43:03 lankes Exp $
+ * $Id: jxta_discovery_service.h,v 1.12 2006/02/17 18:22:28 slowhog Exp $
  */
 
 /**
@@ -144,20 +144,18 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
+
 #define DISC_PEER    0
 #define DISC_GROUP   1
 #define DISC_ADV     2
-#ifdef WIN32
-#define DEFAULT_LIFETIME (Jxta_expiration_time) (1000i64 * 60i64 * 60i64 * 24i64 * 365i64)
-#else
-#define DEFAULT_LIFETIME (Jxta_expiration_time) (1000L * 60L * 60L * 24L * 365L)
-#endif
-#define DEFAULT_EXPIRATION (Jxta_expiration_time)  (1000L * 60L * 60L * 2L)
-typedef struct _jxta_discovery_service Jxta_discovery_service;
 
+#define DEFAULT_LIFETIME ((Jxta_expiration_time) 1000 * 60 * 60 * 24 * 365)
+#define DEFAULT_EXPIRATION ((Jxta_expiration_time) 1000 * 60 * 60 * 2)
+
+typedef struct _jxta_discovery_service Jxta_discovery_service;
 typedef struct _DiscoveryEvent DiscoveryEvent;
 typedef struct _Jxta_discovery_listener Jxta_discovery_listener;
 
@@ -182,16 +180,16 @@ typedef struct _Jxta_discovery_listener Jxta_discovery_listener;
  * @param  listener the listener which will be called back when responses are received
  * @return query id
  */
-JXTA_DECLARE(long)
-discovery_service_get_remote_advertisements(Jxta_discovery_service * service,
-                                            Jxta_id * peerid,
-                                            short type,
-                                            const char *attribute,
-                                            const char *value, int threshold, Jxta_discovery_listener * listener);
+JXTA_DECLARE(long) discovery_service_get_remote_advertisements(Jxta_discovery_service * service,
+                                                               Jxta_id * peerid,
+                                                               short type,
+                                                               const char *attribute,
+                                                               const char *value, int threshold,
+                                                               Jxta_discovery_listener * listener);
 
-JXTA_DECLARE(long)
-discovery_service_remote_query(Jxta_discovery_service * service,
-                               Jxta_id * peerid, const char *query, int threshold, Jxta_discovery_listener * listener);
+JXTA_DECLARE(long) discovery_service_remote_query(Jxta_discovery_service * service,
+                                                  Jxta_id * peerid, const char *query, int threshold,
+                                                  Jxta_discovery_listener * listener);
 
 /**
  * Stop process responses for remote queries issued earlier by calling either discovery_service_get_remote_advertisements or
@@ -217,10 +215,9 @@ JXTA_DECLARE(Jxta_status) discovery_service_cancel_remote_query(Jxta_discovery_s
  * @return Jxta_status
  * @see Jxta_status
  */
-JXTA_DECLARE(Jxta_status)
-    discovery_service_get_local_advertisements(Jxta_discovery_service * service,
-                                           short type, const char *attribute, const char *value, Jxta_vector ** advertisements);
-
+JXTA_DECLARE(Jxta_status) discovery_service_get_local_advertisements(Jxta_discovery_service * service,
+                                                                     short type, const char *attribute, const char *value,
+                                                                     Jxta_vector ** advertisements);
 
 /**
  * Query the local cache with an XPath type query
@@ -229,9 +226,9 @@ JXTA_DECLARE(Jxta_status)
  * @param advertisements - pointer to the Jxta_vector for return
  *
  */
+JXTA_DECLARE(Jxta_status) discovery_service_local_query(Jxta_discovery_service * service, const char *query,
+                                                        Jxta_vector ** advertisements);
 
-JXTA_DECLARE(Jxta_status)
-    discovery_service_local_query(Jxta_discovery_service * service, const char *query, Jxta_vector ** advertisements);
 /**
  * Publish an advertisement that will expire after a certain time. A node that
  * finds this advertisement will hold it for about <i> lifetimeForOthers</i>
@@ -240,16 +237,15 @@ JXTA_DECLARE(Jxta_status)
  * @param  type  DISC_PEER, DISC_GROUP, or DISC_ADV
  * @param  lifetime the amount of time this advertisement will
  * live in my cache specified in milliseconds
- * @param  lifetimeForOthers  the amount of time this advertisement will
+ * @param  expriation  the amount of time this advertisement will
  * live in other peer's cache specified in milliseconds
  * @param   Jxta_advertisement to publish
  * @return Jxta_status
  * @see Jxta_status
  */
-JXTA_DECLARE(Jxta_status)
-    discovery_service_publish(Jxta_discovery_service * service,
-                          Jxta_advertisement * adv,
-                          short type, Jxta_expiration_time lifetime, Jxta_expiration_time lifetimeForOthers);
+JXTA_DECLARE(Jxta_status) discovery_service_publish(Jxta_discovery_service * service,
+                                                    Jxta_advertisement * adv,
+                                                    short type, Jxta_expiration_time lifetime, Jxta_expiration_time expriation);
 
 /**
  * Remote Publish an advertisement will attempt to remote publish adv on all
@@ -258,13 +254,13 @@ JXTA_DECLARE(Jxta_status)
  * @param  Jxta_discovery_service the service 
  * @param   Jxta_advertisement to publish
  * @param  type  DISC_PEER, DISC_GROUP, or DISC_ADV
- * @param  expirationtime  the amount of time this advertisement will expire on other peer's cache specified in milliseconds
+ * @param  expriation  the amount of time this advertisement will expire on other peer's cache specified in milliseconds
  * @return Jxta_status
  * @see Jxta_status
  */
-JXTA_DECLARE(Jxta_status)
-    discovery_service_remote_publish(Jxta_discovery_service * service,
-                                 Jxta_id * peerid, Jxta_advertisement * adv, short type, Jxta_expiration_time expirationtime);
+JXTA_DECLARE(Jxta_status) discovery_service_remote_publish(Jxta_discovery_service * service,
+                                                           Jxta_id * peerid, Jxta_advertisement * adv, short type,
+                                                           Jxta_expiration_time expriation);
 
 /**
  * flush s stored Advertisement
@@ -274,8 +270,7 @@ JXTA_DECLARE(Jxta_status)
  * @return Jxta_status
  * @see Jxta_status
  */
-JXTA_DECLARE(Jxta_status)
-    discovery_service_flush_advertisements(Jxta_discovery_service * service, char *id, short type);
+JXTA_DECLARE(Jxta_status) discovery_service_flush_advertisements(Jxta_discovery_service * service, char *id, short type);
 
 /**
  * register a discovery listener, to notified on discovery events
@@ -284,8 +279,8 @@ JXTA_DECLARE(Jxta_status)
  * @return Jxta_status
  * @see Jxta_status
  */
-JXTA_DECLARE(Jxta_status)
-    discovery_service_add_discovery_listener(Jxta_discovery_service * service, Jxta_discovery_listener * listener);
+JXTA_DECLARE(Jxta_status) discovery_service_add_discovery_listener(Jxta_discovery_service * service,
+                                                                   Jxta_discovery_listener * listener);
 
 /**
  * remove a discovery listener
@@ -294,12 +289,12 @@ JXTA_DECLARE(Jxta_status)
  * @return Jxta_status
  * @see Jxta_status
  */
-JXTA_DECLARE(Jxta_status)
-    discovery_service_remove_discovery_listener(Jxta_discovery_service * service, Jxta_discovery_listener * listener);
-
+JXTA_DECLARE(Jxta_status) discovery_service_remove_discovery_listener(Jxta_discovery_service * service,
+                                                                      Jxta_discovery_listener * listener);
 
 /**
  * Get an advertisement's lifetime value
+ *
  * @param  Jxta_discovery_service the service
  * @param  type  DISC_PEER, DISC_GROUP, or DISC_ADV
  * @param  Advertisement ID
@@ -307,10 +302,12 @@ JXTA_DECLARE(Jxta_status)
  * @return Jxta_status
  * @see Jxta_status
  */
-JXTA_DECLARE(Jxta_status)
-    discovery_service_get_lifetime(Jxta_discovery_service * service, short type, Jxta_id * advId, Jxta_expiration_time * exp);
+JXTA_DECLARE(Jxta_status) discovery_service_get_lifetime(Jxta_discovery_service * service, short type, Jxta_id * advId,
+                                                         Jxta_expiration_time * exp);
+
 /**
- * Get an advertisement's expiration value
+ * Get an advertisement's expiration value.
+ *
  * @param  Jxta_discovery_service the service
  * @param  type  DISC_PEER, DISC_GROUP, or DISC_ADV
  * @param  Advertisement ID
@@ -318,8 +315,8 @@ JXTA_DECLARE(Jxta_status)
  * @return Jxta_status
  * @see Jxta_status
  */
-JXTA_DECLARE(Jxta_status)
-    discovery_service_get_expiration(Jxta_discovery_service * service, short type, Jxta_id * advId, Jxta_expiration_time * exp);
+JXTA_DECLARE(Jxta_status) discovery_service_get_expiration(Jxta_discovery_service * service, short type, Jxta_id * advId,
+                                                           Jxta_expiration_time * exp);
 
 #ifdef __cplusplus
 #if 0
@@ -328,6 +325,6 @@ JXTA_DECLARE(Jxta_status)
 }
 #endif
 
-#endif
+#endif /* JXTA_DISCOVERY_SERVICE_H */
 
 /* vi: set ts=4 sw=4 tw=130 et: */

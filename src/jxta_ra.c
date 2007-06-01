@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_ra.c,v 1.8 2005/11/14 10:11:27 slowhog Exp $
+ * $Id: jxta_ra.c,v 1.9 2006/02/15 01:09:44 slowhog Exp $
  */
 
 
@@ -71,26 +71,15 @@
 #include "jxta_relaya.h"
 #include "jxta_xml_util.h"
 
-#ifndef WIN32
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#endif
-
-#include <apr_want.h>
-#include <apr_network_io.h>
+#include "jxta_apr.h"
 
 #define DEBUG 1
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-}
-#endif
 /** Each of these corresponds to a tag in the 
  * xml ad.
- */ enum tokentype {
+ */ 
+enum tokentype {
     Null_,
     Jxta_RelayAdvertisement_,
     IsClient_,
@@ -477,14 +466,6 @@ int main(int argc, char **argv)
     jxta_RelayAdvertisement_delete(ad);
 
     return 0;
-}
-#endif
-
-
-#ifdef __cplusplus
-#if 0
-{
-#endif
 }
 #endif
 

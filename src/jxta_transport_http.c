@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http.c,v 1.68 2005/11/22 23:44:46 mmx2005 Exp $
+ * $Id: jxta_transport_http.c,v 1.71 2006/02/17 23:26:11 slowhog Exp $
  */
 
 static const char *__log_cat = "HTTP_TRANSPORT";
@@ -61,10 +61,7 @@ static const char *__log_cat = "HTTP_TRANSPORT";
 #include <signal.h> /* for sigaction */
 #endif
 
-#include <apr.h>
-#include <apr_strings.h>
-#include <apr_thread_proc.h>
-#include "jpr/jpr_apr_wrapper.h"
+#include "jxta_apr.h"
 #include "jpr/jpr_excep_proto.h"
 
 #include "jstring.h"
@@ -223,9 +220,6 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     Jxta_transport_http *self;
     Jxta_PA *conf_adv = NULL;
     Jxta_svc *svc = NULL;
-    Jxta_vector *svcs;
-    size_t sz;
-    size_t i;
     Jxta_HTTPTransportAdvertisement *hta;
     JString *isclient = NULL;
 
@@ -270,7 +264,7 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
 
     /*
      * following falls-back on backdoor config if needed only.
-     * So it can be just be removed when nolonger usefull.
+     * So it can be just be removed when no longer useful.
      */
 
     self->is_relay = FALSE;
@@ -284,33 +278,17 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
 
     /**
      ** Extract our configuration for the config adv.
-     ** FIXME - jice@jxta.org 20020320 : painfull.
+     ** FIXME - jice@jxta.org 20020320 : painful.
      **/
 
     jxta_PG_get_configadv(group, &conf_adv);
     if (conf_adv == NULL)
         return JXTA_CONFIG_NOTFOUND;
 
-    svcs = jxta_PA_get_Svc(conf_adv);
-    JXTA_OBJECT_RELEASE(conf_adv);
-
-    sz = jxta_vector_size(svcs);
-    for (i = 0; i < sz; i++) {
-        Jxta_id *mcid;
-        Jxta_svc *tmpsvc = NULL;
-        jxta_vector_get_object_at(svcs, JXTA_OBJECT_PPTR(&tmpsvc), i);
-        mcid = jxta_svc_get_MCID(tmpsvc);
-        if (jxta_id_equals(mcid, assigned_id)) {
-            svc = tmpsvc;
-            JXTA_OBJECT_RELEASE(mcid);
-            break;
-        }
-        JXTA_OBJECT_RELEASE(mcid);
-        JXTA_OBJECT_RELEASE(tmpsvc);
-    }
+    jxta_PA_get_Svc_with_id(conf_adv,assigned_id,&svc);
 
     if (svc == NULL) {
-        JXTA_OBJECT_RELEASE(svcs);
+        JXTA_OBJECT_RELEASE(conf_adv);
         return JXTA_NOT_CONFIGURED;
     }
 
@@ -318,7 +296,7 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     JXTA_OBJECT_RELEASE(svc);
 
     if (hta == NULL) {
-        JXTA_OBJECT_RELEASE(svcs);
+        JXTA_OBJECT_RELEASE(conf_adv);
         return JXTA_CONFIG_NOTFOUND;
     }
 
@@ -331,22 +309,8 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
      * relay and HTTP transport
      */
 
-    sz = jxta_vector_size(svcs);
-    for (i = 0; i < sz; i++) {
-        Jxta_id *mcid;
-        Jxta_svc *tmpsvc = NULL;
-        jxta_vector_get_object_at(svcs, JXTA_OBJECT_PPTR(&tmpsvc), i);
-        mcid = jxta_svc_get_MCID(tmpsvc);
-        if (jxta_id_equals(mcid, jxta_relayproto_classid_get())) {
-            svc = tmpsvc;
-            JXTA_OBJECT_RELEASE(mcid);
-            break;
-        }
-        JXTA_OBJECT_RELEASE(mcid);
-        JXTA_OBJECT_RELEASE(tmpsvc);
-    }
-    JXTA_OBJECT_RELEASE(svcs);
-
+    jxta_PA_get_Svc_with_id(conf_adv,jxta_relayproto_classid_get(),&svc);
+    JXTA_OBJECT_RELEASE(conf_adv);
     if (svc == NULL) {
         return JXTA_CONFIG_NOTFOUND;
     }
@@ -409,14 +373,15 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
      **/
 
     self->peerid = strdup(tmp);
-    if (self->peerid == NULL)
-        return JXTA_NOMEM;
 
     /**
      ** We can now safely release all the intermediate objects
      **/
     JXTA_OBJECT_RELEASE(uniquePid);
     JXTA_OBJECT_RELEASE(id);
+    
+    if (self->peerid == NULL)
+        return JXTA_NOMEM;
 
     if (self->is_relay)
         address_str = apr_psprintf(self->pool, "http://%s:%d", self->srv_host, self->srv_port);
@@ -877,7 +842,7 @@ static HttpClientMessenger *http_client_messenger_new(Jxta_transport_http * tp, 
  **
  ** The following implementation uses Jxta_vector in order to store the
  ** existing HttpClientMessenger objects. It would be more efficient to
- ** use an hashtable, but since jice@jxta.org is currentely writing one
+ ** use an hashtable, but since jice@jxta.org is currently writing one
  ** for jxta-c, this temporary implementation uses the existing Jxta_vector.
  ** When hastable will be available, this implementation should use it.
  **/

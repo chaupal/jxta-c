@@ -50,15 +50,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_mca.h,v 1.6 2005/09/21 21:16:47 slowhog Exp $
+ * $Id: jxta_mca.h,v 1.7 2005/12/23 21:32:15 mmx2005 Exp $
  */
 
 
-#ifndef __MCA_H__
-#define __MCA_H__
+#ifndef __jxta_MCA_H__
+#define __jxta_MCA_H__
 
 #include "jxta_advertisement.h"
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,33 +66,31 @@ extern "C" {
 #endif
 #endif
 
-typedef struct _MCA MCA;
-
 /*
  * transition to new type naming style.
  */
-typedef struct _MCA Jxta_MCA;
+typedef struct _jxta_MCA _jxta_MCA;
+typedef struct _jxta_MCA Jxta_MCA;
 
-JXTA_DECLARE(MCA *) MCA_new(void);
-JXTA_DECLARE(void) MCA_set_handlers(MCA *, XML_Parser, void *);
-void MCA_delete(MCA *);
-JXTA_DECLARE(Jxta_status) MCA_get_xml(MCA *, JString **);
-JXTA_DECLARE(void) MCA_parse_charbuffer(MCA *, const char *, int len);
-JXTA_DECLARE(void) MCA_parse_file(MCA *, FILE * stream);
+JXTA_DECLARE(Jxta_MCA *) jxta_MCA_new(void);
 
-JXTA_DECLARE(char *) MCA_get_MCA(MCA *);
-JXTA_DECLARE(void) MCA_set_MCA(MCA *, char *);
+JXTA_DECLARE(Jxta_status) jxta_MCA_get_xml(Jxta_MCA *, JString **);
+JXTA_DECLARE(void) jxta_MCA_parse_charbuffer(Jxta_MCA *, const char *, int len);
+JXTA_DECLARE(void) jxta_MCA_parse_file(Jxta_MCA *, FILE * stream);
 
-JXTA_DECLARE(char *) MCA_get_MCID(MCA *);
-JXTA_DECLARE(void) MCA_set_MCID(MCA *, char *);
+JXTA_DECLARE(char *) jxta_MCA_get_MCA(Jxta_MCA *);
+JXTA_DECLARE(void) jxta_MCA_set_MCA(Jxta_MCA *, char *);
 
-JXTA_DECLARE(char *) MCA_get_Name(MCA *);
-JXTA_DECLARE(void) MCA_set_Name(MCA *, char *);
+JXTA_DECLARE(Jxta_id *) jxta_MCA_get_MCID(Jxta_MCA *);
+JXTA_DECLARE(void) jxta_MCA_set_MCID(Jxta_MCA *, Jxta_id *);
 
-JXTA_DECLARE(char *) MCA_get_Desc(MCA *);
-JXTA_DECLARE(void) MCA_set_Desc(MCA *, char *);
+JXTA_DECLARE(JString *) jxta_MCA_get_Name(Jxta_MCA *);
+JXTA_DECLARE(void) jxta_MCA_set_Name(Jxta_MCA *, JString *);
 
-JXTA_DECLARE(Jxta_vector *) MCA_get_indexes(Jxta_advertisement *);
+JXTA_DECLARE(JString *) jxta_MCA_get_Desc(Jxta_MCA *);
+JXTA_DECLARE(void) jxta_MCA_set_Desc(Jxta_MCA *, JString *);
+
+JXTA_DECLARE(Jxta_vector *) jxta_MCA_get_indexes(Jxta_advertisement *);
 
 #ifdef __cplusplus
 #if 0
@@ -102,6 +99,6 @@ JXTA_DECLARE(Jxta_vector *) MCA_get_indexes(Jxta_advertisement *);
 }
 #endif
 
-#endif /* __MCA_H__  */
+#endif /* __jxta_MCA_H__  */
 
 /* vi: set ts=4 sw=4 tw=130 et: */

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bytevector.h,v 1.9 2005/11/16 22:53:53 slowhog Exp $
+ * $Id: jxta_bytevector.h,v 1.11 2006/02/21 17:12:30 slowhog Exp $
  */
 
 
@@ -127,13 +127,27 @@ JXTA_DECLARE(Jxta_bytevector *) jxta_bytevector_new_1(size_t initialSize);
 JXTA_DECLARE(Jxta_bytevector *) jxta_bytevector_new_2(unsigned char *initialPtr, size_t initialSize, size_t initalCapacity);
 
 /************************************************************************
+ ** Allocates a new Vector initialized with the provided char. Really
+ ** wrapping the char
+ **
+ ** The creator of a vector is responsible to release it when not used
+ ** anymore. 
+ **
+ ** @param initialPtr The pointer to use for source data.
+ ** @param length The size of the data
+ ** @param freedata If set the wrapped data is freed when the bytevector
+ **               is released 
+ ** @return a new vector, or NULL if allocation failed.
+ *************************************************************************/
+JXTA_DECLARE(Jxta_bytevector *) jxta_bytevector_new_3(char *content, size_t length, Jxta_boolean freedata);
+
+/************************************************************************
  ** Causes the vector to be synchronized.
  **
  ** @param vector ensure this vector is synchronized.
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  *************************************************************************/
-
 JXTA_DECLARE(Jxta_status) jxta_bytevector_set_synchronized(Jxta_bytevector * vector);
 
 /*************************************************************************
@@ -147,6 +161,13 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_set_synchronized(Jxta_bytevector * vec
  ************************************************************************/
 JXTA_DECLARE(Jxta_status) jxta_bytevector_clear(Jxta_bytevector * vector, size_t initialSize);
 
+/*************************************************************************
+ ** Direct access to the content of the vector. 
+ **
+ ** @param vector the vector to clear.
+ ** @return the pointer to the content of the vector
+ ************************************************************************/
+JXTA_DECLARE(const char *) jxta_bytevector_content_ptr(Jxta_bytevector * vector);
 
 /************************************************************************
  ** Add a byte at a particular index. Bytes with higher index are
@@ -160,7 +181,6 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_clear(Jxta_bytevector * vector, size_t
  *************************************************************************/
 JXTA_DECLARE(Jxta_status) jxta_bytevector_add_byte_at(Jxta_bytevector * vector, unsigned char byte, unsigned int at_index);
 
-
 /************************************************************************
  ** Add a byte at the beginning of the vector. byes already in the
  ** vector are moved up. The size of the vector is increased by one.
@@ -171,7 +191,6 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_add_byte_at(Jxta_bytevector * vector, 
  ** otherwise.
  *************************************************************************/
 JXTA_DECLARE(Jxta_status) jxta_bytevector_add_byte_first(Jxta_bytevector * vector, unsigned char byte);
-
 
 /************************************************************************
  ** Add a byte at the end of the vector.  The size of the vector is 
@@ -185,7 +204,6 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_add_byte_first(Jxta_bytevector * vecto
  ** otherwise.
  *************************************************************************/
 JXTA_DECLARE(Jxta_status) jxta_bytevector_add_byte_last(Jxta_bytevector * vector, unsigned char byte);
-
 
 /************************************************************************
  ** Add bytes at a particular index. Bytes with higher index are
@@ -202,7 +220,6 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_add_byte_last(Jxta_bytevector * vector
 JXTA_DECLARE(Jxta_status) jxta_bytevector_add_bytes_at(Jxta_bytevector * vector, unsigned char const *bytes,
                                                        unsigned int at_index, size_t length);
 
-
 /************************************************************************
  ** Add a bytevector at a particular index. Bytes with higher index are
  ** moved up. The size of the vector is increased by the size of the added
@@ -216,7 +233,6 @@ JXTA_DECLARE(Jxta_status) jxta_bytevector_add_bytes_at(Jxta_bytevector * vector,
  *************************************************************************/
 JXTA_DECLARE(Jxta_status) jxta_bytevector_add_bytevector_at(Jxta_bytevector * vector, Jxta_bytevector * bytes,
                                                             unsigned int at_index);
-
 
 /************************************************************************
  ** Add a bytevector at a particular index. Bytes with higher index are
@@ -248,6 +264,21 @@ JXTA_DECLARE(Jxta_status)
  *************************************************************************/
 JXTA_DECLARE(Jxta_status)
     jxta_bytevector_add_from_stream_at(Jxta_bytevector * vector, ReadFunc func, void *stream, size_t length, unsigned int at_index);
+
+/************************************************************************
+ ** Set bytes at a particular index from a stream. 
+ ** WARNING: No check if the data fits.
+ **
+ ** @param vector a pointer to the vector to use.
+ ** @param func function to call to read bytes.
+ ** @param stream parameter to pass to the read function.
+ ** @param length number of bytes to read.
+ ** @param at_index where to add the byte.
+ ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
+ ** otherwise.
+ *************************************************************************/
+JXTA_DECLARE(Jxta_status)
+    jxta_bytevector_set_from_stream_at(Jxta_bytevector * vector, ReadFunc func, void *stream, size_t length, unsigned int at_index);
 
 /************************************************************************
  ** Get the byte which is at the given index. 

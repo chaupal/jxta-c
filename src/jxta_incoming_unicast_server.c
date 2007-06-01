@@ -51,17 +51,13 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_incoming_unicast_server.c,v 1.28 2005/11/22 22:00:58 mmx2005 Exp $
+ * $Id: jxta_incoming_unicast_server.c,v 1.29 2006/02/15 01:09:41 slowhog Exp $
  */
 
 static const char *__log_cat = "TCP_UNICAST";
 
-#include <apr.h>
-#include <apr_network_io.h>
-#include <apr_thread_proc.h>
 
-#include "jpr/jpr_apr_wrapper.h"
-
+#include "jxta_apr.h"
 #include "jxta_errno.h"
 #include "jxta_log.h"
 #include "jxta_transport_tcp_connection.h"

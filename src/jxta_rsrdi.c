@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rsrdi.c,v 1.14 2005/08/03 05:51:19 slowhog Exp $
+ * $Id: jxta_rsrdi.c,v 1.15 2006/02/18 00:32:53 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -62,16 +62,11 @@
 #include "jxta_xml_util.h"
 #include "jxta_advertisement.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-}
-#endif
 /** 
  * Each of these corresponds to a tag in the
  * xml message
- */ enum tokentype {
+ */
+enum tokentype {
     Null_,
     ResolverSrdi_,
     Credential_,
@@ -344,12 +339,5 @@ JXTA_DECLARE(void) jxta_resolver_srdi_parse_file(ResolverSrdi * ad, FILE * strea
 
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
-
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
 
 /* vi: set ts=4 sw=4 tw=130 et: */

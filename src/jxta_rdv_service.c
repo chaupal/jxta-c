@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service.c,v 1.62 2005/11/23 03:12:49 slowhog Exp $
+ * $Id: jxta_rdv_service.c,v 1.64 2006/02/01 23:40:02 slowhog Exp $
  */
 
 /**
@@ -331,31 +331,16 @@ static Jxta_status init(Jxta_module * rdv, Jxta_PG * group, Jxta_id * assigned_i
     res = jxta_peerview_init(self->peerview, group, self->peerviewNameString);
 
     jxta_PG_get_configadv(group, &conf_adv);
+    if (NULL == conf_adv && NULL != self->parentgroup) {
+        jxta_PG_get_configadv(self->parentgroup, &conf_adv);
+    }
 
     if (conf_adv != NULL) {
         Jxta_svc *svc = NULL;
-        Jxta_vector *svcs;
-        unsigned int sz;
-        unsigned int i;
 
-        svcs = jxta_PA_get_Svc(conf_adv);
+        jxta_PA_get_Svc_with_id(conf_adv,jxta_rendezvous_classid,&svc);
+      
         JXTA_OBJECT_RELEASE(conf_adv);
-
-        sz = jxta_vector_size(svcs);
-        for (i = 0; i < sz; i++) {
-            Jxta_id *mcid;
-            Jxta_svc *tmpsvc = NULL;
-            jxta_vector_get_object_at(svcs, JXTA_OBJECT_PPTR(&tmpsvc), i);
-            mcid = jxta_svc_get_MCID(tmpsvc);
-            if (jxta_id_equals(mcid, jxta_rendezvous_classid)) {
-                svc = tmpsvc;
-                JXTA_OBJECT_RELEASE(mcid);
-                break;
-            }
-            JXTA_OBJECT_RELEASE(mcid);
-            JXTA_OBJECT_RELEASE(tmpsvc);
-        }
-        JXTA_OBJECT_RELEASE(svcs);
 
         if (svc != NULL) {
             rdvConfig = jxta_svc_get_RdvConfig(svc);
@@ -379,6 +364,7 @@ static Jxta_status init(Jxta_module * rdv, Jxta_PG * group, Jxta_id * assigned_i
 
     self->config = jxta_RdvConfig_get_config(rdvConfig);
 
+    jxta_peerview_set_happy_size(self->peerview, jxta_RdvConfig_get_min_happy_peerview(rdvConfig));
     JXTA_OBJECT_RELEASE(rdvConfig);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Rendezvous service inited.\n");
@@ -862,7 +848,6 @@ JXTA_DECLARE(void) jxta_rdv_service_set_auto_interval(Jxta_rdv_service * rdv, Jx
 {
     _jxta_rdv_service *self = PTValid(rdv, _jxta_rdv_service);
     apr_status_t res;
-    Jxta_boolean stopping = FALSE;
 
     apr_thread_mutex_lock(self->mutex);
 
@@ -1062,9 +1047,9 @@ void *APR_THREAD_FUNC auto_rdv_thread(apr_thread_t * thread, void *arg)
         new_config = (should_be_rdv_probability > random) ? config_rendezvous : config_edge;
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,
-                        "Auto-rendezvous -- probability = %f average = %f random = %f : "
+                        "Auto-rendezvous -- probability = %f average = %f random = %f diff = %f : "
                         "since last switch = %d : current = %d new = %d \n",
-                        should_be_rdv_probability, average_probability, random, iterations_since_switch, self->config,
+                        should_be_rdv_probability, average_probability, random, probability_difference, iterations_since_switch, self->config,
                         new_config);
 
         /* Refuse to switch if we just switched */

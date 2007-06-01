@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_relay.c,v 1.46 2005/11/16 20:10:41 lankes Exp $
+ * $Id: jxta_relay.c,v 1.52 2006/03/13 19:45:41 slowhog Exp $
  */
 #include <stdlib.h> /* for atoi */
 
@@ -58,11 +58,7 @@
 #include <signal.h> /* for sigaction */
 #endif
 
-#include <apr.h>
-#include <apr_strings.h>
-#include <apr_thread_proc.h>
-#include <apr_thread_cond.h>
-
+#include "jxta_apr.h"
 #include "jpr/jpr_excep_proto.h"
 
 #include "jxta_types.h"
@@ -302,7 +298,6 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     _jxta_transport_relay *self = PTValid(module, _jxta_transport_relay);
     Jxta_PA *conf_adv = NULL;
     Jxta_svc *svc = NULL;
-    Jxta_vector *svcs;
     JString *val = NULL;
     Jxta_vector *relays = NULL;
     JString *relay = NULL;
@@ -355,24 +350,8 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
         return JXTA_CONFIG_NOTFOUND;
     }
 
-    svcs = jxta_PA_get_Svc(conf_adv);
+    jxta_PA_get_Svc_with_id(conf_adv,assigned_id,&svc);
     JXTA_OBJECT_RELEASE(conf_adv);
-
-    sz = jxta_vector_size(svcs);
-    for (i = 0; i < sz; i++) {
-        Jxta_id *mcid;
-        Jxta_svc *tmpsvc = NULL;
-        jxta_vector_get_object_at(svcs, JXTA_OBJECT_PPTR(&tmpsvc), i);
-        mcid = jxta_svc_get_MCID(tmpsvc);
-        if (jxta_id_equals(mcid, assigned_id)) {
-            svc = tmpsvc;
-            JXTA_OBJECT_RELEASE(mcid);
-            break;
-        }
-        JXTA_OBJECT_RELEASE(mcid);
-        JXTA_OBJECT_RELEASE(tmpsvc);
-    }
-    JXTA_OBJECT_RELEASE(svcs);
 
     if (svc == NULL)
         return JXTA_NOT_CONFIGURED;
@@ -538,6 +517,10 @@ static void stop(Jxta_module * module)
 
     _jxta_transport_relay *self = PTValid(module, _jxta_transport_relay);
 
+    if (jxta_module_state(module) != JXTA_MODULE_STARTED) {
+        return;
+    }
+
     if (!self->Is_Client) {
         return;
     }
@@ -657,7 +640,7 @@ _jxta_transport_relay *jxta_transport_relay_construct(Jxta_transport * relay, Jx
         self->pool = NULL;
         self->HttpRelays = NULL;
         self->TcpRelays = NULL;
-        self->peers = NULL;
+        self->peers = jxta_vector_new(1);
         self->listener_service = NULL;
     }
 
@@ -679,9 +662,8 @@ void jxta_transport_relay_destruct(_jxta_transport_relay * self)
     if (self->TcpRelays != NULL) {
         JXTA_OBJECT_RELEASE(self->TcpRelays);
     }
-    if (self->peers != NULL) {
-        JXTA_OBJECT_RELEASE(self->peers);
-    }
+
+    JXTA_OBJECT_RELEASE(self->peers);
 
     self->group = NULL;
 
@@ -1041,8 +1023,6 @@ static void *APR_THREAD_FUNC connect_relay_thread(apr_thread_t * thread, void *a
         JXTA_OBJECT_RELEASE(addr);
         JXTA_OBJECT_RELEASE(addr_e);
         JXTA_OBJECT_RELEASE(addr_a);
-        if (self->peers == NULL)
-            self->peers = jxta_vector_new(1);
         jxta_vector_add_object_last(self->peers, (Jxta_object *) seed);
         JXTA_OBJECT_RELEASE(seed);
     }
@@ -1058,20 +1038,17 @@ static void *APR_THREAD_FUNC connect_relay_thread(apr_thread_t * thread, void *a
         JXTA_OBJECT_RELEASE(addr);
         JXTA_OBJECT_RELEASE(addr_e);
         JXTA_OBJECT_RELEASE(addr_a);
-        if (self->peers == NULL)
-            self->peers = jxta_vector_new(1);
         jxta_vector_add_object_last(self->peers, (Jxta_object *) seed);
         JXTA_OBJECT_RELEASE(seed);
     }
 
-    if (self->peers == NULL)    /* no seed address found */
-        self->peers = jxta_vector_new(0);
-
     if (jxta_vector_size(self->peers) == 0) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "sorry, no valid relay addresses supported by relay service\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "No valid relay addresses supported by relay service\n");
         apr_thread_exit(thread, JXTA_SUCCESS);
         return NULL;
     }
+
+    jxta_vector_shuffle(self->peers);
 
     /* Main loop */
     while (self->running) {

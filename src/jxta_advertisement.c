@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) 2001 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright (c) 2001-2006 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,14 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_advertisement.c,v 1.94 2005/11/22 22:00:56 mmx2005 Exp $
+ * $Id: jxta_advertisement.c,v 1.97 2006/02/15 01:09:37 slowhog Exp $
  */
 static const char *__log_cat = "ADV";
 
-
-#include <apr_thread_proc.h>
-
-#include "jpr/jpr_threadonce.h"
 
 #include "jxta_debug.h"
 #include "jxta_errno.h"
@@ -68,23 +64,21 @@ static const char *__log_cat = "ADV";
 #include "jxta_pga.h"
 #include "jxta_test_adv.h"
 #include "jxta_pipe_adv.h"
+#include "jxta_msa.h"
+#include "jxta_mca.h"
 
 #define ENHANCED_QUERY_LOG "QueryLog"
 
-#ifdef __cplusplus
-extern "C" {
-#if 0
-}
-#endif
-#endif
 #define MAX_ADV_DEPTH 16
+
 JXTA_DECLARE(void)
 jxta_advertisement_initialize(Jxta_advertisement * ad,
                               const char *document_name,
                               const Kwdtab * dispatch_table,
                               JxtaAdvertisementGetXMLFunc get_xml_func,
                               JxtaAdvertisementGetIDFunc get_id_func,
-                              JxtaAdvertisementGetIndexFunc get_index_func, FreeFunc free_func)
+                              JxtaAdvertisementGetIndexFunc get_index_func, 
+                              FreeFunc free_func)
 {
     JXTA_OBJECT_INIT(ad, (JXTA_OBJECT_FREE_FUNC) free_func, 0);
 
@@ -143,7 +137,6 @@ void jxta_advertisement_delete(Jxta_advertisement * ad)
 
 JXTA_DECLARE(void) jxta_advertisement_set_handlers(Jxta_advertisement * ad, XML_Parser parser, Jxta_advertisement * parent)
 {
-
     if (parent == NULL) {
         ad->parent = ad;
     } else {
@@ -158,8 +151,8 @@ JXTA_DECLARE(void) jxta_advertisement_set_handlers(Jxta_advertisement * ad, XML_
 
 void jxta_advertisement_handle_chardata(void *user_data, const XML_Char * cd, int len)
 {
-
     Jxta_advertisement *ad = (Jxta_advertisement *) user_data;
+
     jstring_append_0(ad->accum, cd, len);
 }
 
@@ -170,7 +163,6 @@ JXTA_DECLARE(const char *) jxta_advertisement_get_document_name(Jxta_advertiseme
 
 JXTA_DECLARE(char *) jxta_advertisement_get_string(Jxta_advertisement * ad, Jxta_index * ji)
 {
-
     int i, j, m;
     const Kwdtab *tags_table = ad->dispatch_table;
     char *full_index_name;
@@ -178,6 +170,7 @@ JXTA_DECLARE(char *) jxta_advertisement_get_string(Jxta_advertisement * ad, Jxta
     const char *attrib;
     const char *parm;
     int len;
+
     element = (char *) jstring_get_string(ji->element);
     if (tags_table == NULL) {
         return NULL;
@@ -229,7 +222,6 @@ JXTA_DECLARE(char *) jxta_advertisement_get_string(Jxta_advertisement * ad, Jxta
  */
 JXTA_DECLARE(const char **) jxta_advertisement_get_tagnames(Jxta_advertisement * ad)
 {
-
     const Kwdtab *tags_table = ad->dispatch_table;
     int i = 1;                  /* The first entry is not interresting */
     int numtags = 1;            /* There's always at least the final NULL ptr. */
@@ -263,11 +255,14 @@ JXTA_DECLARE(const char **) jxta_advertisement_get_tagnames(Jxta_advertisement *
 
 void log_error(XML_Parser parser, const char *document_name)
 {
-    JXTA_LOG("Error Parsing %s : %s at line %d:%d (offset=%d,%d)\n",
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, 
+             "Error Parsing %s : %s at line %d:%d (offset=%d,%d)\n",
              document_name,
              XML_ErrorString(XML_GetErrorCode(parser)),
              XML_GetCurrentLineNumber(parser),
-             XML_GetCurrentColumnNumber(parser), XML_GetCurrentByteIndex(parser), XML_GetCurrentByteCount(parser));
+             XML_GetCurrentColumnNumber(parser), 
+             XML_GetCurrentByteIndex(parser), 
+             XML_GetCurrentByteCount(parser));
 }
 
 /** FIXME: Find a way to merge these two parse functions, or 
@@ -305,12 +300,14 @@ JXTA_DECLARE(Jxta_status) jxta_advertisement_parse_charbuffer(Jxta_advertisement
 
 JXTA_DECLARE(Jxta_status) jxta_advertisement_parse_file(Jxta_advertisement * ad, FILE * instream)
 {
-
     char buf[BUFSIZ];           /*  8192 */
     int done;
+    XML_Parser parser = NULL;
 
-    XML_Parser parser = XML_ParserCreate(NULL);
-    JXTA_LOG("In jxta_advertisement_parse_file\n");
+    parser = XML_ParserCreate(NULL);
+    
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In jxta_advertisement_parse_file\n");
+    
     jxta_advertisement_set_handlers(ad, parser, (Jxta_advertisement *) NULL);
 
     do {
@@ -351,27 +348,18 @@ JXTA_DECLARE(void) jxta_advertisement_register_local_handler(Jxta_advertisement 
 /* static apr_pool_t * global_ad_pool; */
 
 static Jxta_hashtable *global_ad_table = NULL;
-static apr_thread_once_t global_hash_init_ctrl = JPR_THREAD_ONCE_INIT;
-
-void initialize_global_hash(void)
-{
-    global_ad_table = jxta_hashtable_new(32);
-    JXTA_LOG("Global ad hash table initialized\n");
-
-}
 
 void jxta_advertisement_new_func_struct_delete(Jxta_advertisement_new_func_struct * new_func_struct)
 {
-
-    JXTA_LOG("In jxta_ad_new_func_delete\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In jxta_ad_new_func_delete\n");
     free(new_func_struct);
 }
 
 Jxta_advertisement_new_func_struct *jxta_advertisement_new_func_struct_new(const JxtaAdvertisementNewFunc new_func)
 {
+    Jxta_advertisement_new_func_struct *new_func_struct ;
 
-    Jxta_advertisement_new_func_struct *new_func_struct =
-        (Jxta_advertisement_new_func_struct *) malloc(sizeof(Jxta_advertisement_new_func_struct));
+    new_func_struct = (Jxta_advertisement_new_func_struct *) malloc(sizeof(Jxta_advertisement_new_func_struct));
     memset(new_func_struct, 0x00, sizeof(Jxta_advertisement_new_func_struct));
     JXTA_OBJECT_INIT(new_func_struct, (JXTA_OBJECT_FREE_FUNC) jxta_advertisement_new_func_struct_delete, 0);
     new_func_struct->jxta_advertisement_new_func = new_func;
@@ -395,15 +383,10 @@ Jxta_advertisement_new_func_struct *jxta_advertisement_new_func_struct_new(const
  */
 JXTA_DECLARE(void) jxta_advertisement_register_global_handler(const char *key, const JxtaAdvertisementNewFunc ad_new_function)
 {
-
     Jxta_advertisement_new_func_struct *new_func_struct = jxta_advertisement_new_func_struct_new(ad_new_function);
-
-    apr_thread_once(&global_hash_init_ctrl, initialize_global_hash);
-
 
     jxta_hashtable_put(global_ad_table, key, strlen(key) + 1, (Jxta_object *) new_func_struct);
     JXTA_OBJECT_RELEASE(new_func_struct);
-
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "jxta_advertisement_global_register : key being registered: %s\n", key);
 }
@@ -413,12 +396,11 @@ int jxta_advertisement_global_handler(Jxta_advertisement * ad, const char *key)
     Jxta_advertisement *new_ad;
     Jxta_advertisement_new_func_struct *new_func_struct = NULL;
 
-    apr_thread_once(&global_hash_init_ctrl, initialize_global_hash);
-
     jxta_hashtable_get(global_ad_table, key, strlen(key) + 1, JXTA_OBJECT_PPTR(&new_func_struct));
 
     if (new_func_struct != NULL) {
         Jxta_advertisement *(JXTA_STDCALL * new_func) (void);
+
         new_func = new_func_struct->jxta_advertisement_new_func;
 
         /* Do what a subdocument handler would do: */
@@ -459,12 +441,10 @@ void jxta_advertisement_cleanup(void)
     if (global_ad_table != NULL) {
         JXTA_OBJECT_RELEASE(global_ad_table);
     }
-
 }
 
 void jxta_advertisement_start_element(void *userdata, const char *ename, const char **atts)
 {
-
     int i, len;
     const char **att;
     const char **typeAttr = NULL;
@@ -491,6 +471,7 @@ void jxta_advertisement_start_element(void *userdata, const char *ename, const c
         /* search for this attribute */
         if (tags_table != NULL) {
             char *full_name;
+
             len = strlen(ename) + strlen(" ") + strlen(*att) + 4;
             full_name = (char *) calloc(1, len);
             apr_snprintf(full_name, len, "%s %s", ename, *att++);
@@ -533,7 +514,7 @@ void jxta_advertisement_start_element(void *userdata, const char *ename, const c
         /* if we're still here, try the element name */
         jxta_advertisement_global_handler(ad, ename);
 
-        /* we've done all we could, nomatter if a handler was found */
+        /* we've done all we could, no matter if a handler was found */
         return;
     }
 
@@ -613,7 +594,6 @@ void jxta_advertisement_start_element(void *userdata, const char *ename, const c
  */
 void jxta_advertisement_end_element(void *userdata, const char *tagname)
 {
-
     Jxta_advertisement *ad = (Jxta_advertisement *) userdata;
 
     /* If at the end of a subdocument (any element with subelements is
@@ -673,7 +653,6 @@ void jxta_advertisement_end_element(void *userdata, const char *tagname)
             }
         }
         ad->curr_handler = ad->handler_stk[ad->depth];
-
     }
 }
 
@@ -686,7 +665,6 @@ JXTA_DECLARE(void) jxta_advertisement_get_xml(Jxta_advertisement * ad, JString *
 
 JXTA_DECLARE(Jxta_id *) jxta_advertisement_get_id(Jxta_advertisement * ad)
 {
-
     if (ad->get_id != NULL) {
         return ad->get_id(ad);
     }
@@ -707,7 +685,6 @@ JXTA_DECLARE(void) jxta_advertisement_set_local_id_string(Jxta_advertisement * a
 
 JXTA_DECLARE(Jxta_vector *) jxta_advertisement_get_indexes(Jxta_advertisement * ad)
 {
-
     if (ad->get_indexes != NULL) {
         return ad->get_indexes(ad);
     }
@@ -748,6 +725,7 @@ JXTA_DECLARE(void) jxta_advertisement_get_advs(Jxta_advertisement * ad, Jxta_vec
 void jxta_Advertisement_idx_delete(Jxta_object * jo)
 {
     Jxta_index *ji = (Jxta_index *) jo;
+
     JXTA_OBJECT_RELEASE(ji->element);
     if (ji->attribute != NULL) {
         JXTA_OBJECT_RELEASE(ji->attribute);
@@ -765,12 +743,14 @@ JXTA_DECLARE(Jxta_vector *) jxta_advertisement_return_indexes(const char *idx[])
 {
     JString *element = NULL;
     JString *attribute = NULL;
-
     int i = 0;
     Jxta_vector *ireturn;
+    
     ireturn = jxta_vector_new(0);
     for (i = 0; idx[i] != NULL; i += 2) {
-        Jxta_index *jIndex = (Jxta_index *) malloc(sizeof(Jxta_index));
+        Jxta_index *jIndex;
+
+        jIndex = (Jxta_index *) malloc(sizeof(Jxta_index));
         memset(jIndex, '\0', sizeof(Jxta_index));
         JXTA_OBJECT_INIT(jIndex, (JXTA_OBJECT_FREE_FUNC) jxta_Advertisement_idx_delete, 0);
         element = jstring_new_2((char *) idx[i]);
@@ -790,6 +770,11 @@ JXTA_DECLARE(Jxta_vector *) jxta_advertisement_return_indexes(const char *idx[])
 
 void jxta_advertisement_register_global_handlers(void)
 {
+    global_ad_table = jxta_hashtable_new(32);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Global ad hash table initialized\n");
+
+    jxta_advertisement_register_global_handler("jxta:MCA", (JxtaAdvertisementNewFunc) jxta_MCA_new);
+    jxta_advertisement_register_global_handler("jxta:MSA", (JxtaAdvertisementNewFunc) jxta_MSA_new);
     jxta_advertisement_register_global_handler("jxta:MIA", (JxtaAdvertisementNewFunc) jxta_MIA_new);
     jxta_advertisement_register_global_handler("jxta:PA", (JxtaAdvertisementNewFunc) jxta_PA_new);
     jxta_advertisement_register_global_handler("jxta:PGA", (JxtaAdvertisementNewFunc) jxta_PGA_new);
@@ -799,12 +784,5 @@ void jxta_advertisement_register_global_handlers(void)
     jxta_advertisement_register_global_handler("jxta:APA", (JxtaAdvertisementNewFunc) jxta_AccessPointAdvertisement_new);
     jxta_advertisement_register_global_handler("demo:TestAdvertisement", (JxtaAdvertisementNewFunc) jxta_test_adv_new);
 }
-
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
 
 /* vim: set ts=4 sw=4 tw=130 et: */

@@ -164,6 +164,9 @@
 				RelativePath="..\..\..\src\jxta_cm.c">
 			</File>
 			<File
+				RelativePath="..\..\..\src\jxta_constants.c">
+			</File>
+			<File
 				RelativePath="..\..\..\src\jxta_cred.c">
 			</File>
 			<File
@@ -174,6 +177,9 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_defloader.c">
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_discovery_config_adv.c">
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_discovery_service.c">
@@ -189,6 +195,9 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_endpoint_address.c">
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_endpoint_config_adv.c">
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_endpoint_service.c">
@@ -468,6 +477,9 @@
 				RelativePath="..\..\..\src\jxta_cm.h">
 			</File>
 			<File
+				RelativePath="..\..\..\src\jxta_constants.h">
+			</File>
+			<File
 				RelativePath="..\..\..\src\jxta_cred.h">
 			</File>
 			<File
@@ -481,6 +493,9 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_defloader_private.h">
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_discovery_config_adv.h">
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_discovery_service.h">
@@ -499,6 +514,9 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_endpoint_address.h">
+			</File>
+			<File
+				RelativePath="..\..\..\src\jxta_endpoint_config_adv.h">
 			</File>
 			<File
 				RelativePath="..\..\..\src\jxta_endpoint_messenger.h">

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi_config_adv.h,v 1.2 2005/11/08 00:29:13 exocetrick Exp $
+ * $Id: jxta_srdi_config_adv.h,v 1.3 2006/01/31 22:11:27 slowhog Exp $
  */
 
 
@@ -69,8 +69,6 @@ extern "C" {
 #endif
 #endif
 typedef struct _jxta_SrdiConfigAdvertisement Jxta_SrdiConfigAdvertisement;
-
-# define DEFAULT_REPLICATION_THRESHOLD 4
 
 JXTA_DECLARE(Jxta_SrdiConfigAdvertisement *) jxta_SrdiConfigAdvertisement_new(void);
 JXTA_DECLARE(Jxta_status) jxta_SrdiConfigAdvertisement_get_xml(Jxta_SrdiConfigAdvertisement *, JString **);

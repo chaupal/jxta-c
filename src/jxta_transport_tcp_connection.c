@@ -51,18 +51,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tcp_connection.c,v 1.52 2005/11/21 01:19:23 mmx2005 Exp $
+ * $Id: jxta_transport_tcp_connection.c,v 1.54 2006/02/15 01:09:50 slowhog Exp $
  */
 
 static const char *__log_cat = "TCP_CONNECTION";
 
-#include <apr.h>
-#include <apr_thread_proc.h>
-#include <apr_strings.h>
-#include <apr_time.h>
 #include <assert.h>
 
-#include "jpr/jpr_apr_wrapper.h"
+#include "jxta_apr.h"
 
 #include "jxta_log.h"
 #include "jxta_errno.h"
@@ -333,7 +329,7 @@ JXTA_DECLARE(Jxta_transport_tcp_connection *) jxta_transport_tcp_connection_new_
     colon = strchr(protocol_address, ':');
     if (colon && (*(colon + 1))) {
         me->port = atoi(colon + 1);
-        remote_ipaddr = (char *) calloc(colon - protocol_address + 1, sizeof(char));
+        remote_ipaddr = (char *) apr_palloc(me->pool, (colon - protocol_address + 1) * sizeof(char));
         me->ipaddr = remote_ipaddr;
         me->ipaddr[0] = 0;
         strncat(me->ipaddr, protocol_address, colon - protocol_address);

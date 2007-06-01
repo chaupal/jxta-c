@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rr.c,v 1.48 2005/11/22 22:00:58 mmx2005 Exp $
+ * $Id: jxta_rr.c,v 1.49 2006/02/15 01:09:46 slowhog Exp $
  */
 
 
@@ -76,10 +76,6 @@
 #include "jxta_xml_util.h"
 #include "jxta_advertisement.h"
 #include "jxta_apr.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /** Each of these corresponds to a tag in the
 * xml ad.
@@ -510,6 +506,4 @@ int main(int argc, char **argv) {
 }
 #endif
 
-#ifdef __cplusplus
-}
-#endif
+/* vim: set ts=4 sw=4 et tw=130: */

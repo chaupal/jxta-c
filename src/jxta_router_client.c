@@ -50,15 +50,14 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_router_client.c,v 1.90 2005/11/25 07:50:00 mmx2005 Exp $
+ * $Id: jxta_router_client.c,v 1.95 2006/02/18 00:04:57 slowhog Exp $
  */
 
 static const char *__log_cat = "ROUTER_CLIENT";
 
 #include <stdlib.h> /* for atoi */
-#include <apr.h>
-#include <apr_strings.h>
 
+#include "jxta_apr.h"
 #include "jpr/jpr_excep_proto.h"
 
 #include "jxta_debug.h"
@@ -158,6 +157,7 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
         } else {
 	        jxta_id_get_uniqueportion(groupId, &tmp);
         }
+        JXTA_OBJECT_RELEASE(groupId);
 
         len=strlen(JXTA_ENDPOINT_PREFIX_ROUTER_NAME) + jstring_length(tmp);
         self->router_name = malloc( len + 1);

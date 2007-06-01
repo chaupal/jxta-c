@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bytevector.c,v 1.20 2005/10/27 01:55:24 slowhog Exp $
+ * $Id: jxta_bytevector.c,v 1.22 2006/02/21 17:12:30 slowhog Exp $
  */
 
 #include <stdlib.h>
@@ -114,6 +114,23 @@ static void jxta_bytevector_free(Jxta_object * vector)
     free(self);
 }
 
+static void jxta_bytevector_free_nothing(Jxta_object * vector)
+{
+    Jxta_bytevector_mutable *self = (Jxta_bytevector_mutable *) vector;
+
+    if (NULL == self)
+        return;
+
+    /* Free the pool containing the mutex */
+    if (NULL != self->usr.mutex) {
+        apr_thread_mutex_destroy(self->usr.mutex);
+        apr_pool_destroy(self->usr.jpr_pool);
+    }
+
+    /* Free the object itself */
+    free(self);
+}
+
 /************************************************************************
  **
  *************************************************************************/
@@ -143,10 +160,11 @@ JXTA_DECLARE(Jxta_bytevector *) jxta_bytevector_new_1(size_t initialSize)
     /* Initialize it. */
     JXTA_OBJECT_INIT(self, jxta_bytevector_free, 0);
 
-    if (JXTA_SUCCESS != jxta_bytevector_clear(self, initialSize)) {
-        free(self);
-        self = NULL;
-    }
+    self->usr.content = (_byte_t *) calloc(initialSize + 1, sizeof(_byte_t));
+    self->usr.capacity = initialSize;
+    self->usr.size = 0;
+    self->usr.jpr_pool = NULL;
+    self->usr.mutex = NULL;
 
     return self;
 }
@@ -207,6 +225,38 @@ JXTA_DECLARE(Jxta_bytevector *) jxta_bytevector_new_2(unsigned char *initialPtr,
     self->usr.size = initialSize;
     self->usr.jpr_pool = NULL;
     self->usr.mutex = NULL;
+
+    return self;
+}
+
+/************************************************************************
+ **
+ *************************************************************************/
+JXTA_DECLARE(Jxta_bytevector *) jxta_bytevector_new_3(char *content, size_t length, Jxta_boolean freedata)
+{
+    Jxta_bytevector_mutable *self;
+
+    /* Create the vector object */
+    self = (Jxta_bytevector_mutable *) malloc(sizeof(Jxta_bytevector_mutable));
+    if (self == NULL) {
+        /* No more memory */
+        return NULL;
+    }
+
+    memset(self, 0, sizeof(Jxta_bytevector_mutable));
+
+    /* Initialize it. */
+    if (freedata)
+        JXTA_OBJECT_INIT(self, jxta_bytevector_free, 0);
+    else
+        JXTA_OBJECT_INIT(self, jxta_bytevector_free_nothing, 0);
+
+    self->usr.content = (_byte_t *) content;
+    self->usr.capacity = length;
+    self->usr.size = length;
+    self->usr.jpr_pool = NULL;
+    self->usr.mutex = NULL;
+
 
     return self;
 }
@@ -325,6 +375,14 @@ static Jxta_status ensure_capacity(Jxta_bytevector_mutable * vector, size_t requ
     return JXTA_SUCCESS;
 }
 
+/************************************************************************
+ **
+ *************************************************************************/
+JXTA_DECLARE(const char *) jxta_bytevector_content_ptr(Jxta_bytevector * vector)
+{
+    Jxta_bytevector_mutable *self = (Jxta_bytevector_mutable *) vector;
+    return (char *) self->usr.content;
+}
 
 /************************************************************************
  **
@@ -549,6 +607,51 @@ JXTA_DECLARE(Jxta_status)
     }
 
   Common_Exit:
+    if (NULL != self->usr.mutex)
+        apr_thread_mutex_unlock(self->usr.mutex);
+
+    return err;
+}
+
+/************************************************************************
+ ** No need to add bytes as the bytevector should have been correctly 
+ ** allocated 
+ *************************************************************************/
+JXTA_DECLARE(Jxta_status)
+    jxta_bytevector_set_from_stream_at(Jxta_bytevector * vector, ReadFunc func, void *stream, size_t length, unsigned int at_index)
+{
+    Jxta_status err = JXTA_SUCCESS;
+
+    Jxta_bytevector_mutable *self = (Jxta_bytevector_mutable *) vector;
+
+    if (func == NULL) {
+        JXTA_LOG("Invalid argument\n");
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    if (!JXTA_OBJECT_CHECK_VALID(self)) {
+        JXTA_LOG("invalid vector");
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    if (length > (self->usr.capacity - at_index)) {
+        JXTA_LOG("Invalid length");
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    if (NULL != self->usr.mutex)
+        apr_thread_mutex_lock(self->usr.mutex);
+
+    err = (func) (stream, (char *) (self->usr.content + (ptrdiff_t) at_index), length);
+
+    self->usr.size += length;
+
+    if (JXTA_SUCCESS != err) {
+        Jxta_status res = jxta_bytevector_remove_bytes_at(self, at_index, length);
+        if (JXTA_SUCCESS == res)
+            JXTA_LOG("Vector is probably corrupted.");
+    }
+
     if (NULL != self->usr.mutex)
         apr_thread_mutex_unlock(self->usr.mutex);
 

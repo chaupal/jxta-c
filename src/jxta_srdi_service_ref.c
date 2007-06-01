@@ -139,7 +139,6 @@ typedef struct {
     Jxta_boolean republish;
     Jxta_PG *parentgroup;
     Jxta_PGID *gid;
-    Jxta_PGID *pid;
     JString *groupUniqueID;
     Jxta_rdv_service *rendezvous;
     Jxta_discovery_service *discovery;
@@ -150,12 +149,9 @@ typedef struct {
     Jxta_listener *rdv_listener;
     Jxta_listener *endpoint_listener;
     Jxta_SrdiConfigAdvertisement *config;
-
 } Jxta_srdi_service_ref;
 
 static const char *__log_cat = "SrdiService";
-/* This ought be to configurable/based on a function applied to the rpv size */
-static unsigned int RPV_REPLICATION_THRESHOLD = 3;
 
 Jxta_status
 jxta_srdi_service_ref_init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
@@ -173,12 +169,13 @@ jxta_srdi_service_ref_init(Jxta_module * module, Jxta_PG * group, Jxta_id * assi
 
     me->group = group;
     jxta_PG_get_parentgroup(me->group, &me->parentgroup);
-    jxta_PG_get_PID(group, &me->pid);
     jxta_PG_get_GID(group, &me->gid);
     jxta_PG_get_cache_manager(group, &me->cm);
     jxta_id_get_uniqueportion(me->gid, &me->groupUniqueID);
     jxta_PG_get_configadv(group, &conf_adv);
-
+    if (NULL == conf_adv && NULL != me->parentgroup) {
+        jxta_PG_get_configadv(me->parentgroup, &conf_adv);
+    }
     if (conf_adv != NULL) {
         jxta_PA_get_Svc_with_id(conf_adv, jxta_srdi_classid, &svc);
         if (NULL != svc ) {
@@ -187,10 +184,11 @@ jxta_srdi_service_ref_init(Jxta_module * module, Jxta_PG * group, Jxta_id * assi
         }
         JXTA_OBJECT_RELEASE(conf_adv);
     }
+    
     if (NULL == me->config) {
         me->config = jxta_SrdiConfigAdvertisement_new();
     }
-    RPV_REPLICATION_THRESHOLD = jxta_srdi_cfg_get_replication_threshold(me->config);
+    
     if (assigned_id != 0) {
         jxta_id_to_jstring(assigned_id, &me->instanceName);
     }
@@ -264,8 +262,10 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
     char **replicaLocs=NULL;
     char *replicaLocsSave=NULL;
     JString *jPkey=NULL;
+    Jxta_id *srdi_owner = NULL;
 
     ttl = jxta_srdi_message_get_ttl(srdiMsg);
+    jxta_srdi_message_get_peerID(srdiMsg, &srdi_owner);
     jxta_srdi_message_get_primaryKey(srdiMsg, &jPkey);
     rpv = jxta_rdv_service_get_peerview_priv((_jxta_rdv_service *) me->rendezvous);
     status = jxta_peerview_get_localview(rpv, &localView);
@@ -282,7 +282,8 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "start replicating \n");
 
     rpv_size = jxta_vector_size(localView);
-    if (ttl < 1 || !jxta_rdv_service_is_rendezvous(me->rendezvous) || rpv_size < RPV_REPLICATION_THRESHOLD) {
+    if (ttl < 1 || !jxta_rdv_service_is_rendezvous(me->rendezvous) || 
+            rpv_size < jxta_srdi_cfg_get_replication_threshold(me->config)) {
         goto CommonExit;
     }
 
@@ -338,7 +339,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
             JXTA_OBJECT_RELEASE(repId);
             repIdChar = jstring_get_string(jRepId);
             if (jxta_hashtable_get(peersHash, repIdChar, strlen(repIdChar) + 1, JXTA_OBJECT_PPTR(&peerEntries)) != JXTA_SUCCESS) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Addding replica to peer HASH - %s \n", repIdChar);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Adding replica to peer HASH - %s \n", repIdChar);
                 peerEntries = jxta_vector_new(0);
                 jxta_vector_add_object_first(peerEntries, (Jxta_object *) repPeer);
                 jxta_hashtable_put(peersHash, repIdChar, strlen(repIdChar) + 1, (Jxta_object *) peerEntries);
@@ -365,7 +366,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
         }
         stat = jxta_vector_remove_object_at(peersVector, JXTA_OBJECT_PPTR(&sendPeer), 0);
         if (JXTA_SUCCESS == stat) {
-            forwardSrdiEntries((Jxta_srdi_service *) me, resolver, sendPeer, me->pid, peersVector, queueName, jPkey);
+            forwardSrdiEntries((Jxta_srdi_service *) me, resolver, sendPeer, srdi_owner, peersVector, queueName, jPkey);
         }
         JXTA_OBJECT_RELEASE(peersVector);
         JXTA_OBJECT_RELEASE(sendPeer);
@@ -376,6 +377,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
     JXTA_OBJECT_RELEASE(allEntries);
     JXTA_OBJECT_RELEASE(replicaExpression);
 CommonExit:
+    JXTA_OBJECT_RELEASE(srdi_owner);
     if (NULL != localView)
         JXTA_OBJECT_RELEASE(localView);
     if (jPkey) JXTA_OBJECT_RELEASE(jPkey);
@@ -1001,8 +1003,6 @@ static void jxta_srdi_service_ref_destruct(Jxta_srdi_service_ref * srdi)
 {
     PTValid(srdi, Jxta_srdi_service_ref);
 
-    JXTA_OBJECT_RELEASE(srdi->pid);
-
     if (srdi->endpoint != 0)
         JXTA_OBJECT_RELEASE(srdi->endpoint);
     if (srdi->rendezvous != 0)
@@ -1019,7 +1019,13 @@ static void jxta_srdi_service_ref_destruct(Jxta_srdi_service_ref * srdi)
         JXTA_OBJECT_RELEASE(srdi->peerID);
     if (srdi->config) 
         JXTA_OBJECT_RELEASE(srdi->config);
-    JXTA_OBJECT_RELEASE(srdi->groupUniqueID);
+    if(srdi->groupUniqueID)
+        JXTA_OBJECT_RELEASE(srdi->groupUniqueID);
+    if(srdi->gid)
+        JXTA_OBJECT_RELEASE(srdi->gid);
+    if(srdi->parentgroup)
+        JXTA_OBJECT_RELEASE(srdi->parentgroup);
+    
 
     /* call the base classe's dtor. */
     jxta_srdi_service_destruct((Jxta_srdi_service *) srdi);

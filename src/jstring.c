@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jstring.c,v 1.65 2005/07/22 03:12:49 slowhog Exp $
+ * $Id: jstring.c,v 1.66 2006/02/18 00:32:50 slowhog Exp $
  */
 
 
@@ -93,12 +93,6 @@
 #include "jxta_debug.h"
 #include "jstring.h"
 
-#ifdef __cplusplus
-extern "C" {
-#if 0
-}
-#endif
-#endif
 const size_t DEFAULTBUFSIZE = 128;
 
 /**
@@ -444,9 +438,4 @@ JXTA_DECLARE(int) jstring_writefunc_appender(void *stream, const char *buf, size
     return (JXTA_SUCCESS == status) ? len : -1;
 }
 
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
+/* vim: set ts=4 sw=4 et tw=130: */

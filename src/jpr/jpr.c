@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr.c,v 1.4 2005/04/30 04:34:50 slowhog Exp $
+ * $Id: jpr.c,v 1.5 2006/02/05 14:16:41 lankes Exp $
  */
 
 #include <apr_general.h>
@@ -62,6 +62,10 @@
 
 apr_pool_t *_jpr_global_pool = NULL;
 static unsigned int _jpr_initialized = 0;
+#ifdef WIN32
+static int _targc = 0;
+static char **_targv = NULL;
+#endif
 
 JPR_DECLARE(Jpr_status) jpr_initialize(void)
 {
@@ -71,7 +75,17 @@ JPR_DECLARE(Jpr_status) jpr_initialize(void)
         return APR_SUCCESS;
     }
 
+#ifdef WIN32
+    if (_targc != __argc)
+        _targc = __argc;
+
+    if (_targv != __argv)
+        _targv = __argv;
+
+    rv = apr_app_initialize(&_targc, &_targv, NULL);
+#else
     rv = apr_initialize();
+#endif
     if (APR_SUCCESS == rv) {
         rv = apr_pool_create(&_jpr_global_pool, NULL);
     }

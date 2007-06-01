@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peerview.h,v 1.15 2005/10/27 01:55:28 slowhog Exp $
+ * $Id: jxta_peerview.h,v 1.16 2006/02/01 23:37:50 slowhog Exp $
  */
 
 
@@ -99,6 +99,21 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_add_event_listener(Jxta_peerview * pv, c
 
 JXTA_DECLARE(Jxta_status) jxta_peerview_remove_event_listener(Jxta_peerview * pv, const char *serviceName,
 							      const char *serviceParam, Jxta_listener **listener);
+                                                              
+JXTA_DECLARE(Jxta_status) jxta_peerview_set_happy_size(Jxta_peerview * pv, unsigned int happy_view);
+JXTA_DECLARE(unsigned int) jxta_peerview_get_happy_size(Jxta_peerview * pv);
+                                                              
+JXTA_DECLARE(Jxta_status) jxta_peerview_set_max_probed(Jxta_peerview * pv, unsigned int max_probed);
+JXTA_DECLARE(unsigned int) jxta_peerview_get_max_probed(Jxta_peerview * pv);
+
+JXTA_DECLARE(Jxta_status) jxta_peerview_set_thread_interval(Jxta_peerview * pv, Jxta_time interval);
+JXTA_DECLARE(Jxta_time) jxta_peerview_get_thread_interval(Jxta_peerview * pv);
+
+JXTA_DECLARE(Jxta_status) jxta_peerview_set_rdva_refresh(Jxta_peerview * pv, Jxta_time_diff interval);
+JXTA_DECLARE(Jxta_time_diff) jxta_peerview_get_rdva_refresh(Jxta_peerview * pv);
+
+JXTA_DECLARE(Jxta_status) jxta_peerview_set_pve_expires(Jxta_peerview * pv, Jxta_time expires);
+JXTA_DECLARE(Jxta_time) jxta_peerview_get_pve_expires(Jxta_peerview * pv);
 
 #ifdef __cplusplus
 #if 0

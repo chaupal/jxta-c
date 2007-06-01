@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_advertisement_priv.h,v 1.1 2005/10/13 19:52:38 mathieu Exp $
+ * $Id: jxta_advertisement_priv.h,v 1.2 2006/02/15 01:09:38 slowhog Exp $
  */
 
 #ifndef JXTA_ADVERTISEMENT_PRIV_H
@@ -69,6 +69,7 @@ extern "C" {
  * their advertisement at init of their services. 
  */
 void jxta_advertisement_register_global_handlers(void);
+void jxta_advertisement_cleanup(void);
 
 #ifdef __cplusplus
 #if 0

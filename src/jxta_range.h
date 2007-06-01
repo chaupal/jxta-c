@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright (c) 2005-2006 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -68,7 +68,7 @@
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif /* if 0 */
 #endif /* __cplusplus */
 
@@ -79,14 +79,12 @@ typedef struct _jxta_range Jxta_range;
  * One-time call to initialize the range component
  * 
 **/
-JXTA_DECLARE(void)
-    jxta_range_init(Jxta_PG *group);
+JXTA_DECLARE(void) jxta_range_init(void);
     
 /**
  * Destroy the Range component
 **/
-JXTA_DECLARE(void)
-    jxta_range_destroy(Jxta_PG *group);
+JXTA_DECLARE(void) jxta_range_destroy(void);
     
 /**
  * Create a new range object

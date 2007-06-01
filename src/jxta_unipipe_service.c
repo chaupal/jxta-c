@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_unipipe_service.c,v 1.37 2005/11/26 05:52:03 mmx2005 Exp $
+ * $Id: jxta_unipipe_service.c,v 1.38 2006/03/15 19:17:56 slowhog Exp $
  */
 
 #include "jxta_apr.h"
@@ -596,7 +596,6 @@ static void JXTA_STDCALL resolve_listener(Jxta_object * obj, void *arg)
     Jxta_vector *peers = NULL;
     Jxta_status res;
     Jxta_pipe_adv *adv = NULL;
-    Jxta_listener *tmpListener = NULL;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "resolve_listener event= %x req= %x\n", event, req);
 
@@ -673,8 +672,6 @@ static void JXTA_STDCALL resolve_listener(Jxta_object * obj, void *arg)
     }
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Invoking the listener %x\n", req->listener);
-
-    tmpListener = req->listener;
 
     JXTA_OBJECT_CHECK_VALID(req->listener);
     JXTA_OBJECT_CHECK_VALID(connect_event);

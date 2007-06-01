@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_client.c,v 1.160 2005/11/23 03:12:49 slowhog Exp $
+ * $Id: jxta_rdv_service_client.c,v 1.163 2006/02/07 07:53:30 slowhog Exp $
  **/
 
 
@@ -88,25 +88,19 @@ static const char *__log_cat = "RdvClient";
 #include "jxta_rdv_service_private.h"
 #include "jxta_rdv_service_provider_private.h"
 
-#ifdef __cplusplus
-extern "C" {
-#if 0
-}
-#endif
-#endif
 /**
  * "Normal" time the background thread sleeps between runs. "Normal" usually
  * means that we are connected to a rdv.
  * Measured in relative microseconds.
-                                                                                                                         **/
-    static const apr_interval_time_t CONNECT_THREAD_NAP_TIME_NORMAL = ((apr_interval_time_t) 60) * 1000 * 1000;
-                                                                                                                        /* 1 Minute */
+**/
+static const Jxta_time_diff CONNECT_THREAD_NAP_TIME_NORMAL = ((Jxta_time_diff) 60) * 1000;  /* 1 Minute */
+
 /**
  * "Fast" time the background thread sleeps between runs. "Fast" usually
  * means that we are not connected to a rdv.
  * Measured in relative microseconds.
  **/
-static const apr_interval_time_t CONNECT_THREAD_NAP_TIME_FAST = ((apr_interval_time_t) 2) * 1000 * 1000;        /* 2 Seconds */
+static const Jxta_time_diff CONNECT_THREAD_NAP_TIME_FAST = ((Jxta_time_diff) 2) * 1000; /* 2 Seconds */
 
 /**
  * Minimal number of rendezvous this client will attempt to connect to.
@@ -118,17 +112,26 @@ static const unsigned int MIN_NB_OF_CONNECTED_RDVS = 1;
 /**
  * Minimum delay between two connection attempts to the same peer.
  **/
-static const Jxta_time_diff MIN_RETRY_DELAY = ((Jxta_time_diff) 15) * 1000;     /* 15 Seconds */
+static const Jxta_time_diff MIN_RETRY_DELAY = ((Jxta_time_diff) 15) * 1000; /* 15 Seconds */
+
+/**
+ * Maximum delay applied between 2 connection attempts
+ **/
+static const Jxta_time_diff MAX_RETRY_DELAY = ((Jxta_time_diff) 45) * 1000;
+/**
+ *
+ **/
+static const Jxta_time_diff CONNECT_DELAY = ((Jxta_time_diff) 15) * 1000;
 /**
  * Renewal of the leases must be done before the lease expires. The following
  * constant defines the number of microseconds to substract to the expiration
  * time in order to set the time of renewal.
  **/
-static const Jxta_time_diff LEASE_RENEWAL_DELAY = ((Jxta_time_diff) 5) * 60 * 1000;     /* 5 Minutes */
+static const Jxta_time_diff LEASE_RENEWAL_DELAY = ((Jxta_time_diff) 5) * 60 * 1000; /* 5 Minutes */
 /**
  *  Need to delay the RDV connection in case we have a relay
  **/
-static const apr_interval_time_t RDV_RELAY_DELAY_CONNECTION = ((apr_interval_time_t) 100) * 1000;       /* 100 ms */
+static const apr_interval_time_t RDV_RELAY_DELAY_CONNECTION = ((apr_interval_time_t) 100) * 1000;   /* 100 ms */
 /**
  * Internal structure of a peer used by this service.
  **/ struct _jxta_peer_rdv_entry {
@@ -186,6 +189,7 @@ struct _jxta_rdv_service_client {
     char *assigned_idString;
     Jxta_discovery_service *discovery;
     Jxta_PA *localPeerAdv;
+    Jxta_RdvConfigAdvertisement *rdvConfig;
     Jxta_PID *localPeerId;
     Jxta_listener *listener_service;
 
@@ -296,7 +300,7 @@ static _jxta_peer_rdv_entry *rdv_entry_new(void)
 /**
  * Standard instantiator
  **/
-Jxta_rdv_service_provider* jxta_rdv_service_client_new(void)
+Jxta_rdv_service_provider *jxta_rdv_service_client_new(void)
 {
     /* Allocate an instance of this service */
     _jxta_rdv_service_client *self = (_jxta_rdv_service_client *) calloc(1, sizeof(_jxta_rdv_service_client));
@@ -391,6 +395,9 @@ static void jxta_rdv_service_client_destruct(_jxta_rdv_service_client * self)
         self->discovery = NULL;
     }
 
+    if (self->rdvConfig != NULL)
+        JXTA_OBJECT_RELEASE(self->rdvConfig);
+
     /* Release the local peer adv and local peer id */
     JXTA_OBJECT_RELEASE(self->localPeerAdv);
     JXTA_OBJECT_RELEASE(self->localPeerId);
@@ -429,6 +436,9 @@ static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service 
     JString *tmp = NULL;
     Jxta_PGID *gid;
     JString *string = NULL;
+    Jxta_PA *conf_adv = NULL;
+    Jxta_RdvConfigAdvertisement *rdvConfig = NULL;
+    Jxta_PG *parentgroup;
     Jxta_id *assigned_id = jxta_service_get_assigned_ID_priv((_jxta_service *) service);
     Jxta_PG *group = jxta_service_get_peergroup_priv((_jxta_service *) service);
 
@@ -451,6 +461,52 @@ static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service 
     JXTA_OBJECT_RELEASE(gid);
     self->groupiduniq = strdup(jstring_get_string(tmp));
     JXTA_OBJECT_RELEASE(tmp);
+    jxta_PG_get_configadv(group, &conf_adv);
+    jxta_PG_get_parentgroup(group, &parentgroup);
+
+    if (NULL == conf_adv && NULL != parentgroup) {
+        jxta_PG_get_configadv(parentgroup, &conf_adv);
+        JXTA_OBJECT_RELEASE(parentgroup);
+    }
+    if (conf_adv != NULL) {
+        Jxta_svc *svc = NULL;
+
+        jxta_PA_get_Svc_with_id(conf_adv, jxta_rendezvous_classid, &svc);
+        if (NULL != svc) {
+            rdvConfig = jxta_svc_get_RdvConfig(svc);
+            JXTA_OBJECT_RELEASE(svc);
+        }
+        JXTA_OBJECT_RELEASE(conf_adv);
+    }
+    if (NULL == rdvConfig) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No RdvConfig Parameters. Loading defaults\n");
+        rdvConfig = jxta_RdvConfigAdvertisement_new();
+    }
+    if (self->rdvConfig)
+        JXTA_OBJECT_RELEASE(self->rdvConfig);
+    self->rdvConfig = rdvConfig;
+
+    if (-1 == jxta_RdvConfig_get_min_connected_rendezvous(rdvConfig)) {
+        jxta_RdvConfig_set_min_connected_rendezvous(rdvConfig, MIN_NB_OF_CONNECTED_RDVS);
+    }
+    if (-1 == jxta_RdvConfig_get_connect_delay(rdvConfig)) {
+        jxta_RdvConfig_set_connect_delay(rdvConfig, CONNECT_DELAY);
+    }
+    if (-1 == jxta_RdvConfig_get_connect_cycle_fast(self->rdvConfig)) {
+        jxta_RdvConfig_set_connect_cycle_fast(self->rdvConfig, CONNECT_THREAD_NAP_TIME_FAST);
+    }
+    if (-1 == jxta_RdvConfig_get_connect_cycle_normal(self->rdvConfig)) {
+        jxta_RdvConfig_set_connect_cycle_normal(self->rdvConfig, CONNECT_THREAD_NAP_TIME_NORMAL);
+    }
+    if (-1 == jxta_RdvConfig_get_lease_renewal_delay(self->rdvConfig)) {
+        jxta_RdvConfig_set_lease_renewal_delay(rdvConfig, LEASE_RENEWAL_DELAY);
+    }
+    if (-1 == jxta_RdvConfig_get_min_retry_delay(self->rdvConfig)) {
+        jxta_RdvConfig_set_min_retry_delay(rdvConfig, MIN_RETRY_DELAY);
+    }
+    if (-1 == jxta_RdvConfig_get_max_retry_delay(self->rdvConfig)) {
+        jxta_RdvConfig_set_max_retry_delay(rdvConfig, MAX_RETRY_DELAY);
+    }
 
     /**
      ** Add the Rendezvous Service Endpoint Listener
@@ -488,7 +544,7 @@ static Jxta_status start(Jxta_rdv_service_provider * provider)
 
     self->running = TRUE;
 
-    apr_thread_create((apr_thread_t**)&self->periodicThread, NULL,      /* no attr */
+    apr_thread_create((apr_thread_t **) & self->periodicThread, NULL,   /* no attr */
                       periodic_thread_main, (void *) JXTA_OBJECT_SHARE(self), jxta_rdv_service_provider_get_pool_priv(provider));
 
     apr_thread_mutex_unlock(self->periodicMutex);
@@ -515,10 +571,11 @@ static Jxta_status start(Jxta_rdv_service_provider * provider)
 static Jxta_status stop(Jxta_rdv_service_provider * provider)
 {
     Jxta_status res = JXTA_SUCCESS;
+    apr_status_t ares = 0;
     _jxta_rdv_service_client *self = (_jxta_rdv_service_client *) PTValid(provider, _jxta_rdv_service_client);
 
     jxta_rdv_service_provider_lock_priv(provider);
-    
+
     if (TRUE != self->running) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "RDV client is not started, ignore stop request.\n");
         jxta_rdv_service_provider_unlock_priv(provider);
@@ -556,8 +613,11 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
 
     res = jxta_rdv_service_provider_stop(provider);
 
-    apr_thread_join(&res, (apr_thread_t*)self->periodicThread);
-
+    apr_thread_join(&ares, (apr_thread_t *) self->periodicThread);
+    if (0 != ares) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Received error: %d when joining periodic thread\n", ares);
+        res = JXTA_FAILED;
+    }
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Stopped.\n");
 
     return res;
@@ -615,8 +675,8 @@ static Jxta_status propagate(Jxta_rdv_service_provider * provider, Jxta_message 
 
     if (JXTA_SUCCESS == res) {
         /* Send the message to ourself */
-        jxta_rdv_service_provider_prop_listener( (Jxta_object*)msg, provider );
-    
+        jxta_rdv_service_provider_prop_listener((Jxta_object *) msg, provider);
+
         res = jxta_rdv_service_provider_prop_to_peers(provider, msg, TRUE);
     }
 
@@ -677,8 +737,10 @@ static void connect_to_peer(_jxta_rdv_service_client * self, _jxta_peer_rdv_entr
     }
 
     peer->lastConnectTry = currentTime;
-    peer->connectInterval += MIN_RETRY_DELAY;
-
+    peer->connectInterval += jxta_RdvConfig_get_min_retry_delay(self->rdvConfig);
+    if (peer->connectInterval > jxta_RdvConfig_get_max_retry_delay(self->rdvConfig)) {
+        peer->connectInterval = jxta_RdvConfig_get_max_retry_delay(self->rdvConfig);
+    }
     jxta_peer_unlock((Jxta_peer *) peer);
 
     /*
@@ -736,6 +798,8 @@ static Jxta_boolean check_peer_lease(_jxta_peer_rdv_entry * peer)
     jxta_peer_unlock((Jxta_peer *) peer);
 
     remaining = (Jxta_time_diff) expires - currentTime;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "-------------- check_peer_lease - Time remaining:%" APR_INT64_T_FMT "\n",
+                    remaining);
 
     /* any lease remaining ? */
     return (remaining > 0);
@@ -765,8 +829,7 @@ static Jxta_boolean check_peer_connect(_jxta_rdv_service_client * self, _jxta_pe
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "peer->lastConnectTry= " JPR_DIFF_TIME_FMT " ms\n",
                     (0 == lastConnectTry) ? 0 : (currentTime - lastConnectTry));
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "peer->connectInterval= " JPR_DIFF_TIME_FMT " ms\n", connectInterval);
-
-    if (((Jxta_time_diff) (expires - currentTime)) < LEASE_RENEWAL_DELAY) {
+    if (((Jxta_time_diff) (expires - currentTime)) < jxta_RdvConfig_get_lease_renewal_delay(self->rdvConfig)) {
         /* Time to try a connection */
         connect_to_peer(self, peer);
     }
@@ -920,6 +983,7 @@ static Jxta_status process_connected_reply(_jxta_rdv_service_client * self, Jxta
         peer->connectInterval = 0;
         peer->lastConnectTry = currentTime;
     } else {
+        peer->connectInterval = jxta_RdvConfig_get_min_retry_delay(self->rdvConfig);
         jxta_peer_set_expires((Jxta_peer *) peer, 0);
         lease_event = JXTA_RDV_DISCONNECTED;
     }
@@ -1036,10 +1100,11 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
     while (self->running) {
         unsigned int nbOfConnectedRdvs = 0;
         unsigned int i;
-        Jxta_vector *rdvs = jxta_hashtable_values_get(self->rdvs);
-
+        Jxta_time_diff connect_fast = 0;
+        Jxta_time_diff connect_normal = 0;
+        Jxta_vector *rdvs;
+        rdvs = jxta_hashtable_values_get(self->rdvs);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Rendezvous Client Periodic RUN.\n");
-
         for (i = 0; i < jxta_vector_size(rdvs); i++) {
             _jxta_peer_rdv_entry *peer;
 
@@ -1052,21 +1117,27 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
             if (check_peer_lease(peer)) {
                 ++nbOfConnectedRdvs;
             } else {
+                Jxta_id *peerid;
+                JString *uniq;
+                jxta_peer_get_peerid((Jxta_peer *) peer, &peerid);
+                jxta_id_get_uniqueportion(peerid, &uniq);
+                JXTA_OBJECT_RELEASE(peerid);
                 /** No lease left. Get rid of this rdv **/
-                char *addrStr = jxta_endpoint_address_to_string(jxta_peer_get_address_priv((Jxta_peer *) peer));
-
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Removing expired RDV : %s\n", addrStr);
+                /* char *addrStr = jxta_endpoint_address_to_string(jxta_peer_get_address_priv((Jxta_peer *) peer)); */
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Removing expired RDV : %s\n", jstring_get_string(uniq));
 
                 jxta_rdv_service_provider_lock_priv((Jxta_rdv_service_provider *) self);
 
-                res = jxta_hashtable_del(self->rdvs, addrStr, strlen(addrStr) + 1, NULL);
+                /* res = jxta_hashtable_del(self->rdvs, addrStr, strlen(addrStr) + 1, NULL); */
+                res = jxta_hashtable_del(self->rdvs, jstring_get_string(uniq), jstring_length(uniq) + 1, NULL);
 
                 jxta_rdv_service_provider_unlock_priv((Jxta_rdv_service_provider *) self);
 
                 jxta_rdv_generate_event((_jxta_rdv_service *)
                                         jxta_rdv_service_provider_get_service_priv((_jxta_rdv_service_provider *) self),
                                         JXTA_RDV_FAILED, jxta_peer_get_peerid_priv((Jxta_peer *) peer));
-                free(addrStr);
+                JXTA_OBJECT_RELEASE(uniq);
+                /* free(addrStr); */
             }
 
             JXTA_OBJECT_RELEASE(peer);
@@ -1098,7 +1169,7 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
         /*
          *   The third leg, wherein we try to locate new rdvs as needed.
          */
-        if (nbOfConnectedRdvs < MIN_NB_OF_CONNECTED_RDVS) {
+        if (nbOfConnectedRdvs < (unsigned int) jxta_RdvConfig_get_min_connected_rendezvous(self->rdvConfig)) {
             if (NULL != seeds) {
 
                 if (jxta_vector_size(seeds) > 0) {
@@ -1128,8 +1199,10 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
                 jxta_peerview_send_rdv_request(((Jxta_rdv_service_provider *) self)->peerview, FALSE, FALSE);
 
                 seeds = jxta_peerview_get_seeds(provider->peerview);
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Found %d seed RDVs in %s\n", jxta_vector_size(seeds),
-                                self->groupiduniq);
+                if (seeds != NULL) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Found %d seed RDVs in %s\n", jxta_vector_size(seeds),
+                                    self->groupiduniq);
+                }
                 delay_count++;
             }
 
@@ -1211,7 +1284,7 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
 
 
         if (NULL != candidate) {
-            if ((candidate->lastConnectTry + candidate->connectInterval) > jpr_time_now()) {
+            if ((candidate->lastConnectTry + candidate->connectInterval) < jpr_time_now()) {
                 JXTA_OBJECT_RELEASE(candidate);
                 candidate = NULL;
             }
@@ -1254,18 +1327,20 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
          * more CPU it will use. Having two different periods for checking connection
          * is a compromise for latency versus performance.
          */
+        connect_normal = jxta_RdvConfig_get_connect_cycle_normal(self->rdvConfig);
 
-        if (nbOfConnectedRdvs < MIN_NB_OF_CONNECTED_RDVS) {
-            apr_time_t wait_time =
-                ((CONNECT_THREAD_NAP_TIME_FAST * delay_count) <
-                 CONNECT_THREAD_NAP_TIME_NORMAL) ? CONNECT_THREAD_NAP_TIME_FAST * delay_count : CONNECT_THREAD_NAP_TIME_NORMAL;
+        if (nbOfConnectedRdvs < (unsigned int) jxta_RdvConfig_get_min_connected_rendezvous(self->rdvConfig)) {
+            apr_time_t wait_time;
+            connect_fast = jxta_RdvConfig_get_connect_cycle_fast(self->rdvConfig);
+            wait_time = (connect_fast * delay_count) < connect_normal ? connect_fast * delay_count : connect_normal;
+            wait_time *= 1000;
             res = apr_thread_cond_timedwait(self->periodicCond, self->periodicMutex, wait_time);
         } else {
             /*
              * reset delay count if we have a connection
              */
             delay_count = 0;
-            res = apr_thread_cond_timedwait(self->periodicCond, self->periodicMutex, CONNECT_THREAD_NAP_TIME_NORMAL);
+            res = apr_thread_cond_timedwait(self->periodicCond, self->periodicMutex, connect_normal * 1000);
         }
     }
 
@@ -1273,12 +1348,10 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
         JXTA_OBJECT_RELEASE(seeds);
         seeds = NULL;
     }
-
     if (NULL != candidates) {
         JXTA_OBJECT_RELEASE(candidates);
         candidates = NULL;
     }
-
     if (NULL != candidate) {
         JXTA_OBJECT_RELEASE(candidate);
         candidate = NULL;
@@ -1321,7 +1394,7 @@ static _jxta_peer_rdv_entry *get_peer_entry(_jxta_rdv_service_client * self, Jxt
 
     jxta_hashtable_stats(self->rdvs, NULL, &currentPeers, NULL, NULL, NULL);
 
-    if (!found && create && (MIN_NB_OF_CONNECTED_RDVS > currentPeers)) {
+    if (!found && create && ((unsigned int) jxta_RdvConfig_get_min_connected_rendezvous(self->rdvConfig) > currentPeers)) {
         /* We need to create a new _jxta_peer_rdv_entry */
         peer = rdv_entry_new();
         if (peer == NULL) {
@@ -1333,7 +1406,6 @@ static _jxta_peer_rdv_entry *get_peer_entry(_jxta_rdv_service_client * self, Jxt
             JXTA_OBJECT_RELEASE(clientAddr);
             jxta_peer_set_peerid((Jxta_peer *) peer, peerid);
             jxta_peer_set_expires((Jxta_peer *) peer, JPR_ABSOLUTE_TIME_MAX);
-
             jxta_hashtable_put(self->rdvs, jstring_get_string(uniq), jstring_length(uniq) + 1, (Jxta_object *) peer);
         }
     }
@@ -1344,12 +1416,5 @@ static _jxta_peer_rdv_entry *get_peer_entry(_jxta_rdv_service_client * self, Jxt
 
     return peer;
 }
-
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
 
 /* vim: set ts=4 sw=4 tw=130 et: */

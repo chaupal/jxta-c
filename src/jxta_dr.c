@@ -50,8 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dr.c,v 1.66 2005/11/22 22:00:57 mmx2005 Exp $
+ * $Id: jxta_dr.c,v 1.68 2006/02/15 01:09:40 slowhog Exp $
  */
+
+static const char *__log_cat = "DR_ADV";
 
 #include <stdio.h>
 #include <string.h>
@@ -65,12 +67,6 @@
 #include "jxta_discovery_service.h"
 #include "jxta_apr.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-}
-#endif
 /** Each of these corresponds to a tag in the
  * xml ad.
  */ enum tokentype {
@@ -109,12 +105,11 @@ struct _Jxta_DiscoveryResponse {
  */
 static void handleJxta_DiscoveryResponse(void *userdata, const XML_Char * cd, int len)
 {
-    JXTA_LOG("In Jxta_DiscoveryResponse element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Jxta_DiscoveryResponse element\n");
 }
 
 static void handleType(void *userdata, const XML_Char * cd, int len)
 {
-
     Jxta_DiscoveryResponse *ad = (Jxta_DiscoveryResponse *) userdata;
     char *tok;
     if (len > 0) {
@@ -123,34 +118,35 @@ static void handleType(void *userdata, const XML_Char * cd, int len)
         extract_char_data(cd, len, tok);
         if (*tok != '\0') {
             ad->Type = (short) strtol(cd, NULL, 0);
-            JXTA_LOG("Type is :%d\n", ad->Type);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Type is :%d\n", ad->Type);
         }
         free(tok);
     }
-    JXTA_LOG("In Type element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Type element\n");
 }
 
 static void handleCount(void *userdata, const XML_Char * cd, int len)
 {
-
     Jxta_DiscoveryResponse *ad = (Jxta_DiscoveryResponse *) userdata;
     char *tok;
+
     if (len > 0) {
         tok = malloc(len + 1);
         memset(tok, 0, len + 1);
         extract_char_data(cd, len, tok);
         if (*tok != '\0') {
             ad->Count = (int) strtol(cd, NULL, 0);
-            JXTA_LOG("Count is :%d\n", ad->Count);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Count is :%d\n", ad->Count);
         }
         free(tok);
     }
-    JXTA_LOG("In Count element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Count element\n");
 }
 
 static void handlePeerAdv(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_DiscoveryResponse *ad = (Jxta_DiscoveryResponse *) userdata;
+
     jstring_append_0((JString *) ad->PeerAdv, cd, len);
     jstring_trim(ad->PeerAdv);
 }
@@ -166,8 +162,8 @@ static void handleAttr(void *userdata, const XML_Char * cd, int len)
 
 static void handleValue(void *userdata, const XML_Char * cd, int len)
 {
-
     Jxta_DiscoveryResponse *ad = (Jxta_DiscoveryResponse *) userdata;
+
     if (len == 0)
         return;
     jstring_append_0((JString *) ad->Value, cd, len);
@@ -182,7 +178,6 @@ static void DRE_Free(Jxta_object * o)
 
 static void handleResponse(void *userdata, const XML_Char * cd, int len)
 {
-
     Jxta_DiscoveryResponse *ad = (Jxta_DiscoveryResponse *) userdata;
     JString *a;
     Jxta_DiscoveryResponseElement *r;
@@ -223,7 +218,7 @@ static void handleResponse(void *userdata, const XML_Char * cd, int len)
     jxta_vector_add_object_last(ad->responselist, (Jxta_object *) r);
     JXTA_OBJECT_RELEASE(r);
 
-    JXTA_LOG("In Response element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Response element\n");
 }
 
 JXTA_DECLARE(long) jxta_discovery_response_get_query_id(Jxta_DiscoveryResponse * ad)
@@ -268,6 +263,7 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_peeradv(Jxta_DiscoveryResp
         JXTA_OBJECT_SHARE(ad->PeerAdv);
     }
     *padv = ad->PeerAdv;
+
     return JXTA_SUCCESS;
 }
 
@@ -296,6 +292,7 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_peer_advertisement(Jxta_Di
         JXTA_OBJECT_SHARE(ad->peer_advertisement);
     }
     *peer_advertisement = ad->peer_advertisement;
+
     return JXTA_SUCCESS;
 }
 
@@ -383,7 +380,6 @@ JXTA_DECLARE(void) jxta_discovery_response_set_responses(Jxta_DiscoveryResponse 
     return;
 }
 
-
 JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_advertisements(Jxta_DiscoveryResponse * ad, Jxta_vector ** advertisements)
 {
     Jxta_DiscoveryResponseElement *res;
@@ -392,12 +388,14 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_advertisements(Jxta_Discov
 
     if (jxta_vector_size(ad->advertisements) < jxta_vector_size(ad->responselist)) {
         Jxta_vector *adv_vec = NULL;
+
         if (NULL != ad->advertisements) {
             JXTA_OBJECT_RELEASE(ad->advertisements);
         }
         ad->advertisements = jxta_vector_new(1);
         for (i = 0; i < jxta_vector_size(ad->responselist); i++) {
             Jxta_object *tmpadv = NULL;
+            
             res = NULL;
             jxta_vector_get_object_at(ad->responselist, JXTA_OBJECT_PPTR(&res), i);
             if (res != NULL) {
@@ -430,7 +428,6 @@ JXTA_DECLARE(void) jxta_discovery_response_set_advertisements(Jxta_DiscoveryResp
         JXTA_OBJECT_SHARE(advertisements);
         ad->advertisements = advertisements;
     }
-    return;
 }
 
 /** Now, build an array of the keyword structs.  Since
@@ -452,10 +449,8 @@ static const Kwdtab Jxta_DiscoveryResponse_tags[] = {
     {NULL, 0, 0, NULL, NULL}
 };
 
-
 Jxta_status response_print(Jxta_DiscoveryResponse * ad, JString * js)
 {
-
     char buf[128];
     Jxta_vector *responselist;
     int eachElement;
@@ -466,6 +461,7 @@ Jxta_status response_print(Jxta_DiscoveryResponse * ad, JString * js)
 
     for (eachElement = jxta_vector_size(responselist) - 1; eachElement >= 0; eachElement--) {
         Jxta_DiscoveryResponseElement *anElement = NULL;
+
         jxta_vector_get_object_at(responselist, JXTA_OBJECT_PPTR(&anElement), eachElement);
         if (NULL == anElement) {
             continue;
@@ -476,7 +472,7 @@ Jxta_status response_print(Jxta_DiscoveryResponse * ad, JString * js)
         jstring_append_2(js, buf);
         status = jxta_xml_util_encode_jstring(anElement->response, &tmps);
         if (status != JXTA_SUCCESS) {
-            JXTA_LOG("error encoding the response, retrun status :%d\n", status);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "error encoding the response, retrun status :%d\n", status);
             return status;
         }
 
@@ -492,7 +488,6 @@ Jxta_status response_print(Jxta_DiscoveryResponse * ad, JString * js)
 
 JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_xml(Jxta_DiscoveryResponse * ad, JString ** document)
 {
-
     JString *doc;
     JString *tmps = NULL;
     Jxta_status status;
@@ -516,7 +511,7 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_xml(Jxta_DiscoveryResponse
     jstring_append_2(doc, "<PeerAdv>");
     status = jxta_xml_util_encode_jstring(ad->PeerAdv, &tmps);
     if (status != JXTA_SUCCESS) {
-        JXTA_LOG("error encoding the PeerAdv, retrun status :%d\n", status);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "error encoding the PeerAdv, retrun status :%d\n", status);
         JXTA_OBJECT_RELEASE(doc);
         return status;
     }
@@ -539,8 +534,8 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_xml(Jxta_DiscoveryResponse
 
 JXTA_DECLARE(Jxta_DiscoveryResponse *) jxta_discovery_response_new(void)
 {
-
     Jxta_DiscoveryResponse *ad;
+
     ad = (Jxta_DiscoveryResponse *) malloc(sizeof(Jxta_DiscoveryResponse));
 
     memset(ad, 0x0, sizeof(Jxta_DiscoveryResponse));
@@ -553,17 +548,18 @@ JXTA_DECLARE(Jxta_DiscoveryResponse *) jxta_discovery_response_new(void)
                                   "jxta:DiscoveryResponse",
                                   Jxta_DiscoveryResponse_tags,
                                   (JxtaAdvertisementGetXMLFunc) jxta_discovery_response_get_xml,
-                                  NULL, NULL, (FreeFunc) jxta_discovery_response_free);
+                                  NULL, 
+                                  NULL, 
+                                  (FreeFunc) jxta_discovery_response_free);
     return ad;
 }
 
-JXTA_DECLARE(Jxta_DiscoveryResponse *) jxta_discovery_response_new_1(short type,
-                                                                     char *attr,
-                                                                     char *value, int threshold, JString * peeradv,
+JXTA_DECLARE(Jxta_DiscoveryResponse *) jxta_discovery_response_new_1(short type, char *attr, char *value, 
+                                                                     int threshold, JString * peeradv,
                                                                      Jxta_vector * responses)
 {
-
     Jxta_DiscoveryResponse *ad;
+
     ad = (Jxta_DiscoveryResponse *) malloc(sizeof(Jxta_DiscoveryResponse));
 
     memset(ad, 0x0, sizeof(Jxta_DiscoveryResponse));
@@ -606,33 +602,30 @@ void jxta_discovery_response_free(Jxta_DiscoveryResponse * ad)
     free(ad);
 }
 
-
-
 JXTA_DECLARE(void) jxta_discovery_response_parse_charbuffer(Jxta_DiscoveryResponse * ad, const char *buf, int len)
 {
-
     jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
 
 JXTA_DECLARE(void) jxta_discovery_response_parse_file(Jxta_DiscoveryResponse * ad, FILE * stream)
 {
-
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
 
 static void response_element_free(Jxta_object * o)
 {
     Jxta_DiscoveryResponseElement *dre = (Jxta_DiscoveryResponseElement *) o;
+
     if (dre->response != NULL)
         JXTA_OBJECT_RELEASE(dre->response);
     free((void *) o);
 }
 
-
 JXTA_DECLARE(Jxta_DiscoveryResponseElement *) jxta_discovery_response_new_element(void)
 {
+    Jxta_DiscoveryResponseElement *dre ;
 
-    Jxta_DiscoveryResponseElement *dre = (Jxta_DiscoveryResponseElement *) malloc(sizeof(Jxta_DiscoveryResponseElement));
+    dre = (Jxta_DiscoveryResponseElement *) malloc(sizeof(Jxta_DiscoveryResponseElement));
     memset(dre, 0x0, sizeof(Jxta_DiscoveryResponseElement));
     JXTA_OBJECT_INIT(dre, response_element_free, 0);
     return dre;
@@ -641,7 +634,6 @@ JXTA_DECLARE(Jxta_DiscoveryResponseElement *) jxta_discovery_response_new_elemen
 JXTA_DECLARE(Jxta_DiscoveryResponseElement *) jxta_discovery_response_new_element_1(JString * response,
                                                                                     Jxta_expiration_time expiration)
 {
-
     Jxta_DiscoveryResponseElement *dre = jxta_discovery_response_new_element();
 
     JXTA_OBJECT_SHARE(response);
@@ -652,12 +644,5 @@ JXTA_DECLARE(Jxta_DiscoveryResponseElement *) jxta_discovery_response_new_elemen
     dre->expiration = expiration;
     return dre;
 }
-
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
 
 /* vi: set ts=4 sw=4 tw=130 et: */

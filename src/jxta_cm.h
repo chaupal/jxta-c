@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright (c) 2002-2006 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,23 +50,22 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cm.h,v 1.16 2005/11/23 15:50:32 slowhog Exp $
+ * $Id: jxta_cm.h,v 1.18 2006/02/15 01:09:39 slowhog Exp $
  */
-#ifndef JXTA_CM_H__
-#define JXTA_CM_H__
+#ifndef __JXTA_CM_H__
+#define __JXTA_CM_H__
 
 #include "jxta_advertisement.h"
 #include "jxta_query.h"
 #include "jxta_srdi.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #if 0
-}
+};
 #endif
 #endif
-/***/ struct _jxta_cm;
+
 typedef struct _jxta_cm Jxta_cm;
 
 /**
@@ -389,6 +388,6 @@ JXTA_DECLARE(void) jxta_cm_set_delta(Jxta_cm * self, Jxta_boolean recordDelta);
 }
 #endif
 
-#endif /* JXTA_CM_H__ */
+#endif /* __JXTA_CM_H__ */
 
 /* vi: set ts=4 sw=4 tw=130 et: */

@@ -50,26 +50,19 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_socket_tunnel.c,v 1.19 2005/11/16 20:10:42 lankes Exp $
+ * $Id: jxta_socket_tunnel.c,v 1.20 2006/02/15 01:09:47 slowhog Exp $
  */
 
 #include <ctype.h>
-#include "apr_network_io.h"
-#include "apr_thread_proc.h"
-#include "apr_thread_mutex.h"
-#include "jpr/jpr_apr_wrapper.h"
+
+#include "jxta_apr.h"
 #include "jxta_socket_tunnel.h"
 #include "jxta_bidipipe.h"
 #include "jxta_log.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0                           /* to cheat indent */
-}
-#endif
 #define JXTA_SOCKET_TUNNEL_LOG "SocketTunnel"
 #define DEFAULT_TUNNEL_BUFFER_SIZE (8 * 1024)
+
 enum protocols {
     TCP = 0,
     UDP,
@@ -843,10 +836,4 @@ JXTA_DECLARE(char *) jxta_socket_tunnel_addr_get(Jxta_socket_tunnel * self)
     return buf;
 }
 
-#if 0   /* to cheat indent */
-{
-#endif
-#ifdef __cplusplus
-}   /* extern "C" */
-#endif
 /* vim: set sw=4 ts=4 et tw=130: */

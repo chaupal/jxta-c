@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_hashtable.h,v 1.9 2005/09/21 21:16:47 slowhog Exp $
+ * $Id: jxta_hashtable.h,v 1.10 2006/02/01 19:01:15 bondolo Exp $
  */
 
 
@@ -117,6 +117,14 @@ JXTA_DECLARE(Jxta_hashtable *) jxta_hashtable_new(size_t initial_size);
  * @return A new hash table, or NULL if allocation failed.
  **/
 JXTA_DECLARE(Jxta_hashtable *) jxta_hashtable_new_0(size_t initial_size, Jxta_boolean synchronized);
+
+
+/**
+ * Clears the hashtable and in the process release all entries.
+ *
+ * @param self The hashtable onto which to apply the operation.
+ **/
+JXTA_DECLARE(void) jxta_hashtable_clear(Jxta_hashtable * self);
 
 
 /**
@@ -266,8 +274,6 @@ JXTA_DECLARE(char **) jxta_hashtable_keys_get(Jxta_hashtable * self);
 JXTA_DECLARE(void)
 jxta_hashtable_stats(Jxta_hashtable * self, size_t * capacity, size_t * usage,
                      size_t * occupancy, size_t * max_occupancy, double *avg_hops);
-
-
 #ifdef __cplusplus
 #if 0
 {

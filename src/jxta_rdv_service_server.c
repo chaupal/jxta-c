@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_server.c,v 1.39 2005/12/15 03:40:21 slowhog Exp $
+ * $Id: jxta_rdv_service_server.c,v 1.46 2006/02/16 00:33:14 slowhog Exp $
  **/
 
 
@@ -85,14 +85,7 @@ static const char *__log_cat = "RdvServer";
 #include "jxta_rdv_service_private.h"
 #include "jxta_rdv_service_provider_private.h"
 #include "jxta_walk_msg.h"
-#include "jxta_apr.h"
 
-#ifdef __cplusplus
-extern "C" {
-#if 0
-}
-#endif
-#endif
 static const char *LIMITEDRANGEWALKELEMENT = "LimitedRangeRdvMessage";
 
 /**
@@ -131,7 +124,7 @@ struct _jxta_rdv_service_server {
     apr_thread_cond_t *periodicCond;
     apr_thread_mutex_t *periodicMutex;
     volatile apr_thread_t *periodicThread;
-
+    Jxta_PG *group;
     Jxta_listener *listener_service;
     JString *walkerSvc;
     JString *walkerParam;
@@ -139,6 +132,7 @@ struct _jxta_rdv_service_server {
     Jxta_discovery_service *discovery;
 
     /* configuration */
+    Jxta_RdvConfigAdvertisement *rdvConfig;
     char *groupiduniq;
     Jxta_PID *localPeerId;
     JString *localPeerIdJString;
@@ -356,6 +350,8 @@ static void Jxta_rdv_service_server_destruct(_jxta_rdv_service_server * rdv)
     /* Release the services object this instance was using */
     if (self->discovery != NULL)
         JXTA_OBJECT_RELEASE(self->discovery);
+    if (self->rdvConfig != NULL)
+        JXTA_OBJECT_RELEASE(self->rdvConfig);
 
     /* Release the local peer adv and local peer id */
     JXTA_OBJECT_RELEASE(self->localPeerAdv);
@@ -410,10 +406,11 @@ static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service 
     Jxta_id *assignedID;
     JString *string = NULL;
     JString *gidString = NULL;
-    Jxta_PG *group = jxta_service_get_peergroup_priv((_jxta_service *) service);
-    Jxta_PA *conf_adv = NULL;
     Jxta_RdvConfigAdvertisement *rdvConfig = NULL;
-
+    Jxta_PG *parentgroup = NULL;
+    Jxta_PA *conf_adv;
+    Jxta_PG *group;
+    group = jxta_service_get_peergroup_priv((_jxta_service *) service);
     jxta_rdv_service_provider_init(provider, service);
 
     jxta_PG_get_discovery_service(group, &self->discovery);
@@ -429,6 +426,31 @@ static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service 
 
     /* Build the JString that contains the string representation of the ID */
     jxta_id_to_jstring(self->localPeerId, &self->localPeerIdJString);
+
+    /* get the config advertisement */
+    jxta_PG_get_configadv(group, &conf_adv);
+    jxta_PG_get_parentgroup(group, &parentgroup);
+
+    if (NULL == conf_adv && NULL != parentgroup) {
+        jxta_PG_get_configadv(parentgroup, &conf_adv);
+    }
+    if (conf_adv != NULL) {
+        Jxta_svc *svc = NULL;
+        jxta_PA_get_Svc_with_id(conf_adv, jxta_rendezvous_classid, &svc);
+        if (NULL != svc) {
+            rdvConfig = jxta_svc_get_RdvConfig(svc);
+            JXTA_OBJECT_RELEASE(svc);
+        }
+        JXTA_OBJECT_RELEASE(conf_adv);
+    }
+
+    if (NULL == rdvConfig) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No RdvConfig Parameters. Loading defaults\n");
+        rdvConfig = jxta_RdvConfigAdvertisement_new();
+    }
+    if (self->rdvConfig)
+        JXTA_OBJECT_RELEASE(self->rdvConfig);
+    self->rdvConfig = rdvConfig;
 
     /*
      * Register Endpoint Listener for Rendezvous Client-Server protocol.
@@ -463,52 +485,15 @@ static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service 
     self->MAX_CLIENTS = DEFAULT_MAX_CLIENTS;
     self->OFFERED_LEASE_DURATION = DEFAULT_LEASE_DURATION;
 
-    jxta_PG_get_configadv(group, &conf_adv);
-
-    if (conf_adv != NULL) {
-        Jxta_vector *svcs = jxta_PA_get_Svc(conf_adv);
-        Jxta_svc *svc = NULL;
-        unsigned int sz;
-        unsigned int i;
-
-        JXTA_OBJECT_RELEASE(conf_adv);
-
-        sz = jxta_vector_size(svcs);
-        for (i = 0; i < sz; i++) {
-            Jxta_id *mcid;
-            Jxta_svc *tmpsvc = NULL;
-            jxta_vector_get_object_at(svcs, JXTA_OBJECT_PPTR(&tmpsvc), i);
-            mcid = jxta_svc_get_MCID(tmpsvc);
-            if (jxta_id_equals(mcid, jxta_rendezvous_classid)) {
-                svc = tmpsvc;
-                JXTA_OBJECT_RELEASE(mcid);
-                break;
-            }
-            JXTA_OBJECT_RELEASE(mcid);
-            JXTA_OBJECT_RELEASE(tmpsvc);
-        }
-        JXTA_OBJECT_RELEASE(svcs);
-
-        if (svc != NULL) {
-            rdvConfig = jxta_svc_get_RdvConfig(svc);
-            JXTA_OBJECT_RELEASE(svc);
-        }
-    }
-
-    if (NULL == rdvConfig) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No RdvConfig Parameters. Loading defaults\n");
-        rdvConfig = jxta_RdvConfigAdvertisement_new();
-    }
-
     if (-1 != jxta_RdvConfig_get_lease_duration(rdvConfig)) {
         self->OFFERED_LEASE_DURATION = jxta_RdvConfig_get_lease_duration(rdvConfig);
     }
-
     if (-1 != jxta_RdvConfig_get_max_clients(rdvConfig)) {
         self->MAX_CLIENTS = jxta_RdvConfig_get_max_clients(rdvConfig);
     }
-
-    JXTA_OBJECT_RELEASE(rdvConfig);
+    if (-1 == jxta_RdvConfig_get_connect_cycle_normal(self->rdvConfig)) {
+        jxta_RdvConfig_set_connect_cycle_normal(self->rdvConfig, PERIODIC_THREAD_NAP_TIME_NORMAL);
+    }
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Inited for %s\n", self->groupiduniq);
 
@@ -734,6 +719,7 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
         }
     }
 
+    res = JXTA_SUCCESS;
     /* reduce the TTL */
     useTTL = LimitedRangeRdvMessage_get_TTL(header) - 1;
 
@@ -1013,7 +999,8 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
 
     transport = jxta_endpoint_service_lookup_transport(provider->service->endpoint, "jxta");
     if (transport != NULL) {
-        res = apr_thread_cond_timedwait(self->periodicCond, self->periodicMutex, PERIODIC_THREAD_NAP_TIME_NORMAL);
+        res = apr_thread_cond_timedwait(self->periodicCond, self->periodicMutex,
+                                        jxta_RdvConfig_get_connect_cycle_normal(self->rdvConfig) * 1000);
         JXTA_OBJECT_RELEASE(transport);
     }
 
@@ -1045,11 +1032,8 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
                 JString *uniq;
 
                 jxta_id_get_uniqueportion(jxta_peer_get_peerid_priv((Jxta_peer *) peer), &uniq);
-
                 res = jxta_hashtable_del(self->clients, jstring_get_string(uniq), jstring_length(uniq) + 1, NULL);
-
                 JXTA_OBJECT_RELEASE(uniq);
-
                 jxta_rdv_generate_event((_jxta_rdv_service *)
                                         jxta_rdv_service_provider_get_service_priv((_jxta_rdv_service_provider *) self),
                                         JXTA_RDV_CLIENT_DISCONNECTED, jxta_peer_get_peerid_priv((Jxta_peer *) peer));
@@ -1059,14 +1043,14 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
         }
 
         JXTA_OBJECT_RELEASE(clients);
-
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Rendezvous Server periodic thread [TID %p] RUN DONE.\n",
                         apr_os_thread_current());
 
         /*
          * Wait for a while until the next iteration.
          */
-        res = apr_thread_cond_timedwait(self->periodicCond, self->periodicMutex, PERIODIC_THREAD_NAP_TIME_NORMAL);
+        res = apr_thread_cond_timedwait(self->periodicCond, self->periodicMutex,
+                                        jxta_RdvConfig_get_connect_cycle_normal(self->rdvConfig) * 1000);
     }
 
     apr_thread_mutex_unlock(self->periodicMutex);
@@ -1238,7 +1222,7 @@ static void JXTA_STDCALL walker_listener(Jxta_object * obj, void *me)
         JXTA_OBJECT_RELEASE(bytes);
         realDest = jxta_endpoint_address_new_2("jxta", _self->groupiduniq, svc_name, jstring_get_string(string));
         JXTA_OBJECT_RELEASE(string);
-        free(svc_name);
+        free((void *) svc_name);
     } else {
         realDest = jxta_endpoint_address_new_2("jxta", _self->groupiduniq, LimitedRangeRdvMessage_get_SrcSvcName(header),
                                                LimitedRangeRdvMessage_get_SrcSvcParams(header));
@@ -1258,12 +1242,5 @@ static void JXTA_STDCALL walker_listener(Jxta_object * obj, void *me)
         JXTA_OBJECT_RELEASE(header);
     }
 }
-
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
 
 /* vim: set ts=4 sw=4  tw=130 et: */

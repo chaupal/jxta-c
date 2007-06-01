@@ -145,6 +145,8 @@
                   src='..\test\jxta_server_tunnel\Release\jxta_server_tunnel.exe' Vital='yes' />
                 <File Id='jxta_client_tunnel' Name='cltunnel.exe' LongName='jxta_client_tunnel.exe' DiskId='1'
                   src='..\test\jxta_client_tunnel\Release\jxta_client_tunnel.exe' Vital='yes' />
+                <File Id='jxta_discovery_publication_test' Name='discpubl.exe' LongName='jxta_discovery_publication_test.exe' DiskId='1'
+                  src='..\test\jxta_discovery_publication_test\Release\jxta_discovery_publication_test.exe' Vital='yes' />
               </Component>
               
             </Directory>
@@ -570,8 +572,6 @@
 			        src='..\..\src\jpr\jpr_excep_proto.h' Vital='yes' />
 				  <File Id='jpr_setjmp.h' Name='setjmp.h' LongName='jpr_setjmp.h' DiskId='1'
 			        src='..\..\src\jpr\jpr_setjmp.h' Vital='yes' />
-				  <File Id='jpr_threadonce.h' Name='thread.h' LongName='jpr_threadonce.h' DiskId='1'
-			        src='..\..\src\jpr\jpr_threadonce.h' Vital='yes' />
 				  <File Id='jpr_types.h' Name='types.h' LongName='jpr_types.h' DiskId='1'
 			        src='..\..\src\jpr\jpr_types.h' Vital='yes' />
 			      <File Id='jpr_priv.h' Name='jpr_priv.h' LongName='jpr_priv.h' DiskId='1'

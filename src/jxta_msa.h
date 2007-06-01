@@ -50,15 +50,15 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_msa.h,v 1.6 2005/09/21 21:16:48 slowhog Exp $
+ * $Id: jxta_msa.h,v 1.7 2005/12/23 21:33:05 mmx2005 Exp $
  */
 
 
-#ifndef __MSA_H__
-#define __MSA_H__
+#ifndef __jxta_MSA_H__
+#define __jxta_MSA_H__
 
 #include "jxta_advertisement.h"
-
+#include "jxta_pipe_adv.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,54 +67,53 @@ extern "C" {
 #endif
 #endif
 
-typedef struct _MSA MSA;
+typedef struct _jxta_MSA _jxta_MSA;
+typedef struct _jxta_MSA Jxta_MSA;
 
 /*
  * Transition to new type naming style.
  */
-typedef struct _MSA Jxta_MSA;
 
-JXTA_DECLARE(MSA *) MSA_new(void);
-JXTA_DECLARE(void) MSA_set_handlers(MSA *, XML_Parser, void *);
-void MSA_delete(MSA *);
-JXTA_DECLARE(Jxta_status) MSA_get_xml(MSA *, JString **);
-JXTA_DECLARE(void) MSA_parse_charbuffer(MSA *, const char *, int len);
-JXTA_DECLARE(void) MSA_parse_file(MSA *, FILE * stream);
+JXTA_DECLARE(Jxta_MSA *) jxta_MSA_new(void);
 
-JXTA_DECLARE(char *) MSA_get_MSA(MSA *);
-JXTA_DECLARE(void) MSA_set_MSA(MSA *, char *);
+JXTA_DECLARE(Jxta_status) jxta_MSA_get_xml(Jxta_MSA *, JString **);
+JXTA_DECLARE(void) jxta_MSA_parse_charbuffer(Jxta_MSA *, const char *, int len);
+JXTA_DECLARE(void) jxta_MSA_parse_file(Jxta_MSA *, FILE * stream);
 
-JXTA_DECLARE(char *) MSA_get_MSID(MSA *);
-JXTA_DECLARE(void) MSA_set_MSID(MSA *, char *);
+JXTA_DECLARE(char *) jxta_MSA_get_MSA(Jxta_MSA *);
+JXTA_DECLARE(void) jxta_MSA_set_MSA(Jxta_MSA *, char *);
 
-JXTA_DECLARE(char *) MSA_get_Name(MSA *);
-JXTA_DECLARE(void) MSA_set_Name(MSA *, char *);
+JXTA_DECLARE(Jxta_id *) jxta_MSA_get_MSID(Jxta_MSA *);
+JXTA_DECLARE(void) jxta_MSA_set_MSID(Jxta_MSA *, Jxta_id *);
 
-JXTA_DECLARE(char *) MSA_get_Crtr(MSA *);
-JXTA_DECLARE(void) MSA_set_Crtr(MSA *, char *);
+JXTA_DECLARE(JString *) jxta_MSA_get_Name(Jxta_MSA *);
+JXTA_DECLARE(void) jxta_MSA_set_Name(Jxta_MSA *, JString *);
 
-JXTA_DECLARE(char *) MSA_get_SURI(MSA *);
-JXTA_DECLARE(void) MSA_set_SURI(MSA *, char *);
+JXTA_DECLARE(JString *) jxta_MSA_get_Crtr(Jxta_MSA *);
+JXTA_DECLARE(void) jxta_MSA_set_Crtr(Jxta_MSA *, JString *);
 
-JXTA_DECLARE(char *) MSA_get_Vers(MSA *);
-JXTA_DECLARE(void) MSA_set_Vers(MSA *, char *);
+JXTA_DECLARE(JString *) jxta_MSA_get_SURI(Jxta_MSA *);
+JXTA_DECLARE(void) jxta_MSA_set_SURI(Jxta_MSA *, JString *);
 
-JXTA_DECLARE(char *) MSA_get_Desc(MSA *);
-JXTA_DECLARE(void) MSA_set_Desc(MSA *, char *);
+JXTA_DECLARE(JString *) jxta_MSA_get_Vers(Jxta_MSA *);
+JXTA_DECLARE(void) jxta_MSA_set_Vers(Jxta_MSA *, JString *);
 
-JXTA_DECLARE(char *) MSA_get_Parm(MSA *);
-JXTA_DECLARE(void) MSA_set_Parm(MSA *, char *);
+JXTA_DECLARE(JString *) jxta_MSA_get_Desc(Jxta_MSA *);
+JXTA_DECLARE(void) jxta_MSA_set_Desc(Jxta_MSA *, JString *);
 
-JXTA_DECLARE(char *) MSA_get_PipeAdvertisement(MSA *);
-JXTA_DECLARE(void) MSA_set_PipeAdvertisement(MSA *, char *);
+JXTA_DECLARE(JString *) jxta_MSA_get_Parm(Jxta_MSA *);
+JXTA_DECLARE(void) jxta_MSA_set_Parm(Jxta_MSA *, JString *);
 
-JXTA_DECLARE(char *) MSA_get_Proxy(MSA *);
-JXTA_DECLARE(void) MSA_set_Proxy(MSA *, char *);
+JXTA_DECLARE(Jxta_pipe_adv *) jxta_MSA_get_PipeAdvertisement(Jxta_MSA *);
+JXTA_DECLARE(void) jxta_MSA_set_PipeAdvertisement(Jxta_MSA *, Jxta_pipe_adv *);
 
-JXTA_DECLARE(char *) MSA_get_Auth(MSA *);
-JXTA_DECLARE(void) MSA_set_Auth(MSA *, char *);
+JXTA_DECLARE(JString *) jxta_MSA_get_Proxy(Jxta_MSA *);
+JXTA_DECLARE(void) jxta_MSA_set_Proxy(Jxta_MSA *, JString *);
 
-JXTA_DECLARE(Jxta_vector *) MSA_get_indexes(Jxta_advertisement *);
+JXTA_DECLARE(JString *) jxta_MSA_get_Auth(Jxta_MSA *);
+JXTA_DECLARE(void) jxta_MSA_set_Auth(Jxta_MSA *, JString *);
+
+JXTA_DECLARE(Jxta_vector *) jxta_MSA_get_indexes(Jxta_advertisement *);
 
 #ifdef __cplusplus
 #if 0
@@ -123,6 +122,6 @@ JXTA_DECLARE(Jxta_vector *) MSA_get_indexes(Jxta_advertisement *);
 }
 #endif
 
-#endif /* __MSA_H__  */
+#endif /* __jxta_MSA_H__  */
 
 /* vi: set ts=4 sw=4 tw=130 et: */

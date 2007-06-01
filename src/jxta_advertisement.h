@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_advertisement.h,v 1.27 2005/10/05 03:14:52 exocetrick Exp $
+ * $Id: jxta_advertisement.h,v 1.28 2005/12/23 21:44:43 mmx2005 Exp $
  */
 
 /**
@@ -152,7 +152,6 @@ typedef struct _jxta_attribute Jxta_attribute;
 typedef void (*FreeFunc) (void *userdata);
 #endif
 
-
 #ifndef  JXTA_ADVERTISEMENT_GET_XML_FUNC
 #define  JXTA_ADVERTISEMENT_GET_XML_FUNC
 typedef Jxta_status(JXTA_STDCALL * JxtaAdvertisementGetXMLFunc) (Jxta_advertisement *, JString **);
@@ -179,11 +178,11 @@ typedef Jxta_vector *(JXTA_STDCALL * JxtaAdvertisementGetIndexFunc) (Jxta_advert
  * having any one of them gets any of the others.
  *
  * For each tag recognized there has to be handler.
- * nodeparse and stringparse are the same thing.
+ * nodeparse and string parse are the same thing.
  */
 
 /*
- * Change of bahaviour:
+ * Change of behavior:
  *
  * The handler is now called twice: once when the start tag is seen, and once
  * when the end-tag is seen. If this handler switches to a subdocument type
@@ -195,15 +194,15 @@ typedef Jxta_vector *(JXTA_STDCALL * JxtaAdvertisementGetIndexFunc) (Jxta_advert
  * text contained in the element as one string, including separators. If the
  * element was empty, a string of exactly one space is passed.
  *
- * The reason behind this behaviour is backward compatibility:
+ * The reason behind this behavior is backward compatibility:
  * Before this change was introduced, handlers could be called any number
  * of times with or without any data and without enough info to discriminate
  * tag boundaries.
  *
  * All legacy code had to (incorrectly) assume that data was either
  * zero-length after stripping or complete, or could only deal (correctly)
- * with fully cumulative data (there could be only one occurence of a given
- * tag). With this change of behaviour, all this code becomes or remains
+ * with fully cumulative data (there could be only one occurrence of a given
+ * tag). With this change of behavior, all this code becomes or remains
  * correct without modification. Code (so far broken) that could have to
  * deal with empty tags that could repeat, should be fixed as follows:
  *
@@ -241,7 +240,6 @@ typedef struct _kwdtab {
     char *(JXTA_STDCALL * get_parm) (Jxta_advertisement *, const char *);
 } Kwdtab;
 
-
 struct _jxta_advertisement {
     JXTA_OBJECT_HANDLE;
 
@@ -270,7 +268,6 @@ struct _jxta_advertisement {
     Jxta_vector *adv_list;
     Jxta_advertisement_node_handler *handler_stk;
     XML_Parser parser;
-
 };
 
 struct _jxta_index {
@@ -281,27 +278,25 @@ struct _jxta_index {
     Jxta_object *range;
 };
 
-
 /** Private. */
 
 void jxta_advertisement_handle_chardata(void *userdata, const XML_Char * cd, int len);
-
 void jxta_advertisement_start_element(void *userdata, const char *ename, const char **atts);
-
 void jxta_advertisement_end_element(void *userdata, const char *name);
-
 
 /**
 *   
 *
-*   @deprecated This is being deprecated in favour of the style used by other jxta objects. @see jxta_advertisement_construct()
+*   @deprecated This is being deprecated in favor of the style used by other jxta objects. @see jxta_advertisement_construct()
 *   and @see jxta_advertisement_destruct()
 **/
 JXTA_DECLARE(void) jxta_advertisement_initialize(Jxta_advertisement * ad,
                                                  const char *document_name,
                                                  const Kwdtab * dispatch_table,
                                                  JxtaAdvertisementGetXMLFunc,
-                                                 JxtaAdvertisementGetIDFunc, JxtaAdvertisementGetIndexFunc, FreeFunc deleter);
+                                                 JxtaAdvertisementGetIDFunc, 
+                                                 JxtaAdvertisementGetIndexFunc, 
+                                                 FreeFunc deleter);
 
 JXTA_DECLARE(Jxta_advertisement *) jxta_advertisement_construct(Jxta_advertisement * ad,
                                                                 const char *document_name,
@@ -318,9 +313,7 @@ JXTA_DECLARE(void) jxta_advertisement_destruct(Jxta_advertisement * ad);
 *   @deprecated This should be private
 **/
 void jxta_advertisement_delete(Jxta_advertisement * ad);
-
 JXTA_DECLARE(void) jxta_advertisement_set_handlers(Jxta_advertisement * ad, XML_Parser parser, Jxta_advertisement * parent);
-
 JXTA_DECLARE(void) jxta_advertisement_register_local_handler(Jxta_advertisement * ad, const char *name, const void *value);
 
 /** 
@@ -330,7 +323,6 @@ JXTA_DECLARE(void) jxta_advertisement_register_local_handler(Jxta_advertisement 
  ** @param idx - array of element/attribute pairs to be indexed.
  */
 JXTA_DECLARE(Jxta_vector *) jxta_advertisement_return_indexes(const char *idx[]);
-
 
 /** Public. */
 
@@ -399,7 +391,6 @@ JXTA_DECLARE(Jxta_vector *) jxta_advertisement_get_indexes(Jxta_advertisement * 
  */
 JXTA_DECLARE(const char *) jxta_advertisement_get_document_name(Jxta_advertisement * ad);
 
-
 /** Registers callback for a printing function.
  * 
  * @param Jxta_advertisement * ad
@@ -421,7 +412,6 @@ JXTA_DECLARE(void) jxta_advertisement_set_printer(Jxta_advertisement * ad, Print
  * @warning Returns a copy that must be freed.
  */
 JXTA_DECLARE(char *) jxta_advertisement_get_string(Jxta_advertisement * ad, Jxta_index * ji);
-
 
 /** Messages saved in a buffer can be parsed later using 
  * this function.
@@ -465,7 +455,6 @@ JXTA_DECLARE(const char **) jxta_advertisement_get_tagnames(Jxta_advertisement *
  * @return nothing
  */
 JXTA_DECLARE(void) jxta_advertisement_register_global_handler(const char *key, const JxtaAdvertisementNewFunc ad_new_function);
-
 
 /**
  * 

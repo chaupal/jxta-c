@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_walk_msg.c,v 1.9 2005/11/23 22:09:03 exocetrick Exp $
+ * $Id: jxta_walk_msg.c,v 1.10 2006/02/15 01:09:51 slowhog Exp $
  */
 
 static const char *__log_cat = "WalkMsg";
@@ -66,15 +66,10 @@ static const char *__log_cat = "WalkMsg";
 
 #include "jxta_walk_msg.h"
 
-#ifdef __cplusplus
-extern "C" {
-#if 0
-}
-#endif
-#endif
-    /** Each of these corresponds to a tag in the
-     * xml ad.
-     */ enum tokentype {
+/** Each of these corresponds to a tag in the
+* xml ad.
+*/ 
+enum tokentype {
     Null_,
     LimitedRangeRdvMessage_,
     TTL_,
@@ -84,11 +79,11 @@ extern "C" {
     SrcSvcParams_
 };
 
-    /** This is the representation of the
-     * actual ad in the code.  It should
-     * stay opaque to the programmer, and be 
-     * accessed through the get/set API.
-     */
+/** This is the representation of the
+* actual ad in the code.  It should
+* stay opaque to the programmer, and be 
+* accessed through the get/set API.
+*/
 struct _LimitedRangeRdvMessage {
     Jxta_advertisement jxta_advertisement;
 
@@ -101,10 +96,10 @@ struct _LimitedRangeRdvMessage {
     JString *svc_params;
 };
 
-    /** Handler functions.  Each of these is responsible for
-     * dealing with all of the character data associated with the 
-     * tag name.
-     */
+/** Handler functions.  Each of these is responsible for
+* dealing with all of the character data associated with the 
+* tag name.
+*/
 
 static void handleLimitedRangeRdvMessage(void *userdata, const XML_Char * cd, int len)
 {
@@ -365,9 +360,4 @@ JXTA_DECLARE(Jxta_status) LimitedRangeRdvMessage_parse_file(LimitedRangeRdvMessa
     return jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
 
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
+/* vim: set ts=4 sw=4 et tw=130: */

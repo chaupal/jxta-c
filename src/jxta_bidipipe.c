@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bidipipe.c,v 1.17 2005/11/16 20:10:39 lankes Exp $
+ * $Id: jxta_bidipipe.c,v 1.19 2006/02/15 01:09:38 slowhog Exp $
  */
 
 #include <stdlib.h>
@@ -58,11 +58,9 @@
 
 #include "jxta_log.h"
 #include "jxta_bidipipe.h"
-#include <apr_thread_cond.h>
-#include <apr_errno.h>
 
 #include "jxta_peergroup.h"
-#include "jpr/jpr_apr_wrapper.h"
+#include "jxta_apr.h"
 
 #define JXTA_BIDIPIPE_LOG "JxtaBidiPipe"
 
@@ -718,7 +716,7 @@ JXTA_DECLARE(Jxta_status) jxta_bidipipe_connect(Jxta_bidipipe * self, Jxta_pipe_
         timeout = 1000;
     jpr_thread_mutex_lock(self->cond_mutex);
     jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_DEBUG, "Waiting confirmation of bidipipe connection ...\n");
-    rv = apr_thread_cond_timedwait(self->cond, self->cond_mutex, now);
+    rv = apr_thread_cond_timedwait(self->cond, self->cond_mutex, timeout);
     jpr_thread_mutex_unlock(self->cond_mutex);
 
     if (APR_TIMEUP == rv)

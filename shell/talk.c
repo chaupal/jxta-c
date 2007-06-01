@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: talk.c,v 1.22 2005/11/24 04:17:50 mmx2005 Exp $
+ * $Id: talk.c,v 1.24 2006/03/01 08:18:06 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -83,8 +83,18 @@ static const char *SENDERGROUPNAME = "GrpName";
 static const char *SENDERMESSAGE = "JxtaTalkSenderMessage";
 static const char *MYGROUPNAME = "NetPeerGroup";
 
-#define DEFAULT_TIMEOUT (1 * 60 * 1000 * 1000)
-#define TALK_ADVERTISEMENT_LIFETIME (Jxta_expiration_time) (24L* 60L * 60L * 1000L)
+static const Jxta_expiration_time DEFAULT_TIMEOUT = 60L * 1000L * 1000L;
+
+/**
+*   Publish for a fortnight
+**/
+static const Jxta_expiration_time TALK_ADVERTISEMENT_LIFETIME = 14L * 24L * 60L * 60L * 1000L;
+
+/**
+*   Cache for a day.
+**/
+static const Jxta_expiration_time TALK_ADVERTISEMENT_EXPIRATION = 24L * 60L * 60L * 1000L;
+
 static Jxta_PG *group;
 static JxtaShellEnvironment *environment;
 static Jxta_discovery_service *discovery = NULL;
@@ -93,11 +103,18 @@ static JString *peerName = NULL;
 
 static Jxta_hashtable *listeners = NULL;
 
+static void talk_process_input(Jxta_object * app, JString * inputLine);
+
+static void talk_start(Jxta_object * appl, int argv, char const *const *arg);
+
+static void talk_print_help(Jxta_object * app);
+
 static void JXTA_STDCALL message_listener(Jxta_object * obj, void *arg);
 static void login_user(const char *userName);
 static void create_user(const char *userName, Jxta_boolean propagate);
 static void connect_to_user(const char *userName);
 static void process_user_input(Jxta_outputpipe * pipe, const char *userName);
+static void send_message(Jxta_outputpipe * op, const char *userMessage);
 
 JxtaShellApplication *talk_new(Jxta_PG * pg,
                                Jxta_listener * standout,
@@ -127,14 +144,14 @@ JxtaShellApplication *talk_new(Jxta_PG * pg,
 }
 
 
-void talk_process_input(Jxta_object * appl, JString * inputLine)
+static void talk_process_input(Jxta_object * appl, JString * inputLine)
 {
     JxtaShellApplication *app = (JxtaShellApplication *) appl;
     JxtaShellApplication_terminate(app);
 }
 
 
-void talk_start(Jxta_object * appl, int argv, const char **arg)
+static void talk_start(Jxta_object * appl, int argv, char const *const *arg)
 {
     enum operations { help, newuser, login, talk };
 
@@ -178,6 +195,7 @@ void talk_start(Jxta_object * appl, int argv, const char **arg)
             break;
 
         default:
+            operation = help;
             error = 1;
             break;
         }
@@ -221,7 +239,7 @@ void talk_start(Jxta_object * appl, int argv, const char **arg)
     JXTA_OBJECT_RELEASE(listeners);
 }
 
-void talk_print_help(Jxta_object * appl)
+static void talk_print_help(Jxta_object * appl)
 {
     JxtaShellApplication *app = (JxtaShellApplication *) appl;
     JString *inputLine = jstring_new_2("talk - talk to another JXTA user \n\n");
@@ -253,7 +271,8 @@ static Jxta_pipe_adv *get_user_adv(const char *userName, Jxta_time timeout)
 
         jxta_PG_get_GID(group, &gid);
         if (JXTA_SUCCESS !=
-            jxta_id_pipeid_new_2(&pipeid, gid, "\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1", 16)) {
+            jxta_id_pipeid_new_2(&pipeid, gid,
+                                 (unsigned char *) "\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1\xD1", 16)) {
             JXTA_OBJECT_RELEASE(gid);
             printf("Fail to construct pipe ID for IP2PGRP.\n");
             return NULL;
@@ -359,40 +378,36 @@ static void login_user(const char *userName)
     adv = get_user_adv(userName, DEFAULT_TIMEOUT);
 
     if (adv != NULL) {
-    /**
-     ** Create a listener for the myJXTA messages
-     **/
+      /*  Create a listener for the myJXTA messages */
         listener = jxta_listener_new((Jxta_listener_func) message_listener, NULL, 1, 200);
         if (listener == NULL) {
             printf("Cannot create listener\n");
             return;
         }
 
-    /**
-     ** Get the pipe
-     **/
+        jxta_listener_start(listener);
+
+        /* Get the pipe */
         res = jxta_pipe_service_timed_accept(pipe_service, adv, 1000, &pipe);
 
         if (res != JXTA_SUCCESS) {
-            printf("Cannot get pipe reason= %d\n", (int) res);
+            printf("Cannot get pipe : %ld\n", res);
             return;
         }
 
         res = jxta_pipe_get_inputpipe(pipe, &ip);
 
         if (res != JXTA_SUCCESS) {
-            printf("Cannot get inputpipe\n");
+            printf("Cannot get inputpipe : %ld\n", res);
             return;
         }
 
         res = jxta_inputpipe_add_listener(ip, listener);
 
         if (res != JXTA_SUCCESS) {
-            printf("Cannot add listener\n");
+            printf("Cannot add listener : %ld\n", res);
             return;
         }
-
-        jxta_listener_start(listener);
 
         JXTA_OBJECT_RELEASE(adv);
     } else {
@@ -414,10 +429,12 @@ static void create_user(const char *userName, Jxta_boolean propagate)
     jxta_PG_get_GID(group, &gid);
 
     jxta_id_pipeid_new_1(&pipeid, gid);
+    JXTA_OBJECT_RELEASE(gid);
 
     JXTA_OBJECT_CHECK_VALID(pipeid);
 
     jxta_id_to_jstring(pipeid, &tmpString);
+    JXTA_OBJECT_RELEASE(pipeid);
 
     JXTA_OBJECT_CHECK_VALID(tmpString);
 
@@ -429,20 +446,21 @@ static void create_user(const char *userName, Jxta_boolean propagate)
     free(talkUserName);
     JXTA_OBJECT_RELEASE(tmpString);
 
-    res = discovery_service_publish(discovery, (Jxta_advertisement *) adv, 
-                                    DISC_ADV, TALK_ADVERTISEMENT_LIFETIME, TALK_ADVERTISEMENT_LIFETIME);
+    res = discovery_service_publish(discovery, (Jxta_advertisement *) adv,
+                                    DISC_ADV, TALK_ADVERTISEMENT_LIFETIME, TALK_ADVERTISEMENT_EXPIRATION);
+                                    
     JXTA_OBJECT_RELEASE(adv);
 
     if (res != JXTA_SUCCESS) {
-        printf("publish failed\n");
+        printf("publish failed.\n");
+    } else {
+        /*
+         * wait for the SRDI index to be published
+         */
+        printf("(wait 20 sec for RDV SRDI indexing)...\n");
+        apr_sleep(20 * 1000 * 1000);
+        printf("done.\n");
     }
-
-    /*
-     * wait for the SRDI index to be published
-     */
-    printf("(wait 20 sec for RDV SRDI indexing).\n");
-    apr_sleep(20 * 1000 * 1000);
-    printf("done.\n");
 }
 
 static void connect_to_user(const char *userName)
@@ -479,7 +497,7 @@ static void connect_to_user(const char *userName)
 
 }
 
-static void send_message(Jxta_outputpipe * op, const char *userName, const char *userMessage)
+static void send_message(Jxta_outputpipe * op, const char *userMessage)
 {
     Jxta_message *msg = jxta_message_new();
     Jxta_message_element *el = NULL;
@@ -600,7 +618,7 @@ static char *get_user_string(void)
 
     if (fgets(pt, 8192, stdin) != NULL) {
         if (strlen(pt) > 1) {
-            pt[strlen(pt) - 1] = 0; /* Strip off last /n */
+            pt[strlen(pt) - 1] = 0;     /* Strip off last /n */
             return pt;
         }
     }
@@ -624,7 +642,7 @@ static void process_user_input(Jxta_outputpipe * pipe, const char *userName)
                 free(userMessage);
                 break;
             }
-            send_message(pipe, userName, userMessage);
+            send_message(pipe, userMessage);
             free(userMessage);
         }
     }

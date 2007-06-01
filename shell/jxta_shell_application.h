@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_application.h,v 1.3 2005/11/17 04:21:53 slowhog Exp $
+ * $Id: jxta_shell_application.h,v 1.4 2006/01/30 01:14:17 bondolo Exp $
  */
 #ifndef __JXTA_SHELL_APPLICATION_H__
 #define  __JXTA_SHELL_APPLICATION_H__
@@ -83,10 +83,10 @@ typedef void (*shell_application_stdin) (Jxta_object * child, JString * inputLin
 /**
  * Prototype of the user function that  starts the actual application
  * @param child the object that we want to start
- * @param argv the number of arguments to pass
- * @param arg the list of arguments
+ * @param argc The number of arguments to passed
+ * @param argv The list of arguments
  **/
-typedef void (*shell_application_start) (Jxta_object * child, int argv, char **arg);
+typedef void (*shell_application_start) (Jxta_object * child, int argc, char const * const * argv );
 
 /**
  * Prototype of the user function that   prints the help information

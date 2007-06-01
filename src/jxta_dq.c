@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dq.c,v 1.44 2005/11/22 22:00:57 mmx2005 Exp $
+ * $Id: jxta_dq.c,v 1.45 2006/02/18 00:32:51 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -65,15 +65,10 @@
 #include "jxta_discovery_service.h"
 #include "jxta_apr.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-}
-#endif
 /** Each of these corresponds to a tag in the
  * xml ad.
- */ enum tokentype {
+ */
+enum tokentype {
     Null_,
     Jxta_DiscoveryQuery_,
     Type_,
@@ -399,10 +394,8 @@ JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new(void)
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
                                   "jxta:DiscoveryQuery",
                                   Jxta_DiscoveryQuery_tags,
-                                  (JxtaAdvertisementGetXMLFunc) jxta_discovery_query_get_xml, 
-                                  NULL, 
-                                  NULL, 
-                                  (FreeFunc) jxta_discovery_query_free);
+                                  (JxtaAdvertisementGetXMLFunc) jxta_discovery_query_get_xml,
+                                  NULL, NULL, (FreeFunc) jxta_discovery_query_free);
 
     ad->Type = 0;
     ad->Threshold = 0;
@@ -430,10 +423,8 @@ JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new_1(short type, const
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
                                   "jxta:DiscoveryQuery",
                                   Jxta_DiscoveryQuery_tags,
-                                  (JxtaAdvertisementGetXMLFunc)jxta_discovery_query_get_xml, 
-                                  NULL, 
-                                  NULL, 
-                                  (FreeFunc) jxta_discovery_query_free);
+                                  (JxtaAdvertisementGetXMLFunc) jxta_discovery_query_get_xml,
+                                  NULL, NULL, (FreeFunc) jxta_discovery_query_free);
 
     ad->Type = type;
     ad->Threshold = threshold;
@@ -455,10 +446,8 @@ JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new_2(const char *query
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
                                   "jxta:DiscoveryQuery",
                                   Jxta_DiscoveryQuery_tags,
-                                  (JxtaAdvertisementGetXMLFunc)jxta_discovery_query_get_xml, 
-                                  NULL, 
-                                  NULL, 
-                                  (FreeFunc) jxta_discovery_query_free);
+                                  (JxtaAdvertisementGetXMLFunc) jxta_discovery_query_get_xml,
+                                  NULL, NULL, (FreeFunc) jxta_discovery_query_free);
 
     ad->Type = DISC_ADV;
     ad->Threshold = threshold;
@@ -506,12 +495,5 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_query_parse_file(Jxta_DiscoveryQuery * 
     /* xxx when the above returns a status we should return it, forr now return success */
     return JXTA_SUCCESS;
 }
-
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
 
 /* vi: set ts=4 sw=4 tw=130 et: */

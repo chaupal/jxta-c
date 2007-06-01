@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http_client.h,v 1.9 2005/09/21 21:16:51 slowhog Exp $
+ * $Id: jxta_transport_http_client.h,v 1.10 2006/02/15 01:09:49 slowhog Exp $
  */
 
 #ifndef __HTTP_CLIENT_H__
@@ -61,10 +61,8 @@
 #include <string.h> /* for strstr */
 #include <stdlib.h> /* for atoi */
 
-#include <apr.h>
-#include <apr_network_io.h>
 #include <apr_uri.h>
-#include <apr_strings.h>    /* for apr_psprintf */
+#include "jxta_apr.h"
 
 #include "jxta_types.h"
 

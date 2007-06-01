@@ -50,48 +50,20 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_xml_util.c,v 1.23 2005/09/14 05:00:09 slowhog Exp $
+ * $Id: jxta_xml_util.c,v 1.24 2006/02/15 01:09:52 slowhog Exp $
  */
 
 #include <stdlib.h>
+#include <ctype.h>
 
-#include <apr_general.h>
-#include <apr_strings.h>
-
+#include "jxta_apr.h"
+#include "jxta_types.h"
 #include "jxta_debug.h"
 #include "jxta_errno.h"
 #include "jxta_object.h"
 #include "jxta_xml_util.h"
 
 #define DEBUG 0
-
-/* Ok, here is the deal: apr is not dealing with 
- * arpa/ and netinet/ very well.  At some point 
- * it probably will.  In the meantime, this stuff
- * will have to be manually defined the way we want it.
- * It will likely be a full days work to sort it out
- * among linux, solaris, win32, bsd etc.
- */
-#ifndef WIN32
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#else
-#include <winsock2.h>
-#endif
-
-#include <ctype.h>
-#include <apr_want.h>
-#include <apr_network_io.h>
-
-#include "jxta_types.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-};
-#endif
-
 
 /** Single call to extract an ip address and port number from 
  *  a character buffer. 
@@ -492,12 +464,5 @@ JXTA_DECLARE(Jxta_status) jxta_xml_util_encode_jstring(JString * src, JString **
 
     return JXTA_SUCCESS;
 }
-
-#if 0
-{
-#endif
-#ifdef __cplusplus
-}
-#endif
 
 /* vim: set ts=4 sw=4 et tw=130: */

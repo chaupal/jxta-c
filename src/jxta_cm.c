@@ -50,15 +50,15 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cm.c,v 1.110 2005/12/15 23:26:59 slowhog Exp $
+ * $Id: jxta_cm.c,v 1.114 2006/03/11 02:38:17 slowhog Exp $
  */
 
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "jxta_apr.h"
 #include <apu.h>
-#include <apr_pools.h>
 #include <apr_dbd.h>
 
 #ifdef WIN32
@@ -69,11 +69,11 @@
 
 /* #include <apr_dbm.h> */
 #include <sqlite3.h>
-#include "jxta_apr.h"
 
 #include "jxta_errno.h"
 #include "jxta_debug.h"
 #include "jxta_object.h"
+#include "jxta_object_type.h"
 #include "jxta_hashtable.h"
 #include "jxta_advertisement.h"
 #include "jxta_discovery_service.h"
@@ -136,14 +136,14 @@ typedef struct {
 
 
 struct _jxta_cm {
-    JXTA_OBJECT_HANDLE;
+    Extends(Jxta_object);
     char *root;
     apr_thread_mutex_t *mutex;
     apr_pool_t *pool;
     Jxta_hashtable *folders;
     Dummy_object *dummy_object;
     Jxta_hashtable *srdi_delta;
-    Jxta_boolean record_delta;
+    volatile Jxta_boolean record_delta;
     Jxta_PID *localPeerId;
     GroupDB *groupDB;
 };
@@ -380,6 +380,7 @@ JXTA_DECLARE(Jxta_cm *) jxta_cm_new(const char *home_directory, Jxta_id * group_
     }
 
     JXTA_OBJECT_INIT(self, cm_free, 0);
+    self->thisType = "Jxta_cm";
     jxta_id_get_uniqueportion(group_id, &group_id_s);
 
     /* If there is an apr api for this, maybe we should use it */
@@ -588,18 +589,14 @@ JXTA_DECLARE(Jxta_status) jxta_cm_remove_advertisement(Jxta_cm * self, const cha
     JString *where = jstring_new_0();
     JString *jKey = jstring_new_2(primary_key);
 
-    apr_thread_mutex_lock(self->mutex);
-
     status = jxta_hashtable_get(self->folders, folder_name, (size_t) strlen(folder_name), JXTA_OBJECT_PPTR(&folder));
 
     if (status != JXTA_SUCCESS) {
-        apr_thread_mutex_unlock(self->mutex);
         JXTA_OBJECT_RELEASE(where);
         JXTA_OBJECT_RELEASE(jKey);
         return status;
     }
 
-    apr_thread_mutex_unlock(self->mutex);
     jstring_append_2(where, SQL_WHERE);
     jstring_append_2(where, CM_COL_AdvId);
     jstring_append_2(where, SQL_EQUAL);
@@ -902,16 +899,11 @@ JXTA_DECLARE(Jxta_status)
     name = jxta_advertisement_get_document_name(adv);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "%s primary key: %s\n", name, primary_key);
 
-    apr_thread_mutex_lock(self->mutex);
-
     status = jxta_hashtable_get(self->folders, folder_name, (size_t) strlen(folder_name), JXTA_OBJECT_PPTR(&folder));
     if (status != JXTA_SUCCESS) {
-        apr_thread_mutex_unlock(self->mutex);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Not saved 2\n");
         return status;
     }
-
-    apr_thread_mutex_unlock(self->mutex);
 
     status = cm_sql_save_advertisement(self->groupDB, primary_key, adv, timeOutForMe, timeOutForOthers);
     /*
@@ -1150,22 +1142,27 @@ static Jxta_object **cm_build_advertisements(GroupDB * groupDB, apr_pool_t * poo
     for (rv = apr_dbd_get_row(groupDB->driver, pool, res, &row, -1);
          rv == 0; rv = apr_dbd_get_row(groupDB->driver, pool, res, &row, -1)) {
         peerid = apr_dbd_get_entry(groupDB->driver, row, 0);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Peer ID: %s\n", peerid ? peerid : "NULL");
         if (peerid == NULL) {
             continue;
         }
         advid = apr_dbd_get_entry(groupDB->driver, row, 1);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Adv ID: %s\n", advid ? advid : "NULL");
         if (advid == NULL) {
             continue;
         }
         name = apr_dbd_get_entry(groupDB->driver, row, 2);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Name: %s\n", name ? name : "NULL");
         if (name == NULL) {
             continue;
         }
         value = apr_dbd_get_entry(groupDB->driver, row, 3);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Value: %s\n", value ? value : "NULL");
         if (value == NULL) {
             continue;
         }
         nameSpace = apr_dbd_get_entry(groupDB->driver, row, 4);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Namespace: %s\n", nameSpace ? nameSpace : "NULL");
         if (nameSpace == NULL) {
             continue;
         }
@@ -1181,7 +1178,8 @@ static Jxta_object **cm_build_advertisements(GroupDB * groupDB, apr_pool_t * poo
             jxta_proffer_adv_add_item(profferAdv, name, value);
         } else {
             *(results++) = (Jxta_object *) profferAdv;
-            *(results++) = (Jxta_object *) jstring_new_2(peerid);
+            *(results++) = (Jxta_object *) jstring_new_2(tmpPid);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Add proffer with peerid %s, advid %s\n", tmpPid, tmpid); 
             profferAdv = jxta_ProfferAdvertisement_new();
             jxta_proffer_adv_set_nameSpace(profferAdv, nameSpace);
             jxta_proffer_adv_set_advId(profferAdv, advid);
@@ -1191,8 +1189,11 @@ static Jxta_object **cm_build_advertisements(GroupDB * groupDB, apr_pool_t * poo
 
     }
     if (profferAdv != NULL) {
+        tmpPid = jxta_proffer_adv_get_peerId(profferAdv);
         *(results++) = (Jxta_object *) profferAdv;
-        *(results++) = (Jxta_object *) jstring_new_2(peerid);
+        *(results++) = (Jxta_object *) jstring_new_2(tmpPid);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Add proffer with peerid %s, advid %s\n", tmpPid, 
+                        jxta_proffer_adv_get_advId(profferAdv)); 
     }
     *(results) = NULL;
     return ret;
@@ -1587,15 +1588,10 @@ static Jxta_status cm_get_time(Jxta_cm * self, const char *folder_name, const ch
 
     jstring_append_2(jKey, primary_key);
 
-    apr_thread_mutex_lock(self->mutex);
-
     status = jxta_hashtable_get(self->folders, folder_name, (size_t) strlen(folder_name), JXTA_OBJECT_PPTR(&folder));
     if (status != JXTA_SUCCESS) {
-        apr_thread_mutex_unlock(self->mutex);
         return status;
     }
-
-    apr_thread_mutex_unlock(self->mutex);
 
     aprs = apr_pool_create(&pool, NULL);
     if (aprs != APR_SUCCESS) {
@@ -1665,16 +1661,12 @@ JXTA_DECLARE(Jxta_status) jxta_cm_remove_expired_records(Jxta_cm * self)
     Folder *folder;
     Jxta_status rt, latched_rt = JXTA_SUCCESS;
 
-    apr_thread_mutex_lock(self->mutex);
 
     all_folders = jxta_hashtable_values_get(self->folders);
     if (NULL == all_folders) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "%s -- Failed to retrieve folders", self->groupDB->id);
-        apr_thread_mutex_unlock(self->mutex);
         return JXTA_NOMEM;
     }
-    apr_thread_mutex_unlock(self->mutex);
-
     cnt = jxta_vector_size(all_folders);
     for (i = 0; i < cnt; i++) {
         jxta_vector_get_object_at(all_folders, JXTA_OBJECT_PPTR(&folder), i);
@@ -1833,15 +1825,12 @@ JXTA_DECLARE(Jxta_vector *) jxta_cm_get_srdi_delta_entries(Jxta_cm * self, JStri
 {
     Jxta_vector *delta_entries = NULL;
 
-    apr_thread_mutex_lock(self->mutex);
     if (jxta_hashtable_del(self->srdi_delta, jstring_get_string(folder_name), (size_t) strlen(jstring_get_string(folder_name))
                            , JXTA_OBJECT_PPTR(&delta_entries)) != JXTA_SUCCESS) {
-        apr_thread_mutex_unlock(self->mutex);
         if (NULL != delta_entries)
             JXTA_OBJECT_RELEASE(delta_entries);
         return NULL;
     }
-    apr_thread_mutex_unlock(self->mutex);
     return delta_entries;
 }
 
@@ -2433,7 +2422,7 @@ cm_sql_save_srdi(GroupDB * groupDB, JString * Handler, JString * Peerid, JString
             jNameSpace = jstring_clone(NameSpace);
         }
     } else {
-        jNameSpace = jstring_new_2("ADV");
+        jNameSpace = jstring_new_2("jxta:ADV");
     }
 
     if (Key != NULL) {

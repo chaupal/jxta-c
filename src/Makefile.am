@@ -7,20 +7,23 @@ AM_CFLAGS = -DTARGET_ARCH_OS_PLATFORM=\"$(target)\" -Wall -W -pedantic -Wno-long
 
 lib_LTLIBRARIES = libjxta.la
 
+libjxta_la_LIBADD = @APR_LIBS@  @XML2_LIBS@ @SQLITE_LIBS@ -Ljpr -ljpr			
 
 include_HEADERS = EndpointRouter.h          \
                   jdlist.h                  \
                   jstring.h                 \
                   jxta_advertisement.h      \
-                  jxta_apr.h                 \
+                  jxta_apr.h                \
                   jxta_bytevector.h         \
                   jxta_cm.h                 \
                   jxta_cred.h               \
                   jxta_debug.h              \
                   jxta_discovery_service.h  \
+                  jxta_discovery_config_adv.h \
                   jxta_dq.h                 \
                   jxta_dr.h                 \
                   jxta_endpoint_address.h   \
+                  jxta_endpoint_config_adv.h   \
                   jxta_endpoint_messenger.h \
                   jxta_endpoint_service.h   \
                   jxta_router_service.h     \
@@ -99,7 +102,8 @@ include_HEADERS = EndpointRouter.h          \
 		  jxta_test_adv.h \
 		  jxta_proffer.h \
                   jxta_range.h \
-		  jxta_callback.h
+		  jxta_callback.h \
+		  jxta_constants.h
 
 
 libjxta_la_SOURCES = jstring.c                      \
@@ -128,12 +132,14 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_message.c                 \
                      queue.c                        \
                      jxta_resolver_service.c        \
+                     jxta_discovery_config_adv.c    \
                      jxta_discovery_service.c       \
                      jxta_peerinfo_service.c        \
                      jxta_advertisement.c           \
 		     jxta_advertisement_priv.h      \
                      jxta_rdv_service.c             \
                      jxta_rdv_service_provider.c    \
+                     jxta_endpoint_config_adv.c     \
                      jxta_endpoint_service.c        \
                      jxta_endpoint_service_priv.h   \
                      jxta_endpoint_address.c        \
@@ -226,6 +232,7 @@ libjxta_la_SOURCES = jstring.c                      \
 		     jxta_proffer.c                     \
                      jxta_range.c                       \
 		     jxta_util_priv.h                   \
-		     jxta_util_priv.c \
-		     jxta_callback.c
+		     jxta_util_priv.c                   \
+		     jxta_callback.c                    \
+		     jxta_constants.c
 

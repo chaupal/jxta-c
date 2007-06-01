@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_stdpg_private.h,v 1.11 2005/10/13 19:52:35 mathieu Exp $
+ * $Id: jxta_stdpg_private.h,v 1.12 2005/12/21 11:04:01 mmx2005 Exp $
  */
 
 #ifndef JXTA_STDPG_PRIVATE_H
@@ -69,7 +69,7 @@ extern "C" {
 #endif
 
 /*
- * Note: Jxta_stdpg does not normaly need to be public, unless the
+ * Note: Jxta_stdpg does not normally need to be public, unless the
  * group has some extra features available to applications. That's why
  * there is no separate incomplete type declaration in a public
  * header file. Here we only export this type to subclassers.
@@ -125,7 +125,7 @@ typedef Jxta_PG_methods Jxta_stdpg_methods;
 
 /*
  * export our methods table to subclassers so that they can copy it
- * at run-time if usefull.
+ * at run-time if useful.
  */
 extern const Jxta_stdpg_methods jxta_stdpg_methods;
 

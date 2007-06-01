@@ -89,11 +89,11 @@ AUTOHEADER=`echo $AUTOCONF | sed s/autoconf/autoheader/`
 
 #ver_check autoconf $RECOMMENDED_AUTOCONF_VER $REQUIRED_AUTOCONF_VER || DIE=1
 #ver_check automake $RECOMMENDED_AUTOMAKE_VER $REQUIRED_AUTOMAKE_VER || DIE=1
-if [ -n "$CC" ] ; then
-    ver_check "$CC" $RECOMMENDED_GCC_VER $REQUIRED_GCC_VER || DIE=1
-else
-    ver_check gcc $RECOMMENDED_GCC_VER $REQUIRED_GCC_VER || DIE=1
-fi
+#if [ -n "$CC" ] ; then
+#    ver_check "$CC" $RECOMMENDED_GCC_VER $REQUIRED_GCC_VER || DIE=1
+#else
+#    ver_check gcc $RECOMMENDED_GCC_VER $REQUIRED_GCC_VER || DIE=1
+#fi
 
 if [ "$DIE" -eq 1 ]; then
     echo "ERROR: required programs not installed."

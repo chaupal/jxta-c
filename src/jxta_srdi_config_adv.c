@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi_config_adv.c,v 1.4 2005/11/23 21:19:51 exocetrick Exp $
+ * $Id: jxta_srdi_config_adv.c,v 1.6 2006/02/15 01:09:47 slowhog Exp $
  */
 
 static const char *const __log_cat = "SrdiCfgAdv";
@@ -65,15 +65,10 @@ static const char *const __log_cat = "SrdiCfgAdv";
 #include "jxta_xml_util.h"
 #include "jxta_apr.h"
 
-#ifdef __cplusplus
-extern "C" {
-#if 0
-}
-#endif
-#endif
 /** Each of these corresponds to a tag in the 
  * xml ad.
- */ enum tokentype {
+ */ 
+enum tokentype {
     Null_,
     Jxta_SrdiConfigAdvertisement_,
     NoRange_,
@@ -91,6 +86,8 @@ struct _jxta_SrdiConfigAdvertisement {
     int replicationThreshold;
     Jxta_boolean noRangeWithValue;
 };
+
+#define DEFAULT_REPLICATION_THRESHOLD 4
 
     /* Forward decl. of un-exported function */
 static void jxta_SrdiConfigAdvertisement_delete(Jxta_object *);
@@ -181,9 +178,8 @@ JXTA_DECLARE(Jxta_status) jxta_SrdiConfigAdvertisement_get_xml(Jxta_SrdiConfigAd
 {
     char tmpbuf[256];
     JString *string = jstring_new_0();
-
+    jstring_append_2(string, "<!-- JXTA SRDI Configuration Advertisement -->\n");
     jstring_append_2(string, "<jxta:SrdiConfig xmlns:jxta=\"http://jxta.org\" type=\"jxta:SrdiConfig\">\n");
-
     jstring_append_2(string, "<NoRangeReplication withValue=\"");
     jstring_append_2(string, jxta_srdi_cfg_get_no_range(ad) ? "true":"false");
     jstring_append_2(string, "\"/>\n");
@@ -213,7 +209,6 @@ Jxta_SrdiConfigAdvertisement *jxta_SrdiConfigAdvertisement_construct(Jxta_SrdiCo
         self->noRangeWithValue=FALSE;
         self->replicationThreshold = DEFAULT_REPLICATION_THRESHOLD;
     }
-
     return self;
 }
 
@@ -254,9 +249,4 @@ JXTA_DECLARE(void) jxta_SrdiConfigAdvertisement_parse_file(Jxta_SrdiConfigAdvert
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
 
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
+/* vim: set ts=4 sw=4 et tw=130: */

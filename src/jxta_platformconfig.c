@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright (c) 2002-2006 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_platformconfig.c,v 1.3 2005/11/04 22:13:25 exocetrick Exp $
+ * $Id: jxta_platformconfig.c,v 1.5 2006/02/02 19:53:30 slowhog Exp $
  */
 
 #include "jxta_platformconfig.h"
@@ -74,14 +74,18 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
   Jxta_TCPTransportAdvertisement *tta = NULL; /* append */
   Jxta_HTTPTransportAdvertisement *hta = NULL;
   Jxta_RelayAdvertisement *rla = NULL;
+  Jxta_DiscoveryConfigAdvertisement *disc = NULL;
   Jxta_RdvConfigAdvertisement *rdv = NULL;
   Jxta_SrdiConfigAdvertisement *srdi = NULL;
+  Jxta_EndPointConfigAdvertisement *ep = NULL;
   
   Jxta_svc *tcpsvc;   /* append */
   Jxta_svc *htsvc;
+  Jxta_svc *discsvc;
   Jxta_svc *rdvsvc;
   Jxta_svc *srdisvc;
   Jxta_svc *rlsvc;
+  Jxta_svc *epsvc;
   
   JString *tcp_proto; /* append */
   JString *http_proto;
@@ -134,6 +138,18 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
   jxta_svc_set_RelayAdvertisement(rlsvc, rla);
   jxta_svc_set_MCID(rlsvc, jxta_relayproto_classid);
   
+  /* Discovery */
+  disc = jxta_DiscoveryConfigAdvertisement_new();
+  discsvc = jxta_svc_new();
+  jxta_svc_set_DiscoveryConfig(discsvc, disc);
+  jxta_svc_set_MCID(discsvc, jxta_discovery_classid);
+  
+  /* EndPoint */
+  ep = jxta_EndPointConfigAdvertisement_new();
+  epsvc = jxta_svc_new();
+  jxta_svc_set_EndPointConfig(epsvc, ep);
+  jxta_svc_set_MCID(epsvc, jxta_endpoint_classid);
+
   /* Rendezvous */
   rdv = jxta_RdvConfigAdvertisement_new();
   jxta_RdvConfig_set_config(rdv, config_edge);
@@ -144,8 +160,6 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
   
   /* SRDI */
   srdi = jxta_SrdiConfigAdvertisement_new();
-  jxta_srdi_config_set_no_range(srdi, FALSE);
-  jxta_srdi_config_set_replication_threshold(srdi, DEFAULT_REPLICATION_THRESHOLD);
   srdisvc = jxta_svc_new();
   jxta_svc_set_SrdiConfig(srdisvc, srdi);
   jxta_svc_set_MCID(srdisvc, jxta_srdi_classid);          
@@ -158,6 +172,8 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
   jxta_vector_add_object_last(services, (Jxta_object *) htsvc);
   jxta_vector_add_object_last(services, (Jxta_object *) rlsvc);
   jxta_vector_add_object_last(services, (Jxta_object *) srdisvc);
+  jxta_vector_add_object_last(services, (Jxta_object *) epsvc);
+  jxta_vector_add_object_last(services, (Jxta_object *) discsvc);
   
   jxta_id_peerid_new_1(&pid, jxta_id_defaultNetPeerGroupID);
   jxta_PA_set_PID(config_adv, pid);

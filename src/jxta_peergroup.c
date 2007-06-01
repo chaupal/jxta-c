@@ -50,13 +50,12 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup.c,v 1.38 2005/11/22 22:00:58 mmx2005 Exp $
+ * $Id: jxta_peergroup.c,v 1.39 2006/02/15 01:09:43 slowhog Exp $
  */
 
-#include "apr_thread_proc.h"
 #include "jpr/jpr_excep.h"
-#include "jpr/jpr_threadonce.h"
 
+#include "jxta_apr.h"
 #include "jxta_defloader_private.h"
 #include "jxta_types.h"
 

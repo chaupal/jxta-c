@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_mia.c,v 1.27 2005/11/22 22:00:58 mmx2005 Exp $
+ * $Id: jxta_mia.c,v 1.30 2006/02/18 00:32:51 slowhog Exp $
  */
 
 
@@ -63,6 +63,7 @@
   `/usr/local/apache2/bin/apr-config --cflags --includes --libs` \
   -lexpat -L/usr/local/apache2/lib/ -lapr
 */
+static const char *__log_cat = "MIA";
 
 #include <stdio.h>
 #include <string.h>
@@ -71,16 +72,10 @@
 #include "jxta_errno.h"
 #include "jxta_mia.h"
 
-
-#ifdef __cplusplus
-extern "C" {
-#if 0
-}
-#endif
-#endif
 /** Each of these corresponds to a tag in the 
  * xml ad.
- */ enum tokentype {
+ */
+enum tokentype {
     Null_,
     jxta_MIA_,
     MSID_,
@@ -122,7 +117,6 @@ struct _jxta_MIA {
  */
 static void jxta_MIA_delete(Jxta_MIA * ad);
 
-
 /** Handler functions.  Each of these is responsible for 
  * dealing with all of the character data associated with the 
  * tag name.
@@ -153,7 +147,7 @@ static void handlejxta_MIA(void *userdata, const XML_Char * cd, int len)
         return;
     }
 
-    JXTA_LOG("In jxta:MIA element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In jxta:MIA element\n");
 }
 
 static void handleEfmt(void *userdata, const XML_Char * cd, int len)
@@ -179,7 +173,7 @@ static void handleEfmt(void *userdata, const XML_Char * cd, int len)
         return;
     }
 
-    JXTA_LOG("In Efmt element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Efmt element\n");
 }
 
 static void handleBind(void *userdata, const XML_Char * cd, int len)
@@ -205,7 +199,7 @@ static void handleBind(void *userdata, const XML_Char * cd, int len)
         return;
     }
 
-    JXTA_LOG("In Bind element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Bind element\n");
 }
 
 static void handleMCID(void *userdata, const XML_Char * cd, int len)
@@ -231,7 +225,7 @@ static void handleMCID(void *userdata, const XML_Char * cd, int len)
         return;
     }
 
-    JXTA_LOG("In MCID element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In MCID element\n");
 }
 
 static void handleSvc(void *userdata, const XML_Char * cd, int len)
@@ -257,9 +251,8 @@ static void handleSvc(void *userdata, const XML_Char * cd, int len)
         return;
     }
 
-    JXTA_LOG("In Svc element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Svc element\n");
 }
-
 
 static void handleMSID(void *userdata, const XML_Char * cd, int len)
 {
@@ -288,6 +281,7 @@ static void handleMSID(void *userdata, const XML_Char * cd, int len)
 
     if (len == 0)
         return;
+
     tmp = jstring_new_1(len + 1);
     jstring_append_0(tmp, cd, len);
     jstring_trim(tmp);
@@ -297,7 +291,7 @@ static void handleMSID(void *userdata, const XML_Char * cd, int len)
         jxta_MIA_set_MSID(ad, msid);
         JXTA_OBJECT_RELEASE(msid);
     }
-    JXTA_LOG("In MSID element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In MSID element\n");
 }
 
 static void handleCode(void *userdata, const XML_Char * cd, int len)
@@ -333,7 +327,7 @@ static void handleCode(void *userdata, const XML_Char * cd, int len)
     jxta_MIA_set_Code(ad, tmp);
     JXTA_OBJECT_RELEASE(tmp);
 
-    JXTA_LOG("In Code element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Code element\n");
 }
 
 static void handlePURI(void *userdata, const XML_Char * cd, int len)
@@ -368,7 +362,7 @@ static void handlePURI(void *userdata, const XML_Char * cd, int len)
     jxta_MIA_set_PURI(ad, tmp);
     JXTA_OBJECT_RELEASE(tmp);
 
-    JXTA_LOG("In PURI element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In PURI element\n");
 }
 
 static void handleProv(void *userdata, const XML_Char * cd, int len)
@@ -403,7 +397,7 @@ static void handleProv(void *userdata, const XML_Char * cd, int len)
     jxta_MIA_set_Prov(ad, tmp);
     JXTA_OBJECT_RELEASE(tmp);
 
-    JXTA_LOG("In Prov element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Prov element\n");
 }
 
 static void handleDesc(void *userdata, const XML_Char * cd, int len)
@@ -439,7 +433,7 @@ static void handleDesc(void *userdata, const XML_Char * cd, int len)
     jxta_MIA_set_Desc(ad, tmp);
     JXTA_OBJECT_RELEASE(tmp);
 
-    JXTA_LOG("In Desc element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Desc element\n");
 }
 
 static void handleComp(void *userdata, const XML_Char * cd, int len)
@@ -457,7 +451,7 @@ static void handleComp(void *userdata, const XML_Char * cd, int len)
     }
     ad->in_comp = !ad->in_comp;
 
-    JXTA_LOG("In Comp element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Comp element\n");
 }
 
 static void handleParm(void *userdata, const XML_Char * cd, int len)
@@ -474,7 +468,7 @@ static void handleParm(void *userdata, const XML_Char * cd, int len)
         return;
     }
     ad->in_parm = !ad->in_parm;
-    JXTA_LOG("In Parm element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Parm element\n");
 }
 
 /** The get/set functions represent the public
@@ -485,7 +479,7 @@ JXTA_DECLARE(char *) jxta_MIA_get_jxta_MIA(Jxta_MIA * ad)
     return NULL;
 }
 
-JXTA_DECLARE(void)jxta_MIA_set_jxta_MIA(Jxta_MIA * ad, char *name)
+JXTA_DECLARE(void) jxta_MIA_set_jxta_MIA(Jxta_MIA * ad, char *name)
 {
 
 }
@@ -496,13 +490,13 @@ JXTA_DECLARE(Jxta_id *) jxta_MIA_get_MSID(Jxta_MIA * ad)
     return ad->MSID;
 }
 
-static char *JXTA_STDCALL jxta_get_msid_string(Jxta_MIA * ad)
+static char *JXTA_STDCALL jxta_get_msid_string(Jxta_advertisement * ad)
 {
     JString *msids = NULL;
     char *tmps;
     Jxta_status status;
 
-    status = jxta_id_to_jstring(ad->MSID, &msids);
+    status = jxta_id_to_jstring(((Jxta_MIA *) ad)->MSID, &msids);
     if (status != JXTA_SUCCESS) {
         JXTA_OBJECT_RELEASE(msids);
         return NULL;
@@ -684,8 +678,7 @@ JXTA_DECLARE(Jxta_MIA *) jxta_MIA_new()
                                   jxta_MIA_tags,
                                   (JxtaAdvertisementGetXMLFunc) jxta_MIA_get_xml,
                                   (JxtaAdvertisementGetIDFunc) jxta_MIA_get_MSID,
-                                  (JxtaAdvertisementGetIndexFunc) jxta_MIA_get_indexes, 
-                                  (FreeFunc) jxta_MIA_delete);
+                                  (JxtaAdvertisementGetIndexFunc) jxta_MIA_get_indexes, (FreeFunc) jxta_MIA_delete);
 
     /* Fill in the required initialization code here. */
     JXTA_OBJECT_SHARE(jxta_id_nullID);
@@ -767,9 +760,4 @@ int main(int argc, char **argv)
 }
 #endif
 
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
+/* vim: set ts=4 sw=4 et tw=130: */

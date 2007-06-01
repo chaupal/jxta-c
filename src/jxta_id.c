@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_id.c,v 1.19 2005/11/26 18:03:59 exocetrick Exp $
+ * $Id: jxta_id.c,v 1.20 2006/02/15 01:09:41 slowhog Exp $
  */
 
 
@@ -60,10 +60,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <jxta_apr.h>
+#include "jxta_apr.h"
 
-#include <jxta.h>
-#include <jxta_id.h>
+#include "jxta.h"
+#include "jxta_id.h"
 
 #include "jxta_id_priv.h"
 

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_vector.c,v 1.31 2005/10/27 01:55:31 slowhog Exp $
+ * $Id: jxta_vector.c,v 1.32 2006/02/15 01:09:51 slowhog Exp $
  */
 
 static const char *__log_cat = "VECTOR";
@@ -65,12 +65,6 @@ static const char *__log_cat = "VECTOR";
 #include "jxta_log.h"
 #include "jxta_vector.h"
 
-#ifdef __cplusplus
-extern "C" {
-#if 0
-}
-#endif
-#endif
 /**********************************************************************
  ** This file implements Jxta_vector. Please refer to jxta_vector.h
  ** for detail on the API.
@@ -535,12 +529,5 @@ JXTA_DECLARE(void) jxta_vector_shuffle(Jxta_vector * vector)
     
     apr_thread_mutex_unlock(vector->mutex);
 }
-
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
 
 /* vim: set ts=4 sw=4 et tw=130: */

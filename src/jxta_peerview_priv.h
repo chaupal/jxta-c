@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peerview_priv.h,v 1.2 2005/10/27 01:55:28 slowhog Exp $
+ * $Id: jxta_peerview_priv.h,v 1.3 2006/02/01 23:37:50 slowhog Exp $
  */
 
 
@@ -109,8 +109,6 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_get_self_peer(Jxta_peerview * pv, Jxta_p
 JXTA_DECLARE(Jxta_status) jxta_peerview_get_up_peer(Jxta_peerview * pv, Jxta_peer ** peer);
 
 JXTA_DECLARE(JString *) jxta_peerview_get_name(Jxta_peerview * pv);
-
-JXTA_DECLARE(Jxta_boolean) jxta_peerview_get_happy_size(Jxta_peerview * pv);
 
 JXTA_DECLARE(Jxta_vector *) jxta_peerview_get_seeds(Jxta_peerview * self);
 

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_netpg.c,v 1.66 2005/10/13 19:52:32 mathieu Exp $
+ * $Id: jxta_netpg.c,v 1.69 2006/02/17 18:24:08 slowhog Exp $
  */
 
 /*
@@ -70,15 +70,8 @@ static const char *__log_cat = "NETPG";
 #include <sys/types.h>
 #endif
 
-#ifdef WIN32
-#include <winsock2.h>
-#else
-#include "netinet/in.h"
-#endif
-
-#include <apr_thread_proc.h>
 #include "jpr/jpr_excep.h"
-#include "jpr/jpr_threadonce.h"
+#include "jxta_apr.h"
 
 #include "jxta_errno.h"
 #include "jxta_log.h"
@@ -99,14 +92,6 @@ static const char *__log_cat = "NETPG";
 #define UNUSED__    /* UNSUSED */
 #endif
 #endif
-
-/*
- * Controls the once-only init of the methods table.
- * We dynamically initialize the methods table because we just
- * override a few methods. There's no practical way of doing that
- * statically in C.
- */
-static apr_thread_once_t methods_table_control = JPR_THREAD_ONCE_INIT;
 
 /*
  * All the methods:
@@ -239,22 +224,17 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before init :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(self));
 
-    /**
-     * Must read the PlatformConfig file to start the proper net peergroup
-     */
+    /* Must read the PlatformConfig file to start the proper net peergroup */
     config_adv = jxta_PlatformConfig_read("PlatformConfig");
-    /** If we have no PlatformConfig file, create one and exit */
-    if (config_adv == NULL) { 
-      config_adv = jxta_PlatformConfig_create_default();
-      jxta_PlatformConfig_write(config_adv, "PlatformConfig");
-      JXTA_OBJECT_RELEASE(config_adv);
-      printf("A new configuration file has been output to \"PlatformConfig\".\n");
-      printf("Please edit relevant elements before starting Jxta again.\n");
-      exit(0);
+
+    /* If we have no PlatformConfig file, create one */
+    if (config_adv == NULL) {
+        config_adv = jxta_PlatformConfig_create_default();
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "A new \"PlatformConfig\" file will be generated.\n");
     }
 
     /*
-     * If we're used as the root group (normaly always) and if
+     * If we're used as the root group (normally always) and if
      * we aren't assigned an ID, then we are the default netpg.
      * Otherwise let things happen as they normaly do (stdpg will
      * pick a new ID) - as for the impl_adv and labels, if we're the
@@ -265,17 +245,18 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
         JString *name;
         JString *desc;
 
-	assigned_id = jxta_PA_get_GID(config_adv);
+        assigned_id = jxta_PA_get_GID(config_adv);
 
-	/**
+    /**
 	 * We are simulating the old behaviour
 	 * if jxta-Null is set read from the platformConfig
 	 * well then set the default NetPeerGroupId 
 	 */
-	if (jxta_id_equals(assigned_id, jxta_id_nullID)) {
-	  JXTA_OBJECT_RELEASE(assigned_id);
-	  assigned_id = jxta_id_defaultNetPeerGroupID;
-	}
+        if (jxta_id_equals(assigned_id, jxta_id_nullID)) {
+            JXTA_OBJECT_RELEASE(assigned_id);
+            assigned_id = jxta_id_defaultNetPeerGroupID;
+            jxta_PA_set_GID(config_adv, assigned_id);
+        }
 
         /*
          * Whatever mia was given to us, we have not counted a
@@ -283,15 +264,15 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
          * However, the one we make here comes with a count for us,
          * so we'll have to release it when we're done.
          */
-	if (impl_adv == NULL) {
-	  impl_adv = (Jxta_advertisement *) jxta_get_netpeergroupMIA();
-	} 
-	
-	release_mia = TRUE;
+        if (impl_adv == NULL) {
+            impl_adv = (Jxta_advertisement *) jxta_get_netpeergroupMIA();
+        }
+
+        release_mia = TRUE;
 
         name = jstring_new_2("NetPeerGroup");
         desc = jstring_new_2("NetPeerGroup by default");
-	
+
         jxta_stdpg_methods.set_labels((Jxta_PG *) it, name, desc);
 
         JXTA_OBJECT_RELEASE(name);
@@ -304,9 +285,10 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
      */
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before super group init :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(self));
-    jxta_stdpg_set_configadv(self, config_adv); 
-    JXTA_OBJECT_RELEASE(config_adv);
+
+    jxta_stdpg_set_configadv(self, config_adv);
     jxta_stdpg_init_group(self, group, assigned_id, impl_adv);
+
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count after super group init :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(self));
 
@@ -332,9 +314,6 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
         ((Jxta_stdpg *) it)->endpoint = (Jxta_endpoint_service *)
             ld_mod(it, jxta_endpoint_classid, "builtin:endpoint_service", MayThrow);
 
-        it->relay = (Jxta_transport *)
-            ld_mod(it, jxta_relayproto_classid, "builtin:relay", MayThrow);
-
         it->http = (Jxta_transport *)
             ld_mod(it, jxta_httpproto_classid, "builtin:transport_http", MayThrow);
 
@@ -343,6 +322,9 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
 
         it->router = (Jxta_transport *)
             ld_mod(it, jxta_routerproto_classid, "builtin:router_client", MayThrow);
+
+        it->relay = (Jxta_transport *)
+            ld_mod(it, jxta_relayproto_classid, "builtin:relay", MayThrow);
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before super modules init :%d.\n",
                         JXTA_OBJECT_GET_REFCOUNT(self));
@@ -373,20 +355,17 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
         Throw(jpr_lasterror_get());
     }
 
+    /* Write out any updates to the PlatformConfig which were made during service init. */
+    jxta_PlatformConfig_write(config_adv, "PlatformConfig");
+    JXTA_OBJECT_RELEASE(config_adv);
+
+    /* Now, start all services */
+
     rv = jxta_module_start((Jxta_module *) (((Jxta_stdpg *) it)->endpoint), noargs);
     if (JXTA_SUCCESS != rv) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failure starting endpoint: %d.\n", rv);
         netpg_stop(self);
         Throw(rv);
-    }
-
-    if (it->relay) {
-        rv = jxta_module_start((Jxta_module *) (it->relay), noargs);
-        if (JXTA_SUCCESS != rv) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failure starting relay: %d.\n", rv);
-            netpg_stop(self);
-            Throw(rv);
-        }
     }
 
     if (it->tcp) {
@@ -412,6 +391,15 @@ static void netpg_init_e(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failure starting router: %d.\n", rv);
         netpg_stop(self);
         Throw(rv);
+    }
+
+    if (it->relay) {
+        rv = jxta_module_start((Jxta_module *) (it->relay), noargs);
+        if (JXTA_SUCCESS != rv) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failure starting relay: %d.\n", rv);
+            netpg_stop(self);
+            Throw(rv);
+        }
     }
 
     /* Now, start all services */
@@ -560,7 +548,6 @@ Jxta_netpg *jxta_netpg_new_instance(void)
     /*
      * Initialize the methods table if needed.
      */
-    apr_thread_once(&methods_table_control, netpg_init_methods);
     jxta_netpg_construct(self, &jxta_netpg_methods);
     return self;
 }

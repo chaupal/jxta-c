@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_service.h,v 1.12 2005/09/29 22:21:34 bondolo Exp $
+ * $Id: jxta_endpoint_service.h,v 1.14 2006/03/06 23:50:38 slowhog Exp $
  */
 
 
@@ -77,9 +77,6 @@ extern "C" {
 #endif
 
 #define  JXTA_ENDPOINT_SERVICE_NAME "EndpointService"
-/**
-    XXX 20050409 bondolo I'm not sure why this is public.
-**/ extern const Jxta_time_diff JXTA_ENDPOINT_DEST_UNREACHABLE_TIMEOUT;
 
 typedef struct _jxta_endpoint_service Jxta_endpoint_service;
 
@@ -182,9 +179,11 @@ JXTA_DECLARE(void) jxta_endpoint_service_remove_filter(Jxta_endpoint_service * s
  * @param dest_addr The destination of the message.
  * @return Jxta_status success or failed
  */
-JXTA_DECLARE(Jxta_status)
-    jxta_endpoint_service_send(Jxta_PG * pg, Jxta_endpoint_service * service, Jxta_message * msg, Jxta_endpoint_address * dest_addr);
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_sync(Jxta_PG * pg, Jxta_endpoint_service * service, Jxta_message * msg, Jxta_endpoint_address * dest_addr);
 
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_async(Jxta_PG * pg, Jxta_endpoint_service * service, Jxta_message * msg, Jxta_endpoint_address * dest_addr);
+
+#define jxta_endpoint_service_send jxta_endpoint_service_send_async
 
 /*
  * Propagate the given message to the given service destination using 

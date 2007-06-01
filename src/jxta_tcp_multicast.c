@@ -51,33 +51,21 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tcp_multicast.c,v 1.28 2005/11/22 23:44:45 mmx2005 Exp $
+ * $Id: jxta_tcp_multicast.c,v 1.29 2006/02/15 01:09:48 slowhog Exp $
  */
 
 #define BUFSIZE		8192
 
-#include <apr.h>
-#include <apr_network_io.h>
-#include <apr_thread_proc.h>
+#include "jxta_apr.h"
 
-#include "jpr/jpr_apr_wrapper.h"
 #include "jpr/jpr_types.h"
 
-#include "jxta_apr.h"
 #include "jxta_errno.h"
 #include "jxta_log.h"
 #include "jxta_tcp_multicast.h"
 #include "jxta_endpoint_address.h"
 #include "jxta_transport_tcp_private.h"
 #include "jxta_tcp_message_packet_header.h"
-
-#ifdef WIN32
-#include <winsock.h>
-#include <ws2tcpip.h>
-#else
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#endif
 
 typedef struct _stream {
     char *data_buf;
@@ -623,3 +611,5 @@ static Jxta_status tcp_multicast_write(TcpMulticast * tm, const char *buf, apr_s
 
     return (APR_SUCCESS == status) ? JXTA_SUCCESS : JXTA_FAILED;
 }
+
+/* vim: set ts=4 sw=4 et tw=130: */

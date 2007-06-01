@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pm.c,v 1.33 2005/11/14 10:11:27 slowhog Exp $
+ * $Id: jxta_pm.c,v 1.34 2006/02/18 00:32:52 slowhog Exp $
  */
 
 static const char *__log_cat = "PropMsg";
@@ -64,14 +64,9 @@ static const char *__log_cat = "PropMsg";
 #include "jxta_xml_util.h"
 #include "jxta_apr.h"
 
-#ifdef __cplusplus
-extern "C" {
-#if 0
-}
-#endif
-#endif
-    /** Each of these corresponds to a tag in the xml ad.
-     */ enum tokentype {
+/** Each of these corresponds to a tag in the xml ad.
+ */
+enum tokentype {
     Null_,
     RendezVousPropagateMessage_,
     DestSName_,
@@ -111,10 +106,11 @@ static void handleRendezVousPropagateMessage(void *userdata, const XML_Char * cd
 static void handleDestSName(void *userdata, const XML_Char * cd, int len)
 {
     RendezVousPropagateMessage *ad = (RendezVousPropagateMessage *) userdata;
-    if (0 == len) return;
+    if (0 == len)
+        return;
     if (NULL == ad->destSName) {
         ad->destSName = jstring_new_1(len);
-    } 
+    }
     jstring_append_0(ad->destSName, cd, len);
     jstring_trim(ad->destSName);
 }
@@ -122,10 +118,11 @@ static void handleDestSName(void *userdata, const XML_Char * cd, int len)
 static void handleDestSParam(void *userdata, const XML_Char * cd, int len)
 {
     RendezVousPropagateMessage *ad = (RendezVousPropagateMessage *) userdata;
-    if (0 == len) return;
+    if (0 == len)
+        return;
     if (NULL == ad->destSParam) {
         ad->destSParam = jstring_new_1(len);
-    } 
+    }
     jstring_append_0(ad->destSParam, cd, len);
     jstring_trim(ad->destSParam);
 }
@@ -134,7 +131,8 @@ static void handleMessageId(void *userdata, const XML_Char * cd, int len)
 {
     RendezVousPropagateMessage *ad = (RendezVousPropagateMessage *) userdata;
 
-    if (0 == len) return;
+    if (0 == len)
+        return;
     if (NULL == ad->messageId) {
         ad->messageId = jstring_new_1(len);
     }
@@ -399,7 +397,8 @@ void RendezVousPropagateMessage_delete(Jxta_object * obj)
     free(ad);
 }
 
-JXTA_DECLARE(Jxta_status) RendezVousPropagateMessage_parse_charbuffer(RendezVousPropagateMessage * ad, const char *buf, size_t len)
+JXTA_DECLARE(Jxta_status) RendezVousPropagateMessage_parse_charbuffer(RendezVousPropagateMessage * ad, const char *buf,
+                                                                      size_t len)
 {
     return jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
@@ -411,11 +410,4 @@ JXTA_DECLARE(Jxta_status) RendezVousPropagateMessage_parse_file(RendezVousPropag
     return jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
 
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
-
-/* vim: set ts=3 sw=4 tw=130 et: */
+/* vim: set ts=4 sw=4 tw=130 et: */

@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright (c) 2002-2006 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_service.c,v 1.109 2005/12/01 07:43:02 slowhog Exp $
+ * $Id: jxta_endpoint_service.c,v 1.118 2006/03/06 23:50:37 slowhog Exp $
  */
 
 static const char *__log_cat = "ENDPOINT";
@@ -59,7 +59,6 @@ static const char *__log_cat = "ENDPOINT";
 #include <assert.h>
 
 #include "jxta_apr.h"
-#include <apr_hash.h>
 
 #include "jpr/jpr_excep_proto.h"
 
@@ -70,6 +69,7 @@ static const char *__log_cat = "ENDPOINT";
 #include "jstring.h"
 #include "jxta_hashtable.h"
 #include "jxta_service_private.h"
+#include "jxta_endpoint_config_adv.h"
 #include "jxta_endpoint_service.h"
 #include "jxta_endpoint_address.h"
 #include "jxta_router_service.h"
@@ -83,17 +83,16 @@ static const char *__log_cat = "ENDPOINT";
 #include "jxta_apr.h"
 #include "jxta_endpoint_service_priv.h"
 
-const Jxta_time_diff JXTA_ENDPOINT_DEST_UNREACHABLE_TIMEOUT = ((Jxta_time_diff) 5L) * 60 * 1000;    /* 10 minutes */
+typedef struct _nc_entry {
+    char *addr;
+    Jxta_time_diff timeout;
+    Jxta_time expiration;
+    Jxta_message **rq;
+    int rq_head;
+    int rq_tail;
+    int rq_capacity;
+} Nc_entry;
 
-/**
- ** 3/04/2002 MEMORY LEAK WARNING lomax@jxta.org
- **
- ** Because of the implementation of apr_hash, the key that is passed must remain
- ** valid memory (apr_hash_set does not copy the memory, just the pointer).
- ** However, there is no mean to free that memory (the assumption must be that the
- ** memory the key comes from is the same pool as the pool that has created the hashtable).
- ** Recomendation is to use Jxta_hashtable instead of apr_hash_t.
- **/
 struct _jxta_endpoint_service {
     Extends(Jxta_service);
 
@@ -108,8 +107,9 @@ struct _jxta_endpoint_service {
     Jxta_PG *my_group;
     JString *my_groupid;
     Jxta_id *my_assigned_id;
+    Jxta_PG *parentgroup;
     Jxta_advertisement *my_impl_adv;
-
+    Jxta_EndPointConfigAdvertisement *config;
     Jxta_RouteAdvertisement *myRoute;
     char *relay_addr;
     char *relay_proto;
@@ -118,12 +118,229 @@ struct _jxta_endpoint_service {
     apr_hash_t *listener_table;
     Jxta_hashtable *transport_table;
     Queue *outgoing_queue;
-    Jxta_hashtable *unreachable_addresses;
+    apr_hash_t *nc; /* negative cache */
 };
 
 static Jxta_listener *jxta_endpoint_service_lookup_listener(Jxta_endpoint_service * service, Jxta_endpoint_address * addr);
 static void *APR_THREAD_FUNC outgoing_message_thread(apr_thread_t * t, void *arg);
-static void outgoing_message_process(Jxta_endpoint_service * service, Jxta_message * msg);
+static Jxta_status outgoing_message_process(Jxta_endpoint_service * service, Jxta_message * msg);
+static Jxta_status send_message(Jxta_endpoint_service *me, Jxta_message *msg, Jxta_endpoint_address *dest);
+
+/* negative cache table operations */
+static Nc_entry* nc_add_peer(Jxta_endpoint_service *me, const char* addr, Jxta_message *msg);
+static void nc_remove_peer(Jxta_endpoint_service *me, Nc_entry *ptr);
+static void nc_destroy(Jxta_endpoint_service *me);
+static Jxta_status nc_peer_queue_msg(Jxta_endpoint_service *me, Nc_entry *ptr, Jxta_message *msg);
+static void nc_review_all(Jxta_endpoint_service *me);
+
+static Nc_entry* nc_add_peer(Jxta_endpoint_service *me, const char* addr, Jxta_message *msg)
+{
+    Nc_entry *ptr = NULL;
+
+    assert(NULL != addr);
+    assert(NULL != me);
+
+    ptr = calloc(1, sizeof(*ptr));
+    if (NULL == ptr) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Fail to allocate negative cache entry, out of memory?\n");
+        return NULL;
+    }
+    ptr->addr = strdup(addr);
+    if (NULL == ptr->addr) {
+        free(ptr);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Fail to duplicate address, out of memory?\n");
+        return NULL;
+    }
+    ptr->timeout = jxta_epcfg_get_nc_timeout_init(me->config);
+    ptr->expiration = jpr_time_now() + ptr->timeout;
+    ptr->rq_capacity = jxta_epcfg_get_ncrq_size(me->config);
+    if (0 != ptr->rq_capacity) {
+        ptr->rq = calloc(ptr->rq_capacity, sizeof(*ptr->rq));
+        if (NULL == ptr->rq) {
+            free(ptr->addr);
+            free(ptr);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Fail to allocate retransmit queue, out of memory?\n");
+            return NULL;
+        }
+        ptr->rq[0] = JXTA_OBJECT_SHARE(msg);
+        ptr->rq_tail = 1;
+    }
+    apr_hash_set(me->nc, ptr->addr, APR_HASH_KEY_STRING, ptr);
+    return ptr;
+}
+
+static void nc_remove_peer(Jxta_endpoint_service *me, Nc_entry *ptr)
+{
+    assert(NULL == ptr->rq || -1 == ptr->rq_tail);
+
+    apr_hash_set(me->nc, ptr->addr, APR_HASH_KEY_STRING, NULL);
+    free(ptr->addr);
+    free(ptr->rq);
+    free(ptr);
+}
+
+static void nc_peer_drop_retransmit_queue(Nc_entry *me)
+{
+    if (NULL == me->rq) {
+        return;
+    }
+
+    if (-1 != me->rq_tail) {
+        do {
+            Jxta_message *msg = NULL;
+
+            assert(me->rq_capacity > me->rq_head);
+            msg = me->rq[me->rq_head++];
+            assert(NULL != msg);
+            JXTA_OBJECT_RELEASE(msg);
+            if (me->rq_head == me->rq_capacity) {
+                me->rq_head = 0;
+            }
+        } while (me->rq_head != me->rq_tail); 
+    }
+
+    free(me->rq);
+    me->rq = NULL;
+}
+
+static void nc_destroy(Jxta_endpoint_service *me)
+{
+    apr_hash_index_t *hi = NULL;
+    Nc_entry *ptr = NULL;
+
+    for (hi = apr_hash_first(NULL, me->nc); hi; hi = apr_hash_next(hi)) {
+        apr_hash_this(hi, NULL, NULL, (void **) &ptr);
+        assert(NULL != ptr);
+
+        nc_peer_drop_retransmit_queue(ptr);
+        free(ptr->addr);
+        free(ptr);
+    }
+}
+
+/**
+ * Review the negative cache entry.
+ * Try to send messages in the retransmit queue after timeout
+ * In case failed, double the timeout period. If the timeout period is already maximum, drop the queue completely
+ * @return JXTA_SUCCESS if the peer is out of timeout period and no msg remains in the queue. JXTA_UNREACHABLE_DEST if the peer
+ * still is unreachable.
+ */
+static Jxta_status nc_peer_process_queue(Jxta_endpoint_service *me, Nc_entry *ptr)
+{
+    Jxta_message *msg = NULL;
+    Jxta_status res = JXTA_SUCCESS;
+    int sent = 0;
+
+    if (jpr_time_now() < ptr->expiration) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Peer at %s is still in timeout for another %" APR_INT64_T_FMT "ms.\n", 
+                        ptr->addr, ptr->expiration - jpr_time_now());
+        return JXTA_UNREACHABLE_DEST;
+    }
+
+    if (!ptr->rq || -1 == ptr->rq_tail) {
+        return JXTA_SUCCESS;
+    }
+
+    do {
+        msg = ptr->rq[ptr->rq_head];
+        res = send_message(me, msg, NULL);
+        if (JXTA_SUCCESS != res) {
+            break;
+        }
+        JXTA_OBJECT_RELEASE(msg);
+        ++sent;
+        if (++ptr->rq_head >= ptr->rq_capacity) {
+            ptr->rq_head = 0;
+        }
+    } while (ptr->rq_head != ptr->rq_tail);
+
+    if (JXTA_SUCCESS == res) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Peer at %s is now reachable after timeout %" APR_INT64_T_FMT 
+                        "ms, retransmit queue is flushed.\n", ptr->addr, ptr->timeout);
+        ptr->rq_tail = -1;
+    } else if (!sent) {
+        Jxta_time_diff timeout_max;
+
+        timeout_max = jxta_epcfg_get_nc_timeout_max(me->config);
+        if (ptr->timeout >= timeout_max) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Peer at %s is still unreachable after timeout %" APR_INT64_T_FMT 
+                            "ms over maximum %" APR_INT64_T_FMT "ms, drop retransmit queue.\n", ptr->addr, ptr->timeout,
+                            timeout_max);
+            nc_peer_drop_retransmit_queue(ptr);
+            ptr->timeout = timeout_max;
+        } else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Peer at %s is still unreachable after timeout %" APR_INT64_T_FMT 
+                            "ms, double it(limit to a maximum of %" APR_INT64_T_FMT "ms).\n", ptr->addr, ptr->timeout,
+                            timeout_max);
+            ptr->timeout *= 2;
+            if (ptr->timeout > timeout_max) {
+                ptr->timeout = timeout_max;
+            }
+        }
+        ptr->expiration = jpr_time_now() + ptr->timeout;
+    }
+    return res;
+}
+
+static Jxta_status nc_peer_queue_msg(Jxta_endpoint_service *me, Nc_entry *ptr, Jxta_message *msg)
+{
+    Jxta_status res;
+
+    res = nc_peer_process_queue(me, ptr);
+    if (JXTA_SUCCESS == res) {
+        if (JXTA_SUCCESS == send_message(me, msg, NULL)) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Peer at %s is back online.\n", ptr->addr);
+            nc_remove_peer(me, ptr);
+            return JXTA_SUCCESS;
+        }
+    }
+
+    if (NULL == ptr->rq) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Peer at %s is still unreachable with maximum timeout %" APR_INT64_T_FMT
+                        "ms, drop message[%p]\n", ptr->addr, ptr->timeout, msg);
+        return JXTA_UNREACHABLE_DEST;
+    }
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Queueing msg[%p] for peer at %s for later retransmission.\n", msg, ptr->addr);
+    if (ptr->rq_head == ptr->rq_tail) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Peer at %s has filled up(%d) retransmit queue, drop oldest message[%p]\n",
+                        ptr->addr, ptr->rq_capacity, ptr->rq[ptr->rq_head]);
+        JXTA_OBJECT_RELEASE(ptr->rq[ptr->rq_head]);
+        ptr->rq[ptr->rq_head++] = JXTA_OBJECT_SHARE(msg);
+        if (ptr->rq_head >= ptr->rq_capacity) {
+            ptr->rq_head = 0;
+        }
+    } else {
+        if (-1 == ptr->rq_tail) {
+            ptr->rq_tail = ptr->rq_head;
+        }
+        ptr->rq[ptr->rq_tail++] = JXTA_OBJECT_SHARE(msg);
+        if (ptr->rq_tail >= ptr->rq_capacity) {
+            ptr->rq_tail = 0;
+        }
+    }
+    return JXTA_UNREACHABLE_DEST;
+}
+
+static void nc_review_all(Jxta_endpoint_service *me)
+{
+    apr_hash_index_t *hi = NULL;
+    Nc_entry *ptr = NULL;
+    Jxta_status res = JXTA_SUCCESS;
+
+    for (hi = apr_hash_first(NULL, me->nc); hi; ) {
+        apr_hash_this(hi, NULL, NULL, (void **) &ptr);
+        /* move index before calling nc_remove_peer which removes entry from cache table and could screw the index */
+        hi = apr_hash_next(hi);
+        assert(NULL != ptr);
+
+        res = nc_peer_process_queue(me, ptr);
+        if (JXTA_SUCCESS == res && NULL != ptr->rq) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Peer at %s is back online.\n", ptr->addr);
+            nc_remove_peer(me, ptr);
+        }
+    }
+}
 
 /*
  * Implementations for module methods
@@ -131,6 +348,8 @@ static void outgoing_message_process(Jxta_endpoint_service * service, Jxta_messa
 static Jxta_status endpoint_init(Jxta_module * it, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
 {
     Jxta_id *gid;
+    Jxta_PA *conf_adv=NULL;
+    Jxta_svc *svc=NULL;
 
     Jxta_endpoint_service *self = PTValid(it, Jxta_endpoint_service);
 
@@ -155,6 +374,22 @@ static Jxta_status endpoint_init(Jxta_module * it, Jxta_PG * group, Jxta_id * as
     self->relay_addr = NULL;
     self->relay_proto = NULL;
     self->myRoute = NULL;
+    jxta_PG_get_configadv(group, &conf_adv);
+    if (NULL == conf_adv && NULL != self->parentgroup) {
+        jxta_PG_get_configadv(self->parentgroup, &conf_adv);
+    }
+    if (conf_adv != NULL) {
+        jxta_PA_get_Svc_with_id(conf_adv, jxta_endpoint_classid, &svc);
+        if (NULL != svc ) {
+            self->config = jxta_svc_get_EndPointConfig(svc);
+            JXTA_OBJECT_RELEASE(svc);
+        }
+        JXTA_OBJECT_RELEASE(conf_adv);
+    }
+
+    if (NULL == self->config) {
+        self->config = jxta_EndPointConfigAdvertisement_new();
+    }
 
     self->running = TRUE;
     apr_thread_create(&self->thread, NULL, outgoing_message_thread, (void *) self, self->pool);
@@ -178,7 +413,7 @@ static void endpoint_stop(Jxta_module * self)
     apr_status_t status;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Stopping outgoing message thread ...\n");
-    /* stop the thrad that processes outgoing messages */
+    /* stop the thread that processes outgoing messages */
     me->running = FALSE;
     queue_enqueue(me->outgoing_queue, NULL);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Waiting outgoing message thread shutdown completely ...\n");
@@ -191,7 +426,6 @@ static void endpoint_stop(Jxta_module * self)
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Stopped.\n");
 }
-
 
 /*
  * implementations for service methods
@@ -230,7 +464,6 @@ static const Jxta_endpoint_service_methods jxta_endpoint_service_methods = {
     endpoint_get_interface
 };
 
-
 typedef struct _Filter Filter;
 
 struct _Filter {
@@ -244,7 +477,7 @@ void jxta_endpoint_service_destruct(Jxta_endpoint_service * service)
     PTValid(service, Jxta_endpoint_service);
 
     /* delete tables and stuff */
-    JXTA_OBJECT_RELEASE(service->unreachable_addresses);
+    nc_destroy(service);
     JXTA_OBJECT_RELEASE(service->transport_table);
 
     if (service->relay_addr)
@@ -301,10 +534,11 @@ Jxta_endpoint_service *jxta_endpoint_service_construct(Jxta_endpoint_service * s
     jxta_service_construct((Jxta_service *) service, (const Jxta_service_methods *) methods);
     service->thisType = "Jxta_endpoint_service";
 
-    service->filter_list = dl_make();
     service->listener_table = apr_hash_make(service->pool);
+    service->nc = apr_hash_make(service->pool);
+
+    service->filter_list = dl_make();
     service->transport_table = jxta_hashtable_new(2);
-    service->unreachable_addresses = jxta_hashtable_new(5);
 
     apr_thread_mutex_create(&service->mutex, APR_THREAD_MUTEX_NESTED, service->pool);
     apr_thread_mutex_create(&service->filter_list_mutex, APR_THREAD_MUTEX_NESTED, service->pool);
@@ -429,36 +663,16 @@ JXTA_DECLARE(void) jxta_endpoint_service_demux_addr(Jxta_endpoint_service * serv
     free(destStr);
 }
 
-
 JXTA_DECLARE(void) jxta_endpoint_service_get_route_from_PA(Jxta_PA * padv, Jxta_RouteAdvertisement ** route)
 {
-    Jxta_vector *svcs;
     Jxta_svc *svc = NULL;
-    unsigned int sz;
-    unsigned int i;
 
-    svcs = jxta_PA_get_Svc(padv);
-    sz = jxta_vector_size(svcs);
-    for (i = 0; i < sz; i++) {
-        Jxta_id *mcid;
-        Jxta_svc *tmpsvc = NULL;
-        jxta_vector_get_object_at(svcs, JXTA_OBJECT_PPTR(&tmpsvc), i);
-        mcid = jxta_svc_get_MCID(tmpsvc);
-        if (jxta_id_equals(mcid, jxta_endpoint_classid_get())) {
-            svc = tmpsvc;
-            JXTA_OBJECT_RELEASE(mcid);
-            break;
-        }
-        JXTA_OBJECT_RELEASE(mcid);
-        JXTA_OBJECT_RELEASE(tmpsvc);
-    }
+    jxta_PA_get_Svc_with_id(padv,jxta_endpoint_classid_get(),&svc);
 
     if (svc != NULL) {
         *route = jxta_svc_get_RouteAdvertisement(svc);
         JXTA_OBJECT_RELEASE(svc);
     }
-
-    JXTA_OBJECT_RELEASE(svcs);
 }
 
 /**
@@ -663,7 +877,6 @@ static Jxta_boolean is_listener_for(Jxta_endpoint_service * service, char *str)
     listener = (Jxta_listener *) apr_hash_get(service->listener_table, str, APR_HASH_KEY_STRING);
     if (listener != NULL) {
         res = TRUE;
-
     }
     apr_thread_mutex_unlock(service->listener_table_mutex);
 
@@ -736,15 +949,16 @@ static Jxta_listener *jxta_endpoint_service_lookup_listener(Jxta_endpoint_servic
     ea_svc_name = jxta_endpoint_address_get_service_name(addr);
     ea_svc_params = jxta_endpoint_address_get_service_params(addr);
     if (ea_svc_name == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No listener associated with this address %s\n", str =
-                        jxta_endpoint_address_to_string(addr));
+        str = jxta_endpoint_address_to_string(addr);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No listener associated with this address %s\n", str);
+        
         if (str != NULL)
             free(str);
         return NULL;
     }
 
     str_length = strlen(ea_svc_name) + (ea_svc_params != NULL ? strlen(ea_svc_params) : 0) + 1;
-    str = malloc(str_length);
+    str = calloc(str_length, sizeof(char));
     apr_snprintf(str, str_length, "%s%s", ea_svc_name, (ea_svc_params != NULL ? ea_svc_params : ""));
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Lookup for listener %s-%s\n", ea_svc_name, ea_svc_params);
@@ -760,11 +974,11 @@ static Jxta_listener *jxta_endpoint_service_lookup_listener(Jxta_endpoint_servic
      * The service name is just the name of the Endpoint cross-messenger
      * service:
      *    EndpointService:uuid-groupId/"real address"
-     * We need to remove the begining of the address
+     * We need to remove the beginning of the address
      */
     if (listener == NULL) {
 
-        str1 = malloc(strlen(ea_svc_params) + 1);
+        str1 = calloc(strlen(ea_svc_params) + 1 , sizeof(char));
 
         index = strlen(ea_svc_name);
 
@@ -868,13 +1082,66 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_propagate(Jxta_endpoint_service 
     return JXTA_SUCCESS;
 }
 
-JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send(Jxta_PG * obj, Jxta_endpoint_service * service, Jxta_message * msg,
-                                                     Jxta_endpoint_address * dest_addr)
+static Jxta_endpoint_address *rewrite_msg_address(Jxta_PG *pg, Jxta_endpoint_address *dest_addr)
+{
+    Jxta_endpoint_address *new_addr = NULL;
+    char *caddress = NULL;
+    JString *cross_service = jstring_new_2(JXTA_ENDPOINT_SERVICE_NAME);
+    Jxta_id *id;
+    JString *sid = NULL;
+
+    /*
+     * Check if we already have the endpoint service address destination
+     * in that case assumed that the right endpoint address was
+     * set
+     *
+     * FIXME 20040510 tra we really should have a better way to 
+     * standardize address processing through subgroups
+     */
+    if (strncmp(jxta_endpoint_address_get_service_name(dest_addr),
+                JXTA_ENDPOINT_SERVICE_NAME, strlen(JXTA_ENDPOINT_SERVICE_NAME)) == 0) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "No address rewrite as endpoint service is already set\n");
+        return JXTA_OBJECT_SHARE(dest_addr);
+    }
+
+    jstring_append_2(cross_service, ":");
+
+    /*
+     * Extract the group id of the messenger destination. This
+     * is different from the endpoint group id, as the endpoint
+     * service always run within the NetGroup.
+     */
+    jxta_PG_get_GID(pg, &id);
+    jxta_id_get_uniqueportion(id, &sid);
+    JXTA_OBJECT_RELEASE(id);
+
+    jstring_append_2(cross_service, jstring_get_string(sid));
+
+    jstring_append_2(cross_service, "/");
+    jstring_append_2(cross_service, jxta_endpoint_address_get_service_name(dest_addr));
+
+    new_addr = jxta_endpoint_address_new_2(jxta_endpoint_address_get_protocol_name(dest_addr),
+                                           jxta_endpoint_address_get_protocol_address(dest_addr),
+                                           jstring_get_string(cross_service),
+                                           jxta_endpoint_address_get_service_params(dest_addr));
+    JXTA_OBJECT_RELEASE(cross_service);
+    JXTA_OBJECT_RELEASE(sid);
+
+    /*
+     * set our new address
+     */
+    caddress = jxta_endpoint_address_to_string(new_addr);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "New Address=%s\n", caddress);
+    free(caddress);
+
+    return new_addr;
+}
+
+static Jxta_status do_send(Jxta_PG * obj, Jxta_endpoint_service * service, Jxta_message * msg, 
+                           Jxta_endpoint_address * dest_addr, Jxta_boolean sync)
 {
     Jxta_status res = JXTA_SUCCESS;
     Jxta_stdpg *pg = PTValid(obj, Jxta_stdpg);
-    Jxta_bytevector *b_exp = NULL;
-    char *baseAddrStr = jxta_endpoint_address_get_transport_addr(dest_addr);
 
     PTValid(service, Jxta_endpoint_service);
 
@@ -885,42 +1152,6 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send(Jxta_PG * obj, Jxta_endpoin
                         FILEANDLINE "No destination service specified. Discarding message [%p]\n", msg);
         return JXTA_INVALID_ARGUMENT;
     }
-
-    /*
-     * check if this destination is reachable. We are maintaining
-     * a negative cache of unreachable destination
-     */
-    apr_thread_mutex_lock(service->mutex);
-
-    res = jxta_hashtable_get(service->unreachable_addresses, baseAddrStr, strlen(baseAddrStr), JXTA_OBJECT_PPTR(&b_exp));
-
-    if ((JXTA_SUCCESS == res) && (b_exp != NULL)) {
-        Jxta_time exp = 0;
-        Jxta_time now = 0;
-
-        jxta_bytevector_get_bytes_at(b_exp, (unsigned char *)&exp, 0, sizeof(Jxta_time));
-        JXTA_OBJECT_RELEASE(b_exp);
-
-        now = jpr_time_now();
-
-        if (exp > now) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Destination [%s] unreachable for " JPR_DIFF_TIME_FMT "ms\n",
-                            baseAddrStr, ((Jxta_time_diff) (exp - now)));
-            apr_thread_mutex_unlock(service->mutex);
-            res = JXTA_UNREACHABLE_DEST;
-            goto Common_Exit;
-        } else {
-            /* 
-             * negative info expired remove the negative cache entry
-             */
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Destination [%s] may now be reachable!\n", baseAddrStr);
-            jxta_hashtable_del(service->unreachable_addresses, baseAddrStr, strlen(baseAddrStr), NULL);
-        }
-    }
-
-    apr_thread_mutex_unlock(service->mutex);
-
-    msg = jxta_message_clone(msg);
 
     /*
      * Note: 20040510 tra
@@ -936,77 +1167,46 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send(Jxta_PG * obj, Jxta_endpoin
      * the service did not set the endpoint address yet.
      */
     if (pg->home_group != NULL) {
+        Jxta_endpoint_address *new_addr = NULL;
+
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "PeerGroup cross-messenger need to rewrite dest address\n");
-
-        /*
-         * Check if we already have the endpoint service address destination
-         * in that case assumed that the right endpoint address was
-         * set
-         *
-         * FIXME 20040510 tra we really should have a better way to 
-         * standardize address processing through subgroups
-         */
-        if (strncmp(jxta_endpoint_address_get_service_name(dest_addr),
-                    JXTA_ENDPOINT_SERVICE_NAME, strlen(JXTA_ENDPOINT_SERVICE_NAME)) != 0) {
-            char *caddress = NULL;
-            JString *cross_service = jstring_new_2(JXTA_ENDPOINT_SERVICE_NAME);
-            Jxta_endpoint_address *new_addr;
-            Jxta_id *id;
-            JString *sid = NULL;
-
-            jstring_append_2(cross_service, ":");
-
-            /*
-             * Extract the group id of the messenger destination. This
-             * is different from the endpoint group id, as the endpoint
-             * service always run within the NetGroup.
-             */
-            jxta_PG_get_GID((Jxta_PG *) pg, &id);
-            jxta_id_get_uniqueportion(id, &sid);
-            JXTA_OBJECT_RELEASE(id);
-
-            jstring_append_2(cross_service, jstring_get_string(sid));
-
-            jstring_append_2(cross_service, "/");
-            jstring_append_2(cross_service, jxta_endpoint_address_get_service_name(dest_addr));
-
-            new_addr = jxta_endpoint_address_new_2(jxta_endpoint_address_get_protocol_name(dest_addr),
-                                                   jxta_endpoint_address_get_protocol_address(dest_addr),
-                                                   jstring_get_string(cross_service),
-                                                   jxta_endpoint_address_get_service_params(dest_addr));
-            JXTA_OBJECT_RELEASE(cross_service);
-            JXTA_OBJECT_RELEASE(sid);
-
-            /*
-             * set our new address
-             */
-            caddress = jxta_endpoint_address_to_string(new_addr);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "New Address=%s\n", caddress);
-            free(caddress);
-
-            jxta_message_set_destination(msg, new_addr);
-
-            queue_enqueue(service->outgoing_queue, (void *) msg);
-
-            JXTA_OBJECT_RELEASE(new_addr);
-
-            res = JXTA_SUCCESS;
-            goto Common_Exit;
-        } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "No address rewrite as endpoint service is already set\n");
-        }
+        new_addr = rewrite_msg_address((Jxta_PG*)pg, dest_addr);
+        jxta_message_set_destination(msg, new_addr);
+        JXTA_OBJECT_RELEASE(new_addr);
+    } else {
+        jxta_message_set_destination(msg, dest_addr);
     }
 
-    jxta_message_set_destination(msg, dest_addr);
+    if (sync) {
+        res = outgoing_message_process(service, msg);
+    } else {
+        char *baseAddrStr = NULL;
+        Nc_entry *ptr = NULL;
 
-    queue_enqueue(service->outgoing_queue, (void *) msg);
-
-    res = JXTA_SUCCESS;
-
-  Common_Exit:
-    free(baseAddrStr);
+        /* better to clone it with async op as it is now
+         * we should really define some rules to avoid such clone
+         */
+        msg = jxta_message_clone(msg);
+        queue_enqueue(service->outgoing_queue, (void *) msg);
+        baseAddrStr = jxta_endpoint_address_get_transport_addr(dest_addr);
+        ptr = apr_hash_get(service->nc, baseAddrStr, APR_HASH_KEY_STRING);
+        free(baseAddrStr);
+        res = (NULL == ptr) ? JXTA_SUCCESS : JXTA_UNREACHABLE_DEST;
+    }
 
     return res;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_sync(Jxta_PG * obj, Jxta_endpoint_service * service, Jxta_message * msg,
+                                                          Jxta_endpoint_address * dest_addr)
+{
+    do_send(obj, service, msg, dest_addr, JXTA_TRUE);
+}
+
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_async(Jxta_PG * obj, Jxta_endpoint_service * service, Jxta_message * msg,
+                                                           Jxta_endpoint_address * dest_addr)
+{
+    do_send(obj, service, msg, dest_addr, JXTA_FALSE);
 }
 
 JXTA_DECLARE(void) jxta_endpoint_service_set_relay(Jxta_endpoint_service * service, const char *proto, const char *host)
@@ -1059,6 +1259,7 @@ JXTA_DECLARE(char *) jxta_endpoint_service_get_relay_proto(Jxta_endpoint_service
 static void *APR_THREAD_FUNC outgoing_message_thread(apr_thread_t * thread, void *arg)
 {
     Jxta_endpoint_service *service = PTValid(arg, Jxta_endpoint_service);
+    size_t cnt = 0;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Endpoint outgoing message thread started.\n");
 
@@ -1066,50 +1267,75 @@ static void *APR_THREAD_FUNC outgoing_message_thread(apr_thread_t * thread, void
         Jxta_message *msg = (Jxta_message *) queue_dequeue(service->outgoing_queue, 10L * 1000L * 1000L);
         if (msg) {
             JXTA_OBJECT_CHECK_VALID(msg);
-
             outgoing_message_process(service, msg);
+            ++cnt;
             JXTA_OBJECT_RELEASE(msg);
+        }
+        if (cnt > jxta_epcfg_get_ncrq_retry(service->config) || 0 == queue_size(service->outgoing_queue)) {
+            cnt = 0;
+            nc_review_all(service);
         }
     }
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Endpoint outgoing message thread stopping.\n");
-
     apr_thread_exit(thread, JXTA_SUCCESS);
-
     /* NOTREACHED */
     return NULL;
 }
 
-static void outgoing_message_process(Jxta_endpoint_service * self, Jxta_message * msg)
+static Jxta_status send_message(Jxta_endpoint_service *me, Jxta_message *msg, Jxta_endpoint_address *dest)
+{
+    JxtaEndpointMessenger *messenger;
+    Jxta_status res;
+
+    if (NULL == dest) {
+        dest = jxta_message_get_destination(msg);
+        if (dest == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Failed to get destination. Message [%p] is discarded.\n", msg);
+            return JXTA_FAILED;
+        }
+        assert(NULL != jxta_endpoint_address_get_service_name(dest));
+    }
+    /*
+     * We have the router transport go ahead and demux to it for sending our message
+     */
+    messenger = jxta_transport_messenger_get(me->router_transport, dest);
+    if (messenger != NULL) {
+        JXTA_OBJECT_CHECK_VALID(messenger);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Sending message [%p] via router transport.\n", msg);
+        res = messenger->jxta_send(messenger, msg);
+        JXTA_OBJECT_RELEASE(messenger);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Could not get router messenger\n");
+        res = JXTA_UNREACHABLE_DEST;
+    }
+    return res;
+}
+
+static Jxta_status outgoing_message_process(Jxta_endpoint_service * self, Jxta_message * msg)
 {
     Jxta_status res = JXTA_SUCCESS;
     Jxta_endpoint_address *dest;
-    JxtaEndpointMessenger *messenger;
+    char *baseAddrStr = NULL;
+    Nc_entry *ptr;
 
     if (self->router_transport == NULL) {
         self->router_transport = jxta_endpoint_service_lookup_transport(self, "jxta");
         if (self->router_transport == NULL) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,
                             FILEANDLINE "Router transport not available. Discarding message [%p]\n", msg);
-            return;
+            return JXTA_BUSY;
         }
     }
 
     JXTA_OBJECT_CHECK_VALID(msg);
 
     dest = jxta_message_get_destination(msg);
-
     if (dest == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "No destination. Message [%p] is discarded.\n", msg);
-        return;
+        return JXTA_ITEM_NOTFOUND;
     }
-
-    if (NULL == jxta_endpoint_address_get_service_name(dest)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "No destination service. Message [%p] is discarded.\n",
-                        msg);
-        JXTA_OBJECT_RELEASE(dest);
-        return;
-    }
+    assert(NULL != jxta_endpoint_address_get_service_name(dest));
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Outgoing message [%p] -> %s://%s/%s/%s\n",
                     msg,
@@ -1118,72 +1344,61 @@ static void outgoing_message_process(Jxta_endpoint_service * self, Jxta_message 
                     jxta_endpoint_address_get_service_name(dest), 
                     jxta_endpoint_address_get_service_params(dest));
 
-    /*
-     * We have the router transport go ahead and demux to it for sending our message
-     */
-    messenger = jxta_transport_messenger_get(self->router_transport, dest);
-    if (messenger != NULL) {
-        JXTA_OBJECT_CHECK_VALID(messenger);
-
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Sending message [%p] via router transport.\n", msg);
-
-        res = messenger->jxta_send(messenger, msg);
-        JXTA_OBJECT_RELEASE(messenger);
+    baseAddrStr = jxta_endpoint_address_get_transport_addr(dest);
+    ptr = apr_hash_get(self->nc, baseAddrStr, APR_HASH_KEY_STRING);
+    if (NULL != ptr) {
+        res = nc_peer_queue_msg(self, ptr, msg);
     } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Could not get router messenger\n");
-        res = JXTA_UNREACHABLE_DEST;
+        res = send_message(self, msg, dest);
+        if (JXTA_SUCCESS != res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Peer at %s is unreachable, queueing msg[%p]\n", baseAddrStr, msg);
+            ptr = nc_add_peer(self, baseAddrStr, msg);
+        }
     }
-
-    if (JXTA_SUCCESS != res) {
-        Jxta_bytevector *b_exp = jxta_bytevector_new_1(sizeof(Jxta_time));
-        Jxta_time until = (Jxta_time) jpr_time_now() + JXTA_ENDPOINT_DEST_UNREACHABLE_TIMEOUT;
-        Jxta_endpoint_address *failed = jxta_endpoint_address_new_2(jxta_endpoint_address_get_protocol_name(dest),
-                                                                    jxta_endpoint_address_get_protocol_address(dest),
-                                                                    NULL,
-                                                                    NULL);
-        char *failedStr = jxta_endpoint_address_to_string(failed);
-
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,
-                        "Failed to send message [%p]. Marking destination %s://%s unreachable until " JPR_ABS_TIME_FMT ".\n", msg,
-                        jxta_endpoint_address_get_protocol_name(failed),
-                        jxta_endpoint_address_get_protocol_address(failed), until);
-        JXTA_OBJECT_RELEASE(failed);
-
-        jxta_bytevector_add_bytes_at(b_exp, (unsigned char *)&until, 0, sizeof(Jxta_time));
-
-        apr_thread_mutex_lock(self->mutex);
-
-        jxta_hashtable_put(self->unreachable_addresses, failedStr, strlen(failedStr), (Jxta_object *) b_exp);
-        free(failedStr);
-        JXTA_OBJECT_RELEASE(b_exp);
-
-        apr_thread_mutex_unlock(self->mutex);
-    } else {
+    if (JXTA_SUCCESS == res) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Message [%p] send successful.\n", msg);
     }
-
+    free(baseAddrStr);
     JXTA_OBJECT_RELEASE(dest);
+    return res;
 }
 
 void jxta_endpoint_service_transport_event(Jxta_endpoint_service * me, Jxta_transport_event * e)
 {
     char *addr = NULL;
     Jxta_endpoint_address *ea = NULL;
+    Jxta_status status;
+    Nc_entry *ptr = NULL;
 
     switch (e->type) {
     case JXTA_TRANSPORT_INBOUND_CONNECT:
         addr = jxta_endpoint_address_get_transport_addr(e->dest_addr);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Inbound connection from %s.\n", addr);
-        if (JXTA_SUCCESS == jxta_hashtable_del(me->unreachable_addresses, addr, strlen(addr), NULL)) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Remove peer %s from unreachable cache.\n", addr);
+
+        ptr = apr_hash_get(me->nc, addr, APR_HASH_KEY_STRING);
+        if (NULL != ptr) {
+            ptr->expiration = 0;
+            status = nc_peer_process_queue(me, ptr);
+            if (JXTA_SUCCESS == status) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Peer at %s is back online.\n", ptr->addr);
+                nc_remove_peer(me, ptr);
+            }
         }
         free(addr);
+
         ea = jxta_endpoint_address_new_3(e->peer_id, NULL, NULL);
         if (NULL != ea) {
             addr = jxta_endpoint_address_get_transport_addr(ea);
             JXTA_OBJECT_RELEASE(ea);
-            if (JXTA_SUCCESS == jxta_hashtable_del(me->unreachable_addresses, addr, strlen(addr), NULL)) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Remove peer %s from unreachable cache.\n", addr);
+
+            ptr = apr_hash_get(me->nc, addr, APR_HASH_KEY_STRING);
+            if (NULL != ptr) {
+                ptr->expiration = 0;
+                status = nc_peer_process_queue(me, ptr);
+                if (JXTA_SUCCESS == status) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Peer at %s is back online.\n", ptr->addr);
+                    nc_remove_peer(me, ptr);
+                }
             }
             free(addr);
         }

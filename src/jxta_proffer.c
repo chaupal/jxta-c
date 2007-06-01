@@ -50,7 +50,8 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
-  */
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include "jxta_errno.h"
@@ -60,19 +61,14 @@
 #include "jxta_proffer.h"
 #include "jxta_apr.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-}
-#endif
 /** This is the representation of the
  * actual ad in the code.  It should
  * stay opaque to the programmer, and be 
  * accessed through the get/set API.
- */ 
+ */
 typedef struct _element_entry Jxta_elemEntry;
 typedef struct _elem_attr Jxta_elemAttr;
+
 static Jxta_status prof_get_element_attribute(const char *elementAttribute, Jxta_elemAttr ** out);
 static void prof_add_to_elemHash(Jxta_ProfferAdvertisement * prof, Jxta_elemAttr * el);
 static Jxta_boolean prof_is_indexable(Jxta_ProfferAdvertisement * prof, const char *element_attr);
@@ -88,15 +84,24 @@ struct _jxta_ProfferAdvertisement {
     const char *advId;
     const char *peerId;
 };
+
+struct _elem_attr {
+    JXTA_OBJECT_HANDLE;
+    char *element;
+    char *attribute;
+    char *value;
+};
+
 struct _element_entry {
     JXTA_OBJECT_HANDLE;
-    Jxta_elemAttr * element;
+    Jxta_elemAttr *element;
     Jxta_boolean isIndexable;
-    Jxta_vector * attributes;
+    Jxta_vector *attributes;
 };
+
 void freeElemEntry(Jxta_object * obj)
 {
-    Jxta_elemEntry *entry=NULL;
+    Jxta_elemEntry *entry = NULL;
     entry = (Jxta_elemEntry *) obj;
     if (entry->element) {
         JXTA_OBJECT_RELEASE(entry->element);
@@ -106,6 +111,7 @@ void freeElemEntry(Jxta_object * obj)
     }
     free(entry);
 }
+
 void freeProfferAdv(Jxta_object * obj)
 {
     Jxta_ProfferAdvertisement *ad = (Jxta_ProfferAdvertisement *) obj;
@@ -124,12 +130,6 @@ void freeProfferAdv(Jxta_object * obj)
     }
     free(ad);
 }
-struct _elem_attr {
-    JXTA_OBJECT_HANDLE;
-    char *element;
-    char *attribute;
-    char *value;
-};
 
 void freeElemAttr(Jxta_object * obj)
 {
@@ -147,13 +147,13 @@ void freeElemAttr(Jxta_object * obj)
 static void handleElement(void *userdata, const XML_Char * cd, int len)
 {
     const char **atts = NULL;
-    JString *pass=NULL;
-    JString *passe=NULL;
-    JString *passAttr=NULL;
-    Jxta_elemAttr *elemAttr=NULL;
-    Jxta_elemEntry *elemEntry=NULL;
+    JString *pass = NULL;
+    JString *passe = NULL;
+    JString *passAttr = NULL;
+    Jxta_elemAttr *elemAttr = NULL;
+    Jxta_elemEntry *elemEntry = NULL;
     Jxta_status status;
-    Jxta_vector *attrVector=NULL;
+    Jxta_vector *attrVector = NULL;
     Jxta_ProfferAdvertisement *ad = (Jxta_ProfferAdvertisement *) userdata;
     Jxta_advertisement *adv = (Jxta_advertisement *) userdata;
     atts = adv->atts;
@@ -170,15 +170,17 @@ static void handleElement(void *userdata, const XML_Char * cd, int len)
         jstring_trim(passe);
         if (jstring_length(passe) > 0) {
             if (prof_is_indexable(ad, jstring_get_string(passAttr))) {
-                Jxta_elemAttr *elemAttr=NULL;
+                Jxta_elemAttr *elemAttr = NULL;
+
                 if (NULL == attrVector) {
                     attrVector = jxta_vector_new(0);
                 }
-                status =  prof_get_element_attribute(jstring_get_string(passAttr), &elemAttr);
+                status = prof_get_element_attribute(jstring_get_string(passAttr), &elemAttr);
                 elemAttr->value = strdup(jstring_get_string(passe));
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, 
-                                     "handleElement -- element:%s  attribute:%s value:%s\n",elemAttr->element, elemAttr->attribute, elemAttr->value);
-                jxta_vector_add_object_last(attrVector, (Jxta_object*) elemAttr);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE,
+                                "handleElement -- element:%s  attribute:%s value:%s\n", elemAttr->element, elemAttr->attribute,
+                                elemAttr->value);
+                jxta_vector_add_object_last(attrVector, (Jxta_object *) elemAttr);
                 JXTA_OBJECT_RELEASE(elemAttr);
             }
         }
@@ -187,14 +189,13 @@ static void handleElement(void *userdata, const XML_Char * cd, int len)
         JXTA_OBJECT_RELEASE(passAttr);
     }
     adv->atts = NULL;
-    if(adv->currElement != NULL) {
+    if (adv->currElement != NULL) {
         status = prof_get_element_attribute(adv->currElement, &elemAttr);
         if (status != JXTA_SUCCESS) {
             adv->currElement = NULL;
             goto CommonExit;
         }
-    }
-    else {
+    } else {
         goto CommonExit;
     }
     elemAttr->value = strdup(jstring_get_string(pass));
@@ -209,19 +210,22 @@ static void handleElement(void *userdata, const XML_Char * cd, int len)
     elemEntry->isIndexable = FALSE;
     if (prof_is_indexable(ad, adv->currElement) || attrVector != NULL) {
         elemEntry->isIndexable = TRUE;
-        jxta_vector_add_object_last(ad->elemVector, (Jxta_object*) elemEntry);
+        jxta_vector_add_object_last(ad->elemVector, (Jxta_object *) elemEntry);
     }
 
     adv->currElement = NULL;
-CommonExit:
-    if (attrVector) JXTA_OBJECT_RELEASE(attrVector);
-    if (elemAttr) JXTA_OBJECT_RELEASE(elemAttr);
-    if (elemEntry) JXTA_OBJECT_RELEASE(elemEntry);
-    if (pass) JXTA_OBJECT_RELEASE(pass);
+  CommonExit:
+    if (attrVector)
+        JXTA_OBJECT_RELEASE(attrVector);
+    if (elemAttr)
+        JXTA_OBJECT_RELEASE(elemAttr);
+    if (elemEntry)
+        JXTA_OBJECT_RELEASE(elemEntry);
+    if (pass)
+        JXTA_OBJECT_RELEASE(pass);
 }
 
-JXTA_DECLARE(Jxta_ProfferAdvertisement *)
-    jxta_ProfferAdvertisement_new()
+JXTA_DECLARE(Jxta_ProfferAdvertisement *) jxta_ProfferAdvertisement_new()
 {
     Jxta_ProfferAdvertisement *self;
 
@@ -231,13 +235,14 @@ JXTA_DECLARE(Jxta_ProfferAdvertisement *)
     JXTA_OBJECT_INIT(self, (JXTA_OBJECT_FREE_FUNC) freeProfferAdv, 0);
     return self;
 }
+
 static const Kwdtab ProfferAdvertisement_tags[] = {
     {"*", 0, *handleElement, NULL, NULL},
     {NULL, 0, 0, NULL, NULL}
 };
 
 JXTA_DECLARE(Jxta_ProfferAdvertisement *)
-    jxta_ProfferAdvertisement_new_rebuild(Jxta_advertisement *adv, const char *name, const char *xmlString)
+    jxta_ProfferAdvertisement_new_rebuild(Jxta_advertisement * adv, const char *name, const char *xmlString)
 {
     Jxta_ProfferAdvertisement *self;
     self = calloc(1, sizeof(Jxta_ProfferAdvertisement));
@@ -246,8 +251,9 @@ JXTA_DECLARE(Jxta_ProfferAdvertisement *)
 
     jxta_advertisement_initialize((Jxta_advertisement *) self,
                                   name,
-                                  ProfferAdvertisement_tags, NULL, (JxtaAdvertisementGetIDFunc) jxta_proffer_adv_get_advId, NULL, (FreeFunc) freeProfferAdv);
-    
+                                  ProfferAdvertisement_tags, NULL, (JxtaAdvertisementGetIDFunc) jxta_proffer_adv_get_advId, NULL,
+                                  (FreeFunc) freeProfferAdv);
+
     self->elemHash = NULL;
     self->elemVector = NULL;
     self->nameSpace = jstring_new_2(name);
@@ -257,8 +263,7 @@ JXTA_DECLARE(Jxta_ProfferAdvertisement *)
     return self;
 }
 
-JXTA_DECLARE(Jxta_status)
-    jxta_proffer_adv_add_item(Jxta_ProfferAdvertisement * prof, const char *name, const char *value)
+JXTA_DECLARE(Jxta_status) jxta_proffer_adv_add_item(Jxta_ProfferAdvertisement * prof, const char *name, const char *value)
 {
     Jxta_elemAttr *elemAttr;
     Jxta_status status;
@@ -268,7 +273,7 @@ JXTA_DECLARE(Jxta_status)
     }
     elemAttr->value = strdup(value);
     prof_add_to_elemHash(prof, elemAttr);
-    
+
     JXTA_OBJECT_RELEASE(elemAttr);
     return JXTA_SUCCESS;
 }
@@ -309,15 +314,14 @@ JXTA_DECLARE(const char *) jxta_proffer_adv_get_peerId(Jxta_ProfferAdvertisement
     return prof->peerId;
 }
 
-JXTA_DECLARE(Jxta_status)
-    jxta_proffer_adv_print(Jxta_ProfferAdvertisement * prof, JString * out)
+JXTA_DECLARE(Jxta_status) jxta_proffer_adv_print(Jxta_ProfferAdvertisement * prof, JString * out)
 {
     unsigned int i, j;
     char *nspace, *ns;
-    Jxta_boolean isMultiple=FALSE;
+    Jxta_boolean isMultiple = FALSE;
     Jxta_vector *elemv = NULL;
     Jxta_vector *elements = NULL;
-    Jxta_elemEntry *elemEntry=NULL;
+    Jxta_elemEntry *elemEntry = NULL;
     jstring_reset(out, NULL);
     jstring_append_2(out, "<");
     jstring_append_1(out, prof->nameSpace);
@@ -338,8 +342,8 @@ JXTA_DECLARE(Jxta_status)
     jstring_append_2(out, ">\n");
     if (NULL != prof->elemHash) {
         elements = jxta_hashtable_values_get(prof->elemHash);
-    } else if (NULL != prof->elemVector){
-        isMultiple=TRUE;
+    } else if (NULL != prof->elemVector) {
+        isMultiple = TRUE;
         elements = JXTA_OBJECT_SHARE(prof->elemVector);
     } else {
         jstring_append_2(out, "</");
@@ -356,11 +360,13 @@ JXTA_DECLARE(Jxta_status)
             Jxta_elemAttr *elemAttr;
             jxta_vector_get_object_at(elements, JXTA_OBJECT_PPTR(&elemEntry), j);
             elemv = elemEntry->attributes;
-            if (elemv) JXTA_OBJECT_SHARE(elemv);
+            if (elemv)
+                JXTA_OBJECT_SHARE(elemv);
             elemAttr = elemEntry->element;
             element = elemAttr->element;
             elemValue = elemAttr->value;
-            if ('#' == *elemValue) elemValue = elemValue+1;
+            if ('#' == *elemValue)
+                elemValue = elemValue + 1;
         } else {
             jxta_vector_get_object_at(elements, JXTA_OBJECT_PPTR(&elemv), j);
         }
@@ -405,10 +411,10 @@ JXTA_DECLARE(Jxta_status)
             jstring_append_2(out, "</");
             jstring_append_2(out, element);
             jstring_append_2(out, ">\n");
-       }
-       if (elemv) 
+        }
+        if (elemv)
             JXTA_OBJECT_RELEASE(elemv);
-       if (elemEntry) 
+        if (elemEntry)
             JXTA_OBJECT_RELEASE(elemEntry);
     }
     jstring_append_2(out, "</");
@@ -419,6 +425,7 @@ JXTA_DECLARE(Jxta_status)
         JXTA_OBJECT_RELEASE(elements);
     return JXTA_SUCCESS;
 }
+
 static Jxta_status prof_get_element_attribute(const char *elementAttribute, Jxta_elemAttr ** out)
 {
     Jxta_boolean att = FALSE;
@@ -448,6 +455,7 @@ static Jxta_status prof_get_element_attribute(const char *elementAttribute, Jxta
     *out = ret;
     return JXTA_SUCCESS;
 }
+
 static void prof_add_to_elemHash(Jxta_ProfferAdvertisement * prof, Jxta_elemAttr * el)
 {
     Jxta_vector *elemv;
@@ -461,12 +469,14 @@ static void prof_add_to_elemHash(Jxta_ProfferAdvertisement * prof, Jxta_elemAttr
     jxta_vector_add_object_first(elemv, (Jxta_object *) el);
     JXTA_OBJECT_RELEASE(elemv);
 }
+
 static Jxta_boolean prof_is_indexable(Jxta_ProfferAdvertisement * prof, const char *element_attr)
 {
     unsigned int i;
-    Jxta_boolean ret=FALSE;
-    if (NULL == prof->indexables) return FALSE;
-    for (i=0; i<jxta_vector_size(prof->indexables); i++) {
+    Jxta_boolean ret = FALSE;
+    if (NULL == prof->indexables)
+        return FALSE;
+    for (i = 0; i < jxta_vector_size(prof->indexables); i++) {
         Jxta_index *ji = NULL;
         Jxta_status status;
         char *full_index_name;
@@ -491,18 +501,12 @@ static Jxta_boolean prof_is_indexable(Jxta_ProfferAdvertisement * prof, const ch
             }
             free(full_index_name);
         }
-        if (NULL != ji) 
+        if (NULL != ji)
             JXTA_OBJECT_RELEASE(ji);
-        if (TRUE == ret) 
+        if (TRUE == ret)
             break;
     }
     return ret;
 }
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
 
 /* vi: set ts=4 sw=4 tw=130 et: */

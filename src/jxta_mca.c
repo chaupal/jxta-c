@@ -50,19 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_mca.c,v 1.23 2005/08/03 05:51:16 slowhog Exp $
+ * $Id: jxta_mca.c,v 1.25 2006/02/18 00:32:51 slowhog Exp $
  */
 
-
-/*
-* The following command will compile the output from the script 
-* given the apr is installed correctly.
-*/
-/*
-* gcc -DSTANDALONE jxta_advertisement.c MCA.c  -o PA \
-  `/usr/local/apache2/bin/apr-config --cflags --includes --libs` \
-  -lexpat -L/usr/local/apache2/lib/ -lapr
-*/
+static const char *const __log_cat = "MCA";
 
 #include <stdio.h>
 #include <string.h>
@@ -70,212 +61,327 @@
 #include "jxta_debug.h"
 #include "jxta_mca.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/** Each of these corresponds to a tag in the
+* xml ad.
+*/
+enum tokentype {
+    Null_,
+    MCA_,
+    MCID_,
+    Name_,
+    Desc_
+};
 
-    /** Each of these corresponds to a tag in the
-     * xml ad.
-     */
-    enum tokentype {
-        Null_,
-        MCA_,
-        MCID_,
-        Name_,
-        Desc_
+/** This is the representation of the
+* actual ad in the code.  It should
+* stay opaque to the programmer, and be 
+* accessed through the get/set API.
+*/
+struct _jxta_MCA {
+    Jxta_advertisement jxta_advertisement;
+    char *jxta_MCA;
+
+    Jxta_id *MCID;
+    JString *Name;
+    JString *Desc;
+};
+
+void MCA_delete(Jxta_MCA * ad);
+
+/** Handler functions.  Each of these is responsible for
+* dealing with all of the character data associated with the 
+* tag name.
+*/
+static void handleMCA(void *userdata, const XML_Char * cd, int len)
+{
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In MCA element\n");
+}
+
+static void handleMCID(void *userdata, const XML_Char * cd, int len)
+{
+    Jxta_id *cid = NULL;
+    Jxta_MCA *ad = (Jxta_MCA *) userdata;
+    JString *tmp;
+
+    if (len == 0)
+        return;
+
+    /* Make room for a final \0 in advance; we'll likely need it. */
+    tmp = jstring_new_1(len + 1);
+
+    jstring_append_0(tmp, (char *) cd, len);
+    jstring_trim(tmp);
+
+    jxta_id_from_jstring(&cid, tmp);
+    JXTA_OBJECT_RELEASE(tmp);
+
+    if (cid != NULL) {
+        jxta_MCA_set_MCID(ad, cid);
+        JXTA_OBJECT_RELEASE(cid);
+    }
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In MCID element\n");
+}
+
+static void handleName(void *userdata, const XML_Char * cd, int len)
+{
+    Jxta_MCA *ad = (Jxta_MCA *) userdata;
+    JString *nm;
+
+    if (len == 0)
+        return;
+
+    nm = jstring_new_1(len);
+    jstring_append_0(nm, cd, len);
+    jstring_trim(nm);
+
+    jxta_MCA_set_Name(ad, nm);
+
+    JXTA_OBJECT_RELEASE(nm);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Name element\n");
+}
+
+static void handleDesc(void *userdata, const XML_Char * cd, int len)
+{
+    Jxta_MCA *ad = (Jxta_MCA *) userdata;
+    JString *desc;
+
+    if (len == 0)
+        return;
+
+    desc = jstring_new_1(len);
+    jstring_append_0(desc, cd, len);
+    jstring_trim(desc);
+
+    jxta_MCA_set_Desc(ad, desc);
+
+    JXTA_OBJECT_RELEASE(desc);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Desc element\n");
+}
+
+/** The get/set functions represent the public
+* interface to the ad class, that is, the API.
+*/
+JXTA_DECLARE(char *) jxta_MCA_get_MCA(Jxta_MCA * ad)
+{
+    return NULL;
+}
+
+JXTA_DECLARE(void) jxta_MCA_set_MCA(Jxta_MCA * ad, char *name)
+{
+}
+
+JXTA_DECLARE(Jxta_id *) jxta_MCA_get_MCID(Jxta_MCA * ad)
+{
+    if (ad->MCID)
+        JXTA_OBJECT_SHARE(ad->MCID);
+
+    return ad->MCID;
+}
+
+JXTA_DECLARE(void) jxta_MCA_set_MCID(Jxta_MCA * ad, Jxta_id * id)
+{
+    if (ad->MCID)
+        JXTA_OBJECT_RELEASE(ad->MCID);
+
+    if (id)
+        JXTA_OBJECT_SHARE(id);
+
+    ad->MCID = id;
+}
+
+char *JXTA_STDCALL jxta_PGA_get_MCID_string(Jxta_advertisement * ad)
+{
+    char *res;
+    JString *js = NULL;
+
+    jxta_id_to_jstring(((Jxta_MCA *) ad)->MCID, &js);
+
+    res = strdup(jstring_get_string(js));
+    JXTA_OBJECT_RELEASE(js);
+
+    return res;
+}
+
+JXTA_DECLARE(JString *) jxta_MCA_get_Name(Jxta_MCA * ad)
+{
+    if (ad->Name)
+        JXTA_OBJECT_SHARE(ad->Name);
+
+    return ad->Name;
+}
+
+char *JXTA_STDCALL jxta_MCA_get_Name_string(Jxta_advertisement * ad)
+{
+    return strdup(jstring_get_string(((Jxta_MCA *) ad)->Name));
+}
+
+JXTA_DECLARE(void) jxta_MCA_set_Name(Jxta_MCA * ad, JString * name)
+{
+    if (ad->Name)
+        JXTA_OBJECT_RELEASE(ad->Name);
+
+    if (name)
+        JXTA_OBJECT_SHARE(name);
+
+    ad->Name = name;
+}
+
+JXTA_DECLARE(JString *) jxta_MCA_get_Desc(Jxta_MCA * ad)
+{
+    if (ad->Desc)
+        JXTA_OBJECT_SHARE(ad->Desc);
+
+    return ad->Desc;
+}
+
+JXTA_DECLARE(void) jxta_MCA_set_Desc(Jxta_MCA * ad, JString * desc)
+{
+    if (ad->Desc)
+        JXTA_OBJECT_RELEASE(ad->Desc);
+
+    if (desc)
+        JXTA_OBJECT_SHARE(desc);
+
+    ad->Desc = desc;
+}
+
+/** Now, build an array of the keyword structs.  Since
+* a top-level, or null state may be of interest, 
+* let that lead off.  Then, walk through the enums,
+* initializing the struct array with the correct fields.
+* Later, the stream will be dispatched to the handler based
+* on the value in the char * kwd.
+*/
+static const Kwdtab MCA_tags[] = {
+    {"Null", Null_, NULL, NULL, NULL},
+    {"jxta:MCA", MCA_, *handleMCA, NULL, NULL},
+    {"MCID", MCID_, *handleMCID, *jxta_PGA_get_MCID_string, NULL},
+    {"Name", Name_, *handleName, *jxta_MCA_get_Name_string, NULL},
+    {"Desc", Desc_, *handleDesc, NULL, NULL},
+    {NULL, 0, 0, NULL, NULL}
+};
+
+JXTA_DECLARE(Jxta_status) jxta_MCA_get_xml(Jxta_MCA * ad, JString ** string)
+{
+    JString *cids;
+    JString *tmp = jstring_new_0();
+
+    jstring_append_2(tmp, "<?xml version=\"1.0\"?>" "<!DOCTYPE jxta:MCA>" "<jxta:MCA xmlns:jxta=\"http://jxta.org\">\n");
+
+    jstring_append_2(tmp, "<MCID>");
+    jxta_id_to_jstring(ad->MCID, &cids);
+    jstring_append_1(tmp, cids);
+    JXTA_OBJECT_RELEASE(cids);
+    jstring_append_2(tmp, "</MCID>\n");
+
+    jstring_append_2(tmp, "<Name>");
+    jstring_append_1(tmp, ad->Name);
+    jstring_append_2(tmp, "</Name>\n");
+
+    jstring_append_2(tmp, "<Desc>");
+    jstring_append_1(tmp, ad->Desc);
+    jstring_append_2(tmp, "</Desc>\n");
+
+    jstring_append_2(tmp, "</jxta:MCA>\n");
+
+    *string = tmp;
+
+    return JXTA_SUCCESS;
+}
+
+/** Get a new instance of the ad.
+* The memory gets shredded going in to 
+* a value that is easy to see in a debugger,
+* just in case there is a segfault (not that 
+* that would ever happen, but in case it ever did.)
+*/
+JXTA_DECLARE(Jxta_MCA *) jxta_MCA_new()
+{
+    Jxta_MCA *ad;
+
+    ad = (Jxta_MCA *) malloc(sizeof(Jxta_MCA));
+    memset(ad, 0xda, sizeof(Jxta_MCA));
+
+    jxta_advertisement_initialize((Jxta_advertisement *) ad,
+                                  "jxta:MCA",
+                                  MCA_tags,
+                                  (JxtaAdvertisementGetXMLFunc) jxta_MCA_get_xml,
+                                  (JxtaAdvertisementGetIDFunc) jxta_MCA_get_MCID,
+                                  (JxtaAdvertisementGetIndexFunc) jxta_MCA_get_indexes, (FreeFunc) MCA_delete);
+
+    JXTA_OBJECT_SHARE(jxta_id_nullID);
+    ad->MCID = jxta_id_nullID;
+    ad->Name = jstring_new_0();
+    ad->Desc = jstring_new_0();
+
+    return ad;
+}
+
+/** Shred the memory going out.  Again,
+* if there ever was a segfault (unlikely,
+* of course), the hex value dddddddd will 
+* pop right out as a piece of memory accessed
+* after it was freed...
+*/
+void MCA_delete(Jxta_MCA * ad)
+{
+    /* Fill in the required freeing functions here. */
+
+    JXTA_OBJECT_RELEASE(ad->MCID);
+    JXTA_OBJECT_RELEASE(ad->Name);
+    JXTA_OBJECT_RELEASE(ad->Desc);
+
+    jxta_advertisement_destruct((Jxta_advertisement *) ad);
+
+    memset(ad, 0xdd, sizeof(Jxta_MCA));
+    free(ad);
+}
+
+JXTA_DECLARE(void) jxta_MCA_parse_charbuffer(Jxta_MCA * ad, const char *buf, int len)
+{
+    jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+}
+
+JXTA_DECLARE(void) jxta_MCA_parse_file(Jxta_MCA * ad, FILE * stream)
+{
+    jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+}
+
+JXTA_DECLARE(Jxta_vector *) jxta_MCA_get_indexes(Jxta_advertisement * dummy)
+{
+    const char *idx[][2] = {
+        {"Name", NULL},
+        {"MCID", NULL},
+        {NULL, NULL}
     };
-
-
-    /** This is the representation of the
-     * actual ad in the code.  It should
-     * stay opaque to the programmer, and be 
-     * accessed through the get/set API.
-     */
-    struct _MCA {
-        Jxta_advertisement jxta_advertisement;
-        char *MCA;
-        char *MCID;
-        char *Name;
-        char *Desc;
-    };
-
-
-    /** Handler functions.  Each of these is responsible for
-     * dealing with all of the character data associated with the 
-     * tag name.
-     */
-    static void
-     handleMCA(void *userdata, const XML_Char * cd, int len) {
-        /* MCA * ad = (MCA*)userdata; */
-        JXTA_LOG("In MCA element\n");
-    } static void
-     handleMCID(void *userdata, const XML_Char * cd, int len) {
-        /* MCA * ad = (MCA*)userdata; */
-        JXTA_LOG("In MCID element\n");
-    }
-
-    static void
-     handleName(void *userdata, const XML_Char * cd, int len) {
-        /* MCA * ad = (MCA*)userdata; */
-        JXTA_LOG("In Name element\n");
-    }
-
-    static void
-     handleDesc(void *userdata, const XML_Char * cd, int len) {
-        /* MCA * ad = (MCA*)userdata; */
-        JXTA_LOG("In Desc element\n");
-    }
-
-
-
-
-    /** The get/set functions represent the public
-     * interface to the ad class, that is, the API.
-     */
-    JXTA_DECLARE(char *) MCA_get_MCA(MCA * ad) {
-        return NULL;
-    }
-
-    JXTA_DECLARE(void)
-     MCA_set_MCA(MCA * ad, char *name) {
-    }
-
-    JXTA_DECLARE(char *) MCA_get_MCID(MCA * ad) {
-        return NULL;
-    }
-
-    JXTA_DECLARE(void)
-     MCA_set_MCID(MCA * ad, char *name) {
-    }
-
-    JXTA_DECLARE(char *) MCA_get_Name(MCA * ad) {
-        return NULL;
-    }
-
-    JXTA_DECLARE(void)
-     MCA_set_Name(MCA * ad, char *name) {
-    }
-
-    JXTA_DECLARE(char *) MCA_get_Desc(MCA * ad) {
-        return NULL;
-    }
-
-    JXTA_DECLARE(void)
-     MCA_set_Desc(MCA * ad, char *name) {
-    }
-
-    /** Now, build an array of the keyword structs.  Since
-     * a top-level, or null state may be of interest, 
-     * let that lead off.  Then, walk through the enums,
-     * initializing the struct array with the correct fields.
-     * Later, the stream will be dispatched to the handler based
-     * on the value in the char * kwd.
-     */
-    static const Kwdtab MCA_tags[] = {
-        {"Null", Null_, NULL, NULL, NULL},
-        {"jxta:MCA", MCA_, *handleMCA, NULL, NULL},
-        {"MCID", MCID_, *handleMCID, NULL, NULL},
-        {"Name", Name_, *handleName, NULL, NULL},
-        {"Desc", Desc_, *handleDesc, NULL, NULL},
-        {NULL, 0, 0, NULL, NULL}
-    };
-
-
-    /**
-     * @todo  Return an appropriate value.
-     */
-    JXTA_DECLARE(Jxta_status) MCA_get_xml(MCA * ad, JString ** string) {
-
-        /*
-           printer(stream,"<MCA>\n");
-           printer(stream,"<MCID>%s</MCID>\n",MCA_get_MCID(ad));
-           printer(stream,"<Name>%s</Name>\n",MCA_get_Name(ad));
-           printer(stream,"<Desc>%s</Desc>\n",MCA_get_Desc(ad));
-           printer(stream,"</MCA>\n");
-         */
-        return JXTA_NOTIMP;
-
-    }
-
-
-    /** Get a new instance of the ad.
-     * The memory gets shredded going in to 
-     * a value that is easy to see in a debugger,
-     * just in case there is a segfault (not that 
-     * that would ever happen, but in case it ever did.)
-     */
-    JXTA_DECLARE(MCA *) MCA_new() {
-
-        MCA *ad;
-        ad = (MCA *) malloc(sizeof(MCA));
-        memset(ad, 0xda, sizeof(MCA));
-
-
-        jxta_advertisement_initialize((Jxta_advertisement *) ad, "jxta:MCA", MCA_tags, (JxtaAdvertisementGetXMLFunc) MCA_get_xml,
-                                      /* XXX Fixme MCA_get_MCID is not implemented nor has the correct sig.
-                                         when it is fixed this needs to be corrected.  it's NULL for now */
-                                      NULL, (JxtaAdvertisementGetIndexFunc) MCA_get_indexes, (FreeFunc) MCA_delete);
-
-        return ad;
-    }
-
-    /** Shred the memory going out.  Again,
-     * if there ever was a segfault (unlikely,
-     * of course), the hex value dddddddd will 
-     * pop right out as a piece of memory accessed
-     * after it was freed...
-     */
-    void
-     MCA_delete(MCA * ad) {
-        /* Fill in the required freeing functions here. */
-
-        memset(ad, 0xdd, sizeof(MCA));
-        free(ad);
-    }
-
-    JXTA_DECLARE(void)
-     MCA_parse_charbuffer(MCA * ad, const char *buf, int len) {
-
-        jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
-    }
-
-    JXTA_DECLARE(void)
-     MCA_parse_file(MCA * ad, FILE * stream) {
-
-        jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
-    }
-
-    JXTA_DECLARE(Jxta_vector *) MCA_get_indexes(Jxta_advertisement * dummy) {
-        const char *idx[][2] = {
-            {"Name", NULL},
-            {NULL, NULL}
-        };
-        return jxta_advertisement_return_indexes(idx[0]);
-    }
+    return jxta_advertisement_return_indexes(idx[0]);
+}
 
 #ifdef STANDALONE
-    int
-     main(int argc, char **argv) {
-        MCA *ad;
-        FILE *testfile;
+int main(int argc, char **argv)
+{
+    Jxta_MCA *ad;
+    FILE *testfile;
 
-        if (argc != 2) {
-            printf("usage: ad <filename>\n");
-            return -1;
-        }
-
-        ad = MCA_new();
-
-        testfile = fopen(argv[1], "r");
-        MCA_parse_file(ad, testfile);
-        fclose(testfile);
-
-        /* MCA_print_xml(ad,fprintf,stdout); */
-        MCA_delete(ad);
-
-        return 0;
+    if (argc != 2) {
+        printf("usage: ad <filename>\n");
+        return -1;
     }
-#endif
-#ifdef __cplusplus
+
+    ad = jxta_MCA_new();
+
+    testfile = fopen(argv[1], "r");
+    jxta_MCA_parse_file(ad, testfile);
+    fclose(testfile);
+
+    /* MCA_print_xml(ad,fprintf,stdout); */
+    JXTA_OBJECT_RELEASE(ad);
+
+    return 0;
 }
+
 #endif
+
+/* vim: set ts=4 sw=4 et tw=130: */

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: talk.h,v 1.3 2005/08/24 01:21:23 slowhog Exp $
+ * $Id: talk.h,v 1.4 2006/01/30 01:14:17 bondolo Exp $
  */
 #ifndef __JXTA_SHELL_TALK_H__
 #define __JXTA_SHELL_TALK_H__
@@ -73,13 +73,6 @@ extern "C" {
 JxtaShellApplication *talk_new(Jxta_PG * pg,
                                Jxta_listener * standout,
                                JxtaShellEnvironment * env, Jxta_object * parent, shell_application_terminate terminate);
-
-void talk_process_input(Jxta_object * app, JString * inputLine);
-
-void talk_start(Jxta_object * app, int argv, const char **arg);
-
-void talk_print_help(Jxta_object * app);
-
 
 #ifdef __cplusplus
 #if 0

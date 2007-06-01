@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_query.c,v 1.16 2005/10/27 01:55:29 slowhog Exp $
+ * $Id: jxta_query.c,v 1.17 2006/02/15 01:09:43 slowhog Exp $
   *
   */
 #include <stdlib.h>
@@ -59,7 +59,7 @@
 #include <float.h>
 #define isnan(a)      _isnan(a) 
 #endif
-#include <jxta_apr.h>
+#include "jxta_apr.h"
 #include "jxta_errno.h"
 #include "jxta_types.h"
 #include "jxta_query.h"

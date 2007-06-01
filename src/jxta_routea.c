@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_routea.c,v 1.16 2005/11/14 10:11:28 slowhog Exp $
+ * $Id: jxta_routea.c,v 1.18 2006/02/18 00:32:53 slowhog Exp $
  */
 
 
@@ -76,15 +76,10 @@
 
 #define DEBUG 1
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-}
-#endif
 /** Each of these corresponds to a tag in the 
  * xml ad.
- */ enum tokentype {
+ */
+enum tokentype {
     Null_,
     Jxta_RouteAdvertisement_,
     DESTPID_,
@@ -107,7 +102,7 @@ struct _jxta_RouteAdvertisement {
 
 /* Forw decl for un-exported function */
 static void jxta_RouteAdvertisement_delete(Jxta_RouteAdvertisement *);
-char * JXTA_STDCALL jxta_RouteAdvertisement_get_DestPID_string(Jxta_RouteAdvertisement * ad);
+char *JXTA_STDCALL jxta_RouteAdvertisement_get_DestPID_string(Jxta_advertisement * ad);
 
 /** Handler functions.  Each of these is responsible for 
  * dealing with all of the character data associated with the 
@@ -232,15 +227,14 @@ JXTA_DECLARE(Jxta_id *)
     return id;
 }
 
-char *JXTA_STDCALL jxta_RouteAdvertisement_get_DestPID_string(Jxta_RouteAdvertisement * ad)
+char *JXTA_STDCALL jxta_RouteAdvertisement_get_DestPID_string(Jxta_advertisement * ad)
 {
-
     char *res;
     Jxta_id *id = NULL;
     JString *js = NULL;
 
-    if (ad->dest != NULL) {
-        id = jxta_AccessPointAdvertisement_get_PID(ad->dest);
+    if (((Jxta_RouteAdvertisement *) ad)->dest != NULL) {
+        id = jxta_AccessPointAdvertisement_get_PID(((Jxta_RouteAdvertisement *) ad)->dest);
         if (id != NULL) {
             jxta_id_to_jstring(id, &js);
             JXTA_OBJECT_RELEASE(id);
@@ -467,14 +461,6 @@ int main(int argc, char **argv)
     jxta_RouteAdvertisement_delete(ad);
 
     return 0;
-}
-#endif
-
-
-#ifdef __cplusplus
-#if 0
-{
-#endif
 }
 #endif
 

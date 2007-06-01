@@ -50,13 +50,13 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_private.h,v 1.21 2005/10/27 01:55:28 slowhog Exp $
+ * $Id: jxta_private.h,v 1.22 2006/02/15 01:09:43 slowhog Exp $
  **/
 #ifndef __JXTA_PRIVATE_H__
 #define __JXTA_PRIVATE_H__
 
-#include <apr_uuid.h>
 #include "jxta_apr.h"
+#include <apr_uuid.h>
 #include "jxta_message.h"
 
 #ifdef __cplusplus

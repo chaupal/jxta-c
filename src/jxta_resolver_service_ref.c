@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_service_ref.c,v 1.94 2005/12/15 06:44:24 slowhog Exp $
+ * $Id: jxta_resolver_service_ref.c,v 1.95 2006/03/14 18:08:27 slowhog Exp $
  */
 
 static const char *__log_cat = "RSLVR";
@@ -1122,6 +1122,7 @@ static void JXTA_STDCALL resolver_service_srdi_listener(Jxta_object * obj, void 
             size = jxta_bytevector_size(jb);
             bytes = calloc(1, size);
             jxta_bytevector_get_bytes_at(jb, bytes, 0, size);
+            JXTA_OBJECT_RELEASE(jb);
             if (!strcmp(mime_type, "application/gzip")) {
 #ifdef GUNZIP_ENABLED
                 uncomprLen = 40 * size;
@@ -1171,7 +1172,6 @@ static void JXTA_STDCALL resolver_service_srdi_listener(Jxta_object * obj, void 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Didn't get the resolver srdi msg expected \n");
         return;
     }
-
 }
 
 /**

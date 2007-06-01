@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * $Id: jxta_log.c,v 1.20 2005/11/22 22:00:58 mmx2005 Exp $
+ * $Id: jxta_log.c,v 1.25 2006/02/18 14:57:32 lankes Exp $
  */
 
 #include <stdio.h>
@@ -21,15 +21,12 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "jpr/jpr_apr_wrapper.h"
-
+#include "jxta_apr.h"
 #include "jxta_errno.h"
 
 #include "jxta_log.h"
 #include "jxta_log_priv.h"
 
-#include "apr_pools.h"
-#include "apr_portable.h"
 
 static apr_pool_t *_jxta_log_pool = NULL;
 
@@ -289,7 +286,7 @@ static Jxta_status add_category(Jxta_log_selector * self, const char *cat)
 
     if (self->category_size <= self->category_count) {
         i = self->category_size + JXTA_LOG_CAT_GROWTH_RATE;
-        p = realloc(self->categories, i * sizeof(char *));
+        p = realloc((void *)self->categories, i * sizeof(char *));
         if (NULL == p) {
             return JXTA_NOMEM;
         }
@@ -709,6 +706,56 @@ JXTA_DECLARE(Jxta_status)
 
     jpr_thread_mutex_unlock(self->mutex);
     return rv;
+}
+
+/*
+ * JXTA.NET need following helper functions to create log messages. 
+ */
+
+/* Define the type of JXTA.NET's callback function */
+typedef Jxta_status(JXTA_STDCALL * jxta_managed_log_callback) (const char *cat, int level, const char *msg, unsigned int thread);
+
+/* pointer to JXTA.NET's callback function */
+static jxta_managed_log_callback _managed_log_func = NULL;
+
+/* native callback function, which creates the log message and calls the JXTA.NET's callback function */
+static int JXTA_STDCALL jxta_managed_log_callback_func(void *user_data, const char *cat, int level, const char *fmt, va_list ap)
+{
+	int length = 0;
+	char *message = 0;
+
+#ifdef WIN32
+	length = _vscprintf(fmt, ap) + 1;
+	
+	message = malloc(length);
+
+	_vsnprintf(message, length, fmt, ap);
+
+	if (_managed_log_func != NULL)
+		return _managed_log_func(cat, level, message, GetCurrentThreadId());
+	else return -1;
+#else
+	length =  vsnprintf(NULL, 0, fmt, ap) + 1;
+	
+	message = malloc(sizeof(char) * length);
+
+	vsnprintf(message, length, fmt, ap);
+
+	if (_managed_log_func != NULL)
+		return _managed_log_func(cat, level, message, apr_os_thread_current());
+	else return -1;
+#endif
+}
+
+/* function to register JXTA.NET's callback function */
+JXTA_DECLARE(void) jxta_managed_log_using(jxta_managed_log_callback log_cb)
+{
+	_managed_log_func = log_cb;
+
+	if (log_cb != NULL)
+		jxta_log_using(jxta_managed_log_callback_func, NULL);
+	else
+		jxta_log_using(NULL, NULL);
 }
 
 /* vi: set sw=4 ts=4 tw=130 et: */

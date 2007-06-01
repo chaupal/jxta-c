@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tcp.c,v 1.51 2005/12/07 01:16:18 slowhog Exp $
+ * $Id: jxta_transport_tcp.c,v 1.53 2006/02/17 23:26:12 slowhog Exp $
  */
 
 static const char *__log_cat = "TCP_TRANSPORT";
@@ -199,8 +199,6 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     JString *Pid = NULL;
     Jxta_PA *conf_adv = NULL;
     Jxta_svc *svc = NULL;
-    Jxta_vector *svcs;
-    unsigned int sz, i;
     Jxta_TCPTransportAdvertisement *tta;
 
     char *multicast_addr;
@@ -237,24 +235,8 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     if (conf_adv == NULL)
         return JXTA_CONFIG_NOTFOUND;
 
-    svcs = jxta_PA_get_Svc(conf_adv);
+    jxta_PA_get_Svc_with_id(conf_adv,assigned_id,&svc);  
     JXTA_OBJECT_RELEASE(conf_adv);
-
-    sz = jxta_vector_size(svcs);
-    for (i = 0; i < sz; i++) {
-        Jxta_id *mcid;
-        Jxta_svc *tmpsvc = NULL;
-        jxta_vector_get_object_at(svcs, JXTA_OBJECT_PPTR(&tmpsvc), i);
-        mcid = jxta_svc_get_MCID(tmpsvc);
-        if (jxta_id_equals(mcid, assigned_id)) {
-            svc = tmpsvc;
-            JXTA_OBJECT_RELEASE(mcid);
-            break;
-        }
-        JXTA_OBJECT_RELEASE(mcid);
-        JXTA_OBJECT_RELEASE(tmpsvc);
-    }
-    JXTA_OBJECT_RELEASE(svcs);
 
     if (svc == NULL) {
         return JXTA_NOT_CONFIGURED;
@@ -346,13 +328,13 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     jxta_id_to_jstring(id, &Pid);
     self->peerid = strdup(jstring_get_string(Pid));
 
+    JXTA_OBJECT_RELEASE(Pid);
+    JXTA_OBJECT_RELEASE(id);
+    
     if (self->peerid == NULL) {
         JXTA_OBJECT_RELEASE(tta);
         return JXTA_NOMEM;
     }
-
-    JXTA_OBJECT_RELEASE(Pid);
-    JXTA_OBJECT_RELEASE(id);
 
     /* Server Enabled */
     if (!jxta_TCPTransportAdvertisement_get_ServerOff(tta)) {

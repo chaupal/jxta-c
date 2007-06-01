@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_piperesolver_msg.c,v 1.17 2005/10/18 01:22:19 mathieu Exp $
+ * $Id: jxta_piperesolver_msg.c,v 1.18 2006/02/18 00:32:52 slowhog Exp $
  */
 
 
@@ -74,15 +74,10 @@ static const char *__log_cat = "PIPE_RESOLVER_MSG";
 #include "jstring.h"
 #include "jxta_log.h"
 
-#ifdef __cplusplus
-extern "C" {
-#if 0
-}
-#endif
-#endif
-    /** Each of these corresponds to a tag in the
-     * xml ad.
-     */ enum tokentype {
+/** Each of these corresponds to a tag in the
+ * xml ad.
+ */
+enum tokentype {
     Null_,
     PipeResolver_,
     MsgType_,
@@ -206,7 +201,7 @@ static void handleCached(void *userdata, const XML_Char * cd, int len)
         if (strcmp(tok, "true") == 0) {
             ad->Cached = TRUE;
         }
-    } 
+    }
     free(tok);
 }
 
@@ -565,12 +560,6 @@ int main(int argc, char **argv)
     jxta_piperesolver_msg_delete(ad);
 
     return 0;
-}
-#endif
-#ifdef __cplusplus
-#if 0
-{
-#endif
 }
 #endif
 

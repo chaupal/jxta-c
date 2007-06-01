@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rm.c,v 1.39 2005/11/11 21:58:23 slowhog Exp $
+ * $Id: jxta_rm.c,v 1.40 2006/02/18 00:32:53 slowhog Exp $
  */
 
 static const char *const __log_cat = "RouterMessage";
@@ -63,13 +63,6 @@ static const char *const __log_cat = "RouterMessage";
 #include "jxta_rm.h"
 #include "jxta_xml_util.h"
 #include "jxta_apa.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-};
-#endif
 
 /** Each of these corresponds to a tag in the
  * xml ad.
@@ -171,17 +164,17 @@ static void handleGatewayForward(void *me, const XML_Char * cd, int len)
     EndpointRouterMessage *_self = (EndpointRouterMessage *) me;
     Jxta_AccessPointAdvertisement *apa = NULL;
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Forward Gateway: %s\n", 0 == len ? "Begin" : "End" );
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Forward Gateway: %s\n", 0 == len ? "Begin" : "End");
     if (0 != len) {
         return;
     }
 
     apa = jxta_AccessPointAdvertisement_new();
     if (NULL == apa) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to allocate APA\n" );
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to allocate APA\n");
         return;
     }
-        
+
     jxta_advertisement_set_handlers((Jxta_advertisement *) apa, ((Jxta_advertisement *) _self)->parser, (void *) _self);
     jxta_vector_add_object_last(_self->forwardGateways, (Jxta_object *) apa);
     JXTA_OBJECT_RELEASE(apa);
@@ -192,17 +185,17 @@ static void handleGatewayReverse(void *me, const XML_Char * cd, int len)
     EndpointRouterMessage *_self = (EndpointRouterMessage *) me;
     Jxta_AccessPointAdvertisement *apa = NULL;
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Reverse Gateway: %s\n", 0 == len ? "Begin" : "End" );
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Reverse Gateway: %s\n", 0 == len ? "Begin" : "End");
     if (0 != len) {
         return;
     }
 
     apa = jxta_AccessPointAdvertisement_new();
     if (NULL == apa) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to allocate APA\n" );
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to allocate APA\n");
         return;
     }
-        
+
     jxta_advertisement_set_handlers((Jxta_advertisement *) apa, ((Jxta_advertisement *) _self)->parser, (void *) _self);
     jxta_vector_add_object_last(_self->reverseGateways, (Jxta_object *) apa);
     JXTA_OBJECT_RELEASE(apa);
@@ -497,12 +490,5 @@ JXTA_DECLARE(Jxta_status) EndpointRouterMessage_parse_file(EndpointRouterMessage
 {
     return jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
-
-#if 0
-{
-#endif
-#ifdef __cplusplus
-}
-#endif
 
 /* vim: set ts=4 sw=4 et tw=130: */

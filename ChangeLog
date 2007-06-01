@@ -1,1 +1,5358 @@
-see <http://jxta-c.jxta.org/servlets/BrowseList?listName=cvs>
+2006-03-16 00:53  slowhog
+
+	* 	- Include jxta.net in dist tarball
+
+2006-03-16 00:53  slowhog
+
+	* 	- bump version to 2.4
+
+2006-03-16 00:52  slowhog
+
+	* 	- Update ChangeLog with cvs2cl.pl --fsf -I www -P --hide-filenames
+	  -l -d '2005-03-15<'
+
+2006-03-15 22:36  slowhog
+
+	* 	- fix object leak Obtained from: Eric Xu Submitted by:  Henry the
+	  slowhogdd
+
+2006-03-15 19:17  slowhog
+
+	* 	- remove unused local variable
+
+2006-03-15 09:05  slowhog
+
+	* 	- fix the issue when one failed resolver request causing following
+	    resolver queries won't work the reason is that
+	  pending_request_remove change the size of vector, therefore failed
+	  to invoke the right listener
+	  - fix one object leak
+
+2006-03-15 01:41  slowhog
+
+	* 	- fix SRDI replication with wrong peer ID.
+
+2006-03-15 01:40  slowhog
+
+	* 	- useOnlySeeds is not supported yet
+
+2006-03-14 18:08  slowhog
+
+	* 	- fix object leak Obtained from: Eric Xu Submitted by:  Henry the
+	  slowhog
+
+2006-03-14 18:07  slowhog
+
+	* 	- fix return value
+	  - not to export a private function to Win32 DLL. It will become
+	  public API for implementing external modules.
+
+	  Obtained from: Stefan Lankes Submitted by:  Henry the slowhog
+
+2006-03-14 08:52  slowhog
+
+	* 	- use value as advId(pkey) when advId is not available.
+
+2006-03-14 08:39  slowhog
+
+	* 	- fix typo
+
+2006-03-13 19:45  slowhog
+
+	* 	- fix the relay segfault when stopping with a failure start, i.e,
+	  port had been in use
+	  - add module state support
+
+2006-03-11 08:35  slowhog
+
+	* 	- don't forget the attributes
+
+2006-03-11 02:38  slowhog
+
+	* 	- fix peer ID. The first peer ID is not been catched while the last
+	  duplicates.
+	  - more logs
+
+2006-03-11 02:35  slowhog
+
+	* 	- more comprehensive log
+
+2006-03-10 20:53  lankes
+
+	* 	- remove jpr_threadonce.h from the installer
+	  - is not longer part of jxta-c
+
+2006-03-10 01:26  slowhog
+
+	* 	- update wildcard patch for libxml2
+
+2006-03-09 08:30  slowhog
+
+	* 	Issue number: 228 Obtained from: Eric Xu Submitted by:  Henry the
+	  slowhog
+
+2006-03-07 02:23  slowhog
+
+	* 	- fix the comment to at least match the function prototype.
+
+	  Issue number: 57 Submitted by: Henry the slowhog
+
+2006-03-06 23:50  slowhog
+
+	* 	- Provide both sync/async API for sending messages with endpoint
+	  - Return UNREACHABLE_DEST for async mode if a host is in negative
+	  cache Issue number: 231 Submitted by: Henry the slowhog Reviewed by:
+	  Eric Xu (mmx2005)
+
+2006-03-06 23:08  slowhog
+
+	* 	- gcc is not required
+
+2006-03-06 21:44  slowhog
+
+	* 	- rq could be NULL if the connection is made from a peer is in the
+	  negative cache and bail itself out
+
+2006-03-04 02:54  slowhog
+
+	* 	- Exclude peer which is still unreachable after maximum timeout.
+
+2006-03-04 00:24  slowhog
+
+	* 	- cosmetic change
+
+2006-03-01 19:30  lankes
+
+	* 	- bump the version to 2.4
+
+2006-03-01 08:18  slowhog
+
+	* 	- fix object leak
+
+2006-03-01 08:17  slowhog
+
+	* 	- bump the version to 2.4_beta
+
+2006-02-21 17:12  slowhog
+
+	* 	- rename variables not to collide with C++ reserve word.
+
+2006-02-18 14:57  lankes
+
+	* 	- on a UNIX system jxta_managed_log_callback_func allocates not
+	  enough memory for the log message
+
+2006-02-18 00:32  slowhog
+
+	* 	- remove ifdef __cplusplus for source files
+	  - indent
+
+2006-02-18 00:04  slowhog
+
+	* 	- typo
+
+2006-02-17 23:54  slowhog
+
+	* 	- object leak fix Obtained from: Eric Xu Reviewed by:   Henry the
+	  slowhog
+
+2006-02-17 23:26  slowhog
+
+	* 	- memory leak fixes Obtained from: David J Deterra Reviewed by:
+	  Henry the slowhog
+
+2006-02-17 18:26  slowhog
+
+	* 	- cosmetic change
+	  - no extern C block for source file
+
+2006-02-17 18:24  slowhog
+
+	* 	- cosmetic change
+
+2006-02-17 18:22  slowhog
+
+	* 	- fix DEFAULT_LIFETIME overflow(L suffix should be LL) on Unices, by
+	  casting first, this form works on all platform.
+
+2006-02-16 10:46  lankes
+
+	* 	- fix error in releasing objects
+
+2006-02-16 02:06  slowhog
+
+	* 	- Return correct expiration time in discovery response Obtained
+	  from: David J Deterra Submitted by: Reviewed by:   Henry the
+	  slowhog/bondolo
+
+2006-02-16 01:20  slowhog
+
+	* 	- cosmetic change
+
+2006-02-16 00:33  slowhog
+
+	* 	- Reset error condition before walk, thanks to David Deterra
+	  reporting the bug Obtained from: David J Deterra Reviewed by:  Henry
+	  the slowhog
+
+2006-02-15 01:15  slowhog
+
+	* 	- remove obsolete jpr_threadonce
+
+2006-02-15 01:09  slowhog
+
+	* 	- apr include cleanup. Never directly include apr header files, use
+	  jxta_apr.h instead so we can isolate apr functions
+	  - ifdef __cplusplus should not be in C source file, remove when I
+	  encounter them
+	  - remove usage of jpr_thread_once, use init/terminate call instead.
+
+2006-02-13 22:37  lankes
+
+	* 	- use the correct year in the license text
+
+2006-02-13 22:34  lankes
+
+	* 	- add Search.cs the project
+
+2006-02-13 21:27  lankes
+
+	* 	- add license text
+
+2006-02-13 21:07  lankes
+
+	* 	- add the command "search" to the shell
+
+2006-02-13 21:06  lankes
+
+	* 	- redesign of the parameter analyse
+
+2006-02-13 21:04  lankes
+
+	* 	- now,  we support the parameter paadr of
+	  discovery_service_get_remote_advertisements
+
+2006-02-13 19:51  slowhog
+
+	* 	Issue number: 229 Submitted by: Henry the slowhog Reviewed by:  Eric
+	  Xu
+
+2006-02-13 13:30  lankes
+
+	* 	- On Windows apr_os_thread_current evaluates the thread handle and
+	  not the thread id => therefore, I use GetCurrentThreadId instead of
+	  apr_os_thread_current
+
+2006-02-13 10:06  lankes
+
+	* 	- cosmetic changes
+
+2006-02-13 10:06  lankes
+
+	* 	- use the new JXTA-C helper functions to create the log messages
+
+2006-02-13 10:05  lankes
+
+	* 	- add some helper functions for JXTA.NET
+	  - this functions are needed to create log messages
+
+2006-02-13 10:04  lankes
+
+	* 	- remove obsolete function
+
+2006-02-13 08:49  lankes
+
+	* 	- include apr_atomic.h, which is needed for Windows
+
+2006-02-13 07:36  mathieu
+
+	* 	Commit patch 290 of issue 187 :-). Reviewer: slowhog
+
+2006-02-10 22:18  slowhog
+
+	* 	- deadlock fix. periodicMutex is locked in periodicThread which may
+	  calling listener funciton. Use atomic operation instead and make
+	  sure we leave listener function when the peerview object is
+	  destructing.
+
+2006-02-10 02:25  slowhog
+
+	* 	- peerview_listener should not be released in stop method, but in
+	  destructor. It is not created in start method.
+
+2006-02-07 07:53  slowhog
+
+	* 	cosmetic indent style fix
+
+2006-02-07 07:40  slowhog
+
+	* 	- initialize the thread interval with default value Submitted by:
+	  Henry the slowhog
+
+2006-02-05 16:10  lankes
+
+	* 	- use the new logging interface
+
+2006-02-05 16:09  lankes
+
+	* 	- JXTA.NET use jxta_vsnprintf instead of apr_vsnprintf => remove
+	  libapr from the DLL mapping
+
+2006-02-05 16:05  lankes
+
+	* 	- stop the module in the destructor of PeerGroup
+
+2006-02-05 16:03  lankes
+
+	* 	- use jxta_terminate in the destructor of JxtaObject
+
+2006-02-05 16:02  lankes
+
+	* 	- redesign of the logging interface
+
+2006-02-05 15:58  lankes
+
+	* 	- apr_vsnprintf is not compatible to ANSI vsnprintf.
+	  - Therefore, I define my own helper function for JXTA.NET.
+
+2006-02-05 14:21  mathieu
+
+	* 	Adding SQLITE or else lsqlite not found when jpr.so
+
+2006-02-05 14:16  lankes
+
+	* 	- now, jpr use the same code to intialize apr
+
+2006-02-05 11:11  lankes
+
+	* 	- check, if seeds is a null pointer.
+
+2006-02-05 10:51  lankes
+
+	* 	- add example jxta_discovery_publication_test to the Windows
+	  installer
+
+2006-02-02 23:08  lankes
+
+	* 	- add jxta_discovery_config_adv and jxta_endpoint_config_adv to the
+	  VS 2005 project files
+
+2006-02-02 22:47  lankes
+
+	* 	- add jxta_discovery_config_adv and jxta_endpoint_config_adv to the
+	  VS project files
+
+2006-02-02 21:45  slowhog
+
+	* 	- New files for endpoint/discovery tunning options, thanks to Stefan
+	  reminding me
+
+2006-02-02 19:53  slowhog
+
+	* 	- Tunning options for endpoint and discovery services Obtained from:
+	  Rick Keiner Submitted by:  Henry the slowhog
+
+2006-02-01 23:40  slowhog
+
+	* 	- support tunning options in RDV Obtained from: Rick Kleiner/Henry
+	  the slowhog Submitted by:  Henry the slowhog
+
+2006-02-01 23:37  slowhog
+
+	* 	- Support tunning options in peerview Obtained from: Rick
+	  Kleiner/Henry the slowhog Submitted by:  Henry the slowhog
+
+2006-02-01 23:34  slowhog
+
+	* 	- Add tunning options to RDV configuration Obtained from: Rick
+	  Kleiner/Henry the slowhog Submitted by:  Henry the slowhog
+
+2006-02-01 19:01  bondolo
+
+	* 	adds 'clear' method to hashtable for emptying a hashtable of all
+	  entries.
+
+2006-02-01 18:58  bondolo
+
+	* 	minor dox improvements
+
+2006-02-01 18:57  bondolo
+
+	* 	prevents leak if peerview is started/stopped/restarted.
+
+2006-01-31 22:11  slowhog
+
+	* 	- Each instance of SRDI service gets the threshold of peerview size
+	  from configuration. This is the minimum size to start replication. A
+	  mechanism to get the configuration object from the service is needed
+	  to ease configuration at run-time.
+
+	  Obtained from: Rick Kleiner/Henry the slowhog Submitted by:  Henry
+	  the slowhog
+
+2006-01-31 19:20  slowhog
+
+	* 	- Allow NULL for range at line 452,580
+	  - Indent style fix
+
+	  Obtained from: Rick Kleiner/Henry the slowhog Submitted by:  Henry
+	  the slowhog
+
+2006-01-31 18:52  slowhog
+
+	* 	- Default will be set in the srdi advertisement constructor.
+
+	  Obtained from: Rick Kleiner Submitted by:  Henry Jen the slowhog
+
+2006-01-31 08:58  slowhog
+
+	* 	- remove unnecessary mutex op Obtained from: Rick Kleiner, Henry Jen
+	  the slowhog Submitted by:  Henry Jen the slowhog
+
+2006-01-30 08:11  lankes
+
+	* 	- add new test tool to the Visual Studio project files
+
+2006-01-30 01:14  bondolo
+
+	* 	cleanups
+
+2006-01-30 01:13  bondolo
+
+	* 	a new test tool.
+
+2006-01-29 20:31  lankes
+
+	* 	- produce nicer output messages
+
+2006-01-29 20:02  lankes
+
+	* 	- add auto-detection of Mono support
+
+2006-01-29 16:57  lankes
+
+	* 	- minor changes
+
+2006-01-29 16:50  lankes
+
+	* 	- add a small README
+
+2006-01-28 15:24  lankes
+
+	* 	- remove obsolete files
+
+2006-01-28 15:22  lankes
+
+	* 	- add missing "$@" in the creation of the JxtaNETShell script
+
+2006-01-28 14:59  lankes
+
+	* 	- fix problems by the creation of the script JxtaNETShell
+
+2006-01-28 00:43  slowhog
+
+	* 	- make sure self->peers is always available, but can be an empty
+	  vector.  Issue number: 226 Submitted by: Henry Jen the slowhog
+
+2006-01-27 22:50  lankes
+
+	* 	- remove obsolete files
+
+2006-01-27 22:48  lankes
+
+	* 	- better support for the 'DESTDIR' variable
+
+2006-01-27 19:14  lankes
+
+	* 	- add support for the 'DESTDIR' variable
+
+2006-01-27 18:28  lankes
+
+	* 	- remove some warnings
+
+2006-01-27 01:01  bondolo
+
+	* 	Make peerid configuration more automatic. You can now start with a
+	  PlatformConfig that doesn't contain a PID (or GID) and have values
+	  filled in for you.
+
+	  Also improves behaviour of initial PlatformConfiguration creation.
+
+2006-01-26 20:56  lankes
+
+	* 	- minor changes for mono
+
+2006-01-26 20:33  lankes
+
+	* 	- minor changes in JxtaNetShell to use the new logging facilities
+
+2006-01-26 20:31  lankes
+
+	* 	- add in jxta.net the possibility to use the logging facilities of
+	  jxta-c
+
+2006-01-26 20:27  lankes
+
+	* 	- export more marcos for programming languages (like C#) which have
+	  no access to the include files of jxta-c
+
+2006-01-26 03:29  bondolo
+
+	* 	remove extra X
+
+2006-01-26 03:25  bondolo
+
+	* 	fixes handling of error case when no relays are defined.
+
+2006-01-26 00:35  bondolo
+
+	* 	updated for 2.3
+
+2006-01-21 17:56  lankes
+
+	* 	- modify the configure file and add makefiles to create the C#
+	  wrapper
+	  - the flag "--enable-mono" activates the Mono support
+
+2006-01-18 20:33  lankes
+
+	* 	- add project files for Visual Studio 2005
+	  - this is necessary for our C#-wrapper
+
+2006-01-18 20:30  lankes
+
+	* 	- add C#-wrapper for JXTA-C and its Visual Studio project files
+	  - tomorrow, I will check-in the UNIX make and configure file
+
+2006-01-15 15:08  lankes
+
+	* 	- add jxta_constants.c to the VS project files
+
+2006-01-15 13:33  lankes
+
+	* 	- add the new file jxta_constants.c to export marcos for programming
+	  languages (like C#) which have no access to the include files of
+	  jxta-c
+
+2006-01-13 03:19  mmx2005
+
+	* 	- memory leak fix, or fix it in the destructor.
+	   - by mmx2005
+
+2006-01-12 19:35  slowhog
+
+	* 	- There is no required CDATA in those elements, so length could be
+	  0.
+
+2006-01-12 19:30  slowhog
+
+	* 	- addr is NULL for sure
+
+2006-01-03 01:58  mmx2005
+
+	* 	- return if len=0
+	   by mmx2005
+
+2005-12-31 11:05  mmx2005
+
+	* 	- memory leak fix
+	   by mmx2005
+
+2005-12-31 11:04  mmx2005
+
+	* 	- memory free fix
+	   by mmx2005
+
+2005-12-31 11:01  mmx2005
+
+	* 	- memory leak fix
+	   by mmx2005
+
+2005-12-31 10:59  mmx2005
+
+	* 	- shuffle seeds
+	   by mmx2005
+
+2005-12-28 05:11  mmx2005
+
+	* 	-  adjust log level
+	     by mmx2005
+
+2005-12-27 10:45  slowhog
+
+	* 	- fix waiting timeout Obtained from: "Victor Semizarov"
+	  <victor.semizarov@auriga.ru> Reviewed by:  Henry Jen the slowhog
+
+2005-12-25 05:47  mmx2005
+
+	* 	- ensure alloced buffer is initiated ( malloc -> calloc )
+	    by mmx2005
+
+2005-12-25 02:15  mmx2005
+
+	* 	- 'JXTA_ENDPOINT_DEST_UNREACHABLE_TIMEOUT' -> private
+	   by mmx2005
+
+2005-12-24 23:46  mmx2005
+
+	* 	- reg MCA/MSA
+	   by mmx2005
+
+2005-12-24 06:44  mmx2005
+
+	* 	- JXTA_LOG -> jxta_log_append
+	   by mmx2005
+
+2005-12-24 04:41  mmx2005
+
+	* 	- change log level
+	    by mmx2005
+
+2005-12-24 04:36  mmx2005
+
+	* 	- change the value of __log_cat
+	    by mmx2005
+
+2005-12-24 04:31  mmx2005
+
+	* 	- JXTA_LOG -> jxta_log_append
+	    by mmx2005
+
+2005-12-23 21:44  mmx2005
+
+	* 	- register MCA/MSA parser
+	    by mmx2005
+
+2005-12-23 21:33  mmx2005
+
+	* 	- MSA impl
+	    by mmx2005
+
+2005-12-23 21:32  mmx2005
+
+	* 	- MCA impl
+	    by mmx2005
+
+2005-12-22 05:02  mmx2005
+
+	* 	 -  change log level
+	    by mmx2005
+
+2005-12-22 03:11  mmx2005
+
+	* 	 -  JXTA_LOG -> jxta_log_append
+	    by mmx2005
+
+2005-12-21 23:39  mmx2005
+
+	* 	 -  JXTA_LOG -> jxta_log_append
+	     by mmx2005
+
+2005-12-21 11:04  mmx2005
+
+	* 	 - issue 221
+	     by mmx2005
+	     reviewed by mathieu
+
+2005-12-21 06:00  mmx2005
+
+	* 	 - check rdva first
+	    by mmx2005
+
+2005-12-20 05:14  mmx2005
+
+	* 	 - replaced by 'jxta_PA_get_Svc_with_id'
+	     by mmx2005
+
+2005-12-20 03:47  mmx2005
+
+	* 	 - conform to the definition of 'Kwdtab'
+	     by mmx2005
+
+2005-12-20 03:44  mmx2005
+
+	* 	 - compile warning fix
+	     by mmx2005
+
+2005-12-19 07:01  mmx2005
+
+	* 	 - indent fix
+	     by mmx2005
+
+2005-12-16 22:42  lankes
+
+	* 	- use correct file name in the dll description
+
+2005-12-16 10:46  lankes
+
+	* 	- bump version to 2.3
+
+2005-12-15 23:36  slowhog
+
+	* 	- bump version to 2.3
+
+2005-12-15 23:26  slowhog
+
+	* 	- fix the pipe srdi expiration time overflow
+
+2005-12-15 21:30  slowhog
+
+	* 	- return correct value Submitted by: Eric Xu (mmx2005)
+
+2005-12-15 21:29  slowhog
+
+	* 	- LONG_MAX is depending on definition, we need 2^63 -
+	  1(Long.MAX_VALUE in JSE).
+
+2005-12-15 20:30  slowhog
+
+	* 	- return value
+	  - remove unused variables
+
+	  Submitted by: Erix Xu (mmx2005)
+
+2005-12-15 16:59  slowhog
+
+	* 	- Use SRDI on RDV
+	  - Properly walk the propagate msg
+
+2005-12-15 16:49  slowhog
+
+	* 	- remove __cplusplus, not needed in C source file
+
+2005-12-15 06:44  slowhog
+
+	* 	- only walk when it is a RDV server
+
+2005-12-15 03:40  slowhog
+
+	* 	- Make walk to be compatible with JSE implementation
+
+2005-12-15 03:34  slowhog
+
+	* 	- indent style fix
+
+2005-12-14 03:34  slowhog
+
+	* 	- fix the over-release of a peerview entry
+
+	  Submitted by: Henry Jen the slowhog Reviewed by:  Rick Keiner,
+	  hamada
+
+2005-12-11 22:46  mmx2005
+
+	* 	 - change the value of '__log_cat'
+
+	    committed by mmx2005
+
+2005-12-07 01:16  slowhog
+
+	* 	- release mutex Obtained from: Biran A. Wilson
+
+2005-12-05 18:59  lankes
+
+	* 	- bump version to 2.3 (only on a Windows system)
+
+2005-12-03 07:15  slowhog
+
+	* 	- bump version to 2.3_beta
+
+2005-12-02 16:29  slowhog
+
+	* 	- Make query expression based on type and also fix query without
+	  attribute
+
+	  Issue number: 218 Submitted by: Henry Jen the slowhog
+
+2005-12-02 16:21  slowhog
+
+	* 	- Make sure the listener function is not in process before destruct
+	  - Should not remove listener from endpoint at stop, it was suppose
+	    to be removed at destruct, as RDV client does not start peerview
+
+2005-12-02 05:12  slowhog
+
+	* 	- Fix discovery query origin from a RDV
+	  - Fix route for resolver query in subgroup
+
+	  Issue number:  218 Obtained from: exocetrick, slowhog
+
+2005-12-02 03:39  slowhog
+
+	* 	- Although not really affect functionality, the correct layout
+	  allows cscope to build tag db correctly
+
+2005-12-01 07:44  slowhog
+
+	* 	- more infomation in log entry
+
+2005-12-01 07:43  slowhog
+
+	* 	- correct return value
+
+2005-12-01 07:43  slowhog
+
+	* 	source file should not have #ifdef __cplusplus, which should be in
+	  header files only.
+
+2005-11-28 03:53  mmx2005
+
+	* 	 - destroy cond/mutex on quit
+	     use 'jxta_PA_get_Svc_with_id'
+
+	     committed by mmx2005
+
+2005-11-27 20:35  exocetrick
+
+	* 	- Get correct rdv state
+	  - Only the edge should publish rdv advertisement
+
+2005-11-27 12:18  mmx2005
+
+	* 	 - possible memory leak fix
+	    committed by mmx2005
+
+2005-11-27 10:48  mmx2005
+
+	* 	 - add or remove space-line
+
+2005-11-27 02:40  mmx2005
+
+	* 	 - misspelled comment word fix
+	    committed by mmx2005
+
+2005-11-27 02:30  mmx2005
+
+	* 	 - possible memory leak fix
+	     committed by mmx2005
+
+2005-11-26 18:03  exocetrick
+
+	* 	Initialize status and remove unused variable
+
+2005-11-26 17:00  mmx2005
+
+	* 	 - JXTA_LOG -->  jxta_log_append
+	    committed by mmx2005
+
+2005-11-26 16:38  mmx2005
+
+	* 	 - Indent fix
+	    committed by mmx2005
+
+2005-11-26 12:11  mmx2005
+
+	* 	 - AdvId from jxta_cm_hash is saved as a 'positive' value
+	     committed by mmx2005
+
+2005-11-26 08:18  mmx2005
+
+	* 	- take 'Jxta_advertisement*)
+	    committed by mmx2005
+
+2005-11-26 07:52  mmx2005
+
+	* 	- misspelled comment word fix
+	    commited by mmx2005
+
+2005-11-26 07:37  mmx2005
+
+	* 	- indent fix
+	    commited by mmx2005
+
+2005-11-26 07:28  mmx2005
+
+	* 	- remove some space lines
+	    commited by mmx2005
+
+2005-11-26 05:57  mmx2005
+
+	* 	 -- memory leak fix
+	    committed by mmx2005
+
+2005-11-26 05:52  mmx2005
+
+	* 	 -- take 'const char *'
+	    committed by mmx2005
+
+2005-11-25 23:53  mmx2005
+
+	* 	  - indent fix
+	      compile warnings
+	    committed by mmx2005
+
+2005-11-25 20:25  exocetrick
+
+	* 	Remove unused variable
+
+2005-11-25 07:50  mmx2005
+
+	* 	 - destroy mutex
+	     remove compile warnings
+	     committed by mmx2005
+
+2005-11-24 18:57  exocetrick
+
+	* 	Didn't need to save it at all
+
+2005-11-24 04:17  mmx2005
+
+	* 	- use JPR_ABS_TIME_FMT
+	    remove some compile warnings
+	    committed by mmx2005
+
+2005-11-24 00:20  mmx2005
+
+	* 	 - fix calling convention
+	   - remove compile warnings
+
+	   committed by mmx2005
+
+2005-11-23 23:41  exocetrick
+
+	* 	Fix memory leak
+
+2005-11-23 22:09  exocetrick
+
+	* 	Fix memory leaks
+
+2005-11-23 21:19  exocetrick
+
+	* 	- Handle the replication threshold from the config
+	  - Fix the hopcount check
+
+2005-11-23 21:15  exocetrick
+
+	* 	Add debug messages
+
+2005-11-23 21:12  exocetrick
+
+	* 	- Changes for walking queries properly (Issues 203/214)
+	  - pass char to search_srdi
+	  - create a function to send to replica
+	  - fix threshold handling
+
+2005-11-23 16:06  slowhog
+
+	* 	- Use Jxta_callback for resolver handler
+	  - Fix jxta_srdi_searchSrdi API to include handler
+	  - Modify discovery and pipe resolver to adapt API changes
+	  - Pipe resolver is fixed and verified with desired behavior
+
+	  Issue number: 204, 158 Submitted by: Henry Jen the slowhog
+
+2005-11-23 15:50  slowhog
+
+	* 	- indent style fix
+
+2005-11-23 10:51  mmx2005
+
+	* 	 - memory leak
+	   - committed by mmx2005
+
+2005-11-23 03:12  slowhog
+
+	* 	- Walk will be continued by handler, not RDV walker listener.
+
+	  Issue number: 214 Submitted by: Henry Jen the slowhog
+
+2005-11-22 23:44  mmx2005
+
+	* 	- remove compile warnings
+	  - indent style fix
+	    committed by mmx2005
+
+2005-11-22 22:00  mmx2005
+
+	* 	 - remove compile warniongs
+	   - indent style fix
+	   committed by mmx2005
+
+2005-11-22 10:40  slowhog
+
+	* 	- fix broken replication due to missing {}
+	  - Replace JXTA_LOG with new log facility
+
+2005-11-22 10:33  slowhog
+
+	* 	- Type information
+
+2005-11-22 09:42  mmx2005
+
+	* 	 - define MIN MAX
+	   Committed by mmx2005
+
+2005-11-22 07:48  mmx2005
+
+	* 	 - mutex destroyed on
+	   Committed by mmx2005
+	   reviewed by slowhog
+
+2005-11-22 03:06  slowhog
+
+	* 	- switch to new log facility
+
+2005-11-21 01:37  mmx2005
+
+	* 	 - memory leak committed by mmx2005
+
+2005-11-21 01:32  mmx2005
+
+	* 	 - Remove compile warnings committed by mmx2005
+
+2005-11-21 01:19  mmx2005
+
+	* 	 - Remove unused vars  memory leak.  committed by mmx2005
+
+2005-11-20 23:22  mmx2005
+
+	* 	use jxta_AccessPointAdvertisement_get_PID_string Submitted by: Eric
+	  Xu (mmx2005) Reviewed by: slowhog
+
+2005-11-17 08:25  lankes
+
+	* 	- add jxta_callback to the VS project files
+
+2005-11-17 08:18  slowhog
+
+	* 	- Fix compile warning on Win32 Submitted by: Eric Xu (mmx2005)
+
+2005-11-17 08:09  lankes
+
+	* 	- listener function calling convention fix
+
+2005-11-17 04:23  slowhog
+
+	* 	- take away comma to be consistent.
+
+2005-11-17 04:21  slowhog
+
+	* 	- listener fucntion calling convention fix
+
+	  Obtained from: Eric Xu (mmx2005) Reviewed by:   Henry Jen the
+	  slowhog
+
+2005-11-17 03:46  slowhog
+
+	* 	- get rid if C++ style inline comments
+
+2005-11-17 03:40  slowhog
+
+	* 	- add jxta_callback to replace synchronous listener
+
+	  Issue number: 215 Submitted by: Henry Jen the slowhog Reviewed by:
+	  Mike Duigou (bondolo)
+
+2005-11-17 01:18  slowhog
+
+	* 	- allow NULL as a parameter, but return -1 to indicate error.
+
+2005-11-16 23:00  slowhog
+
+	* 	- fix initialize value and eliminate compiler warning
+
+2005-11-16 22:53  slowhog
+
+	* 	- indent style fix
+
+2005-11-16 20:10  lankes
+
+	* 	- now, the listener function use stdcall as calling convention Issue
+	  number: 212 Submitted by:  lankes Reviewed by:  slowhog
+
+2005-11-16 16:40  exocetrick
+
+	* 	Make sure the proffer handles the element properly and shares it.
+
+2005-11-16 03:09  slowhog
+
+	* 	- indent style fix
+
+2005-11-16 02:51  slowhog
+
+	* 	- Fix logical mistake cause connection cannot be established.
+	  Obtained from: Eric Xu (mmx2005) Reviewed by:   Henry Jen the
+	  slowhog
+
+2005-11-15 18:52  slowhog
+
+	* 	- correct peer count for log message
+
+	  Obtained from: Eric Xu (mmx2005) Reviewed by:   Henry Jen the
+	  slowhog
+
+2005-11-15 18:41  slowhog
+
+	* 	- More JXTA_OBJECT_PPTR fix to eliminate compiler warnings.
+
+	  Issue number: 140 Submitted by: Henry Jen the slowhog
+
+2005-11-14 10:11  slowhog
+
+	* 	- use JXTA_OBJECT_PPTR macro to eliminate compiler warning
+
+	  Issue number: 140 Submitted by: Henry Jen the slowhog
+
+2005-11-14 08:41  slowhog
+
+	* 	- leak fix
+
+2005-11-14 08:40  slowhog
+
+	* 	- terminate threads one by one, so that each thread get singaled
+	  properly Issue number: 208 Obtained from: Eric Xu (mmx2005) Reviewed
+	  by:   Henry Jen the slowhog
+
+2005-11-13 17:43  lankes
+
+	* 	- remove warning of MS's C++ compiler
+
+2005-11-13 17:09  lankes
+
+	* 	- define _jxta_return to export in the JXTA DLL
+
+2005-11-12 18:09  exocetrick
+
+	* 	Fix compiler warnings - Doesn't generate a statement.
+
+2005-11-12 17:47  exocetrick
+
+	* 	Invalid XML syntax fixed.
+
+2005-11-12 04:34  slowhog
+
+	* 	- Fix IP2PGRP pipe ID creation.
+
+	  Submitted by: Henry Jen the slowhog
+
+2005-11-12 04:26  slowhog
+
+	* 	- another fix, should not work Friday night. :-P
+
+2005-11-12 03:59  slowhog
+
+	* 	- Check return code.
+
+2005-11-12 03:05  slowhog
+
+	* 	- Provide return value for tcp_connection_start_socket, so in
+	  jxta_transport_tcp_connection_new_? can check the value and behave
+	  properly.
+	  - Match the naming convention of me/_self for member functions.
+
+	  Issue number: 210 Submitted by: Henry Jen the slowhog
+
+2005-11-12 01:41  slowhog
+
+	* 	- fix deadlock caused by listener function require the mutex hold by
+	  stop function to stop itself.
+
+	  Issue number: 207 Submitted by: Eric Xu (mmx2005) Reviewed by:
+	  Henry Jen the slowhog
+
+2005-11-11 21:58  slowhog
+
+	* 	- ERM fix. Fwd & Rvs should contains a list of APA
+
+	  Issue number: 156 Submitted by: Henry Jen the slowhog
+
+2005-11-10 21:10  exocetrick
+
+	* 	Don't release here. It will be released in finishTop.
+
+2005-11-09 23:30  mathieu
+
+	* 	Issue number: 187. As it is always defined, let's play with #if
+	  Obtained from: mathieu Submitted by: mathieu Reviewed by:
+
+2005-11-09 23:27  mathieu
+
+	* 	Issue number: 180 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by: valgrind
+
+2005-11-09 09:59  slowhog
+
+	* 	- style fix
+
+2005-11-09 09:57  slowhog
+
+	* 	- Declare a macro to be used for case that casting a pointer to
+	  JXTA_OBJECT pointer, which is causing the compiler warning while the
+	  code is correct. The macro cast to a void* first, and thus compiler
+	  won't complain
+
+	  Issue number: 140 Submitted by: Henry Jen the slowhog
+
+2005-11-08 09:08  slowhog
+
+	* 	- fix missing param for log message
+
+2005-11-08 00:29  exocetrick
+
+	* 	Do not use bool with C++.
+
+2005-11-07 11:56  lankes
+
+	* 	- add jxta_srdi_config_adv.c to the VS project files
+
+2005-11-07 10:31  slowhog
+
+	* 	Obtained from: ericx Submitted by:  slowhog
+
+2005-11-06 00:59  slowhog
+
+	* 	- Add methods to construct from character string/buffer. Reduce
+	  unnecessary copy
+
+	  Issue number: 205 Submitted by: Henry Jen the slowhog
+
+2005-11-06 00:55  slowhog
+
+	* 	-indent style fix
+
+2005-11-05 06:42  exocetrick
+
+	* 	Improve SRDI Replication Publication Issue number: 206 Obtained
+	  from: Submitted by: ExocetRick Reviewed by:
+
+2005-11-05 05:47  slowhog
+
+	* 	- don't know how this is left out
+
+2005-11-04 23:23  exocetrick
+
+	* 	Correct the message level
+
+2005-11-04 22:29  exocetrick
+
+	* 	Issue number: 203 Obtained from: Submitted by: ExocetRick Reviewed
+	  by:
+
+2005-11-04 22:16  exocetrick
+
+	* 	Changes required for replication
+
+2005-11-04 22:13  exocetrick
+
+	* 	Add SRDI config for Numeric replication
+
+2005-11-04 22:08  exocetrick
+
+	* 	Fix memory leak
+
+2005-11-04 22:07  exocetrick
+
+	* 	Add PRAGMA define
+
+2005-11-04 22:06  exocetrick
+
+	* 	Fix proffer to only create indexable element/attributes
+
+2005-11-04 21:59  exocetrick
+
+	* 	Performance improvements
+	  - timeout check
+	  - add index
+	  - add pragma for SQLite synchronous spec.
+
+2005-11-04 21:28  exocetrick
+
+	* 	Issue number: 201 Obtained from: Submitted by: ExocetRick Reviewed
+	  by:
+
+2005-11-03 21:09  lankes
+
+	* 	- MS declare in its newest Platform SDK some
+	   functions (like strdup and strncpy) as deprecated
+	  - the definition of _CRT_SECURE_NO_DEPRECATE and
+	  _CRT_NONSTDC_NO_DEPRECATE suppressed the warnings messages of VC7
+
+2005-11-03 20:52  lankes
+
+	* 	- add jxta_apr.h to the Windows installer
+	  - remove jxtaapr.h from the Windows installer
+
+2005-11-03 19:18  lankes
+
+	* 	- change to C calling convention
+	  - this is necessary for all internal "delete" functions
+
+2005-11-03 07:31  mathieu
+
+	* 	Issue number: 187. Patch number 3.  Obtained from: mathieu Submitted
+	  by: mathieu Reviewed by: slowhog
+
+2005-10-28 22:48  slowhog
+
+	* 	- minor fix for convention
+
+2005-10-28 22:30  mathieu
+
+	* 	Issue number: 187. Patch number 2 Obtained from: mathieu Submitted
+	  by: mathieu Reviewed by: slowhog
+
+2005-10-27 18:49  mathieu
+
+	* 	Issue number: 187. fixing things reported by Henry Obtained from:
+	  mathieu Submitted by: mathieu Reviewed by: slowhog
+
+2005-10-27 18:32  mathieu
+
+	* 	Issue number: 187 (1st patch) Obtained from: mathieu Submitted by:
+	  mathieu Reviewed by: slowhog
+
+2005-10-27 09:44  lankes
+
+	* 	- the jxtaapr.h should be jxta_apr.h
+
+2005-10-27 09:29  lankes
+
+	* 	 - change in VS project files jxtaapr.h to jxta_apr.h
+
+2005-10-27 06:42  slowhog
+
+	* 	- eliminate complier warning with appropriate casting
+	  - remove useless msg element in connect/renew request Submitted by:
+	  Eric Xu (mmx2005) Reviewed by:  Henry Jen the slowhog
+
+2005-10-27 01:55  slowhog
+
+	* 	- the jxtaapr.h should be jxta_apr.h
+
+2005-10-23 17:25  exocetrick
+
+	* 	Issue number: 199 Obtained from: Submitted by: ExocetRick Reviewed
+	  by: slowhog
+
+2005-10-18 23:37  slowhog
+
+	* 	- leak fix
+
+2005-10-18 23:34  slowhog
+
+	* 	- fix segment fault when got a RA with relay:// EA
+	  - fix over-release on EA when picking best address(contributed by
+	  Brian A. Wilson)
+	  - Change the default transport direction to OUTBOUND only
+
+	  Issue number:  191 Submitted by:  Henry Jen the slowhog
+
+2005-10-18 23:27  slowhog
+
+	* 	- use new API for getting service
+
+2005-10-18 14:34  exocetrick
+
+	* 	Add function to retrieve service with an ID
+
+2005-10-18 01:23  mathieu
+
+	* 	Issue number: 178 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by:
+
+2005-10-18 01:22  mathieu
+
+	* 	Issue number: 198 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by: valgrind ;-)
+
+2005-10-17 20:51  slowhog
+
+	* 	- eliminate hardcode rules to support multiple transports Issue
+	  number: 191 Submitted by: Henry Jen the slowhog
+
+2005-10-17 06:54  mathieu
+
+	* 	Issue number: 184. Obvious fix Obtained from: mathieu Submitted by:
+	  mathieu Reviewed by:
+
+2005-10-15 02:43  mathieu
+
+	* 	Issue number: 165. Bad merge ...  Obtained from: mathieu Submitted
+	  by: mathieu Reviewed by:
+
+2005-10-14 22:00  lankes
+
+	* 	- need to include some headers
+	  - otherwise I got linker errors on Windows
+
+2005-10-14 21:57  lankes
+
+	* 	- arpa/inet.h doesn't exist on a Windows system => avoid inclusion
+	  of arpa/inet.h
+
+2005-10-14 21:49  lankes
+
+	* 	- add jxta_util_priv.c and jxta_platformconfig.c to the VS project
+	  files
+
+2005-10-14 21:47  lankes
+
+	* 	- remove obsolete windows implementation of signbit
+
+2005-10-14 06:20  mathieu
+
+	* 	Issue number: 197 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by:
+
+2005-10-14 06:19  mathieu
+
+	* 	Issue number: 181. Hum, let say that's a typo fix :-) Obtained from:
+	  mathieu Submitted by: mathieu Reviewed by:
+
+2005-10-14 06:12  mathieu
+
+	* 	Issue number: 181 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by:
+
+2005-10-14 01:12  slowhog
+
+	* 	- indent style change
+	  - fix segfault when len=0
+
+2005-10-13 23:49  mathieu
+
+	* 	Issue number: 158 & 170 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by: slowhog
+
+2005-10-13 22:35  slowhog
+
+	* 	- rename internal variable name for superclass.
+
+2005-10-13 21:52  exocetrick
+
+	* 	Didn't save before previous commit.
+
+2005-10-13 21:21  mathieu
+
+	* 	Issue number: change from world to net peergroup Id. (issue 184)
+	  Obtained from: mathieu Submitted by: mathieu Reviewed by: slowhog
+
+2005-10-13 20:35  mathieu
+
+	* 	Issue number: 196 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by: bondolo & slowhog
+
+2005-10-13 20:28  mathieu
+
+	* 	Issue number: 184 (missing file) Obtained from: mathieu Submitted
+	  by: mathieu Reviewed by: slowhog
+
+2005-10-13 19:52  mathieu
+
+	* 	Issue number: 184 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by: slowhog
+
+2005-10-13 17:07  exocetrick
+
+	* 	Modifications to support execution from a test script Issue number:
+	  182 Obtained from: Submitted by: ExocetRick Reviewed by:
+
+2005-10-13 16:59  exocetrick
+
+	* 	Test case execution enhancements Issue number: 182 Obtained from:
+	  Submitted by: ExocetRick Reviewed by:
+
+2005-10-13 16:42  mathieu
+
+	* 	Issue number: 195 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by:
+
+2005-10-12 23:11  slowhog
+
+	* 	- Fix wrong include filename and one warning
+
+2005-10-12 00:26  mathieu
+
+	* 	Issue number: Missing files :-(. Thanks Henry! Obtained from:
+	  mathieu Submitted by: Reviewed by:
+
+2005-10-12 00:04  mathieu
+
+	* 	Issue number: 189 & 192 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by: exocetrick
+
+2005-10-07 23:14  slowhog
+
+	* 	Issue number: 118
+
+2005-10-07 23:05  mathieu
+
+	* 	Issue number: 176. LEASE rdv events where removed by this patch.
+	  Update whisp code Obtained from: bondolo Submitted by: bondolo
+	  Reviewed by: mathieu
+
+2005-10-07 23:04  mathieu
+
+	* 	Issue number: 188 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by: slowhog
+
+2005-10-06 22:47  exocetrick
+
+	* 	Remove dependency of signbit. Negative zero check not needed.
+
+2005-10-06 17:20  exocetrick
+
+	* 	Fix debug messages to match the operation.
+
+2005-10-06 16:37  exocetrick
+
+	* 	Support for new rdv events introduced by auto-rendezvous
+
+2005-10-06 16:36  exocetrick
+
+	* 	Fix infinite loop when no replica entries and no sub queries Change
+	  log level for updates
+
+2005-10-06 16:33  bondolo
+
+	* 	Corrects problems with rdv propagation by edges and reduces cost of
+	  propagation significantly.
+
+	  Issue number: 176 Reviewed by:  mathieu
+
+2005-10-05 04:02  exocetrick
+
+	* 	Remove debug code and compiler warning.
+
+2005-10-05 03:59  exocetrick
+
+	* 	Add lost comments
+
+2005-10-05 03:14  exocetrick
+
+	* 	Remove unused entries and references in the advertisement structure
+
+2005-10-05 00:57  mathieu
+
+	* 	Issue number: 169 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by: exocetrick
+
+2005-10-03 16:35  bondolo
+
+	* 	update to new logging.
+
+2005-10-03 16:34  bondolo
+
+	* 	update to new logging
+
+2005-10-03 16:21  mathieu
+
+	* 	Issue number: 185 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by: bondolo
+
+2005-10-01 01:12  mathieu
+
+	* 	Issue number: 183 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by:
+
+2005-10-01 00:12  mathieu
+
+	* 	Issue number: 141 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by: bondolo & slowhog
+
+2005-10-01 00:02  slowhog
+
+	* 	- recover changes between r1.6 and r1.7
+	  - indent style change
+
+2005-09-30 23:46  mathieu
+
+	* 	Issue number: 158 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by: bondolo & slowhog
+
+2005-09-30 00:20  slowhog
+
+	* 	- fix seg fault when PA is not in the discovery response
+
+2005-09-30 00:20  slowhog
+
+	* 	- get rid of complier warning of type-puffing
+
+2005-09-30 00:14  slowhog
+
+	* 	- get rid of complier warning of type-puffing
+
+2005-09-30 00:14  bondolo
+
+	* 	better error handling.
+
+2005-09-29 22:45  lankes
+
+	* 	- add jxta_range.c to the VS2003 project files
+
+2005-09-29 22:44  lankes
+
+	* 	- fix function declaration
+	  - this is necessary for Windows
+
+2005-09-29 22:40  lankes
+
+	* 	- Windows doesn't support the signbit function.
+	  - Therefore, I define my own signbit function.
+
+2005-09-29 22:21  bondolo
+
+	* 	additional demux so that services don't have to set_destination on
+	  msg just to call demux
+
+2005-09-29 22:01  bondolo
+
+	* 	better diagnostics and error handling in listener
+
+2005-09-29 22:01  bondolo
+
+	* 	clean up logging, return the results of parse operations.
+
+2005-09-29 18:22  mathieu
+
+	* 	Issue number: 171 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by: bondolo
+
+2005-09-29 07:30  slowhog
+
+	* 	- Change to void * to match macro definition
+
+2005-09-29 07:27  slowhog
+
+	* 	- Enable to extend with C++ modules
+
+2005-09-25 04:36  exocetrick
+
+	* 	Remove comments from an important debug message.
+
+2005-09-25 03:55  exocetrick
+
+	* 	Query Extensions for Numeric and Relational Operators Includes a fix
+	  for searches that weren't being walked.  Issue number: 127 and 167
+	  Obtained from: ExocetRick Submitted by: ExcoetRick Reviewed by:
+
+2005-09-24 18:06  bondolo
+
+	* 	Add the ability to create propagate pipes.
+
+	  Add "magic" binding to the "ip2pgrp" talk user name.
+
+2005-09-24 02:36  mathieu
+
+	* 	Issue number: 180 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by:
+
+2005-09-24 01:55  mathieu
+
+	* 	Issue number: 179 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by:
+
+2005-09-24 01:34  mathieu
+
+	* 	Issue number: 178 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by:
+
+2005-09-24 01:19  mathieu
+
+	* 	Issue number: 175 (part 2) Obtained from: mathieu Submitted by:
+	  mathieu Reviewed by:
+
+2005-09-24 00:15  mathieu
+
+	* 	Issue number: 177 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by:
+
+2005-09-23 23:25  mathieu
+
+	* 	Issue number: 175 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by:
+
+2005-09-23 23:11  mathieu
+
+	* 	Issue number: 174 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by:
+
+2005-09-23 21:58  mathieu
+
+	* 	Issue number: 171 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by:
+
+2005-09-23 20:38  exocetrick
+
+	* 	Discard responses that originate at the local peer.  Issue Number:
+	  172 Obtained from: Submitted by: bondolo Reviewed by:
+
+2005-09-23 20:09  slowhog
+
+	* 	- Replace reprecated APIs
+
+2005-09-23 20:07  slowhog
+
+	* 	- large indent change
+
+2005-09-23 20:01  slowhog
+
+	* 	- replace deprecated API
+	  - indent changes
+
+	  Issue number: 55
+
+2005-09-23 18:06  slowhog
+
+	* 	- Change to transport event
+	  - Remove both physical & jxta address from the negative cache
+
+	  Issue number: 155 Submitted by: Henry Jen the slowhog
+
+2005-09-23 17:37  slowhog
+
+	* 	- indent style fixes
+
+2005-09-23 17:03  bondolo
+
+	* 	correct syntax error
+
+2005-09-23 15:34  exocetrick
+
+	* 	Memory leaks
+
+2005-09-23 15:05  exocetrick
+
+	* 	Handle the Peer Advertisement properly.
+
+2005-09-23 04:31  slowhog
+
+	* 	- add a jxta_endpoint_address_new_3 to construct from a peer ID
+	  - change contructors naming convention to new_? to be consistent
+	  with others Issue number: 168, 55 Submitted by: Henry Jen the
+	  slowhog Reviewed by:  bondolo (Mike Duigou)
+
+2005-09-23 04:12  slowhog
+
+	* 	- indent style changes
+
+2005-09-22 22:57  slowhog
+
+	* 	- Make sure NULL was returned if the string cannot be converted to a
+	  valid Jxta_id
+
+2005-09-22 21:14  lankes
+
+	* 	- add aditional include path to libxml2
+
+2005-09-22 19:23  mathieu
+
+	* 	The patch also removes uneeded JXTA_OBJECT_RELEASE in the case the
+	  group is not even created.  Issue number: 166 Obtained from: mathieu
+	  Submitted by: mathieu Reviewed by:
+
+2005-09-22 16:28  exocetrick
+
+	* 	Remove unused variables and clean up some casting
+
+2005-09-22 15:17  exocetrick
+
+	* 	Forgot to release the cache manager. :/.
+
+2005-09-22 04:28  exocetrick
+
+	* 	Remove srdi entries when the edge disconnects from the rendezvous
+
+2005-09-22 03:58  exocetrick
+
+	* 	Retrieve the cm from the peer group
+
+2005-09-22 03:44  exocetrick
+
+	* 	Add the groupid to debug messages
+
+2005-09-22 03:36  exocetrick
+
+	* 	For responses received add debug info for peer and queryid
+
+2005-09-22 03:26  exocetrick
+
+	* 	Create the cache manager in the Peer Group with get/set functions
+
+2005-09-21 22:56  mathieu
+
+	* 	Forget to use JXTA_DECLARE_DATA macro.  Issue number: Obtained from:
+	  Submitted by: Reviewed by:
+
+2005-09-21 21:37  mathieu
+
+	* 	Issue number: 165 Obtained from: mathieu Submitted by: mathieu
+	  Reviewed by: slowhog
+
+2005-09-21 21:16  slowhog
+
+	* 	- indent style change.
+	  - change } to }; to correct the indent behavior
+
+2005-09-21 19:18  exocetrick
+
+	* 	- Check for a null route to avoid segfault of a malformed
+	  advertisement
+	  - Add the index for RdvServiceName
+
+2005-09-20 23:29  mathieu
+
+	* 	Memory leak fix Issue number: 164 Obtained from: mathieu Submitted
+	  by: mathieu Reviewed by: bondolo
+
+2005-09-20 02:42  mathieu
+
+	* 	Memory leak fix.  ==17300== 141 (64 direct, 77 indirect) bytes in 1
+	  blocks are definitely lost in loss record 11 of 35 ==17300==    at
+	  0x11B1E48D: calloc (vg_replace_malloc.c:279) ==17300==    by
+	  0x13062B3B: jxta_endpoint_address_new2 (jxta_endpoint_address.c:113)
+	  ==17300==    by 0x1307BBCA: client_listener
+	  (jxta_rdv_service_client.c:1305) ==17300==    by 0x130896C7:
+	  listener_thread_main (jxta_listener.c:317) ==17300==    by
+	  0x12E15B54: start_thread (in /lib/libpthread-0.60.so) ==17300==
+	  by 0x133C286F: clone (in /lib/libc-2.3.2.so) Issue number: Obtained
+	  from: Submitted by: Reviewed by:
+
+2005-09-20 01:03  slowhog
+
+	* 	- With a capacity larger than the size, the content was realloc'ed,
+	  and of course the test will fail. Change to same size to avoid
+	  realloc.  Issue number: 152 Submitted by: Henry Jen the slowhog
+
+2005-09-20 00:31  mathieu
+
+	* 	Update test since peers can go down an up easily now Issue number:
+	  Obtained from: Submitted by: Reviewed by:
+
+2005-09-20 00:28  mathieu
+
+	* 	Remove -g in the default setting Issue number: Obtained from:
+	  Submitted by: Reviewed by:
+
+2005-09-20 00:28  mathieu
+
+	* 	Memory leak fix.  ==15218== 276 bytes in 2 blocks are definitely
+	  lost in loss record 30 of 49 ==15218==    at 0x11B1E582: realloc
+	  (vg_replace_malloc.c:306) ==15218==    by 0x1304DF7C: resizeBuf
+	  (jstring.c:128) ==15218==    by 0x1304E422: jstring_append_0
+	  (jstring.c:308) ==15218==    by 0x1304E549: jstring_append_2
+	  (jstring.c:335) ==15218==    by 0x13053B94: getUniqueportion
+	  (jxta_id_uuid.c:712) ==15218==    by 0x1305258B:
+	  jxta_id_get_uniqueportion (jxta_id.c:389) ==15218==    by
+	  0x13089ED7: get_peer_entry (jxta_rdv_service_client.c:1289)
+	  ==15218==    by 0x130890CC: process_connected_reply
+	  (jxta_rdv_service_client.c:879) ==15218==    by 0x130893BE:
+	  client_listener (jxta_rdv_service_client.c:964) ==15218==    by
+	  0x1309A92C: listener_thread_main (jxta_listener.c:317) ==15218==
+	  by 0x12E15B54: start_thread (in /lib/libpthread-0.60.so) ==15218==
+	  by 0x133E086F: clone (in /lib/libc-2.3.2.so) Issue number: Obtained
+	  from: Submitted by: Reviewed by:
+
+2005-09-19 19:23  mathieu
+
+	* 	Fix issue for correct setting of sqlite include directory.
+	  Otherwise no include directory is put in Makefile and sqlite.h
+	  cannot be found.  Note: this apply to JXTA-C 2.2 release Issue
+	  number: Obtained from: Submitted by: Reviewed by:
+
+2005-09-19 02:05  mathieu
+
+	* 	Adding usec in log traces Issue number: Obtained from: Submitted by:
+	  Reviewed by:
+
+2005-09-16 05:16  slowhog
+
+	* 	- add libxml2 patch into source tarball
+
+2005-09-15 22:02  slowhog
+
+	* 	- mark 2.2 release
+
+2005-09-15 21:53  slowhog
+
+	* 	- mutex lock to make rdv_service methods like propagate/walk to be
+	  synchronized
+	  - add protection in case allocating message element fail
+	  - get rid of non-use get_provier_priv method
+	  - disable auto-rdv as C RDV capability is not fully implemented yet
+	  Issue number: 161 Submitted by: Henry Jen the slowhog Reviewed by:
+	  bondolo (Mike Duigou)
+
+2005-09-15 18:41  slowhog
+
+	* 	- increase timeout to 10 seconds Issue number: 116 Submitted by:
+	  Henry Jen the slowhog
+
+2005-09-15 03:26  slowhog
+
+	* 	- revert bad changes by mistake
+
+2005-09-15 03:20  slowhog
+
+	* 	- Service name & param should always be NULL here
+
+2005-09-15 02:31  bondolo
+
+	* 	corrects issue with typing of intf_addr. luckily int is the same
+	  size as pointers on most platforms....
+
+	  Issue number: n/a Reviewed by: slowhog
+
+2005-09-15 02:18  bondolo
+
+	* 	forgot to commit this file with issue 154. Additional logging only.
+	  issue : 154 reviewer : mathieu
+
+2005-09-15 02:15  slowhog
+
+	* 	Issue number: 159 Submitted by: Henry Jen the slowhog Reviewed by:
+	  bondolo (Mike Duigou)
+
+2005-09-14 21:03  bondolo
+
+	* 	updated doxconf for release 2.2
+
+2005-09-14 05:00  slowhog
+
+	* 	- indent style fix
+
+2005-09-13 23:06  slowhog
+
+	* 	- indent style fix
+
+2005-09-13 21:55  slowhog
+
+	* 	- indent style fix
+
+2005-09-13 16:26  slowhog
+
+	* 	- Remove a peer connect in from the unreachable cache Submitted by:
+	  Henry Jen the slowhog Reviewed by:  bondolo (Mike Duigou)
+
+2005-09-12 17:46  mathieu
+
+	* 	Issue number: issue 157 + removed uneeded use of an
+	  AccessPointAdvertisement Obtained from: mathieu Submitted by:
+	  mathieu Reviewed by: Henry Jen aka slowhog
+
+2005-09-12 07:02  slowhog
+
+	* 	Issue number: 146 Obtained from: Mathieu Jan Reviewed by:  Henry Jen
+	  the slowhog
+
+2005-09-10 03:20  bondolo
+
+	* 	Fixes rdv event generation for a number of cases.
+
+	  corrects problem with removal of expired rdv clients.
+
+	  issue : 153/154 reviewer : mathieu
+
+2005-09-10 01:25  slowhog
+
+	* 	- Copy & Paste error, fixed. :-P
+
+2005-09-10 01:04  slowhog
+
+	* 	- The sizeof is 4, not causing a problem now, but is a bug.
+
+2005-09-10 00:57  slowhog
+
+	* 	- SrcPeer does not exist for JXME implementation is causing segment
+	  fault. We should prevent the segment fault anyway as we should not
+	  trust input from elsewhere.
+
+2005-09-10 00:55  slowhog
+
+	* 	- RdvServerName need to be trimmed. Some implementation(JSE) is
+	  sending RDV ADV with indentation characters(\n\t).
+
+2005-09-09 18:22  bondolo
+
+	* 	remove explicit test for dlopen in libdl. dlopen is not in libdl on
+	  all platforms. The AC_LIBTOOL_DLOPEN macro performs the correct
+	  check anyway.
+
+2005-09-09 18:20  bondolo
+
+	* 	better handling for missing programs (discovered when i tried
+	  running without libtool on cygwin0
+
+2005-09-09 15:34  exocetrick
+
+	* 	Free storage allocated by libxml2 for the result
+
+2005-09-08 20:01  lankes
+
+	* 	- use the environment variable APACHE2 instead of a relative path to
+	  the lib
+
+2005-09-07 22:21  slowhog
+
+	* 	- replace strsep(), which is not a portable function.
+
+	  Submitted by: Henry Jen the slowhog
+
+2005-09-07 19:10  slowhog
+
+	* 	- indent style change
+
+2005-09-07 19:08  slowhog
+
+	* 	- use portable apr_time function rather then gettimeofday and
+	  timersub, where timersub is not standard conforming and not
+	  available on Solaris.  Submitted by: Henry Jen the slowhog Reviewed
+	  by:  Mathieu Jan
+
+2005-09-07 18:01  lankes
+
+	* 	- go back to the now the dynamic version of Microsoft's C library
+	  - the installer include now the dynamic version (MSVCRT71.DLL)
+
+2005-09-07 17:56  lankes
+
+	* 	- add MSVCRT71.DLL to the installer
+	  - installer include now the release instead of the debug version of
+	  JXTA-C
+
+2005-09-07 14:33  exocetrick
+
+	* 	- Status was not being stored in the rendezvous object
+	  - Stop the old provider before starting the provider
+
+2005-09-07 00:12  slowhog
+
+	* 	- The old start sequence may cause segfault, as the rdv could be
+	  started before endpoint has a transport. This problem had been
+	  reported by bondolo and David Deterra.
+
+	  Submitted by: Henry Jen the slowhog Reviewed by:  Mike Duigou
+	  (bondolo)
+
+2005-09-05 12:13  lankes
+
+	* 	- remove Jxta_boot.c from the project files
+	  - JXTA-C use now the static version of Microsoft's C library because
+	  the dynamic version (MSVCRT71.DLL) isn't installed on standard
+	  Windows XP system.
+
+2005-09-04 14:43  lankes
+
+	* 	- change version number to 2.2 (Palau)
+
+2005-09-03 06:56  mathieu
+
+	* 	- Fix compile error on Mac: jxta_bench_comm.c:151: error: `pipe'
+	  redeclared as different kind of symbol /usr/include/unistd.h:164:
+	  error: previous declaration of `pipe' Issue number: Obtained from:
+	  Submitted by: Reviewed by:
+
+2005-09-03 06:39  mathieu
+
+	* 	Issue number: 147 Obtained from: Mathieu Submitted by: Mathieu
+	  Reviewed by: Henri Jen the slowhog
+
+2005-09-03 02:02  slowhog
+
+	* 	- Fix compile error on Mac
+	  - Remove unecessary definition of TRUE/FALSE, they are not even used
+	  in jdlist.c
+
+2005-09-02 19:26  slowhog
+
+	* 	- Update Win32 distribution
+
+2005-09-02 18:18  slowhog
+
+	* 	- remove out-dated VC6 project files
+
+2005-09-02 17:51  slowhog
+
+	* 	- add rdvcontrol to JxtaShell project
+	  - Use $(APACHE2) env var for include path
+	  - add jxta_dr_priv.h to jxta lib/dll project Issue number: 129
+	  Submitted by: Henry Jen the slowhog
+
+2005-09-02 08:57  slowhog
+
+	* 	- add rdvcontrol command Issue number:  129 Submitted by:  Mike
+	  Duigou (bondolo) Reviewed by:   Henry Jen the slowhog
+
+2005-09-02 08:56  slowhog
+
+	* 	- rdvstatus command enhancement
+	  - add rdvcontrol command
+
+	  Issue number: 129 Submitted by: Mike Duigou (bondolo) Reviewed by:
+	  Henry Jen the slowhog
+
+2005-09-01 21:46  slowhog
+
+	* 	- consistent way to specify openssl location
+
+2005-09-01 21:45  slowhog
+
+	* 	- newline after join a group
+
+2005-09-01 17:58  exocetrick
+
+	* 	This is makes the time out handling consistent with JSE
+	  implementation.  Another fix is in to remove a "double" close of the
+	  SQL database.  Issue number: 139
+
+2005-09-01 03:27  slowhog
+
+	* 	Issue number: 125 Submitted by: Mike Duigou Reviewed by:  Henry Jen
+	  the slowhog
+
+2005-09-01 02:51  bondolo
+
+	* 	shuffle seed rdvs to provide fairer access to rdvs.
+
+	  issue : 145 reviewer : slowhog
+
+2005-09-01 01:50  slowhog
+
+	* 	-indent style fix
+
+2005-08-31 23:30  slowhog
+
+	* 	- leak fixes
+
+2005-08-31 22:50  bondolo
+
+	* 	adds shuffle operation. will be used for a bug fix to be posted
+	  shortly.
+
+	  Issue number: 144 Reviewed by: slowhog
+
+2005-08-31 06:19  slowhog
+
+	* 	- refactor on jxta_rdv_service for better auto_rdv switching and
+	  thread sync issues Issue number:  129 Obtained from: Mike Duigou
+	  (bondolo) Submitted by:  Henry Jen the slowhog Reviewed by:   Mike
+	  Duigou
+
+2005-08-30 17:27  slowhog
+
+	* 	- various leak fixes Issue number: 135 Submitted by: Henry Jen the
+	  slowhog
+
+2005-08-30 04:28  exocetrick
+
+	* 	Use the id for composite advertisements from the original hash of
+	  the document when an advertisement does not return an Id.
+
+2005-08-29 23:08  mathieu
+
+	* 	gdbm is the dbm used when JXTA-C runs over PadicoTM. Allowing it so
+	  that people can simply do a cvs co to get a JXTA-C package for
+	  PadicoTM Issue number: Obtained from: Submitted by: Reviewed by:
+
+2005-08-29 22:49  slowhog
+
+	* 	- Implement remove discovery listeners
+	  - Add discovery_service_cancel_remote_query() API
+
+	  Issue number: 135, shell/talk.c need this patch to fix object leak
+
+2005-08-29 21:26  slowhog
+
+	* 	- prevent from update an adv with a shorter expiration period, to be
+	  consistent as JSE implementation Issue number: 139 Submitted by:
+	  Rick Keiner (exocetrick) Reviewed by:  Henry Jen the slowhog
+
+2005-08-29 21:18  slowhog
+
+	* 	- indent style change
+
+2005-08-29 13:39  lankes
+
+	* 	- add a small introduction to build JXTA-C on Windows
+
+2005-08-29 06:39  slowhog
+
+	* 	- remove object in a vector by value, needed for removing discovery
+	  listeners.  Issue number: 135 Submitted by: Henry Jen the slowhog
+
+2005-08-29 06:38  slowhog
+
+	* 	- add query_id to discovery response, so one listener can be used
+	  for multiple remote queries.
+
+	  Issue number: 135 Submitted by: Henry Jen the slowhog
+
+2005-08-28 07:07  slowhog
+
+	* 	- this is the right fix for issue 128, should had catched this.
+	  - I do see the Oops message on Linux, means we need it for Win32
+	  release version.
+
+	  Issue number: 128, 140 Submitted by: Henry Jen the slowhog
+
+2005-08-27 01:08  slowhog
+
+	* 	- leak fix
+
+2005-08-26 02:39  slowhog
+
+	* 	-indent style change
+
+2005-08-24 23:49  slowhog
+
+	* 	- add jxta_object_priv.h to distribution tarball.  Issue number:  78
+
+2005-08-24 17:07  bondolo
+
+	* 	add missing parameter for log trace.
+
+2005-08-24 10:09  lankes
+
+	* 	- use on windows __int64 instead of long long
+	  - long long isn't supported by VC6
+
+2005-08-24 07:09  lankes
+
+	* 	- change code style to traditional ANSI C
+	  - this is necessary for Microsoft's VC7
+
+2005-08-24 06:36  lankes
+
+	* 	- change U64d to I64d
+	  - thanks to ericx!
+
+2005-08-24 01:31  slowhog
+
+	* 	- missed bug
+
+2005-08-24 01:21  slowhog
+
+	* 	- indent style changes, should not do after code freeze, but the
+	  code is really bad styled. Sorry!
+
+2005-08-24 01:09  slowhog
+
+	* 	- remove adv from env as flushed Issue number: 16 Submitted by:
+	  Brian.A.Wilson@boeing.com Reviewed by:  Henry Jen the slowhog
+
+2005-08-23 20:51  lankes
+
+	* 	Issue number:  138 Submitted by:   mmx2005 Reviewed by:   lankes
+
+	  - JPR_ABS_TIME_FMT use now the correct prefix
+
+2005-08-22 22:39  slowhog
+
+	* 	- revert the change of cloning revertGateways, as it does not seem
+	  to be the correct fix. Even if it is, it is not complete without
+	  covering forwardGateway.
+
+2005-08-19 22:16  slowhog
+
+	* 	- leak fix
+
+2005-08-19 02:39  exocetrick
+
+	* 	Fix memory leak.
+
+2005-08-19 02:25  exocetrick
+
+	* 	Query ID debug info when a response is received.
+
+2005-08-18 22:43  slowhog
+
+	* 	- use APR_INT64_T_FMT macro instead of %lld, which cause segfault on
+	  Opetron systems where APR_INT64_T_FMT is "ld" rather than "lld"when
+	  use with apr_snprintf.
+
+2005-08-18 22:22  slowhog
+
+	* 	- add Desc element handling Issue number:  53 Obtained from:
+	  Brian.A.Wilson@boeing.com Submitted by:  Henry Jen the slowhog
+	  Reviewed by:   Henry Jen the slowhog
+
+2005-08-18 20:46  lankes
+
+	* 	- change code style to traditional ANSI C
+	  - this is necessary for Microsoft's VC7
+
+2005-08-18 19:01  slowhog
+
+	* 	- replace sprintf with apr_snprintf
+
+	  Issue number:  133 Obtained from: Brian.A.Wilson@boeing.com Reviewed
+	  by:   Henry Jen the slowhog
+
+2005-08-18 06:39  mathieu
+
+	* 	using CC instead of gcc if set and modified regular exp for gcc-4.0
+	  support style cmd
+
+2005-08-18 02:32  slowhog
+
+	* 	- add option -k to stop and release the peer group
+
+2005-08-18 02:20  slowhog
+
+	* 	- indent style fix
+
+2005-08-18 02:19  slowhog
+
+	* 	- work-around the bad behavior on Relay Server.  Issue number:  131
+
+2005-08-18 01:55  slowhog
+
+	* 	- Fix infinite loop in debug version.  Issue number: 128
+
+2005-08-17 01:31  slowhog
+
+	* 	- leak fixes
+
+2005-08-16 19:08  lankes
+
+	* 	- add scripts to create an installer for Windows
+
+2005-08-16 19:02  lankes
+
+	* 	- remove unnecessary files
+
+2005-08-16 07:27  lankes
+
+	* 	- set in the VS 2003 project files GZIP_ENABLED and GUNZIP_ENABLED
+	  to 1 => enable zlib compression
+
+2005-08-15 22:30  bondolo
+
+	* 	adjust level of chatty trace message.
+
+2005-08-15 20:56  slowhog
+
+	* 	- fix gcc version issue on Debian, tested on Debian, Solaris and FC4
+	  Issue number:  123 Submitted by:  Henry Jen the slowhog
+
+2005-08-14 17:56  exocetrick
+
+	* 	Fix Memory leak and add info message for the query ID.
+
+2005-08-14 17:53  exocetrick
+
+	* 	Remove elements not needed.
+
+2005-08-14 17:39  exocetrick
+
+	* 	Support compile  option to disable SRDI compression/decompression.
+
+2005-08-14 17:37  exocetrick
+
+	* 	Configuration option to disable SRDI compression/decompression.
+
+2005-08-14 15:30  exocetrick
+
+	* 	Extended query should be escaped.
+
+2005-08-05 01:26  slowhog
+
+	* 	- Small refactoring to eliminate duplicate code
+
+2005-08-04 20:53  exocetrick
+
+	* 	Fixed the destruction of the CM Changed advertisement expiration
+	  check to 10 minutes
+
+2005-08-04 20:51  exocetrick
+
+	* 	Fix initialization of apr_dbd Add debug messages for table creation
+	  change malloc to calloc
+
+2005-08-04 19:15  slowhog
+
+	* 	- ensure auto_rdv thread is stopped properly Submitted by: Henry Jen
+	  the slowhog Reviewed by:  Mike Duigou (bondolo)
+
+2005-08-03 08:44  lankes
+
+	* 	- add JXTA_DECLARE to export these functions
+
+2005-08-03 08:32  lankes
+
+	* 	- add VS 2003 project files for some test programs
+	  - minor changes in the other project files
+	  - some test programs use now the static JXTA lib instead  of the
+	  DLL, because they use internal JXTA function
+
+2005-08-03 08:10  lankes
+
+	* 	- minor changes to create these test programs on a Windows system
+	  - Unfortunately, Windows doesn't support timersub, gettimeofday and
+	  getopt. Therefore, I create my own timersub, gettimeofday and getopt
+	  on Windows.
+
+2005-08-03 05:51  slowhog
+
+	* 	- Win32 fixes on calling convention, type, etc.
+
+	  Issue number: 119 Obtained from: Stefan Lankes Reviewed by:   Henry
+	  Jen the slowhog
+
+2005-08-02 21:36  slowhog
+
+	* 	- apr_thread_exit could cause segfault if the rdv is destructed
+	  already.
+	  - remove an extra provider mutex lock in the
+	  jxta_rdv_service_server.c::start()
+
+2005-07-31 16:34  exocetrick
+
+	* 	Add gzip compression to srdi messages
+
+2005-07-31 03:16  exocetrick
+
+	* 	Create a vector clone rather than just a JXTA_OBJECT_SHARE for
+	  reverseGateways to fix an apr_pools problem.
+
+2005-07-31 02:31  exocetrick
+
+	* 	Add diagnostics for apr_pool allocation Remove duplication of index
+	  entries to the SRDI table
+
+2005-07-31 02:18  exocetrick
+
+	* 	fix memory leak
+
+2005-07-31 02:17  exocetrick
+
+	* 	Modify default config
+
+2005-07-28 23:46  slowhog
+
+	* 	- leak fix
+
+2005-07-28 23:12  slowhog
+
+	* 	- leak fix
+
+2005-07-28 23:03  slowhog
+
+	* 	- Remove unnecessary RELEASE, they are released in stop() function.
+
+2005-07-28 19:17  slowhog
+
+	* 	- leak fix.
+	  - set provider to NULL later
+
+	  Obtained from: Brian.A.Wilson@boeing.com Reviewed by:   Henry Jen
+	  the slowhog
+
+2005-07-28 19:10  slowhog
+
+	* 	- remove the walker listener
+
+	  Obtained from: Brian.A.Wilson@boeing.com Reviewed by:   Henry Jen
+	  the slowhog
+
+2005-07-28 19:03  slowhog
+
+	* 	- Fix a few leaks
+
+	  Obtained from: Brian.A.Wilson@boeing.com Reviewed by:   Henry Jen
+	  the slowhog
+
+2005-07-28 18:08  slowhog
+
+	* 	- Add $apr_config/bin into path for finding apu-1-config. So in case
+	  apr-util are installed in the same place as apr, not need to specify
+	  --with-apu option.  In case --with-aor option isn't used, /bin
+	  should be pretty safe to be in path.  :-)
+
+2005-07-28 02:27  slowhog
+
+	* 	- Fix segment fault caused by multiple TCP connections between 2
+	  peers. After patched, there should only be one connection between
+	  two peers.
+
+	  Submitted by: Henry Jen the slowhog
+
+2005-07-28 02:24  slowhog
+
+	* 	- Avoid release a NULL object. I don't see the secondary_keys are
+	  used with a quick look, can we safely remove it?
+
+	  Obtained from: "Wilson, Brian A" <Brian.A.Wilson@boeing.com>
+	  Reviewed by:   Henry Jen the slowhog
+
+2005-07-28 02:20  slowhog
+
+	* 	- Fix leak caused by thread not stopping. Set running to false when
+	  requested to stop
+	  - use apr_thread_join to make sure thread stopped before free the
+	  object rather than self-reference
+
+	  Submitted by: Henry Jen the slowhog
+
+2005-07-28 01:52  slowhog
+
+	* 	- There is a member var group in the base class jxta_service, no
+	  need to keep another here
+
+	  Reviewed by: Henry Jen the slowhog
+
+2005-07-28 01:17  slowhog
+
+	* 	- There is a member var group in the base class jxta_service, no
+	  need to keep another here
+
+	  Reported by: Wilson, Brian A <Brian.A.Wilson@boeing.com> Reviewed
+	  by: Henry Jen the slowhog
+
+2005-07-28 01:12  slowhog
+
+	* 	- Fix leaks, there is a share when calling apr_thread_create
+
+	  Submitted by: Wilson, Brian A <Brian.A.Wilson@boeing.com> Reviewed
+	  by:  Henry Jen the slowhog
+
+2005-07-28 00:23  slowhog
+
+	* 	- avoid compile warning caused by name collision, using pf_free
+	  instead of free Submitted by: Henry Jen the slowhog
+
+2005-07-27 04:52  exocetrick
+
+	* 	Add the definition of jxta_cm_get_others_time.
+
+2005-07-27 04:22  exocetrick
+
+	* 	Remove reindex at startup. Just remove expired records.
+
+2005-07-26 01:30  slowhog
+
+	* 	- Add a new accessor function to get a transport address of an
+	  endpoint address
+
+2005-07-25 17:42  mathieu
+
+	* 	Fixed issue of wrong copyright. Sorry for the noise ...  Issue
+	  number: Obtained from: Submitted by: Reviewed by:
+
+2005-07-25 17:41  mathieu
+
+	* 	Fixed issue with GENERATE Issue number: Obtained from: Submitted by:
+	  Reviewed by:
+
+2005-07-25 17:34  mathieu
+
+	* 	Fixed issue with GENERATE ...  Issue number: Obtained from:
+	  Submitted by: Reviewed by:
+
+2005-07-25 12:06  mathieu
+
+	* 	Issue number: Obtained from: Submitted by: Reviewed by:
+
+2005-07-24 19:17  mathieu
+
+	* 	Added benchmark code (comm layers) Issue number: 59 Obtained from:
+	  mathieu Submitted by: mathieu Reviewed by:
+
+2005-07-24 18:59  mathieu
+
+	* 	Added benchmark code (comm layers) Issue number: 59 Obtained from:
+	  mathieu Submitted by: mathieu Reviewed by:
+
+2005-07-24 18:47  lankes
+
+	* 	- add VS 2003 project files for jxta_rdvclient_listener_test and
+	  jxta_rdvserver_test
+
+2005-07-24 11:33  mathieu
+
+	* 	Added test programs for deployment purpose Issue number: Obtained
+	  from: Submitted by: Reviewed by:
+
+2005-07-22 03:12  slowhog
+
+	* 	- Patch for C++ compatibility
+	  - Indent style changes
+
+	  Obtained from: Wilson, Brian A <Brian.A.Wilson@boeing.com> Submitted
+	  by:  Henry Jen the slowhog Reviewed by:   Henry Jen the slowhog
+
+2005-07-21 23:02  slowhog
+
+	* 	- Patch for C++ compatibility Obtained from: Wilson, Brian A
+	  <Brian.A.Wilson@boeing.com> Reviewed by:   Henry Jen the slowhog
+
+2005-07-21 22:05  slowhog
+
+	* 	- Change the--with-xxx behavior. If not specifying, configure script
+	  will try to find the lib automatically.  Submitted by:  Henry Jen
+	  the slowhog
+
+2005-07-21 21:08  slowhog
+
+	* 	- add "Content-Length" header for proxy compatibility
+
+	  Obtained from: "maurizio rucco" <garrick@hotmail.it> Reviewed by:
+	  Henry Jen the slowhog
+
+2005-07-19 21:29  slowhog
+
+	* 	- Remove obsolete configure.in.solaris
+
+2005-07-19 20:51  slowhog
+
+	* 	- allow apr-util & apr be in different locations
+
+2005-07-15 17:27  slowhog
+
+	* 	- fix the log message with error number
+
+2005-07-06 17:28  exocetrick
+
+	* 	Fixed a header count check and added some warning messages
+
+2005-07-05 17:04  exocetrick
+
+	* 	indent restyle
+
+2005-07-02 00:15  exocetrick
+
+	* 	- Add functions to return lifetime and expiration times
+	  - Use absolute value for expiration and lifetime values
+
+2005-07-01 18:29  exocetrick
+
+	* 	indent restyle
+
+2005-07-01 18:24  exocetrick
+
+	* 	Add functions to the API for retrieval of expiration and lifetime
+	  values
+
+2005-06-24 19:53  exocetrick
+
+	* 	Improved shutdown handling and added debug messages for tracking
+	  shutdown
+
+2005-06-24 08:00  slowhog
+
+	* 	- Bug fix in set_advertisements
+	  - Memory leak fix
+
+	  Submitted by: Henry Jen the slowhog Reviewed by:  Mathieu Jan
+
+2005-06-23 02:40  exocetrick
+
+	* 	Fix memory calloc problem.
+
+2005-06-23 02:35  exocetrick
+
+	* 	Fix memory leaks
+
+2005-06-23 02:31  exocetrick
+
+	* 	Modifications to route complex queries.
+
+2005-06-23 02:21  exocetrick
+
+	* 	Fix memory leak
+
+2005-06-22 15:30  exocetrick
+
+	* 	Fix memory leak
+
+2005-06-22 15:25  exocetrick
+
+	* 	Fix memory leak
+
+2005-06-22 09:01  exocetrick
+
+	* 	Fix memory leak
+
+2005-06-22 08:45  exocetrick
+
+	* 	Fix memory leaks
+
+2005-06-17 20:55  lankes
+
+	* 	- cosmetic changes
+
+2005-06-17 20:51  exocetrick
+
+	* 	- clean up log messages
+	  - fix init problems
+	  - clean up return checking
+
+2005-06-17 20:49  lankes
+
+	* 	- add additional include path to the VS2003 project files
+
+2005-06-17 20:38  exocetrick
+
+	* 	Fix memory leaks
+
+2005-06-17 15:53  exocetrick
+
+	* 	Complex query routing in replicas.
+
+2005-06-17 14:30  exocetrick
+
+	* 	indent restyle
+
+2005-06-17 14:27  exocetrick
+
+	* 	Read file for remote queries
+
+2005-06-16 23:11  slowhog
+
+	* 	indent style change for *.[ch] files in src folder
+
+2005-06-16 18:17  slowhog
+
+	* 	- developer version, named as 2.2_pre
+
+2005-06-16 06:43  lankes
+
+	* 	- export jxta_nullID, jxta_worldNetPeerGroupID and
+	  jxta_defaultNetPeerGroupID
+
+2005-06-14 23:03  slowhog
+
+	* 	- bump the version to 2.1.1
+	  - add install instruction copied from wiki
+
+2005-06-14 22:25  slowhog
+
+	* 	- remove obsolete file
+
+2005-06-13 21:35  exocetrick
+
+	* 	Add dependence on OpenSSL library
+
+2005-06-13 20:14  lankes
+
+	* 	- minor changes in the VS 2003 project files to support OpenSSL
+
+2005-06-13 19:46  lankes
+
+	* 	- add JXTA_DECLARE to export the functions
+
+2005-06-13 19:30  exocetrick
+
+	* 	- add JXTA_DECLARE to export functions
+
+2005-06-13 18:51  exocetrick
+
+	* 	indent restyle
+
+2005-06-13 18:47  exocetrick
+
+	* 	indent restyle
+
+2005-06-13 18:45  exocetrick
+
+	* 	Follow header files convention
+
+2005-06-13 18:34  exocetrick
+
+	* 	indent restyle
+
+2005-06-13 18:33  lankes
+
+	* 	- add JXTA_DECLARE to export the functions
+
+2005-06-13 18:12  exocetrick
+
+	* 	indent restyle
+
+2005-06-13 16:27  exocetrick
+
+	* 	fix memory leak
+
+2005-06-13 16:26  exocetrick
+
+	* 	save the threshold
+
+2005-06-13 16:24  exocetrick
+
+	* 	- fix memory leaks
+	  - modify prefix name
+	  - clean up warning messages
+
+2005-06-13 16:21  exocetrick
+
+	* 	clean up warning messages
+
+2005-06-13 16:10  exocetrick
+
+	* 	* Modifications for enhanced (XPath) SRDI discovery and replica
+	  publishing
+
+2005-06-13 15:10  exocetrick
+
+	* 	memory leaks
+
+2005-06-12 14:45  lankes
+
+	* 	- the line "#endif /* __Jxta_Membership_Service_H__  */" have to be
+	  at the end of the file
+
+2005-06-10 22:47  slowhog
+
+	* 	- Check the state for stop.
+
+	  Issue number:  117 Submitted by:  Henry Jen the slowhog
+
+2005-06-10 13:34  mathieu
+
+	* 	Missing unlock for mutex Issue number: 113 Obtained from: mathieu
+	  Submitted by: mathieu Reviewed by: slowhog
+
+2005-06-10 00:52  slowhog
+
+	* 	- return JXTA_NOT_CONFIGURED to disable HTTP transport in case of
+	  not a relay client Issue number:  101 Submitted by:  slowhog
+
+2005-06-10 00:50  slowhog
+
+	* 	- return JXTA_NOT_CONFIGURED to disable the HTTP transport in case
+	  of not a relay client.
+
+	  Issue number:  101 Submitted by:  slowhog
+
+2005-06-09 22:48  slowhog
+
+	* 	- typo, shame on you, slowhog!
+
+2005-06-09 01:27  slowhog
+
+	* 	- detach threads are not "joined"
+	  - make sure mutex is unlocked before destroy it
+
+	  Issue number:  113, 114
+
+2005-06-09 01:21  slowhog
+
+	* 	- leak fixes
+	  - Encode peer adv to be embedded inside a XML element
+	  - correctly process bad peer advertisement
+
+2005-06-09 00:46  slowhog
+
+	* 	- jxta_object_initialize/terminate pair to free resources
+
+2005-06-08 23:57  slowhog
+
+	* 	- fix leaks found by amsaleem
+	  - fix the function signature to get the source address of a
+	  multicase msg
+
+2005-06-08 23:09  slowhog
+
+	* 	- detach threads are not "joined"
+	  - make sure mutex is unlocked before destroy it
+
+	  Issue number:  113, 114 Submitted by:  Henry Jen the slowhog
+
+2005-06-08 02:37  exocetrick
+
+	* 	indent cleanup and let the listener release the object
+
+2005-06-07 23:23  slowhog
+
+	* 	- fix segfault & leaks Issue number:  75 Submitted by:  slowhog
+
+2005-06-07 23:15  slowhog
+
+	* 	- Fix the segfault and some leaks
+
+	  Issue number:  75 Submitted by:  slowhog
+
+2005-06-05 17:31  lankes
+
+	* 	- exit the program on a failure
+
+2005-06-05 16:16  lankes
+
+	* 	- rdvConfig have to be initialized with NULL => a unitialized
+	  rdvConfig throws a system exception on Windows
+
+2005-06-05 14:56  lankes
+
+	* 	- remove obsolete macro JXTA_STDCALL
+
+2005-06-04 21:57  bondolo
+
+	* 	port of patches from the 2.1.1 branch. Required a few additional
+	  changes to mesh with the cvs trunk.
+
+	  Issue number: Submitted by: slowhog Reviewed by: bondolo
+
+2005-06-04 17:17  lankes
+
+	* 	- add JXTA_STDCALL for MS VC7
+
+2005-06-04 15:35  exocetrick
+
+	* 	cleanup of definitions
+
+2005-06-04 15:34  exocetrick
+
+	* 	Previous update incorrect and this cleans up the memory leaks. Also
+	  const definitions.
+
+2005-06-04 14:44  exocetrick
+
+	* 	Change from malloc to calloc for storage initialization
+
+2005-06-04 14:42  exocetrick
+
+	* 	Fixed memory leaks
+
+2005-06-04 14:41  exocetrick
+
+	* 	Fix memory leak
+
+2005-06-04 14:24  lankes
+
+	* 	- change the version number to 2.1.1
+
+2005-06-04 04:27  slowhog
+
+	* 	- change project name from jxta to jxta-c
+	  - bump the version to 2.1.1_beta
+
+2005-06-04 00:35  exocetrick
+
+	* 	Handle the release properly and fix a storage allocation problem
+
+2005-06-03 23:55  bondolo
+
+	* 	One more attempt at managing the tcp messenger/connection lifecyle.
+
+2005-06-03 23:54  bondolo
+
+	* 	fix problem due to cut and paste. ack!
+
+2005-06-03 23:27  slowhog
+
+	* 	- remove pre-built lib from CVS, download them from 'documents &
+	  files' section at
+	  http://jxta-c.jxta.org/servlets/ProjectDocumentList
+
+2005-06-03 23:15  exocetrick
+
+	* 	Add the extra entry in the Kwdtab entries for the get_parm function
+
+2005-06-03 23:01  exocetrick
+
+	* 	Fix the separator character for element/attribute
+
+2005-06-03 22:56  exocetrick
+
+	* 	Fix problem where the index is released too soon
+
+2005-06-03 22:54  exocetrick
+
+	* 	- Fix problem of segfault when pushing the SRDI delta
+	  - misc cleanup of warnings
+
+2005-06-03 19:43  slowhog
+
+	* 	- fix discovery response
+	  - release string too early
+
+2005-06-03 19:40  slowhog
+
+	* 	- Leaks fix
+
+2005-06-03 18:39  slowhog
+
+	* 	- safeguard the header value with a null character
+
+2005-06-03 18:34  slowhog
+
+	* 	- identify listener in log messages
+
+2005-06-03 18:25  slowhog
+
+	* 	- fix discovery response
+	  - release string too early
+
+2005-06-02 19:37  lankes
+
+	* 	- add #include "jxta_private.h" and remove some warnings
+
+2005-06-01 21:38  mathieu
+
+	* 	Fixed memory leaks (removed from the patch things related to
+	  jxta_rdv*. Impl changed ...) Issue number:  115 Obtained from:
+	  Mathieu Submitted by: Mathieu Reviewed by: slowhog
+
+2005-06-01 21:04  mathieu
+
+	* 	Fixed memory leaks Issue number: 115 Obtained from: Mathieu
+	  Submitted by: Mathieu Reviewed by: slowhog
+
+2005-06-01 19:49  slowhog
+
+	* 	- safeguard the header value with a null character
+
+2005-06-01 17:32  slowhog
+
+	* 	- identify listener in log messages
+
+2005-05-31 19:08  lankes
+
+	* 	- returns the status of the function
+
+2005-05-31 18:18  bondolo
+
+	* 	use correct auto-rdv check interval.
+
+2005-05-27 20:49  slowhog
+
+	* 	-Use Jxta_boolean instead of boolean
+
+2005-05-27 20:41  slowhog
+
+	* 	-Use Jxta_boolean instead of boolean
+
+2005-05-27 19:30  slowhog
+
+	* 	- Change boolean to Jxta_boolean
+
+2005-05-27 18:56  slowhog
+
+	* 	- Use Jxta_boolean instead of boolean
+
+	  Issue number:  113 Obtained from: Mathieu Jan Reviewed by:   Henry
+	  Jen the slowhog
+
+2005-05-27 09:18  lankes
+
+	* 	- add VS 2003 project files for npg_test
+
+2005-05-27 07:23  slowhog
+
+	* 	- return Jxta_status for parse
+
+2005-05-27 07:06  slowhog
+
+	* 	- Proposed enhancement, +1 by bondolo
+	  - Make sure pipe resolver response reach the listener
+
+	  Issue number:  112 Submitted by:  Henry Jen the slowhog
+
+2005-05-27 06:58  slowhog
+
+	* 	- add timestamp to log
+
+2005-05-27 06:54  slowhog
+
+	* 	- Release object too early
+
+	  Issue number:  113 Obtained from: Mathieu Jan Reviewed by:   Henry
+	  Jen the slowhog
+
+2005-05-27 06:52  slowhog
+
+	* 	- add a new test program npg_test.c
+
+2005-05-27 06:50  slowhog
+
+	* 	- add the copywrite notice
+
+2005-05-27 06:46  slowhog
+
+	* 	- leak fix in incoming_unicast_server
+	  - make sure the listener get called
+
+	  Those two together, fix the problems we had for pipe resolving
+	  without multicast.
+
+2005-05-27 06:42  slowhog
+
+	* 	- Proposed enhancement, +1 by bondolo Issue number:  112 Submitted
+	  by:  Henry Jen the slowhog
+
+2005-05-27 06:30  slowhog
+
+	* 	- Release object too early
+
+	  Issue number:  113 Obtained from: Mathieu Jan Reviewed by:   Henry
+	  Jen the slowhog
+
+2005-05-27 06:29  slowhog
+
+	* 	- add timestamp to log messages
+
+2005-05-26 20:37  slowhog
+
+	* 	- add new test program npg_test
+	  - add copywrite notice to pg_start_stop_test.c
+
+2005-05-26 20:27  slowhog
+
+	* 	- leak fix
+	  - correctly process bad peer advertisement
+
+2005-05-26 20:24  slowhog
+
+	* 	Fix crash when failed to connect
+
+2005-05-26 20:22  slowhog
+
+	* 	Encode peer adv to be embedded inside a XML element
+
+2005-05-26 20:20  slowhog
+
+	* 	returning status code
+
+2005-05-25 06:37  lankes
+
+	* 	- minor changes in the VS 2003 project files
+
+2005-05-25 06:35  lankes
+
+	* 	Issue number:  109 Obtained from: lankes Submitted by:  lankes
+	  Reviewed by:   got a +1 from slowhog
+
+	  - allocate more memory for a temporary string
+
+2005-05-25 01:40  slowhog
+
+	* 	- revert the commit until the license issue addressed
+
+2005-05-25 01:37  slowhog
+
+	* 	- add a new test program based on amsaleem's contribution
+
+2005-05-25 01:36  slowhog
+
+	* 	- leak fixes
+	  - bad messenger with closed connection should be removed
+
+2005-05-24 19:24  slowhog
+
+	* 	- #define ENABLE_JXTA_LOG 1
+
+2005-05-24 17:01  bondolo
+
+	* 	completes initial implementation of auto-rdv functionality.
+
+	  Includes a few minor fixes to rdv client and server to support
+	  transitioning.
+
+2005-05-24 16:53  bondolo
+
+	* 	fix lint warnings.
+
+2005-05-24 10:16  lankes
+
+	* 	- include some private headers to specify some functions
+
+2005-05-24 10:14  lankes
+
+	* 	- changes in the VS 2003 project files to support sqlite3
+
+2005-05-23 06:34  lankes
+
+	* 	- my mistake... sorry
+
+2005-05-22 19:16  lankes
+
+	* 	- include some private headers to specify some functions
+
+2005-05-22 18:58  lankes
+
+	* 	- declare some functions to export within the JXTA DLL
+	  - remove the macro JXTA_STDCALL form Jxta_advertisement_node_handler
+	  in Kwdtab and all static handler functions
+
+2005-05-22 18:43  lankes
+
+	* 	- use #ifdef instead of #if => this need the MS VC7
+
+2005-05-22 18:40  lankes
+
+	* 	- declare the functions to export within a DLL
+
+2005-05-21 01:34  bondolo
+
+	* 	addtitional work on auto-rdv. Still working on tuning the transition
+	  policy. Currently doesn't actually switch between edge and client
+	  (though switching has been tested).
+
+2005-05-21 01:08  slowhog
+
+	* 	Get rid of annoying 'not initialize' message in case of quitting
+
+2005-05-21 01:03  slowhog
+
+	* 	Leak fixes
+
+2005-05-21 00:54  slowhog
+
+	* 	Get rid of annoying 'not initialize' message in case of quitting
+
+2005-05-20 22:37  slowhog
+
+	* 	- modify #ifdef for JXTA_LOG_ENABLE and JXTA_OBJECT_TRACKING_ENABLE
+	  to allow better control from project setting
+	  - add a --enable-object-tracking option for configure to enable the
+	  global object tracking
+
+2005-05-20 22:33  slowhog
+
+	* 	- modify #ifdef for JXTA_LOG_ENABLE and JXTA_OBJECT_TRACKING_ENABLE
+	  to allow better control from project setting
+	  - add a --enable-object-tracking option for configure to enable the
+	  global object tracking
+
+2005-05-20 21:54  slowhog
+
+	* 	fix for gcc version string like 'gcc (GCC) 3.3.3 (SuSE Linux)'
+
+2005-05-20 20:48  bondolo
+
+	* 	replace index -> at_index or index -> elements to avoid clash with
+	  stdlib index() symbol
+
+2005-05-20 19:52  slowhog
+
+	* 	- make sure using valid folder name
+
+	  Issue number: 107 Submitted by: slowhog
+
+2005-05-20 19:52  bondolo
+
+	* 	refactoring for auto-rdv functionality. The auto-rdv policy and
+	  switching is not yet included.
+
+2005-05-20 19:52  slowhog
+
+	* 	leak fix
+
+2005-05-20 19:41  slowhog
+
+	* 	leak fixes
+
+2005-05-20 19:41  slowhog
+
+	* 	- make sure using correct folder name
+
+	  Issue number: 107 Submitted by: slowhog
+
+2005-05-20 19:26  bondolo
+
+	* 	add accessor for auto rdv interval
+
+2005-05-20 17:09  slowhog
+
+	* 	- Workaround for issue 78
+
+	  Issue number:  78 Submitted by:  slowhog
+
+2005-05-20 08:14  slowhog
+
+	* 	- leak fixes
+
+2005-05-20 08:03  slowhog
+
+	* 	- leak fixes
+
+2005-05-20 04:44  slowhog
+
+	* 	- leak fixes
+	  - remove mutex lock from rdv_service_client stop method to prevent
+	  deadlock
+
+2005-05-20 01:05  slowhog
+
+	* 	- leak fixes
+	  - remove the mutex lock in rdv_service_client stop method which
+	  caused deadlock while waiting listener(in this case,
+	  process_connected_reply will need to lock the mutex) to come to a
+	  full stop.
+
+2005-05-19 06:51  slowhog
+
+	* 	- leak fixes
+
+2005-05-19 06:14  lankes
+
+	* 	- use a more traditional C-style for the Microsoft Compiler
+
+2005-05-19 05:52  lankes
+
+	* 	- use a more traditional C-style for the Microsoft Compiler
+
+2005-05-19 03:26  bondolo
+
+	* 	fixes a problem with the unreachable address cache. Previously the
+	  unreachable address cache only used the protocol address portion of
+	  the endpoint address. ie. 64.81.53.91 rather than tcp://64.81.53.91
+	  or http://64.81.53.91 This often resulted in problems for protocols
+	  such as relay and rdv which used phyiscal transport messengers. If
+	  the destintation peer did not support all of the transports then the
+	  address might end up in the unreachable cache even though it was
+	  reachable on some transports.
+
+	  The unreachable cache now includes the transport identifier. Also
+	  fixes some problems with undersynchronization on the cache.
+
+2005-05-19 01:59  bondolo
+
+	* 	fix generation of public address to match behaviour of the J2SE
+	  implementation. Also provides better handling of InterfaceAddress
+	  which should improve behaviour of running multiple peers in loopback
+	  mode.
+
+	  issue : 102 reviewer : slowhog
+
+2005-05-19 01:18  slowhog
+
+	* 	- fix over-release
+
+2005-05-19 01:17  slowhog
+
+	* 	- fix over-release, the listener function should no longer release
+	  the object.
+
+2005-05-19 00:20  slowhog
+
+	* 	- wait for non-busy threads to stop instead of all threads when
+	  jxta_listener_stop() is called. This make sure all threads will be
+	  stopped once it finish process the message.
+	  - wait for all threads to stop when jxta_listener is deleted.
+
+	  Issue number:  106 Submitted by:  slowhog
+
+2005-05-19 00:17  slowhog
+
+	* 	- wait for non-busy threads to stop instead of all threads when
+	  jxta_listener_stop() is called. This make sure all threads will be
+	  stopped once it finish process the message.
+	  - wait for all threads to stop when jxta_listener is deleted.
+
+	  Issue number:  106 Submitted by:  slowhog
+
+2005-05-19 00:13  slowhog
+
+	* 	- various minor fixes
+
+2005-05-19 00:11  slowhog
+
+	* 	- various cleanup
+
+2005-05-18 23:56  slowhog
+
+	* 	- return queue size for queue_enqueue()
+
+2005-05-18 23:27  slowhog
+
+	* 	- set log function to NULL in case the closed Jxta_log_file is in
+	  use
+
+	  Issue number:  104 Submitted by:  lankes Reviewed by:   slowhog
+
+2005-05-18 23:24  slowhog
+
+	* 	Issue number:  105 Obtained from: lankes Submitted by:  slowhog
+
+2005-05-18 23:20  slowhog
+
+	* 	Issue number:  105 Submitted by:  lankes Reviewed by:   slowhog
+
+2005-05-18 20:32  bondolo
+
+	* 	fix docs
+
+2005-05-18 20:27  bondolo
+
+	* 	cleanups
+
+2005-05-18 20:03  bondolo
+
+	* 	Fixes issues with over-release of messages in rdv server.
+
+	  improvements to propagation.
+
+2005-05-17 01:24  slowhog
+
+	* 	minor indent style cleanup
+
+2005-05-17 01:22  slowhog
+
+	* 	- remove and stop srdi listener
+
+2005-05-17 01:21  slowhog
+
+	* 	indent style cleanup
+
+2005-05-17 01:20  slowhog
+
+	* 	- leak fixes
+
+2005-05-17 01:09  slowhog
+
+	* 	- remove unused variable which was a leak
+
+2005-05-17 01:08  slowhog
+
+	* 	indent style cleanup
+
+2005-05-17 01:07  slowhog
+
+	* 	- leak fixes
+	  - make a copy of folder_name
+
+2005-05-17 01:05  slowhog
+
+	* 	- remove redundant initialize call
+	  - make sure exit on error free resources
+	  - set log to NULL before terminate to avoid seg fault
+
+2005-05-16 19:28  bondolo
+
+	* 	fix breakage with the recently changed static on
+	  handleJxta_RdvConfigAdvertisement.
+
+	  fix lint and a number of other minor issues with declarations.
+
+2005-05-16 19:27  bondolo
+
+	* 	fix print format for absolute times
+
+2005-05-16 18:28  slowhog
+
+	* 	- Pass the advertiement to initialize a module properly
+
+	  Submitted by: DeTerra, David J <david.j.deterra@boeing.com> Reviewer
+	  by:  Mike Duigou(bondolo), Henry Jen the slowhog
+
+2005-05-16 18:28  bondolo
+
+	* 	add another static declaration
+
+2005-05-16 17:40  lankes
+
+	* 	- use a more traditional C-style for the Microsoft Compiler
+
+2005-05-16 17:34  lankes
+
+	* 	- add the macro JXTA_DECLARE to export some function
+	  - use a more traditional C-style for the Microsoft Compiler
+
+2005-05-16 17:26  bondolo
+
+	* 	restyle minor cleanups
+
+2005-05-16 17:23  bondolo
+
+	* 	fix declarations.
+
+2005-05-16 17:21  bondolo
+
+	* 	fix compilation problem
+
+2005-05-14 00:20  slowhog
+
+	* 	- superclass should call destruct rather than delete
+
+2005-05-14 00:19  slowhog
+
+	* 	- leak fixes
+
+2005-05-14 00:18  slowhog
+
+	* 	- avoid leak
+
+2005-05-14 00:17  slowhog
+
+	* 	- remove nonsense share/release pair
+
+2005-05-14 00:15  slowhog
+
+	* 	superclass should call destruct rather than delete
+
+2005-05-13 20:22  bondolo
+
+	* 	improve behaviour for failed peers.
+
+2005-05-13 17:45  slowhog
+
+	* 	- leak fixes
+
+2005-05-13 00:20  slowhog
+
+	* 	- parameters do not match the format string
+
+2005-05-13 00:19  slowhog
+
+	* 	- Should not release the object here.
+
+2005-05-12 22:29  slowhog
+
+	* 	- indent style cleanup
+	  - convert from DOS to Unix EOL so indent can work
+
+2005-05-12 22:22  slowhog
+
+	* 	- remove not needed references and some leak fixes
+
+2005-05-12 22:21  slowhog
+
+	* 	- check for end of attribute list
+
+2005-05-12 22:20  slowhog
+
+	* 	- use JPR format string as Mike(bondolo) suggested
+	  - indent style cleanup
+
+2005-05-11 23:58  slowhog
+
+	* 	- indent style changes
+
+2005-05-11 23:37  slowhog
+
+	* 	- use APR_UINT64_FMT macro to eliminate #ifdef
+	  - leak fix
+
+2005-05-11 17:41  slowhog
+
+	* 	- no need to release here.
+
+2005-05-11 17:40  slowhog
+
+	* 	- no need to release it here.
+
+2005-05-11 08:36  slowhog
+
+	* 	- leak fixes
+
+2005-05-11 07:02  exocetrick
+
+	* 	Functions to build pseudo advertisement when searching the srdi with
+	  a complex query
+
+2005-05-11 05:51  slowhog
+
+	* 	- accumulated leak fixes
+	  - let listener to release object, not relying on listener function
+	  to do so.
+
+2005-05-11 00:20  slowhog
+
+	* 	- get rid of redundant SHARE/RELEASE
+
+2005-05-10 18:34  slowhog
+
+	* 	- leak fix
+
+2005-05-10 07:34  slowhog
+
+	* 	- More leak fixes
+
+2005-05-10 06:36  slowhog
+
+	* 	- leak fixes
+	  - take number of iterations from command line option, default to 1
+
+2005-05-10 06:35  slowhog
+
+	* 	- leaks fixes
+
+2005-05-09 21:08  bondolo
+
+	* 	Fancy new rdvstatus extensions. Better handling of peerview member
+	  failures.
+
+2005-05-09 19:32  slowhog
+
+	* 	- Leak fixes
+
+2005-05-09 18:46  bondolo
+
+	* 	remove obsolete junk
+
+2005-05-09 18:45  bondolo
+
+	* 	fix parsing problems for addresses containing ? and # characters.
+
+2005-05-09 18:02  bondolo
+
+	* 	exocetrick's sqlite3 driver has now been committed to apr so this
+	  patch is no longer required. updated build instructions can be found
+	  on the jxta-c home page.
+
+2005-05-09 17:35  bondolo
+
+	* 	remove a cast which causes a lint warning.
+
+2005-05-07 00:15  exocetrick
+
+	* 	Correct problem with matched ifdef with c++ compile
+
+2005-05-06 23:45  bondolo
+
+	* 	Adds a kick procedure for rdvs. JXTA-C rdvs no longer require a J2SE
+	  peer to assist in forming a peerview. Currently tested with 3 jxta-c
+	  RDV peers, but more should work as well.
+
+2005-05-06 23:43  bondolo
+
+	* 	fix a minor leak
+
+2005-05-06 21:10  bondolo
+
+	* 	groupid is malloc object not a jxta object.
+
+2005-05-06 21:09  bondolo
+
+	* 	correct typo
+
+2005-05-06 12:15  slowhog
+
+	* 	- apr_hash_t does need the key
+
+2005-05-06 11:56  slowhog
+
+	* 	- use %p instead of %X to avoid segfault when quitting Somehow when
+	  jxta_PG_module_terminate call log will cause segfault
+
+2005-05-06 10:41  slowhog
+
+	* 	- let listener to release object, not relying on listener function
+	  to do so.
+	  - many memory leaks clean up
+
+2005-05-05 19:08  slowhog
+
+	* 	- Fix TCP transportation problem on failed to get a RDV lease
+
+2005-05-05 01:06  slowhog
+
+	* 	- release TCP connection reported by amsaleem Submitted by:  slowhog
+
+2005-05-05 01:05  slowhog
+
+	* 	back port tcp messenger start cleanup by bondolo
+
+2005-05-05 01:02  slowhog
+
+	* 	Fix leak
+
+2005-05-05 00:53  slowhog
+
+	* 	- Fix busy loop when remote disconnect without sending welcome
+	  message (DoS)
+
+2005-05-04 23:51  slowhog
+
+	* 	- make sure self->ipaddr to be allocated from pool
+
+2005-05-04 23:05  slowhog
+
+	* 	- fix leaks found by amsaleem
+	  - fix the function signature to get the source address of a
+	  multicase msg
+
+	  Obtained from: Part from amsaleem Submitted by:  slowhog
+
+2005-05-04 20:47  bondolo
+
+	* 	Normalizes makefile.am to include consistent sqlite_cppflags and
+	  remove the -Wdeclaration-after-statement (any suggestions for
+	  inclusion of gcc version specific flags appreciated)
+
+	  tweaking of configure.in to hopefully result in better detection.
+
+2005-05-04 19:24  slowhog
+
+	* 	- fix leaks found by amsaleem Obtained from: amsaleem Submitted by:
+	  slowhog
+
+2005-05-04 19:24  slowhog
+
+	* 	revert commit with wrong log by accident
+
+2005-05-04 19:15  slowhog
+
+	* 	back port some clean up by bondolo
+
+2005-05-04 09:17  slowhog
+
+	* 	- destroy mutex
+	  - some leaks fix
+
+	  Obtained from: amsaleem Submitted by:  slowhog
+
+2005-05-04 09:15  slowhog
+
+	* 	- should start thread in start function
+
+2005-05-04 08:08  slowhog
+
+	* 	-Verify usr.elements to be valid, commit to be defensive. Not sure
+	  if we should do assert.  Obtained from: amsaleem Submitted by:
+	  slowhog
+
+2005-05-04 08:02  slowhog
+
+	* 	- destroy muex Obtained from: amsaleem Submitted by:  slowhog
+
+2005-05-04 07:57  slowhog
+
+	* 	- destroy mutex Obtained from: amsaleem Submitted by:  slowhog
+
+2005-05-04 07:45  slowhog
+
+	* 	- Release mutex before return from failure Obtained from: amsaleem
+	  Submitted by:  slowhog
+
+2005-05-04 07:44  slowhog
+
+	* 	- jxta_object_initialize/terminate pair to free resources
+
+	  Obtained from: amsaleem Submitted by:  slowhog
+
+2005-05-04 07:42  slowhog
+
+	* 	revert commit by accident
+
+2005-05-04 07:37  slowhog
+
+	* 	revert commit by accident
+
+2005-05-04 07:21  slowhog
+
+	* 	- jxta_object_initialize/terminate pair to free resources
+
+	  Obtained from: amsaleem Submitted by:  slowhog
+
+2005-05-04 07:12  slowhog
+
+	* 	destroy pool if fail to initialize
+
+2005-05-04 07:10  slowhog
+
+	* 	jxta_log.c
+
+2005-05-04 04:14  slowhog
+
+	* 	- Fix various leaks
+	  - part had been reviewed by bondolo
+
+2005-05-04 03:47  slowhog
+
+	* 	mark start of reading configuration
+
+2005-05-04 03:46  slowhog
+
+	* 	fix leaks
+
+2005-05-04 03:45  slowhog
+
+	* 	indent style fix
+
+2005-05-04 03:43  slowhog
+
+	* 	fix leaks
+
+2005-05-04 03:42  slowhog
+
+	* 	Add INIT for JXTA_OBJECT_SHARE_TRACK to have each instance tracked
+
+2005-05-04 03:41  slowhog
+
+	* 	INIT_FLAGS should not be in CVS
+
+2005-05-04 03:40  slowhog
+
+	* 	fix leaks
+
+2005-05-03 01:25  slowhog
+
+	* 	release Rendezvous service
+
+2005-05-03 01:24  slowhog
+
+	* 	init the EndpointMessenger::address field to proper value
+
+2005-05-03 01:22  slowhog
+
+	* 	- peer_entry will be released when router_client::peers are released
+	  in destructor
+	  - clean up peer_entry
+	  - some other minor clean up
+
+2005-05-03 01:18  slowhog
+
+	* 	- remove unnecessary share, the thread is stopped before the
+	  instance destructed
+	  - listener_service had been released in stop method
+	  - assigned_id is malloc, not JXTA_OBJECT
+
+2005-05-03 01:08  slowhog
+
+	* 	- clean up credentials when stopped, avoid cross-ref which keeps the
+	  membership service from released.
+
+2005-05-03 01:07  bondolo
+
+	* 	correct problem when there is no up/down peer and correctly get down
+	  peer for walking.
+
+2005-05-03 01:06  slowhog
+
+	* 	- rename self->transport to self->router to be more comprehensive
+	  - release the router transport
+	  - listener table is apr_hash, not JXTA_OBJECT
+
+2005-05-03 01:03  slowhog
+
+	* 	folder could be NULL if cm_close was called before
+
+2005-05-02 19:29  bondolo
+
+	* 	fixes to signedness
+
+2005-05-02 19:20  bondolo
+
+	* 	fix a problem with the type of data returned from a bytevector.
+	  bytes are nominally unsigned chars.
+
+2005-05-02 19:19  bondolo
+
+	* 	fixes to configure.in to support building with sqlite3 installation
+	  located in a private directory (as opposed to a system installed
+	  location)
+
+2005-05-02 19:09  slowhog
+
+	* 	- release memory allocated by super class(jxta_advertisement)
+
+2005-05-02 19:08  slowhog
+
+	* 	- back port some cleanup by bondolo
+
+2005-05-02 18:02  bondolo
+
+	* 	Initial walker implementation now complete.
+
+2005-05-02 18:01  bondolo
+
+	* 	add additional accessors needed for walker
+
+2005-05-01 23:29  bondolo
+
+	* 	more progress on walker implementation.
+
+2005-05-01 20:39  bondolo
+
+	* 	remove // comment
+
+2005-05-01 18:58  bondolo
+
+	* 	lint cleanups and convert to new logging.
+
+2005-05-01 18:57  bondolo
+
+	* 	better handling of status return for messengers. errors were not
+	  being consistently reported.
+
+	  Submitted by: portions from slowhog
+
+2005-05-01 18:55  bondolo
+
+	* 	various valgrind fixes
+
+	  submitted by : slowhog reviewer : bondolo
+
+2005-05-01 03:05  bondolo
+
+	* 	better diagnostics
+
+2005-05-01 03:04  bondolo
+
+	* 	more tidying
+
+2005-05-01 03:03  bondolo
+
+	* 	register walker listener.
+
+2005-05-01 03:03  bondolo
+
+	* 	fix a problem with starting incoming connections.
+
+2005-05-01 02:49  bondolo
+
+	* 	remove old comment
+
+2005-05-01 01:06  bondolo
+
+	* 	adjust log level
+
+2005-05-01 00:29  bondolo
+
+	* 	Cleanups for tcp transport.
+
+	  Portions provided by slowhog
+
+2005-05-01 00:27  bondolo
+
+	* 	adjustments to log level
+
+2005-05-01 00:26  bondolo
+
+	* 	correct problem with initialization of SRDI namespace
+
+2005-04-30 22:04  bondolo
+
+	* 	cleanup of reallocation stage
+
+2005-04-30 09:23  slowhog
+
+	* 	fix leak
+
+2005-04-30 09:22  slowhog
+
+	* 	fix request leak on error and some minor cleanup
+
+2005-04-30 09:19  slowhog
+
+	* 	leak fix
+
+2005-04-30 09:18  slowhog
+
+	* 	leak fix - close should free the structure
+
+2005-04-30 09:16  slowhog
+
+	* 	Fix folder leak, which is a major memory leak
+
+2005-04-30 04:34  slowhog
+
+	* 	fix init count, copy & paste bad :-(
+
+2005-04-29 23:49  slowhog
+
+	* 	- comment out -l option code, multiple log selectors is not
+	  supported
+	  - release jxta_log_selector
+	  - remove initialization/terminate call not needed.
+
+2005-04-29 20:44  bondolo
+
+	* 	remove more duplicate const for endpoint addresses
+
+2005-04-29 20:37  bondolo
+
+	* 	Add rendezvous status enumeration. This necessitated changing the
+	  config enumeration as well.
+
+2005-04-29 20:35  bondolo
+
+	* 	remove redundant const.
+
+2005-04-29 19:55  bondolo
+
+	* 	fixes problems with rdv event generation.
+
+2005-04-29 19:55  bondolo
+
+	* 	tweak log levels
+
+2005-04-29 19:07  slowhog
+
+	* 	cleanup errors reported by valgrind
+
+2005-04-28 09:56  lankes
+
+	* 	- used wrong macro to export the integer _jpr_withinFuncTryBlk_
+
+2005-04-28 03:26  bondolo
+
+	* 	instructions and patch file for adding sqlite3 to apr-utils. This
+	  patch will be obsoleted when apr adds sqlite3 support.
+
+	  Issue number: Obtained from: Submitted by:  exocetrick
+
+2005-04-28 03:07  bondolo
+
+	* 	remove dbm selection from configure.in. No longer needed now that we
+	  use SQLite.
+
+2005-04-28 02:41  exocetrick
+
+	* 	Remove ref to jpr_threads.
+
+2005-04-28 02:31  exocetrick
+
+	* 	Mods for enhanced discovery
+
+2005-04-28 02:23  exocetrick
+
+	* 	Mods for enhanced discovery
+
+2005-04-28 02:05  slowhog
+
+	* 	ServiceParam for relay listener should be NULL to be cross-group.
+	  After this change, the listener can be located to process relay
+	  lease
+
+2005-04-28 02:03  slowhog
+
+	* 	ServiceParam should be NULL for relay to be cross-group.  After
+	  this, the relay listener can be located to process relay lease
+
+2005-04-28 01:49  exocetrick
+
+	* 	Update cm interface
+
+2005-04-28 01:41  exocetrick
+
+	* 	New srdi components
+
+2005-04-28 01:38  exocetrick
+
+	* 	Cm with SQL backend, Enhanced XPath Discovery, srdi
+
+2005-04-28 00:43  exocetrick
+
+	* 	Additions for extended query
+
+2005-04-27 20:46  bondolo
+
+	* 	minor tweak. We don't need sqlite's cflags
+
+2005-04-26 15:00  exocetrick
+
+	* 	Remove reference comments and clean up warnings
+
+2005-04-26 05:09  bondolo
+
+	* 	temporarily disable query.c and one line of publish until cm is
+	  integrated (that's the next step).
+
+2005-04-25 23:51  bondolo
+
+	* 	Remove obsolete APR 0.95 (or earlier) APR files.
+
+2005-04-25 23:47  bondolo
+
+	* 	fixed directions.
+
+2005-04-25 23:09  bondolo
+
+	* 	Update makefiles which include sqlite3 support
+
+2005-04-25 23:05  exocetrick
+
+	* 	publish for a test advertisement
+
+2005-04-25 22:55  exocetrick
+
+	* 	Added for the support of SQL backend database
+
+2005-04-25 22:45  bondolo
+
+	* 	Add configuration for sqlite3
+
+2005-04-25 19:41  bondolo
+
+	* 	More improvements to configure.in
+
+	  Next build should provide Solaris compatibility
+
+2005-04-25 18:54  bondolo
+
+	* 	Remove #undef so that configure.in based debug configuration can be
+	  used.
+
+2005-04-25 17:52  bondolo
+
+	* 	Add smarter handling of libxml prefix location.
+
+2005-04-25 16:22  bondolo
+
+	* 	additional test file
+
+2005-04-25 16:21  bondolo
+
+	* 	additional files for libxml merge
+
+2005-04-25 16:18  bondolo
+
+	* 	add libxml to cvs trunk
+
+2005-04-25 16:14  bondolo
+
+	* 	update of Makefiles, add libxml patch info and shell updates
+
+2005-04-25 15:26  exocetrick
+
+	* 	Enhanced XPath Query
+
+2005-04-25 15:21  exocetrick
+
+	* 	Add an srdi service
+
+2005-04-23 19:46  bondolo
+
+	* 	refactoring of propagation in order to accomodate inclusion of
+	  walker interface.
+
+2005-04-23 18:15  bondolo
+
+	* 	fix intermittent failure caused by unitialized variable in
+	  add_to_localview
+
+2005-04-23 17:40  bondolo
+
+	* 	minor hearder cleanups.
+
+	  message_id_new is not a resolver function.
+
+2005-04-23 17:35  bondolo
+
+	* 	const correctness cleanups
+
+2005-04-22 01:57  slowhog
+
+	* 	- add missing pointer dereference
+
+2005-04-22 01:55  slowhog
+
+	* 	- missing pointer dereference
+
+2005-04-22 01:51  slowhog
+
+	* 	- support dynamic port binding
+
+2005-04-22 01:34  slowhog
+
+	* 	- fix the modline for vim
+
+2005-04-22 01:26  slowhog
+
+	* 	- support dynamic port binding
+
+2005-04-21 22:56  bondolo
+
+	* 	disable features not yet available.
+
+2005-04-21 22:49  bondolo
+
+	* 	fix compilation problems
+
+2005-04-21 22:49  bondolo
+
+	* 	add missing jxta_test_adv.[ch]
+
+2005-04-21 00:40  slowhog
+
+	* 	- makr number of working threads volatile
+	  - object in queue could be NULL
+
+2005-04-21 00:37  slowhog
+
+	* 	- make number of threads volatile
+	  - object in the queue could be NULL
+
+2005-04-20 23:47  slowhog
+
+	* 	- warning clean up
+
+2005-04-20 23:47  slowhog
+
+	* 	- more merge from head for propagation listener
+
+2005-04-20 23:09  slowhog
+
+	* 	- move listener_stop call before locking mutex to avoid deadlock
+	  with listener function
+	  - merge new refactored propagate_listener by bondolo to avoid two
+	    problems:
+	  1. damaged propagation message header
+	    2. endpoint_address of new destination for the propagated msg
+
+2005-04-20 23:04  slowhog
+
+	* 	- move listener_stop call before locking mutex to avoid listener
+	  function dead lock
+	  - remove obsolete listener remove call
+
+2005-04-20 21:27  bondolo
+
+	* 	add missing jxta_walk_msg.[ch]
+
+2005-04-20 21:19  bondolo
+
+	* 	add libxml2 requirements
+
+2005-04-20 20:13  bondolo
+
+	* 	update instructions for libxml2 installation. remove checked in
+	  2.6.16 source and instead provide a download link in readme.
+
+2005-04-20 19:57  bondolo
+
+	* 	add publish shell command.
+
+2005-04-20 19:55  bondolo
+
+	* 	merges from rick for post 2.1 branch. done in prep for integration
+	  against trunk
+
+2005-04-20 07:52  slowhog
+
+	* 	- show thread ID for Win32
+
+2005-04-20 04:11  bondolo
+
+	* 	improve rdva refresh behaviour for the local pve. This is being done
+	  in part to accomodate an apparent change in the endpoint behaviour.
+	  The order of transport initialization seems to have changed and the
+	  endpoint section of the peer adv is no longer initialized when the
+	  peerview starts. This change allows the peerview to initialize later
+	  and also to process updates.
+
+2005-04-20 01:30  slowhog
+
+	* 	- should be mutex_unlock
+
+2005-04-20 00:20  slowhog
+
+	* 	- Looks reasonable not to share the object Issue number:  94
+	  Obtained from: amsaleem Submitted by:  amsaleem Reviewed by:
+	  slowhog
+
+2005-04-20 00:18  slowhog
+
+	* 	- It's reasonable to not share the object
+
+	  Issue number:  94 Obtained from: amsaleem Submitted by:  slowhog
+	  Reviewed by:   slowhog
+
+2005-04-19 23:41  slowhog
+
+	* 	-remove transport from endpoint. resolve the cross-ref keep it from
+	  release.
+
+	  Issue number:  93 Obtained from: amsaleem Submitted by:  slowhog
+	  Reviewed by:   slowhog
+
+2005-04-19 23:38  bondolo
+
+	* 	process RdvConfig defaults differently. Strangely they aren't
+	  getting set.
+
+	  Add better error handling for bad prefs and for cases where no lease
+	  is being offered.
+
+2005-04-19 23:32  slowhog
+
+	* 	- make sure http_transportation and http_poller can be stopped
+	  properly
+
+2005-04-19 23:27  slowhog
+
+	* 	- remove transport from endpoint, avoid cross ref in endpoint keep
+	  http_transport from destruct
+
+2005-04-19 23:21  slowhog
+
+	* 	- release mutex
+
+2005-04-19 23:00  bondolo
+
+	* 	fix issue with construction of public addresses. both tcp and http
+	  were constructing addresses of the form:
+
+	  scheme://addr:port/
+
+	  Unfortunately the final / is significant. It means that there is a
+	  service param (and empty one) and this is distinct from the version
+	  with no final /. The j2se peerview implementation compares addresses
+	  when use only seeds is enabled and was regarding the addresses
+	  contained in jxta-c rdv advs as non-matching.
+
+2005-04-19 21:15  slowhog
+
+	* 	- typo
+
+2005-04-19 21:12  slowhog
+
+	* 	- stop http poller
+
+2005-04-19 20:44  slowhog
+
+	* 	- stop listeners
+
+2005-04-19 06:48  slowhog
+
+	* 	stop listeners
+
+2005-04-19 06:41  slowhog
+
+	* 	- stop/release listener
+	  - remove transport from endpoint
+	  - use running rather then checking APR_TIMEUP for stop indication.
+
+	  Issue number: 89 Submitted by: amsaleem Reviewed by:  slowhog
+
+2005-04-19 06:40  slowhog
+
+	* 	Release listener
+
+2005-04-19 06:35  slowhog
+
+	* 	- stop listener
+	  - remove transport from endpoint
+	  - use running rather then checking APR_TIMEUP for stop indication.
+
+	  Issue number: 89 Submitted by: amsaleem Reviewed by:  slowhog
+
+2005-04-19 05:46  slowhog
+
+	* 	- return if the service is stopped.
+
+2005-04-19 05:43  slowhog
+
+	* 	return if the service is stopped.
+
+2005-04-19 04:37  bondolo
+
+	* 	Add walk interface to rendezvous. Right now the server
+	  implementation is a "faked" version that just uses propagate, but
+	  its an adequate implementation for a solo rdv.
+
+2005-04-19 00:59  slowhog
+
+	* 	- release the listener
+
+2005-04-19 00:06  slowhog
+
+	* 	Destroy mutex
+
+	  Submitted by:  amsaleem Reviewed by:   slowhog
+
+2005-04-19 00:05  slowhog
+
+	* 	ensure threads are stopped before release and avoid cross ref keep
+	  the object from be freed.  Issue number:  96 Submitted by:  amsaleem
+	  Reviewed by:   slowhog
+
+2005-04-18 23:41  slowhog
+
+	* 	Release reference to rendezvous service.
+
+	  Issue number: 92 Submitted by: amsaleem Reviewed by:  slowhog
+
+2005-04-18 23:40  slowhog
+
+	* 	Release reference to rendezvous service.  Issue number: 92 Submitted
+	  by: amsaleem Reviewed by:  slowhog
+
+2005-04-18 23:35  bondolo
+
+	* 	add jxta_walk_msg.[ch]
+
+2005-04-18 23:30  bondolo
+
+	* 	remove unused field
+
+2005-04-18 23:29  slowhog
+
+	* 	- remove code no longer needed
+
+	  Submitted by: slowhog Reviewed by:  amsaleem
+
+2005-04-18 23:25  slowhog
+
+	* 	- remove code no longer needed, jxta_initialize is doing the
+	  gatekeeping init.
+
+2005-04-18 22:59  bondolo
+
+	* 	first cut at walk message
+
+2005-04-18 22:08  slowhog
+
+	* 	- acquire mutex before release for better protection
+
+2005-04-18 22:06  slowhog
+
+	* 	- Acquire mutex for better protection
+
+2005-04-18 22:05  slowhog
+
+	* 	Patch submitted by Saleem.
+
+	  - This should work as the _free method now assure threads to stop,
+	  somwhow now there is a deadlock caused by rdv_service_client
+	  propagate listener we need to look into
+
+2005-04-18 19:02  bondolo
+
+	* 	cleanups to propagate method
+
+2005-04-18 19:01  bondolo
+
+	* 	shorter peerview debug name
+
+2005-04-18 19:00  bondolo
+
+	* 	const adjustments
+
+2005-04-18 06:24  lankes
+
+	* 	Issue number:  81
+
+	  - add VS 2003 project files
+
+2005-04-18 00:23  bondolo
+
+	* 	note 2.2 revision
+
+2005-04-18 00:22  bondolo
+
+	* 	accomodate API changes in peerview
+
+2005-04-18 00:21  bondolo
+
+	* 	implementation improvements preparing for adding kick() strategy
+
+2005-04-18 00:20  bondolo
+
+	* 	diagnostic improvements which helped fix another problem.
+
+2005-04-17 16:31  lankes
+
+	* 	Issue number:  81
+
+	  - add VS 2003 project files
+
+2005-04-17 15:40  lankes
+
+	* 	Issue number:  81
+
+	  - add resource informations for the JXTA and JPR DLL
+
+2005-04-17 15:22  lankes
+
+	* 	Issue number:  81
+
+	  - I need this changes to compile confgui with Visual Studio 2003.
+
+2005-04-17 15:03  lankes
+
+	* 	Issue number:  81
+
+	  - minor changes for Windows
+	  - specified standard call as calling convention for
+	  JxtaShellObject_equals and JxtaShellObject_hashValue
+
+2005-04-17 14:22  lankes
+
+	* 	Issue number:  81
+
+	  - minor fixes for windows
+	  - add some includes (mostly jxta.h)
+	  - use tradtional ANSI C, which is necessary for VC7
+
+2005-04-17 01:56  bondolo
+
+	* 	adds the ability to force immediate failure when a bad object is
+	  detected. Currently off by default.
+
+2005-04-17 01:48  bondolo
+
+	* 	fix problem preventing building on non-Windows
+
+2005-04-17 01:47  bondolo
+
+	* 	remove the long obsolete "router" element from hta
+
+2005-04-16 13:45  lankes
+
+	* 	Issue number:  81
+
+	  - add the macros JXTA_DECLARE and JXTA_DECLARE_DATA to create a DLL
+	  - JXTA_DECLARE also specified that the exported functions used
+	  stdcall as calling convention
+	  - add the macro JXTA_STDCALL to specify the calling convention of a
+	  function pointer.
+	  - if the user wants to create a static library on a windows system,
+	  then the macro JXTA_STATIC has to be defined.
+
+2005-04-16 13:27  lankes
+
+	* 	Issue number:  81
+
+	  - add the macros JPR_DECLARE and JPR_DECLARE_DATA to create a DLL
+	  - if the user wants to create a static library on a windows, then
+	  the macro JPR_STATIC has to be defined.
+
+2005-04-16 08:32  slowhog
+
+	* 	backport start/stop clean up code
+
+2005-04-16 08:18  slowhog
+
+	* 	Break messenger_send function into smaller pieces and fix a few
+	  leaks.
+
+2005-04-16 04:56  bondolo
+
+	* 	remove spurious uninited object warning.
+
+2005-04-16 03:24  bondolo
+
+	* 	remove a SHARE_TRACK left in during debugging.
+
+2005-04-16 03:22  bondolo
+
+	* 	accidentally checked in with share tracking on.
+
+2005-04-16 02:56  bondolo
+
+	* 	fix recognition of seeding seeds.
+
+2005-04-16 01:25  bondolo
+
+	* 	merge of rdv functionality from the post 2.1 branch.
+
+2005-04-16 01:20  bondolo
+
+	* 	fixes problems with connections not being completely started when
+	  endpoint would try to use messenger.
+
+	  also cleans up shutdown.
+
+2005-04-15 23:47  slowhog
+
+	* 	- make sure listeners and endpoint_service are released properly
+	  - some compiler warnings clean up
+
+2005-04-15 23:35  slowhog
+
+	* 	- Remove listeners and release endpoint_service when stop
+
+2005-04-15 21:52  slowhog
+
+	* 	Weak reference of group, should not call JXTA_OBJECT_RELEASE
+
+2005-04-15 21:51  slowhog
+
+	* 	Weak reference of group should not call JXTA_RELEASE_OBJECT
+
+2005-04-15 21:27  slowhog
+
+	* 	fix typo clean up a few warnings
+
+2005-04-15 21:17  bondolo
+
+	* 	prevent newly created peer elements from being deleted immediately
+	  after creation.
+
+	  fixes problems with rdv client recieving multiple lease offers.
+
+2005-04-15 21:05  slowhog
+
+	* 	thread safe with mutex minor modification of search_in_local_cm
+
+2005-04-15 19:39  bondolo
+
+	* 	fixes a problem with insufficient synchronization of state between
+	  the outgoing messenger and the incoming messages thread.
+
+2005-04-15 19:08  slowhog
+
+	* 	Replace jpr_thread_delay with apr_sleep
+
+2005-04-14 23:49  slowhog
+
+	* 	Weak reference from unipipe_piperesolver to unipipe_service Move
+	  some code from new/free to start/stop to ensure cleanup(should not
+	  be necessary, just being cautious until we review it)
+
+	  Issue number:  83, 86 Obtained from: amsaleem, slowhog Reviewed by:
+	  slowhog
+
+2005-04-14 23:05  slowhog
+
+	* 	Weak reference from unipipe_piperesolver to unipipe_service Move
+	  some code from new/free to start/stop to ensure cleanup(should not
+	  be necessary, just being cautious until we review it)
+
+	  Issue number:  83, 86 Obtained from: amsaleem, slowhog Reviewed by:
+	  slowhog
+
+2005-04-14 22:44  bondolo
+
+	* 	misc fixes based upon testing vs public network.
+
+2005-04-14 21:13  bondolo
+
+	* 	remove jpr_thread_delay
+
+2005-04-14 21:10  bondolo
+
+	* 	i remove remaining traces of jpr_thread_delay
+
+2005-04-14 18:46  slowhog
+
+	* 	fix releasing pipe_service_impl
+
+	  Issue number:  85 Submitted by:  amsaleem Reviewed by:   slowhog
+
+2005-04-14 02:25  bondolo
+
+	* 	remove more unused references to jpr_thread.h
+
+2005-04-14 02:18  bondolo
+
+	* 	Remove traces of the jpr_thread.h from files which no longer use it.
+
+2005-04-14 02:01  bondolo
+
+	* 	logging fixes
+
+2005-04-14 01:59  bondolo
+
+	* 	logging improvements and lint nits
+
+2005-04-14 01:57  bondolo
+
+	* 	minor cleanups. router client needs better logging messages.
+
+2005-04-14 01:54  bondolo
+
+	* 	eliminate usage of jpr_thread_delay and general improvements to
+	  poller loop.
+
+2005-04-14 01:38  bondolo
+
+	* 	mark method table const
+
+2005-04-14 01:36  bondolo
+
+	* 	note updated version
+
+2005-04-14 01:29  slowhog
+
+	* 	fix releasing pipe_service_impl
+
+	  Issue number:  85 Submitted by:  amsaleem Reviewed by:   slowhog
+
+2005-04-13 21:18  bondolo
+
+	* 	fix usage of jpr_thread_delay to use cond_wait.
+
+2005-04-13 20:51  bondolo
+
+	* 	change default interface address to 0.0.0.0 since it actually
+	  works...
+
+2005-04-13 20:47  bondolo
+
+	* 	force default to edge if we encounter seed rdv addresses.
+
+2005-04-13 20:37  bondolo
+
+	* 	fixes problem with MIN time definition and adds printf formats for
+	  time values using the same style as APR.
+
+2005-04-13 19:09  bondolo
+
+	* 	fix emit of proberelays element
+
+2005-04-13 19:05  bondolo
+
+	* 	implements backwards compatibility for PlatformConfig parsing and
+	  generation of RdvConfig format params in new PlatformConfig files.
+
+2005-04-13 19:04  bondolo
+
+	* 	fix bugs with output of seeding information
+
+2005-04-12 02:36  bondolo
+
+	* 	diagnostics tweaks
+
+2005-04-12 02:33  bondolo
+
+	* 	upgrade included libxml2 so that it builds with current gcc. old
+	  version was 2.6.16, new version is 2.6.19 This patch also changes
+	  the process by which the jxta alterations to libxml are applied. The
+	  changes are now provided as a patch file. Instructions are included
+	  in the INSTALL and README files.
+
+2005-04-12 02:27  bondolo
+
+	* 	corrections and improved diagnostics.
+
+2005-04-11 21:48  bondolo
+
+	* 	fix build breakage on the 2.1 branch
+
+2005-04-11 21:47  bondolo
+
+	* 	fix breakage with 2.1 branch
+
+2005-04-11 21:46  bondolo
+
+	* 	fix breakage with post 2.1 branch build
+
+2005-04-11 21:45  bondolo
+
+	* 	cvs is not only stupid, it's evil too!
+
+2005-04-11 18:22  bondolo
+
+	* 	correctly identify endpoint worker thread.
+
+2005-04-10 00:32  bondolo
+
+	* 	Add PTName and convert to new logging.
+
+2005-04-10 00:31  bondolo
+
+	* 	corrects problems with usage of timed sleep. constants were declared
+	  with wrong time base in at least one case resulting in sleeping
+	  1/1000th of the desired time.
+
+2005-04-10 00:25  bondolo
+
+	* 	minor cleanups
+
+2005-04-10 00:25  bondolo
+
+	* 	minor cleanup to make the endpoint's worker thread behave more like
+	  the worker threads of other services. Still uses thread_join in
+	  stop.
+
+	  Other cleanups as well
+
+2005-04-09 21:41  bondolo
+
+	* 	Obey configuration settings to construct server.
+
+	  Use parent pool rather than making our own.
+
+2005-04-09 21:19  bondolo
+
+	* 	mark jxta_advertisement_initialize deprecated and remove declaration
+	  of jxta_advertisement_set_free since it isn't implemented (and
+	  doesn't seem to have ever been implemented).
+
+2005-04-09 20:43  bondolo
+
+	* 	diagnostics tweaks. Was having problems figuring out when a
+	  connection wasn't working.
+
+2005-04-09 02:49  bondolo
+
+	* 	more compact display for diagnostic output.
+
+	  -------------------------
+
+2005-04-09 02:46  bondolo
+
+	* 	add rdv_config_adv to file list.
+
+2005-04-09 01:43  bondolo
+
+	* 	fix a double free issue which was preventing rdv connect
+
+2005-04-08 23:25  bondolo
+
+	* 	fix mistaken commit of unsaved file.
+
+2005-04-08 23:22  bondolo
+
+	* 	change levels of a few messages to paranoid.
+
+2005-04-08 23:12  bondolo
+
+	* 	diagnostic tweaks which were useful in diagnosing a problem.
+
+2005-04-08 23:10  slowhog
+
+	* 	autoconf-2.5x support on Mandrake 9.1
+
+2005-04-08 21:56  bondolo
+
+	* 	fixes from valgrind/lint
+
+2005-04-08 21:53  bondolo
+
+	* 	disable share tracking of groups. should not have been committed as
+	  enabled.
+
+2005-04-08 21:53  bondolo
+
+	* 	Start of work to make advertisements behave more like other jxta
+	  objects. other misc cleanups. API remains backwards compatible
+	  though jxta_advertisement_initialize is now deprecated.
+
+2005-04-08 21:21  bondolo
+
+	* 	fixes forgotten reference to APR_STATUS_IS_SUCCESS
+
+2005-04-08 20:28  bondolo
+
+	* 	corrects a minor typo.
+
+2005-04-08 19:38  slowhog
+
+	* 	To adapt apr 1.1.  After patch, the codebase itself is still
+	  compatible with apr-0.9.6, but the configure process is not. A
+	  little modification in configure script should still allow developer
+	  to use apr-0.9.6.
+
+2005-04-07 22:58  slowhog
+
+	* 	Call jxta_initialize/terminate as they should
+
+2005-04-07 22:35  slowhog
+
+	* 	Allow nested initialize
+
+2005-04-07 05:05  bondolo
+
+	* 	misc cleanups of lint and valgrind errors. was touching 1 byte past
+	  end of strings and leaking memory.
+
+2005-04-07 04:10  bondolo
+
+	* 	disable object tracking. It probably shouldn't be left turned on
+	  when committed.
+
+2005-04-07 02:38  bondolo
+
+	* 	improvements for rdvstatus & get_peers
+
+2005-04-07 02:16  bondolo
+
+	* 	trace was too noisy. replace with paranoid
+
+2005-04-07 01:56  bondolo
+
+	* 	support for the paranoid
+
+2005-04-07 01:55  bondolo
+
+	* 	restyle
+
+2005-04-07 01:54  bondolo
+
+	* 	valgrind fixes
+
+2005-04-07 01:32  bondolo
+
+	* 	fixes problems with use of uninited memory pointed out by valgrind.
+	  cleaned up dox, removed lint, fixed logging while I was here.
+
+	  passes unit test.
+
+2005-04-07 01:08  slowhog
+
+	* 	- call jxta_initialize/terminate
+
+2005-04-07 01:01  slowhog
+
+	* 	Reflect the new files added by bondolo
+
+2005-04-06 21:59  bondolo
+
+	* 	const correctness and log adjustments
+
+2005-04-06 21:50  bondolo
+
+	* 	better lease handling and cleanups for propagation.
+
+2005-04-06 21:49  bondolo
+
+	* 	log cleanups
+
+2005-04-06 21:30  bondolo
+
+	* 	adjust jxta_log levels to be less spammy
+
+2005-04-06 00:38  bondolo
+
+	* 	additional accessor functions for rdv config adv.
+
+	  cleanups.
+
+	  trim of peer name in rdv advertisement.
+
+2005-04-05 02:14  bondolo
+
+	* 	use configured lease duration rather than hardcoded values. better
+	  cleanups
+
+2005-04-04 22:58  bondolo
+
+	* 	with the change to jxta_log logging some of the warning messages now
+	  lacked context when displayed. This patch enhances the messages so
+	  that you don't need to use trace level to understand what's going
+	  on.
+
+2005-04-04 22:56  bondolo
+
+	* 	include <string.h> and convert some // comments
+
+2005-04-04 21:26  bondolo
+
+	* 	use seeds from new rdvconfigadv
+
+2005-04-04 20:58  slowhog
+
+	* 	Release listeners and discovery service in stop method rather in
+	  destruct.
+
+	  Issue number: 81 Reviewed by:  bondolo
+
+2005-04-04 17:17  bondolo
+
+	* 	add <string.h> and convert a number of // comments
+
+2005-04-03 01:50  bondolo
+
+	* 	Now loads either Rdv service client or server provider based upon
+	  configuration from RdvConfig in PlatformConfig
+
+2005-04-03 01:47  bondolo
+
+	* 	Add support for RdvConfig advertisement
+
+2005-04-02 23:50  bondolo
+
+	* 	minor optimization
+
+2005-04-02 23:50  bondolo
+
+	* 	convert malloc to calloc
+
+2005-04-02 23:49  bondolo
+
+	* 	adds a new constructor for JStrings which avoids a temp
+
+2005-04-02 23:48  bondolo
+
+	* 	JXTA_OBJECT_RELEASE was releasing the wrong object
+
+2005-04-02 05:49  slowhog
+
+	* 	To make sure the thread stopped before free self.
+
+2005-04-02 01:29  slowhog
+
+	* 	Stop listener to avoid segfault in case cm closed after
+	  discovery_serice stopped
+
+2005-04-02 00:57  slowhog
+
+	* 	Wrong commit, fix it. Sorry!
+
+2005-04-02 00:29  slowhog
+
+	* 	Handle failure when start a module. This matters now because more
+	  action are moved from init to start now.
+
+2005-04-02 00:26  slowhog
+
+	* 	- Make sure we release discovery service properly when stopped
+
+2005-04-01 22:29  slowhog
+
+	* 	- commit too fast, fix variable
+
+2005-04-01 22:26  slowhog
+
+	* 	- convert to new log
+	  - set REUSEADDR socket option, hopefully can help in case the socket
+	  in TIME_WAIT
+
+2005-04-01 21:35  slowhog
+
+	* 	- Convert to new log
+	  - Make sure discovery_service was release after stop
+
+2005-04-01 09:11  slowhog
+
+	* 	Add additional log level: PARANOID
+
+2005-04-01 01:45  slowhog
+
+	* 	Stop listener before release it if it was started. This make sure
+	  the thread will stop after.
+
+2005-04-01 00:01  slowhog
+
+	* 	fix the expiration time display
+
+2005-03-31 23:55  slowhog
+
+	* 	- add log
+	  - fix expire time display
+
+2005-03-31 05:20  bondolo
+
+	* 	cleanups to the startup/shutdown code
+
+2005-03-31 01:27  bondolo
+
+	* 	adds missing conversion of jpr_thread_delay ->
+	  apr_thread_cont_timewait in the connect_thread_main
+
+2005-03-31 00:24  slowhog
+
+	* 	Although the function is useless, fix locking problem before wait
+	  anyway.
+
+2005-03-31 00:24  slowhog
+
+	* 	Should had lock the mutex before wait on the condition. This bug is
+	  causing deadlock problem on Windows.
+
+2005-03-30 23:14  bondolo
+
+	* 	adds proper shutdown logic for rdv client.
+
+2005-03-30 22:44  bondolo
+
+	* 	Issue number: Obtained from: Submitted by: Reviewed by:
+
+2005-03-30 21:59  bondolo
+
+	* 	fix a problem with time constants pointed out by henry (slowhog)
+
+2005-03-30 21:33  bondolo
+
+	* 	forgot to default to client once again.
+
+2005-03-30 21:07  bondolo
+
+	* 	removes references to some non-existant source files.
+
+2005-03-30 20:45  bondolo
+
+	* 	adds missing files to makefile.am
+
+2005-03-30 20:37  bondolo
+
+	* 	minor cleanups
+
+2005-03-30 20:00  bondolo
+
+	* 	cleaner definitions to make lint happy.
+
+	  additional dox to note deprecations.
+
+2005-03-30 19:58  bondolo
+
+	* 	updated peerview and rdv service. rdv side has problems with initial
+	  seeding and works best if another rdv is already running and
+	  contacts it.
+
+2005-03-30 07:08  slowhog
+
+	* 	convert to new log
+
+2005-03-30 02:22  slowhog
+
+	* 	- "indent" restyle
+	  - convert to new log
+
+2005-03-30 02:17  slowhog
+
+	* 	convert to new log
+
+2005-03-30 02:08  bondolo
+
+	* 	add a missing \n
+
+2005-03-30 02:02  slowhog
+
+	* 	Convert to new log
+
+2005-03-30 01:30  slowhog
+
+	* 	- Convert to new log
+	  - share/release connection in messenger
+
+2005-03-30 01:11  slowhog
+
+	* 	- "indent" style change
+	  - Not stopping endpoint service, netpg will do that.
+	  - Not stopping peerinfo service, it is not even created
+
+2005-03-30 00:56  slowhog
+
+	* 	"indent" restyle
+
+2005-03-30 00:51  slowhog
+
+	* 	more log
+
+2005-03-30 00:49  slowhog
+
+	* 	- additional log to confirm that initialize only one time
+
+2005-03-30 00:47  slowhog
+
+	* 	- fix leak of HttpRelays & TcpRelays as they were cloned from other
+	    places later
+	  - remove duplicate release on endpoint
+	  - additional log to aid debugging
+
+2005-03-29 23:50  bondolo
+
+	* 	switch to jxta_log.h logging
+
+2005-03-29 21:12  bondolo
+
+	* 	make sure objects are initialized, fix leaks. all minor nits from
+	  valgrind.
+
+2005-03-29 20:15  bondolo
+
+	* 	balance the apr_initialize with an apr_terminate
+
+2005-03-29 20:12  bondolo
+
+	* 	correct sharing of impl_adv. Sometimes it can be null.
+
+	  also removes builtin init_e method in favour of using the generic
+	  jxta_module_init_e_impl version.
+
+2005-03-29 20:10  bondolo
+
+	* 	switch to calloc to zero buffer
+
+2005-03-29 20:09  bondolo
+
+	* 	better message for failure
+
+2005-03-29 19:01  bondolo
+
+	* 	Completes implementation of (optional) object share/release
+	  tracking.
+
+	  Convert to jxta_log
+
+	  Improve return types of many functions
+
+	  Improvements to dox.
+
+	  Steals a few improvments from lankes work in issue 81
+
+	  issue : 67 reviewer: slowhog
+
+2005-03-29 01:28  bondolo
+
+	* 	better error message
+
+2005-03-28 23:27  bondolo
+
+	* 	declare as a time interval rather than as an absolute time.
+
+2005-03-28 19:30  bondolo
+
+	* 	restyle and fix one case where not entering an option could cause a
+	  segfault.
+
+2005-03-26 01:31  bondolo
+
+	* 	Fixes a problem with free of stop_cond.
+
+	  Mark several timeouts as being intervals not absolute times.
+
+	  Replace init_e with the generic equivalent.
+
+	  Restyle and dox corrections.
+
+2005-03-26 00:40  slowhog
+
+	* 	Try to awake waiting threads. We don't wait for all threads to come
+	  to a stop yet, which I believe should be done to ensure a clean
+	  stop.
+
+2005-03-26 00:32  bondolo
+
+	* 	Mark timeouts as being intervals rather than absolute values.
+
+	  Partial conversion to the new logging system.
+
+2005-03-26 00:17  bondolo
+
+	* 	note that the timeouts are time intervals and not absolute times.
+
+2005-03-26 00:11  bondolo
+
+	* 	restyle and minor lint nits
+
+2005-03-25 23:39  bondolo
+
+	* 	declare some params const
+
+2005-03-25 21:50  slowhog
+
+	* 	indent style change
+
+2005-03-25 21:48  slowhog
+
+	* 	Stop endpoint properly, this eliminate the segment fault behind a
+	  firewall.
+
+	  Submitted by: Henry Jen
+
+2005-03-25 02:32  hamada
+
+	* 	  Addresses properly stopping a group
+
+	   - Adds reference count logs
+	   - Services shouldn't share the group object (and no longer do)
+	   - JXTA_OBJECT init flags to trigger reference counting checks
+	   - misc. cleanup throughout
+
+	  hamada, and bondolo
+
+	  Issue number: Obtained from: Submitted by: Reviewed by:
+
+2005-03-25 02:24  hamada
+
+	* 	adds start stop group test
+
+	  Issue number: Obtained from: slowhog Submitted by: Reviewed by:
+
+2005-03-24 19:43  slowhog
+
+	* 	Convert static initialization from thread_once to
+	  initialize()/terminate() pair
+
+2005-03-24 19:40  slowhog
+
+	* 	New files for initialize/terminate(Try) patch.  Also add
+	  jxta_types.c to source file list.
+
+2005-03-24 19:35  slowhog
+
+	* 	Try macro can cause a segment fault. Basically this is bacause we
+	  use thread_once to simulate static initialization, and we should not
+	  using resources allocated from apr under such code.
+
+	  The patch convert the thread_once mechanism to
+	  jxta_initialize/jxta_terminate pair.
+
+	  Submitted by: Henry Jen
+
+2005-03-24 19:27  slowhog
+
+	* 	fix leak of peers
+
+2005-03-24 18:32  slowhog
+
+	* 	indent style changes
+
+2005-03-24 18:27  slowhog
+
+	* 	Issue number: 79 Submitted by: Henry Jen
+
+	  Fix the segfault caused by closed socket. The running flag should be
+	  set before shutting down the sockets.
+
+2005-03-24 18:25  slowhog
+
+	* 	Fix Segfault when stop relay service where the peer is not a relay
+	  client.
+
+	  Submitted by: Henry Jen aka slowhog
+
+2005-03-24 01:48  bondolo
+
+	* 	minor nits
+
+2005-03-24 01:42  slowhog
+
+	* 	Stop method should make sure the working threads stopped properly.
+	  With this patch, now netpg at least will clean up tcp transport
+	  resource so that to create a netpg later to instantiate tcp
+	  transport won't cause problem.
+
+	  Submitted by: Henry Jen
+
+2005-03-23 20:10  hamada
+
+	* 	move debug fucntions into standalone section as there are not used
+	  anywhere else
+
+	  Issue number:  NA Obtained from: Submitted by: Reviewed by:   NA
+
+2005-03-23 20:04  bondolo
+
+	* 	style and dox improvements
+
+2005-03-23 19:37  bondolo
+
+	* 	use size_t instead of Jxta_uint
+
+2005-03-23 19:31  bondolo
+
+	* 	define some constants for time values and improve doxs.
+
+2005-03-23 19:08  bondolo
+
+	* 	add apr_portable for apr_thread_delay which is used by lots of
+	  modules
+
+2005-03-23 19:07  bondolo
+
+	* 	fix doxygen comments
+
+2005-03-23 18:23  slowhog
+
+	* 	Make sure the thread terminate before stop returns. Also allow the
+	  thread to awake with stop signal without waiting the timeout.
+
+	  Reported by: hamada Submitted by: Henry Jen based on hamada's patch
+
+2005-03-22 16:23  bondolo
+
+	* 	More conversions to Jxta_boolean from boolean
+
+2005-03-22 04:09  bondolo
+
+	* 	more conversions of boolean -> Jxta_boolean. removes a few unneeded
+	  casts.
+
+2005-03-22 04:08  bondolo
+
+	* 	converts usage of boolean to Jxta_boolean. Involves no public APIs
+	  and since boolean was usually typedefed to Jxta_boolean this should
+	  remain even link compatible with older code.
+
+2005-03-22 03:49  bondolo
+
+	* 	Use Jxta_boolean rather than "boolean".
+
+2005-03-21 23:38  slowhog
+
+	* 	Issue number: 77 Obtained from: Stefan Lankes Submitted by: Stefan
+	  Lankes Reviewed by:  Henry Jen
+
+2005-03-18 00:32  bondolo
+
+	* 	minor cleanup
+
+2005-03-16 01:26  slowhog
+
+	* 	Issue number: Obtained from: Submitted by: Reviewed by:
+
+2005-03-16 01:18  slowhog
+
+	* 	Release the endpoint object
+
+	  Issue number: 73 Submitted by: Henry Jen aka slowhog
+

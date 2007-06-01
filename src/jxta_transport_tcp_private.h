@@ -51,14 +51,13 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tcp_private.h,v 1.13 2005/09/23 18:06:48 slowhog Exp $
+ * $Id: jxta_transport_tcp_private.h,v 1.14 2006/02/15 01:09:50 slowhog Exp $
  */
 
 #ifndef __JXTA_TRANSPORT_TCP_PRIVATE_H__
 #define __JXTA_TRANSPORT_TCP_PRIVATE_H__
 
-#include <apr_network_io.h>
-
+#include "jxta_apr.h"
 #include "jxta_types.h"
 #include "jxta_endpoint_address.h"
 #include "jxta_endpoint_service.h"

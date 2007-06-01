@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights
+ * Copyright (c) 2002-2006 Sun Microsystems, Inc.  All rights
  * reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_module.c,v 1.22 2005/08/03 05:51:16 slowhog Exp $
+ * $Id: jxta_module.c,v 1.24 2006/03/14 18:07:40 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -79,6 +79,7 @@ _jxta_module *jxta_module_construct(_jxta_module * module, Jxta_module_methods c
 {
     _jxta_module *self = (_jxta_module *) module;
 
+    self->state = JXTA_MODULE_LOADING;
     self->methods = PTValid(methods, Jxta_module_methods);
     self->thisType = "_jxta_module";
 
@@ -93,6 +94,7 @@ void jxta_module_destruct(Jxta_module * module)
     _jxta_module *self = (_jxta_module *) module;
 
     self->thisType = NULL;
+    self->state = JXTA_MODULE_UNLOADED;
 }
 
 /**
@@ -119,9 +121,12 @@ void jxta_module_destruct(Jxta_module * module)
 JXTA_DECLARE(Jxta_status) jxta_module_init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigned_id,
                                            Jxta_advertisement * impl_adv)
 {
+    Jxta_status res;
     _jxta_module *self = PTValid(module, _jxta_module);
 
-    return JXTA_MODULE_VTBL(self)->init(self, group, assigned_id, impl_adv);
+    res = JXTA_MODULE_VTBL(self)->init(self, group, assigned_id, impl_adv);
+    self->state = JXTA_MODULE_LOADED;
+    return res;
 }
 
 /**
@@ -153,6 +158,7 @@ JXTA_DECLARE(void) jxta_module_init_e(Jxta_module * module, Jxta_PG * group, Jxt
     ThrowThrough();
 
     JXTA_MODULE_VTBL(self)->init_e(self, group, assigned_id, impl_adv, MayThrow);
+    self->state = JXTA_MODULE_LOADED;
 }
 
 
@@ -169,9 +175,13 @@ JXTA_DECLARE(void) jxta_module_init_e(Jxta_module * module, Jxta_PG * group, Jxt
  */
 JXTA_DECLARE(Jxta_status) jxta_module_start(Jxta_module * module, const char *args[])
 {
+    Jxta_status res;
     _jxta_module *self = PTValid(module, _jxta_module);
 
-    return JXTA_MODULE_VTBL(self)->start(self, args);
+    self->state = JXTA_MODULE_STARTING;
+    res = JXTA_MODULE_VTBL(self)->start(self, args);
+    self->state = (JXTA_SUCCESS == res) ? JXTA_MODULE_STARTED : JXTA_MODULE_STOPPED;
+    return res;
 }
 
 
@@ -184,7 +194,10 @@ JXTA_DECLARE(void) jxta_module_stop(Jxta_module * module)
 {
     _jxta_module *self = PTValid(module, _jxta_module);
 
+    self->state = JXTA_MODULE_STOPPING;
     JXTA_MODULE_VTBL(self)->stop(self);
+    self->state = JXTA_MODULE_STOPPED;
+    return;
 }
 
 /*
@@ -211,4 +224,13 @@ void jxta_module_init_e_impl(Jxta_module * module, Jxta_PG * group, Jxta_id * as
 
     if (res != JXTA_SUCCESS)
         Throw(res);
+
+    module->state = JXTA_MODULE_LOADED;
 }
+
+Jxta_module_state jxta_module_state(Jxta_module * self)
+{
+    return self->state;
+}
+
+/* vim: set ts=4 sw=4 et tw=130: */

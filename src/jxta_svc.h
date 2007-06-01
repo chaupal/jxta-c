@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright (c) 2002-2006 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_svc.h,v 1.8 2005/11/04 22:13:27 exocetrick Exp $
+ * $Id: jxta_svc.h,v 1.9 2006/02/02 19:53:30 slowhog Exp $
  */
 
 
@@ -60,6 +60,8 @@
 #include "jxta_advertisement.h"
 #include "jxta_hta.h"
 #include "jxta_tta.h"
+#include "jxta_discovery_config_adv.h"
+#include "jxta_endpoint_config_adv.h"
 #include "jxta_rdv_config_adv.h"
 #include "jxta_srdi_config_adv.h"
 #include "jxta_relaya.h"
@@ -162,6 +164,18 @@ JXTA_DECLARE(void) jxta_svc_set_TCPTransportAdvertisement(Jxta_svc *, Jxta_TCPTr
  * Unlike similar accessors in other advs, this one may return NULL if
  * there is no such element.
  */
+JXTA_DECLARE(Jxta_DiscoveryConfigAdvertisement *) jxta_svc_get_DiscoveryConfig(Jxta_svc *);
+
+/*
+ * Unlike similar mutators in other advs, it is valid to pass NULL as a means
+ * to remove the element.
+ */
+JXTA_DECLARE(void) jxta_svc_set_DiscoveryConfig(Jxta_svc *, Jxta_DiscoveryConfigAdvertisement *);
+
+/*
+ * Unlike similar accessors in other advs, this one may return NULL if
+ * there is no such element.
+ */
 JXTA_DECLARE(Jxta_RdvConfigAdvertisement *) jxta_svc_get_RdvConfig(Jxta_svc *);
 
 /*
@@ -169,6 +183,18 @@ JXTA_DECLARE(Jxta_RdvConfigAdvertisement *) jxta_svc_get_RdvConfig(Jxta_svc *);
  * to remove the element.
  */
 JXTA_DECLARE(void) jxta_svc_set_RdvConfig(Jxta_svc *, Jxta_RdvConfigAdvertisement *);
+
+/*
+ * Unlike similar accessors in other advs, this one may return NULL if
+ * there is no such element.
+ */
+JXTA_DECLARE(Jxta_EndPointConfigAdvertisement *) jxta_svc_get_EndPointConfig(Jxta_svc *);
+
+/*
+ * Unlike similar mutators in other advs, it is valid to pass NULL as a means
+ * to remove the element.
+ */
+JXTA_DECLARE(void) jxta_svc_set_EndPointConfig(Jxta_svc *, Jxta_EndPointConfigAdvertisement *);
 
 /*
  * Unlike similar accessors in other advs, this one may return NULL if

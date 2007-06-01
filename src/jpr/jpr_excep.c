@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_excep.c,v 1.7 2005/04/16 13:27:13 lankes Exp $
+ * $Id: jpr_excep.c,v 1.8 2006/02/15 01:09:53 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -60,8 +60,6 @@
 #include <apr_thread_proc.h>
 
 #include "jpr_excep.h"
-#include "jpr_threadonce.h"
-#include "jpr_types.h"
 #include "jpr_priv.h"
 
 /* we do not want to start chasing our tail. */

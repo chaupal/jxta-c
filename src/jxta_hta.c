@@ -50,22 +50,12 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_hta.c,v 1.56 2005/10/27 01:55:26 slowhog Exp $
+ * $Id: jxta_hta.c,v 1.57 2006/02/15 01:09:41 slowhog Exp $
  */
 
 
 #include <stdio.h>
 #include <string.h>
-
-#ifndef WIN32
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#endif
-
-#include <apr_want.h>
-#include <apr_network_io.h>
-
-#include "jpr/jpr_apr_wrapper.h"
 
 #include "jxta_apr.h"
 #include "jxta_errno.h"
@@ -75,15 +65,10 @@
 #include "jxta_xml_util.h"
 
 
-#ifdef __cplusplus
-extern "C" {
-#if 0
-}
-#endif
-#endif
 /** Each of these corresponds to a tag in the 
  * xml ad.
- */ enum tokentype {
+ */ 
+enum tokentype {
     Null_,
     Jxta_HTTPTransportAdvertisement_,
     Protocol_,
@@ -588,9 +573,4 @@ JXTA_DECLARE(Jxta_vector *)
     return jxta_advertisement_return_indexes(idx[0]);
 }
 
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
+/* vim: set ts=4 sw=4 et tw=130: */

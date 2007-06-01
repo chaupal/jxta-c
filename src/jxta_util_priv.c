@@ -50,11 +50,13 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_util_priv.c,v 1.3 2005/11/14 10:11:29 slowhog Exp $
+ * $Id: jxta_util_priv.c,v 1.6 2006/03/11 02:35:02 slowhog Exp $
  */
 
 static const char *__log_cat = "UTIL";
 
+#include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 
 #include "jxta_util_priv.h"
@@ -77,22 +79,23 @@ Jxta_vector *getPeerids(Jxta_vector * peers)
         return NULL;
     }
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "----- check the peerids: \n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "----- check %d peerids: \n", jxta_vector_size(peers));
     peersHash = jxta_hashtable_new(jxta_vector_size(peers));
     for (i = 0; i < jxta_vector_size(peers); i++) {
         const char *pid;
         JString *temp;
+
         jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&jPeerId), i);
         pid = jstring_get_string(jPeerId);
         if (jxta_hashtable_get(peersHash, pid, strlen(pid), JXTA_OBJECT_PPTR(&temp)) != JXTA_SUCCESS) {
             Jxta_id *jid;
             jxta_hashtable_put(peersHash, pid, strlen(pid), (Jxta_object *) jPeerId);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "----- got a peerid to send the query: %s\n",
-                            jstring_get_string(jPeerId));
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "----- add peerid to result set: %s\n", pid);
             jxta_id_from_jstring(&jid, jPeerId);
             jxta_vector_add_object_last(peerIds, (Jxta_object *) jid);
             JXTA_OBJECT_RELEASE(jid);
         } else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "----- peerid is in result set already: %s\n", pid);
             if (temp != NULL) {
                 JXTA_OBJECT_RELEASE(temp);
             }

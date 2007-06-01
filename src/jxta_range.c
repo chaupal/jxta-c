@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright (c) 2005-2006 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -52,9 +52,8 @@
  *
   */
 #include <stdlib.h>
-#include <apr_thread_proc.h>
 
-#include "jpr/jpr_threadonce.h"
+#include "jxta_apr.h"
 #include "jxta_errno.h"
 #include "jxta_types.h"
 #include "jxta_debug.h"
@@ -72,12 +71,7 @@
 #include <libxml/globals.h>
 
 #define __log_cat "Range"
-#ifdef __cplusplus
-extern "C" {
-#if 0
-}
-#endif
-#endif
+
 struct _jxta_range {
     JXTA_OBJECT_HANDLE;
     char *nameSpace;
@@ -90,7 +84,6 @@ struct _jxta_range {
 
 static void range_get_elem_attr(const char * elemAttr, char **element, char **attribute);
 static Jxta_hashtable *global_range_table = NULL;
-static apr_thread_once_t global_range_init_ctrl = JPR_THREAD_ONCE_INIT;
 
 static void range_delete(Jxta_object * obj)
 {
@@ -115,21 +108,15 @@ JXTA_DECLARE(double) jxta_range_cast_to_number(const char *sNum)
     return ret;
 }
 
-void initialize_global_range(void)
+/* TODO make range hashtable associate to individual peer group ?? */
+JXTA_DECLARE(void) jxta_range_init()
 {
     global_range_table = jxta_hashtable_new(32);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Global range hash table initialized\n");
 }
 
-JXTA_DECLARE(void) jxta_range_init(Jxta_PG * group)
+JXTA_DECLARE(void) jxta_range_destroy()
 {
-    /* TODO make this peer group ?? */
-    apr_thread_once(&global_range_init_ctrl, initialize_global_range);
-}
-
-JXTA_DECLARE(void) jxta_range_destroy(Jxta_PG * group)
-{
-    /* TODO make this per group???? */
     if (global_range_table) {
         Jxta_object *dummy;
         Jxta_vector *ranges;
@@ -444,9 +431,4 @@ static void range_get_elem_attr(const char * elemAttr, char **element, char **at
    *attribute = attr;
 }
 
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
+/* vim: set ts=4 sw=4 et tw=130: */

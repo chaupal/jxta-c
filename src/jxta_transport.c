@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport.c,v 1.18 2005/11/25 07:50:01 mmx2005 Exp $
+ * $Id: jxta_transport.c,v 1.19 2005/12/31 11:04:26 mmx2005 Exp $
  */
 
 static const char *__log_cat = "TRANSPORT";
@@ -160,7 +160,9 @@ JXTA_DECLARE(JxtaEndpointMessenger *) jxta_transport_messenger_get(Jxta_transpor
         ea_str = jxta_endpoint_address_to_string(there);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE 
                         ": Calling abstract method jxta_transport_messenger_get for EA: %s\n", ea_str ? ea_str : "NULL");
-        if (ea_str) JXTA_OBJECT_RELEASE(ea_str);
+        if (ea_str) 
+            free(ea_str);
+
         return NULL;
     }
 }

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_hashtable.c,v 1.29 2005/10/27 01:55:26 slowhog Exp $
+ * $Id: jxta_hashtable.c,v 1.30 2006/02/01 19:01:15 bondolo Exp $
  */
 
 
@@ -196,7 +196,7 @@ JXTA_DECLARE(Jxta_hashtable *) jxta_hashtable_new_0(size_t initial_usage, Jxta_b
     }
 
     /* Create the mutex */
-    res = apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED,    /* nested */
+    res = apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED,        /* nested */
                                   self->pool);
     if (res != APR_SUCCESS) {
         /* Free the memory that has been already allocated */
@@ -409,7 +409,6 @@ static Entry *findspot(Jxta_hashtable * self, size_t hashk, const void *key, siz
 
             return NULL;
         }
-
 #ifndef NDEBUG
         /* update nb hops while we're in the ! NDEBUG section. */
         ++hop_cnt;
@@ -688,10 +687,10 @@ JXTA_DECLARE(Jxta_status) jxta_hashtable_del(Jxta_hashtable * self, const void *
      */
     free(e->key);
     e->hashk = 0;
-    e->key = (Jxta_object *) self;  /* we use the hashtable's addr as a valid
-                                     * non-null ptr to differentiate reusable
-                                     * entries from blank ones.
-                                     */
+    e->key = (Jxta_object *) self;      /* we use the hashtable's addr as a valid
+                                         * non-null ptr to differentiate reusable
+                                         * entries from blank ones.
+                                         */
 
     --(self->usage);
 
@@ -738,10 +737,10 @@ JXTA_DECLARE(Jxta_status) jxta_hashtable_delcheck(Jxta_hashtable * self, const v
      */
     free(e->key);
     e->hashk = 0;
-    e->key = (Jxta_object *) self;  /* we use the hashtable's addr as a valid
-                                     * non-null ptr to differentiate reusable
-                                     * entries from blank ones.
-                                     */
+    e->key = (Jxta_object *) self;      /* we use the hashtable's addr as a valid
+                                         * non-null ptr to differentiate reusable
+                                         * entries from blank ones.
+                                         */
 
     --(self->usage);
 
@@ -864,8 +863,38 @@ JXTA_DECLARE(Jxta_status) jxta_hashtable_stupid_lookup(Jxta_hashtable * self, co
     return JXTA_ITEM_NOTFOUND;
 }
 
+JXTA_DECLARE(void) jxta_hashtable_clear(Jxta_hashtable * self)
+{
+    int i;
+    Entry *e;
+
+    JXTA_OBJECT_CHECK_VALID(self);
+
+    if (self->mutex != NULL)
+        apr_thread_mutex_lock(self->mutex);
+
+    /* Release all the object contained in the table */
+    for (i = self->modmask + 1, e = self->tbl; i > 0; --i, ++e) {
+        if (e->hashk == 0)
+            continue;   /* entry not in use */
+        free(e->key);
+        e->key = (Jxta_object *) self;  /* we use the hashtable's addr as a valid
+                                         * non-null ptr to differentiate reusable
+                                         * entries from blank ones.
+                                         */
+
+        e->hashk = 0;
+        JXTA_OBJECT_RELEASE(e->value);
+        e->value = NULL;
+        --(self->usage);
+    }
+
+    if (self->mutex != NULL)
+        apr_thread_mutex_unlock(self->mutex);
+}
+
 JXTA_DECLARE(void)
-    jxta_hashtable_stats(Jxta_hashtable * self, size_t * capacity, size_t * usage,
+jxta_hashtable_stats(Jxta_hashtable * self, size_t * capacity, size_t * usage,
                      size_t * occupancy, size_t * max_occupancy, double *avg_hops)
 {
     JXTA_OBJECT_CHECK_VALID(self);

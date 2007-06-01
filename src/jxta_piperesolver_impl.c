@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_piperesolver_impl.c,v 1.40 2005/12/15 21:29:10 slowhog Exp $
+ * $Id: jxta_piperesolver_impl.c,v 1.42 2006/03/15 09:05:01 slowhog Exp $
  */
 
 #include <limits.h>
@@ -1075,6 +1075,8 @@ static Jxta_status JXTA_STDCALL query_listener(Jxta_object * obj, void *me)
     }
 
   FINAL_EXIT:
+    if (peer_id != NULL)
+        JXTA_OBJECT_RELEASE(peer_id);
     if (reply != NULL)
         JXTA_OBJECT_RELEASE(reply);
     if (rr != NULL)
@@ -1203,20 +1205,18 @@ static void JXTA_STDCALL response_listener(Jxta_object * obj, void *arg)
             }
             if (jxta_id_equals(tmpPeerid, peerid)) {
                 jxta_vector_add_object_first(reqs, (Jxta_object *) req);
-                pending_request_remove(self, req);
                 JXTA_OBJECT_CHECK_VALID(req);
             }
             JXTA_OBJECT_RELEASE(tmpPeerid);
         } else {
             jxta_vector_add_object_first(reqs, (Jxta_object *) req);
-            pending_request_remove(self, req);
-
             JXTA_OBJECT_CHECK_VALID(req);
         }
 
         JXTA_OBJECT_RELEASE(req);
         JXTA_OBJECT_CHECK_VALID(req);
     }
+    JXTA_OBJECT_RELEASE(vector);
 
     apr_thread_mutex_unlock(self->mutex);
 
@@ -1229,6 +1229,7 @@ static void JXTA_STDCALL response_listener(Jxta_object * obj, void *arg)
         }
 
         JXTA_OBJECT_CHECK_VALID(req);
+        pending_request_remove(self, req);
         tmpVector = jxta_vector_new(0);
         res = jxta_vector_add_object_first(tmpVector, (Jxta_object *) remote_peer);
         event = jxta_pipe_resolver_event_new(JXTA_PIPE_RESOLVER_RESOLVED, req->adv, tmpVector);

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rq.c,v 1.69 2005/12/02 03:39:53 slowhog Exp $
+ * $Id: jxta_rq.c,v 1.70 2006/02/15 01:09:46 slowhog Exp $
  */
 
 static const char *__log_cat = "RSLVQuery";
@@ -64,13 +64,6 @@ static const char *__log_cat = "RSLVQuery";
 #include "jxta_routea.h"
 #include "jxta_apa.h"
 #include "jxta_apr.h"
-
-#ifdef __cplusplus
-extern "C" {
-#if 0
-};
-#endif
-#endif
 
 /**
  * Defines invalid query id
@@ -580,12 +573,5 @@ JXTA_DECLARE(void) jxta_resolver_query_parse_file(ResolverQuery * ad, FILE * str
 {
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
-
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
 
 /* vi: set ts=4 sw=4 tw=130 et: */

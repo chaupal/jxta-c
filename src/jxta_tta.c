@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tta.c,v 1.49 2005/10/27 01:55:31 slowhog Exp $
+ * $Id: jxta_tta.c,v 1.50 2006/02/15 01:09:51 slowhog Exp $
  */
 
 static const char *__log_cat = "TCPADV";
@@ -58,30 +58,16 @@ static const char *__log_cat = "TCPADV";
 #include <stdio.h>
 #include <string.h>
 
-#ifndef WIN32
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#endif
-
-#include <apr_want.h>
-#include <apr_network_io.h>
-#include "jpr/jpr_apr_wrapper.h"
-
 #include "jxta_errno.h"
 #include "jxta_tta.h"
 #include "jxta_log.h"
 #include "jxta_xml_util.h"
 #include "jxta_apr.h"
 
-#ifdef __cplusplus
-extern "C" {
-#if 0
-}
-#endif
-#endif
 /** Each of these corresponds to a tag in the 
  * xml ad.
- */ enum tokentype {
+ */ 
+enum tokentype {
     Null_,
     Jxta_TCPTransportAdvertisement_,
     Protocol_,
@@ -610,9 +596,4 @@ JXTA_DECLARE(Jxta_vector *)
     return jxta_advertisement_return_indexes(idx[0]);
 }
 
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
+/* vim: set ts=4 sw=4 et tw=130: */

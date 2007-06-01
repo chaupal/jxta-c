@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv.c,v 1.50 2005/11/26 08:18:06 mmx2005 Exp $
+ * $Id: jxta_rdv.c,v 1.51 2005/12/28 05:11:41 mmx2005 Exp $
  */
  
 static const char *const __log_cat = "RdvAdv";
@@ -103,7 +103,7 @@ static void jxta_RdvAdvertisement_destruct(Jxta_RdvAdvertisement * ad);
 static void handleRdvAdvertisement(void *userdata, const XML_Char * cd, int len)
 {
     /* RdvAdvertisement * ad = (Jxta_RdvAdvertisement*)userdata; */
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "In RdvAdvertisement element\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In RdvAdvertisement element\n");
 }
 
 static void handleName(void *userdata, const XML_Char * cd, int len)

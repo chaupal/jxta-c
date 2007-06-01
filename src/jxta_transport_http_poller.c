@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http_poller.c,v 1.29 2005/10/17 06:54:04 mathieu Exp $
+ * $Id: jxta_transport_http_poller.c,v 1.30 2006/02/15 01:09:49 slowhog Exp $
  */
 
 static const char *__log_cat = "HTTP_POLLER";
@@ -61,11 +61,8 @@ static const char *__log_cat = "HTTP_POLLER";
 
 #include <signal.h>
 
-#include <apr.h>
-#include <apr_network_io.h>
+#include "jxta_apr.h"
 #include <apr_uri.h>
-#include <apr_strings.h>
-#include <apr_thread_proc.h>
 
 #include "jpr/jpr_types.h"
 

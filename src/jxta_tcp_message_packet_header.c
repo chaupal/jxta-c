@@ -51,14 +51,12 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tcp_message_packet_header.c,v 1.11 2005/11/03 07:31:51 mathieu Exp $
+ * $Id: jxta_tcp_message_packet_header.c,v 1.12 2006/02/15 01:09:48 slowhog Exp $
  */
 
 #include <stdlib.h>
 
-#include "apr.h"
-#include "apr_strings.h"
-#include "apr_network_io.h"
+#include "jxta_apr.h"
 
 #include "jxta_debug.h"
 #include "jxta_errno.h"

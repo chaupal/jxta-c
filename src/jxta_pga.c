@@ -50,10 +50,10 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pga.c,v 1.35 2005/11/26 17:00:45 mmx2005 Exp $
+ * $Id: jxta_pga.c,v 1.38 2006/02/18 00:32:52 slowhog Exp $
  */
 
-static const char *const __log_cat = "PGAAdv";
+static const char *const __log_cat = "PGA";
 
 #include <stdio.h>
 #include <string.h>
@@ -64,10 +64,6 @@ static const char *const __log_cat = "PGAAdv";
 #include "jxta_advertisement.h"
 #include "jxta_id.h"
 #include "jxta_pga.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /** Each of these corresponds to a tag in the 
  * xml ad.
@@ -106,12 +102,14 @@ static void jxta_PGA_delete(Jxta_PGA *);
  * dealing with all of the character data associated with the 
  * tag name.
  */
-static void handleJxta_PGA(void *userdata, const XML_Char * cd, int len) {
+static void handleJxta_PGA(void *userdata, const XML_Char * cd, int len)
+{
     /* Jxta_PGA * ad = (Jxta_PGA*)userdata; */
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG , "In PGA element...\n");    
-} 
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In PGA element...\n");
+}
 
-static void handleGID(void *userdata, const XML_Char * cd, int len) {
+static void handleGID(void *userdata, const XML_Char * cd, int len)
+{
     Jxta_id *gid = NULL;
     Jxta_PGA *ad = (Jxta_PGA *) userdata;
     JString *tmp;
@@ -134,7 +132,7 @@ static void handleGID(void *userdata, const XML_Char * cd, int len) {
     }
 }
 
-static void handleMSID(void *userdata, const XML_Char * cd, int len) 
+static void handleMSID(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_id *msid = NULL;
     Jxta_PGA *ad = (Jxta_PGA *) userdata;
@@ -158,7 +156,7 @@ static void handleMSID(void *userdata, const XML_Char * cd, int len)
     }
 }
 
-static void handleName(void *userdata, const XML_Char * cd, int len) 
+static void handleName(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_PGA *ad = (Jxta_PGA *) userdata;
     JString *nm;
@@ -175,7 +173,7 @@ static void handleName(void *userdata, const XML_Char * cd, int len)
     JXTA_OBJECT_RELEASE(nm);
 }
 
-static void handleDesc(void *userdata, const XML_Char * cd, int len) 
+static void handleDesc(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_PGA *ad = (Jxta_PGA *) userdata;
     JString *nm;
@@ -192,164 +190,167 @@ static void handleDesc(void *userdata, const XML_Char * cd, int len)
     JXTA_OBJECT_RELEASE(nm);
 }
 
-static void handleSvc(void *userdata, const XML_Char * cd, int len) 
+static void handleSvc(void *userdata, const XML_Char * cd, int len)
 {
     /* Jxta_PGA * ad = (Jxta_PGA*)userdata; */
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG , "In Svc element...\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Svc element...\n");
 }
 
 /** The get/set functions represent the public
  * interface to the ad class, that is, the API.
  */
-JXTA_DECLARE(char *) jxta_PGA_get_Jxta_PGA(Jxta_PGA * ad) 
+JXTA_DECLARE(char *) jxta_PGA_get_Jxta_PGA(Jxta_PGA * ad)
 {
     return NULL;
 }
 
-char *JXTA_STDCALL jxta_PGA_get_Jxta_PGA_string(Jxta_advertisement * ad) 
+char *JXTA_STDCALL jxta_PGA_get_Jxta_PGA_string(Jxta_advertisement * ad)
 {
     return NULL;
 }
 
-JXTA_DECLARE(void) jxta_PGA_set_Jxta_PGA(Jxta_PGA * ad, char *name) 
+JXTA_DECLARE(void) jxta_PGA_set_Jxta_PGA(Jxta_PGA * ad, char *name)
 {
 
 }
 
-JXTA_DECLARE(Jxta_id *) jxta_PGA_get_GID(Jxta_PGA * ad) 
+JXTA_DECLARE(Jxta_id *) jxta_PGA_get_GID(Jxta_PGA * ad)
 {
     JXTA_OBJECT_SHARE(ad->GID);
     return ad->GID;
 }
 
-char *JXTA_STDCALL jxta_PGA_get_GID_string(Jxta_advertisement * ad) 
+char *JXTA_STDCALL jxta_PGA_get_GID_string(Jxta_advertisement * ad)
 {
     char *res;
     JString *js = NULL;
-    
+
     jxta_id_to_jstring(((Jxta_PGA *) ad)->GID, &js);
 
     /*
-    * since we return a plain string we have to dup it (get_string does not
-    * do it for us). All this because we have to release the new js now,
-    * otherwise there's be no other opportunity; the reference will be
-    * forgotten when we return.
-    * FIXME: jice@jxta.org 20020228 - It would be much better to return the
-    * jstring directly.
-    */
+     * since we return a plain string we have to dup it (get_string does not
+     * do it for us). All this because we have to release the new js now,
+     * otherwise there's be no other opportunity; the reference will be
+     * forgotten when we return.
+     * FIXME: jice@jxta.org 20020228 - It would be much better to return the
+     * jstring directly.
+     */
 
     res = strdup(jstring_get_string(js));
     JXTA_OBJECT_RELEASE(js);
     return res;
 }
 
-JXTA_DECLARE(void) jxta_PGA_set_GID(Jxta_PGA * ad, Jxta_id * id) 
+JXTA_DECLARE(void) jxta_PGA_set_GID(Jxta_PGA * ad, Jxta_id * id)
 {
     JXTA_OBJECT_SHARE(id);
     JXTA_OBJECT_RELEASE(ad->GID);
     ad->GID = id;
 }
 
-JXTA_DECLARE(Jxta_id *) jxta_PGA_get_MSID(Jxta_PGA * ad) 
+JXTA_DECLARE(Jxta_id *) jxta_PGA_get_MSID(Jxta_PGA * ad)
 {
     JXTA_OBJECT_SHARE(ad->MSID);
     return ad->MSID;
 }
 
-char *JXTA_STDCALL jxta_PGA_get_MSID_string(Jxta_advertisement * ad) 
+char *JXTA_STDCALL jxta_PGA_get_MSID_string(Jxta_advertisement * ad)
 {
     char *res;
     JString *js = NULL;
-    
+
     jxta_id_to_jstring(((Jxta_PGA *) ad)->MSID, &js);
 
     /*
-    * since we return a plain string we have to dup it (get_string does not
-    * do it for us). All this because we have to release the new js now,
-    * otherwise there's be no other opportunity; the reference will be
-    * forgotten when we return.
-    * FIXME: jice@jxta.org 20020228 - It would be much better to return the
-    * jstring directly.
-    */
+     * since we return a plain string we have to dup it (get_string does not
+     * do it for us). All this because we have to release the new js now,
+     * otherwise there's be no other opportunity; the reference will be
+     * forgotten when we return.
+     * FIXME: jice@jxta.org 20020228 - It would be much better to return the
+     * jstring directly.
+     */
 
     res = strdup(jstring_get_string(js));
     JXTA_OBJECT_RELEASE(js);
     return res;
 }
 
-JXTA_DECLARE(void) jxta_PGA_set_MSID(Jxta_PGA * ad, Jxta_id * id) 
+JXTA_DECLARE(void) jxta_PGA_set_MSID(Jxta_PGA * ad, Jxta_id * id)
 {
     JXTA_OBJECT_SHARE(id);
     JXTA_OBJECT_RELEASE(ad->MSID);
     ad->MSID = id;
 }
 
-JXTA_DECLARE(JString *) jxta_PGA_get_Name(Jxta_PGA * ad) 
+JXTA_DECLARE(JString *) jxta_PGA_get_Name(Jxta_PGA * ad)
 {
     JXTA_OBJECT_SHARE(ad->Name);
     return ad->Name;
 }
 
-char *JXTA_STDCALL jxta_PGA_get_Name_string(Jxta_advertisement * ad) {
+char *JXTA_STDCALL jxta_PGA_get_Name_string(Jxta_advertisement * ad)
+{
     /*
-    * since we return a plain string we have to dup it (get_string does not
-    * do it for us) otherwise the pointer would become invalid as soon
-    * as this object is released, which would be rather unsafe since
-    * some code could end-up naively holding a char pointer which validity
-    * is subject to the reference count of an advertisement it might not
-    * know anything about.
-    * FIXME: jice@jxta.org 20020228 - It would be much better to return the
-    * jstring directly.
-    */
+     * since we return a plain string we have to dup it (get_string does not
+     * do it for us) otherwise the pointer would become invalid as soon
+     * as this object is released, which would be rather unsafe since
+     * some code could end-up naively holding a char pointer which validity
+     * is subject to the reference count of an advertisement it might not
+     * know anything about.
+     * FIXME: jice@jxta.org 20020228 - It would be much better to return the
+     * jstring directly.
+     */
 
     return strdup(jstring_get_string(((Jxta_PGA *) ad)->Name));
 }
 
-JXTA_DECLARE(void) jxta_PGA_set_Name(Jxta_PGA * ad, JString * name) 
+JXTA_DECLARE(void) jxta_PGA_set_Name(Jxta_PGA * ad, JString * name)
 {
     JXTA_OBJECT_SHARE(name);
     JXTA_OBJECT_RELEASE(ad->Name);
     ad->Name = name;
 }
 
-JXTA_DECLARE(JString *) jxta_PGA_get_Desc(Jxta_PGA * ad) 
+JXTA_DECLARE(JString *) jxta_PGA_get_Desc(Jxta_PGA * ad)
 {
     JXTA_OBJECT_SHARE(ad->Desc);
     return ad->Desc;
 }
 
-char *JXTA_STDCALL jxta_PGA_get_Desc_string(Jxta_advertisement * ad) {
+char *JXTA_STDCALL jxta_PGA_get_Desc_string(Jxta_advertisement * ad)
+{
     /*
-    * since we return a plain string we have to dup it (get_string does not
-    * do it for us) otherwise the pointer would become invalid as soon
-    * as this object is released, which would be rather unsafe since
-    * some code could end-up naively holding a char pointer which validity
-    * is subject to the reference count of an advertisement it might not
-    * know anything about.
-    * FIXME: jice@jxta.org 20020228 - It would be much better to return the
-    * jstring directly.
-    */
+     * since we return a plain string we have to dup it (get_string does not
+     * do it for us) otherwise the pointer would become invalid as soon
+     * as this object is released, which would be rather unsafe since
+     * some code could end-up naively holding a char pointer which validity
+     * is subject to the reference count of an advertisement it might not
+     * know anything about.
+     * FIXME: jice@jxta.org 20020228 - It would be much better to return the
+     * jstring directly.
+     */
 
     return strdup(jstring_get_string(((Jxta_PGA *) ad)->Desc));
 }
 
-JXTA_DECLARE(void) jxta_PGA_set_Desc(Jxta_PGA * ad, JString * desc) 
+JXTA_DECLARE(void) jxta_PGA_set_Desc(Jxta_PGA * ad, JString * desc)
 {
     JXTA_OBJECT_SHARE(desc);
     JXTA_OBJECT_RELEASE(ad->Desc);
     ad->Desc = desc;
 }
 
-JXTA_DECLARE(char *) jxta_PGA_get_Svc(Jxta_PGA * ad) {
-    return NULL;
-}
-
-char *JXTA_STDCALL jxta_PGA_get_Svc_string(Jxta_advertisement * ad) 
+JXTA_DECLARE(char *) jxta_PGA_get_Svc(Jxta_PGA * ad)
 {
     return NULL;
 }
 
-void jxta_PGA_set_Svc(Jxta_PGA * ad, char *name) 
+char *JXTA_STDCALL jxta_PGA_get_Svc_string(Jxta_advertisement * ad)
+{
+    return NULL;
+}
+
+void jxta_PGA_set_Svc(Jxta_PGA * ad, char *name)
 {
 
 }
@@ -372,7 +373,7 @@ static const Kwdtab jxta_PGA_tags[] = {
     {NULL, 0, 0, NULL, NULL}
 };
 
-JXTA_DECLARE(Jxta_status) jxta_PGA_get_xml(Jxta_PGA * ad, JString ** string) 
+JXTA_DECLARE(Jxta_status) jxta_PGA_get_xml(Jxta_PGA * ad, JString ** string)
 {
     JString *gids;
     JString *msids;
@@ -413,11 +414,11 @@ JXTA_DECLARE(Jxta_status) jxta_PGA_get_xml(Jxta_PGA * ad, JString ** string)
  * just in case there is a segfault (not that 
  * that would ever happen, but in case it ever did.)
  */
-JXTA_DECLARE(Jxta_PGA *) jxta_PGA_new() 
+JXTA_DECLARE(Jxta_PGA *) jxta_PGA_new()
 {
     Jxta_PGA *ad;
-    
-    ad = (Jxta_PGA *) malloc(sizeof(Jxta_PGA));    
+
+    ad = (Jxta_PGA *) malloc(sizeof(Jxta_PGA));
     memset(ad, 0xda, sizeof(Jxta_PGA));
 
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
@@ -425,8 +426,7 @@ JXTA_DECLARE(Jxta_PGA *) jxta_PGA_new()
                                   jxta_PGA_tags,
                                   (JxtaAdvertisementGetXMLFunc) jxta_PGA_get_xml,
                                   (JxtaAdvertisementGetIDFunc) jxta_PGA_get_GID,
-                                  (JxtaAdvertisementGetIndexFunc) jxta_PGA_get_indexes, 
-                                  (FreeFunc) jxta_PGA_delete);
+                                  (JxtaAdvertisementGetIndexFunc) jxta_PGA_get_indexes, (FreeFunc) jxta_PGA_delete);
 
     JXTA_OBJECT_SHARE(jxta_id_nullID);
     JXTA_OBJECT_SHARE(jxta_id_nullID);
@@ -445,7 +445,7 @@ JXTA_DECLARE(Jxta_PGA *) jxta_PGA_new()
  * pop right out as a piece of memory accessed
  * after it was freed...
  */
-static void jxta_PGA_delete(Jxta_PGA * ad) 
+static void jxta_PGA_delete(Jxta_PGA * ad)
 {
     /* Fill in the required freeing functions here. */
 
@@ -459,7 +459,7 @@ static void jxta_PGA_delete(Jxta_PGA * ad)
     free(ad);
 }
 
-JXTA_DECLARE(Jxta_vector *) jxta_PGA_get_indexes(Jxta_advertisement * dummy) 
+JXTA_DECLARE(Jxta_vector *) jxta_PGA_get_indexes(Jxta_advertisement * dummy)
 {
     /** 
     * Define the indexed fields
@@ -472,11 +472,11 @@ JXTA_DECLARE(Jxta_vector *) jxta_PGA_get_indexes(Jxta_advertisement * dummy)
         {"MSID", NULL},
         {NULL, NULL}
     };
-    
-    return jxta_advertisement_return_indexes(PGA_idx[0]);   
+
+    return jxta_advertisement_return_indexes(PGA_idx[0]);
 }
 
-JXTA_DECLARE(void) jxta_PGA_parse_charbuffer(Jxta_PGA * ad, const char *buf, int len) 
+JXTA_DECLARE(void) jxta_PGA_parse_charbuffer(Jxta_PGA * ad, const char *buf, int len)
 {
     jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
@@ -485,13 +485,13 @@ JXTA_DECLARE(void) jxta_PGA_parse_charbuffer(Jxta_PGA * ad, const char *buf, int
  * the data from the xml stream.
  */
 
-JXTA_DECLARE(void) jxta_PGA_parse_file(Jxta_PGA * ad, FILE * stream) 
+JXTA_DECLARE(void) jxta_PGA_parse_file(Jxta_PGA * ad, FILE * stream)
 {
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
 
 #ifdef STANDALONE
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
     Jxta_PGA *ad;
     FILE *testfile;
@@ -514,6 +514,4 @@ int main(int argc, char **argv)
 }
 #endif
 
-#ifdef __cplusplus
-}
-#endif
+/* vim: set ts=4 sw=4 et tw=130: */

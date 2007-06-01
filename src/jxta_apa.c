@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_apa.c,v 1.18 2005/11/20 23:22:53 mmx2005 Exp $
+ * $Id: jxta_apa.c,v 1.20 2006/02/18 00:32:50 slowhog Exp $
  */
 
 static const char *__log_cat = "APA";
@@ -64,13 +64,6 @@ static const char *__log_cat = "APA";
 #include "jxta_apa.h"
 #include "jxta_xml_util.h"
 #include <assert.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-};
-#endif
 
 /** Each of these corresponds to a tag in the 
  * xml ad.
@@ -103,7 +96,7 @@ static void jxta_AccessPointAdvertisement_delete(Jxta_AccessPointAdvertisement *
  */
 static void handleJxta_AccessPointAdvertisement(void *userdata, const XML_Char * cd, int len)
 {
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "AccessPointAdvertisement Parse\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "AccessPointAdvertisement Parse\n");
 }
 
 
@@ -213,8 +206,8 @@ JXTA_DECLARE(void) jxta_AccessPointAdvertisement_set_EndpointAddresses(Jxta_Acce
     ad->endpoints = addresses;
 }
 
-JXTA_DECLARE(Jxta_status) jxta_AccessPointAdvertisement_add_EndpointAddress(Jxta_AccessPointAdvertisement *me, 
-                                                                            Jxta_endpoint_address *ea)
+JXTA_DECLARE(Jxta_status) jxta_AccessPointAdvertisement_add_EndpointAddress(Jxta_AccessPointAdvertisement * me,
+                                                                            Jxta_endpoint_address * ea)
 {
     char *cstr;
     JString *jstr;
@@ -231,7 +224,7 @@ JXTA_DECLARE(Jxta_status) jxta_AccessPointAdvertisement_add_EndpointAddress(Jxta
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to allocate a JString, not enough memory?\n");
         return JXTA_NOMEM;
     }
-    jxta_vector_add_object_last(me->endpoints, (Jxta_object*)jstr);
+    jxta_vector_add_object_last(me->endpoints, (Jxta_object *) jstr);
     JXTA_OBJECT_RELEASE(jstr);
 
     return JXTA_SUCCESS;
@@ -246,7 +239,7 @@ static char *JXTA_STDCALL jxta_AccessPointAdvertisement_get_PID_string(Jxta_adve
     res = strdup(jstring_get_string(js));
     JXTA_OBJECT_RELEASE(js);
     return res;
-    
+
 }
 
 /** Now, build an array of the keyword structs.  Since 
@@ -384,12 +377,5 @@ JXTA_DECLARE(Jxta_vector *) jxta_AccessPointAdvertisement_get_indexes(Jxta_adver
     };
     return jxta_advertisement_return_indexes(idx[0]);
 }
-
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
 
 /* vi: set ts=4 sw=4 tw=130 et: */

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_id_jxta.c,v 1.21 2005/11/25 23:53:35 mmx2005 Exp $
+ * $Id: jxta_id_jxta.c,v 1.22 2006/02/18 00:32:51 slowhog Exp $
  */
 
 
@@ -63,13 +63,6 @@
 #include "jxta_objecthashtable.h"
 
 #include "jxta_id_priv.h"
-
-#ifdef __cplusplus
-extern "C" {
-#if 0
-}
-#endif
-#endif
 
 #ifdef WIN32
 #pragma warning( once : 4100 )
@@ -90,7 +83,7 @@ static Jxta_status newPipeid2(Jxta_id ** pipe, Jxta_id * pg, unsigned char const
 static Jxta_status newModuleclassid1(Jxta_id ** mcid);
 static Jxta_status newModuleclassid2(Jxta_id ** mcid, Jxta_id * base);
 static Jxta_status newModulespecid(Jxta_id ** msid, Jxta_id * mcid);
-static Jxta_status new_from_str(Jxta_id ** id, const char * str, size_t len);
+static Jxta_status new_from_str(Jxta_id ** id, const char *str, size_t len);
 static Jxta_status getUniqueportion(Jxta_id * jid, JString ** uniq);
 static void doDelete(Jxta_object * jid);
 static Jxta_boolean equals(Jxta_id * jid1, Jxta_id * jid2);
@@ -238,7 +231,7 @@ static Jxta_status newModulespecid(Jxta_id ** msid, Jxta_id * mcid)
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-static Jxta_status new_from_str(Jxta_id ** id, const char * str, size_t len)
+static Jxta_status new_from_str(Jxta_id ** id, const char *str, size_t len)
 {
     Jxta_status res;
     _jxta_id_jxta *me;
@@ -381,12 +374,5 @@ JXTAIDFormat jxta_format = {
     equals,
     hashcode
 };
-
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
 
 /* vim: set ts=4 sw=4 et tw=130: */

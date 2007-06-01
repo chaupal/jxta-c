@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cred_null.c,v 1.7 2005/06/16 23:11:40 slowhog Exp $
+ * $Id: jxta_cred_null.c,v 1.8 2006/02/18 00:32:51 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -61,145 +61,148 @@
 #include "jxta_debug.h"
 #include "jxta_cred_null.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+struct _jxta_cred_null {
+    struct _Jxta_credential common;
 
-    struct _jxta_cred_null {
-        struct _Jxta_credential common;
+    Jxta_service *service;
 
-        Jxta_service *service;
+    Jxta_id *pg;
 
-        Jxta_id *pg;
+    Jxta_id *peer;
 
-        Jxta_id *peer;
-
-        JString *identity;
-    };
+    JString *identity;
+};
 
 
-    typedef struct _jxta_cred_null jxta_cred_null_mutable;
+typedef struct _jxta_cred_null jxta_cred_null_mutable;
 
-    static void jxta_cred_null_delete(Jxta_object * ptr);
-    static Jxta_status jxta_cred__null_getpeergroup(Jxta_credential * cred, Jxta_id ** pg);
-    static Jxta_status jxta_cred__null_getpeer(Jxta_credential * cred, Jxta_id ** peer);
-    static Jxta_status jxta_cred__null_getsource(Jxta_credential * cred, Jxta_service ** service);
-    static Jxta_status jxta_cred__null_getxml(Jxta_credential * cred, Jxta_write_func func, void *stream);
-    static Jxta_status jxta_cred__null_getxml_1(Jxta_credential * cred, Jxta_write_func func, void *stream);
+static void jxta_cred_null_delete(Jxta_object * ptr);
+static Jxta_status jxta_cred__null_getpeergroup(Jxta_credential * cred, Jxta_id ** pg);
+static Jxta_status jxta_cred__null_getpeer(Jxta_credential * cred, Jxta_id ** peer);
+static Jxta_status jxta_cred__null_getsource(Jxta_credential * cred, Jxta_service ** service);
+static Jxta_status jxta_cred__null_getxml(Jxta_credential * cred, Jxta_write_func func, void *stream);
+static Jxta_status jxta_cred__null_getxml_1(Jxta_credential * cred, Jxta_write_func func, void *stream);
 
-    static Jxta_cred_vtable _cred_null_vtable = {
-        "NullCrendenital",
+static Jxta_cred_vtable _cred_null_vtable = {
+    "NullCrendenital",
 
-        jxta_cred__null_getpeergroup,
-        jxta_cred__null_getpeer,
-        jxta_cred__null_getsource,
-        jxta_cred__null_getxml,
-        jxta_cred__null_getxml_1
-    };
+    jxta_cred__null_getpeergroup,
+    jxta_cred__null_getpeer,
+    jxta_cred__null_getsource,
+    jxta_cred__null_getxml,
+    jxta_cred__null_getxml_1
+};
 
-    jxta_cred_null *jxta_cred_null_new(Jxta_service * service, Jxta_id * pg, Jxta_id * peer, JString * identity) {
-        jxta_cred_null_mutable *cred = (jxta_cred_null_mutable *) malloc(sizeof(struct _jxta_cred_null));
+jxta_cred_null *jxta_cred_null_new(Jxta_service * service, Jxta_id * pg, Jxta_id * peer, JString * identity)
+{
+    jxta_cred_null_mutable *cred = (jxta_cred_null_mutable *) malloc(sizeof(struct _jxta_cred_null));
 
-        if (NULL == cred) {
-            JXTA_LOG("Could not malloc cred");
-            return NULL;
-        }
-
-        memset(cred, 0, sizeof(struct _jxta_cred_null));
-
-        JXTA_OBJECT_INIT(cred, jxta_cred_null_delete, NULL);
-
-        cred->common.credfuncs = &_cred_null_vtable;
-
-        cred->service = JXTA_OBJECT_SHARE(service);
-        cred->pg = JXTA_OBJECT_SHARE(pg);
-        cred->peer = JXTA_OBJECT_SHARE(peer);
-        cred->identity = JXTA_OBJECT_SHARE(identity);
-
-        return (jxta_cred_null *) cred;
+    if (NULL == cred) {
+        JXTA_LOG("Could not malloc cred");
+        return NULL;
     }
 
-    static void jxta_cred_null_delete(Jxta_object * ptr) {
-        jxta_cred_null_mutable *cred = (jxta_cred_null_mutable *) ptr;
+    memset(cred, 0, sizeof(struct _jxta_cred_null));
 
-        JXTA_OBJECT_RELEASE(cred->service);
-        JXTA_OBJECT_RELEASE(cred->pg);
-        JXTA_OBJECT_RELEASE(cred->peer);
-        JXTA_OBJECT_RELEASE(cred->identity);
+    JXTA_OBJECT_INIT(cred, jxta_cred_null_delete, NULL);
 
-        free(ptr);
-        ptr = NULL;
-    }
+    cred->common.credfuncs = &_cred_null_vtable;
 
-    static Jxta_status jxta_cred__null_getpeergroup(Jxta_credential * cred, Jxta_id ** pg) {
-        jxta_cred_null *self = (jxta_cred_null *) cred;
+    cred->service = JXTA_OBJECT_SHARE(service);
+    cred->pg = JXTA_OBJECT_SHARE(pg);
+    cred->peer = JXTA_OBJECT_SHARE(peer);
+    cred->identity = JXTA_OBJECT_SHARE(identity);
 
-        if (!JXTA_OBJECT_CHECK_VALID(self))
-            return JXTA_INVALID_ARGUMENT;
+    return (jxta_cred_null *) cred;
+}
 
-        if (NULL == pg)
-            return JXTA_INVALID_ARGUMENT;
+static void jxta_cred_null_delete(Jxta_object * ptr)
+{
+    jxta_cred_null_mutable *cred = (jxta_cred_null_mutable *) ptr;
 
-        *pg = JXTA_OBJECT_SHARE(self->pg);
+    JXTA_OBJECT_RELEASE(cred->service);
+    JXTA_OBJECT_RELEASE(cred->pg);
+    JXTA_OBJECT_RELEASE(cred->peer);
+    JXTA_OBJECT_RELEASE(cred->identity);
 
-        return JXTA_SUCCESS;
-    }
+    free(ptr);
+    ptr = NULL;
+}
 
-    static Jxta_status jxta_cred__null_getpeer(Jxta_credential * cred, Jxta_id ** peer) {
-        jxta_cred_null *self = (jxta_cred_null *) cred;
+static Jxta_status jxta_cred__null_getpeergroup(Jxta_credential * cred, Jxta_id ** pg)
+{
+    jxta_cred_null *self = (jxta_cred_null *) cred;
 
-        if (!JXTA_OBJECT_CHECK_VALID(self))
-            return JXTA_INVALID_ARGUMENT;
+    if (!JXTA_OBJECT_CHECK_VALID(self))
+        return JXTA_INVALID_ARGUMENT;
 
-        if (NULL == peer)
-            return JXTA_INVALID_ARGUMENT;
+    if (NULL == pg)
+        return JXTA_INVALID_ARGUMENT;
 
-        *peer = JXTA_OBJECT_SHARE(self->peer);
+    *pg = JXTA_OBJECT_SHARE(self->pg);
 
-        return JXTA_SUCCESS;
-    }
+    return JXTA_SUCCESS;
+}
 
-    static Jxta_status jxta_cred__null_getsource(Jxta_credential * cred, Jxta_service ** service) {
-        jxta_cred_null *self = (jxta_cred_null *) cred;
+static Jxta_status jxta_cred__null_getpeer(Jxta_credential * cred, Jxta_id ** peer)
+{
+    jxta_cred_null *self = (jxta_cred_null *) cred;
 
-        if (!JXTA_OBJECT_CHECK_VALID(self))
-            return JXTA_INVALID_ARGUMENT;
+    if (!JXTA_OBJECT_CHECK_VALID(self))
+        return JXTA_INVALID_ARGUMENT;
 
-        if (NULL == service)
-            return JXTA_INVALID_ARGUMENT;
+    if (NULL == peer)
+        return JXTA_INVALID_ARGUMENT;
 
-        *service = JXTA_OBJECT_SHARE(self->service);
+    *peer = JXTA_OBJECT_SHARE(self->peer);
 
-        return JXTA_SUCCESS;
-    }
+    return JXTA_SUCCESS;
+}
 
-    static Jxta_status jxta_cred__null_getxml(Jxta_credential * cred, Jxta_write_func func, void *stream) {
-        static const char *XMLDECL = "<?xml version=\"1.0\" standalone=no charset=\"UTF8\"?>\n\n";
-        static const char *DOCTYPEDECL = "<!DOCTYPE jxta:Cred>\n\n";
+static Jxta_status jxta_cred__null_getsource(Jxta_credential * cred, Jxta_service ** service)
+{
+    jxta_cred_null *self = (jxta_cred_null *) cred;
 
-        Jxta_status res;
-        jxta_cred_null *self = (jxta_cred_null *) cred;
+    if (!JXTA_OBJECT_CHECK_VALID(self))
+        return JXTA_INVALID_ARGUMENT;
 
-        if (!JXTA_OBJECT_CHECK_VALID(self))
-            return JXTA_INVALID_ARGUMENT;
+    if (NULL == service)
+        return JXTA_INVALID_ARGUMENT;
 
-        if (NULL == func)
-            return JXTA_INVALID_ARGUMENT;
+    *service = JXTA_OBJECT_SHARE(self->service);
 
-        (func) (stream, XMLDECL, sizeof(XMLDECL) - 1, &res);
+    return JXTA_SUCCESS;
+}
 
-        if (JXTA_SUCCESS != res)
-            return res;
+static Jxta_status jxta_cred__null_getxml(Jxta_credential * cred, Jxta_write_func func, void *stream)
+{
+    static const char *XMLDECL = "<?xml version=\"1.0\" standalone=no charset=\"UTF8\"?>\n\n";
+    static const char *DOCTYPEDECL = "<!DOCTYPE jxta:Cred>\n\n";
 
-        (func) (stream, DOCTYPEDECL, sizeof(DOCTYPEDECL) - 1, &res);
+    Jxta_status res;
+    jxta_cred_null *self = (jxta_cred_null *) cred;
 
-        if (JXTA_SUCCESS != res)
-            return res;
+    if (!JXTA_OBJECT_CHECK_VALID(self))
+        return JXTA_INVALID_ARGUMENT;
 
-        return jxta_cred__null_getxml_1(cred, func, stream);
-    }
+    if (NULL == func)
+        return JXTA_INVALID_ARGUMENT;
 
-    static Jxta_status jxta_cred__null_getxml_1(Jxta_credential * cred, Jxta_write_func func, void *stream) {
+    (func) (stream, XMLDECL, sizeof(XMLDECL) - 1, &res);
+
+    if (JXTA_SUCCESS != res)
+        return res;
+
+    (func) (stream, DOCTYPEDECL, sizeof(DOCTYPEDECL) - 1, &res);
+
+    if (JXTA_SUCCESS != res)
+        return res;
+
+    return jxta_cred__null_getxml_1(cred, func, stream);
+}
+
+static Jxta_status jxta_cred__null_getxml_1(Jxta_credential * cred, Jxta_write_func func, void *stream)
+{
 #define PARAM           ((const char*) -1)
 #define STARTTAGSTART   "<"
 #define STARTTAGEND     ">\n"
@@ -212,82 +215,80 @@ extern "C" {
 #define PEERTAG         "PeerID"
 #define IDENTITYTAG     "Identity"
 
-        static const char *const docschema[] = {
-            STARTTAGSTART, CREDTAG, CREDNSATTR, CREDTYPEATTR, STARTTAGEND,
-            STARTTAGSTART, PGTAG, STARTTAGEND, PARAM, ENDTAGSTART, PGTAG, ENDTAGEND,
-            STARTTAGSTART, PEERTAG, STARTTAGEND, PARAM, ENDTAGSTART, PEERTAG, ENDTAGEND,
-            STARTTAGSTART, IDENTITYTAG, STARTTAGEND, PARAM, ENDTAGSTART, IDENTITYTAG, ENDTAGEND,
-            ENDTAGSTART, CREDTAG, ENDTAGEND, NULL
-        };
-        char const *const *eachPart = docschema;
+    static const char *const docschema[] = {
+        STARTTAGSTART, CREDTAG, CREDNSATTR, CREDTYPEATTR, STARTTAGEND,
+        STARTTAGSTART, PGTAG, STARTTAGEND, PARAM, ENDTAGSTART, PGTAG, ENDTAGEND,
+        STARTTAGSTART, PEERTAG, STARTTAGEND, PARAM, ENDTAGSTART, PEERTAG, ENDTAGEND,
+        STARTTAGSTART, IDENTITYTAG, STARTTAGEND, PARAM, ENDTAGSTART, IDENTITYTAG, ENDTAGEND,
+        ENDTAGSTART, CREDTAG, ENDTAGEND, NULL
+    };
+    char const *const *eachPart = docschema;
 
-        Jxta_status res = JXTA_SUCCESS;
-        jxta_cred_null *self = (jxta_cred_null *) cred;
+    Jxta_status res = JXTA_SUCCESS;
+    jxta_cred_null *self = (jxta_cred_null *) cred;
 
-        const char *params[4] = {
-            NULL, NULL, NULL, NULL
-        };
-        int eachParam = 0;
+    const char *params[4] = {
+        NULL, NULL, NULL, NULL
+    };
+    int eachParam = 0;
 
-        JString *tmp = NULL;
+    JString *tmp = NULL;
 
-        if (!JXTA_OBJECT_CHECK_VALID(self))
-            return JXTA_INVALID_ARGUMENT;
+    if (!JXTA_OBJECT_CHECK_VALID(self))
+        return JXTA_INVALID_ARGUMENT;
 
-        if (NULL == func)
-            return JXTA_INVALID_ARGUMENT;
+    if (NULL == func)
+        return JXTA_INVALID_ARGUMENT;
 
-        /* pg param */
-        res = jxta_id_to_jstring(self->pg, &tmp);
+    /* pg param */
+    res = jxta_id_to_jstring(self->pg, &tmp);
+
+    if (JXTA_SUCCESS != res)
+        goto Common_Exit;
+
+    params[0] = strdup(jstring_get_string(tmp));
+    JXTA_OBJECT_RELEASE(tmp);
+    tmp = NULL;
+
+    /* peer param */
+    res = jxta_id_to_jstring(self->peer, &tmp);
+
+    if (JXTA_SUCCESS != res)
+        goto Common_Exit;
+
+    params[1] = strdup(jstring_get_string(tmp));
+    JXTA_OBJECT_RELEASE(tmp);
+    tmp = NULL;
+
+    /* identity param */
+    params[2] = strdup(jstring_get_string(self->identity));
+
+    /* write it! */
+    while (NULL != *eachPart) {
+        if (PARAM != *eachPart)
+            (func) (stream, *eachPart, strlen(*eachPart), &res);
+        else {
+            (func) (stream, params[eachParam], strlen(params[eachParam]), &res);
+            eachParam++;
+        }
 
         if (JXTA_SUCCESS != res)
             goto Common_Exit;
-
-        params[0] = strdup(jstring_get_string(tmp));
-        JXTA_OBJECT_RELEASE(tmp);
-        tmp = NULL;
-
-        /* peer param */
-        res = jxta_id_to_jstring(self->peer, &tmp);
-
-        if (JXTA_SUCCESS != res)
-            goto Common_Exit;
-
-        params[1] = strdup(jstring_get_string(tmp));
-        JXTA_OBJECT_RELEASE(tmp);
-        tmp = NULL;
-
-        /* identity param */
-        params[2] = strdup(jstring_get_string(self->identity));
-
-        /* write it! */
-        while (NULL != *eachPart) {
-            if (PARAM != *eachPart)
-                (func) (stream, *eachPart, strlen(*eachPart), &res);
-            else {
-                (func) (stream, params[eachParam], strlen(params[eachParam]), &res);
-                eachParam++;
-            }
-
-            if (JXTA_SUCCESS != res)
-                goto Common_Exit;
-            eachPart++;
-        }
-
-      Common_Exit:
-        if (NULL != tmp)
-            JXTA_OBJECT_RELEASE(tmp);
-        tmp = NULL;
-
-        for (eachParam = 0; eachParam < (sizeof(params) / sizeof(const char *)); eachParam++) {
-            free((void *) params[eachParam]);
-            params[eachParam] = NULL;
-        }
-
-        return res;
-
+        eachPart++;
     }
 
-#ifdef __cplusplus
+  Common_Exit:
+    if (NULL != tmp)
+        JXTA_OBJECT_RELEASE(tmp);
+    tmp = NULL;
+
+    for (eachParam = 0; eachParam < (sizeof(params) / sizeof(const char *)); eachParam++) {
+        free((void *) params[eachParam]);
+        params[eachParam] = NULL;
+    }
+
+    return res;
+
 }
-#endif
+
+/* vim: set ts=4 sw=4 et tw=130: */

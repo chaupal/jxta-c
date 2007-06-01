@@ -37,6 +37,7 @@ bin_PROGRAMS = jstring_test	    \
 	       jxta_rdvserver_test  \
 	       jxta_resolver_test   \
 	       jxta_discovery_test  \
+               jxta_discovery_publication_test \
 	       jxta_pg_test	    \
 	       jxta_join_test	    \
 	       endpoint_test	    \
@@ -206,6 +207,10 @@ jxta_rdvserver_test.o:	jxta_rdvserver_test.c
 jxta_resolver_test_SOURCES   = jxta_resolver_test.c
 jxta_resolver_test.o:  jxta_resolver_test.c
 	$(COMPILE) -DSTANDALONE -o jxta_resolver_test.o -c jxta_resolver_test.c
+
+jxta_discovery_publication_test_SOURCES   = jxta_discovery_publication_test.c
+jxta_discovery_publication_test.o:  jxta_discovery_publication_test.c
+	$(COMPILE) -DSTANDALONE -o jxta_discovery_publication_test.o -c jxta_discovery_publication_test.c
 
 endpoint_test_SOURCES	     = endpoint_test.c
 endpoint_test.o:  endpoint_test.c

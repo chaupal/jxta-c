@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_wm.c,v 1.23 2005/11/14 10:11:30 slowhog Exp $
+ * $Id: jxta_wm.c,v 1.24 2006/02/15 01:09:51 slowhog Exp $
  */
 
 static const char *const __log_cat = "WireMessage";
@@ -65,15 +65,10 @@ static const char *const __log_cat = "WireMessage";
 #include "jstring.h"
 #include "jxta_apr.h"
 
-#ifdef __cplusplus
-extern "C" {
-#if 0
-}
-#endif
-#endif
 /** Each of these corresponds to a tag in the
  * xml ad.
- */ enum tokentype {
+ */ 
+enum tokentype {
     Null_,
     JxtaWire_,
     SrcPeer_,
@@ -84,11 +79,11 @@ extern "C" {
 };
 
 
-    /** This is the representation of the
-     * actual ad in the code.  It should
-     * stay opaque to the programmer, and be 
-     * accessed through the get/set API.
-     */
+/** This is the representation of the
+ * actual ad in the code.  It should
+ * stay opaque to the programmer, and be 
+ * accessed through the get/set API.
+ */
 struct _JxtaWire {
     Jxta_advertisement jxta_advertisement;
     char *JxtaWire;
@@ -99,11 +94,10 @@ struct _JxtaWire {
     char *msgId;
 };
 
-
-    /** Handler functions.  Each of these is responsible for
-     * dealing with all of the character data associated with the 
-     * tag name.
-     */
+/** Handler functions.  Each of these is responsible for
+ * dealing with all of the character data associated with the 
+ * tag name.
+ */
 static void handleJxtaWire(void *userdata, const XML_Char * cd, int len)
 {
     /* JxtaWire * ad = (JxtaWire*)userdata; */
@@ -454,12 +448,5 @@ JXTA_DECLARE(void) JxtaWire_parse_file(JxtaWire * ad, FILE * stream)
 
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
-
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
 
 /* vim: set ts=4 sw=4 et tw=130: */

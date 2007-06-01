@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_adv.c,v 1.25 2005/11/26 16:38:01 mmx2005 Exp $
+ * $Id: jxta_pipe_adv.c,v 1.26 2006/02/17 18:26:43 slowhog Exp $
  */
 
 
@@ -70,10 +70,6 @@
 #include "jxta_errno.h"
 #include "jxta_pipe_adv.h"
 #include "jxta_xml_util.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /** Each of these corresponds to a tag in the
  * xml ad.
@@ -105,12 +101,12 @@ void jxta_pipe_adv_delete(Jxta_pipe_adv *);
  * dealing with all of the character data associated with the 
  * tag name.
  */
-static void handlePipeAdvertisement(void *userdata, const XML_Char * cd, int len) 
+static void handlePipeAdvertisement(void *userdata, const XML_Char * cd, int len)
 {
-    /* Jxta_pipe_adv * ad = (Jxta_pipe_adv*)userdata; */   
-} 
+    /* Jxta_pipe_adv * ad = (Jxta_pipe_adv*)userdata; */
+}
 
-static void handleId(void *userdata, const XML_Char * cd, int len) 
+static void handleId(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_pipe_adv *ad = (Jxta_pipe_adv *) userdata;
 
@@ -126,7 +122,7 @@ static void handleId(void *userdata, const XML_Char * cd, int len)
     }
 }
 
-static void handleType(void *userdata, const XML_Char * cd, int len) 
+static void handleType(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_pipe_adv *ad = (Jxta_pipe_adv *) userdata;
     char *tok = (char *) malloc(len + 1);
@@ -142,7 +138,7 @@ static void handleType(void *userdata, const XML_Char * cd, int len)
     }
 }
 
-static void handleName(void *userdata, const XML_Char * cd, int len) 
+static void handleName(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_pipe_adv *ad = (Jxta_pipe_adv *) userdata;
     char *tok = (char *) calloc(len + 1, sizeof(char));
@@ -160,7 +156,7 @@ static void handleName(void *userdata, const XML_Char * cd, int len)
  * interface to the ad class, that is, the API.
  */
 
-JXTA_DECLARE(Jxta_id *) jxta_pipe_adv_get_pipeid(Jxta_pipe_adv * ad) 
+JXTA_DECLARE(Jxta_id *) jxta_pipe_adv_get_pipeid(Jxta_pipe_adv * ad)
 {
     Jxta_id *pipeid = NULL;
     JString *tmps = jstring_new_2(ad->Id);
@@ -170,20 +166,20 @@ JXTA_DECLARE(Jxta_id *) jxta_pipe_adv_get_pipeid(Jxta_pipe_adv * ad)
     return pipeid;
 }
 
-JXTA_DECLARE(const char *) jxta_pipe_adv_get_Id(Jxta_pipe_adv * ad) 
+JXTA_DECLARE(const char *) jxta_pipe_adv_get_Id(Jxta_pipe_adv * ad)
 {
     return ad->Id;
 }
 
-char *JXTA_STDCALL jxta_pipe_adv_get_Id_string(Jxta_advertisement * ad) 
+char *JXTA_STDCALL jxta_pipe_adv_get_Id_string(Jxta_advertisement * ad)
 {
     char *res;
-    
+
     res = strdup(((Jxta_pipe_adv *) ad)->Id);
     return res;
 }
 
-JXTA_DECLARE(Jxta_status) jxta_pipe_adv_set_Id(Jxta_pipe_adv * ad, const char *val) 
+JXTA_DECLARE(Jxta_status) jxta_pipe_adv_set_Id(Jxta_pipe_adv * ad, const char *val)
 {
     if (val != NULL) {
         if (NULL != ad->Id) {
@@ -198,17 +194,17 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_adv_set_Id(Jxta_pipe_adv * ad, const char *v
     return JXTA_SUCCESS;
 }
 
-JXTA_DECLARE(const char *) jxta_pipe_adv_get_Type(Jxta_pipe_adv * ad) 
+JXTA_DECLARE(const char *) jxta_pipe_adv_get_Type(Jxta_pipe_adv * ad)
 {
     return ad->Type;
 }
 
-char *JXTA_STDCALL jxta_pipe_adv_get_Type_string(Jxta_advertisement * ad) 
+char *JXTA_STDCALL jxta_pipe_adv_get_Type_string(Jxta_advertisement * ad)
 {
     return strdup(((Jxta_pipe_adv *) ad)->Type);
 }
 
-JXTA_DECLARE(Jxta_status) jxta_pipe_adv_set_Type(Jxta_pipe_adv * ad, const char *val) 
+JXTA_DECLARE(Jxta_status) jxta_pipe_adv_set_Type(Jxta_pipe_adv * ad, const char *val)
 {
     if (val != NULL) {
         ad->Type = (char *) malloc(strlen(val) + 1);
@@ -220,12 +216,12 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_adv_set_Type(Jxta_pipe_adv * ad, const char 
     return JXTA_SUCCESS;
 }
 
-JXTA_DECLARE(const char *) jxta_pipe_adv_get_Name(Jxta_pipe_adv * ad) 
+JXTA_DECLARE(const char *) jxta_pipe_adv_get_Name(Jxta_pipe_adv * ad)
 {
     return ad->Name;
 }
 
-char *JXTA_STDCALL jxta_pipe_adv_get_Name_string(Jxta_advertisement * ad) 
+char *JXTA_STDCALL jxta_pipe_adv_get_Name_string(Jxta_advertisement * ad)
 {
     if (((Jxta_pipe_adv *) ad)->Name != NULL) {
         return strdup(((Jxta_pipe_adv *) ad)->Name);
@@ -234,7 +230,7 @@ char *JXTA_STDCALL jxta_pipe_adv_get_Name_string(Jxta_advertisement * ad)
     }
 }
 
-JXTA_DECLARE(Jxta_status) jxta_pipe_adv_set_Name(Jxta_pipe_adv * ad, const char *val) 
+JXTA_DECLARE(Jxta_status) jxta_pipe_adv_set_Name(Jxta_pipe_adv * ad, const char *val)
 {
     if (val != NULL) {
         ad->Name = (char *) malloc(strlen(val) + 1);
@@ -262,7 +258,7 @@ static const Kwdtab PipeAdvertisement_tags[] = {
     {NULL, 0, 0, NULL, NULL}
 };
 
-JXTA_DECLARE(Jxta_status) jxta_pipe_adv_get_xml(Jxta_pipe_adv * ad, JString ** xml) 
+JXTA_DECLARE(Jxta_status) jxta_pipe_adv_get_xml(Jxta_pipe_adv * ad, JString ** xml)
 {
     JString *string;
 
@@ -297,24 +293,23 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_adv_get_xml(Jxta_pipe_adv * ad, JString ** x
  * just in case there is a segfault (not that 
  * that would ever happen, but in case it ever did.)
  */
-JXTA_DECLARE(Jxta_pipe_adv *) jxta_pipe_adv_new(void) 
+JXTA_DECLARE(Jxta_pipe_adv *) jxta_pipe_adv_new(void)
 {
     Jxta_pipe_adv *ad;
-    
+
     ad = (Jxta_pipe_adv *) malloc(sizeof(Jxta_pipe_adv));
     memset(ad, 0x0, sizeof(Jxta_pipe_adv));
 
     /*
-        JXTA_OBJECT_INIT((Jxta_advertisement*)ad,jxta_pipe_adv_delete, 0);
-    */
+       JXTA_OBJECT_INIT((Jxta_advertisement*)ad,jxta_pipe_adv_delete, 0);
+     */
 
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
                                   "jxta:PipeAdvertisement",
                                   PipeAdvertisement_tags,
                                   (JxtaAdvertisementGetXMLFunc) jxta_pipe_adv_get_xml,
                                   (JxtaAdvertisementGetIDFunc) jxta_pipe_adv_get_pipeid,
-                                  (JxtaAdvertisementGetIndexFunc) jxta_pipe_adv_get_indexes, 
-                                  (FreeFunc) jxta_pipe_adv_delete);
+                                  (JxtaAdvertisementGetIndexFunc) jxta_pipe_adv_get_indexes, (FreeFunc) jxta_pipe_adv_delete);
 
     ad->Id = NULL;
     ad->Type = NULL;
@@ -329,7 +324,7 @@ JXTA_DECLARE(Jxta_pipe_adv *) jxta_pipe_adv_new(void)
  * pop right out as a piece of memory accessed
  * after it was freed...
  */
-void jxta_pipe_adv_delete(Jxta_pipe_adv * ad) 
+void jxta_pipe_adv_delete(Jxta_pipe_adv * ad)
 {
     /* Fill in the required freeing functions here. */
     if (ad->Id) {
@@ -352,17 +347,17 @@ void jxta_pipe_adv_delete(Jxta_pipe_adv * ad)
     free(ad);
 }
 
-JXTA_DECLARE(void) jxta_pipe_adv_parse_charbuffer(Jxta_pipe_adv * ad, const char *buf, int len) 
+JXTA_DECLARE(void) jxta_pipe_adv_parse_charbuffer(Jxta_pipe_adv * ad, const char *buf, int len)
 {
     jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
 }
 
-JXTA_DECLARE(void) jxta_pipe_adv_parse_file(Jxta_pipe_adv * ad, FILE * stream) 
+JXTA_DECLARE(void) jxta_pipe_adv_parse_file(Jxta_pipe_adv * ad, FILE * stream)
 {
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
 
-JXTA_DECLARE(Jxta_vector *) jxta_pipe_adv_get_indexes(Jxta_advertisement * dummy) 
+JXTA_DECLARE(Jxta_vector *) jxta_pipe_adv_get_indexes(Jxta_advertisement * dummy)
 {
     static const char *idx[][2] = {
         {"Name", NULL},
@@ -373,7 +368,7 @@ JXTA_DECLARE(Jxta_vector *) jxta_pipe_adv_get_indexes(Jxta_advertisement * dummy
 }
 
 #ifdef STANDALONE
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
     Jxta_pipe_adv *ad;
     FILE *testfile;
@@ -393,8 +388,5 @@ int main(int argc, char **argv)
     jxta_pipe_adv_delete(ad);
 
     return 0;
-}
-#endif
-#ifdef __cplusplus
 }
 #endif

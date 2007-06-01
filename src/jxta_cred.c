@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cred.c,v 1.6 2005/07/22 03:12:50 slowhog Exp $
+ * $Id: jxta_cred.c,v 1.7 2006/02/18 00:32:50 slowhog Exp $
  */
 
 #include <stdio.h>
@@ -61,12 +61,6 @@
 #include "jxta_cred.h"
 #include "jxta_cred_priv.h"
 
-#ifdef __cplusplus
-extern "C" {
-#if 0
-}
-#endif
-#endif
 JXTA_DECLARE(Jxta_status) jxta_credential_get_xml(Jxta_advertisement * ad, Jxta_write_func func, void *stream)
 {
     Jxta_credential_mutable *self = (Jxta_credential_mutable *) ad;
@@ -144,9 +138,4 @@ JXTA_DECLARE(Jxta_status)
     return (self->credfuncs->cred_getsource) (cred, svc);
 }
 
-#ifdef __cplusplus
-#if 0
-{
-#endif
-}
-#endif
+/* vim: set ts=4 sw=4 et tw=130: */

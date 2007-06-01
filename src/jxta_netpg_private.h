@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_netpg_private.h,v 1.14 2005/09/21 21:16:48 slowhog Exp $
+ * $Id: jxta_netpg_private.h,v 1.15 2006/02/15 01:09:42 slowhog Exp $
  */
 
 #ifndef JXTA_NETPG_PRIVATE_H
@@ -114,6 +114,7 @@ extern void jxta_netpg_construct(Jxta_netpg * self, Jxta_netpg_methods * methods
  */
 extern void jxta_netpg_destruct(Jxta_netpg * self);
 
+void netpg_init_methods(void);
 
 #ifdef __cplusplus
 #if 0

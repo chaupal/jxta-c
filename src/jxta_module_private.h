@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_module_private.h,v 1.21 2005/09/21 21:16:48 slowhog Exp $
+ * $Id: jxta_module_private.h,v 1.23 2006/03/14 18:07:41 slowhog Exp $
  */
 
 #ifndef JXTA_MODULE_PRIVATE_H
@@ -75,6 +75,18 @@ extern "C" {
 };
 #endif
 #endif
+
+typedef enum _module_states {
+    JXTA_MODULE_UNKNOWN = -1,
+    JXTA_MODULE_LOADING = 0,
+    JXTA_MODULE_LOADED,
+    JXTA_MODULE_STARTING,
+    JXTA_MODULE_STARTED,
+    JXTA_MODULE_STOPPING,
+    JXTA_MODULE_STOPPED,
+    JXTA_MODULE_UNLOADING,
+    JXTA_MODULE_UNLOADED
+} Jxta_module_state;
 
 /**
  * The set of methods that a Jxta_module must implement.
@@ -114,6 +126,7 @@ typedef struct _jxta_module_methods Jxta_module_methods;
 struct _jxta_module {
     Extends(Jxta_object);       /* equivalent to JXTA_OBJECT_HANDLE; char* thisType. */
     Jxta_module_methods const *methods; /* Pointer to the module implementation set of methods. */
+    int state;
 
     /* Implementors put their stuff after that */
 };
@@ -162,6 +175,8 @@ extern void jxta_module_destruct(_jxta_module * self);
 extern void jxta_module_init_e_impl(Jxta_module * module, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv,
                                     Throws);
 
+
+extern Jxta_module_state jxta_module_state(Jxta_module * module);
 
 #ifdef __cplusplus
 #if 0

@@ -7,19 +7,15 @@ jprincludedir = $(includedir)/jpr
 
 lib_LTLIBRARIES = libjpr.la
 
+libjpr_la_LIBADD = @APR_LIBS@ @SQLITE_LIBS@
+
 nobase_jprinclude_HEADERS =  jpr_apr_wrapper.h	\
 			     jpr_core.h		\
                              jpr_errno.h        \
 			     jpr_excep.h        \
 			     jpr_excep_proto.h  \
 			     jpr_setjmp.h       \
-			     jpr_threadonce.h   \
-			     jpr_types.h	\
-			     arch/beos/jpr_threadonce.h \
-			     arch/netware/jpr_threadonce.h \
-			     arch/os2/jpr_threadonce.h \
-			     arch/unix/jpr_threadonce.h \
-			     arch/win32/jpr_threadonce.h 
+			     jpr_types.h
          
 libjpr_la_SOURCES = inet_ntop.c		 \
 		    jpr.c                \
