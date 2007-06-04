@@ -1,34 +1,55 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
+	Version="8,00"
 	Name="server_tunnel"
 	ProjectGUID="{26397F9B-DA2C-4AF5-8610-3DBBB11DB6ED}"
 	RootNamespace="server_tunnel"
-	SccProjectName=""
-	SccLocalPath="">
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory=".\Debug"
 			IntermediateDirectory=".\Debug"
 			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TypeLibraryName=".\Debug/server_tunnel.tlb"
+				HeaderFileName=""
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				FavorSizeOrSpeed="0"
-				AdditionalIncludeDirectories="..\..\..\src,$(APACHE2)\include;$(XML2)\include"
+				AdditionalIncludeDirectories="..\..\..\src,$(APACHE2)\include;$(XML2)\include;$(OPENSSL)\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;JXTA_STATIC;JPR_STATIC;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
-				StringPooling="FALSE"
-				MinimalRebuild="TRUE"
-				ExceptionHandling="FALSE"
+				StringPooling="false"
+				MinimalRebuild="true"
+				ExceptionHandling="0"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
@@ -37,134 +58,161 @@
 				ObjectFile=".\Debug/"
 				ProgramDataBaseFileName=".\Debug/"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				Detect64BitPortabilityProblems="FALSE"
+				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="3"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib libexpat.lib libxml2.lib zdll.lib wsock32.lib"
-				OutputFile=".\Debug/server_tunnel.exe"
-				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="&quot;$(APACHE2)\lib&quot;;$(ZLIB)\lib;$(SQLITE3)\lib;$(XML2)\lib;$(OPENSSL)\lib"
-				IgnoreDefaultLibraryNames="MSVCRT.lib"
-				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile=".\Debug/server_tunnel.pdb"
-				SubSystem="1"
-				TargetMachine="1"/>
-			<Tool
-				Name="VCMIDLTool"
-				TypeLibraryName=".\Debug/server_tunnel.tlb"
-				HeaderFileName=""/>
-			<Tool
-				Name="VCPostBuildEventTool"
-				Description="Copy DLLs"
-				CommandLine="copy &quot;$(OPENSSL)\bin\*.dll&quot; $(ConfigurationName)
-copy &quot;$(APACHE2)\bin\*.dll&quot; $(ConfigurationName)
-copy &quot;$(ZLIB)\bin\*.dll&quot;  $(ConfigurationName)
-copy &quot;$(SQLITE3)\bin\*.dll&quot;  $(ConfigurationName)
-copy &quot;$(XML2)\bin\*.dll&quot;  $(ConfigurationName)
-copy &quot;$(SolutionDir)jxta\jxtadll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)
-copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)
-"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"/>
+				Culture="1033"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCLinkerTool"
+				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib libexpat.lib libxml2.lib zdll.lib wsock32.lib ssleay32.lib"
+				OutputFile=".\Debug/server_tunnel.exe"
+				LinkIncremental="1"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="&quot;$(APACHE2)\lib&quot;;$(ZLIB)\lib;$(SQLITE3)\lib;$(XML2)\lib;$(OPENSSL)\lib"
+				IgnoreDefaultLibraryNames="MSVCRT.lib"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile=".\Debug/server_tunnel.pdb"
+				SubSystem="1"
+				TargetMachine="1"
+			/>
 			<Tool
-				Name="VCWebDeploymentTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				Description="Copy DLLs"
+				CommandLine="copy &quot;$(OPENSSL)\bin\*.dll&quot; $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(APACHE2)\bin\*.dll&quot; $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(ZLIB)\bin\*.dll&quot;  $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(SQLITE3)\bin\*.dll&quot;  $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(XML2)\bin\*.dll&quot;  $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(SolutionDir)jxta\jxtadll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)&#x0D;&#x0A;"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory=".\Release"
 			IntermediateDirectory=".\Release"
 			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TypeLibraryName=".\Release/server_tunnel.tlb"
+				HeaderFileName=""
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="0"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\..\..\src,$(APACHE2)\include;$(XML2)\include"
+				AdditionalIncludeDirectories="..\..\..\src,$(APACHE2)\include;$(XML2)\include;$(OPENSSL)\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;JXTA_STATIC;JPR_STATIC;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
-				StringPooling="FALSE"
-				ExceptionHandling="FALSE"
+				StringPooling="false"
+				ExceptionHandling="0"
 				RuntimeLibrary="2"
-				BufferSecurityCheck="FALSE"
-				EnableFunctionLevelLinking="FALSE"
+				BufferSecurityCheck="false"
+				EnableFunctionLevelLinking="false"
 				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile=".\Release/server_tunnel.pch"
 				AssemblerListingLocation=".\Release/"
 				ObjectFile=".\Release/"
 				ProgramDataBaseFileName=".\Release/"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				Detect64BitPortabilityProblems="FALSE"
+				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="0"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib libexpat.lib libxml2.lib zdll.lib wsock32.lib"
+				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib libexpat.lib libxml2.lib zdll.lib wsock32.lib ssleay32.lib"
 				OutputFile=".\Release/server_tunnel.exe"
 				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;$(APACHE2)\lib&quot;;$(ZLIB)\lib;$(SQLITE3)\lib;$(XML2)\lib;$(OPENSSL)\lib"
 				IgnoreDefaultLibraryNames=""
 				ProgramDatabaseFile=".\Release/server_tunnel.pdb"
 				SubSystem="1"
-				TargetMachine="1"/>
+				TargetMachine="1"
+			/>
 			<Tool
-				Name="VCMIDLTool"
-				TypeLibraryName=".\Release/server_tunnel.tlb"
-				HeaderFileName=""/>
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Copy DLLs"
-				CommandLine="copy &quot;$(OPENSSL)\bin\*.dll&quot; $(ConfigurationName)
-copy &quot;$(APACHE2)\bin\*.dll&quot; $(ConfigurationName)
-copy &quot;$(ZLIB)\bin\*.dll&quot;  $(ConfigurationName)
-copy &quot;$(SQLITE3)\bin\*.dll&quot;  $(ConfigurationName)
-copy &quot;$(XML2)\bin\*.dll&quot;  $(ConfigurationName)
-copy &quot;$(SolutionDir)jxta\jxtadll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)
-copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)
-"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				CommandLine="copy &quot;$(OPENSSL)\bin\*.dll&quot; $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(APACHE2)\bin\*.dll&quot; $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(ZLIB)\bin\*.dll&quot;  $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(SQLITE3)\bin\*.dll&quot;  $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(XML2)\bin\*.dll&quot;  $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(SolutionDir)jxta\jxtadll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)&#x0D;&#x0A;"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
@@ -172,18 +220,22 @@ copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(Configur
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
+			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+			>
 			<File
-				RelativePath="..\..\..\test\jxta_server_tunnel.c">
+				RelativePath="..\..\..\test\jxta_server_tunnel.c"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl">
+			Filter="h;hpp;hxx;hm;inl"
+			>
 		</Filter>
 		<Filter
 			Name="Resource Files"
-			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
+			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
+			>
 		</Filter>
 	</Files>
 	<Globals>

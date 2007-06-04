@@ -1,33 +1,55 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
+	Version="8,00"
 	Name="JxtaShell"
 	ProjectGUID="{BA9243EE-C021-4623-8D78-F39473AB8366}"
-	SccProjectName=""
-	SccLocalPath="">
+	RootNamespace="JxtaShell"
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory=".\Debug"
 			IntermediateDirectory=".\Debug"
 			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TypeLibraryName=".\Debug/JxtaShell.tlb"
+				HeaderFileName=""
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				FavorSizeOrSpeed="0"
-				AdditionalIncludeDirectories="..\..\src,..\..\shell,$(APACHE2)\include;$(XML2)\include"
+				AdditionalIncludeDirectories="..\..\src,..\..\shell,$(APACHE2)\include;$(XML2)\include;$(OPENSSL)\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
-				StringPooling="FALSE"
-				MinimalRebuild="TRUE"
-				ExceptionHandling="FALSE"
+				StringPooling="false"
+				MinimalRebuild="true"
+				ExceptionHandling="0"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
@@ -36,136 +58,161 @@
 				ObjectFile=".\Debug/"
 				ProgramDataBaseFileName=".\Debug/"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				Detect64BitPortabilityProblems="FALSE"
+				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="3"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_DEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libapr-1.lib libaprutil-1.lib"
 				OutputFile=".\Debug/JxtaShell.exe"
 				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;$(APACHE2)\lib&quot;"
 				IgnoreDefaultLibraryNames="MSVCRT.lib"
-				GenerateDebugInformation="TRUE"
+				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/JxtaShell.pdb"
 				SubSystem="1"
-				TargetMachine="1"/>
+				TargetMachine="1"
+			/>
 			<Tool
-				Name="VCMIDLTool"
-				TypeLibraryName=".\Debug/JxtaShell.tlb"
-				HeaderFileName=""/>
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Copy DLLs"
-				CommandLine="copy &quot;$(OPENSSL)\bin\*.dll&quot; $(ConfigurationName)
-copy &quot;$(APACHE2)\bin\*.dll&quot; $(ConfigurationName)
-copy &quot;$(ZLIB)\bin\*.dll&quot;  $(ConfigurationName)
-copy &quot;$(SQLITE3)\bin\*.dll&quot;  $(ConfigurationName)
-copy &quot;$(XML2)\bin\*.dll&quot;  $(ConfigurationName)
-copy &quot;$(SolutionDir)jxta\jxtadll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)
-copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)
-
-"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				CommandLine="copy &quot;$(OPENSSL)\bin\*.dll&quot; $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(APACHE2)\bin\*.dll&quot; $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(ZLIB)\bin\*.dll&quot;  $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(SQLITE3)\bin\*.dll&quot;  $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(XML2)\bin\*.dll&quot;  $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(SolutionDir)jxta\jxtadll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)&#x0D;&#x0A;&#x0D;&#x0A;"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory=".\Release"
 			IntermediateDirectory=".\Release"
 			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TypeLibraryName=".\Release/JxtaShell.tlb"
+				HeaderFileName=""
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="0"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\..\src,..\..\shell,$(APACHE2)\include;$(XML2)\include"
+				AdditionalIncludeDirectories="..\..\src,..\..\shell,$(APACHE2)\include;$(XML2)\include;$(OPENSSL)\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
-				StringPooling="FALSE"
-				ExceptionHandling="FALSE"
+				StringPooling="false"
+				ExceptionHandling="0"
 				RuntimeLibrary="2"
-				BufferSecurityCheck="FALSE"
-				EnableFunctionLevelLinking="FALSE"
+				BufferSecurityCheck="false"
+				EnableFunctionLevelLinking="false"
 				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile=".\Release/JxtaShell.pch"
 				AssemblerListingLocation=".\Release/"
 				ObjectFile=".\Release/"
 				ProgramDataBaseFileName=".\Release/"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				Detect64BitPortabilityProblems="FALSE"
+				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="0"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libapr-1.lib libaprutil-1.lib"
 				OutputFile=".\Release/JxtaShell.exe"
 				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;$(APACHE2)\lib&quot;"
 				IgnoreDefaultLibraryNames=""
 				ProgramDatabaseFile=".\Release/JxtaShell.pdb"
 				SubSystem="1"
-				TargetMachine="1"/>
+				TargetMachine="1"
+			/>
 			<Tool
-				Name="VCMIDLTool"
-				TypeLibraryName=".\Release/JxtaShell.tlb"
-				HeaderFileName=""/>
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Copy DLLs"
-				CommandLine="copy &quot;$(OPENSSL)\bin\*.dll&quot; $(ConfigurationName)
-copy &quot;$(APACHE2)\bin\*.dll&quot; $(ConfigurationName)
-copy &quot;$(ZLIB)\bin\*.dll&quot;  $(ConfigurationName)
-copy &quot;$(SQLITE3)\bin\*.dll&quot;  $(ConfigurationName)
-copy &quot;$(XML2)\bin\*.dll&quot;  $(ConfigurationName)
-copy &quot;$(SolutionDir)jxta\jxtadll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)
-copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)
-
-"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				CommandLine="copy &quot;$(OPENSSL)\bin\*.dll&quot; $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(APACHE2)\bin\*.dll&quot; $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(ZLIB)\bin\*.dll&quot;  $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(SQLITE3)\bin\*.dll&quot;  $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(XML2)\bin\*.dll&quot;  $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(SolutionDir)jxta\jxtadll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)&#x0D;&#x0A;copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)&#x0D;&#x0A;&#x0D;&#x0A;"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
@@ -173,135 +220,178 @@ copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(Configur
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
+			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+			>
 			<File
-				RelativePath="..\..\shell\cat.c">
+				RelativePath="..\..\shell\cat.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\groups.c">
+				RelativePath="..\..\shell\groups.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\join.c">
+				RelativePath="..\..\shell\join.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\jxta_shell_app_env.c">
+				RelativePath="..\..\shell\jxta_shell_app_env.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\jxta_shell_application.c">
+				RelativePath="..\..\shell\jxta_shell_application.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\jxta_shell_environment.c">
+				RelativePath="..\..\shell\jxta_shell_environment.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\jxta_shell_getopt.c">
+				RelativePath="..\..\shell\jxta_shell_getopt.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\jxta_shell_main.c">
+				RelativePath="..\..\shell\jxta_shell_main.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\jxta_shell_object.c">
+				RelativePath="..\..\shell\jxta_shell_object.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\jxta_shell_tokenizer.c">
+				RelativePath="..\..\shell\jxta_shell_tokenizer.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\kdb.c">
+				RelativePath="..\..\shell\kdb.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\leave.c">
+				RelativePath="..\..\shell\leave.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\peers.c">
+				RelativePath="..\..\shell\peers.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\publish.c">
+				RelativePath="..\..\shell\publish.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\rdvcontrol.c">
+				RelativePath="..\..\shell\rdvcontrol.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\rdvstatus.c">
+				RelativePath="..\..\shell\rdvstatus.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\search.c">
+				RelativePath="..\..\shell\search.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\talk.c">
+				RelativePath="..\..\shell\talk.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\TestApplication.c">
+				RelativePath="..\..\shell\TestApplication.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\whoami.c">
+				RelativePath="..\..\shell\whoami.c"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl">
+			Filter="h;hpp;hxx;hm;inl"
+			>
 			<File
-				RelativePath="..\..\shell\cat.h">
+				RelativePath="..\..\shell\cat.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\groups.h">
+				RelativePath="..\..\shell\groups.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\join.h">
+				RelativePath="..\..\shell\join.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\jxta_shell_app_env.h">
+				RelativePath="..\..\shell\jxta_shell_app_env.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\jxta_shell_application.h">
+				RelativePath="..\..\shell\jxta_shell_application.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\jxta_shell_environment.h">
+				RelativePath="..\..\shell\jxta_shell_environment.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\jxta_shell_getopt.h">
+				RelativePath="..\..\shell\jxta_shell_getopt.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\jxta_shell_main.h">
+				RelativePath="..\..\shell\jxta_shell_main.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\jxta_shell_object.h">
+				RelativePath="..\..\shell\jxta_shell_object.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\jxta_shell_tokenizer.h">
+				RelativePath="..\..\shell\jxta_shell_tokenizer.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\kdb.h">
+				RelativePath="..\..\shell\kdb.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\leave.h">
+				RelativePath="..\..\shell\leave.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\peers.h">
+				RelativePath="..\..\shell\peers.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\publish.h">
+				RelativePath="..\..\shell\publish.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\rdvcontrol.h">
+				RelativePath="..\..\shell\rdvcontrol.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\rdvstatus.h">
+				RelativePath="..\..\shell\rdvstatus.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\search.h">
+				RelativePath="..\..\shell\search.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\talk.h">
+				RelativePath="..\..\shell\talk.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\TestApplication.h">
+				RelativePath="..\..\shell\TestApplication.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\shell\whoami.h">
+				RelativePath="..\..\shell\whoami.h"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
-			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
+			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
+			>
 		</Filter>
 	</Files>
 	<Globals>

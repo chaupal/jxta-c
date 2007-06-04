@@ -8,8 +8,7 @@ native Windows platform.
 General
 =======
 
-Currently, we support only Visual Studio .NET 2003 to build JXTA-C. Therefore, 
-the old VC6 project files in the current CVS tree are obsolete.
+Currently, we support only Visual Studio .NET 2005 to build JXTA-C. 
 
 To create JXTA-C on Windows you need following libraries:
 
@@ -18,6 +17,7 @@ To create JXTA-C on Windows you need following libraries:
  - zlib (http://www.zlib.net/)
  - sqlite3 (http://www.sqlite.org/)
  - xml2 (http://xmlsoft.org/index.html)
+ - expat (http://expat.sourceforge.net/)
 
 Beside XML2 you can use the official distribution of these libraries. The 
 XML2 library has been modified in order to provide wild card searching 
@@ -26,11 +26,10 @@ create this custom version of XML2. See INSTALL in lib/xml2 for instructions on
 building this version of XML2.
 
 
-Check out the sources from CVS
+Check out the sources from SVN
 ==============================
 
-cvs -d :pserver:guest@cvs.jxta.org:/cvs login
-cvs -d :pserver:guest@cvs.jxta.org:/cvs checkout jxta-c 
+svn checkout https://jxta-c.dev.java.net/svn/jxta-c/jxta-c/trunk --username guest
 
 
 Configuring the sources
@@ -38,15 +37,17 @@ Configuring the sources
 
 You have to specify the environment variables (APACHE2, XML2, ZLIB, SQLITE3 and OPENSSL) 
 to the location of the necessary libraries. It is assumed that 
-the headers are located in the subdirectory "include", the DLLs in the subdirtectory 
+the headers are located in the subdirectory "include", the DLLs in the subdirectory 
 "bin" and the link libraries in the subdirectory "lib". For instance, zlib.h is located 
 at $(ZLIB)/include.
+The expat-stuff does not reside in an own directory for historical reasons; the library
+and the header file need to be put into the APACHE2 directory.
 
 
 Building the sources
 ====================
 
-Open with Visual Studio .NET 2003 the project file jxta.sln in the directory "win32".
+Open with Visual Studio .NET 2005 the project file jxta.sln in the directory "win32".
 Afterwards, press F7 to build the JXTA libraries and all examples. 
 
 
