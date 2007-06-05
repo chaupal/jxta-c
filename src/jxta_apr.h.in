@@ -91,6 +91,12 @@
 	 (APR_MAJOR_VERSION == (major) && APR_MINOR_VERSION == (minor) && \
 	  APR_PATCH_VERSION >= (patch)))
 
+#define CHECK_EXPAT_VERSION(major, minor, micro) \
+	(XML_MAJOR_VERSION > (major) || \
+	 (XML_MAJOR_VERSION == (major) && XML_MINOR_VERSION > (minor)) || \
+	 (XML_MAJOR_VERSION == (major) && XML_MINOR_VERSION == (minor) && \
+	  XML_MICRO_VERSION >= (micro)))
+
 #endif /* __JXTA_APR_H__ */
 
 /* vim: set sw=4 ts=4 et tw=130: */

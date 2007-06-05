@@ -354,6 +354,15 @@ JXTA_DECLARE(Jxta_status) jxta_advertisement_parse_charbuffer(Jxta_advertisement
     Jxta_status res;
     size_t offset = 0;
     XML_Parser parser;
+#if CHECK_EXPAT_VERSION(1, 95, 5)
+    enum XML_Status xml_result;
+#else
+    int xml_result;
+#ifndef XML_STATUS_OK
+#define XML_STATUS_OK 1
+#define XML_STATUS_ERROR 0
+#endif
+#endif
  
     if (!buf || !len) {
         return JXTA_INVALID_ARGUMENT;
@@ -366,7 +375,7 @@ JXTA_DECLARE(Jxta_status) jxta_advertisement_parse_charbuffer(Jxta_advertisement
     jxta_advertisement_set_handlers(ad, parser, (Jxta_advertisement *) NULL);
 
     while (offset < len) {
-        enum XML_Status xml_result = XML_Parse(parser, buf + offset, len - offset, 1);
+        xml_result = XML_Parse(parser, buf + offset, len - offset, 1);
         
         offset += XML_GetCurrentByteIndex(parser);        
 
@@ -374,16 +383,22 @@ JXTA_DECLARE(Jxta_status) jxta_advertisement_parse_charbuffer(Jxta_advertisement
             res = JXTA_SUCCESS;
             break;
         } else if( XML_STATUS_ERROR == xml_result ) {
-        if (XML_GetErrorCode(parser) != XML_ERROR_JUNK_AFTER_DOC_ELEMENT) {
-            log_error(parser, ad->document_name);
-                res = JXTA_INVALID_ARGUMENT;
-                break;
-            } else {
-                /* Reset the parser for another advertisement */
-                XML_ParserReset( parser, NULL );
-                continue;
+            if (XML_GetErrorCode(parser) != XML_ERROR_JUNK_AFTER_DOC_ELEMENT) {
+                log_error(parser, ad->document_name);
+                    res = JXTA_INVALID_ARGUMENT;
+                    break;
+                } else {
+                    /* Reset the parser for another advertisement */
+#if CHECK_EXPAT_VERSION(1, 95, 3)
+                    XML_ParserReset( parser, NULL );
+#else
+                    XML_ParserFree(parser);
+                    parser = XML_ParserCreate(NULL);
+                    jxta_advertisement_set_handlers(ad, parser, (Jxta_advertisement *) NULL);
+#endif
+                    continue;
+                }
             }
-        }
         }
 
         XML_ParserFree(parser);
