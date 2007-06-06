@@ -284,11 +284,12 @@ Jxta_vector *client_entry_get_options(Jxta_peer * me)
     return options;
 }
 
-int client_entry_creation_time_compare(Jxta_peer * me, Jxta_peer * target)
+int client_entry_creation_time_compare(Jxta_peer ** me, Jxta_peer ** target)
 {
 
-    _jxta_peer_client_entry *myself = PTValid(me, _jxta_peer_client_entry);
-    _jxta_peer_client_entry *themself = PTValid(me, _jxta_peer_client_entry);
+    _jxta_peer_client_entry *myself = PTValid(*me, _jxta_peer_client_entry);
+    _jxta_peer_client_entry *themself = PTValid(*target, _jxta_peer_client_entry);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "client_entry_creation_time_compare\n");
 
     if (myself->creation_time < themself->creation_time) {
         return -1;
@@ -1307,6 +1308,7 @@ static void *APR_THREAD_FUNC periodic_task(apr_thread_t * thread, void *arg)
 
     clients = jxta_hashtable_values_get(myself->clients);
     sz = jxta_vector_size(clients);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Rendezvous Server periodic task %d clients.\n", sz);
     for (i = 0; i < sz; i++) {
         _jxta_peer_client_entry *peer;
 

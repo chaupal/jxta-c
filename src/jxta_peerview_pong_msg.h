@@ -116,16 +116,17 @@ JXTA_DECLARE(void) jxta_peerview_pong_msg_set_options(Jxta_peerview_pong_msg * m
 
 JXTA_DECLARE(Jxta_vector *) jxta_pong_msg_get_partner_infos(Jxta_peerview_pong_msg * myself);
 JXTA_DECLARE(void) jxta_pong_msg_clear_partner_infos(Jxta_peerview_pong_msg * myself );
-JXTA_DECLARE(void) jxta_pong_msg_add_partner_info(Jxta_peerview_pong_msg * myself, Jxta_id *peer, const char *target_hash, const char *target_hash_radius );
+JXTA_DECLARE(void) jxta_pong_msg_add_partner_info(Jxta_peerview_pong_msg * myself, Jxta_id *peer, Jxta_PA * peer_adv, const char *target_hash, const char *target_hash_radius );
 
 JXTA_DECLARE(Jxta_vector *) jxta_pong_msg_get_associate_infos(Jxta_peerview_pong_msg * myself);
 JXTA_DECLARE(void) jxta_pong_msg_clear_associate_infos(Jxta_peerview_pong_msg * myself );
-JXTA_DECLARE(void) jxta_pong_msg_add_associate_info(Jxta_peerview_pong_msg * myself, Jxta_id *peer, const char *target_hash, const char *target_hash_radius );
+JXTA_DECLARE(void) jxta_pong_msg_add_associate_info(Jxta_peerview_pong_msg * myself, Jxta_id *peer, Jxta_PA * peer_adv, const char *target_hash, const char *target_hash_radius );
 
 /** 
 *   Accessors for Jxta_peerview_peer_info
 **/
 JXTA_DECLARE(Jxta_id *) jxta_peerview_peer_info_get_peer_id(Jxta_peerview_peer_info * me);
+JXTA_DECLARE(Jxta_PA *) jxta_peerview_peer_info_get_peer_adv(Jxta_peerview_peer_info * me);
 JXTA_DECLARE(const char *) jxta_peerview_peer_info_get_target_hash(Jxta_peerview_peer_info * me);
 JXTA_DECLARE(const char *) jxta_peerview_peer_info_get_target_hash_radius(Jxta_peerview_peer_info * me);
 

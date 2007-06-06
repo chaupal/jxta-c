@@ -73,7 +73,10 @@ struct _Jxta_peerview_peer_info {
     JXTA_OBJECT_HANDLE;
 
     Jxta_id *peer_id;
-
+    Jxta_PA *peer_adv;
+    Jxta_boolean peer_adv_gen_set;
+    apr_uuid_t peer_adv_gen;
+    Jxta_time_diff peer_adv_exp;
     JString *target_hash;
     JString *target_hash_radius;
 };
@@ -109,7 +112,7 @@ struct _Jxta_peerview_pong_msg {
     Jxta_peerview_peer_info * current_peer_info;    
 };
 
-static Jxta_peerview_peer_info *peerview_peer_info_new( Jxta_id * id, char const *target_hash, char const *target_hash_radius );
+static Jxta_peerview_peer_info *peerview_peer_info_new( Jxta_id * id, Jxta_PA * peer_adv, char const *target_hash, char const *target_hash_radius );
 static void peerview_peer_info_delete(Jxta_object * me);
 
 static void peerview_pong_msg_delete(Jxta_object * me);
@@ -135,7 +138,7 @@ enum tokentype {
     TargetHash_,
     Adv_,
     Partner_,
-    Associate_,
+    ClusterMember_,
     Option_
 };
 
@@ -155,7 +158,7 @@ static const Kwdtab jxta_peerview_pong_msg_tags[] = {
     {"TargetHash", TargetHash_, *handle_target_hash, NULL, NULL},
     {"Adv", Adv_, *handle_adv, NULL, NULL},
     {"Partner", Partner_, *handle_partner, NULL, NULL},
-    {"Associate", Associate_, *handle_associate, NULL, NULL},
+    {"ClusterMember", ClusterMember_, *handle_associate, NULL, NULL},
     {"Option", Option_, *handle_option, NULL, NULL},
     
     {NULL, 0, NULL, NULL, NULL}
@@ -183,7 +186,7 @@ JXTA_DECLARE(Jxta_peerview_pong_msg *) jxta_peerview_pong_msg_new(void)
                                                                  (JxtaAdvertisementGetIndexFunc) NULL);
 
     if (NULL != myself) {
-        myself->peer = peerview_peer_info_new( JXTA_OBJECT_SHARE(jxta_id_nullID), NULL, NULL );
+        myself->peer = peerview_peer_info_new( JXTA_OBJECT_SHARE(jxta_id_nullID), NULL, NULL, NULL );
         myself->credential = NULL;
         myself->instance_mask = NULL;
         myself->peer_adv = NULL;
@@ -493,6 +496,7 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml(Jxta_peerview_pong_msg 
     Jxta_status res;
     JString *string;
     JString *temp;
+    unsigned int i=0;
     char tmpbuf[256];   /* We use this buffer to store a string representation of a int */
  
     JXTA_OBJECT_CHECK_VALID(myself);
@@ -553,9 +557,69 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml(Jxta_peerview_pong_msg 
 
         attrs[attr_idx] = NULL;
 
-        temp = NULL;
-
         res = jxta_PA_get_xml_1(myself->peer_adv, &temp, "Adv", attrs);
+
+        if( JXTA_SUCCESS == res ) {
+            jstring_append_1(string, temp);
+        }
+        JXTA_OBJECT_RELEASE(temp);
+        for (attr_idx = 0; attrs[attr_idx]; attr_idx++) {
+            if (free_mask & (1 << attr_idx)) {
+                free( (void*) attrs[attr_idx]);
+            }
+        }
+    }
+
+    for (i = 0; i < jxta_vector_size(myself->associates); i++) {
+        Jxta_peerview_peer_info *peer_info=NULL;
+        res = jxta_vector_get_object_at(myself->associates, JXTA_OBJECT_PPTR(&peer_info), i);
+        if (JXTA_SUCCESS != res) continue;
+        JString *jPeerid = NULL;
+        jstring_append_2(string, "<ClusterMember");
+        jstring_append_2(string, " peer_id = \"");
+        jxta_id_to_jstring(peer_info->peer_id, &jPeerid);
+        jstring_append_2(string, jstring_get_string(jPeerid));
+        jstring_append_2(string, "\"");
+        jstring_append_2(string, " >");
+        jstring_append_2(string, "<TargetHash");
+        jstring_append_2(string, " radius=\"");
+        jstring_append_2(string, jstring_get_string(peer_info->target_hash_radius));
+        jstring_append_2(string, "\"");
+        jstring_append_2(string, ">\n");
+        jstring_append_2(string, jstring_get_string(peer_info->target_hash));
+        jstring_append_2(string, "</TargetHash>\n");
+        char const *attrs[8] = { "type", "jxta:PA" };
+        unsigned int free_mask = 0;
+        int attr_idx = 2;
+        apr_uuid_t * adv_gen = (apr_uuid_t *) calloc(1, sizeof(apr_uuid_t));
+        *adv_gen = peer_info->peer_adv_gen;
+
+        if (NULL != adv_gen) {
+            attrs[attr_idx++] = "adv_gen";
+
+            apr_uuid_format(tmpbuf, adv_gen);
+            free(adv_gen);
+            free_mask |= (1 << attr_idx);
+            attrs[attr_idx++] = strdup(tmpbuf);
+        }
+
+        if (-1L != peer_info->peer_adv_exp) {
+            attrs[attr_idx++] = "expiration";
+
+            apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, peer_info->peer_adv_exp);
+            free_mask |= (1 << attr_idx);
+            attrs[attr_idx++] = strdup(tmpbuf);
+        }
+
+        attrs[attr_idx] = NULL;
+
+
+        res = jxta_PA_get_xml_1(peer_info->peer_adv, &temp, "Adv", attrs);
+
+        if( JXTA_SUCCESS == res ) {
+            jstring_append_1(string, temp);
+        }
+        JXTA_OBJECT_RELEASE(temp);
 
         for (attr_idx = 0; attrs[attr_idx]; attr_idx++) {
             if (free_mask & (1 << attr_idx)) {
@@ -563,12 +627,71 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml(Jxta_peerview_pong_msg 
             }
         }
 
+        jstring_append_2(string, "</ClusterMember>\n");
+
+        JXTA_OBJECT_RELEASE(jPeerid);
+        JXTA_OBJECT_RELEASE(peer_info);
+    }
+
+    for (i = 0; i < jxta_vector_size(myself->partners); i++) {
+        Jxta_peerview_peer_info *peer_info=NULL;
+        res = jxta_vector_get_object_at(myself->partners, JXTA_OBJECT_PPTR(&peer_info), i);
+        if (JXTA_SUCCESS != res) continue;
+        JString *jPeerid = NULL;
+        jstring_append_2(string, "<Partner");
+        jstring_append_2(string, " peer_id = \"");
+        jxta_id_to_jstring(peer_info->peer_id, &jPeerid);
+        jstring_append_2(string, jstring_get_string(jPeerid));
+        jstring_append_2(string, "\"");
+        jstring_append_2(string, " >");
+        jstring_append_2(string, "<TargetHash");
+        jstring_append_2(string, " radius=\"");
+        jstring_append_2(string, jstring_get_string(peer_info->target_hash_radius));
+        jstring_append_2(string, "\"");
+        jstring_append_2(string, ">\n");
+        jstring_append_2(string, jstring_get_string(peer_info->target_hash));
+        jstring_append_2(string, "</TargetHash>\n");
+        char const *attrs[8] = { "type", "jxta:PA" };
+        unsigned int free_mask = 0;
+        int attr_idx = 2;
+        apr_uuid_t * adv_gen = (apr_uuid_t *) calloc(1, sizeof(apr_uuid_t));
+        *adv_gen = peer_info->peer_adv_gen;
+
+        if (NULL != adv_gen) {
+            attrs[attr_idx++] = "adv_gen";
+
+            apr_uuid_format(tmpbuf, adv_gen);
+            free(adv_gen);
+            free_mask |= (1 << attr_idx);
+            attrs[attr_idx++] = strdup(tmpbuf);
+        }
+
+        if (-1L != peer_info->peer_adv_exp) {
+            attrs[attr_idx++] = "expiration";
+
+            apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, peer_info->peer_adv_exp);
+            free_mask |= (1 << attr_idx);
+            attrs[attr_idx++] = strdup(tmpbuf);
+        }
+
+        attrs[attr_idx] = NULL;
+
+        res = jxta_PA_get_xml_1(peer_info->peer_adv, &temp, "Adv", attrs);
+
+        for (attr_idx = 0; attrs[attr_idx]; attr_idx++) {
+            if (free_mask & (1 << attr_idx)) {
+               free( (void*) attrs[attr_idx]);
+            }
+        }
+
         if( JXTA_SUCCESS == res ) {
             jstring_append_1(string, temp);
         }
         JXTA_OBJECT_RELEASE(temp);
+        jstring_append_2(string, "</Partner>\n");
+        JXTA_OBJECT_RELEASE(jPeerid);
+        JXTA_OBJECT_RELEASE(peer_info);
     }
-
     /* FIXME Handle credentials and options */
 
     jstring_append_2(string, "</jxta:PeerviewPong>\n");
@@ -743,7 +866,10 @@ static void handle_adv(void *me, const XML_Char * cd, int len)
 
     if( 0 == len ) {
         const char **atts = ((Jxta_advertisement *) myself)->atts;
-
+        Jxta_PA * peer_adv = NULL;
+        Jxta_boolean peer_adv_gen_set;
+        apr_uuid_t peer_adv_gen;
+        Jxta_time_diff peer_adv_exp;
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <Adv> : [%pp]\n", myself);
 
         /** handle attributes */
@@ -753,24 +879,45 @@ static void handle_adv(void *me, const XML_Char * cd, int len)
             } else if (0 == strcmp(*atts, "xmlns:jxta")) {
                 /* just silently skip it. */
             } else if (0 == strcmp(*atts, "adv_gen")) {
-                myself->peer_adv_gen_set = (APR_SUCCESS == apr_uuid_parse( &myself->peer_adv_gen, atts[1]));
+                peer_adv_gen_set = (APR_SUCCESS == apr_uuid_parse( &peer_adv_gen, atts[1]));
                 
-                if( !myself->peer_adv_gen_set ) {
+                if( !peer_adv_gen_set ) {
                         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,
                                         FILEANDLINE "UUID parse failure for server_adv_gen [%pp] : %s\n", myself, atts[1]);
                 }
             } else if (0 == strcmp(*atts, "expiration")) {
-                myself->peer_adv_exp = atol(atts[1]);
+                peer_adv_exp = atol(atts[1]);
             } else {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
             }
 
             atts += 2;
         }
-
-        myself->peer_adv = jxta_PA_new();
-
-        jxta_advertisement_set_handlers((Jxta_advertisement *) myself->peer_adv, ((Jxta_advertisement *) myself)->parser, (void *) myself);
+        switch(myself->parse_context) {
+            case UNKNOWN :
+                break;
+                
+            case GLOBAL :
+                myself->peer_adv = jxta_PA_new();
+                myself->peer_adv_gen_set = peer_adv_gen_set;
+                myself->peer_adv_gen = peer_adv_gen;
+                myself->peer_adv_exp = peer_adv_exp;
+                peer_adv = myself->peer_adv;
+                break;
+            case PARTNER : 
+            case ASSOCIATE :
+                peer_adv = jxta_PA_new();
+                if( NULL != myself->current_peer_info->peer_adv ) {
+                    JXTA_OBJECT_RELEASE(myself->current_peer_info->peer_adv);
+                }
+                myself->current_peer_info->peer_adv = peer_adv;
+                myself->current_peer_info->peer_adv_gen_set = peer_adv_gen_set;
+                myself->current_peer_info->peer_adv_gen = peer_adv_gen;
+                myself->current_peer_info->peer_adv_exp = peer_adv_exp;
+                break;
+        }
+ 
+        jxta_advertisement_set_handlers((Jxta_advertisement *) peer_adv, ((Jxta_advertisement *) myself)->parser, (void *) myself);
    } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <Adv> : [%pp]\n", myself);
    }
@@ -812,7 +959,7 @@ static void handle_partner(void *me, const XML_Char * cd, int len)
         }
         
         if( NULL != peer_id ) {
-            Jxta_peerview_peer_info* peer_info = peerview_peer_info_new( peer_id, NULL, NULL );
+            Jxta_peerview_peer_info* peer_info = peerview_peer_info_new( peer_id, NULL, NULL, NULL );
             jxta_vector_add_object_last( myself->partners, (Jxta_object*) peer_info );
             
             myself->parse_context = PARTNER;
@@ -837,7 +984,7 @@ static void handle_associate(void *me, const XML_Char * cd, int len)
         const char **atts = ((Jxta_advertisement *) myself)->atts;
         Jxta_id * peer_id = NULL;
 
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "START <Associate> : [%pp]\n", myself);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "START <ClusterMember> : [%pp]\n", myself);
 
         /** handle attributes */
         while (atts && *atts) {
@@ -863,7 +1010,7 @@ static void handle_associate(void *me, const XML_Char * cd, int len)
         }
         
         if( NULL != peer_id ) {
-            Jxta_peerview_peer_info* peer_info = peerview_peer_info_new( peer_id, NULL, NULL );
+            Jxta_peerview_peer_info* peer_info = peerview_peer_info_new( peer_id, NULL, NULL, NULL );
             jxta_vector_add_object_last( myself->associates, (Jxta_object*) peer_info );
             
             myself->parse_context = ASSOCIATE;
@@ -874,7 +1021,7 @@ static void handle_associate(void *me, const XML_Char * cd, int len)
         myself->parse_context = UNKNOWN;
         myself->current_peer_info = NULL;
     
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "FINISH <Associate> : [%pp]\n", myself);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "FINISH <ClusterMember> : [%pp]\n", myself);
     }
 }
 
@@ -911,13 +1058,13 @@ JXTA_DECLARE(void) jxta_pong_msg_clear_partner_infos(Jxta_peerview_pong_msg * my
     jxta_vector_clear( myself->partners );
 }
 
-JXTA_DECLARE(void) jxta_pong_msg_add_partner_info(Jxta_peerview_pong_msg * myself, Jxta_id *peer, const char *target_hash, const char *target_hash_radius )
+JXTA_DECLARE(void) jxta_pong_msg_add_partner_info(Jxta_peerview_pong_msg * myself, Jxta_id *peer, Jxta_PA * peer_adv,  const char *target_hash, const char *target_hash_radius )
 {
     Jxta_peerview_peer_info * new_info;
     
     JXTA_OBJECT_CHECK_VALID(myself);
 
-    new_info = peerview_peer_info_new( peer, target_hash, target_hash_radius );
+    new_info = peerview_peer_info_new( peer, peer_adv, target_hash, target_hash_radius );
     
     if( NULL != new_info ) {
         jxta_vector_add_object_last( myself->partners, (Jxta_object*) new_info );
@@ -945,13 +1092,13 @@ JXTA_DECLARE(void) jxta_pong_msg_clear_associate_infos(Jxta_peerview_pong_msg * 
     jxta_vector_clear( myself->associates );
 }
 
-JXTA_DECLARE(void) jxta_pong_msg_add_associate_info(Jxta_peerview_pong_msg * myself, Jxta_id *peer, const char *target_hash, const char *target_hash_radius )
+JXTA_DECLARE(void) jxta_pong_msg_add_associate_info(Jxta_peerview_pong_msg * myself, Jxta_id *peer, Jxta_PA * peer_adv, const char *target_hash, const char *target_hash_radius )
 {
     Jxta_peerview_peer_info * new_info;
     
     JXTA_OBJECT_CHECK_VALID(myself);
 
-    new_info = peerview_peer_info_new( peer, target_hash, target_hash_radius );
+    new_info = peerview_peer_info_new( peer, peer_adv, target_hash, target_hash_radius );
     
     if( NULL != new_info ) {
         jxta_vector_add_object_last( myself->associates, (Jxta_object*) new_info );
@@ -959,7 +1106,7 @@ JXTA_DECLARE(void) jxta_pong_msg_add_associate_info(Jxta_peerview_pong_msg * mys
     }
 }                                                            
 
-static Jxta_peerview_peer_info *peerview_peer_info_new( Jxta_id * id, char const *target_hash, char const *target_hash_radius )
+static Jxta_peerview_peer_info *peerview_peer_info_new( Jxta_id * id, Jxta_PA * peer_adv, char const *target_hash, char const *target_hash_radius )
 {
     Jxta_peerview_peer_info *myself;
     
@@ -979,7 +1126,7 @@ static Jxta_peerview_peer_info *peerview_peer_info_new( Jxta_id * id, char const
     JXTA_OBJECT_INIT(myself, peerview_peer_info_delete, NULL);
     
     myself->peer_id = JXTA_OBJECT_SHARE(id);
-   
+    myself->peer_adv = JXTA_OBJECT_SHARE(peer_adv);
     if( NULL != target_hash ) {
         myself->target_hash = jstring_new_2(target_hash);
         jstring_trim(myself->target_hash);
@@ -1021,6 +1168,14 @@ JXTA_DECLARE(Jxta_id *) jxta_peerview_peer_info_get_peer_id(Jxta_peerview_peer_i
     JXTA_OBJECT_CHECK_VALID(peer);
 
     return JXTA_OBJECT_SHARE(peer->peer_id);
+}
+
+
+JXTA_DECLARE(Jxta_PA *) jxta_peerview_peer_info_get_peer_adv(Jxta_peerview_peer_info * peer)
+{
+    JXTA_OBJECT_CHECK_VALID(peer);
+
+    return JXTA_OBJECT_SHARE(peer->peer_adv);
 }
 
 JXTA_DECLARE(const char *) jxta_peerview_peer_info_get_target_hash(Jxta_peerview_peer_info * peer)

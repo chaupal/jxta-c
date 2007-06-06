@@ -105,7 +105,7 @@ static const apr_interval_time_t JXTA_PEERVIEW_ADD_INTERVAL = 90 * APR_USEC_PER_
 
 static const unsigned int DEFAULT_CLUSTERS_COUNT = 2;
 
-static const unsigned int DEFAULT_CLUSTER_MEMBERS = 2;
+static const unsigned int DEFAULT_CLUSTER_MEMBERS = 4;
 
 static const unsigned int DEFAULT_REPLICATION_FACTOR = 2;
 
@@ -113,7 +113,7 @@ static const unsigned int DEFAULT_REPLICATION_FACTOR = 2;
 *   The number of locate probes we will send before giving up
 *   and starting a new peerview instance.
 */
-static const unsigned int DEFAULT_MAX_LOCATE_PROBES = 5;
+static const unsigned int DEFAULT_MAX_LOCATE_PROBES = 2;
 
 /**
 *   The maximum number of address requests we will send per
@@ -358,7 +358,7 @@ static Jxta_status JXTA_STDCALL peerview_protocol_cb(Jxta_object * obj, void *ar
 static Jxta_status peerview_handle_address_request(Jxta_peerview * myself, Jxta_peerview_address_request_msg * addr_req);
 static Jxta_status peerview_handle_address_assign(Jxta_peerview * myself, Jxta_peerview_address_assign_msg * addr_assign);
 static Jxta_status peerview_handle_ping(Jxta_peerview * myself, Jxta_peerview_ping_msg * ping);
-static Jxta_status peerview_handle_pong(Jxta_peerview * myself, Jxta_peerview_pong_msg * pong);
+static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_msg * pong);
 
 static Jxta_status peerview_send_address_request(Jxta_peerview * myself, Jxta_peer * dest);
 static Jxta_status peerview_send_ping(Jxta_peerview * myself, Jxta_peer * dest, apr_uuid_t * adv_gen);
@@ -630,7 +630,9 @@ JXTA_DECLARE(Jxta_status) peerview_init(Jxta_peerview * pv, Jxta_PG * group, Jxt
     if (NULL == myself->assigned_id_str) {
         return JXTA_NOMEM;
     }
+
     JXTA_OBJECT_RELEASE(string);
+
     myself->group = JXTA_OBJECT_SHARE(group);
 
     myself->thread_pool = jxta_PG_thread_pool_get(group);
@@ -751,6 +753,8 @@ Jxta_status peerview_start(Jxta_peerview * pv)
     jxta_PG_get_endpoint_service(myself->group, &(myself->endpoint));
     jxta_PG_add_recipient(myself->group, &myself->ep_cookie, RDV_V3_MSID, JXTA_PEERVIEW_NAME, peerview_protocol_cb, myself);
 
+    jxta_PG_get_discovery_service(myself->group, &(myself->discovery));
+
     myself->state = PV_PASSIVE;
     myself->running = TRUE;
 
@@ -801,7 +805,6 @@ static Jxta_status create_self_pve(Jxta_peerview * myself, BIGNUM * address)
 
 Jxta_status peerview_stop(Jxta_peerview * pv)
 {
-    apr_status_t res;
     Jxta_peerview *myself = PTValid(pv, Jxta_peerview);
 
     apr_thread_mutex_lock(myself->mutex);
@@ -973,6 +976,13 @@ JXTA_DECLARE(unsigned int) jxta_peerview_get_localview_size(Jxta_peerview * me)
     return result;
 }
 
+JXTA_DECLARE(unsigned int) jxta_peerview_get_cluster_number(Jxta_peerview * me)
+{
+    Jxta_peerview *myself = PTValid(me, Jxta_peerview);
+
+    return myself->my_cluster;
+}
+
 JXTA_DECLARE(Jxta_status) jxta_peerview_gen_hash(Jxta_peerview * me, unsigned char const *value, size_t length, BIGNUM ** hash)
 {
     Jxta_status res = JXTA_SUCCESS;
@@ -1009,6 +1019,7 @@ static unsigned int cluster_for_hash(Jxta_peerview * myself, BIGNUM * target_has
     target_cluster = (unsigned int) BN_get_word(bn_target_cluster);
     BN_free(bn_target_cluster);
     BN_CTX_free(ctx);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "target_cluster : %d\n", target_cluster);
 
     return target_cluster;
 }
@@ -1364,7 +1375,6 @@ static Jxta_status peerview_send_ping(Jxta_peerview * myself, Jxta_peer * dest, 
     Jxta_message_element *el = NULL;
     Jxta_peerview_ping_msg *ping;
     JString *ping_xml = NULL;
-    char *temp;
 
     ping = jxta_peerview_ping_msg_new();
 
@@ -1411,6 +1421,8 @@ static Jxta_status peerview_send_pong(Jxta_peerview * myself, Jxta_peer * dest)
     Jxta_message *msg;
     Jxta_message_element *el = NULL;
     char *tmp;
+    unsigned int i;
+    Jxta_vector *peers;
     apr_uuid_t adv_gen;
 
     apr_thread_mutex_lock(myself->mutex);
@@ -1446,6 +1458,63 @@ static Jxta_status peerview_send_pong(Jxta_peerview * myself, Jxta_peer * dest)
     jxta_peerview_pong_msg_set_peer_adv_gen(pong, &adv_gen);
 
     jxta_peerview_pong_msg_set_peer_adv_exp(pong, JXTA_PEERVIEW_PVE_EXPIRATION);
+    res = jxta_peerview_get_localview(myself, &peers);
+
+    if (JXTA_SUCCESS == res) {
+
+        for (i = 0; i < jxta_vector_size(peers); ++i) {
+            Jxta_id * peerId=NULL;
+            Jxta_peer * peer=NULL;
+            res = jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer), i);
+            if (JXTA_SUCCESS != res) continue;
+
+            jxta_peer_get_peerid(peer, &peerId);
+            if (!jxta_id_equals(peerId, myself->pid)) {
+                Peerview_entry *pve = NULL;
+                pve = peerview_get_pve(myself, peerId);
+                if (NULL != pve) {
+                    char *target_hash = NULL;
+                    char *target_hash_radius = NULL;
+                    target_hash = BN_bn2hex(pve->target_hash);
+                    target_hash_radius = BN_bn2hex(pve->target_hash_radius);
+                    jxta_pong_msg_add_partner_info(pong, peerId, jxta_peer_adv((Jxta_peer *) pve), target_hash, target_hash_radius );
+                    free(target_hash);
+                    free(target_hash_radius);
+                }
+            }
+            JXTA_OBJECT_RELEASE(peer);
+            JXTA_OBJECT_RELEASE(peerId);
+        }
+        JXTA_OBJECT_RELEASE(peers);
+    }
+    res = jxta_peerview_get_globalview(myself, &peers);
+
+    if (JXTA_SUCCESS == res) {
+
+        for (i = 0; i < jxta_vector_size(peers); ++i) {
+            Jxta_id * peerId=NULL;
+            Jxta_peer * peer=NULL;
+            res = jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer), i);
+            if (JXTA_SUCCESS != res) continue;
+            jxta_peer_get_peerid(peer, &peerId);
+            if (!jxta_id_equals(peerId, myself->pid)) {
+                Peerview_entry *pve = NULL;
+                pve = peerview_get_pve(myself, peerId);
+                if (NULL != pve) {
+                    char *target_hash = NULL;
+                    char *target_hash_radius = NULL;
+                    target_hash = BN_bn2hex(pve->target_hash);
+                    target_hash_radius = BN_bn2hex(pve->target_hash_radius);
+                    jxta_pong_msg_add_associate_info(pong, peerId, jxta_peer_adv((Jxta_peer *) pve), target_hash, target_hash_radius );
+                    free(target_hash);
+                    free(target_hash_radius);
+                }
+            }
+            JXTA_OBJECT_RELEASE(peer);
+            JXTA_OBJECT_RELEASE(peerId);
+        }
+        JXTA_OBJECT_RELEASE(peers);
+    }
 
     apr_thread_mutex_unlock(myself->mutex);
 
@@ -1526,18 +1595,26 @@ static Jxta_status peerview_send_address_assign(Jxta_peerview * myself, Jxta_pee
 
 static Jxta_status peerview_send_pvm(Jxta_peerview * me, Jxta_peer * dest, Jxta_message * msg)
 {
-    Jxta_status res;
+    Jxta_status res=JXTA_SUCCESS;
     Jxta_id *peerid;
     Jxta_endpoint_address *dest_addr;
     Jxta_endpoint_address *peer_addr;
     char *addr_str;
     JString *pid_jstr;
+    Jxta_PA *peer_adv=NULL;
+    jxta_peer_get_adv(dest, &peer_adv);
 
     /* XXX 20060925 bondolo Publish the peer advertisement? */
+    if (NULL != peer_adv) {
+        res = discovery_service_publish(me->discovery, (Jxta_advertisement *) peer_adv , DISC_PEER, 5L * 60L * 1000L, LOCAL_ONLY_EXPIRATION);
+    }
+    if (JXTA_SUCCESS != res) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed to publish peer advertisement\n");
+    }
     peerid = jxta_peer_peerid(dest);
     if (peerid) {
         jxta_id_to_jstring(peerid, &pid_jstr);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Sending peerview message [%pp] to : %s\n", msg,
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Sending peerview message with peerid [%pp] to : %s\n", msg,
                         jstring_get_string(pid_jstr));
         JXTA_OBJECT_RELEASE(pid_jstr);
         res = jxta_PG_async_send(me->group, msg, peerid, RDV_V3_MSID, JXTA_PEERVIEW_NAME);
@@ -1857,7 +1934,7 @@ static Jxta_status peerview_handle_address_assign(Jxta_peerview * myself, Jxta_p
     BIGNUM *target_hash = NULL;
     Jxta_boolean same;
     Jxta_id *assigner_id = NULL;
-    Peerview_entry *assigner;
+    Peerview_entry *assigner = NULL;
 
     apr_thread_mutex_lock(myself->mutex);
 
@@ -1893,6 +1970,7 @@ static Jxta_status peerview_handle_address_assign(Jxta_peerview * myself, Jxta_p
     assigner = peerview_get_pve(myself, assigner_id);
 
     if (NULL == assigner) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Address assignement from peer not in the peerview.\n");
         /* Our assigner is unknown to us, we won't accept it's assignement. */
         res = JXTA_FAILED;
         goto FINAL_EXIT;
@@ -1937,7 +2015,6 @@ static Jxta_status peerview_handle_address_assign(Jxta_peerview * myself, Jxta_p
 static Jxta_status peerview_handle_ping(Jxta_peerview * myself, Jxta_peerview_ping_msg * ping)
 {
     Jxta_status res = JXTA_SUCCESS;
-    volatile Jxta_boolean locked = FALSE;
     Jxta_id *pid;
     Jxta_peer *dest;
     Jxta_endpoint_address *dst_ea;
@@ -2001,7 +2078,7 @@ static Jxta_status joining_peerview(Jxta_peerview * me, const char *pv_mask)
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not initiate addressing activity. [%pp]\n", me);
     }
 
-    return JXTA_SUCCESS;
+    return res;
 }
 
 /* XXX: Switch to new peerview only depends on whether we have assigned address to other RDV seems to be weak. Would it cause 
@@ -2011,13 +2088,14 @@ static Jxta_boolean is_for_alternative(Jxta_peerview * me, const char *pv_mask)
 {
     Jxta_boolean rv = FALSE;
     BIGNUM *instance_mask;
-    
+    int same;
     instance_mask = BN_new();
     BN_hex2bn(&instance_mask, pv_mask);
 
-    if (BN_cmp(me->instance_mask, instance_mask)) {
-        /* Instance masks are not the same. This response is from a different peerview instance. */
-        if (!me->assigned_address) {
+    same = BN_cmp(me->instance_mask, instance_mask);
+    /* Instance masks are not the same. This response is from a different peerview instance. */
+    if (same != 0) {
+        if (!me->assigned_address || same < 0) {
             /* Signify that we are giving up on this peerview instance in favour of the new one. */
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "PV[%pp] Found peerview alternate instance : %s\n", me, pv_mask);
 
@@ -2026,12 +2104,10 @@ static Jxta_boolean is_for_alternative(Jxta_peerview * me, const char *pv_mask)
             jxta_peer_set_expires((Jxta_peer *) me->self_pve, 0L);
             me->state = PV_ADDRESSING;
         } else {
-            /* FIXME bondolo Decide whether we are going to remain with the current instance or join the other instance. */
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "PV[%pp] Nonmatching instance mask found : %s\n", me, pv_mask);
             rv = TRUE;
         }
     }
-
     BN_free(instance_mask);
     return rv;
 }
@@ -2128,17 +2204,24 @@ static Jxta_status process_referrals(Jxta_peerview * me, Jxta_peerview_pong_msg 
         }
 
         referral_pid = jxta_peerview_peer_info_get_peer_id(peer);
+
         if (!peerview_check_pve(me, referral_pid)) {
             /* Not in pve, see if we have a referral already. */
             Jxta_peer *ping_target = jxta_peer_new();
-
+            Jxta_PA *peer_adv = jxta_peerview_peer_info_get_peer_adv(peer);
             jxta_peer_set_peerid(ping_target, referral_pid);
+            jxta_peer_set_adv(ping_target, peer_adv);
             if (!jxta_vector_contains (me->activity_maintain_referral_peers, (Jxta_object *) ping_target,
-                                       (Jxta_object_equals_func *) jxta_peer_equals)) {
+                                       (Jxta_object_equals_func) jxta_peer_equals)) {
+                JString *jPeerid;
+                jxta_id_to_jstring(referral_pid, &jPeerid); 
                 jxta_vector_add_object_last(me->activity_maintain_referral_peers, (Jxta_object *) ping_target);
-            }
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,"Added referral: %s\n", jstring_get_string(jPeerid));
+                JXTA_OBJECT_RELEASE(jPeerid);
 
+            }
             JXTA_OBJECT_RELEASE(ping_target);
+            JXTA_OBJECT_RELEASE(peer_adv);
         }
 
         JXTA_OBJECT_RELEASE(referral_pid);
@@ -2215,7 +2298,7 @@ static Jxta_status handle_existing_pve_pong(Jxta_peerview * me, Peerview_entry *
     /* If a PA is included, update the PA */
     adv_gen = jxta_peerview_pong_msg_get_peer_adv_gen(pong);
     if (!adv_gen) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "PV[%pp] Invalid PONG message, adv_gen requiredi for adv.\n", me);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "PV[%pp] Invalid PONG message, adv_gen required for adv.\n", me);
         JXTA_OBJECT_RELEASE(pa);
         return JXTA_SUCCESS;
     }
@@ -2230,10 +2313,12 @@ static Jxta_status handle_existing_pve_pong(Jxta_peerview * me, Peerview_entry *
 
         if ((NULL != me->self_pve) && (0 != jxta_peer_get_expires((Jxta_peer *) me->self_pve))) {
             /*FIXME: sould not do so if pve is new, not yet in our pve */
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "sould not do so if pve is new, not yet in our pve\n");
             jxta_peer_set_expires((Jxta_peer *) pve, jpr_time_now() + pve->adv_exp);
         } else {
             /* We aren't in the peerview. Greatly foreshorten the expiration so that a pong msg will be sent by
                maintenance task. */
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "We aren't in the peerview. Greatly foreshorten the expiration\n");
             jxta_peer_set_expires((Jxta_peer *) pve, jpr_time_now() + JXTA_PEERVIEW_PVE_PONG_DUE);
         }
 
@@ -2243,7 +2328,7 @@ static Jxta_status handle_existing_pve_pong(Jxta_peerview * me, Peerview_entry *
     }
     free(adv_gen);
 
-    return JXTA_SUCCESS;
+    return res;
 }
 
 static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_msg * pong)
@@ -2267,12 +2352,14 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
     if (me->instance_mask) {
         assert(PV_MAINTENANCE == me->state || PV_ADDRESSING == me->state || PV_ANNOUNCING == me->state);
         if (is_for_alternative(me, jxta_peerview_pong_msg_get_instance_mask(pong))) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "PONG [%pp] is for alternative\n", pong);
             apr_thread_mutex_unlock(me->mutex);
             return JXTA_SUCCESS;
         }
     } else {
         assert(PV_LOCATING == me->state || PV_PASSIVE == me->state);
         res = joining_peerview(me, jxta_peerview_pong_msg_get_instance_mask(pong));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "PONG [%pp] is joining peerview\n");
         assert(PV_ADDRESSING == me->state);
     }
 
@@ -2280,8 +2367,17 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
     JXTA_OBJECT_RELEASE(pid);
 
     if (NULL == pve) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "PONG [%pp] is being handled as new\n", pong);
         res = handle_new_pve_pong(me, pong);
+        if (JXTA_SUCCESS == res && me->state == PV_MAINTENANCE) {
+            Jxta_peer * newPeer = jxta_peer_new();
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "PONG announcement\n");
+            jxta_peer_set_peerid(newPeer, pid);
+            peerview_send_pong(me, newPeer);
+            JXTA_OBJECT_RELEASE(newPeer);
+        }
     } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "PONG [%pp] is being handled as existing pong\n", pong);
         res = handle_existing_pve_pong(me, pve, pong);
         JXTA_OBJECT_RELEASE(pve);
     }
@@ -2353,7 +2449,7 @@ static Jxta_boolean peerview_check_pve(Jxta_peerview * myself, Jxta_PID * pid)
 
     apr_thread_mutex_lock(myself->mutex);
 
-    res = jxta_hashtable_contains(myself->pves, jstring_get_string(pid_str), jstring_length(pid_str) + 1);
+    res = (jxta_hashtable_contains(myself->pves, jstring_get_string(pid_str), jstring_length(pid_str) + 1) == JXTA_SUCCESS) ? TRUE:FALSE;
 
     apr_thread_mutex_unlock(myself->mutex);
 
@@ -2920,7 +3016,7 @@ static Jxta_status create_new_peerview(Jxta_peerview * me)
 
     /* We have probed a number of times and not found a peerview. Let's make our own. */
     BIGNUM *address = BN_new();
-    apr_status_t apr_res;
+
 
     me->instance_mask = BN_new();
     BN_rand(me->instance_mask, (SHA_DIGEST_LENGTH * CHAR_BIT), -1, 0);
@@ -3004,7 +3100,6 @@ static void *APR_THREAD_FUNC activity_peerview_locate(apr_thread_t * thread, voi
 {
     Jxta_status res;
     Jxta_peerview *myself = PTValid(cookie, Jxta_peerview);
-    Jxta_boolean sent_seed = FALSE;
     apr_status_t apr_res;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "ACT[locate] [%pp]: Running. \n", myself);
@@ -3183,7 +3278,6 @@ static Jxta_status probe_referrals(Jxta_peerview * me)
         jxta_vector_remove_object_at(me->activity_maintain_referral_peers, NULL, 0);
     }
     me->activity_maintain_referral_pings_sent = 0;
-
     /* Send ping messages to any referrals from pong responses. */
 
     jxta_vector_shuffle(me->activity_maintain_referral_peers);  /* We use this for probes so shuffle it. */
@@ -3191,7 +3285,7 @@ static Jxta_status probe_referrals(Jxta_peerview * me)
     while ((me->activity_maintain_referral_pings_sent < DEFAULT_MAX_PING_PROBES)
            && (me->activity_maintain_referral_pings_sent < jxta_vector_size(me->activity_maintain_referral_peers))) {
 
-        res = jxta_vector_get_object_at(me->activity_maintain_referral_peers, JXTA_OBJECT_PPTR(ping_peer),
+        res = jxta_vector_get_object_at(me->activity_maintain_referral_peers, JXTA_OBJECT_PPTR(&ping_peer),
                                       me->activity_maintain_referral_pings_sent);
 
         if (JXTA_SUCCESS == res) {
@@ -3214,7 +3308,6 @@ static Jxta_status check_pves(Jxta_peerview * me, Jxta_vector *pves)
     Peerview_entry * a_pve;
     Jxta_time now;
     Jxta_time expires;
-    unsigned int address_requests_sent = 0;
 
     /* Kill, ping or request address from current pves */
     all_pves = jxta_vector_size(pves);
@@ -3244,7 +3337,6 @@ static Jxta_status check_pves(Jxta_peerview * me, Jxta_vector *pves)
             JXTA_OBJECT_RELEASE(a_pve);
             continue;
         }
-
         if ((expires - now) <= JXTA_PEERVIEW_PVE_PING_DUE) {
             /* Ping for refresh */
             res = peerview_send_ping(me, (Jxta_peer *) a_pve, &a_pve->adv_gen);
@@ -3265,12 +3357,11 @@ static Jxta_status check_pves(Jxta_peerview * me, Jxta_vector *pves)
 **/
 static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, void *cookie)
 {
-    Jxta_status res;
+
     Jxta_peerview *myself = PTValid(cookie, Jxta_peerview);
     Jxta_vector * current_pves;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "ACT[maintain] [%pp]: Running. \n", myself);
-
     apr_thread_mutex_lock(myself->mutex);
 
     if (PV_ADDRESSING != myself->state && PV_MAINTENANCE != myself->state) {
@@ -3391,6 +3482,7 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
 
     all_clients = jxta_vector_size(rdv_clients);
 
+
     for (each_client = 0; each_client < all_clients; each_client++) {
         Jxta_peer *client;
         Jxta_vector *options;
@@ -3404,9 +3496,9 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
         options = client_entry_get_options(client);
 
         /* XXX 20061023 bondolo Use options as part of ranking. */
-        if (NULL != options) {
+        /* if (NULL != options) { */
             jxta_vector_add_object_last(myself->activity_add_candidate_peers, (Jxta_object *) client);
-        }
+        /* } */
 
         if (NULL != options) {
             JXTA_OBJECT_RELEASE(options);
@@ -3417,14 +3509,14 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
 
     /* Sort by age. Use oldest client peers as candidates. */
     res =
-        jxta_vector_qsort(myself->activity_add_candidate_peers, (Jxta_object_compare_func *) client_entry_creation_time_compare);
+        jxta_vector_qsort(myself->activity_add_candidate_peers, (Jxta_object_compare_func) client_entry_creation_time_compare);
 
     /* Now process the candidates */
-    all_clients = jxta_vector_size(rdv_clients);
+    all_clients = jxta_vector_size(myself->activity_add_candidate_peers);
     for (each_client = 0; (each_client < all_clients) && (each_client < MAXIMUM_CLIENT_INVITATIONS); each_client++) {
         Jxta_peer *invitee;
 
-        res = jxta_vector_remove_object_at(rdv_clients, JXTA_OBJECT_PPTR(&invitee), 0);
+        res = jxta_vector_remove_object_at(myself->activity_add_candidate_peers, JXTA_OBJECT_PPTR(&invitee), 0);
 
         if (JXTA_SUCCESS != res) {
             continue;
