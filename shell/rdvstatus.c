@@ -155,6 +155,7 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
     Jxta_status err;
     Jxta_vector *peers = NULL;
     unsigned int i;
+    char linebuff[64];
     Jxta_peerview *pv = jxta_rdv_service_get_peerview(rdv);
     Jxta_peer *selfPVE = NULL;
 
@@ -194,7 +195,9 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
     }
 
     if( NULL != pv ) {
-    jxta_peerview_get_self_peer(pv, &selfPVE);
+        jxta_peerview_get_self_peer(pv, &selfPVE);
+        sprintf(linebuff, "Cluster number:%i\n", jxta_peerview_get_cluster_number(pv));
+        jstring_append_2(outputLine, linebuff);
 
     /* Get the list of peers */
         err = jxta_peerview_get_globalview(pv, &peers);
