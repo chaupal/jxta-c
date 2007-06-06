@@ -960,7 +960,11 @@ static JxtaEndpointMessenger *messenger_get(Jxta_transport * t, Jxta_endpoint_ad
     JXTA_OBJECT_INIT(messenger, messenger_delete, NULL);
 
     messenger->router = JXTA_OBJECT_SHARE(self);
-    messenger->generic.address = demangle_ea(self, dest);
+
+    /* disable demangle until compatibility with JSE can be resolved */
+    /* messenger->generic.address = demangle_ea(self, dest); */
+
+    messenger->generic.address = JXTA_OBJECT_SHARE(dest);
     messenger->generic.jxta_send = messenger_send;
     messenger->peerid = get_peerid_from_endpoint_address(dest);
 
