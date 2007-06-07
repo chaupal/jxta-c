@@ -1877,14 +1877,14 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
     JString *jPrimaryKey = NULL;
     unsigned int i;
     Jxta_peer *peer;
-    Jxta_boolean bReplica = FALSE;
+    Jxta_boolean bReplica = TRUE;
     Jxta_id *peerid = NULL;
-    _jxta_rdv_service *rdv;
+    Jxta_rdv_service *rdv;
     Jxta_discovery_service_ref *discovery = PTValid(arg, Jxta_discovery_service_ref);
 
     JXTA_OBJECT_CHECK_VALID(obj);
 
-    rdv = (_jxta_rdv_service *) discovery->rdv;
+    rdv = discovery->rdv;
 
     if ( config_rendezvous != jxta_rdv_service_config( rdv ) ) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Not a rendezvous, ignoring message.\n");
@@ -1915,6 +1915,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
         goto FINAL_EXIT;
     }
 
+
     /* process resend entries */
     if (NULL != entries) {
         cm_get_resend_delta_entries(discovery->cm, entries, &resendDelta);
@@ -1936,10 +1937,16 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
         goto FINAL_EXIT;
     }
 
+    /* is this from an edge ? */
+    if (JXTA_SUCCESS == jxta_rdv_service_get_peer(discovery->rdv, peerid, &peer)) {
+        bReplica = FALSE;
+        JXTA_OBJECT_RELEASE(peer);
+    }
     /* process entries */
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "got srdi with peerid -- %s and vector_size %i\n",
                     jstring_get_string(jPeerid)
                     , jxta_vector_size(entries));
+
     if (!bReplica) {
         jxta_srdi_replicateEntries(discovery->srdi, discovery->resolver, smsg, discovery->instanceName);
     }
@@ -2056,7 +2063,7 @@ static void JXTA_STDCALL discovery_service_rdv_listener(Jxta_object * obj, void 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Rendezvous became edge in Discovery %s\n", jstring_get_string(string));
         break;
     case JXTA_RDV_BECAME_RDV:
-        cm_set_delta(discovery->cm, FALSE);
+        cm_set_delta(discovery->cm, TRUE);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Became Rendezvous in Discovery %s\n", jstring_get_string(string));
         break;
     default:
@@ -2232,7 +2239,7 @@ static void *APR_THREAD_FUNC advertisement_handling_func(apr_thread_t * thread, 
         if (discovery->delta_loop >= delta_cycle) {
             res = jxta_discovery_push_srdi(discovery, TRUE, TRUE);
             if (TRUE == jxta_rdv_service_is_rendezvous((Jxta_rdv_service *) discovery->rdv)) {
-                cm_set_delta(discovery->cm, FALSE);
+                cm_set_delta(discovery->cm, TRUE);
             }
             discovery->delta_loop = 0;
         }
@@ -2311,8 +2318,11 @@ Jxta_status jxta_discovery_send_srdi(Jxta_discovery_service_ref * discovery, JSt
         return JXTA_NOMEM;
     }
     /* jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "pushing srdi %s \n", jstring_get_string(messageString)); */
-    res = jxta_srdi_pushSrdi_msg(discovery->srdi, discovery->resolver, discovery->instanceName, msg, NULL);
-
+    if ( config_rendezvous == jxta_rdv_service_config( discovery->rdv ) ) {
+        res = jxta_srdi_replicateEntries(discovery->srdi, discovery->resolver, msg, discovery->instanceName);
+    } else {
+        res = jxta_srdi_pushSrdi_msg(discovery->srdi, discovery->resolver, discovery->instanceName, msg, NULL);
+    }
     if (res != JXTA_SUCCESS) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "cannot send srdi message\n");
     }
