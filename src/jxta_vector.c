@@ -93,8 +93,8 @@ static void move_index_backward(Jxta_vector * vector, unsigned int at_index);
 static Jxta_status add_object_at(Jxta_vector * vector, Jxta_object * object, unsigned int at_index);
 static Jxta_status addall_objects_at(Jxta_vector * vector, Jxta_vector * objects, unsigned int at_index, unsigned int from_index,
                                      unsigned int count);
-static Jxta_boolean address_equator(const void *a, const void *b);
-static int address_comparator(const void *a, const void *b);
+static Jxta_boolean JXTA_STDCALL address_equator(const Jxta_object *a, const Jxta_object *b);
+static int JXTA_STDCALL address_comparator(const Jxta_object *a, const Jxta_object *b);
 
 /**
  * Free the vector
@@ -585,12 +585,12 @@ JXTA_DECLARE(Jxta_status) jxta_vector_clear(Jxta_vector * vector)
 }
 
 /* default comparator function */
-static int address_comparator(const void *a, const void *b)
+static int JXTA_STDCALL address_comparator(const Jxta_object *a, const Jxta_object *b)
 {
     return ((char *) a) - ((char *) b);
 }
 
-static Jxta_boolean address_equator(const void *a, const void *b)
+static Jxta_boolean JXTA_STDCALL address_equator(const Jxta_object *a, const Jxta_object *b)
 {
     return a == b;
 }
