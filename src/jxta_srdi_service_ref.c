@@ -226,7 +226,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
     int ttl;
     Jxta_hashtable *peersHash = NULL;
     char **replicaLocs = NULL;
-    char *replicaLocsSave = NULL;
+    char **replicaLocsSave = NULL;
     JString *jPkey = NULL;
     JString *jPeerId = NULL;
     Jxta_id *peerid = NULL;
@@ -265,7 +265,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
                 status = cm_get_srdi_with_seq_number(me->cm, jPeerId, newEntry->seqNumber, newEntry);
                 if (JXTA_ITEM_NOTFOUND == status) {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE
-                        , "Could not get the entry for seqNumber %d from peerid:%s in replicateEntries\n", newEntry->seqNumber, jstring_get_string(jPeerId));
+                        , "Could not get the entry for seqNumber " JXTA_SEQUENCE_NUMBER_FMT " from peerid:%s in replicateEntries\n", newEntry->seqNumber, jstring_get_string(jPeerId));
                     JXTA_OBJECT_RELEASE(newEntry);
                     JXTA_OBJECT_RELEASE(entry);
                     continue;
@@ -341,7 +341,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
         JXTA_OBJECT_RELEASE(newEntry);
     }
     replicaLocs = jxta_hashtable_keys_get(peersHash);
-    replicaLocsSave = (char *) replicaLocs;
+    replicaLocsSave = (char **) replicaLocs;
     while (NULL != replicaLocs && *replicaLocs) {
         Jxta_status stat;
         Jxta_peer *sendPeer;

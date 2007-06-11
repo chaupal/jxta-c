@@ -598,7 +598,7 @@ Jxta_status jxta_stdpg_init_modules(Jxta_module * self)
         Jxta_module *module = NULL;
         JString *path_jstring = NULL;
         char *path = NULL;
-        char *res, *state;
+        char *token, *state;
         char *lib_name = NULL;
         char *constructor_name = NULL;
 
@@ -613,10 +613,10 @@ Jxta_status jxta_stdpg_init_modules(Jxta_module * self)
                 path = strdup(jstring_get_string(path_jstring));
                 JXTA_OBJECT_RELEASE(path_jstring);
 
-                res = apr_strtok(path, "$", &state);
-                lib_name = strdup(res);
-                res = apr_strtok(NULL, "$", &state);
-                constructor_name = strdup(res);
+                token = apr_strtok(path, "$", &state);
+                lib_name = strdup(token);
+                token = apr_strtok(NULL, "$", &state);
+                constructor_name = strdup(token);
                 free(path);
 
 #if APR_HAS_DSO
