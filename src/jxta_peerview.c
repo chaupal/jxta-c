@@ -190,6 +190,9 @@ static Jxta_RdvAdvertisement *jxta_peerview_build_rdva(Jxta_PG * group, JString 
 
 static void jxta_peerview_call_event_listeners(Jxta_peerview * pv, Jxta_Peerview_event_type event, Jxta_id * id);
 
+static void Addjust_up_down_peers(_jxta_peerview_mutable * self);
+static void Remove_expired_PVEs(_jxta_peerview_mutable * self);
+
 static _jxta_peer_peerview_entry *peerview_entry_new(void)
 {
     _jxta_peer_peerview_entry *self;
@@ -1219,6 +1222,91 @@ static Jxta_status jxta_peerview_get_pve(_jxta_peerview_mutable * self, Jxta_PID
     return res;
 }
 
+static void Addjust_up_down_peers(_jxta_peerview_mutable * self)
+{
+    _jxta_peer_peerview_entry *comparePVE;
+    unsigned int i;
+    unsigned int MyPos = INT_MAX ;
+
+    if (NULL != self->downPVE) {
+        JXTA_OBJECT_RELEASE(self->downPVE);
+        self->downPVE = NULL;
+    }
+
+    if (NULL != self->upPVE) {
+        JXTA_OBJECT_RELEASE(self->upPVE);
+        self->upPVE = NULL;
+    }
+
+    for (i = 0; i < jxta_vector_size(self->localViewOrder); i++) {         
+        jxta_vector_get_object_at(self->localViewOrder, JXTA_OBJECT_PPTR(&comparePVE), i);        
+        if (self->selfPVE == comparePVE) {
+            MyPos = i ;
+        }
+        JXTA_OBJECT_RELEASE(comparePVE);
+
+        if(MyPos != INT_MAX)
+            break;
+    }
+
+    if( MyPos == INT_MAX){
+        return;
+    }
+
+    // downPVE
+    if( MyPos == 0)
+        i =  jxta_vector_size(self->localViewOrder) - 1 ;
+    else
+        i= MyPos -1 ;
+
+    if( i != MyPos)
+        jxta_vector_get_object_at(self->localViewOrder, JXTA_OBJECT_PPTR(&self->downPVE), i);
+
+    // upPVE
+    if( MyPos < (jxta_vector_size(self->localViewOrder) - 1 )  )
+        i= MyPos + 1 ;        
+    else
+        i =  0 ;
+
+    if( i != MyPos)
+        jxta_vector_get_object_at(self->localViewOrder, JXTA_OBJECT_PPTR(&self->upPVE), i);
+}
+
+static void Remove_expired_PVEs(_jxta_peerview_mutable * self)
+{
+    unsigned int i=0;
+    _jxta_peer_peerview_entry *checkPVE;
+    Jxta_time expiresAt;
+    Jxta_time currentTime;
+    Jxta_status res;
+    Jxta_boolean removed = JXTA_FALSE;
+
+    currentTime = (Jxta_time) jpr_time_now();
+
+    while(i < jxta_vector_size(self->localViewOrder) ){
+        res = jxta_vector_get_object_at(self->localViewOrder, JXTA_OBJECT_PPTR(&checkPVE), i);
+
+        if ((JXTA_SUCCESS != res) || (NULL == checkPVE)) {
+            i++;
+            continue;
+        }
+
+        expiresAt = jxta_peer_get_expires((Jxta_peer *) checkPVE);
+        if (expiresAt < currentTime) {
+            res = jxta_vector_remove_object_at(self->localViewOrder, NULL, i);
+            removed = JXTA_TRUE;
+        }else{
+            i++;
+        }
+
+        JXTA_OBJECT_RELEASE(checkPVE);
+    }
+
+    if(removed){
+        Addjust_up_down_peers(self);
+    }
+
+}
 static Jxta_status jxta_peerview_add_pve(_jxta_peerview_mutable * self, _jxta_peer_peerview_entry * pve)
 {
     Jxta_status res = JXTA_SUCCESS;
@@ -1237,7 +1325,6 @@ static Jxta_status jxta_peerview_add_pve(_jxta_peerview_mutable * self, _jxta_pe
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Adding new PVE [%pp] for %s\n", pve, jstring_get_string(pidString));
 
-        eachPVE = jxta_vector_size(self->localViewOrder) - 1;
         for (eachPVE = jxta_vector_size(self->localViewOrder); !added && eachPVE > 0; eachPVE--) {
             _jxta_peer_peerview_entry *comparePVE;
             JString *comparePVEpidString = NULL;
@@ -1260,38 +1347,7 @@ static Jxta_status jxta_peerview_add_pve(_jxta_peerview_mutable * self, _jxta_pe
 
         jxta_hashtable_put(self->localView, jstring_get_string(pidString), jstring_length(pidString) + 1, (Jxta_object *) pve);
 
-        /* adjust up/down peers */
-        if (NULL != self->downPVE) {
-            JXTA_OBJECT_RELEASE(self->downPVE);
-            self->downPVE = NULL;
-        }
-
-        if (NULL != self->upPVE) {
-            JXTA_OBJECT_RELEASE(self->upPVE);
-            self->upPVE = NULL;
-        }
-
-        for (eachPVE = 0; eachPVE < jxta_vector_size(self->localViewOrder); eachPVE++) {
-            _jxta_peer_peerview_entry *comparePVE;
-
-            jxta_vector_get_object_at(self->localViewOrder, JXTA_OBJECT_PPTR(&comparePVE), eachPVE);
-
-            if (self->selfPVE == comparePVE) {
-                if (eachPVE > 0) {
-                    jxta_vector_get_object_at(self->localViewOrder, JXTA_OBJECT_PPTR(&self->downPVE), eachPVE - 1);
-                }
-
-                if ((eachPVE < (jxta_vector_size(self->localViewOrder) - 1))) {
-                    jxta_vector_get_object_at(self->localViewOrder, JXTA_OBJECT_PPTR(&self->upPVE), eachPVE + 1);
-                }
-
-                JXTA_OBJECT_RELEASE(comparePVE);
-
-                break;
-            }
-
-            JXTA_OBJECT_RELEASE(comparePVE);
-        }
+        Addjust_up_down_peers(self);
 
         /*
          * Notify the peerview listeners that we added a rdv peer from our local rpv 
@@ -1343,37 +1399,7 @@ static Jxta_status jxta_peerview_remove_pve(_jxta_peerview_mutable * self, Jxta_
 
         JXTA_OBJECT_RELEASE(pidString);
 
-        /* adjust up/down peers */
-        if (NULL != self->downPVE) {
-            JXTA_OBJECT_RELEASE(self->downPVE);
-            self->downPVE = NULL;
-        }
-        if (NULL != self->upPVE) {
-            JXTA_OBJECT_RELEASE(self->upPVE);
-            self->upPVE = NULL;
-        }
-
-        for (eachPVE = 0; eachPVE < jxta_vector_size(self->localViewOrder); eachPVE++) {
-            _jxta_peer_peerview_entry *comparePVE;
-
-            res = jxta_vector_get_object_at(self->localViewOrder, JXTA_OBJECT_PPTR(&comparePVE), eachPVE);
-
-            if (self->selfPVE == comparePVE) {
-                if (eachPVE > 0) {
-                    res = jxta_vector_get_object_at(self->localViewOrder, JXTA_OBJECT_PPTR(&self->downPVE), eachPVE - 1);
-                }
-
-                if ((eachPVE < (jxta_vector_size(self->localViewOrder) - 1))) {
-                    res = jxta_vector_get_object_at(self->localViewOrder, JXTA_OBJECT_PPTR(&self->upPVE), eachPVE + 1);
-                }
-
-                JXTA_OBJECT_RELEASE(comparePVE);
-
-                break;
-            }
-
-            JXTA_OBJECT_RELEASE(comparePVE);
-        }
+        Addjust_up_down_peers(self);
 
         /*
          * Notify the RDV listeners about the new RDV peer added in the local rpv
@@ -1389,31 +1415,13 @@ static Jxta_status jxta_peerview_remove_pve(_jxta_peerview_mutable * self, Jxta_
 JXTA_DECLARE(Jxta_status) jxta_peerview_get_localview(Jxta_peerview * pv, Jxta_vector ** view)
 {
     _jxta_peerview_mutable *self = PTValid(pv, _jxta_peerview_mutable);
-    unsigned int eachPVE;
-    Jxta_time currentTime = (Jxta_time) jpr_time_now();
 
     apr_thread_mutex_lock(self->mutex);
 
+    Remove_expired_PVEs(self);
     jxta_vector_clone(self->localViewOrder, view, 0, INT_MAX);
 
     apr_thread_mutex_unlock(self->mutex);
-
-    /* clean up expired PVEs */
-    for (eachPVE = 0; eachPVE < jxta_vector_size(*view); eachPVE++) {
-        _jxta_peer_peerview_entry *checkPVE;
-        Jxta_time expiresAt;
-
-        jxta_vector_get_object_at(*view, JXTA_OBJECT_PPTR(&checkPVE), eachPVE);
-
-        expiresAt = jxta_peer_get_expires((Jxta_peer *) checkPVE);
-
-        if (expiresAt < currentTime) {
-            jxta_vector_remove_object_at(*view, NULL, eachPVE);
-            jxta_peerview_remove_pve(self, jxta_peer_get_peerid_priv((Jxta_peer *) checkPVE));
-        }
-
-        JXTA_OBJECT_RELEASE(checkPVE);
-    }
 
     return JXTA_SUCCESS;
 }
@@ -1586,7 +1594,6 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Peerview worker thread started.\n");
 
     while (self->running) {
-        unsigned int eachPVE;
         _jxta_peer_peerview_entry *current_up;
         _jxta_peer_peerview_entry *current_down;
 
@@ -1600,26 +1607,7 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
 
         apr_thread_mutex_lock(self->mutex);
 
-        /* Remove Expired PVEs */
-        for (eachPVE = 0; eachPVE < jxta_vector_size(self->localViewOrder); eachPVE++) {
-            _jxta_peer_peerview_entry *checkPVE;
-            Jxta_time expiresAt;
-            Jxta_time currentTime = (Jxta_time) jpr_time_now();
-
-            res = jxta_vector_get_object_at(self->localViewOrder, JXTA_OBJECT_PPTR(&checkPVE), eachPVE);
-
-            if ((JXTA_SUCCESS != res) || (NULL == checkPVE)) {
-                continue;
-            }
-
-            expiresAt = jxta_peer_get_expires((Jxta_peer *) checkPVE);
-
-            if (expiresAt < currentTime) {
-                jxta_peerview_remove_pve(self, jxta_peer_get_peerid_priv((Jxta_peer *) checkPVE));
-            }
-
-            JXTA_OBJECT_RELEASE(checkPVE);
-        }
+        Remove_expired_PVEs(self);
 
         /* Update the up/down peers */
         current_down = self->downPVE ? JXTA_OBJECT_SHARE(self->downPVE) : NULL;
