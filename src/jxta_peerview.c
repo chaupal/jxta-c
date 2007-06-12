@@ -190,8 +190,8 @@ static Jxta_RdvAdvertisement *jxta_peerview_build_rdva(Jxta_PG * group, JString 
 
 static void jxta_peerview_call_event_listeners(Jxta_peerview * pv, Jxta_Peerview_event_type event, Jxta_id * id);
 
-static void Addjust_up_down_peers(_jxta_peerview_mutable * self);
-static void Remove_expired_PVEs(_jxta_peerview_mutable * self);
+static void addjust_up_down_peers(_jxta_peerview_mutable * self);
+static void remove_expired_PVEs(_jxta_peerview_mutable * self);
 
 static _jxta_peer_peerview_entry *peerview_entry_new(void)
 {
@@ -1222,7 +1222,7 @@ static Jxta_status jxta_peerview_get_pve(_jxta_peerview_mutable * self, Jxta_PID
     return res;
 }
 
-static void Addjust_up_down_peers(_jxta_peerview_mutable * self)
+static void addjust_up_down_peers(_jxta_peerview_mutable * self)
 {
     _jxta_peer_peerview_entry *comparePVE;
     unsigned int i;
@@ -1272,7 +1272,7 @@ static void Addjust_up_down_peers(_jxta_peerview_mutable * self)
         jxta_vector_get_object_at(self->localViewOrder, JXTA_OBJECT_PPTR(&self->upPVE), i);
 }
 
-static void Remove_expired_PVEs(_jxta_peerview_mutable * self)
+static void remove_expired_PVEs(_jxta_peerview_mutable * self)
 {
     unsigned int i=0;
     _jxta_peer_peerview_entry *checkPVE;
@@ -1303,7 +1303,7 @@ static void Remove_expired_PVEs(_jxta_peerview_mutable * self)
     }
 
     if(removed){
-        Addjust_up_down_peers(self);
+        addjust_up_down_peers(self);
     }
 
 }
@@ -1347,7 +1347,7 @@ static Jxta_status jxta_peerview_add_pve(_jxta_peerview_mutable * self, _jxta_pe
 
         jxta_hashtable_put(self->localView, jstring_get_string(pidString), jstring_length(pidString) + 1, (Jxta_object *) pve);
 
-        Addjust_up_down_peers(self);
+        addjust_up_down_peers(self);
 
         /*
          * Notify the peerview listeners that we added a rdv peer from our local rpv 
@@ -1399,7 +1399,7 @@ static Jxta_status jxta_peerview_remove_pve(_jxta_peerview_mutable * self, Jxta_
 
         JXTA_OBJECT_RELEASE(pidString);
 
-        Addjust_up_down_peers(self);
+        addjust_up_down_peers(self);
 
         /*
          * Notify the RDV listeners about the new RDV peer added in the local rpv
@@ -1418,7 +1418,7 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_get_localview(Jxta_peerview * pv, Jxta_v
 
     apr_thread_mutex_lock(self->mutex);
 
-    Remove_expired_PVEs(self);
+    remove_expired_PVEs(self);
     jxta_vector_clone(self->localViewOrder, view, 0, INT_MAX);
 
     apr_thread_mutex_unlock(self->mutex);
@@ -1607,7 +1607,7 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
 
         apr_thread_mutex_lock(self->mutex);
 
-        Remove_expired_PVEs(self);
+        remove_expired_PVEs(self);
 
         /* Update the up/down peers */
         current_down = self->downPVE ? JXTA_OBJECT_SHARE(self->downPVE) : NULL;
