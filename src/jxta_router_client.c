@@ -1582,7 +1582,8 @@ static Jxta_status JXTA_STDCALL router_client_cb(Jxta_object * obj, void *arg)
 
         if (!transport) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Relay transport does not exist, exiting\n");
-            goto ERROR_EXIT;
+            res = JXTA_SUCCESS;
+            goto FINAL_EXIT;
         }
 
         /*construct relay dest address */
