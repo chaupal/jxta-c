@@ -157,10 +157,16 @@ void jxta_peers_start(Jxta_object * appl, int argv, char **arg)
     JxtaShellGetopt_delete(opt);
     jxta_PG_get_discovery_service(group, &discovery);
     if (ff) {
+        Jxta_PA * pa = NULL;
 		JString *tmp_str = NULL;
         discovery_service_flush_advertisements(discovery, NULL, DISC_PEER);
         tmp_str = jstring_new_2("PeerAdvertisement");
         JxtaShellEnvironment_delete_type(environment, tmp_str);
+
+        /* publish local peer advertisement */
+        jxta_PG_get_PA(group, &pa);
+        discovery_service_publish(discovery, pa, DISC_PEER, DEFAULT_LIFETIME, DEFAULT_EXPIRATION);
+
         JxtaShellApplication_terminate(app);
         JXTA_OBJECT_RELEASE(tmp_str);
         JXTA_OBJECT_RELEASE(pid);
