@@ -1619,8 +1619,9 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
         if (current_down) {
             res =
                 jxta_peerview_send_pvm(self, self->selfPVE, jxta_peer_get_address_priv((Jxta_peer *) current_down),
-                                       (0 == (rand() % 3))
-                                       && (jxta_vector_size(self->localViewOrder) >= self->happy_size), FALSE);
+                                       /* FALSE to ask for referral */
+                                       (jxta_vector_size(self->localViewOrder) >= self->happy_size) || (0 != (rand() %3)), 
+                                       FALSE);
 
             if (JXTA_SUCCESS != res) {
                 jxta_peerview_remove_pve(self, jxta_peer_get_peerid_priv((Jxta_peer *) current_down));
@@ -1632,8 +1633,9 @@ static void *APR_THREAD_FUNC periodic_thread_main(apr_thread_t * thread, void *a
         if (current_up) {
             res =
                 jxta_peerview_send_pvm(self, self->selfPVE, jxta_peer_get_address_priv((Jxta_peer *) current_up),
-                                       (0 == (rand() % 3))
-                                       && (jxta_vector_size(self->localViewOrder) >= self->happy_size), FALSE);
+                                       /* FALSE to ask for referral */
+                                       (jxta_vector_size(self->localViewOrder) >= self->happy_size) || (0 != (rand() %3)), 
+                                       FALSE);
 
             if (JXTA_SUCCESS != res) {
                 jxta_peerview_remove_pve(self, jxta_peer_get_peerid_priv((Jxta_peer *) current_up));
