@@ -489,15 +489,15 @@ JXTA_DECLARE(HttpResponse *) http_request_done(HttpRequest * req)
             }
         }
 
-        if (res->content_length > 0) {
-            ++pos;
+        if (total_read > ++pos) {
             /* Just in case. Strip off extra <crlf> */
-            while ((header_buf[pos] == '\n') || (header_buf[pos] == '\r'))
+            while ((total_read > pos) && ((header_buf[pos] == '\n') || (header_buf[pos] == '\r')))
                 ++pos;
 
             res->data_buf = &header_buf[pos];
             res->data_buf_size = total_read - pos;
-            res->content_length -= res->data_buf_size;
+            if (res->content_length > 0)
+                res->content_length -= res->data_buf_size;
         } else {
             res->data_buf = NULL;
             res->data_buf_size = 0;
