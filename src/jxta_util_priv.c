@@ -113,7 +113,7 @@ Jxta_vector *getPeerids(Jxta_vector * peers)
     return peerIds;
 }
 
-char* get_service_key(const char * svc_name, const char * svc_param)
+char *get_service_key(const char *svc_name, const char *svc_param)
 {
     char *key = NULL;
     size_t len;
@@ -136,12 +136,12 @@ char* get_service_key(const char * svc_name, const char * svc_param)
     return key;
 }
 
-Jxta_status qos_setting_to_xml(apr_hash_t * setting, char ** result, apr_pool_t * p)
+Jxta_status qos_setting_to_xml(apr_hash_t * setting, char **result, apr_pool_t * p)
 {
     apr_hash_index_t *hi = NULL;
-    const void * key;
+    const void *key;
     apr_ssize_t len;
-    void * val;
+    void *val;
     int cnt;
     JString *buf = NULL;
 
@@ -168,21 +168,21 @@ Jxta_status qos_setting_to_xml(apr_hash_t * setting, char ** result, apr_pool_t 
         *result = "";
     }
 
-	JXTA_OBJECT_RELEASE(buf);
+    JXTA_OBJECT_RELEASE(buf);
 
     return JXTA_SUCCESS;
 }
 
-Jxta_status xml_to_qos_setting(const char * xml, apr_hash_t ** result, apr_pool_t * p)
+Jxta_status xml_to_qos_setting(const char *xml, apr_hash_t ** result, apr_pool_t * p)
 {
     apr_status_t rv;
-    apr_xml_parser * psr;
-    apr_xml_doc * doc;
-    apr_xml_elem * elt;
-    apr_xml_elem * ve;
-    apr_hash_t * ht = NULL;
-   
-    psr  = apr_xml_parser_create(p);
+    apr_xml_parser *psr;
+    apr_xml_doc *doc;
+    apr_xml_elem *elt;
+    apr_xml_elem *ve;
+    apr_hash_t *ht = NULL;
+
+    psr = apr_xml_parser_create(p);
     if (!psr) {
         *result = NULL;
         return JXTA_FAILED;
@@ -211,12 +211,12 @@ Jxta_status xml_to_qos_setting(const char * xml, apr_hash_t ** result, apr_pool_
         }
         apr_hash_set(ht, elt->first_cdata.first->text, APR_HASH_KEY_STRING, ve->first_cdata.first->text);
     }
-    
+
     *result = ht;
     return JXTA_SUCCESS;
 }
 
-Jxta_status qos_support_to_xml(const char ** capability_list, char ** result, apr_pool_t * p)
+Jxta_status qos_support_to_xml(const char **capability_list, char **result, apr_pool_t * p)
 {
     int cnt;
     JString *buf = NULL;
@@ -240,21 +240,21 @@ Jxta_status qos_support_to_xml(const char ** capability_list, char ** result, ap
         *result = "";
     }
 
-	JXTA_OBJECT_RELEASE(buf);
+    JXTA_OBJECT_RELEASE(buf);
 
     return JXTA_SUCCESS;
 }
 
-Jxta_status xml_to_qos_support(const char * xml, char *** result, apr_pool_t * p)
+Jxta_status xml_to_qos_support(const char *xml, char ***result, apr_pool_t * p)
 {
     /* FIXME: implement it */
     return JXTA_NOTIMP;
 }
 
-Jxta_status ep_tcp_socket_listen(apr_socket_t ** me, const char * addr, apr_port_t port, apr_int32_t backlog, apr_pool_t * p)
+Jxta_status ep_tcp_socket_listen(apr_socket_t ** me, const char *addr, apr_port_t port, apr_int32_t backlog, apr_pool_t * p)
 {
     apr_status_t rv;
-    apr_sockaddr_t * sa;
+    apr_sockaddr_t *sa;
     char msg[256];
 
     rv = apr_sockaddr_info_get(&sa, addr, APR_UNSPEC, port, 0, p);
@@ -305,11 +305,11 @@ Jxta_status ep_tcp_socket_listen(apr_socket_t ** me, const char * addr, apr_port
 
 Jxta_status JXTA_STDCALL brigade_read(void *stream, char *buf, apr_size_t len)
 {
-    apr_bucket_brigade * b = stream;
-    apr_bucket * e;
-    apr_bucket * trash;
+    apr_bucket_brigade *b = stream;
+    apr_bucket *e;
+    apr_bucket *trash;
     apr_status_t rv;
-    const char * data;
+    const char *data;
     apr_size_t sz;
     int done = 0;
 
@@ -321,7 +321,7 @@ Jxta_status JXTA_STDCALL brigade_read(void *stream, char *buf, apr_size_t len)
     while (APR_BRIGADE_SENTINEL(b) != e && !done) {
         rv = apr_bucket_read(e, &data, &sz, APR_BLOCK_READ);
         if (APR_SUCCESS != rv) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Brigade[%pp] failed to read with status %d.\n", b, rv); 
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Brigade[%pp] failed to read with status %d.\n", b, rv);
             return rv;
         }
 
@@ -349,23 +349,23 @@ Jxta_status JXTA_STDCALL brigade_read(void *stream, char *buf, apr_size_t len)
     return JXTA_SUCCESS;
 }
 
-Jxta_status query_all_advs(const char *query, Jxta_credential *scope[], int threshold, Jxta_vector ** results)
+Jxta_status query_all_advs(const char *query, Jxta_credential * scope[], int threshold, Jxta_vector ** results)
 {
     Jxta_status status = JXTA_SUCCESS;
     unsigned int i;
-    Jxta_credential **passScope=NULL;
-    Jxta_vector * groups=NULL;
+    Jxta_credential **passScope = NULL;
+    Jxta_vector *groups = NULL;
     Jxta_PG *pg = NULL;
-    Jxta_PG *netPeerGroup=NULL;
-    Jxta_discovery_service * discovery=NULL;
+    Jxta_PG *netPeerGroup = NULL;
+    Jxta_discovery_service *discovery = NULL;
 
-    groups =  jxta_get_registered_groups();
-    for (i=0; (groups != NULL) && i< jxta_vector_size(groups); i++) {
+    groups = jxta_get_registered_groups();
+    for (i = 0; (groups != NULL) && i < jxta_vector_size(groups); i++) {
         status = jxta_vector_get_object_at(groups, JXTA_OBJECT_PPTR(&pg), i);
         if (NULL == jxta_PG_parent(pg)) {
             netPeerGroup = pg;
             break;
-       }
+        }
         JXTA_OBJECT_RELEASE(pg);
         pg = NULL;
     }
@@ -375,13 +375,13 @@ Jxta_status query_all_advs(const char *query, Jxta_credential *scope[], int thre
         goto FINAL_EXIT;
     }
     if (NULL == scope && jxta_vector_size(groups) > 0) {
-        int j=0;
+        int j = 0;
 
         passScope = calloc(1, sizeof(Jxta_credential *) * (jxta_vector_size(groups) + 1));
-        for (i=0; i<jxta_vector_size(groups); i++) {
-            Jxta_PG * ppg;
+        for (i = 0; i < jxta_vector_size(groups); i++) {
+            Jxta_PG *ppg;
             Jxta_vector *creds;
-            Jxta_membership_service * membership;
+            Jxta_membership_service *membership;
 
             jxta_vector_get_object_at(groups, JXTA_OBJECT_PPTR(&ppg), i);
             jxta_PG_get_membership_service(ppg, &membership);
@@ -390,7 +390,7 @@ Jxta_status query_all_advs(const char *query, Jxta_credential *scope[], int thre
                 JXTA_OBJECT_RELEASE(ppg);
                 continue;
             }
-            jxta_membership_service_get_currentcreds(membership, &creds );
+            jxta_membership_service_get_currentcreds(membership, &creds);
             if (NULL != creds) {
                 if (jxta_vector_size(creds) > 0) {
                     jxta_vector_get_object_at(creds, JXTA_OBJECT_PPTR(&passScope[j++]), 0);
@@ -400,7 +400,7 @@ Jxta_status query_all_advs(const char *query, Jxta_credential *scope[], int thre
             JXTA_OBJECT_RELEASE(membership);
             JXTA_OBJECT_RELEASE(ppg);
         }
-        passScope[j] =NULL;
+        passScope[j] = NULL;
     }
     jxta_PG_get_discovery_service(netPeerGroup, &discovery);
     if (NULL == discovery) {
@@ -410,7 +410,7 @@ Jxta_status query_all_advs(const char *query, Jxta_credential *scope[], int thre
     if (NULL == passScope || NULL == *passScope) {
         passScope = scope;
     }
-    status = getLocalGroupsQuery (discovery, query, passScope, results, threshold, FALSE);
+    status = getLocalGroupsQuery(discovery, query, passScope, results, threshold, FALSE);
 
   FINAL_EXIT:
 

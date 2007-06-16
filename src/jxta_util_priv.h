@@ -74,7 +74,7 @@ extern "C" {
  */
 Jxta_vector *getPeerids(Jxta_vector * peers);
 
-char* get_service_key(const char * svc_name, const char * svc_param);
+char *get_service_key(const char *svc_name, const char *svc_param);
 
 /**
  * Convert the current setting into a jxta:QoS_Setting XML paragraph. A sample is like:
@@ -88,12 +88,12 @@ char* get_service_key(const char * svc_name, const char * svc_param);
  *  </QoS_Setting>
  * The string will be allocated from the pool assigned when create the QoS object
  */
-Jxta_status qos_setting_to_xml(apr_hash_t * setting, char ** result, apr_pool_t * p);
+Jxta_status qos_setting_to_xml(apr_hash_t * setting, char **result, apr_pool_t * p);
 
 /**
  * Parse a jxta:QoS_Setting XML paragraph into a hash table of QoS setting
  */
-Jxta_status xml_to_qos_setting(const char * xml, apr_hash_t ** dest, apr_pool_t * p);
+Jxta_status xml_to_qos_setting(const char *xml, apr_hash_t ** dest, apr_pool_t * p);
 
 /**
  * Convert the current capability into a jxta:QoS_Support XML paragraph. A sample is like:
@@ -104,14 +104,14 @@ Jxta_status xml_to_qos_setting(const char * xml, apr_hash_t ** dest, apr_pool_t 
  *  </QoS_Support>
  * The string will be allocated from the pool assigned when create the QoS object
  */
-Jxta_status qos_support_to_xml(const char ** capability_list, char ** result, apr_pool_t * p);
+Jxta_status qos_support_to_xml(const char **capability_list, char **result, apr_pool_t * p);
 
 /**
  * Parse a jxta:QoS_Support XML paragraph into a list of QoS capabilities
  */
-Jxta_status xml_to_qos_support(const char * xml, char *** result, apr_pool_t * p);
+Jxta_status xml_to_qos_support(const char *xml, char ***result, apr_pool_t * p);
 
-Jxta_status ep_tcp_socket_listen(apr_socket_t ** me, const char * addr, apr_port_t port, apr_int32_t backlog, apr_pool_t * p);
+Jxta_status ep_tcp_socket_listen(apr_socket_t ** me, const char *addr, apr_port_t port, apr_int32_t backlog, apr_pool_t * p);
 
 /* ReadFunc with STREAM to be apr_brigade */
 Jxta_status JXTA_STDCALL brigade_read(void *b, char *buf, apr_size_t len);
@@ -127,7 +127,7 @@ Jxta_status JXTA_STDCALL brigade_read(void *b, char *buf, apr_size_t len);
  * @see Jxta_status
  *
 **/
-Jxta_status query_all_advs(const char *query,Jxta_credential *scope[], int threshold, Jxta_vector ** advertisements);
+Jxta_status query_all_advs(const char *query, Jxta_credential * scope[], int threshold, Jxta_vector ** advertisements);
 
 #ifdef __cplusplus
 #if 0
