@@ -198,7 +198,7 @@ static _jxta_peer_client_entry *get_peer_entry(_jxta_rdv_service_server * myself
 static Jxta_boolean check_peer_lease(_jxta_peer_client_entry * peer);
 
 static _jxta_peer_client_entry *client_entry_new(void);
-static _jxta_peer_client_entry *client_entry_construct(_jxta_peer_client_entry * self);
+static _jxta_peer_client_entry *client_entry_construct(_jxta_peer_client_entry * myself);
 static void client_entry_delete(Jxta_object * addr);
 static void client_entry_destruct(_jxta_peer_client_entry * myself);
 
@@ -328,7 +328,6 @@ static _jxta_rdv_service_server *jxta_rdv_service_server_construct(_jxta_rdv_ser
                                                                    const _jxta_rdv_service_provider_methods * methods,
                                                                    apr_pool_t * pool)
 {
-    apr_status_t res = APR_SUCCESS;
 
     myself =
         (_jxta_rdv_service_server *) jxta_rdv_service_provider_construct((_jxta_rdv_service_provider *) myself, methods, pool);
@@ -532,7 +531,6 @@ static Jxta_status open_adv_pipe(Jxta_rdv_service_provider * provider)
 static Jxta_status stop(Jxta_rdv_service_provider * provider)
 {
     Jxta_status res;
-    apr_status_t apr_res;
     Jxta_PG * pg;
     _jxta_rdv_service_server *myself = PTValid(provider, _jxta_rdv_service_server);
 
@@ -894,7 +892,7 @@ static Jxta_status handle_lease_request(_jxta_rdv_service_server * myself, Jxta_
     Jxta_bytevector *value = jxta_message_element_get_value(el);
     JString *string;
     Jxta_time_diff lease_requested;
-    Jxta_Rendezvous_event_type lease_event;
+    Jxta_Rendezvous_event_type lease_event = 0;
     Jxta_PA *pa = NULL;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Processing lease request message [%pp]\n", msg);
@@ -1028,6 +1026,7 @@ static Jxta_status handle_lease_request(_jxta_rdv_service_server * myself, Jxta_
         /*
          *  notify the RDV listeners about the client activity
          */
+        assert(lease_event != 0);
         rdv_service_generate_event(provider->service, lease_event, client_peerid);
     }
 
@@ -1065,7 +1064,6 @@ static Jxta_status handle_lease_response(_jxta_rdv_service_server * myself, Jxta
     Jxta_lease_response_msg *lease_response = NULL;
     Jxta_id *server_peerid = NULL;
     JString *server_peerid_str = NULL;
-    Jxta_time_diff lease = -1L;
     Jxta_lease_adv_info *server_info = NULL;
     Jxta_PA *server_adv = NULL;
     apr_uuid_t *server_adv_gen = NULL;
@@ -1222,10 +1220,8 @@ static Jxta_status send_connect_reply(_jxta_rdv_service_server * myself, Jxta_id
     Jxta_rdv_service_provider *provider = PTValid(myself, _jxta_rdv_service_provider);
     Jxta_lease_response_msg *lease_response;
     JString *lease_response_xml = NULL;
-    Jxta_message *msg;
+    Jxta_message *msg = NULL;
     Jxta_message_element *msgElem;
-    Jxta_endpoint_address *address;
-    Jxta_endpoint_address *destAddr;
     apr_uuid_t adv_gen;
 
     lease_response = jxta_lease_response_msg_new();
@@ -1487,7 +1483,6 @@ static Jxta_status JXTA_STDCALL walker_cb(Jxta_object * obj, void *me)
     /* Call handler */
     res = walk_handler(myself, msg, header);
 
-  FINAL_EXIT:
     if (NULL != header) {
         JXTA_OBJECT_RELEASE(header);
     }
