@@ -289,9 +289,9 @@ JXTA_DECLARE(HttpRequest *) http_client_start_request(HttpClient * con, const ch
     apr_snprintf(s, sizeof(s), "%s:%d", con->host, con->port);
     http_request_set_header(req, "Host", s);
     http_request_set_header(req, "Connection", "Keep-Alive");
+    http_request_write(req, "\r\n", 2);
 
     if (body) {
-        http_request_write(req, "\r\n", 2);
         http_request_write(req, body, strlen(body));
     }
 
