@@ -1480,7 +1480,7 @@ static Jxta_status JXTA_STDCALL walker_cb(Jxta_object * obj, void *me)
     /* Adjust policy */
     policy = jxta_rdv_diffusion_get_policy(header);
 
-    if (JXTA_RDV_DIFFUSION_POLICY_BROADCAST == scope) {
+    if (JXTA_RDV_DIFFUSION_POLICY_BROADCAST == policy) {
         jxta_rdv_diffusion_set_policy(header, JXTA_RDV_DIFFUSION_POLICY_MULTICAST);
     }
 
