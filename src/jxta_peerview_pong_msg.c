@@ -965,6 +965,7 @@ static void handle_partner(void *me, const XML_Char * cd, int len)
             myself->parse_context = PARTNER;
             myself->current_peer_info = peer_info; /* the object is retained in the cluster_members. */
             JXTA_OBJECT_RELEASE(peer_info);
+            JXTA_OBJECT_RELEASE(peer_id);
         }
     } else {
         myself->parse_context = UNKNOWN;
@@ -1016,6 +1017,7 @@ static void handle_associate(void *me, const XML_Char * cd, int len)
             myself->parse_context = ASSOCIATE;
             myself->current_peer_info = peer_info; /* the object is retained in the partners. */
             JXTA_OBJECT_RELEASE(peer_info);
+            JXTA_OBJECT_RELEASE(peer_id);
         }
     } else {
         myself->parse_context = UNKNOWN;
@@ -1150,7 +1152,10 @@ static void peerview_peer_info_delete(Jxta_object * me)
         JXTA_OBJECT_RELEASE(myself->target_hash);
         myself->target_hash = NULL;
     }
-    
+    if( NULL != myself->peer_adv) {
+        JXTA_OBJECT_RELEASE(myself->peer_adv);
+        myself->peer_adv = NULL;
+    }
     if( NULL != myself->target_hash_radius ) {
         JXTA_OBJECT_RELEASE(myself->target_hash_radius);
         myself->target_hash_radius = NULL;
