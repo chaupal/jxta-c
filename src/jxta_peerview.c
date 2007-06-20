@@ -1634,6 +1634,8 @@ static Jxta_status peerview_send_pvm(Jxta_peerview * me, Jxta_peer * dest, Jxta_
             res = JXTA_UNREACHABLE_DEST;
         }
     }
+    if (peer_adv)
+        JXTA_OBJECT_RELEASE(peer_adv);
     return res;
 }
 
