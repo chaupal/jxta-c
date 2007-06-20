@@ -352,25 +352,16 @@ Jxta_status jxta_rdv_service_provider_prop_handler(Jxta_rdv_service_provider * m
     Jxta_endpoint_address *realDest = jxta_endpoint_address_new_2("jxta", myself->gid_uniq_str, svc_name, svc_param);
     Jxta_id *src_peer_id = NULL;
 
-    /* Invoke the endpoint service demux again with the "real" destination */
-    jxta_endpoint_service_demux_addr(myself->service->endpoint, realDest, msg);
-    JXTA_OBJECT_RELEASE(realDest);
-
     /* Attach the diffusion header to the message */
-    res = jxta_rdv_service_provider_set_diffusion_header(msg, header);
+     res = jxta_rdv_service_provider_set_diffusion_header(msg, header);
 
     if (JXTA_SUCCESS != res) {
         goto FINAL_EXIT;
     }
 
-    /* Are a peerview member? Then walk the message to the rest of the peerview. */
-    if ((NULL != myself->peerview) && jxta_peerview_is_member(myself->peerview)) {
-        res = jxta_rdv_service_walk((Jxta_rdv_service *) myself->service, msg, svc_name, svc_param);
-
-        if (JXTA_SUCCESS != res) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Walk failed for [%pp].\n", msg);
-        }
-    }
+    /* Invoke the endpoint service demux again with the "real" destination */
+    jxta_endpoint_service_demux_addr(myself->service->endpoint, realDest, msg);
+    JXTA_OBJECT_RELEASE(realDest);
 
     if (JXTA_RDV_DIFFUSION_POLICY_TRAVERSAL == jxta_rdv_diffusion_get_policy(header)) {
         /* Traversals don't flood. */

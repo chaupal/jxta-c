@@ -724,8 +724,13 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
         }
 
         jxta_rdv_diffusion_set_src_peer_id(header, provider->local_peer_id);
-        jxta_rdv_diffusion_set_policy(header, JXTA_RDV_DIFFUSION_POLICY_TRAVERSAL);
+        if (NULL == target_hash) {
+            jxta_rdv_diffusion_set_policy(header, JXTA_RDV_DIFFUSION_POLICY_MULTICAST);
+        } else {
+            jxta_rdv_diffusion_set_policy(header, JXTA_RDV_DIFFUSION_POLICY_TRAVERSAL);
+        }
         jxta_rdv_diffusion_set_scope(header, JXTA_RDV_DIFFUSION_SCOPE_GLOBAL);
+        jxta_rdv_diffusion_set_ttl(header, 1);
         jxta_rdv_diffusion_set_dest_svc_name(header, serviceName);
         jxta_rdv_diffusion_set_dest_svc_param(header, serviceParam);
     } else {

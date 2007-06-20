@@ -181,6 +181,7 @@ static Jxta_status propagate(Jxta_rdv_service_provider * provider, Jxta_message 
                              const char *serviceParam, int ttl);
 static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
                         const char *serviceParam, const char *target_hash);
+static Jxta_status walk_to_view (Jxta_rdv_service_provider * provider, Jxta_vector * view, Jxta_id * sourceId, Jxta_message * msg);
 
 static void *APR_THREAD_FUNC periodic_task(apr_thread_t * thread, void *myself);
 
@@ -676,15 +677,17 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
     Jxta_rdv_diffusion *header = NULL;
     Jxta_rdv_diffusion_scope scope;
     Jxta_rdv_diffusion_policy policy;
-    unsigned int each_peer;
-    unsigned int view_size;
-    Jxta_vector *view;
+    Jxta_vector *localView = NULL;
+    Jxta_vector *globalView = NULL;
     Jxta_boolean new_walk;
-
+    Jxta_id * sourceId = NULL;
     JXTA_OBJECT_CHECK_VALID(msg);
 
     msg = jxta_message_clone(msg);
-
+    if (NULL == msg) {
+        res = JXTA_NOMEM;
+        goto FINAL_EXIT;
+    }
     if (!jxta_peerview_is_member(provider->peerview)) {
         /* We are not in the peerview. There is no place for us to send the message. */
         res = JXTA_SUCCESS;
@@ -700,10 +703,14 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
             res = JXTA_NOMEM;
             goto FINAL_EXIT;
         }
-
-        jxta_rdv_diffusion_set_src_peer_id(header, provider->local_peer_id);
-        jxta_rdv_diffusion_set_policy(header, JXTA_RDV_DIFFUSION_POLICY_TRAVERSAL);
         jxta_rdv_diffusion_set_scope(header, JXTA_RDV_DIFFUSION_SCOPE_GLOBAL);
+        if (NULL == target_hash) {
+            jxta_rdv_diffusion_set_policy(header, JXTA_RDV_DIFFUSION_POLICY_MULTICAST);
+        } else {
+            jxta_rdv_diffusion_set_policy(header, JXTA_RDV_DIFFUSION_POLICY_TRAVERSAL);
+        }
+        jxta_rdv_diffusion_set_src_peer_id(header, provider->local_peer_id);
+        jxta_rdv_diffusion_set_ttl(header, 1);
         jxta_rdv_diffusion_set_target_hash(header, target_hash);
         jxta_rdv_diffusion_set_dest_svc_name(header, serviceName);
         jxta_rdv_diffusion_set_dest_svc_param(header, serviceParam);
@@ -729,102 +736,90 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
                 goto FINAL_EXIT;
             }
         }
-
+        sourceId = jxta_rdv_diffusion_get_src_peer_id(header);
+        jxta_rdv_diffusion_set_src_peer_id(header, provider->local_peer_id);
         new_walk = FALSE;
     }
 
     /* Set the target hash for this walk. The target hash *may* change for resend walks. */
     jxta_rdv_diffusion_set_target_hash(header, target_hash);
 
-    res = jxta_rdv_service_provider_set_diffusion_header(msg, header);
-
-    if (JXTA_SUCCESS != res) {
-        goto FINAL_EXIT;
-    }
-
     policy = jxta_rdv_diffusion_get_policy(header);
 
     scope = jxta_rdv_diffusion_get_scope(header);
 
-    if (JXTA_RDV_DIFFUSION_POLICY_TRAVERSAL == policy) {
-        if (NULL == target_hash) {
-            /* No Target? XXX This is a hack, we walk the message to our cluster members. */
-            policy = JXTA_RDV_DIFFUSION_POLICY_MULTICAST;
-            scope = JXTA_RDV_DIFFUSION_SCOPE_LOCAL;
-        } else {
-            Jxta_peer *peer = NULL;
-            BIGNUM *bn_target_hash = NULL;
+    if (NULL != target_hash
+        && JXTA_RDV_DIFFUSION_POLICY_TRAVERSAL == policy
+        && scope == JXTA_RDV_DIFFUSION_SCOPE_GLOBAL) {
 
-            BN_hex2bn(&bn_target_hash, target_hash);
+        Jxta_peer *peer = NULL;
+        BIGNUM *bn_target_hash = NULL;
+        BN_hex2bn(&bn_target_hash, target_hash);
 
-            res = jxta_peerview_get_peer_for_target_hash(provider->peerview, bn_target_hash, &peer);
+        res = jxta_peerview_get_peer_for_target_hash(provider->peerview, bn_target_hash, &peer);
 
-            BN_free(bn_target_hash);
+        BN_free(bn_target_hash);
 
-            if (JXTA_SUCCESS != res) {
-                goto FINAL_EXIT;
-            }
-
-            assert(peer->peerid);
-            if (!jxta_id_equals(((_jxta_peer_entry *) peer)->peerid, provider->local_peer_id)) {
-                Jxta_PG * pg;
-                JString * pid;
-
-                pg = jxta_service_get_peergroup_priv((Jxta_service*) provider->service);
-                jxta_id_to_jstring(peer->peerid, &pid);
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Walk the message to peer %s\n", jstring_get_string(pid));
-                JXTA_OBJECT_RELEASE(pid);
-                jxta_PG_async_send(pg, msg, peer->peerid, RDV_V3_MSID, JXTA_RDV_WALKER_SERVICE_NAME);
-            } else {
-                /* It is a message for us! */
-                walk_handler(myself, msg, header);
-            }
-
-            JXTA_OBJECT_RELEASE(peer);
+        if (JXTA_SUCCESS != res) {
+            goto FINAL_EXIT;
         }
+
+        assert(peer->peerid);
+        if (!jxta_id_equals(((_jxta_peer_entry *) peer)->peerid, provider->local_peer_id)) {
+            Jxta_PG * pg;
+            JString * pid;
+            pg = jxta_service_get_peergroup_priv((Jxta_service*) provider->service);
+            jxta_id_to_jstring(peer->peerid, &pid);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Send walk message to peer %s\n", jstring_get_string(pid));
+            JXTA_OBJECT_RELEASE(pid);
+            jxta_PG_async_send(pg, msg, peer->peerid, RDV_V3_MSID, JXTA_RDV_WALKER_SERVICE_NAME);
+        } else {
+            /* It is a message for us! */
+            walk_handler(myself, msg, header);
+        }
+        JXTA_OBJECT_RELEASE(peer);
     }
 
     if ((JXTA_RDV_DIFFUSION_POLICY_BROADCAST == policy) || (JXTA_RDV_DIFFUSION_POLICY_MULTICAST == policy)) {
         if (JXTA_RDV_DIFFUSION_SCOPE_GLOBAL == scope) {
-            res = jxta_peerview_get_globalview(provider->peerview, &view);
+            /* message transferred to our associates and partners */
+            res = jxta_peerview_get_globalview(provider->peerview, &globalView);
+            if (JXTA_SUCCESS != res) {
+                goto FINAL_EXIT;
+            }
+            res = jxta_peerview_get_localview(provider->peerview, &localView);
         } else if (JXTA_RDV_DIFFUSION_SCOPE_LOCAL == scope) {
-            res = jxta_peerview_get_localview(provider->peerview, &view);
+            /* messages transferred to our partners */
+            res = jxta_peerview_get_localview(provider->peerview, &localView);
         } else if (JXTA_RDV_DIFFUSION_SCOPE_TERMINAL == scope) {
             /* Don't continue if walk is in the terminal state */
             goto FINAL_EXIT;
         }
 
-        if ((JXTA_SUCCESS != res) || (NULL == view)) {
+        if (JXTA_SUCCESS != res) {
             goto FINAL_EXIT;
         }
 
-        view_size = jxta_vector_size(view);
-
-        for (each_peer = 0; each_peer < view_size; each_peer++) {
-            Jxta_peer *peer;
-
-            res = jxta_vector_get_object_at(view, JXTA_OBJECT_PPTR(&peer), each_peer);
-
+        if (NULL != globalView && jxta_vector_size(globalView) > 0) {
+            res = jxta_rdv_service_provider_set_diffusion_header(msg, header);
             if (JXTA_SUCCESS != res) {
-                continue;
+                goto FINAL_EXIT;
             }
-
-            assert(peer->peerid);
-            if (!jxta_id_equals(jxta_peer_peerid(peer), provider->local_peer_id)) {
-                Jxta_PG * pg;
-                JString * pid;
-
-                pg = jxta_service_get_peergroup_priv((Jxta_service*) provider->service);
-                jxta_id_to_jstring(peer->peerid, &pid);
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Walk the message to peer %s\n", jstring_get_string(pid));
-                JXTA_OBJECT_RELEASE(pid);
-                jxta_PG_async_send(pg, msg, peer->peerid, RDV_V3_MSID, JXTA_RDV_WALKER_SERVICE_NAME);
+            res = walk_to_view(provider, globalView, sourceId, msg);
+            if (JXTA_SUCCESS != res) {
+                goto FINAL_EXIT;
             }
-
-            JXTA_OBJECT_RELEASE(peer);
         }
-
-        JXTA_OBJECT_RELEASE(view);
+        if (NULL != localView && jxta_vector_size(localView) > 0) {
+            if (new_walk) {
+                jxta_rdv_diffusion_set_scope(header, JXTA_RDV_DIFFUSION_SCOPE_LOCAL);
+                res = jxta_rdv_service_provider_set_diffusion_header(msg, header);
+            }
+            res = walk_to_view(provider, localView, sourceId, msg);
+            if (JXTA_SUCCESS != res) {
+                goto FINAL_EXIT;
+            }
+        }
     } else {
         res = JXTA_INVALID_ARGUMENT;
         goto FINAL_EXIT;
@@ -833,14 +828,48 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
     res = JXTA_SUCCESS;
 
   FINAL_EXIT:
-    if (NULL != header) {
+    if (sourceId)
+        JXTA_OBJECT_RELEASE(sourceId);
+    if (localView)
+        JXTA_OBJECT_RELEASE(localView);
+    if (globalView)
+        JXTA_OBJECT_RELEASE(globalView);
+    if (NULL != header)
         JXTA_OBJECT_RELEASE(header);
-    }
-
-    JXTA_OBJECT_RELEASE(msg);
+    if (msg)
+        JXTA_OBJECT_RELEASE(msg);
 
     return res;
 }
+
+static Jxta_status walk_to_view (Jxta_rdv_service_provider * provider, Jxta_vector * view, Jxta_id * sourceId, Jxta_message * msg)
+{
+        Jxta_status res = JXTA_SUCCESS;
+        unsigned int each_peer;
+        unsigned int view_size = jxta_vector_size(view);
+        for (each_peer = 0; each_peer < view_size; each_peer++) {
+            Jxta_peer *peer = NULL;
+            res = jxta_vector_get_object_at(view, JXTA_OBJECT_PPTR(&peer), each_peer);
+            if (JXTA_SUCCESS != res) {
+                continue;
+            }
+            assert(peer->peerid);
+            if (!jxta_id_equals(jxta_peer_peerid(peer), provider->local_peer_id)
+                    && !jxta_id_equals(jxta_peer_peerid(peer), sourceId)) {
+                Jxta_PG * pg;
+                JString * pid;
+                pg = jxta_service_get_peergroup_priv((Jxta_service*) provider->service);
+                jxta_id_to_jstring(peer->peerid, &pid);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Walk the message to peer %s\n", jstring_get_string(pid));
+                JXTA_OBJECT_RELEASE(pid);
+                jxta_PG_async_send(pg, msg, peer->peerid, RDV_V3_MSID, JXTA_RDV_WALKER_SERVICE_NAME);
+            }
+            if (peer)
+                JXTA_OBJECT_RELEASE(peer);
+        }
+    return res;
+}
+
 
 /**
     Message Handler for the client lease protocol.
@@ -1178,6 +1207,7 @@ static Jxta_status handle_lease_response(_jxta_rdv_service_server * myself, Jxta
 
             rdv_service_add_referral_seed((Jxta_rdv_service *) provider->service, referral_seed);
             JXTA_OBJECT_RELEASE(referral_seed);
+            JXTA_OBJECT_RELEASE(referral_adv);
         }
 
         JXTA_OBJECT_RELEASE(referral);
@@ -1498,8 +1528,6 @@ static Jxta_status JXTA_STDCALL walk_handler(_jxta_rdv_service_server * myself, 
 
     if (JXTA_RDV_DIFFUSION_POLICY_MULTICAST == policy) {
         /* We are walking a flood message, pass it on to the propagation code */
-        jxta_message_remove_element_2(msg, JXTA_RDV_NS_NAME, JXTA_RDV_DIFFUSION_ELEMENT_NAME);
-
         res = jxta_rdv_service_provider_prop_handler(provider, msg, header);
     }
     if (JXTA_RDV_DIFFUSION_POLICY_TRAVERSAL == policy) {
@@ -1513,7 +1541,6 @@ static Jxta_status JXTA_STDCALL walk_handler(_jxta_rdv_service_server * myself, 
             JXTA_OBJECT_RELEASE(realDest);
         }
     }
-
     return res;
 }
 

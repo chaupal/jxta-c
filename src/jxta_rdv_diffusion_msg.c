@@ -353,27 +353,6 @@ static Jxta_status validate_message(Jxta_rdv_diffusion * myself)
         return JXTA_INVALID_ARGUMENT;
     }
 
-    if (JXTA_RDV_DIFFUSION_SCOPE_TERMINAL == jxta_rdv_diffusion_get_scope(myself)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "scope must not be TERMINAL [%pp]\n", myself);
-        return JXTA_INVALID_ARGUMENT;
-    }
-
-    if ((JXTA_RDV_DIFFUSION_POLICY_BROADCAST == jxta_rdv_diffusion_get_policy(myself))
-        || (JXTA_RDV_DIFFUSION_POLICY_MULTICAST == jxta_rdv_diffusion_get_policy(myself))) {
-        if (0 == jxta_rdv_diffusion_get_ttl(myself)) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "TTL must not be 0 [%pp]\n", myself);
-            return JXTA_INVALID_ARGUMENT;
-        }
-    }
-
-    if ((JXTA_RDV_DIFFUSION_POLICY_TRAVERSAL == jxta_rdv_diffusion_get_policy(myself))
-        && (JXTA_RDV_DIFFUSION_SCOPE_LOCAL == jxta_rdv_diffusion_get_scope(myself))) {
-        if (NULL == jxta_rdv_diffusion_get_target_hash(myself)) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "target hash must not be NULL [%pp]\n", myself);
-            return JXTA_INVALID_ARGUMENT;
-        }
-    }
-
     if (NULL == jxta_rdv_diffusion_get_dest_svc_name(myself)) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Service Name must not be NULL [%pp]\n", myself);
         return JXTA_INVALID_ARGUMENT;
