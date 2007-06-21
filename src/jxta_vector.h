@@ -326,7 +326,7 @@ JXTA_DECLARE(Jxta_status) jxta_vector_move_element_last(Jxta_vector * vector, un
  **
  ** @return TRUE if the object was found in the vector otherwise FALSE.
  ************************************************************************/
-JXTA_DECLARE(Jxta_boolean) jxta_vector_contains(Jxta_vector * vector, Jxta_object* object, Jxta_object_equals_func * func);
+JXTA_DECLARE(Jxta_boolean) jxta_vector_contains(Jxta_vector * vector, Jxta_object* object, Jxta_object_equals_func func);
 
 /*************************************************************************
  ** Sorts a vector using the provided comparator function.
@@ -339,7 +339,7 @@ JXTA_DECLARE(Jxta_boolean) jxta_vector_contains(Jxta_vector * vector, Jxta_objec
  ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
  ** otherwise.
  ************************************************************************/
-JXTA_DECLARE(Jxta_status) jxta_vector_qsort(Jxta_vector * vector, Jxta_object_compare_func * func);
+JXTA_DECLARE(Jxta_status) jxta_vector_qsort(Jxta_vector * vector, Jxta_object_compare_func func);
 
 /*************************************************************************
  ** Shuffles a vector. The elements in the vector will re-arranged in

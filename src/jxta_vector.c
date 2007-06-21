@@ -64,7 +64,6 @@ static const char *__log_cat = "VECTOR";
 #include "jxta_errno.h"
 #include "jxta_log.h"
 #include "jxta_vector.h"
-
 /**********************************************************************
  ** This file implements Jxta_vector. Please refer to jxta_vector.h
  ** for detail on the API.
@@ -94,8 +93,8 @@ static void move_index_backward(Jxta_vector * vector, unsigned int at_index);
 static Jxta_status add_object_at(Jxta_vector * vector, Jxta_object * object, unsigned int at_index);
 static Jxta_status addall_objects_at(Jxta_vector * vector, Jxta_vector * objects, unsigned int at_index, unsigned int from_index,
                                      unsigned int count);
-static Jxta_boolean address_equator(const void *a, const void *b);
-static int address_comparator(const void *a, const void *b);
+static Jxta_boolean JXTA_STDCALL address_equator(const Jxta_object *a, const Jxta_object *b);
+static int JXTA_STDCALL address_comparator(const Jxta_object *a, const Jxta_object *b);
 
 /**
  * Free the vector
@@ -586,12 +585,12 @@ JXTA_DECLARE(Jxta_status) jxta_vector_clear(Jxta_vector * vector)
 }
 
 /* default comparator function */
-static int address_comparator(const void *a, const void *b)
+static int JXTA_STDCALL address_comparator(const Jxta_object *a, const Jxta_object *b)
 {
     return ((char *) a) - ((char *) b);
 }
 
-static Jxta_boolean address_equator(const void *a, const void *b)
+static Jxta_boolean JXTA_STDCALL address_equator(const Jxta_object *a, const Jxta_object *b)
 {
     return a == b;
 }
@@ -678,7 +677,7 @@ JXTA_DECLARE(Jxta_status) jxta_vector_move_element_last(Jxta_vector * vector, un
     return JXTA_SUCCESS;
 }
 
-JXTA_DECLARE(Jxta_boolean) jxta_vector_contains(Jxta_vector * vector, Jxta_object * object, Jxta_object_equals_func * func)
+JXTA_DECLARE(Jxta_boolean) jxta_vector_contains(Jxta_vector * vector, Jxta_object * object, Jxta_object_equals_func func)
 {
     unsigned int each_object;
     Jxta_boolean found = FALSE;
@@ -687,13 +686,13 @@ JXTA_DECLARE(Jxta_boolean) jxta_vector_contains(Jxta_vector * vector, Jxta_objec
     JXTA_OBJECT_CHECK_VALID(object);
 
     if (NULL == func) {
-        func = (Jxta_object_equals_func *) address_equator;
+        func = (Jxta_object_equals_func) address_equator;
     }
 
     apr_thread_mutex_lock(vector->mutex);
 
     for (each_object = 0; each_object < vector->size; each_object++) {
-        if ((*func) (vector->elements[each_object], object)) {
+        if ((func) (vector->elements[each_object], object)) {
             found = TRUE;
             break;
         }
@@ -704,12 +703,12 @@ JXTA_DECLARE(Jxta_boolean) jxta_vector_contains(Jxta_vector * vector, Jxta_objec
     return found;
 }
 
-JXTA_DECLARE(Jxta_status) jxta_vector_qsort(Jxta_vector * vector, Jxta_object_compare_func * func)
+JXTA_DECLARE(Jxta_status) jxta_vector_qsort(Jxta_vector * vector, Jxta_object_compare_func func)
 {
     JXTA_OBJECT_CHECK_VALID(vector);
 
     if (NULL == func) {
-        func = (Jxta_object_compare_func *) address_comparator;
+        func = (Jxta_object_compare_func) address_comparator;
     }
 
     apr_thread_mutex_lock(vector->mutex);
@@ -723,7 +722,7 @@ JXTA_DECLARE(Jxta_status) jxta_vector_qsort(Jxta_vector * vector, Jxta_object_co
 
 /**
 * Shuffle adapted from  : <http://benpfaff.org/writings/clc/shuffle.html>
-* Copyright © 2004 Ben Pfaff.
+* Copyright  2004 Ben Pfaff.
 *
 * <p/>This function assumes that srand() has been called with good seed
 * material. See <http://benpfaff.org/writings/clc/random-seed.html> for good 
