@@ -220,7 +220,7 @@ JXTA_DECLARE(void) http_client_close(HttpClient * con)
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-void http_client_free(HttpClient * con)
+JXTA_DECLARE(void) http_client_free(HttpClient * con)
 {
     http_client_close(con);
 
@@ -246,7 +246,7 @@ void http_client_free(HttpClient * con)
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-void http_request_free(void *addr)
+JXTA_DECLARE(void) http_request_free(void *addr)
 {
     HttpRequest *self = (HttpRequest *) addr;
     free(self);
@@ -372,7 +372,7 @@ void http_response_parse(HttpResponse * res, char *line)
 /******************************************************************************/
 /*                                                                            */
 /******************************************************************************/
-void http_response_free(void *addr)
+JXTA_DECLARE(void) http_response_free(void *addr)
 {
     HttpResponse *self = (HttpResponse *) addr;
 
