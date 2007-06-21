@@ -107,7 +107,7 @@ JXTA_DECLARE(void) http_client_close(HttpClient * con);
 /**
  * Free the memory used by the client.
  */
-void http_client_free(HttpClient * con);
+JXTA_DECLARE(void) http_client_free(HttpClient * con);
 
 
 /**
@@ -216,8 +216,8 @@ JXTA_DECLARE(char *) http_response_read_fully(HttpResponse * res);
  */
 JXTA_DECLARE(void) http_response_done(HttpResponse * res);
 
-void http_response_free(void *addr);
-void http_request_free(void *addr);
+JXTA_DECLARE(void) http_response_free(void *addr);
+JXTA_DECLARE(void) http_request_free(void *addr);
 JXTA_DECLARE(int) http_get_content_length(HttpResponse * res);
 
 

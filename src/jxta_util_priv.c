@@ -69,6 +69,11 @@ static const char *__log_cat = "UTIL";
 #include "jxta_discovery_service_private.h"
 #include "jxta_log.h"
 #include "jxta_id.h"
+#include "jxta_transport_http_client.h"
+#include "jxta_endpoint_address.h"
+#include "jxta_uri.h"
+
+#define MAX_LINE_LENGTH 80
 
 Jxta_vector *getPeerids(Jxta_vector * peers)
 {
@@ -111,6 +116,201 @@ Jxta_vector *getPeerids(Jxta_vector * peers)
     }
     JXTA_OBJECT_RELEASE(peersHash);
     return peerIds;
+}
+
+static Jxta_vector *load_http_seeding(const apr_uri_t * const uri)
+{
+    HttpClient *client = NULL;
+    HttpRequest *req = NULL;
+    HttpResponse *res = NULL;
+    Jxta_status status;
+
+    JString *j_uri = NULL;
+    JString *seeds_string;
+
+    Jxta_vector *seeds = NULL;
+    Jxta_endpoint_address *addr;
+
+    char buf[200];
+    int len = 200;
+    char *last;
+    char *next;
+    char *s;
+    apr_port_t port;
+
+    /* default http port to 80 */
+    port = (uri->port_str) ? uri->port : APR_URI_HTTP_DEFAULT_PORT;
+
+    /* TODO: support proxy. */
+    client = http_client_new(NULL, 0, uri->hostname, port, NULL);
+
+    if (client == NULL)
+        goto Common_Exit;
+
+    status = http_client_connect(client);
+    if (status != JXTA_SUCCESS)
+        goto Common_Exit;
+
+    j_uri = jstring_new_0();
+
+    if (uri->path == NULL) {
+        jstring_append_2(j_uri, "/");
+    } else {
+        jstring_append_2(j_uri, uri->path);
+        if (uri->query) {
+            jstring_append_2(j_uri, "?");
+            jstring_append_2(j_uri, uri->query);
+        }
+    }
+
+    req = http_client_start_request(client, "GET", jstring_get_string(j_uri), NULL);
+    http_request_write(req, "\r\n", 2);
+    res = http_request_done(req);
+
+    seeds_string = jstring_new_0();
+
+    /* read content */
+    len = 200;
+    memset(buf, 0, len);
+    while (http_response_read(res, buf, &len) == APR_SUCCESS) {
+        jstring_append_2(seeds_string, buf);
+        len = 200;
+        memset(buf, 0, len);
+    }
+
+    /* parse seeds */
+    s = (char *) jstring_get_string(seeds_string);
+    /* 10 should be plenty in most cases */
+    seeds = jxta_vector_new(10);
+
+    while ((next = apr_strtok(s, "\n", &last)) != NULL) {
+        addr = jxta_endpoint_address_new(next);
+        if (addr) {
+            jxta_vector_add_object_last(seeds, (Jxta_object *) addr);
+            JXTA_OBJECT_RELEASE(addr);
+        }
+        s = NULL;
+    }
+
+    JXTA_OBJECT_RELEASE(seeds_string);
+
+  Common_Exit:
+    if (j_uri)
+        JXTA_OBJECT_RELEASE(j_uri);
+    if (req)
+        http_request_free(req);
+    if (res)
+        http_response_free(res);
+    if (client)
+        http_client_free(client);
+
+    return seeds;
+}
+
+Jxta_vector *load_file_seeding(const apr_uri_t * const uri)
+{
+    Jxta_vector *seeds = NULL;
+    FILE *inp = NULL;
+    char line[MAX_LINE_LENGTH];
+    char *status;
+    JString *addr_jstr = NULL;
+    Jxta_endpoint_address *seed_ea = NULL;
+
+    inp = fopen(uri->path, "r");
+    if (inp == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed to open seeding file at location: %s\n", uri->path);
+        return NULL;
+    }
+
+    /* 10 should be plenty in most cases */
+    seeds = jxta_vector_new(10);
+
+    /* FIXME: line limitation is OK for now. */
+    for (status = fgets(line, MAX_LINE_LENGTH, inp); status != 0; status = fgets(line, MAX_LINE_LENGTH, inp)) {
+        addr_jstr = jstring_new_1(strlen(line));
+        jstring_append_0(addr_jstr, line, strlen(line));
+        jstring_trim(addr_jstr);
+        seed_ea = jxta_endpoint_address_new_1(addr_jstr);
+        jxta_vector_add_object_last(seeds, (Jxta_object *) seed_ea);
+        JXTA_OBJECT_RELEASE(seed_ea);
+        seed_ea = NULL;
+        JXTA_OBJECT_RELEASE(addr_jstr);
+        addr_jstr = NULL;
+    }
+
+    fclose(inp);
+
+    return seeds;
+}
+
+/**
+ * Load a list of seeds from the provided seeding URI.
+ *
+ * @param seeding_uri The seeding URI. 
+ *
+ * @return A vector of Jxta_endpoint_address for seeds, NULL if error occurs.
+ */
+Jxta_vector *load_seeds_from_uri(const apr_uri_t * const seeding_uri)
+{
+    assert(seeding_uri);
+
+    /* althogu uri requires to have scheme, APR accepts that.
+     * since APR 1.2.x failed to handle uri like scheme:path-rootless by assuming scheme is bind to '://',
+     * thus failed to support URI alike file:relative_pathr.
+     * So we would use no scheme as a way to provide relative path for 'file:'.
+     */
+    if (NULL == seeding_uri->scheme || 0 == strcasecmp("file", seeding_uri->scheme)) {
+        if (seeding_uri->path) {
+            return load_file_seeding(seeding_uri);
+        }
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Invalid file URI: must have a path.\n");
+    } else if (0 == strcasecmp("http", seeding_uri->scheme)) {
+        if (seeding_uri->hostname) {
+            return load_http_seeding(seeding_uri);
+        }
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Invalid http URI: must have a hostname.\n");
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Not supported URI scheme in seeding URI: %s\n", seeding_uri->scheme);
+    }
+
+    return NULL;
+}
+
+/**
+ * Load a list of seeds from the provided seeding URI.
+ *
+ * @param seeding_uri The seeding URI as a NULL-terminated string.
+ * @param pool The memory pool used during the process. NULL will cause a temporary memory pool to be created.
+ *
+ * @return A vector of Jxta_endpoint_address for seeds, NULL if error occurs.
+ */
+Jxta_vector *load_seeds(const char *seeding_uri, apr_pool_t * pool)
+{
+    apr_pool_t *p;
+    apr_uri_t uri;
+    apr_status_t rc;
+    Jxta_vector *rv = NULL;
+
+    assert(seeding_uri);
+
+    if (NULL == pool) {
+        apr_pool_create(&p, NULL);
+    } else {
+        p = pool;
+    }
+
+    rc = apr_uri_parse(p, seeding_uri, &uri);
+    if (APR_SUCCESS == rc) {
+        rv = load_seeds_from_uri(&uri);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Invalid seeding URI: %s\n", seeding_uri);
+    }
+
+    if (NULL == pool) {
+        apr_pool_destroy(p);
+    }
+
+    return rv;
 }
 
 char *get_service_key(const char *svc_name, const char *svc_param)

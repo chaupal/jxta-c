@@ -57,6 +57,7 @@
 #include "jxta_apr.h"
 #include "jxta_cred.h"
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -73,6 +74,25 @@ extern "C" {
  * @param returns the output vector
  */
 Jxta_vector *getPeerids(Jxta_vector * peers);
+
+/**
+ * Load a list of seeds from the provided seeding URI.
+ *
+ * @param seeding_uri The seeding URI. 
+ *
+ * @return A vector of Jxta_endpoint_address for seeds, NULL if error occurs.
+ */
+Jxta_vector *load_seeds_from_uri(const apr_uri_t * const seeding_uri);
+
+/**
+ * Load a list of seeds from the provided seeding URI.
+ *
+ * @param seeding_uri The seeding URI as a NULL-terminated string.
+ * @param pool The memory pool used during the process. NULL will cause a temporary memory pool to be created.
+ *
+ * @return A vector of Jxta_endpoint_address for seeds, NULL if error occurs.
+ */
+Jxta_vector *load_seeds(const char *seeding_uri, apr_pool_t * pool);
 
 char *get_service_key(const char *svc_name, const char *svc_param);
 
