@@ -2859,11 +2859,11 @@ static Jxta_status cm_srdi_elements_save_priv(Jxta_cm * me, JString * handler, J
         status = jxta_hashtable_get(entriesHash, nameSpace, strlen(nameSpace) + 1, JXTA_OBJECT_PPTR(&nsEntries));
         if (JXTA_SUCCESS != status) {
             nsEntries = jxta_vector_new(0);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "adding %s  with a length of %i\n", nameSpace,
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "adding %s  with a length of %i\n", nameSpace,
                             strlen(nameSpace) + 1);
             jxta_hashtable_put(entriesHash, nameSpace, strlen(nameSpace) + 1, (Jxta_object *) nsEntries);
         } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Already had an entry %s\n", nameSpace);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Already had an entry %s\n", nameSpace);
         }
         status = jxta_vector_add_object_last(nsEntries, (Jxta_object *) entry);
         if (JXTA_SUCCESS != status) {
@@ -6039,7 +6039,7 @@ static DBSpace **cm_dbSpaces_get_priv(Jxta_cm * self, const char *pAdvType, Jxta
         status = jxta_hashtable_get(self->resolvedAdvs, pAdvType, strlen(pAdvType), JXTA_OBJECT_PPTR(&resAdvType));
         if (JXTA_SUCCESS == status) {
             DBSpace **save;
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Found a resolved type -- %s \n", pAdvType);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Found a resolved type -- %s \n", pAdvType);
             /* for performance  return right away */
             dbArray = calloc(2, sizeof(DBSpace *));
             save = dbArray;
