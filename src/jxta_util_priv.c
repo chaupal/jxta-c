@@ -71,7 +71,6 @@ static const char *__log_cat = "UTIL";
 #include "jxta_id.h"
 #include "jxta_transport_http_client.h"
 #include "jxta_endpoint_address.h"
-#include "jxta_uri.h"
 
 #define MAX_LINE_LENGTH 80
 
