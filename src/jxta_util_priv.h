@@ -82,7 +82,7 @@ Jxta_vector *getPeerids(Jxta_vector * peers);
  *
  * @return A vector of Jxta_endpoint_address for seeds, NULL if error occurs.
  */
-Jxta_vector *load_seeds_from_uri(const apr_uri_t *, const seeding_uri);
+Jxta_vector *load_seeds_from_uri(const apr_uri_t * const seeding_uri);
 
 /**
  * Load a list of seeds from the provided seeding URI.
