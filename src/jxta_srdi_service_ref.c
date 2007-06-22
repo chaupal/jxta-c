@@ -109,7 +109,7 @@ static const char *__log_cat = "SrdiSvc";
 #include <openssl/sha.h>
 
 static Jxta_status start(Jxta_module * mod, const char *argv[]);
-static Jxta_status stop(Jxta_module * this);
+static void stop(Jxta_module * this);
 static void JXTA_STDCALL jxta_srdi_rdv_listener(Jxta_object * obj, void *arg);
 static Jxta_status JXTA_STDCALL srdi_service_srdi_cb(Jxta_object * obj, void *arg);
 static Jxta_boolean hopcount_ok(ResolverQuery * query, long count);
@@ -232,7 +232,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
     Jxta_id *peerid = NULL;
     jxta_srdi_message_get_peerID(srdiMsg, &peerid);
     jxta_id_to_jstring(peerid, &jPeerId);
-    JXTA_OBJECT_RELEASE(peerid);
+    JXTA_OBJECT_RELEASE(peerid); 
     ttl = jxta_srdi_message_get_ttl(srdiMsg);
     jxta_srdi_message_get_primaryKey(srdiMsg, &jPkey);
 
@@ -674,7 +674,7 @@ static Jxta_peer *getNumericReplica(Jxta_srdi_service * me, Jxta_range * rge, co
             }
         }
     } else {
-        status = jxta_peerview_get_associate_peer(rpv, pos, JXTA_OBJECT_PPTR(&peer));
+        status = jxta_peerview_get_associate_peer(rpv, pos, &peer);
         if (JXTA_SUCCESS == status) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Replica address from getNumericReplica : %s://%s\n",
                             jxta_endpoint_address_get_protocol_name(jxta_peer_address(peer)),
@@ -884,15 +884,8 @@ static void JXTA_STDCALL jxta_srdi_rdv_listener(Jxta_object * obj, void *arg)
     } else {
         peerid = jstring_get_string(jPeerid);
     }
-    res = jxta_rdv_service_get_peer(me->rendezvous, rdv_event->pid, &peer);
-    if (JXTA_SUCCESS != res) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Got a rdv event with an unknown peerid %s\n", peerid);
-    }
     if (NULL == me->cm) {
         peergroup_get_cache_manager(me->group, &me->cm);
-    }
-    if (NULL != peer) {
-        expires = jxta_peer_get_expires(peer);
     }
     switch (type) {
         case JXTA_RDV_CLIENT_DISCONNECTED:
@@ -903,24 +896,28 @@ static void JXTA_STDCALL jxta_srdi_rdv_listener(Jxta_object * obj, void *arg)
             break;
         case JXTA_RDV_CLIENT_CONNECTED:
         case JXTA_RDV_CLIENT_RECONNECTED:
-            if (NULL != me->cm && expires > 0) {
-                res = cm_update_srdi_times(me->cm, jPeerid, expires);
-                if (JXTA_SUCCESS != res) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Error update SRDI times %d\n", res);
-                }
-            }
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,
-                        "Connected rdv client expires: %" APR_INT64_T_FMT " %s\n",expires, peerid);
-            break;
         case JXTA_RDV_CONNECTED:
+            res = jxta_rdv_service_get_peer(me->rendezvous, rdv_event->pid, &peer);
+            if (JXTA_SUCCESS != res) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Got a rdv event with an unknown peerid %s\n", peerid);
+            }
+            if (NULL != peer) {
+                expires = jxta_peer_get_expires(peer);
+            }
             if (NULL != me->cm && expires > 0) {
                 res = cm_update_srdi_times(me->cm, jPeerid, expires);
                 if (JXTA_SUCCESS != res) {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Error update SRDI times %d\n", res);
                 }
             }
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,
-                        "Connected rdv expires: %" APR_INT64_T_FMT " %s\n",expires, peerid);
+            if (type == JXTA_RDV_CONNECTED) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,
+                            "Connected rdv expires: %" APR_INT64_T_FMT " %s\n",expires, peerid);
+            }
+            else {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,
+                            "Connected rdv client expires: %" APR_INT64_T_FMT " %s\n",expires, peerid);
+            }
             break;
         case JXTA_RDV_FAILED:
         case JXTA_RDV_DISCONNECTED:
@@ -1009,7 +1006,7 @@ const Jxta_srdi_service_ref_methods jxta_srdi_service_ref_methods = {
 /**
 *  stop the current running thread
 */
-static Jxta_status stop(Jxta_module * me)
+static void stop(Jxta_module * me)
 {
     Jxta_srdi_service_ref *myself = PTValid( me, Jxta_srdi_service_ref );
 
@@ -1018,8 +1015,6 @@ static Jxta_status stop(Jxta_module * me)
     JXTA_OBJECT_RELEASE(myself->rdv_listener);
 
     endpoint_service_remove_recipient(myself->endpoint, myself->ep_cookie);
-
-    return JXTA_SUCCESS;
 }
 
 static Jxta_status start(Jxta_module * me, const char *argv[])
