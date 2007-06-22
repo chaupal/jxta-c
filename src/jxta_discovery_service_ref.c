@@ -1880,6 +1880,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
     Jxta_vector *entries = NULL;
     Jxta_vector *resendDelta=NULL;
     Jxta_status status;
+    unsigned int i;
     JString *jPeerid = NULL;
     JString *jPrimaryKey = NULL;
     unsigned int rpv_size;
