@@ -1625,7 +1625,7 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
             goto finishTop;
         }
 
-        status = queryLocal(discovery, NULL, jContext, &qAdvs, threshold, TRUE);
+        status = queryLocal(discovery, NULL, jContext, &qAdvs, threshold, FALSE);
         if (status != JXTA_SUCCESS) {
             goto finishTop;
         }
@@ -1633,7 +1633,15 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
         keys = (char **) calloc(1, sizeof(char *) * (jxta_vector_size(qAdvs) + 1));
 
         for (i = 0; i < jxta_vector_size(qAdvs); i++) {
-            jxta_vector_get_object_at(qAdvs, JXTA_OBJECT_PPTR(&foundAdv), i);
+            Jxta_query_result * qres = NULL;
+            jxta_vector_get_object_at(qAdvs, JXTA_OBJECT_PPTR(&qres), i);
+            if (qres->expiration == 0) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Found a local advertisement but it is local only\n");
+                JXTA_OBJECT_RELEASE(qres);
+                continue;
+            }
+            foundAdv = JXTA_OBJECT_SHARE(qres->adv);
+            JXTA_OBJECT_RELEASE(qres);
             id = jxta_advertisement_get_id(foundAdv);
             if (id != NULL) {
                 status = jxta_id_get_uniqueportion(id, &id_str);
@@ -1874,7 +1882,6 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
     Jxta_status status;
     JString *jPeerid = NULL;
     JString *jPrimaryKey = NULL;
-    unsigned int i;
     unsigned int rpv_size;
     Jxta_peer *peer;
     Jxta_vector *localView = NULL;
