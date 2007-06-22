@@ -121,6 +121,7 @@ static void handleJxta_SRDIMessage(void *userdata, const XML_Char * cd, int len)
                 break;
             }
             if (entry->nameSpace) {
+                JXTA_OBJECT_RELEASE(entry);
                 continue;
             }
             
@@ -132,6 +133,7 @@ static void handleJxta_SRDIMessage(void *userdata, const XML_Char * cd, int len)
             } else {
                 entry->nameSpace = jstring_new_2("jxta:ADV");
             }
+            JXTA_OBJECT_RELEASE(entry);
         }
     }
 }
