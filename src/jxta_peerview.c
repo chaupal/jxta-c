@@ -3398,7 +3398,7 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
 
     if (!myself->activity_add) {
         /* Start the add activity? */
-        apr_status_t apr_res = apr_thread_pool_schedule(myself->thread_pool, activity_peerview_add, myself, 
+        apr_res = apr_thread_pool_schedule(myself->thread_pool, activity_peerview_add, myself, 
                                                         JXTA_PEERVIEW_ADD_INTERVAL, myself);
 
         if (APR_SUCCESS != apr_res) {
