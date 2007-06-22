@@ -1633,7 +1633,8 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
         }
 
         keys = (char **) calloc(1, sizeof(char *) * (jxta_vector_size(qAdvs) + 1));
-
+        
+        unsigned int found_count = 0;
         for (i = 0; i < jxta_vector_size(qAdvs); i++) {
             Jxta_query_result * qres = NULL;
             jxta_vector_get_object_at(qAdvs, JXTA_OBJECT_PPTR(&qres), i);
@@ -1656,13 +1657,13 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
                 id_str = jstring_new_2(jxta_advertisement_get_local_id_string(foundAdv));
             }
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Found Id - %s.\n", jstring_get_string(id_str));
-            keys[i] = strdup(jstring_get_string(id_str));
+            keys[found_count++] = strdup(jstring_get_string(id_str));
             JXTA_OBJECT_RELEASE(id_str);
             JXTA_OBJECT_RELEASE(foundAdv);
         }
         JXTA_OBJECT_RELEASE(qAdvs);
         qAdvs = NULL;
-        keys[i] = NULL;
+        keys[found_count] = NULL;
     }
     if (NULL == keys || NULL == keys[0]) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No keys locally \n");

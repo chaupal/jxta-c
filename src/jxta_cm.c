@@ -3458,14 +3458,12 @@ static Jxta_cache_entry **cm_proffer_advertisements_build(DBSpace * dbSpace, apr
         if (lifetime == NULL) {
             continue;
         }
-        sscanf(lifetime, jstring_get_string(jInt64_for_format), &cache_entry->lifetime);
         expiration = apr_dbd_get_entry(dbSpace->conn->driver, row, 6);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d Expiration: %s\n", dbSpace->conn->log_id,
                         expiration ? expiration : "NULL");
         if (expiration == NULL) {
             continue;
         }
-        sscanf(expiration, jstring_get_string(jInt64_for_format), &cache_entry->expiration);
         if (adv_present) {
             adv = apr_dbd_get_entry(dbSpace->conn->driver, row, 7);
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d Adv: %s\n", dbSpace->conn->log_id, adv ? adv : "NULL");
@@ -3479,6 +3477,8 @@ static Jxta_cache_entry **cm_proffer_advertisements_build(DBSpace * dbSpace, apr
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d Unable to parse Adv: %s\n", dbSpace->conn->log_id,
                                     adv ? adv : "NULL");
                     ret = NULL;
+                    JXTA_OBJECT_RELEASE(cache_entry);
+                    JXTA_OBJECT_RELEASE(profferAdv);
                     goto FINAL_EXIT;
                 }
                 cache_entry->adv = jAdv;
@@ -3491,6 +3491,8 @@ static Jxta_cache_entry **cm_proffer_advertisements_build(DBSpace * dbSpace, apr
         if (NULL == profferAdv) {
             profferAdv = jxta_ProfferAdvertisement_new_1(nameSpace, advid, profid);
             cache_entry->profadv = profferAdv;
+            sscanf(lifetime, jstring_get_string(jInt64_for_format), &cache_entry->lifetime);
+            sscanf(expiration, jstring_get_string(jInt64_for_format), &cache_entry->expiration);
         }
         tmpid = jxta_proffer_adv_get_advId(profferAdv);
         tmpPid = jxta_proffer_adv_get_peerId(profferAdv);
@@ -3503,6 +3505,8 @@ static Jxta_cache_entry **cm_proffer_advertisements_build(DBSpace * dbSpace, apr
             cache_entry = calloc(1, sizeof(Jxta_cache_entry));
             JXTA_OBJECT_INIT(cache_entry, cache_entry_free, NULL);
             cache_entry->profadv = profferAdv;
+            sscanf(lifetime, jstring_get_string(jInt64_for_format), &cache_entry->lifetime);
+            sscanf(expiration, jstring_get_string(jInt64_for_format), &cache_entry->expiration);
             if (adv_present) {
                 jAdv = jxta_advertisement_new();
                 status = jxta_advertisement_parse_charbuffer(jAdv, adv, strlen(adv));
