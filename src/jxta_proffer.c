@@ -171,7 +171,6 @@ static void handleElement(void *userdata, const XML_Char * cd, int len)
         jstring_trim(passe);
         if (jstring_length(passe) > 0) {
             if (prof_is_indexable(ad, jstring_get_string(passAttr))) {
-                Jxta_elemAttr *elemAttr = NULL;
 
                 if (NULL == attrVector) {
                     attrVector = jxta_vector_new(0);
@@ -183,6 +182,7 @@ static void handleElement(void *userdata, const XML_Char * cd, int len)
                                 elemAttr->value);
                 jxta_vector_add_object_last(attrVector, (Jxta_object *) elemAttr);
                 JXTA_OBJECT_RELEASE(elemAttr);
+                elemAttr = NULL;
             }
         }
         atts += 2;
@@ -201,6 +201,9 @@ static void handleElement(void *userdata, const XML_Char * cd, int len)
     }
     elemAttr->value = strdup(jstring_get_string(pass));
     elemEntry = calloc(1, sizeof(Jxta_elemEntry));
+    if (NULL == elemEntry) {
+        goto CommonExit;
+    }
     JXTA_OBJECT_INIT(elemEntry, (JXTA_OBJECT_FREE_FUNC) freeElemEntry, 0);
     elemEntry->element = JXTA_OBJECT_SHARE(elemAttr);
     elemEntry->attributes = JXTA_OBJECT_SHARE(attrVector);
@@ -349,7 +352,6 @@ JXTA_DECLARE(Jxta_status) jxta_proffer_adv_print(Jxta_ProfferAdvertisement * pro
         char *element = NULL;
         char *elemValue = NULL;
         if (isMultiple) {
-            Jxta_elemAttr *elemAttr;
             jxta_vector_get_object_at(elements, JXTA_OBJECT_PPTR(&elemEntry), j);
             elemv = elemEntry->attributes;
             if (elemv)
@@ -357,6 +359,7 @@ JXTA_DECLARE(Jxta_status) jxta_proffer_adv_print(Jxta_ProfferAdvertisement * pro
             elemAttr = elemEntry->element;
             element = elemAttr->element;
             elemValue = elemAttr->value;
+            elemAttr = NULL;
             if ('#' == *elemValue)
                 elemValue = elemValue + 1;
         } else {

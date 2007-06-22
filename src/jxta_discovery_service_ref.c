@@ -851,7 +851,7 @@ Jxta_status getLocalGroupsQuery (Jxta_discovery_service * self, const char *quer
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to add object to rejects vector\n");
                 continue;
             }
-            jxta_credential_get_peergroupid(*l_scope, &gId);
+            status = jxta_credential_get_peergroupid(*l_scope, &gId);
             if (JXTA_SUCCESS != status) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to retrieve peergroupid from credential\n");
                 continue;
@@ -859,6 +859,7 @@ Jxta_status getLocalGroupsQuery (Jxta_discovery_service * self, const char *quer
             jxta_id_to_jstring(gId, &jgroupid);
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "rejected group %s\n", jstring_get_string(jgroupid));
             JXTA_OBJECT_RELEASE(jgroupid);
+            JXTA_OBJECT_RELEASE(gId);
         }
         l_scope++;
     }
@@ -1582,16 +1583,16 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
     replicaExpression = jstring_new_0();
 
     if (attr && jstring_length(attr) != 0) {
-        char *dr = (char *) dirname[type];
+        char *drName = (char *) dirname[type];
         char *at = (char *) jstring_get_string(attr);
         char *vl = (char *) jstring_get_string(val);
         JString *jSearch = NULL;
 
         jstring_reset(replicaExpression, NULL);
-        jstring_append_2(replicaExpression, dr);
+        jstring_append_2(replicaExpression, drName);
         jstring_append_2(replicaExpression, at);
         jstring_append_2(replicaExpression, vl);
-        keys = cm_search(discovery->cm, dr, at, vl, TRUE, jxta_discovery_query_get_threshold(dq));
+        keys = cm_search(discovery->cm, drName, at, vl, TRUE, jxta_discovery_query_get_threshold(dq));
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Search %s\n", jstring_get_string(replicaExpression));
         jSearch = jstring_new_2("/*:*[");
         jstring_append_1(jSearch, attr);
@@ -1718,7 +1719,7 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
     responses = jxta_vector_new(1);
     threshold = jxta_discovery_query_get_threshold(dq);
     while (keys[i]) {
-        JString *res = NULL;
+        JString *responseString = NULL;
         Jxta_expiration_time lifetime = 0;
         Jxta_expiration_time expiration = 0;
         Jxta_expiration_time responseTime = 0;
@@ -1735,7 +1736,7 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
             free(keys[i++]);
             continue;
         }
-        status = cm_restore_bytes(discovery->cm, (char *) dirname[type], keys[i], &res);
+        status = cm_restore_bytes(discovery->cm, (char *) dirname[type], keys[i], &responseString);
         if (status != JXTA_SUCCESS) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Error restoring bytes of advid %s\n", keys[i]);
             free(keys[i++]);
@@ -1758,7 +1759,7 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Expiration of 0 found and no response sent\n");
             }
             free(keys[i++]);
-            JXTA_OBJECT_RELEASE(res);
+            JXTA_OBJECT_RELEASE(responseString);
             continue;
         }
 
@@ -1767,13 +1768,13 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
         else
             responseTime = expiration;
 
-        dre = jxta_discovery_response_new_element_1(res, responseTime);
+        dre = jxta_discovery_response_new_element_1(responseString, responseTime);
         jxta_vector_add_object_last(responses, (Jxta_object *) dre);
         /* The vector counts his reference. Release ours */
         JXTA_OBJECT_RELEASE(dre);
 
         /* The element counts his reference. Release ours */
-        JXTA_OBJECT_RELEASE(res);
+        JXTA_OBJECT_RELEASE(responseString);
 
         free(keys[i]);
         i++;

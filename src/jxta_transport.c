@@ -71,6 +71,9 @@ static void jxta_transport_event_delete(Jxta_object * me)
     if (NULL != me2->dest_addr) {
         JXTA_OBJECT_RELEASE(me2->dest_addr);
     }
+    if (NULL != me2->msgr) {
+        JXTA_OBJECT_RELEASE(me2->msgr);
+    }
 
     free(me2);
 }
