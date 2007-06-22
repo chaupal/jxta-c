@@ -844,6 +844,7 @@ static Jxta_status cm_address_spaces_process(Jxta_cm * self)
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Duplicate database -- %s -- for address space --- %s\n",
                             dbSpace->alias, jstring_get_string(jName));
+            JXTA_OBJECT_RELEASE(dbSpace);
             JXTA_OBJECT_RELEASE(dbCheck);
             continue;
         }
@@ -1808,11 +1809,9 @@ Jxta_status cm_get_srdi_with_seq_number(Jxta_cm * me, JString * jPeerid, Jxta_se
     const char *value;
     const char *nameSpace;
     apr_dbd_row_t *row = NULL;
-    DBSpace *dbSpace = NULL;
     DBSpace *dbSRDI = NULL;
     JString *jWhere = NULL;
     JString *jColumns = NULL;
-    JString *jSeq = NULL;
     JString *jName = NULL;
     JString *jAdvId = NULL;
 
@@ -1823,7 +1822,7 @@ Jxta_status cm_get_srdi_with_seq_number(Jxta_cm * me, JString * jPeerid, Jxta_se
 
     aprs = apr_pool_create(&pool, NULL);
     if (aprs != APR_SUCCESS) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "%s -- Unable to create apr_pool: %d\n", dbSpace->id, aprs);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "%s -- Unable to create apr_pool: %d\n", dbSRDI->id, aprs);
         status = JXTA_NOMEM;
         goto FINAL_EXIT;
     }
@@ -1852,8 +1851,9 @@ Jxta_status cm_get_srdi_with_seq_number(Jxta_cm * me, JString * jPeerid, Jxta_se
         entry->advId = jstring_clone(jAdvId);
         entry->nameSpace = jstring_new_2(nameSpace);
     } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "db_id: %d There is no entry for seq: %s from: %s in groupid:%s\n",
-                        dbSpace->conn->log_id, jstring_get_string(jSeq), jstring_get_string(jPeerid),
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "db_id: %d There is no entry for seq: " 
+                                                         JXTA_SEQUENCE_NUMBER_FMT " from: %s in groupid:%s\n",
+                        dbSRDI->conn->log_id, seq, jstring_get_string(jPeerid),
                         jstring_get_string(me->jGroupID_string));
         status = JXTA_ITEM_NOTFOUND;
         goto FINAL_EXIT;
@@ -1866,11 +1866,8 @@ FINAL_EXIT:
         JXTA_OBJECT_RELEASE(jName);
     if (jWhere)
         JXTA_OBJECT_RELEASE(jWhere);
-    JXTA_OBJECT_RELEASE(jSeq);
     JXTA_OBJECT_RELEASE(jWhere);
     JXTA_OBJECT_RELEASE(jColumns);
-    if (dbSpace)
-        JXTA_OBJECT_RELEASE(dbSpace);
     if (dbSRDI)
         JXTA_OBJECT_RELEASE(dbSRDI);
     return status;
@@ -2246,7 +2243,6 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jHand
     *jNewValue = NULL;
     dbSpaces = cm_dbSpaces_get(me, jstring_get_string(entry->nameSpace), NULL, FALSE);
     dbSpacesSave = dbSpaces;
-    jAlias = jstring_new_2((*dbSpaces)->alias);
     insert_sql = jstring_new_0();
     dbSpace = *dbSpaces;
     sqlval = jstring_new_0();
@@ -2302,7 +2298,6 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jHand
         *newSeqNumber = apr_atoi64(seqNumber);
         goto FINAL_EXIT;
     } else if (status == JXTA_ITEM_NOTFOUND) {
-        JString *jAlias = NULL;
         jstring_append_2(insert_sql, SQL_INSERT_INTO CM_TBL_SRDI_DELTA SQL_VALUES);
         jAlias = jstring_new_2(dbSpace->alias);
         if (0 == entry->seqNumber ) {
@@ -2312,6 +2307,7 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jHand
         }
         cm_delta_entry_create(me->jGroupID_string, jAlias, jPeerid, jHandler, sqlval, entry);
         JXTA_OBJECT_RELEASE(jAlias);
+        jAlias = NULL;
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- Error searching for srdi delta entry %i \n",
                         dbSpace->conn->log_id, dbSpace->id, status);
@@ -2342,7 +2338,6 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jHand
         apr_pool_destroy(pool);
     if (jVal)
         JXTA_OBJECT_RELEASE(jVal);
-    JXTA_OBJECT_RELEASE(jAlias);
     JXTA_OBJECT_RELEASE(insert_sql);
     JXTA_OBJECT_RELEASE(sqlval);
     JXTA_OBJECT_RELEASE(entry);
@@ -3156,8 +3151,8 @@ Jxta_advertisement **cm_sql_query(Jxta_cm * self, const char *folder_name, JStri
     Jxta_status status = JXTA_SUCCESS;
     DBSpace *dbSpace = self->defaultDB;
     Jxta_advertisement *newAdv = NULL;
-    Jxta_vector *res_vect;
-    Jxta_object *res_adv;
+    Jxta_vector *res_vect = NULL;
+    Jxta_advertisement *res_adv = NULL;
     apr_pool_t *pool = NULL;
     apr_status_t aprs;
     apr_dbd_results_t *res = NULL;
@@ -3201,8 +3196,6 @@ Jxta_advertisement **cm_sql_query(Jxta_cm * self, const char *folder_name, JStri
         } else {
             char *tmp;
             int len;
-            res_vect = NULL;
-            res_adv = NULL;
             len = strlen(entry);
             tmp = malloc(len + 1);
             memcpy(tmp, entry, len + 1);
@@ -3216,13 +3209,13 @@ Jxta_advertisement **cm_sql_query(Jxta_cm * self, const char *folder_name, JStri
                 continue;
             }
             if (jxta_vector_size(res_vect) != 0) {
-                Jxta_advertisement *res_adv;
-
                 jxta_vector_get_object_at(res_vect, JXTA_OBJECT_PPTR(&res_adv), (unsigned int) 0);
                 jxta_advertisement_set_local_id_string(res_adv, advId);
                 results[i++] = res_adv;
+                res_adv = NULL;
             }
             JXTA_OBJECT_RELEASE(res_vect);
+            res_vect = NULL;
         }
 
     }
@@ -3784,6 +3777,11 @@ Jxta_vector *cm_query_replica(Jxta_cm * self, JString * nameSpace, Jxta_vector *
         jstring_append_2(jWhere, CM_COL_SRC);
         jstring_append_2(jWhere, SQL_DOT);
         cm_sql_append_timeout_check_greater(jWhere);
+
+        if (jOrder != NULL) {
+            JXTA_OBJECT_RELEASE(jOrder);
+            jOrder = NULL;
+        }
 
         jOrder = jstring_new_2(SQL_ORDER);
         jstring_append_2(jOrder, CM_COL_AdvId);
@@ -4550,7 +4548,6 @@ void cm_remove_srdi_delta_entries(Jxta_cm * me, JString * jPeerid, Jxta_vector *
         JXTA_OBJECT_RELEASE(jWhere);
     } else {
         for (i = 0; i < jxta_vector_size(me->dbSpaces); i++) {
-            Jxta_status status;
             status = jxta_vector_get_object_at(me->dbSpaces, JXTA_OBJECT_PPTR(&dbSpace), i);
             if (JXTA_SUCCESS != status) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,
