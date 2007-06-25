@@ -386,7 +386,8 @@ static Jxta_status cm_sql_select_join_generic(DBSpace * dbSpace, apr_pool_t * po
                                               apr_dbd_results_t ** res, JString * where, Jxta_boolean bCheckGroup);
 
 static Jxta_status cm_item_update(DBSpace * dbSpace, const char *table, JString * jNameSpace, JString * jKey,
-                                  JString * jElemAttr, JString * jVal, JString * jRange, Jxta_expiration_time timeOutForMe);
+                                  JString * jElemAttr, JString * jVal, JString * jRange, Jxta_expiration_time timeOutForMe,
+                                  Jxta_expiration_time timeOutForOthers);
 
 static Jxta_status cm_item_delete(DBSpace * dbSpace, const char *table, const char *advId);
 
@@ -5227,7 +5228,8 @@ static Jxta_status cm_advertisement_remove(DBSpace * dbSpace, const char *nameSp
 }
 
 static Jxta_status cm_item_update(DBSpace * dbSpace, const char *table, JString * jNameSpace, JString * jKey,
-                                  JString * jElemAttr, JString * jVal, JString * jRange, Jxta_expiration_time timeOutForMe)
+                                  JString * jElemAttr, JString * jVal, JString * jRange, Jxta_expiration_time timeOutForMe,
+                                  Jxta_expiration_time timeOutForOthers)
 {
     int nrows = 0;
     int rv = 0;
@@ -5254,6 +5256,15 @@ static Jxta_status cm_item_update(DBSpace * dbSpace, const char *table, JString 
         jstring_append_2(update_sql, "0");
     }
 
+    jstring_append_2(update_sql, SQL_COMMA CM_COL_TimeOutForOthers SQL_EQUAL);
+
+    memset(aTime, 0, 64);
+
+    if (apr_snprintf(aTime, 64, "%" APR_INT64_T_FMT, timeOutForOthers) != 0) {
+        jstring_append_2(update_sql, aTime);
+    } else {
+        jstring_append_2(update_sql, "0");
+    }
     jstring_append_2(update_sql, SQL_WHERE CM_COL_AdvId SQL_EQUAL);
     SQL_VALUE(update_sql, jKey);
     jstring_append_2(update_sql, SQL_AND CM_COL_NameSpace SQL_EQUAL);
@@ -5396,7 +5407,7 @@ static Jxta_status cm_item_insert(DBSpace * dbSpace, const char *table, const ch
         if (timeOutForMe > expTime) {
             expTime = timeOutForMe;
         }
-        status = cm_item_update(dbSpace, table, jNameSpace, jKey, jElemAttr, jVal, jRange, expTime);
+        status = cm_item_update(dbSpace, table, jNameSpace, jKey, jElemAttr, jVal, jRange, expTime, timeOutForOthers);
         goto finish;
     } else if (status == JXTA_ITEM_NOTFOUND) {
         jstring_append_2(insert_sql, SQL_INSERT_INTO);
