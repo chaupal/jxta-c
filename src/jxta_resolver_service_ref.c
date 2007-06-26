@@ -538,7 +538,7 @@ static Jxta_status do_send(Jxta_resolver_service_ref * me, Jxta_id * peerid, JSt
     jxta_message_add_element(msg, msgElem);
 
     if (NULL == peerid) {
-        status = jxta_rdv_service_walk(me->rendezvous, msg, me->instanceName, queue);
+        jxta_rdv_service_walk(me->rendezvous, msg, me->instanceName, queue);
         status = jxta_endpoint_service_propagate(me->endpoint, msg, me->instanceName, queue);
         if (JXTA_SUCCESS != status) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Endpoint service propagation status= %d\n", status);
@@ -1088,8 +1088,7 @@ static Jxta_status learn_route_from_query(Jxta_resolver_service_ref * me, Resolv
     }
 
     rc = discovery_service_publish(discovery, (Jxta_advertisement *) route, DISC_ADV, ROUTEADV_DEFAULT_LIFETIME,
-                                  /* ROUTEADV_DEFAULT_EXPIRATION); */
-                                    LOCAL_ONLY_EXPIRATION);
+                                  ROUTEADV_DEFAULT_EXPIRATION);
     JXTA_OBJECT_RELEASE(discovery);
     if (JXTA_SUCCESS != rc) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,
