@@ -692,7 +692,7 @@ static Jxta_status peerview_init_cluster(Jxta_peerview * myself)
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Hash Space : %s\n", tmp);
     free(tmp);
     BN_div(myself->cluster_divisor, NULL, hash_space, clusters_count, ctx);
-    tmp = BN_bn2hex(hash_space);
+    tmp = BN_bn2hex(myself->cluster_divisor);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Cluster Divisor : %s\n", tmp);
     free(tmp);
     BN_free(hash_space);
@@ -3468,6 +3468,7 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "ACT[add] [%pp]: Attempting to recruit peerview members.\n",
                     myself);
+
 
     /* Get some candidates from the RDV Server. We won't be running unless the peer is a rdv. 
      */

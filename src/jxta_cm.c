@@ -3261,11 +3261,12 @@ Jxta_cache_entry **cm_query_ctx(Jxta_cm * me, Jxta_credential ** scope, int thre
     jstring_append_2(jJoin, SQL_FROM CM_TBL_ELEM_ATTRIBUTES_SRC SQL_JOIN);
     jstring_append_2(jJoin, CM_TBL_ADVERTISEMENTS_JOIN SQL_ON);
     jstring_append_2(jJoin, CM_COL_SRC SQL_DOT CM_COL_AdvId SQL_EQUAL CM_COL_JOIN SQL_DOT CM_COL_AdvId);
+
+    /* concatenate groupIDs within the scope of the query */
     if (me->sharedDB) {
         jstring_append_2(jJoin, SQL_AND CM_COL_SRC SQL_DOT CM_COL_GroupID SQL_EQUAL CM_COL_JOIN SQL_DOT CM_COL_GroupID);
     }
 
-    /* concatenate groupIDs within the scope of the query */
     jSQLcmd = jstring_new_2(jstring_get_string(jContext->sqlcmd));
 
     while (NULL != scope && *scope && me->sharedDB) {

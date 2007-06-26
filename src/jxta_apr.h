@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_apr.h,v 1.14 2006/09/29 02:01:28 slowhog Exp $
+ * $Id: jxta_apr.h.in,v 1.4 2006/09/29 02:01:29 slowhog Exp $
  */
 
 #ifndef __JXTA_APR_H__
@@ -78,7 +78,7 @@
 #include <apr_lib.h>
 #include <apr_buckets.h>
 
-#ifdef HAVE_APR_THREAD_POOL_H
+#if 0
 #include <apr_thread_pool.h>
 #else
 #include "jpr/apr_thread_pool.h"
