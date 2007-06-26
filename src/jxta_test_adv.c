@@ -669,10 +669,8 @@ JXTA_DECLARE(Jxta_status) jxta_test_adv_get_xml(Jxta_test_adv * ad, JString ** x
     }
     jstring_append_2(string, " IdAttr1=\"");
     jstring_append_2(string, jxta_test_adv_get_IdAttr1((Jxta_test_adv *) ad));
-    jstring_append_2(string, "\""); 
-    /* jstring_append_2(string,
-                     " range:IdAttr1=\"(-100 :: 300)\" range:testBadOne=\" (xxx, ddd)\" range:testBadOne2=\"(xxx-xddd)\""); */
-    jstring_append_2(string, ">");
+    jstring_append_2(string,
+                     " range:IdAttr1=\"(-100 :: 300)\" range:testBadOne=\" (xxx, ddd)\" range:testBadOne2=\"(xxx-xddd)\"");
     jstring_append_2(string, jxta_test_adv_get_Id((Jxta_test_adv *) ad));
     jstring_append_2(string, "</testId>\n");
     jstring_append_2(string, "<Type>");
@@ -692,7 +690,7 @@ JXTA_DECLARE(Jxta_status) jxta_test_adv_get_xml(Jxta_test_adv * ad, JString ** x
     jstring_append_2(string, "\">");
     jstring_append_2(string, jxta_test_adv_get_Name((Jxta_test_adv *) ad));
     jstring_append_2(string, "</Name>\n");
-    /* jstring_append_2(string, "<Empty1 range=\"(100 :: 200)\" Empty1Attribute=\"empty\">#300</Empty1>\n"); */
+    jstring_append_2(string, "<Empty1 range=\"(100 :: 200)\" Empty1Attribute=\"empty\">#300</Empty1>\n");
     jstring_append_2(string, "<Empty2/>\n");
     jstring_append_2(string, "<GenericNumeric");
     if (NULL == ad->GenericNumericRange) {
