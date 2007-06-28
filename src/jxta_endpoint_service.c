@@ -541,7 +541,6 @@ static void messenger_remove(Jxta_endpoint_service * me, Jxta_endpoint_address *
 {
     char * ta;
     Peer_route_elt *ptr;
-    apr_ssize_t len;
 
     ta = jxta_endpoint_address_get_transport_addr(ea);
     ptr = apr_hash_get(me->messengers, ta, APR_HASH_KEY_STRING);
@@ -1737,7 +1736,7 @@ static Jxta_status do_crossgroup_send(Jxta_PG * obj, Jxta_endpoint_service * me,
     if (strncmp(jxta_endpoint_address_get_service_name(dest_addr), JXTA_ENDPOINT_SERVICE_NAME, 
                 strlen(JXTA_ENDPOINT_SERVICE_NAME))) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "PeerGroup cross-messenger need to rewrite dest address\n");
-        res = jxta_PG_get_recipient_addr(pg, jxta_endpoint_address_get_protocol_name(dest_addr),
+        res = jxta_PG_get_recipient_addr((Jxta_PG *)pg, jxta_endpoint_address_get_protocol_name(dest_addr),
                                          jxta_endpoint_address_get_protocol_address(dest_addr),
                                          jxta_endpoint_address_get_service_name(dest_addr),
                                          jxta_endpoint_address_get_service_params(dest_addr), &new_addr);
@@ -1998,9 +1997,7 @@ void jxta_endpoint_service_transport_event(Jxta_endpoint_service * me, Jxta_tran
 {
     char *addr = NULL;
     Jxta_endpoint_address *ea = NULL;
-    Jxta_status status;
     Nc_entry *ptr = NULL;
-    apr_ssize_t klen;
 
     switch (e->type) {
     case JXTA_TRANSPORT_INBOUND_CONNECTED:
