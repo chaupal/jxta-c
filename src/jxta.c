@@ -102,6 +102,7 @@ JXTA_DECLARE(void) jxta_initialize(void)
     jxta_range_init();
 }
 
+// test commit svn 
 
 /**
  * @todo Add termination code.
