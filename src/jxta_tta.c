@@ -568,6 +568,7 @@ static void jxta_TCPTransportAdvertisement_destruct(Jxta_TCPTransportAdvertiseme
     JXTA_OBJECT_RELEASE(self->Protocol);
     JXTA_OBJECT_RELEASE(self->ConfigMode);
     JXTA_OBJECT_RELEASE(self->Server);
+	free(self->InterfaceAddress);
 
     jxta_advertisement_destruct((Jxta_advertisement *) self);
 }
