@@ -64,8 +64,6 @@ static const char *__log_cat = "TLS_TRANSPORT";
 #include "jxta_apr.h"
 #include "jpr/jpr_excep_proto.h"
 
-#include "apr_lib.h"
-
 #include "jstring.h"
 #include "jxta_types.h"
 #include "jxta_errno.h"
@@ -84,8 +82,6 @@ static const char *__log_cat = "TLS_TRANSPORT";
 #include <openssl/err.h>
 
 #include "jxta_tls_config_adv.h"
-
-#include "apr_file_info.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>

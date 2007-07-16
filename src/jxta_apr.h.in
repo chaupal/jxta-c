@@ -78,6 +78,7 @@
 #include <apr_lib.h>
 #include <apr_buckets.h>
 #include <apr_uri.h>
+#include <apr_file_info.h>
 
 #if @apr_threadpool@
 #include <apr_thread_pool.h>
