@@ -368,8 +368,6 @@ static void Jxta_rdv_service_server_destruct(_jxta_rdv_service_server * myself)
     JXTA_OBJECT_RELEASE(myself->clients);
 
     /* Release the services object this instance was using */
-    if (myself->discovery != NULL)
-        JXTA_OBJECT_RELEASE(myself->discovery);
     if (myself->rdvConfig != NULL)
         JXTA_OBJECT_RELEASE(myself->rdvConfig);
 
@@ -413,7 +411,6 @@ static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service 
     jxta_rdv_service_provider_init(provider, service);
 
     group = jxta_service_get_peergroup_priv((Jxta_service *) service);
-    jxta_PG_get_discovery_service(group, &myself->discovery);
 
     /* get the config advertisement */
     jxta_PG_get_configadv(group, &conf_adv);
@@ -475,11 +472,20 @@ static Jxta_status start(Jxta_rdv_service_provider * provider)
     Jxta_status res;
     Jxta_PG * pg;
 
+    jxta_rdv_service_provider_lock_priv(provider);
+
+    if (TRUE == myself->running)
+    {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "RDV server is already started, ignore start request.\n");
+        jxta_rdv_service_provider_unlock_priv(provider);
+        assert(FALSE);
+        return APR_SUCCESS;
+    }
+
     pg = jxta_service_get_peergroup_priv((Jxta_service*) provider->service);
+    jxta_PG_get_discovery_service(pg, &myself->discovery);
     jxta_PG_add_recipient(pg, &myself->ep_cookie_leasing, RDV_V3_MSID, JXTA_RDV_LEASING_SERVICE_NAME, leasing_cb, myself);
     jxta_PG_add_recipient(pg, &myself->ep_cookie_walker, RDV_V3_MSID, JXTA_RDV_WALKER_SERVICE_NAME, walker_cb, myself);
-
-    jxta_rdv_service_provider_lock_priv(provider);
 
     res = jxta_rdv_service_provider_start(provider);
 
@@ -547,14 +553,16 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
     jxta_PG_remove_recipient(pg, myself->ep_cookie_leasing);
     jxta_PG_remove_recipient(pg, myself->ep_cookie_walker);
 
+    if (myself->discovery != NULL) {
+        JXTA_OBJECT_RELEASE(myself->discovery);
+        myself->discovery = NULL;
+    }
+
     /* We need to tell the background thread that it has to die. */
     myself->running = FALSE;
-
     jxta_rdv_service_provider_unlock_priv(provider);
+
     apr_thread_pool_tasks_cancel(provider->thread_pool, myself);
-
-    rdv_service_generate_event(provider->service, JXTA_RDV_FAILED, provider->local_peer_id);
-
 
     /* Remove listener on the pipe */
     if (myself->seeding_listener != NULL) {
@@ -568,6 +576,8 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
         JXTA_OBJECT_RELEASE(myself->seeding_listener);
         myself->seeding_listener = NULL;
     }
+
+    rdv_service_generate_event(provider->service, JXTA_RDV_FAILED, provider->local_peer_id);
 
     /*
      *  FIXME 20050203 bondolo Should send a disconnect.
@@ -1364,8 +1374,11 @@ static void *APR_THREAD_FUNC periodic_task(apr_thread_t * thread, void *arg)
     /*
      * TODO: exponential backoff delay to avoid constant * retry to RDV seed.
      */
-    apr_thread_pool_schedule(provider->thread_pool, periodic_task, myself,
-                             jxta_RdvConfig_get_connect_cycle_normal(myself->rdvConfig) * 1000, myself);
+    if (myself->running) {
+        apr_thread_pool_schedule(provider->thread_pool, periodic_task, myself,
+                                jxta_RdvConfig_get_connect_cycle_normal(myself->rdvConfig) * 1000, myself);
+    }
+                             
     return NULL;
 }
 

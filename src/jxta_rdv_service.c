@@ -244,10 +244,6 @@ static void jxta_rdv_service_destruct(_jxta_rdv_service * rdv)
         myself->provider = NULL;
     }
 
-    if (NULL != myself->parentgroup) {
-        JXTA_OBJECT_RELEASE(myself->parentgroup);
-    }
-
     if (NULL != myself->endpoint) {
         JXTA_OBJECT_RELEASE(myself->endpoint);
     }
@@ -266,10 +262,6 @@ static void jxta_rdv_service_destruct(_jxta_rdv_service * rdv)
 
     if (NULL != myself->assigned_id_str) {
         free(myself->assigned_id_str);
-    }
-
-    if (NULL != myself->group) {
-        JXTA_OBJECT_RELEASE(myself->group);
     }
 
     if (NULL != myself->parentgroup) {
@@ -364,7 +356,7 @@ static Jxta_status init(Jxta_module * rdv, Jxta_PG * group, Jxta_id * assigned_i
 
     jxta_PG_get_PID(group, &myself->pid);
 
-    myself->group = JXTA_OBJECT_SHARE(group);
+    myself->group = group; /* Not shared to prevent a circular dependency */
 
     jxta_PG_get_parentgroup(group, &myself->parentgroup);
 
@@ -874,6 +866,9 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_set_config(Jxta_rdv_service * rdv, Rd
     case status_edge:
         if (NULL != myself->peerview) {
             res = jxta_peerview_remove_event_listener(myself->peerview, myself->assigned_id_str, NULL);
+            jxta_listener_stop(myself->peerview_listener);
+            JXTA_OBJECT_RELEASE(myself->peerview_listener);
+            myself->peerview_listener = NULL;
 
             res = peerview_stop(myself->peerview);
 

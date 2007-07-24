@@ -578,7 +578,9 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
     /* We need to tell the background task that it has to die. */
     myself->running = FALSE;
 
+    jxta_rdv_service_provider_unlock_priv(provider);
     apr_thread_pool_tasks_cancel(provider->thread_pool, myself);
+    jxta_rdv_service_provider_lock_priv(provider);
 
     assert(NULL != myself->ep_cookie);
     pg = jxta_service_get_peergroup_priv((Jxta_service*) provider->service);
@@ -808,8 +810,11 @@ static void send_lease_request(_jxta_rdv_service_client * myself, _jxta_peer_rdv
     jxta_peer_lock((Jxta_peer *) peer);
 
     address = jxta_peer_address((Jxta_peer *) peer);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Requesting Rdv lease from %s://%s\n",
-                    jxta_endpoint_address_get_protocol_name(address), jxta_endpoint_address_get_protocol_address(address));
+    if (address != NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Requesting Rdv lease from %s://%s\n",
+                        jxta_endpoint_address_get_protocol_name(address), 
+                        jxta_endpoint_address_get_protocol_address(address));
+    }
 
     if ((peer->lastConnectTry + peer->connectInterval) > currentTime) {
         /* Not time yet to try to connect */
@@ -899,7 +904,7 @@ static void send_lease_request(_jxta_rdv_service_client * myself, _jxta_peer_rdv
         Jxta_id *pid = jxta_PA_get_PID(pa);
         res = jxta_PG_sync_send(pg, msg, pid, RDV_V3_MSID, JXTA_RDV_LEASING_SERVICE_NAME);
         JXTA_OBJECT_RELEASE(pid);
-    } else {
+    } else if (address != NULL) {
         Jxta_endpoint_address *dest = NULL;
         res = jxta_PG_get_recipient_addr(pg, jxta_endpoint_address_get_protocol_name(address),
                                          jxta_endpoint_address_get_protocol_address(address), 
@@ -908,6 +913,10 @@ static void send_lease_request(_jxta_rdv_service_client * myself, _jxta_peer_rdv
             res = jxta_endpoint_service_send_ex(provider->service->endpoint, msg, dest, JXTA_TRUE);
             JXTA_OBJECT_RELEASE(dest);
         }
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot send the lease request "
+                        "because both the pa and address are NULL\n");
+        res = JXTA_FAILED;
     }
 
     /*
@@ -1350,7 +1359,7 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
             }
         }
 
-        while ((NULL == myself->candidate) && (jxta_vector_size(myself->candidates) > 0)) {
+        while ((NULL != myself->candidate) && (jxta_vector_size(myself->candidates) > 0)) {
             /* Try connecting to a new candidate */
             res = jxta_vector_remove_object_at(myself->candidates, JXTA_OBJECT_PPTR(&myself->candidate), 0);
 
