@@ -242,6 +242,7 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
     Jxta_netpg *it = PTValid(self, Jxta_netpg);
     Jxta_status rv = JXTA_SUCCESS;
     Jxta_PA *config_adv = NULL;
+    Jxta_id *pg_id = NULL;
 
     const char *noargs[] = { NULL };
 
@@ -275,15 +276,16 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
         JString *name;
         JString *desc;
 
-        assigned_id = jxta_PA_get_GID(config_adv);
+        pg_id = jxta_PA_get_GID(config_adv);
+        assigned_id = pg_id;
 
-        /**
-	 * We are simulating the old behaviour
-	 * if jxta-Null is set read from the platformConfig
-	 * well then set the default NetPeerGroupId 
-	 */
+        /*
+         * We are simulating the old behaviour
+         * if jxta-Null is set read from the platformConfig
+         * well then set the default NetPeerGroupId 
+         */
         if (jxta_id_equals(assigned_id, jxta_id_nullID)) {
-            JXTA_OBJECT_RELEASE(assigned_id);
+            /* no share needed as jxta_id_defaultNetPeerGroupID is static object */
             assigned_id = jxta_id_defaultNetPeerGroupID;
             jxta_PA_set_GID(config_adv, assigned_id);
         }
@@ -320,6 +322,10 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
 
     jxta_stdpg_set_configadv(self, config_adv);
     jxta_stdpg_init_group(self, group, assigned_id, impl_adv);
+
+    /* can only release pg_id after we done with assigned_id */
+    JXTA_OBJECT_RELEASE(pg_id);
+
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count after super group init :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(self));
