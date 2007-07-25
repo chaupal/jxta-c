@@ -1374,10 +1374,12 @@ static void *APR_THREAD_FUNC periodic_task(apr_thread_t * thread, void *arg)
     /*
      * TODO: exponential backoff delay to avoid constant * retry to RDV seed.
      */
+    jxta_rdv_service_provider_lock_priv(provider);
     if (myself->running) {
         apr_thread_pool_schedule(provider->thread_pool, periodic_task, myself,
                                 jxta_RdvConfig_get_connect_cycle_normal(myself->rdvConfig) * 1000, myself);
     }
+    jxta_rdv_service_provider_unlock_priv(provider);
                              
     return NULL;
 }
