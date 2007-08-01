@@ -494,7 +494,7 @@ static void handle_target_hash(void *me, const XML_Char * cd, int len)
             JXTA_OBJECT_RELEASE(myself->target_hash);
         }
         
-        myself->target_hash = JXTA_OBJECT_SHARE( string );
+        myself->target_hash = string;
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <TargetHash> : [%pp]\n", myself);
     }
