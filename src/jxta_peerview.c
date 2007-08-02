@@ -2034,6 +2034,8 @@ static Jxta_status peerview_handle_ping(Jxta_peerview * myself, Jxta_peerview_pi
             /* It's not for me! Just ignore it. */
             goto FINAL_EXIT;
         }
+        if (NULL != pid)
+            JXTA_OBJECT_RELEASE(pid);
     }
 
     pid = jxta_peerview_ping_msg_get_src_peer_id(ping);
