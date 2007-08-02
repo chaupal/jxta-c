@@ -2611,7 +2611,11 @@ static Jxta_status peerview_remove_pve(Jxta_peerview * myself, Jxta_PID * pid)
 
             if (found) {
                 jxta_vector_remove_object_at(myself->clusters[each_cluster].members, NULL, each_member);
-
+                
+                if (NULL != myself->assigner_id && jxta_id_equals(pid, myself->assigner_id)) {
+                    JXTA_OBJECT_RELEASE(myself->assigner_id);
+                    myself->assigner_id = NULL;
+                }
                 if (NULL != myself->clusters[each_cluster].histogram) {
                     JXTA_OBJECT_RELEASE(myself->clusters[each_cluster].histogram);
                     myself->clusters[each_cluster].histogram = NULL;
