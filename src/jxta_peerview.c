@@ -1008,7 +1008,7 @@ static unsigned int cluster_for_hash(Jxta_peerview * myself, BIGNUM * target_has
     unsigned int target_cluster;
 
     tmp = BN_bn2hex(myself->peer_address_space);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Cluster divisor : %s\n", tmp);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Address Space : %s\n", tmp);
     free(tmp);
 
     tmp = BN_bn2hex(target_hash);
