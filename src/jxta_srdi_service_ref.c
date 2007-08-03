@@ -336,6 +336,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
             JXTA_OBJECT_RELEASE(jRepId);
         }
             JXTA_OBJECT_RELEASE(repId);
+            JXTA_OBJECT_RELEASE(repPeer);
         }
         JXTA_OBJECT_RELEASE(entry);
         JXTA_OBJECT_RELEASE(newEntry);

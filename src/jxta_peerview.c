@@ -781,7 +781,7 @@ static Jxta_status create_self_pve(Jxta_peerview * myself, BIGNUM * address)
     apr_uuid_get(&myself->self_pve->adv_gen);
     JXTA_OBJECT_RELEASE(pa);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Initializing Self PVE : \n", myself->self_pve);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Initializing Self PVE : %x\n", myself->self_pve);
 
     jxta_peer_set_expires((Jxta_peer *) myself->self_pve, JPR_ABSOLUTE_TIME_MAX);
 
@@ -1088,6 +1088,7 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_get_peer_for_target_hash(Jxta_peerview *
                         BN_copy(best_distance, distance);
                     }
                 }
+                JXTA_OBJECT_RELEASE(candidate);
             }
 
             BN_free(distance);
