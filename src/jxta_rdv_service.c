@@ -738,18 +738,19 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_set_config(Jxta_rdv_service * rdv, Rd
     _jxta_rdv_service *myself = PTValid(rdv, _jxta_rdv_service);
     Jxta_rdv_service_provider *newProvider;
     Jxta_rdv_service_provider *oldProvider;
-    RendezVousStatus new_status;
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "[%pp] Switching rdv configuration : [%s] -> [%s]\n",
-                    myself, JXTA_RDV_CONFIG_MODE_NAMES[myself->current_config], JXTA_RDV_CONFIG_MODE_NAMES[config]);
-
-    apr_thread_mutex_lock(myself->mutex);
+    RendezVousStatus new_status = myself->current_config;
 
     if ((NULL != myself->provider) && (myself->current_config == config)) {
         /* Already in correct config. */
         res = JXTA_SUCCESS;
         goto FINAL_EXIT;
     }
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "[%pp] Switching rdv configuration : [%s] -> [%s]\n",
+                    myself, JXTA_RDV_CONFIG_MODE_NAMES[myself->current_config], JXTA_RDV_CONFIG_MODE_NAMES[config]);
+
+    apr_thread_mutex_lock(myself->mutex);
+
 
     switch (config) {
     case config_adhoc:
