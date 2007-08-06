@@ -141,7 +141,9 @@ static void peerview_ping_msg_delete(Jxta_object * me)
         JXTA_OBJECT_RELEASE(myself->options);
         myself->options = NULL;
     }
-    
+
+    jxta_advertisement_destruct((Jxta_advertisement *) myself);
+
     memset(myself, 0xdd, sizeof(Jxta_peerview_ping_msg));
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "PeerviewPing FREE [%pp]\n", myself );
