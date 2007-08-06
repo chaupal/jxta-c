@@ -739,6 +739,7 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_set_config(Jxta_rdv_service * rdv, Rd
     Jxta_rdv_service_provider *newProvider;
     Jxta_rdv_service_provider *oldProvider;
     RendezVousStatus new_status = myself->current_config;
+    Jxta_boolean locked = FALSE;
 
     if ((NULL != myself->provider) && (myself->current_config == config)) {
         /* Already in correct config. */
@@ -750,7 +751,7 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_set_config(Jxta_rdv_service * rdv, Rd
                     myself, JXTA_RDV_CONFIG_MODE_NAMES[myself->current_config], JXTA_RDV_CONFIG_MODE_NAMES[config]);
 
     apr_thread_mutex_lock(myself->mutex);
-
+    locked = TRUE;
 
     switch (config) {
     case config_adhoc:
@@ -891,7 +892,8 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_set_config(Jxta_rdv_service * rdv, Rd
     }
 
   FINAL_EXIT:
-    apr_thread_mutex_unlock(myself->mutex);
+    if (locked)
+        apr_thread_mutex_unlock(myself->mutex);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "[%pp] Rendezvous provider status : %s\n", myself,
                     JXTA_RDV_STATUS_NAMES[new_status]);
