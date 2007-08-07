@@ -333,7 +333,7 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_get_xml(Jxta_lease_response_ms
 {
     Jxta_status res = JXTA_SUCCESS;
     JString *string;
-    JString *tempstr;
+    JString *tempstr=NULL;
     char tmpbuf[256];   /* We use this buffer to store a string representation of a int */
     unsigned int each_referral;
 
@@ -356,6 +356,7 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_get_xml(Jxta_lease_response_ms
     jxta_id_to_jstring(myself->server_id, &tempstr);
     jstring_append_1(string, tempstr);
     JXTA_OBJECT_RELEASE(tempstr);
+    tempstr = NULL;
     jstring_append_2(string, "\"");
 
     if (-1L != myself->offered_lease) {
@@ -394,7 +395,6 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_get_xml(Jxta_lease_response_ms
         attrs[attr_idx] = NULL;
 
         server_adv = jxta_lease_adv_info_get_adv(myself->server);
-        tempstr = NULL;
 
         jxta_PA_get_xml_1(server_adv, &tempstr, "ServerAdv", attrs);
         JXTA_OBJECT_RELEASE(server_adv);
@@ -404,8 +404,11 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_get_xml(Jxta_lease_response_ms
                 free( (void*) attrs[attr_idx]);
             }
         }
-
-        jstring_append_1(string, tempstr);
+        if (tempstr) {
+            jstring_append_1(string, tempstr);
+            JXTA_OBJECT_RELEASE(tempstr);
+            tempstr = NULL;
+        }
     }
 
     for (each_referral = 0; each_referral < jxta_vector_size(myself->referrals); each_referral++) {
@@ -437,8 +440,11 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_get_xml(Jxta_lease_response_ms
                     free( (void*) attrs[attr_idx]);
                 }
             }
-
-            jstring_append_1(string, tempstr);
+            if (tempstr) {
+                jstring_append_1(string, tempstr);
+                JXTA_OBJECT_RELEASE(tempstr);
+                tempstr = NULL;
+            }
 
             JXTA_OBJECT_RELEASE(referral);
         }
@@ -446,7 +452,8 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_get_xml(Jxta_lease_response_ms
     }
 
     jstring_append_2(string, "</jxta:LeaseResponse>\n");
-
+    if (tempstr)
+        JXTA_OBJECT_RELEASE(tempstr);
     *xml = string;
     return JXTA_SUCCESS;
 }
