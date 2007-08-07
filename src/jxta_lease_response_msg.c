@@ -417,7 +417,7 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_get_xml(Jxta_lease_response_ms
         int attr_idx = 2;
         Jxta_lease_adv_info *referral;
 
-        res = jxta_vector_get_object_at(myself->referrals, (Jxta_object **) & referral, each_referral);
+        res = jxta_vector_get_object_at(myself->referrals, JXTA_OBJECT_PPTR(& referral), each_referral);
 
         if (JXTA_SUCCESS == res) {
             Jxta_PA *adv = jxta_lease_adv_info_get_adv(referral);
