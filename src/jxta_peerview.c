@@ -1746,8 +1746,15 @@ static Jxta_status peerview_handle_address_request(Jxta_peerview * myself, Jxta_
     Jxta_peer *dest;
     Jxta_boolean found_empty = FALSE;
 
+
     apr_thread_mutex_lock(myself->mutex);
     locked = TRUE;
+
+    /* Make sure we are an active member of a peerview. */
+    if ((NULL == myself->self_pve) || (0 == jxta_peer_get_expires((Jxta_peer *) myself->self_pve))) {
+        /* We are either inactive or moving to a new instance. */
+         goto FINAL_EXIT;
+    }
 
     /* XXX 20060925 bondolo Possbily use existing target hash if present */
 
