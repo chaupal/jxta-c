@@ -581,6 +581,18 @@ static void peerview_destruct(Jxta_peerview * myself)
         JXTA_OBJECT_RELEASE(myself->activity_add_candidate_peers);
     }
 
+    if (NULL != myself->cluster_divisor) {
+        BN_free(myself->cluster_divisor);
+    }
+
+    if (NULL != myself->peer_address_space) {
+        BN_free(myself->peer_address_space);
+    }
+
+    if (NULL != myself->instance_mask) {
+        BN_free(myself->instance_mask);
+    }
+
     apr_thread_mutex_destroy(myself->mutex);
 
     /* Free the pool */
@@ -789,10 +801,7 @@ Jxta_status peerview_stop(Jxta_peerview * pv)
 
     /* FIXME bondolo Announce that we are shutting down */
 
-    /* Remove our PVE */
-    if (myself->self_pve) {
-        peerview_remove_pve(myself, jxta_peer_peerid((Jxta_peer *) myself->self_pve));
-    }
+    peerview_clear_pves(myself);
 
     myself->running = FALSE;
 
