@@ -199,14 +199,6 @@ struct _jxta_peerview {
     Jxta_boolean active;
 
     /**
-    *   If TRUE then we have assigned an address to another peer since we
-    *   joined this peerview.
-    **/
-    Jxta_boolean assigned_address;
-
-    /* State */
-
-    /**
     *   The instance mask of the peerview instance we are participating in or 
     *   NULL if we haven't yet chosen a peerview instance in which to participate.
     **/
@@ -245,29 +237,6 @@ struct _jxta_peerview {
     *   Our own pve or NULL if we have no assigned address within the peerview.
     */
     Peerview_entry *self_pve;
-
-    /**
-    *   ID of the peer which assigned us our address (may be self)
-    **/
-    Jxta_id *assigner_id;
-
-    /**
-    *   Advertisement gen of the peer which assigned us. We will do no assignments
-    *   (outside or inside) of our cluster as long as the peer still has this the 
-    *   same gen. If the peer is not in our cluster then we will do assignements
-    *   within our cluster.
-    **/
-    apr_uuid_t assigner_adv_gen;
-
-    /**
-    *   If true then we will assign addresses outside our cluster to peers who request them.
-    **/
-    Jxta_boolean assign_global_addresses;
-
-    /**
-    *   If true then we will assign addresses within our cluster to peers who request them.
-    **/
-    Jxta_boolean assign_local_addresses;
 
     /** 
     *   To generate peer view events 
@@ -517,7 +486,6 @@ static Jxta_peerview *peerview_construct(Jxta_peerview * myself, apr_pool_t * pa
         myself->my_cluster = INT_MAX;
         myself->clusters = NULL;
         myself->self_pve = NULL;
-        myself->assigner_id = NULL;
 
         myself->event_listener_table = jxta_hashtable_new(1);
 
@@ -537,6 +505,7 @@ static Jxta_peerview *peerview_construct(Jxta_peerview * myself, apr_pool_t * pa
 
 static void peerview_destruct(Jxta_peerview * myself)
 {
+
     if (myself->running) {
         peerview_stop(myself);
     }
@@ -600,12 +569,16 @@ static void peerview_destruct(Jxta_peerview * myself)
         JXTA_OBJECT_RELEASE(myself->self_pve);
     }
 
-    if (NULL != myself->assigner_id) {
-        JXTA_OBJECT_RELEASE(myself->assigner_id);
-    }
-
     if (NULL != myself->event_listener_table) {
         JXTA_OBJECT_RELEASE(myself->event_listener_table);
+    }
+
+    if (NULL !=  myself->activity_maintain_referral_peers) {
+        JXTA_OBJECT_RELEASE(myself->activity_maintain_referral_peers);
+    }
+
+    if (NULL != myself->activity_add_candidate_peers) {
+        JXTA_OBJECT_RELEASE(myself->activity_add_candidate_peers);
     }
 
     apr_thread_mutex_destroy(myself->mutex);
@@ -613,6 +586,9 @@ static void peerview_destruct(Jxta_peerview * myself)
     /* Free the pool */
 
     apr_pool_destroy(myself->pool);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Destruction of [%pp] finished\n", myself);
+
 }
 
 JXTA_DECLARE(Jxta_status) peerview_init(Jxta_peerview * pv, Jxta_PG * group, Jxta_id * assigned_id)
@@ -807,10 +783,11 @@ Jxta_status peerview_stop(Jxta_peerview * pv)
 {
     Jxta_peerview *myself = PTValid(pv, Jxta_peerview);
 
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Stopping peerview\n");
+
     apr_thread_mutex_lock(myself->mutex);
 
     /* FIXME bondolo Announce that we are shutting down */
-
 
     /* Remove our PVE */
     if (myself->self_pve) {
@@ -1758,63 +1735,6 @@ static Jxta_status JXTA_STDCALL peerview_protocol_cb(Jxta_object * obj, void *ar
     return res;
 }
 
-/**
-*   Must be called with global mutex locked.
-**/
-static void update_assignment_scope(Jxta_peerview * myself)
-{
-
-    /* Start Safe */
-    myself->assign_global_addresses = FALSE;
-    myself->assign_local_addresses = FALSE;
-
-    /* Make sure we are an active member of a peerview. */
-    if ((NULL == myself->self_pve) || (0 == jxta_peer_get_expires((Jxta_peer *) myself->self_pve))) {
-        /* We are either inactive or moving to a new instance. */
-        return;
-    }
-
-    if (NULL == myself->assigner_id) {
-        /* Not entirely sure how this might happen... */
-        return;
-    }
-
-    if (myself->pid != myself->assigner_id) {
-        Peerview_entry *assigner = peerview_get_pve(myself, myself->assigner_id);
-        Jxta_boolean we_assign = FALSE;
-
-        if (NULL == assigner) {
-            /* Our assigner is gone. We have leave to do what we wish. */
-            we_assign = TRUE;
-        } else {
-            if (0 != memcmp(&myself->assigner_adv_gen, &assigner->adv_gen, sizeof(apr_uuid_t))) {
-                /* Assigner has changed adv_gen, maybe it's time to go our own way. */
-                we_assign = TRUE;
-            } else {
-                if (myself->my_cluster != cluster_for_hash(myself, assigner->target_hash)) {
-                    /* our assigner is not in our cluster, we allow ourselves to assign within our cluster */
-                    myself->assign_local_addresses = TRUE;
-                }
-            }
-
-            if (we_assign) {
-                myself->assign_local_addresses = TRUE;
-                myself->assign_global_addresses = TRUE;
-
-                /* re-write history. This makes things easier in future runs. */
-                JXTA_OBJECT_RELEASE(myself->assigner_id);
-                myself->assigner_id = JXTA_OBJECT_SHARE(myself->pid);
-            }
-
-            JXTA_OBJECT_RELEASE(assigner);
-        }
-    } else {
-        /* We are our own assigner (or our assigner vanished at some point) */
-        myself->assign_local_addresses = TRUE;
-        myself->assign_global_addresses = TRUE;
-    }
-}
-
 static Jxta_status peerview_handle_address_request(Jxta_peerview * myself, Jxta_peerview_address_request_msg * addr_req)
 {
     Jxta_status res = JXTA_SUCCESS;
@@ -1829,19 +1749,11 @@ static Jxta_status peerview_handle_address_request(Jxta_peerview * myself, Jxta_
     apr_thread_mutex_lock(myself->mutex);
     locked = TRUE;
 
-    update_assignment_scope(myself);
-
-    if (!myself->assign_global_addresses && !myself->assign_local_addresses) {
-        /* We are not in a position to be assigning addresses. So we don't respond. */
-        res = JXTA_SUCCESS;
-        goto FINAL_EXIT;
-    }
-
     /* XXX 20060925 bondolo Possbily use existing target hash if present */
 
     /* Inverse binary search. We look as far away from our cluster as possible */
 
-    if (myself->assign_global_addresses && myself->clusters_count > 1) {
+    if (myself->clusters_count > 1) {
         /* Assign within any cluster */
         unsigned int low_cluster;
         unsigned int mid_cluster;
@@ -1909,9 +1821,6 @@ static Jxta_status peerview_handle_address_request(Jxta_peerview * myself, Jxta_
     JXTA_OBJECT_RELEASE(dest_id);
     jxta_peer_set_expires(dest, jpr_time_now() + jxta_peerview_address_request_msg_get_peer_adv_exp(addr_req));
 
-    /* Note that we have assigned an address to another peer */
-    myself->assigned_address = TRUE;
-
     locked = FALSE;
     apr_thread_mutex_unlock(myself->mutex);
 
@@ -1968,17 +1877,6 @@ static Jxta_status peerview_handle_address_assign(Jxta_peerview * myself, Jxta_p
         goto FINAL_EXIT;
     }
 
-    assigner_id = jxta_peerview_address_assign_msg_get_peer_id(addr_assign);
-
-    assigner = peerview_get_pve(myself, assigner_id);
-
-    if (NULL == assigner) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Address assignement from peer not in the peerview.\n");
-        /* Our assigner is unknown to us, we won't accept it's assignement. */
-        res = JXTA_FAILED;
-        goto FINAL_EXIT;
-    }
-
     BN_hex2bn(&target_hash, jxta_peerview_address_assign_msg_get_target_hash(addr_assign));
 
     assert(PV_ADDRESSING == myself->state);
@@ -1986,10 +1884,6 @@ static Jxta_status peerview_handle_address_assign(Jxta_peerview * myself, Jxta_p
     myself->state = PV_ANNOUNCING;
 
     BN_free(target_hash);
-
-    myself->assigner_id = JXTA_OBJECT_SHARE(assigner_id);
-
-    myself->assigner_adv_gen = assigner->adv_gen;
 
     if (APR_SUCCESS != apr_thread_pool_push(myself->thread_pool, activity_peerview_announce, myself,
                                             APR_THREAD_TASK_PRIORITY_HIGH, myself)) {
@@ -2077,7 +1971,6 @@ static Jxta_status joining_peerview(Jxta_peerview * me, const char *pv_mask)
     }
 
     BN_hex2bn(&me->instance_mask, pv_mask);
-    me->assigned_address = FALSE;
     me->state = PV_ADDRESSING;
 
     if (APR_SUCCESS != apr_thread_pool_push(me->thread_pool, activity_peerview_addressing, me,
@@ -2102,7 +1995,7 @@ static Jxta_boolean is_for_alternative(Jxta_peerview * me, const char *pv_mask)
     same = BN_cmp(me->instance_mask, instance_mask);
     /* Instance masks are not the same. This response is from a different peerview instance. */
     if (same != 0) {
-        if (!me->assigned_address || same < 0) {
+        if (same < 0) {
             /* Signify that we are giving up on this peerview instance in favour of the new one. */
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "PV[%pp] Found peerview alternate instance : %s\n", me, pv_mask);
 
@@ -2613,10 +2506,6 @@ static Jxta_status peerview_remove_pve(Jxta_peerview * myself, Jxta_PID * pid)
             if (found) {
                 jxta_vector_remove_object_at(myself->clusters[each_cluster].members, NULL, each_member);
                 
-                if (NULL != myself->assigner_id && jxta_id_equals(pid, myself->assigner_id)) {
-                    JXTA_OBJECT_RELEASE(myself->assigner_id);
-                    myself->assigner_id = NULL;
-                }
                 if (NULL != myself->clusters[each_cluster].histogram) {
                     JXTA_OBJECT_RELEASE(myself->clusters[each_cluster].histogram);
                     myself->clusters[each_cluster].histogram = NULL;
@@ -3048,8 +2937,6 @@ static Jxta_status create_new_peerview(Jxta_peerview * me)
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "self chosen Instance Mask : %s\n", tmp);
     free(tmp);
 
-    me->assigned_address = FALSE;
-
     /* Choose our address randomly. */
     BN_rand(address, (SHA_DIGEST_LENGTH * CHAR_BIT), -1, 0);
 
@@ -3060,11 +2947,6 @@ static Jxta_status create_new_peerview(Jxta_peerview * me)
     create_self_pve(me, address);
 
     BN_free(address);
-
-    me->assigner_id = JXTA_OBJECT_SHARE(me->pid);
-
-    /* Force to zero, we are an authority unto ourselves (until proven otherwise) */
-    memset(&me->assigner_adv_gen, 0, sizeof(apr_uuid_t));
 
     return JXTA_SUCCESS;
 }
@@ -3463,20 +3345,16 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
         return NULL;
     }
 
-    update_assignment_scope(myself);
-
-    if (myself->assign_global_addresses) {
-        /* Survey and determine if additional Peerview members are needed in other clusters */
-        for (each_cluster = 0; each_cluster < myself->clusters_count; each_cluster++) {
-            unsigned int member_count = jxta_vector_size(myself->clusters[each_cluster].members);
-            if (0 == member_count) {
-                need_additional = TRUE;
-                break;
-            }
+    /* Survey and determine if additional Peerview members are needed in other clusters */
+    for (each_cluster = 0; each_cluster < myself->clusters_count; each_cluster++) {
+        unsigned int member_count = jxta_vector_size(myself->clusters[each_cluster].members);
+        if (0 == member_count) {
+            need_additional = TRUE;
+            break;
         }
     }
 
-    if (!need_additional && myself->assign_local_addresses) {
+    if (!need_additional) {
         /* Survey and determine if additional Peerview members are needed in our cluster */
         if (jxta_vector_size(myself->clusters[myself->my_cluster].members) < DEFAULT_CLUSTER_MEMBERS) {
             need_additional = TRUE;
