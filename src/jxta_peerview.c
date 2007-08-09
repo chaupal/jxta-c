@@ -777,13 +777,13 @@ static Jxta_status create_self_pve(Jxta_peerview * myself, BIGNUM * address)
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Self Target Hash : %s\n", tmp);
     free(tmp);
 
-    myself->self_pve->target_hash = BN_dup(address);
+    BN_copy(myself->self_pve->target_hash, address);
 
     myself->my_cluster = cluster_for_hash(myself, myself->self_pve->target_hash);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Self Cluster : %d\n", myself->my_cluster);
 
-    myself->self_pve->target_hash_radius = BN_dup(myself->peer_address_space);
+    BN_copy(myself->self_pve->target_hash_radius, myself->peer_address_space);
     BN_rshift1(myself->self_pve->target_hash_radius, myself->self_pve->target_hash_radius);
 
     res = peerview_add_pve(myself, myself->self_pve);
