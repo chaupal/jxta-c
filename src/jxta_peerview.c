@@ -581,6 +581,10 @@ static void peerview_destruct(Jxta_peerview * myself)
         JXTA_OBJECT_RELEASE(myself->activity_add_candidate_peers);
     }
 
+    if (NULL != myself->activity_locate_seeds) {
+        JXTA_OBJECT_RELEASE(myself->activity_locate_seeds);
+    }
+
     if (NULL != myself->cluster_divisor) {
         BN_free(myself->cluster_divisor);
     }
