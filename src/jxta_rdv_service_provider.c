@@ -137,6 +137,7 @@ void jxta_rdv_service_provider_destruct(_jxta_rdv_service_provider * myself)
     free(myself->assigned_id_str);
 
     JXTA_OBJECT_RELEASE(myself->local_peer_id);
+    JXTA_OBJECT_RELEASE(myself->local_pa);
 
     free(myself->gid_uniq_str);
 
