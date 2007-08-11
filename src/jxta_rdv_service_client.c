@@ -1352,7 +1352,6 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
 
         /* Final lap -- try to connect to a candidate rdv */
         if (NULL != myself->candidate) {
-
             if ((myself->candidate->lastConnectTry + myself->candidate->connectInterval) > jpr_time_now()) {
                 /* Time for the next candidate. */
                 JXTA_OBJECT_RELEASE(myself->candidate);
@@ -1360,7 +1359,7 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
             }
         }
 
-        while ((NULL != myself->candidates) && (jxta_vector_size(myself->candidates) > 0)) {
+        while ((NULL == myself->candidate) && (jxta_vector_size(myself->candidates) > 0)) {
             /* Try connecting to a new candidate */
             res = jxta_vector_remove_object_at(myself->candidates, JXTA_OBJECT_PPTR(&myself->candidate), 0);
 
@@ -1368,7 +1367,6 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
                 /* Failed. Try another! */
                 continue;
             }
-
             if (jxta_peer_get_expires((Jxta_peer *) myself->candidate) < jpr_time_now()) {
                 /* Expired candidate. Get another. */
                 JXTA_OBJECT_RELEASE(myself->candidate);
@@ -1376,13 +1374,15 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
                 continue;
             }
 
+        }
+        if (NULL != myself->candidate) {
             send_lease_request(myself, myself->candidate);
         }
     } else {
         /* We don't need any of the current candidates. */
         jxta_vector_clear(myself->candidates);
 
-        if (NULL == myself->candidate) {
+        if (NULL != myself->candidate) {
             JXTA_OBJECT_RELEASE(myself->candidate);
             myself->candidate = NULL;
         }
