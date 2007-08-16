@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_svc.c,v 1.58 2006/10/31 19:55:33 bondolo Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "SVCADV";

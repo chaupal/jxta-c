@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peerinfo_service_ref.c,v 1.14 2006/09/08 19:57:28 bondolo Exp $
+ * $Id$
  */
 
 

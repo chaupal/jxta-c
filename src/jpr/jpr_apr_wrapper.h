@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_apr_wrapper.h,v 1.7 2006/09/29 02:01:29 slowhog Exp $
+ * $Id$
  */
 
 #ifndef __JPR_APR_WRAPPER_H__

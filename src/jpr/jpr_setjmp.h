@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_setjmp.h,v 1.2 2005/02/08 22:48:35 bondolo Exp $
+ * $Id$
  */
 
 #ifndef JPR_SETJMP_H

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peerview_ping_msg.c,v 1.1.4.4 2007/05/24 16:24:24 exocetrick Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "PV_PING";

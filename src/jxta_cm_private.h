@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cm_private.h,v 1.15.2.1 2007/03/30 00:06:21 ExocetRick Exp $
+ * $Id$
  */
 #ifndef __JXTA_CM_PRIVATE_H__
 #define __JXTA_CM_PRIVATE_H__

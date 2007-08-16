@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cm.c,v 1.165.2.3 2007/05/25 21:55:10 ExocetRick Exp $
+ * $Id$
  */
 
 #include <stdlib.h>

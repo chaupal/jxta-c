@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pga.h,v 1.11 2006/09/01 02:56:51 bondolo Exp $
+ * $Id$
  */
 
 #ifndef JXTA_PGA_H__

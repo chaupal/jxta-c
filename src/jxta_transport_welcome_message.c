@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_welcome_message.c,v 1.6.4.1 2006/12/23 19:22:10 slowhog Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "WELCOME_MSG";

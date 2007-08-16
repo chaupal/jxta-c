@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_service.c,v 1.25 2006/09/06 21:45:18 slowhog Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "SERVICE";

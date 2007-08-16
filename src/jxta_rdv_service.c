@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service.c,v 1.78.4.3 2006/12/02 08:17:49 slowhog Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "RdvSvc";
@@ -802,7 +802,7 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_set_config(Jxta_rdv_service * rdv, Rd
                 goto FINAL_EXIT;
             }
 
-              /** Add a listener to peerview events */
+            /* Add a listener to peerview events */
             myself->peerview_listener = jxta_listener_new((Jxta_listener_func) peerview_event_listener, myself, 1, 1);
 
             if (myself->peerview_listener != NULL) {

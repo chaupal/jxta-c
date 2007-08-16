@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_constants.c,v 1.5 2006/08/14 22:51:17 mmx2005 Exp $
+ * $Id$
  */
 #include "jxta_constants.h"
 #include "jxta_advertisement.h"

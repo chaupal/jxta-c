@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport.h,v 1.9 2006/09/06 21:45:18 slowhog Exp $
+ * $Id$
  */
 
 #ifndef JXTA_TRANSPORT_H

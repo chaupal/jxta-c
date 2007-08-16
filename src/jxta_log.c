@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * $Id: jxta_log.c,v 1.31 2006/09/29 02:01:29 slowhog Exp $
+ * $Id$
  */
 
 #include <stdio.h>

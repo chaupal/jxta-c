@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bytevector.h,v 1.11 2006/02/21 17:12:30 slowhog Exp $
+ * $Id$
  */
 
 

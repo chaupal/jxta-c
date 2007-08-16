@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_platformconfig.c,v 1.7 2006/07/26 17:39:02 slowhog Exp $
+ * $Id$
  */
 
 #include "jxta_platformconfig.h"

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_address.h,v 1.20.4.1 2006/12/23 19:16:25 slowhog Exp $
+ * $Id$
  */
 
 

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jstring.c,v 1.73.4.1 2007/04/27 17:16:50 slowhog Exp $
+ * $Id$
  */
 
 

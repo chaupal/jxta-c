@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: mia_adv_test.c,v 1.7 2005/11/15 18:41:34 slowhog Exp $
+ * $Id$
  */
 
 #include <stdio.h>

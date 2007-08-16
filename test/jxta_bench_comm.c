@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bench_comm.c,v 1.10 2005/11/16 20:10:43 lankes Exp $
+ * $Id$
  */
 
 /**

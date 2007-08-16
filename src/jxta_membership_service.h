@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_membership_service.h,v 1.8 2006/09/15 18:31:33 bondolo Exp $
+ * $Id$
  */
 
 

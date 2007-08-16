@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cm.h,v 1.21 2006/07/13 21:28:30 exocetrick Exp $
+ * $Id$
  */
 #ifndef __JXTA_CM_H__
 #define __JXTA_CM_H__

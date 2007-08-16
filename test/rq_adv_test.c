@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rq_adv_test.c,v 1.17 2006/10/30 22:54:13 bondolo Exp $
+ * $Id$
  */
 
 #include <stdio.h>

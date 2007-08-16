@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_service_impl.h,v 1.12 2006/06/16 05:44:55 mmx2005 Exp $
+ * $Id$
  */
 
 

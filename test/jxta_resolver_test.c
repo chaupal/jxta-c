@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_test.c,v 1.23.4.1 2006/11/16 00:06:36 bondolo Exp $
+ * $Id$
  */
 
 #include "jxta.h"

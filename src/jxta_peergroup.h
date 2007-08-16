@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup.h,v 1.19.2.1 2006/12/02 07:56:47 slowhog Exp $
+ * $Id$
  */
 
 #ifndef JXTA_PEERGROUP_H

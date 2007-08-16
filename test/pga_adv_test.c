@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: pga_adv_test.c,v 1.11 2006/08/12 22:38:00 bondolo Exp $
+ * $Id$
  */
 
 #include <stdio.h>

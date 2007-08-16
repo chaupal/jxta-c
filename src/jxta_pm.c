@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pm.c,v 1.35 2006/11/04 10:44:47 mmx2005 Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "PropMsg";

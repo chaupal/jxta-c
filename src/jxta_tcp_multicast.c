@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tcp_multicast.c,v 1.32 2006/09/20 00:58:09 bondolo Exp $
+ * $Id$
  */
 
 

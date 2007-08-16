@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_types.c,v 1.10 2006/09/19 20:46:00 bondolo Exp $
+ * $Id$
  */
 
 #include "jpr_types.h"

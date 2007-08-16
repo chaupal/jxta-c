@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_server_tunnel.c,v 1.7 2005/10/13 17:07:39 exocetrick Exp $
+ * $Id$
  */
 
 #include <stdio.h>

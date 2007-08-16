@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: endpoint_test.c,v 1.31 2006/09/29 06:52:05 slowhog Exp $
+ * $Id$
  */
 
 #include <stdio.h>

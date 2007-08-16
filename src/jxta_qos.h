@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_qos.h,v 1.4 2006/08/19 01:16:43 slowhog Exp $
+ * $Id$
  */
 
 #ifndef JXTA_QOS_H

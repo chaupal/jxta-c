@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cred_null.c,v 1.9 2006/08/23 20:44:49 bondolo Exp $
+ * $Id$
  */
 
 #include <stdio.h>

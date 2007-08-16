@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jstring_test.h,v 1.3 2005/10/13 17:07:37 exocetrick Exp $
+ * $Id$
  */
 
 

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http_poller.h,v 1.8 2005/09/21 21:16:52 slowhog Exp $
+ * $Id$
  */
 #ifndef __HTTP_POLLER_H__
 #define __HTTP_POLLER_H__

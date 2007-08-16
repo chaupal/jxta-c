@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_message.h,v 1.12 2006/08/30 21:03:35 slowhog Exp $
+ * $Id$
  */
 
 #ifndef __JXTAMSG_H__

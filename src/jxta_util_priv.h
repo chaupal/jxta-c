@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_util_priv.h,v 1.8 2006/09/27 23:09:15 exocetrick Exp $
+ * $Id$
  */
 
 #include "jxta_vector.h"

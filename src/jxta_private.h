@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_private.h,v 1.22 2006/02/15 01:09:43 slowhog Exp $
+ * $Id$
  **/
 #ifndef __JXTA_PRIVATE_H__
 #define __JXTA_PRIVATE_H__

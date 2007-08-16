@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pga.c,v 1.40 2006/09/01 02:56:51 bondolo Exp $
+ * $Id$
  */
 
 static const char *const __log_cat = "PGA";

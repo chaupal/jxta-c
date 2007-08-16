@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_platformconfig.h,v 1.1 2005/10/13 19:52:39 mathieu Exp $
+ * $Id$
  */
 
 #ifndef JXTA_CONFIG_H

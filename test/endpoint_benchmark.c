@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: endpoint_benchmark.c,v 1.1 2006/10/20 16:49:07 slowhog Exp $
+ * $Id$
  */
 
 /**

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bench_pipe_resolution.c,v 1.1 2005/10/14 06:12:11 mathieu Exp $
+ * $Id$
  */
 
 /**

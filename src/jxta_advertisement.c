@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_advertisement.c,v 1.107 2006/11/01 04:40:05 mmx2005 Exp $
+ * $Id$
  */
 static const char *__log_cat = "ADV";
 

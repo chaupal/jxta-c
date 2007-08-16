@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_relaya.h,v 1.10 2006/10/31 22:08:54 bondolo Exp $
+ * $Id$
  */
 
 

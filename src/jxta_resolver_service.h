@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_service.h,v 1.10 2006/08/16 21:07:31 slowhog Exp $
+ * $Id$
  */
 
 #ifndef JXTA_RESOLVER_SERVICE_H

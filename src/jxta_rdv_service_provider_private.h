@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_provider_private.h,v 1.14.4.3 2006/12/02 08:17:50 slowhog Exp $
+ * $Id$
  */
 
 #ifndef __JXTA_RDV_SERVICE_PROVIDER_PRIVATE_H__

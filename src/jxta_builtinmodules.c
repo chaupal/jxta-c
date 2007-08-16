@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_builtinmodules.c,v 1.17 2005/09/29 07:27:50 slowhog Exp $
+ * $Id$
  */
 
 #include <stddef.h>

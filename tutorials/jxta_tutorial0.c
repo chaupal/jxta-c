@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tutorial0.c,v 1.6 2006/09/20 08:00:03 slowhog Exp $
+ * $Id$
  */
 
 /*

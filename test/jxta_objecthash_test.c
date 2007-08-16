@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_objecthash_test.c,v 1.10 2005/11/15 18:41:33 slowhog Exp $
+ * $Id$
  */
 
 #include <stdio.h>

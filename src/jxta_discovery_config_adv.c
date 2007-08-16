@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_discovery_config_adv.c,v 1.2 2006/02/18 00:32:51 slowhog Exp $
+ * $Id$
  */
 
 static const char *const __log_cat = "DiscCfgAdv";

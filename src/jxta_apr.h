@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_apr.h,v 1.14 2006/09/29 02:01:28 slowhog Exp $
+ * $Id$
  */
 
 #ifndef __JXTA_APR_H__

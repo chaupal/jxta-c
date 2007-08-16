@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_util_priv.c,v 1.16.2.2 2007/04/25 18:51:05 slowhog Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "UTIL";

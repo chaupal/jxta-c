@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cache_config_adv.c,v 1.5 2006/09/18 11:53:50 exocetrick Exp $
+ * $Id$
  */
 
 static const char *const __log_cat = "CacheCfgAdv";

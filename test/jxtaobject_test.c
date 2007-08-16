@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxtaobject_test.c,v 1.19 2006/06/30 20:38:34 bondolo Exp $
+ * $Id$
  */
 
 #include "jxta.h"

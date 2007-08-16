@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_walk_msg.c,v 1.11.4.1 2007/04/27 17:16:50 slowhog Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "WalkMsg";

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jdlist.c,v 1.13 2006/08/16 04:56:35 mmx2005 Exp $
+ * $Id$
  */
 
 /* 

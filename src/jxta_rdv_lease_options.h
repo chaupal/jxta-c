@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_lease_options.h,v 1.2.2.1 2006/11/29 01:49:50 slowhog Exp $
+ * $Id$
  */
 
 

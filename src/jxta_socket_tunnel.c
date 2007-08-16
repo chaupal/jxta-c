@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_socket_tunnel.c,v 1.22 2006/09/29 01:28:45 slowhog Exp $
+ * $Id$
  */
 
 #include <ctype.h>

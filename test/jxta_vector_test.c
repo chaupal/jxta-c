@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_vector_test.c,v 1.11 2006/08/20 20:15:58 bondolo Exp $
+ * $Id$
  */
 
 #include <jxta.h>

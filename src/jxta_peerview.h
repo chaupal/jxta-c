@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peerview.h,v 1.16.4.1 2006/11/16 00:06:30 bondolo Exp $
+ * $Id$
  */
 
 

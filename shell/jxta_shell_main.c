@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_main.c,v 1.33 2006/10/18 03:09:12 slowhog Exp $
+ * $Id$
  */
 
 #include <stdio.h>

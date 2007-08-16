@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: whisp.c,v 1.12 2005/11/15 18:41:35 slowhog Exp $
+ * $Id$
  */
 
 /*

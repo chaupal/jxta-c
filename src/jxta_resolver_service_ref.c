@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_resolver_service_ref.c,v 1.118.2.1 2007/04/25 18:39:49 slowhog Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "RSLVR";

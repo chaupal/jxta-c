@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: tta_adv_test.c,v 1.14 2005/10/13 17:07:41 exocetrick Exp $
+ * $Id$
  */
 
 #include <stdio.h>

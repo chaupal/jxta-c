@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_relay.h,v 1.7 2005/10/13 19:52:34 mathieu Exp $
+ * $Id$
  */
 
 #ifndef JXTA_RELAY_H__

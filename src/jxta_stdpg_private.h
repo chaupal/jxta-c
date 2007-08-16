@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_stdpg_private.h,v 1.14 2006/09/08 19:17:56 bondolo Exp $
+ * $Id$
  */
 
 #ifndef JXTA_STDPG_PRIVATE_H

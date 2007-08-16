@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi_service.c,v 1.12.4.1 2006/11/16 00:06:34 bondolo Exp $
+ * $Id$
  */
 
 #include "jxta_srdi_service_private.h"

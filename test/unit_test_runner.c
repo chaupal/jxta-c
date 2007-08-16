@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: unit_test_runner.c,v 1.13.2.1 2006/11/16 00:06:37 bondolo Exp $
+ * $Id$
  */
 
 

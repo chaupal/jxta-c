@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_discovery_config_adv.h,v 1.1 2006/02/02 21:45:01 slowhog Exp $
+ * $Id$
  */
 
 

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: npg_test.c,v 1.9 2006/09/01 21:28:26 lankes Exp $
+ * $Id$
  */
 
 #include <sys/stat.h>

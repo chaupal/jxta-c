@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_welcome_message.h,v 1.2 2006/06/01 04:29:44 mmx2005 Exp $
+ * $Id$
  */
 
 #ifndef __JXTA_TRANSPORT_WELCOME_MESSAGE_H__

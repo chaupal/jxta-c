@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_listener.c,v 1.42 2006/08/11 22:39:31 slowhog Exp $
+ * $Id$
  */
 
 #include <stdlib.h>

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: peerview_pong_msg_test.c,v 1.1.4.1 2006/11/16 00:06:37 bondolo Exp $
+ * $Id$
  */
 
 #include <stdio.h>

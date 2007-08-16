@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peerview_pong_msg.c,v 1.1.4.1 2006/11/16 00:06:32 bondolo Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "PV_PONG";

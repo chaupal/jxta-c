@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: route_adv_test.c,v 1.12 2006/10/24 17:53:36 bondolo Exp $
+ * $Id$
  */
 
 #include <stdio.h>

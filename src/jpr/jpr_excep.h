@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_excep.h,v 1.5 2005/11/21 01:32:08 mmx2005 Exp $
+ * $Id$
  */
 
 #ifndef JPR_EXCEP_H

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_hta.h,v 1.9 2005/09/21 21:16:47 slowhog Exp $
+ * $Id$
  */
 
 

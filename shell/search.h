@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: search.h,v 1.3 2005/08/24 01:21:23 slowhog Exp $
+ * $Id$
  */
 #ifndef __JXTA_SHELL_SEARCH_H__
 #define __JXTA_SHELL_SEARCH_H__

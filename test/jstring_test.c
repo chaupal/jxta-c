@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jstring_test.c,v 1.25 2006/09/29 06:52:06 slowhog Exp $
+ * $Id$
  */
 
 

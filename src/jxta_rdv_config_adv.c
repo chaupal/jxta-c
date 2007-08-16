@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_config_adv.c,v 1.33.4.2 2006/11/29 01:49:50 slowhog Exp $
+ * $Id$
  */
 
 static const char *const __log_cat = "RdvCfgAdv";

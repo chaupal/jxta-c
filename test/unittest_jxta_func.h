@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: unittest_jxta_func.h,v 1.5 2006/08/23 20:50:46 bondolo Exp $
+ * $Id$
  */
 
 

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object_priv.h,v 1.17 2005/11/13 17:09:03 lankes Exp $
+ * $Id$
  */
 
 

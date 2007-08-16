@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_lease_request_msg.h,v 1.5 2006/10/31 20:25:13 bondolo Exp $
+ * $Id$
  */
 
 

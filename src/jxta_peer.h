@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peer.h,v 1.13.2.1 2006/12/02 08:17:49 slowhog Exp $
+ * $Id$
  */
 
 

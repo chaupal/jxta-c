@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http_client.c,v 1.26 2006/08/08 18:36:11 bondolo Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "HTTP_CLIENT";

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: talk.c,v 1.27 2006/07/19 19:26:12 lankes Exp $
+ * $Id$
  */
 
 #include <stdio.h>

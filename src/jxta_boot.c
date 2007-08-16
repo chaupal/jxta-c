@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_boot.c,v 1.5 2005/01/12 22:37:39 bondolo Exp $
+ * $Id$
  */
 
 

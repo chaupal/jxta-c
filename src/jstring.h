@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jstring.h,v 1.14 2006/08/05 00:25:53 bondolo Exp $
+ * $Id$
  */
 
 

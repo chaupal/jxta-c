@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_dr.h,v 1.13 2006/08/17 01:39:41 mmx2005 Exp $
+ * $Id$
  */
 
 

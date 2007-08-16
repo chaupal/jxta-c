@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_lease_request_msg.c,v 1.9 2006/11/11 02:28:35 mmx2005 Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "LeaseRequest";

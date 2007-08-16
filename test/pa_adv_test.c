@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: pa_adv_test.c,v 1.29 2006/10/31 20:44:27 bondolo Exp $
+ * $Id$
  */
 
 #include <stdio.h>

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rdvstatus.h,v 1.4 2005/09/02 08:56:45 slowhog Exp $
+ * $Id$
  */
 #ifndef __JXTA_SHELL_RDVSTATUS_H__
 #define __JXTA_SHELL_RDVSTATUS_H__

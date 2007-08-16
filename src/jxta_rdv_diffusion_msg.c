@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_diffusion_msg.c,v 1.1.4.2 2006/11/29 01:49:50 slowhog Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "DiffusionMsg";

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rdvstatus.c,v 1.24.4.1 2006/11/16 00:06:29 bondolo Exp $
+ * $Id$
  */
 
 

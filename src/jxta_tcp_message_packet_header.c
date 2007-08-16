@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tcp_message_packet_header.c,v 1.15 2006/09/02 00:54:22 slowhog Exp $
+ * $Id$
  */
 
 #include <stdlib.h>

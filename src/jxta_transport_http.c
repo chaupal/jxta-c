@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http.c,v 1.73 2006/10/31 19:51:26 bondolo Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "HTTP_TRANSPORT";

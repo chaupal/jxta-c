@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pa.c,v 1.102 2006/10/11 02:13:21 mmx2005 Exp $
+ * $Id$
  */
 
 static const char *const __log_cat = "PA";

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: shared_tests.c,v 1.2 2005/01/15 03:32:07 brent Exp $
+ * $Id$
  */
 
 /*

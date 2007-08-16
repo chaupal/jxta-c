@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tcp_connection.c,v 1.74.2.10 2007/02/08 23:57:30 slowhog Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "TCP_CONNECTION";

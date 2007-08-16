@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_defloader.c,v 1.9 2006/09/08 19:17:54 bondolo Exp $
+ * $Id$
  */
 
 #include <string.h>

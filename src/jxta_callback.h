@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_callback.h,v 1.4 2006/06/28 17:42:14 slowhog Exp $
+ * $Id$
  */
 
 

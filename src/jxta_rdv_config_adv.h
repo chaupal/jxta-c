@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_config_adv.h,v 1.14.4.1 2006/11/16 00:06:32 bondolo Exp $
+ * $Id$
  */
 
 

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_query.c,v 1.25 2006/10/31 18:12:47 slowhog Exp $
+ * $Id$
   *
   */
 #include <stdlib.h>

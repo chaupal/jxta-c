@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object_type.c,v 1.11 2006/03/29 21:49:16 slowhog Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "OBJECT";

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: leave.c,v 1.6 2005/08/19 22:16:06 slowhog Exp $
+ * $Id$
  */
 
 #include <stdio.h>

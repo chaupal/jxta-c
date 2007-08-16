@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tutorial_args.c,v 1.3 2005/01/15 03:32:06 brent Exp $
+ * $Id$
  */
 
 /*

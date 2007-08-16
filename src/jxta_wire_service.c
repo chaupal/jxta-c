@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_wire_service.c,v 1.49 2006/09/08 20:56:01 exocetrick Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "WireService";

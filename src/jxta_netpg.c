@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_netpg.c,v 1.75 2006/09/08 20:00:53 bondolo Exp $
+ * $Id$
  */
 
 /*

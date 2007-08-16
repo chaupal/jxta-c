@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object_ptrwrapper.c,v 1.8 2006/03/23 02:26:04 slowhog Exp $
+ * $Id$
  */
 
 #include <stdlib.h>

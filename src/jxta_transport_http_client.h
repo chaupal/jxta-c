@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_http_client.h,v 1.11 2006/08/08 18:36:12 bondolo Exp $
+ * $Id$
  */
 
 #ifndef __HTTP_CLIENT_H__

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_advertisement_priv.h,v 1.2 2006/02/15 01:09:38 slowhog Exp $
+ * $Id$
  */
 
 #ifndef JXTA_ADVERTISEMENT_PRIV_H

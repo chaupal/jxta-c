@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_stdpg.c,v 1.66 2006/09/29 01:28:45 slowhog Exp $
+ * $Id$
  */
 
 /*

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_netpg_private.h,v 1.16 2006/09/08 19:17:54 bondolo Exp $
+ * $Id$
  */
 
 #ifndef JXTA_NETPG_PRIVATE_H

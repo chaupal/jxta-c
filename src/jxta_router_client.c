@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_router_client.c,v 1.103.2.1 2007/01/12 22:39:27 slowhog Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "ROUTER";
