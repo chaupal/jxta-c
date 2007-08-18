@@ -1,5 +1,5 @@
 
-SUBDIRS = src test shell @CS_DIR@ tutorials
+SUBDIRS = src test shell @CS_DIR@ tutorials jxtad
 
 EXTRA_DIST = doxconf.in \
 		win32 \
