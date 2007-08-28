@@ -337,6 +337,8 @@ static Jxta_status peerview_send_pvm(Jxta_peerview * myself, Jxta_peer * dest, J
 static void call_event_listeners(Jxta_peerview * pv, Jxta_Peerview_event_type event, Jxta_id * id);
 
 static unsigned int cluster_for_hash(Jxta_peerview * myself, BIGNUM * target_hash);
+static Jxta_status joining_peerview(Jxta_peerview * me, const char *pv_mask);
+static Jxta_boolean is_for_alternative(Jxta_peerview * me, const char *pv_mask);
 
 static Jxta_status build_histogram(Jxta_vector ** histo, Jxta_vector * peers, BIGNUM * minimum, BIGNUM * maximum);
 
@@ -1377,7 +1379,7 @@ static Jxta_status peerview_send_ping(Jxta_peerview * myself, Jxta_peer * dest, 
         assert(jxta_peer_address(dest));
         jxta_peerview_ping_msg_set_dst_peer_ea(ping, jxta_peer_address(dest));
     }
-    
+
     jxta_peerview_ping_msg_set_dest_peer_adv_gen(ping, adv_gen);
 
     res = jxta_peerview_ping_msg_get_xml(ping, &ping_xml);
@@ -1964,7 +1966,6 @@ static Jxta_status peerview_handle_ping(Jxta_peerview * myself, Jxta_peerview_pi
     jxta_peer_set_peerid(dest, pid);
 
     res = peerview_send_pong(myself, dest);
-
     JXTA_OBJECT_RELEASE(dest);
 
   FINAL_EXIT:
@@ -2015,6 +2016,7 @@ static Jxta_boolean is_for_alternative(Jxta_peerview * me, const char *pv_mask)
     same = BN_cmp(me->instance_mask, instance_mask);
     /* Instance masks are not the same. This response is from a different peerview instance. */
     if (same != 0) {
+        rv = TRUE;
         if (same < 0) {
             /* Signify that we are giving up on this peerview instance in favour of the new one. */
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "PV[%pp] Found peerview alternate instance : %s\n", me, pv_mask);
@@ -2023,11 +2025,8 @@ static Jxta_boolean is_for_alternative(Jxta_peerview * me, const char *pv_mask)
             peerview_clear_pves(me);
             jxta_peer_set_expires((Jxta_peer *) me->self_pve, 0L);
             me->state = PV_LOCATING;
-            rv = TRUE;
-
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "PV[%pp] Nonmatching instance mask found : %s\n", me, pv_mask);
-            rv = TRUE;
         }
     }
     BN_free(instance_mask);
@@ -2258,6 +2257,7 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
     Jxta_status res = JXTA_SUCCESS;
     Jxta_id *pid = NULL;
     Peerview_entry *pve = NULL;
+    Jxta_boolean send_pong = FALSE;
 
     /* TODO 20060926 bondolo Valdiate credential on pong message */
 
@@ -2271,17 +2271,18 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
 
     apr_thread_mutex_lock(me->mutex);
 
+
     if (me->instance_mask) {
         assert(PV_MAINTENANCE == me->state || PV_ADDRESSING == me->state || PV_ANNOUNCING == me->state);
         if (is_for_alternative(me, jxta_peerview_pong_msg_get_instance_mask(pong))) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "PONG [%pp] is for alternative\n", pong);
             if (PV_LOCATING == me->state) {
                 res = joining_peerview(me, jxta_peerview_pong_msg_get_instance_mask(pong));
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "PONG [%pp] is joining alternate peerview\n");
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "PONG [%pp] is joining alternate peerview\n", pong);
                 assert(PV_ADDRESSING == me->state);
-            }
-            else {
-                /* ignore - we're not in that peerview */
+            } else {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "PONG [%pp] give it a chance to join ours\n", pong);
+                send_pong = TRUE;
                 goto UNLOCK_EXIT;
             }
         }
@@ -2293,16 +2294,13 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
     }
 
     pve = peerview_get_pve(me, pid);
- 
+
     if (NULL == pve) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "PONG [%pp] is being handled as new\n", pong);
         res = handle_new_pve_pong(me, pong);
         if (JXTA_SUCCESS == res && me->state == PV_MAINTENANCE) {
-            Jxta_peer * newPeer = jxta_peer_new();
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "PONG announcement\n");
-            jxta_peer_set_peerid(newPeer, pid);
-            peerview_send_pong(me, newPeer);
-            JXTA_OBJECT_RELEASE(newPeer);
+            send_pong = TRUE;
         }
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "PONG [%pp] is being handled as existing pong\n", pong);
@@ -2312,9 +2310,20 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
     if (JXTA_SUCCESS == res) {
         process_referrals(me, pong);
     }
+
 UNLOCK_EXIT:
+
+    if (send_pong) {
+        Jxta_peer * newPeer = jxta_peer_new();
+        jxta_peer_set_peerid(newPeer, pid);
+        peerview_send_pong(me, newPeer);
+        JXTA_OBJECT_RELEASE(newPeer);
+    }
+
     apr_thread_mutex_unlock(me->mutex);
+
 FINAL_EXIT:
+
     if (pve)
         JXTA_OBJECT_RELEASE(pve);
     if (pid)
@@ -2676,6 +2685,7 @@ static Jxta_peerview_event *peerview_event_new(Jxta_Peerview_event_type event, J
 
 static Peerview_histogram_entry *peerview_histogram_entry_new(BIGNUM * start, BIGNUM * end)
 {
+
     Peerview_histogram_entry *myself = (Peerview_histogram_entry *) calloc(1, sizeof(Peerview_histogram_entry));
 
     if (NULL == myself) {
@@ -3456,7 +3466,9 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
     }
 
     JXTA_OBJECT_RELEASE(rdv_clients);
+
     probe_a_seed(myself);
+
   RERUN_EXIT:
     if (myself->running) {
         /* Reschedule another check. */
