@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_lease_response_msg.c,v 1.7 2006/10/06 19:27:10 bondolo Exp $
+ * $Id: jxta_lease_response_msg.c 118 2007-08-16 00:18:01Z slowhog $
  */
 
 static const char *__log_cat = "LeaseResponse";
@@ -333,7 +333,7 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_get_xml(Jxta_lease_response_ms
 {
     Jxta_status res = JXTA_SUCCESS;
     JString *string;
-    JString *tempstr;
+    JString *tempstr=NULL;
     char tmpbuf[256];   /* We use this buffer to store a string representation of a int */
     unsigned int each_referral;
 
@@ -356,6 +356,7 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_get_xml(Jxta_lease_response_ms
     jxta_id_to_jstring(myself->server_id, &tempstr);
     jstring_append_1(string, tempstr);
     JXTA_OBJECT_RELEASE(tempstr);
+    tempstr = NULL;
     jstring_append_2(string, "\"");
 
     if (-1L != myself->offered_lease) {
@@ -394,7 +395,6 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_get_xml(Jxta_lease_response_ms
         attrs[attr_idx] = NULL;
 
         server_adv = jxta_lease_adv_info_get_adv(myself->server);
-        tempstr = NULL;
 
         jxta_PA_get_xml_1(server_adv, &tempstr, "ServerAdv", attrs);
         JXTA_OBJECT_RELEASE(server_adv);
@@ -404,8 +404,11 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_get_xml(Jxta_lease_response_ms
                 free( (void*) attrs[attr_idx]);
             }
         }
-
-        jstring_append_1(string, tempstr);
+        if (tempstr) {
+            jstring_append_1(string, tempstr);
+            JXTA_OBJECT_RELEASE(tempstr);
+            tempstr = NULL;
+        }
     }
 
     for (each_referral = 0; each_referral < jxta_vector_size(myself->referrals); each_referral++) {
@@ -414,7 +417,7 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_get_xml(Jxta_lease_response_ms
         int attr_idx = 2;
         Jxta_lease_adv_info *referral;
 
-        res = jxta_vector_get_object_at(myself->referrals, (Jxta_object **) & referral, each_referral);
+        res = jxta_vector_get_object_at(myself->referrals, JXTA_OBJECT_PPTR(& referral), each_referral);
 
         if (JXTA_SUCCESS == res) {
             Jxta_PA *adv = jxta_lease_adv_info_get_adv(referral);
@@ -437,8 +440,11 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_get_xml(Jxta_lease_response_ms
                     free( (void*) attrs[attr_idx]);
                 }
             }
-
-            jstring_append_1(string, tempstr);
+            if (tempstr) {
+                jstring_append_1(string, tempstr);
+                JXTA_OBJECT_RELEASE(tempstr);
+                tempstr = NULL;
+            }
 
             JXTA_OBJECT_RELEASE(referral);
         }
@@ -446,7 +452,8 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_get_xml(Jxta_lease_response_ms
     }
 
     jstring_append_2(string, "</jxta:LeaseResponse>\n");
-
+    if (tempstr)
+        JXTA_OBJECT_RELEASE(tempstr);
     *xml = string;
     return JXTA_SUCCESS;
 }
