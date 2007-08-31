@@ -1307,7 +1307,7 @@ static Jxta_status send_connect_reply(_jxta_rdv_service_server * myself, Jxta_id
             add_peer = TRUE;
         }
         if (add_peer) {
-            jxta_lease_response_msg_add_referral_adv(lease_response, jxta_peer_adv(peer), 50000L );
+            jxta_lease_response_msg_add_referral_adv(lease_response, jxta_peer_adv(peer), jxta_peer_get_expires(peer) - jpr_time_now());
         }
         JXTA_OBJECT_RELEASE(peerId);
         JXTA_OBJECT_RELEASE(peer);
