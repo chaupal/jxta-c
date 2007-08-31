@@ -1263,6 +1263,10 @@ static Jxta_status send_connect_reply(_jxta_rdv_service_server * myself, Jxta_id
     Jxta_message *msg = NULL;
     Jxta_message_element *msgElem;
     apr_uuid_t adv_gen;
+    Jxta_vector * referrals;
+    Jxta_vector * globals;
+    int i;
+    Jxta_boolean this_peer_added = FALSE;
 
     lease_response = jxta_lease_response_msg_new();
 
@@ -1277,9 +1281,38 @@ static Jxta_status send_connect_reply(_jxta_rdv_service_server * myself, Jxta_id
 
     /* FIXME 20060811 bondolo Use a real advertisement generation */
     apr_uuid_get(&adv_gen);
+
     jxta_lease_response_msg_set_server_adv_info(lease_response, provider->local_pa, &adv_gen, DEFAULT_LEASE_DURATION * 2);
 
-    /* FIXME 20060812 bondolo Generate referrals. */
+    jxta_peerview_get_localview(provider->peerview, &referrals);
+    jxta_peerview_get_globalview(provider->peerview, &globals);
+    jxta_vector_addall_objects_last(referrals, globals);
+    JXTA_OBJECT_RELEASE(globals);
+
+    for (i=0; i < jxta_vector_size(referrals); i++) {
+        Jxta_status ret;
+        Jxta_peer *peer;
+        Jxta_id *peerId;
+        Jxta_boolean add_peer = FALSE;
+        ret = jxta_vector_get_object_at(referrals, JXTA_OBJECT_PPTR(&peer), i);
+        if (JXTA_SUCCESS != ret) {
+            continue;
+        }
+        jxta_peer_get_peerid(peer, &peerId);
+        if (jxta_id_equals(peerId, provider->local_peer_id)) {
+            if (!this_peer_added)
+                add_peer = TRUE;
+            this_peer_added = TRUE;
+        } else {
+            add_peer = TRUE;
+        }
+        if (add_peer) {
+            jxta_lease_response_msg_add_referral_adv(lease_response, jxta_peer_adv(peer), 50000L );
+        }
+        JXTA_OBJECT_RELEASE(peerId);
+        JXTA_OBJECT_RELEASE(peer);
+    }
+    JXTA_OBJECT_RELEASE(referrals);
 
     res = jxta_lease_response_msg_get_xml(lease_response, &lease_response_xml);
     JXTA_OBJECT_RELEASE(lease_response);
