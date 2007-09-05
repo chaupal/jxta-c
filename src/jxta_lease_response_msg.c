@@ -569,7 +569,7 @@ JXTA_DECLARE(void) jxta_lease_response_msg_set_referral_advs(Jxta_lease_response
     }
 }
 
-JXTA_DECLARE(void) jxta_lease_response_msg_add_referral_advs(Jxta_lease_response_msg * myself,
+JXTA_DECLARE(void) jxta_lease_response_msg_add_referral_adv(Jxta_lease_response_msg * myself,
                                                                  Jxta_PA * adv, Jxta_time_diff exp )
 {
     JXTA_OBJECT_CHECK_VALID(myself);
