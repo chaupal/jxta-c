@@ -366,6 +366,7 @@ JXTA_DECLARE(Jxta_status) jxta_lease_request_msg_get_xml(Jxta_lease_request_msg 
         } else {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failed getting option [%pp].\n", myself);
         }
+        JXTA_OBJECT_RELEASE(option);
     }
 
     jstring_append_2(string, "</jxta:LeaseRequest>\n");
