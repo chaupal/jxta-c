@@ -1760,6 +1760,7 @@ static Jxta_status peerview_handle_address_request(Jxta_peerview * myself, Jxta_
     Jxta_id *dest_id;
     Jxta_peer *dest;
     Jxta_boolean found_empty = FALSE;
+    Peerview_entry *pve = NULL;
 
 
     apr_thread_mutex_lock(myself->mutex);
@@ -1771,11 +1772,15 @@ static Jxta_status peerview_handle_address_request(Jxta_peerview * myself, Jxta_
          goto FINAL_EXIT;
     }
 
-    /* XXX 20060925 bondolo Possbily use existing target hash if present */
+    dest = jxta_peer_new();
+    dest_pa = jxta_peerview_address_request_msg_get_peer_adv(addr_req);
+    jxta_peer_set_adv(dest, dest_pa);
+    dest_id = jxta_PA_get_PID(dest_pa);
+    pve = peerview_get_pve(myself, dest_id);
 
     /* Inverse binary search. We look as far away from our cluster as possible */
 
-    if (myself->clusters_count > 1) {
+    if (myself->clusters_count > 1 && NULL == pve) {
         /* Assign within any cluster */
         unsigned int low_cluster;
         unsigned int mid_cluster;
@@ -1818,26 +1823,21 @@ static Jxta_status peerview_handle_address_request(Jxta_peerview * myself, Jxta_
         } while (!found_empty);
     }
 
-    target_address = BN_new();
-
-    if (found_empty) {
-        /* We need to choose an address for the specified cluster */
-
-        BN_pseudo_rand_range(target_address, myself->cluster_divisor);
-        BN_add(target_address, target_address, myself->clusters[a_cluster].min);
+    if (NULL != pve) {
+        target_address = BN_dup(pve->target_hash);
     } else {
-        /* We need to choose an address within our cluster */
-
-        /* XXX 20060925 bondolo Do something stociastic with histogram. */
-        BN_pseudo_rand_range(target_address, myself->cluster_divisor);
-        BN_add(target_address, target_address, myself->clusters[myself->my_cluster].min);
+        target_address = BN_new();
+        if (found_empty) {
+            BN_pseudo_rand_range(target_address, myself->cluster_divisor);
+            BN_add(target_address, target_address, myself->clusters[a_cluster].min);
+        } else {
+            /* We need to choose an address within our cluster */
+            /* XXX 20060925 bondolo Do something stociastic with histogram. */
+            BN_pseudo_rand_range(target_address, myself->cluster_divisor);
+            BN_add(target_address, target_address, myself->clusters[myself->my_cluster].min);
+        }
     }
 
-    dest = jxta_peer_new();
-
-    dest_pa = jxta_peerview_address_request_msg_get_peer_adv(addr_req);
-    jxta_peer_set_adv(dest, dest_pa);
-    dest_id = jxta_PA_get_PID(dest_pa);
     jxta_peer_set_peerid(dest, dest_id);
     JXTA_OBJECT_RELEASE(dest_pa);
     JXTA_OBJECT_RELEASE(dest_id);
