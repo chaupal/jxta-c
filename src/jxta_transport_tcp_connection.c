@@ -255,7 +255,7 @@ static Jxta_status emit_event(Jxta_transport_tcp_connection * me, Jxta_transport
     switch (ev_type) {
         case JXTA_TRANSPORT_INBOUND_CONNECTED: 
         case JXTA_TRANSPORT_OUTBOUND_CONNECTED:
-            rv = tcp_connection_get_messenger(me, apr_time_from_sec(1), (JxtaEndpointMessenger**)&e->msgr);
+            rv = tcp_connection_get_messenger(me, apr_time_from_sec(1), (TcpMessenger**)&e->msgr);
             assert(JXTA_TIMEOUT != rv);
             break;
         case JXTA_TRANSPORT_CONNECTION_CLOSED:
@@ -513,7 +513,7 @@ JXTA_DECLARE(Jxta_transport_tcp_connection *) jxta_transport_tcp_connection_new_
 /**
     Handle welcome message.
 **/
-static Jxta_status tcp_connection_start_socket(Jxta_transport_tcp_connection * _self)
+static Jxta_status tcp_connection_start_socket(Jxta_transport_tcp_connection * me)
 {
     Jxta_endpoint_address *public_addr;
     JString *peerid;
@@ -522,34 +522,34 @@ static Jxta_status tcp_connection_start_socket(Jxta_transport_tcp_connection * _
     JString *welcome_str = NULL;
     apr_bucket * e;
 
-    peerid = jxta_transport_tcp_get_peerid(_self->tp);
-    public_addr = jxta_transport_tcp_get_public_addr(_self->tp);
+    peerid = jxta_transport_tcp_get_peerid(me->tp);
+    public_addr = jxta_transport_tcp_get_public_addr(me->tp);
 
-    _self->pollfd.p = _self->pool;
-    _self->pollfd.desc.s = _self->shared_socket;
-    _self->pollfd.desc_type = APR_POLL_SOCKET;
-    _self->pollfd.reqevents = APR_POLLOUT;
+    me->pollfd.p = me->pool;
+    me->pollfd.desc.s = me->shared_socket;
+    me->pollfd.desc_type = APR_POLL_SOCKET;
+    me->pollfd.reqevents = APR_POLLOUT;
 
-    apr_socket_opt_set(_self->shared_socket, APR_SO_KEEPALIVE, 1);  /* Keep Alive */
-    apr_socket_opt_set(_self->shared_socket, APR_SO_LINGER, LINGER_DELAY);  /* Linger Delay */
-    apr_socket_opt_set(_self->shared_socket, APR_TCP_NODELAY, 1);   /* disable nagel's */
+    apr_socket_opt_set(me->shared_socket, APR_SO_KEEPALIVE, 1);  /* Keep Alive */
+    apr_socket_opt_set(me->shared_socket, APR_SO_LINGER, LINGER_DELAY);  /* Linger Delay */
+    apr_socket_opt_set(me->shared_socket, APR_TCP_NODELAY, 1);   /* disable nagel's */
 
-    apr_socket_opt_set(_self->shared_socket, APR_SO_NONBLOCK, 1);
-    apr_socket_timeout_set(_self->shared_socket, 0);
+    apr_socket_opt_set(me->shared_socket, APR_SO_NONBLOCK, 1);
+    apr_socket_timeout_set(me->shared_socket, 0);
     
-    _self->my_welcome = welcome_message_new_1(_self->dest_addr, public_addr, peerid, TRUE, 1);
+    me->my_welcome = welcome_message_new_1(me->dest_addr, public_addr, peerid, TRUE, 1);
     JXTA_OBJECT_RELEASE(peerid);
-    if (_self->my_welcome == NULL) {
+    if (me->my_welcome == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Failed to create welcome message\n");
         return JXTA_FAILED;
     }
 
     /* send my welcome message */
-    welcome_str = welcome_message_get_welcome(_self->my_welcome);
+    welcome_str = welcome_message_get_welcome(me->my_welcome);
 
-    res = flush(_self, jstring_get_string(welcome_str), jstring_length(welcome_str));
+    res = flush(me, jstring_get_string(welcome_str), jstring_length(welcome_str));
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Local welcome message sent ..%s\n",
-                    (caddress = jxta_endpoint_address_to_string(_self->dest_addr)));
+                    (caddress = jxta_endpoint_address_to_string(me->dest_addr)));
     free(caddress);
     JXTA_OBJECT_RELEASE(welcome_str);
 
@@ -558,12 +558,15 @@ static Jxta_status tcp_connection_start_socket(Jxta_transport_tcp_connection * _
         return res;
     }
 
-    _self->connection_state = CONN_CONNECTING;
+    me->connection_state = CONN_CONNECTING;
 
-    assert(APR_BRIGADE_EMPTY(_self->brigade));
-    e = apr_bucket_socket_create(_self->shared_socket, _self->bk_list);
-    APR_BRIGADE_INSERT_TAIL(_self->brigade, e);
-    res = jxta_endpoint_service_add_poll(_self->endpoint, _self->shared_socket, read_cb, _self, &_self->poll);
+    /* lock to ensure read only starts after add_poll is completed. */
+    apr_thread_mutex_lock(me->reading_lock);
+    assert(APR_BRIGADE_EMPTY(me->brigade));
+    e = apr_bucket_socket_create(me->shared_socket, me->bk_list);
+    APR_BRIGADE_INSERT_TAIL(me->brigade, e);
+    res = jxta_endpoint_service_add_poll(me->endpoint, me->shared_socket, read_cb, me, &me->poll);
+    apr_thread_mutex_unlock(me->reading_lock);
     if (APR_SUCCESS != res) {
         return JXTA_FAILED;
     }
@@ -839,8 +842,8 @@ static apr_status_t process_welcome(Jxta_transport_tcp_connection *me)
         me->port = atoi(colon + 1);
         me->ipaddr = apr_pstrndup(me->pool, remote_addr, colon - remote_addr);
     }
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "New connection with remote address %s:%d in welcome messsage.\n", 
-                    me->ipaddr, me->port);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "New connection[%pp] with remote address %s:%d in welcome messsage.\n", 
+                    me, me->ipaddr, me->port);
 
     return APR_SUCCESS;
 }
@@ -935,6 +938,10 @@ static void* APR_THREAD_FUNC process_data(apr_thread_t * thd, void * arg)
     return (void*) rv;
 }
 
+/**
+ * Drain the socket data into the brigade, then return the socket
+ * for next poll.
+ */
 static Jxta_status drain_socket(Jxta_transport_tcp_connection *me)
 {
     apr_bucket *e;
@@ -970,15 +977,17 @@ static Jxta_status JXTA_STDCALL read_cb(void *param, void *arg)
 
     apr_thread_mutex_lock(me->reading_lock);
     me->last_time_used = apr_time_now();
-    drain_socket(me);
+    rv = drain_socket(me);
     if (me->dispatched) {
         apr_thread_mutex_unlock(me->reading_lock);
         rv = APR_SUCCESS;
     } else {
         me->dispatched = TRUE;
         apr_thread_mutex_unlock(me->reading_lock);
-        jxta_endpoint_service_get_thread_pool(me->endpoint, &tp);
-        rv = apr_thread_pool_push(tp, process_data, me, APR_THREAD_TASK_PRIORITY_HIGHEST, me);
+        if (APR_SUCCESS == rv) {
+            jxta_endpoint_service_get_thread_pool(me->endpoint, &tp);
+            rv = apr_thread_pool_push(tp, process_data, me, APR_THREAD_TASK_PRIORITY_HIGHEST, me);
+        }
     }
     return rv;
 }
@@ -1008,7 +1017,10 @@ JXTA_DECLARE(Jxta_status) jxta_transport_tcp_connection_close(Jxta_transport_tcp
     me->connection_state = CONN_DISCONNECTING;
     apr_thread_mutex_unlock(me->mutex);
 
+    /* Lock to ensure the connection had done reading. */
+    apr_thread_mutex_lock(me->reading_lock);
     jxta_endpoint_service_remove_poll(me->endpoint, me->poll);
+    apr_thread_mutex_unlock(me->reading_lock);
 
     apr_thread_mutex_lock(me->mutex);
     apr_socket_shutdown(me->shared_socket, APR_SHUTDOWN_READWRITE);
