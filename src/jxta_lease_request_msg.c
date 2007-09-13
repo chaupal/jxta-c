@@ -181,7 +181,7 @@ static Jxta_lease_request_msg *lease_request_msg_construct(Jxta_lease_request_ms
         myself->credential = NULL;
         myself->client_adv = NULL;
         myself->client_adv_exp = -1L;
-        myself->requested_lease = 0;
+        myself->requested_lease = -1L;
         myself->server_adv_gen = NULL;
         myself->referral_advs = 0;
         myself->options = jxta_vector_new(0);
@@ -226,7 +226,8 @@ static Jxta_status validate_message(Jxta_lease_request_msg * myself) {
         return JXTA_INVALID_ARGUMENT;
     }
 
-    if ( myself->requested_lease < 0L ) {
+    /* -1L indicates requested lease is not specified */
+    if (myself->requested_lease < 0L && -1L != myself->requested_lease) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Requested lease must be >= 0 [%pp].\n", myself);
         return JXTA_INVALID_ARGUMENT;
     }
@@ -294,7 +295,7 @@ JXTA_DECLARE(Jxta_status) jxta_lease_request_msg_get_xml(Jxta_lease_request_msg 
         jstring_append_2(string, "\"");
     }
 
-    if (0 != myself->requested_lease) {
+    if (-1 != myself->requested_lease) {
         jstring_append_2(string, " requested_lease=\"");
         apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, myself->requested_lease);
         jstring_append_2(string, tmpbuf);
