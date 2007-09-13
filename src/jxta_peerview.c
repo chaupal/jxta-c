@@ -1607,7 +1607,7 @@ static Jxta_status peerview_send_pvm(Jxta_peerview * me, Jxta_peer * dest, Jxta_
     peerid = jxta_peer_peerid(dest);
     if (peerid) {
         jxta_id_to_jstring(peerid, &pid_jstr);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Sending peerview message with peerid [%pp] to : %s\n", msg,
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Sending peerview message[%pp] by peerid to : %s\n", msg,
                         jstring_get_string(pid_jstr));
         JXTA_OBJECT_RELEASE(pid_jstr);
         res = jxta_PG_async_send(me->group, msg, peerid, RDV_V3_MSID, JXTA_PEERVIEW_NAME);
