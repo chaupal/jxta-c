@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_core.h,v 1.2 2005/04/16 13:27:12 lankes Exp $
+ * $Id$
  */
 
 

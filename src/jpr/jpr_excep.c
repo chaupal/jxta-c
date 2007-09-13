@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_excep.c,v 1.8 2006/02/15 01:09:53 slowhog Exp $
+ * $Id$
  */
 
 #include <stdio.h>

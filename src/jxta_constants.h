@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_constants.h,v 1.4 2006/08/04 10:35:12 lankes Exp $
+ * $Id$
  */
 #ifndef __JXTA_CONSTANTS_H__
 #define __JXTA_CONSTANTS_H__

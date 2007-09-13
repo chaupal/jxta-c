@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi.h,v 1.16 2007/03/28 03:01:36 mmx2005 Exp $
+ * $Id$
  */
 
 

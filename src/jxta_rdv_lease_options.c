@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_lease_options.c,v 1.3 2006/11/01 02:26:38 mmx2005 Exp $
+ * $Id$
  */
 
 static const char *const __log_cat = "RdvLeaseOptions";

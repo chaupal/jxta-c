@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_id.h,v 1.10 2006/05/23 17:39:53 slowhog Exp $
+ * $Id$
  */
 
 #ifndef JXTAID_H

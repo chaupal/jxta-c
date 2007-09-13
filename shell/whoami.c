@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: whoami.c,v 1.5 2005/11/15 18:41:31 slowhog Exp $
+ * $Id$
  */
 
 #include <stdio.h>

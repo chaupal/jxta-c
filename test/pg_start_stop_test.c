@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: pg_start_stop_test.c,v 1.10 2006/09/01 21:28:26 lankes Exp $
+ * $Id$
  */
 
 #include <apr_time.h>

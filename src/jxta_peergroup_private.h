@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup_private.h,v 1.26 2006/09/08 20:56:01 exocetrick Exp $
+ * $Id$
  */
 
 #ifndef JXTA_PEERGROUP_PRIVATE_H

@@ -82,7 +82,7 @@ echo "/*
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * \$Id: newads.sh,v 1.8 2002/03/02 18:50:07 ddoolin Exp $
+ * \$Id$
  */
 
    " >> $1

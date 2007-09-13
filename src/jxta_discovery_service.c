@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_discovery_service.c,v 1.23 2006/09/06 21:27:38 slowhog Exp $
+ * $Id$
  */
 
 #include "jxta_discovery_service_private.h"

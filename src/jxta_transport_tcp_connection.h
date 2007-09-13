@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tcp_connection.h,v 1.13 2006/09/06 00:43:48 slowhog Exp $
+ * $Id$
  */
 
 #ifndef __JXTA_TRANSPORT_TCP_CONNECTION_H__

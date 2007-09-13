@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: Shell.cs,v 1.9 2006/08/04 10:33:18 lankes Exp $
+ * $Id$
  */
 using System;
 using JxtaNET;

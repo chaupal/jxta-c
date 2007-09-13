@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_piperesolver_msg.h,v 1.8 2006/09/26 18:28:24 slowhog Exp $
+ * $Id$
  */
 
 #ifndef __Jxta_piperesolver_msg_H__

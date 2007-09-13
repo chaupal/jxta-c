@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_walk_msg.h,v 1.6 2006/08/03 21:34:21 bondolo Exp $
+ * $Id$
  */
 
 

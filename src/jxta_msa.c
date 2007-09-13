@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_msa.c,v 1.28 2006/10/31 19:49:29 bondolo Exp $
+ * $Id$
  */
 
 static const char *const __log_cat = "MSA";

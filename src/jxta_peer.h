@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peer.h,v 1.13 2006/10/01 01:07:55 bondolo Exp $
+ * $Id$
  */
 
 

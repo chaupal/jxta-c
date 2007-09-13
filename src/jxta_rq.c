@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rq.c,v 1.83 2006/12/24 08:11:23 mmx2005 Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "RSLVQuery";

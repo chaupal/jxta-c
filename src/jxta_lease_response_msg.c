@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_lease_response_msg.c 118 2007-08-16 00:18:01Z slowhog $
+ * $Id$
  */
 
 static const char *__log_cat = "LeaseResponse";

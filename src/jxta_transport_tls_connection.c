@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tls_connection.c,v 1.2 2007/04/24 23:31:48 mmx2005 Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "TLS_CONNECTION";

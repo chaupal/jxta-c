@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_service.c,v 1.152 2007/01/16 22:27:04 slowhog Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "ENDPOINT";

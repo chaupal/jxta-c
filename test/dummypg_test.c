@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: dummypg_test.c,v 1.23 2006/09/08 20:09:24 bondolo Exp $
+ * $Id$
  */
 
 /*

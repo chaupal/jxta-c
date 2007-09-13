@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jstring.c,v 1.74 2007/04/27 09:53:21 mmx2005 Exp $
+ * $Id$
  */
 
 

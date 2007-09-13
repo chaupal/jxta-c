@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: Search.cs,v 1.4 2006/08/04 10:33:17 lankes Exp $
+ * $Id$
  */
 using System;
 using System.IO;

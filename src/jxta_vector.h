@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_vector.h,v 1.14 2006/10/01 01:07:10 bondolo Exp $
+ * $Id$
  */
 
 

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_discovery_publication_test.c,v 1.1 2006/01/30 01:13:48 bondolo Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "DPT";

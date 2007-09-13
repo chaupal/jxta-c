@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_xml_util.h,v 1.5 2005/09/14 05:00:09 slowhog Exp $
+ * $Id$
  */
 
 /** The utility functions in this file could be implemented 

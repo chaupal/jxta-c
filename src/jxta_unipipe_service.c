@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_unipipe_service.c,v 1.46 2007/04/23 03:38:49 mmx2005 Exp $
+ * $Id$
  */
 
 #include "jxta_apr.h"

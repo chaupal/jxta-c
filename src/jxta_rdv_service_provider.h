@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_provider.h,v 1.2 2005/09/21 21:16:50 slowhog Exp $
+ * $Id$
  */
 
 #ifndef __JXTA_RDV_SERVICE_PROVIDER_H__

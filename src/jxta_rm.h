@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rm.h,v 1.10 2006/09/20 00:54:29 bondolo Exp $
+ * $Id$
  */
 
 

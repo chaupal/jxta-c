@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: timer_test.c,v 1.4 2005/09/23 20:07:16 slowhog Exp $
+ * $Id$
  */
 
 #include "timer.h"

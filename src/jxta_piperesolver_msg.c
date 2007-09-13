@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_piperesolver_msg.c,v 1.20 2007/04/28 04:41:47 mmx2005 Exp $
+ * $Id$
  */
 
 

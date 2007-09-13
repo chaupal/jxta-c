@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: Peers.cs,v 1.3 2006/08/04 10:33:17 lankes Exp $
+ * $Id$
  */
 using System;
 using JxtaNET;

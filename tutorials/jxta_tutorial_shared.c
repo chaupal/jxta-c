@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tutorial_shared.c,v 1.6 2006/09/01 18:03:26 bondolo Exp $
+ * $Id$
  */
 
 /*

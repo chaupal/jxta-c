@@ -52,7 +52,7 @@
 #
 # This license is based on the BSD license adopted by the Apache Foundation.
 #
-# $Id: testWithINP.sh,v 1.1 2005/10/13 16:59:44 exocetrick Exp $
+# $Id$
 #
  
 ###  Run all of the test code sequentially.

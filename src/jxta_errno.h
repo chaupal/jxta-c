@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_errno.h,v 1.7 2006/09/01 23:36:56 bondolo Exp $
+ * $Id$
  */
 
 #ifndef JXTA_ERRNO_H

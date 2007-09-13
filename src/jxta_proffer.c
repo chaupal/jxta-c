@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_proffer.c,v 1.17 2006/09/19 18:45:47 exocetrick Exp $
+ * $Id$
  */
 
 #include <stdio.h>

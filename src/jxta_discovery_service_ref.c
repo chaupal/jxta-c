@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_discovery_service_ref.c,v 1.197 2006/09/23 18:51:04 exocetrick Exp $
+ * $Id$
  */
 
 #include <limits.h>

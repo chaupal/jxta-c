@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_endpoint_messenger.h,v 1.7 2006/12/23 19:53:00 slowhog Exp $
+ * $Id$
  */
 
 

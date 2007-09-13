@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_netpg.h,v 1.1 2005/10/13 20:28:07 mathieu Exp $
+ * $Id$
  */
 
 #ifndef JXTA_NETPG_H

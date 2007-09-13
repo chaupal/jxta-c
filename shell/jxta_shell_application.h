@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_application.h,v 1.4 2006/01/30 01:14:17 bondolo Exp $
+ * $Id$
  */
 #ifndef __JXTA_SHELL_APPLICATION_H__
 #define  __JXTA_SHELL_APPLICATION_H__

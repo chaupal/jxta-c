@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peergroup.c,v 1.59 2007/04/24 21:51:33 slowhog Exp $
+ * $Id$
  */
 static const char *__log_cat = "PG";
 

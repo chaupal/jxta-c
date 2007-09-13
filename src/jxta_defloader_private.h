@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_defloader_private.h,v 1.5 2006/09/08 19:17:54 bondolo Exp $
+ * $Id$
  */
 
 #ifndef JXTA_DEFLOADER_PRIVATE_H

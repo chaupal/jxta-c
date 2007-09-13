@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: msg_test.c,v 1.29 2006/09/29 06:52:06 slowhog Exp $
+ * $Id$
  */
 
 #include <stdio.h>

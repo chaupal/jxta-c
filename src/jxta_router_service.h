@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_router_service.h,v 1.3 2005/09/21 21:16:50 slowhog Exp $
+ * $Id$
  */
 
 

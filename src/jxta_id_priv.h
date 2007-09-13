@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_id_priv.h,v 1.14 2005/11/06 00:59:50 slowhog Exp $
+ * $Id$
  */
 
 

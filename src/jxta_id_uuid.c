@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_id_uuid.c,v 1.23 2006/08/02 23:27:40 bondolo Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "ENDPOINT";

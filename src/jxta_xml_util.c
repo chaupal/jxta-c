@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_xml_util.c,v 1.26 2006/09/29 01:28:45 slowhog Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "XMLUTIL";

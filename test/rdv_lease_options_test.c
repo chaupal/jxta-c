@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rdv_lease_options_test.c,v 1.1 2006/10/31 20:00:40 bondolo Exp $
+ * $Id$
  */
 
 #include <stdio.h>

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr.c,v 1.5 2006/02/05 14:16:41 lankes Exp $
+ * $Id$
  */
 
 #include <apr_general.h>

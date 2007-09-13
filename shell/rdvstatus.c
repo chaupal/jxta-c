@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rdvstatus.c,v 1.24 2005/11/24 04:17:50 mmx2005 Exp $
+ * $Id$
  */
 
 

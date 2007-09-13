@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_debug.c,v 1.16 2005/10/27 01:55:25 slowhog Exp $
+ * $Id$
  */
 
 #include "jxta_debug.h"

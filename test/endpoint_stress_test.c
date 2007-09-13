@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: endpoint_stress_test.c,v 1.23 2006/05/16 00:58:13 slowhog Exp $
+ * $Id$
  */
 
 #include "jxta.h"

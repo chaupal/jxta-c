@@ -44,7 +44,7 @@ Project JXTA homepage <http://www.jxta.org>
 
 This license is based on the BSD license adopted by the Apache Foundation. 
 
-$Id: build.xml,v 1.2 2004/08/11 23:10:32 gonzo Exp $
+$Id$
 
 -->
 <project name="jxta-c" basedir="." default="dist">

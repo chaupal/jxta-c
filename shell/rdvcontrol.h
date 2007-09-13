@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rdvcontrol.h,v 1.1 2005/09/02 08:57:52 slowhog Exp $
+ * $Id$
  */
 #ifndef __JXTA_SHELL_RDVCONTROL_H__
 #define __JXTA_SHELL_RDVCONTROL_H__

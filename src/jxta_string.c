@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_string.c,v 1.4 2005/06/16 23:11:52 slowhog Exp $
+ * $Id$
  */
 
 #include <stdarg.h>

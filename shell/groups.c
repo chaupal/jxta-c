@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: groups.c,v 1.15 2005/11/26 05:57:54 mmx2005 Exp $
+ * $Id$
  */
 
 #include <stdio.h>

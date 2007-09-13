@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_shell_app_env.h,v 1.2 2005/08/24 01:21:20 slowhog Exp $
+ * $Id$
  */
 #ifndef __JXTA_SHELL_APP_ENV_H__
 #define __JXTA_SHELL_APP_ENV_H__

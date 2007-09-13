@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_membership_service.c,v 1.9 2005/06/16 23:11:44 slowhog Exp $
+ * $Id$
  */
 
 #include "jxta_service_private.h"

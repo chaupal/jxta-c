@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_module.h,v 1.12 2006/09/13 17:56:50 bondolo Exp $
+ * $Id$
  */
 
 #ifndef JXTA_MODULE_H

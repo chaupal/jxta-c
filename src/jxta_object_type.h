@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_object_type.h,v 1.14 2006/12/23 19:53:01 slowhog Exp $
+ * $Id$
  */
 
 #ifndef JXTA_OBJECT_TYPE_H

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_builtinmodules_private.h,v 1.6 2007/04/24 21:51:33 slowhog Exp $
+ * $Id$
  */
 
 #ifndef JXTA_BUILTINMODULES_PRIVATE_H

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: Log.cs,v 1.5 2006/08/04 10:33:19 lankes Exp $
+ * $Id$
  */
 
 using System;

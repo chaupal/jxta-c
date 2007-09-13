@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rdv_adv_test.c,v 1.6 2005/09/23 20:07:15 slowhog Exp $
+ * $Id$
  */
 
 #include <stdio.h>

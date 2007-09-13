@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: PipeMsgEvent.cs,v 1.1 2006/08/04 12:12:27 lankes Exp $
+ * $Id$
  */
 using System;
 using System.Collections.Generic;

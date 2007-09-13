@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: rdvcontrol.c,v 1.2 2005/11/24 04:17:49 mmx2005 Exp $
+ * $Id$
  */
 
 

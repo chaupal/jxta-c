@@ -52,7 +52,7 @@
 #
 # This license is based on the BSD license adopted by the Apache Foundation.
 #
-# $Id: testall.sh,v 1.7 2004/05/25 04:12:09 tra Exp $
+# $Id$
 #
  
 ###  Run all of the test code sequentially.

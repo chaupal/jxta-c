@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cache_config_adv.h,v 1.3 2006/09/13 00:06:34 slowhog Exp $
+ * $Id$
  */
 
 

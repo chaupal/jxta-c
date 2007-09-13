@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_service.h,v 1.14 2006/09/06 23:09:47 mmx2005 Exp $
+ * $Id$
  */
 
 #ifndef JXTA_SERVICE_H

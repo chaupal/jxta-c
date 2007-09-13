@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdvserver_test.c,v 1.5 2005/11/16 20:10:44 lankes Exp $
+ * $Id$
  */
 
 #include <stdio.h>

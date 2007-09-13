@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_advertisement.h,v 1.33 2006/11/01 01:41:36 bondolo Exp $
+ * $Id$
  */
 
 /**

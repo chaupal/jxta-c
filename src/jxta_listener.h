@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_listener.h,v 1.9 2006/06/17 09:24:13 mmx2005 Exp $
+ * $Id$
  */
 
 

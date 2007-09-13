@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_transport_tls_private.h,v 1.1 2007/04/24 21:51:34 slowhog Exp $
+ * $Id$
  */
 
 #ifndef __JXTA_TRANSPORT_TLS_PRIVATE_H__

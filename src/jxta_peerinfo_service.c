@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peerinfo_service.c,v 1.5 2005/06/16 23:11:46 slowhog Exp $
+ * $Id$
  */
 
 #include "jxta_peerinfo_service_private.h"

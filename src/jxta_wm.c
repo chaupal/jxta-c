@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_wm.c,v 1.26 2007/04/10 02:02:34 mmx2005 Exp $
+ * $Id$
  */
 
 static const char *const __log_cat = "WireMessage";

@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jpr_errno.h,v 1.4 2006/09/13 20:04:22 bondolo Exp $
+ * $Id$
  */
 
 #ifndef JPR_ERRNO_H

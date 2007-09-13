@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_module.c,v 1.30 2006/09/18 22:58:55 slowhog Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "MODULE";

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: DiscoveryService.cs,v 1.4 2006/08/07 11:18:04 lankes Exp $
+ * $Id$
  */
 using System;
 using System.Runtime.InteropServices;

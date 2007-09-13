@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: PeerGroupFactory.cs,v 1.1 2006/08/04 10:33:21 lankes Exp $
+ * $Id$
  */
 using System;
 using System.Collections.Generic;

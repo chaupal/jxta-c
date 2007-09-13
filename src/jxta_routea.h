@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_routea.h,v 1.9 2006/08/23 22:12:32 bondolo Exp $
+ * $Id$
  */
 
 

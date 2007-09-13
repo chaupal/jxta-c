@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_piperesolver_impl.c,v 1.54 2007/04/28 10:06:57 mmx2005 Exp $
+ * $Id$
  */
 
 #include <limits.h>

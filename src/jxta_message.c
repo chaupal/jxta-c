@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_message.c,v 1.64 2006/09/12 02:53:40 bondolo Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "MESSAGE";

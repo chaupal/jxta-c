@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: peerlist_test.c,v 1.11 2005/11/05 05:47:34 slowhog Exp $
+ * $Id$
  */
 
 

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_util_priv.c,v 1.19 2007/04/20 14:43:18 mmx2005 Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "UTIL";

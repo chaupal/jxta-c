@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: queue.c,v 1.21 2005/10/27 01:55:32 slowhog Exp $
+ * $Id$
  */
 
 #include <stdio.h>

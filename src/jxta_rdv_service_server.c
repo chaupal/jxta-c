@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_rdv_service_server.c,v 1.57 2006/09/29 02:01:29 slowhog Exp $
+ * $Id$
  **/
 
 

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_pipe_service.c,v 1.32 2007/04/24 23:40:39 mmx2005 Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "PIPE";

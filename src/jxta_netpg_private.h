@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_netpg_private.h,v 1.17 2007/04/24 21:51:33 slowhog Exp $
+ * $Id$
  */
 
 #ifndef JXTA_NETPG_PRIVATE_H

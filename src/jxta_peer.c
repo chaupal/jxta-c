@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peer.c,v 1.24 2006/10/01 23:14:10 mmx2005 Exp $
+ * $Id$
  */
 
 #include "jxta_apr.h"

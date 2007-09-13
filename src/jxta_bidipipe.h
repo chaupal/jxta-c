@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bidipipe.h,v 1.8 2005/09/21 21:16:46 slowhog Exp $
+ * $Id$
  */
 
 #ifndef __JXTA_BIDIPIPE_H__

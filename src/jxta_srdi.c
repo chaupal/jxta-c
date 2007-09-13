@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_srdi.c,v 1.35 2007/03/17 15:52:07 mmx2005 Exp $
+ * $Id$
  */
  
 static const char *__log_cat = "SRDI";

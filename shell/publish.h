@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: publish.h,v 1.4 2005/09/25 03:55:47 exocetrick Exp $
+ * $Id$
  */
 #ifndef __JXTA_SHELL_PUBLISH_H__
 #define __JXTA_SHELL_PUBLISH_H__

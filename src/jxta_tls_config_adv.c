@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_tls_config_adv.c,v 1.2 2007/04/24 23:46:42 mmx2005 Exp $
+ * $Id$
  */
 
 static const char *const __log_cat = "TlsCfgAdv";

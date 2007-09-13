@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_relay.c,v 1.62 2007/04/25 04:33:57 mmx2005 Exp $
+ * $Id$
  */
 #include <stdlib.h> /* for atoi */
 

@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_mca.c,v 1.27 2006/09/29 01:28:44 slowhog Exp $
+ * $Id$
  */
 
 static const char *const __log_cat = "MCA";

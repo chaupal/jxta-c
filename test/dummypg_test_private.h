@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: dummypg_test_private.h,v 1.4 2006/09/08 19:17:56 bondolo Exp $
+ * $Id$
  */
 
 #ifndef DUMMYPG_TEST_PRIVATE_H

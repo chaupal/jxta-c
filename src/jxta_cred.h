@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_cred.h,v 1.4 2005/06/16 23:11:40 slowhog Exp $
+ * $Id$
  */
 
 

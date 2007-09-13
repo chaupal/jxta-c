@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_peerview_priv.h,v 1.3 2006/02/01 23:37:50 slowhog Exp $
+ * $Id$
  */
 
 

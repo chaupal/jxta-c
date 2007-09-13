@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_bytevector.c,v 1.23 2007/04/22 22:45:00 mmx2005 Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "bytevector";

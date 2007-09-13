@@ -51,7 +51,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_hashtable.c,v 1.31 2006/10/01 01:08:50 bondolo Exp $
+ * $Id$
  */
 
 

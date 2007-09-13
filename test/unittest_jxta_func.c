@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: unittest_jxta_func.c,v 1.12 2006/09/29 06:52:06 slowhog Exp $
+ * $Id$
  */
 
 #include <stdio.h>

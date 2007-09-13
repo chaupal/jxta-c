@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: PipeID.cs,v 1.1 2006/08/04 11:39:21 lankes Exp $
+ * $Id$
  */
 using System;
 using System.Collections.Generic;

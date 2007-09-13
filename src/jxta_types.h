@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_types.h,v 1.9 2006/09/13 20:04:23 bondolo Exp $
+ * $Id$
  */
 
 #ifndef JXTA_TYPES_H

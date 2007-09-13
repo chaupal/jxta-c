@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: hta_adv_test.c,v 1.12 2005/09/23 20:07:13 slowhog Exp $
+ * $Id$
  */
 
 #include <stdio.h>

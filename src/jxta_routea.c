@@ -50,7 +50,7 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id: jxta_routea.c,v 1.24 2006/08/31 21:07:49 bondolo Exp $
+ * $Id$
  */
 
 static const char *__log_cat = "RA";
