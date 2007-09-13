@@ -701,7 +701,7 @@ static Jxta_status messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
     JXTA_OBJECT_CHECK_VALID(msg);
     JXTA_OBJECT_CHECK_VALID(messenger);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Router_messenger.send()\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Router::messenger_send()\n");
 
     if (FALSE == messenger->router->started) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Trying to send a message after router was stopped.\n");
