@@ -219,8 +219,6 @@ static Jxta_status tcp_messenger_send(JxtaEndpointMessenger * me, Jxta_message *
     JXTA_OBJECT_CHECK_VALID(myself->conn);
 
     JXTA_OBJECT_SHARE(msg);
-    /* message must be set due to JSE implementation bug */
-    jxta_message_set_source(msg, myself->_super.address);
 
     status = jxta_transport_tcp_connection_send_message(myself->conn, msg);
     JXTA_OBJECT_RELEASE(msg);
@@ -1070,6 +1068,7 @@ JXTA_DECLARE(Jxta_status) jxta_transport_tcp_connection_send_message(Jxta_transp
     Jxta_status res;
     _jxta_transport_tcp_connection *_self = (_jxta_transport_tcp_connection *) me;
     apr_int64_t msg_size;
+    Jxta_endpoint_address *addr;
 
     JXTA_OBJECT_CHECK_VALID(_self);
 
@@ -1081,6 +1080,14 @@ JXTA_DECLARE(Jxta_status) jxta_transport_tcp_connection_send_message(Jxta_transp
 
     JXTA_OBJECT_CHECK_VALID(msg);
     JXTA_OBJECT_SHARE(msg);
+
+    /* A better approach is to set EndpointSrcAddress only when not through a direct connection,
+     * i.e, only when sent throught EndpointRouter.
+     * However, JXTA-JSE requires src to be set no matter what.
+     */
+    addr = jxta_transport_publicaddr_get(_self->tp);
+    jxta_message_set_source(msg, addr);
+    JXTA_OBJECT_RELEASE(addr);
 
     msg_size = 0;
     res = jxta_message_write_1(msg, APP_MSG, _self->use_msg_version, msg_wireformat_size, &msg_size);
