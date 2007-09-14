@@ -327,7 +327,7 @@ JXTA_DECLARE( Jxta_welcome_message *) welcome_message_new_2(JString * welcome_st
 
 Error_Exit :
     JXTA_OBJECT_RELEASE(myself);
-    myself = NULL;
+    return NULL;
 
 Common_Exit :
     myself->welcome_str = JXTA_OBJECT_SHARE(welcome_str);
