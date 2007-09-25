@@ -436,8 +436,8 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_address_request_msg_get_xml(Jxta_peervie
     char const *attrs[8] = { "type", "jxta:PA" };
     unsigned int free_mask = 0;
     int attr_idx = 2;
-    apr_uuid_t *adv_gen;
- 
+    apr_uuid_t *adv_gen = NULL;
+    memset(tmpbuf, 0 , 256);
     JXTA_OBJECT_CHECK_VALID(myself);
 
     if (xml == NULL) {
