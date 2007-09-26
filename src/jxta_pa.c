@@ -58,6 +58,7 @@ static const char *const __log_cat = "PA";
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <apr.h>
 
 #include "jxta_log.h"
 #include "jxta_errno.h"
@@ -66,6 +67,7 @@ static const char *const __log_cat = "PA";
 #include "jxta_routea.h"
 #include "jxta_apa.h"
 #include "jxta_rdv.h"
+#include "jxta_id_uuid_priv.h"
 
 /** Each of these corresponds to a tag in the 
  * xml ad.
@@ -77,6 +79,7 @@ enum tokentype {
     GID_,
     Name_,
     Desc_,
+    SN_,
     Svc_
 };
 
@@ -93,6 +96,11 @@ struct _jxta_PA {
     JString *Name;
     JString *Desc;
     Jxta_vector *svclist;
+    Jxta_boolean adv_gen_set;
+    apr_uuid_t adv_gen;
+    apr_uuid_t *adv_gen_ptr;
+    enum contexts { UNKNOWN, UUID, TSP } uuid_context;
+
 };
 
 /**
@@ -112,8 +120,10 @@ static void handleJxta_PA(void *me, const XML_Char * cd, int len)
 
     JXTA_OBJECT_CHECK_VALID(myself);
 
-    if( 0 == len ) {
+    if (0 == len) {
+
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "START <jxta:PA> : [%pp]\n", myself);
+
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "FINISH <jxta:PA> : [%pp]\n", myself);
     }
@@ -243,6 +253,63 @@ static void handleSvc(void *me, const XML_Char * cd, int len)
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <Svc> Element [%pp]\n", ad );
     }
+}
+
+static void handleSN(void *me, const XML_Char * cd, int len)
+{
+    Jxta_PA *ad = (Jxta_PA *) me;
+
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    if (len == 0) {
+        const char **atts = ((Jxta_advertisement *) ad)->atts;
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "START <SN> Element : [%pp]\n", ad);
+        while (atts && *atts) {
+            if (0 == strcmp(*atts, "type")) {
+                JString *type_str = jstring_new_2(atts[1]);
+                jstring_trim(type_str);
+                if (!strncmp(jstring_get_string(type_str), "uuid", 4)) {
+                    ad->uuid_context = UUID;
+                }
+                JXTA_OBJECT_RELEASE(type_str);
+            }
+        atts += 2;
+        }
+
+    } else {
+        JString *adv_gen = jstring_new_1(len );
+        char tmpbuf[64];
+        apr_status_t ret;
+        apr_uuid_t peer_adv_gen;
+
+        jstring_append_0( adv_gen, cd, len);
+        jstring_trim(adv_gen);
+        switch (ad->uuid_context) {
+            case UUID:
+            ret = apr_uuid_parse( &peer_adv_gen, jstring_get_string(adv_gen));
+            if (APR_SUCCESS == ret) {
+
+                jxta_PA_set_SN(ad, &peer_adv_gen);
+
+                apr_uuid_format(tmpbuf, &peer_adv_gen);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "parsed :%s\n", tmpbuf);
+            } else {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Error parsing UUID:%s\n", jstring_get_string(adv_gen));
+            }
+            break;
+            case TSP:
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "TSP type not supported\n");
+                break;
+            case UNKNOWN:
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unknown SN type:%s\n", jstring_get_string(adv_gen));
+                break;
+        }
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "FINISH <SN> Element:%s\n", jstring_get_string(adv_gen) , tmpbuf);
+
+        JXTA_OBJECT_RELEASE(adv_gen);
+    }
+
 }
 
  /** The get/set functions represent the public
@@ -431,6 +498,49 @@ JXTA_DECLARE(void) jxta_PA_set_Desc(Jxta_PA * ad, JString * desc)
     }
 }
 
+JXTA_DECLARE(Jxta_boolean) jxta_PA_get_SN(Jxta_PA * myself, apr_uuid_t * ret)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    if ( myself->adv_gen_set ) {
+        memmove(ret, &myself->adv_gen, sizeof(apr_uuid_t));
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+JXTA_DECLARE(void) jxta_PA_set_SN(Jxta_PA * myself, apr_uuid_t * adv_gen)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    if (NULL == adv_gen) {
+        myself->adv_gen_set = FALSE;
+    } else {
+        memmove(&myself->adv_gen, adv_gen, sizeof(apr_uuid_t));
+        myself->adv_gen_set = TRUE;
+    }
+}
+
+JXTA_DECLARE(Jxta_boolean) jxta_PA_is_recent(Jxta_PA * myself, apr_uuid_t *uuid)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    Jxta_boolean ret = FALSE;
+    int cmp;
+    if (!myself->adv_gen_set) return FALSE;
+    cmp = jxta_id_uuid_compare(&myself->adv_gen, uuid);
+    if (UUID_NOT_COMPARABLE == cmp) {
+        ret = (UUID_LESS_THAN != jxta_id_uuid_time_stamp_compare(&myself->adv_gen, uuid)) ? TRUE:FALSE;
+        if (TRUE == ret) {
+            ret = (UUID_GREATER_THAN == jxta_id_uuid_seq_no_compare(&myself->adv_gen, uuid)) ? TRUE:FALSE;
+        }
+    } else {
+        ret = (UUID_LESS_THAN != cmp) ? TRUE:FALSE;
+    }
+    return ret;
+}
+
 JXTA_DECLARE(JString *) jxta_PA_get_Dbg(Jxta_PA * ad)
 {
     return NULL;
@@ -542,6 +652,7 @@ static const Kwdtab jxta_PA_tags[] = {
     {"GID", GID_, *handleGID, jxta_PA_get_GID_string, NULL},
     {"Name", Name_, *handleName, jxta_PA_get_Name_string, NULL},
     {"Desc", Desc_, *handleDesc, jxta_PA_get_Desc_string, NULL},
+    {"SN", SN_, *handleSN, NULL, NULL},
     {"Svc", Svc_, *handleSvc, NULL, NULL},
     {NULL, 0, 0, 0, NULL}
 };
@@ -602,7 +713,7 @@ JXTA_DECLARE(Jxta_status) jxta_PA_get_xml_1(Jxta_PA * ad, JString ** xml, char c
     Jxta_status res = JXTA_SUCCESS;
     JString *string;
     JString *tmpref = NULL;
-
+    char tmpbuf[64];
     if (xml == NULL) {
         return JXTA_INVALID_ARGUMENT;
     }
@@ -625,7 +736,8 @@ JXTA_DECLARE(Jxta_status) jxta_PA_get_xml_1(Jxta_PA * ad, JString ** xml, char c
         jstring_append_2(string, "\"");
         
         attrs += 2;
-    }    
+    }
+
     jstring_append_2(string, ">\n");
     
     jstring_append_2(string, "<PID>");
@@ -635,6 +747,12 @@ JXTA_DECLARE(Jxta_status) jxta_PA_get_xml_1(Jxta_PA * ad, JString ** xml, char c
     tmpref = NULL;
     jstring_append_2(string, "</PID>\n");
 
+    if (ad->adv_gen_set) {
+        apr_uuid_format(tmpbuf, &ad->adv_gen);
+        jstring_append_2(string, "<SN type='uuid'>");
+        jstring_append_2(string, tmpbuf);
+        jstring_append_2(string, "</SN>\n");
+    }
     jstring_append_2(string, "<GID>");
     jxta_id_to_jstring(ad->GID, &tmpref);
     jstring_append_1(string, tmpref);
@@ -653,7 +771,6 @@ JXTA_DECLARE(Jxta_status) jxta_PA_get_xml_1(Jxta_PA * ad, JString ** xml, char c
         jstring_append_1(string, ad->Desc);
         jstring_append_2(string, "</Desc>\n");
     }
-
     /* Print services */
     res = svc_printer(ad, string);
     if( JXTA_SUCCESS != res ) {
@@ -703,7 +820,6 @@ JXTA_DECLARE(Jxta_PA *) jxta_PA_new()
         ad->Desc = jstring_new_0();
         ad->svclist = jxta_vector_new(4);
     }
-
     return ad;
 }
 

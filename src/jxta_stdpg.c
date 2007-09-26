@@ -98,6 +98,7 @@ static const char *__log_cat = "STDPG";
 #include "jxta_mia.h"
 #include "jxta_routea.h"
 #include "jxta_platformconfig.h"
+#include "jxta_id_uuid_priv.h"
 
 #ifndef UNUSED
 #ifdef __GNUC__
@@ -322,6 +323,8 @@ void jxta_stdpg_set_configadv(Jxta_module * self, Jxta_PA * config_adv)
 void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
 {
     Jxta_status status;
+    apr_uuid_t uuid;
+    Jxta_boolean uuid_to_use = FALSE;
     JString *mia_parm_jstring = NULL;
     Jxta_advertisement *parm_advs = NULL;
     Jxta_vector *parm_advs_vector = NULL;
@@ -336,6 +339,9 @@ void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assign
     const char *home;
     Jxta_stdpg *it = PTValid(self, Jxta_stdpg);
     apr_thread_pool_t *thread_pool = NULL;
+    char tmp[64];
+    int cmp = 0;
+    Jpr_absolute_time time = 0;
 
     /* The assigned ID is supposed to be the grp ID.
      * if we're the root group we may not have been given one, though.
@@ -360,6 +366,7 @@ void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assign
          * Therefore that's were our PID and name are.
          */
         pid_to_use = jxta_PA_get_PID(it->config_adv);
+        uuid_to_use = jxta_PA_get_SN(it->config_adv, &uuid);
 
         if ((NULL == pid_to_use) || jxta_id_equals(pid_to_use, jxta_id_nullID)) {
             jxta_id_peerid_new_1(&pid_to_use, gid_to_use);
@@ -387,9 +394,31 @@ void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assign
          * and we do not have that set-up in C.
          */
         jxta_PG_get_configadv(group, &(it->config_adv));
+        uuid_to_use = jxta_PA_get_SN(it->config_adv, &uuid);
         jxta_PG_get_PID(group, &(pid_to_use));
         jxta_PG_get_peername(group, &(peername_to_use));
     }
+    if (!uuid_to_use) {
+        apr_uuid_t * uuid_ptr;
+        uuid_ptr = jxta_id_uuid_new();
+        if (uuid_ptr) {
+            memmove(&uuid, uuid_ptr, sizeof(apr_uuid_t));
+            jxta_PA_set_SN(it->config_adv, &uuid);
+            free(uuid_ptr);
+            uuid_to_use = TRUE;
+        } else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to obtain a new uuid\n");
+        }
+    }
+    time = apr_time_now();
+    cmp = jxta_id_uuid_time_compare(&uuid, time);
+    if (UUID_EQUALS == cmp) {
+        /* time was moved back on this system */
+        jxta_id_uuid_increment_seq_number(&uuid);
+    }
+    apr_uuid_format(tmp, &uuid);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Got the uuid %s return from compare %d\n", tmp, cmp);
+
     /* create a cache manager */
     home = getenv("JXTA_HOME");
     jxta_PA_get_Svc_with_id(it->config_adv, jxta_cache_classid, &svc);
@@ -491,6 +520,8 @@ void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assign
      */
     it->peer_adv = jxta_PA_new();
 
+    jxta_PA_set_SN(it->peer_adv, &uuid);
+
     /* Set our name and pid and gid in our peer adv. */
     jxta_PA_set_Name(it->peer_adv, peername_to_use);
     jxta_PA_set_PID(it->peer_adv, pid_to_use);
@@ -514,6 +545,7 @@ void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assign
     JXTA_OBJECT_RELEASE(pid_to_use);
     JXTA_OBJECT_RELEASE(gid_to_use);
     JXTA_OBJECT_RELEASE(msid_to_use);
+
 }
 
 /*

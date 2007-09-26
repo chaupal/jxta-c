@@ -84,6 +84,7 @@ static const char *__log_cat = "NETPG";
 #include "jxta_hta.h"
 #include "jxta_mia.h"
 #include "jxta_platformconfig.h"
+#include "jxta_id_uuid_priv.h"
 
 #ifndef UNUSED
 #ifdef __GNUC__
@@ -231,11 +232,9 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
     Jxta_status res;
     Jxta_boolean release_mia = FALSE;
     Jxta_netpg *it = PTValid(self, Jxta_netpg);
-    Jxta_status rv = JXTA_SUCCESS;
     Jxta_PA *config_adv = NULL;
     Jxta_id *pg_id = NULL;
-
-    const char *noargs[] = { NULL };
+    apr_uuid_t uuid;
 
     /* Must read the PlatformConfig file to start the proper net peergroup */
     config_adv = jxta_PlatformConfig_read("PlatformConfig");
@@ -245,6 +244,23 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
         config_adv = jxta_PlatformConfig_create_default();
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "A new \"PlatformConfig\" file will be generated.\n");
     }
+
+    if (!jxta_PA_get_SN(config_adv, &uuid)) {
+        apr_uuid_t * uuid_ptr;
+        uuid_ptr = jxta_id_uuid_new();
+        memmove(&uuid, uuid_ptr, sizeof(apr_uuid_t));
+        free(uuid_ptr);
+    } else {
+        Jpr_absolute_time time;
+        int cmp;
+        time = apr_time_now();
+        cmp = jxta_id_uuid_time_compare(&uuid, time);
+        if (UUID_EQUALS == cmp) {
+            /* time was moved back on this system */
+            jxta_id_uuid_increment_seq_number(&uuid);
+        }
+    }
+    jxta_PA_set_SN(config_adv, &uuid);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before init : %d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(self));

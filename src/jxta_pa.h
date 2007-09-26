@@ -192,6 +192,35 @@ JXTA_DECLARE(Jxta_id *) jxta_PA_get_GID(Jxta_PA *);
 JXTA_DECLARE(void) jxta_PA_set_GID(Jxta_PA *, Jxta_id *);
 
 /**
+ * Sets the UUID for the advertisement. The UUID is a Type 1 UUID which
+ * is time based with a sequence number.
+ *
+ * @param Jxta_PA * peer advertisement
+ * @param apr_uuid_t * pointer to UUID generated with time stamp/seq. number
+ */
+JXTA_DECLARE(void) jxta_PA_set_SN(Jxta_PA * myself, apr_uuid_t * adv_gen);
+
+/**
+ * Gets the UUID that was generated when the advertisement was published.
+ *
+ * @param Jxta_PA * peer advertisement
+ * @param apr_uuid_t * pointer to a uuid location
+ * 
+ * @return boolean indicates if uuid was set
+ */
+JXTA_DECLARE(Jxta_boolean) jxta_PA_get_SN(Jxta_PA * myself, apr_uuid_t * ret);
+
+/**
+ * Compares the UUID of the PA with the UUID passed as the parameter.
+ *
+ * @param Jxta_PA * peer advertisement
+ * @param apr_uuid_t * pointer to a uuid location
+ * 
+ * @return boolean indicates whether the PA was created before the timestamp of the UUID
+ */
+JXTA_DECLARE(Jxta_boolean) jxta_PA_is_recent(Jxta_PA * myself, apr_uuid_t *uuid);
+
+/**
  * Gets the name of the peer.
  *
  * @param Jxta_PA * peer advertisement

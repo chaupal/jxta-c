@@ -64,6 +64,7 @@
 #include "jxta_relaya.h"
 #include "jxta_svc.h"
 #include "jxta_peergroup.h"
+#include "jxta_id_uuid_priv.h"
 
 static const char *__log_cat = "PLATFORMCONFIG";
 
@@ -71,6 +72,8 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
 {
   Jxta_PA *config_adv = NULL;
   Jxta_id *pid = NULL;
+  apr_uuid_t uuid;
+  apr_uuid_t * uuid_ptr;
   Jxta_TCPTransportAdvertisement *tta = NULL; /* append */
   Jxta_HTTPTransportAdvertisement *hta = NULL;
   Jxta_RelayAdvertisement *rla = NULL;
@@ -174,6 +177,12 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
           
           
   config_adv = jxta_PA_new();
+
+  uuid_ptr = jxta_id_uuid_new();
+  memmove(&uuid, uuid_ptr, sizeof(apr_uuid_t));
+  free(uuid_ptr);
+  jxta_PA_set_SN(config_adv, &uuid);
+
   services = jxta_PA_get_Svc(config_adv);
   jxta_vector_add_object_last(services, (Jxta_object *) rdvsvc);
   jxta_vector_add_object_last(services, (Jxta_object *) tcpsvc);      /* append */

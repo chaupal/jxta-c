@@ -53,13 +53,14 @@
  * $Id$
  */
 
-static const char *__log_cat = "ENDPOINT";
+static const char *__log_cat = "UUID";
 
 #ifdef WIN32
 #pragma warning ( once : 4115 4100)
 #endif
 
 #include <stddef.h>
+#include <math.h>
 #include <sys/types.h>
 #include <string.h>
 #include <stdlib.h>
@@ -69,7 +70,9 @@ static const char *__log_cat = "ENDPOINT";
 #include "jxta_log.h"
 #include "jxta_objecthashtable.h"
 #include "jxta_id_priv.h"
+#include "jxta_id_uuid_priv.h"
 #include "jxta_apr.h"
+
 
     /******************************************************************************/
     /*                                                                            */
@@ -78,7 +81,6 @@ enum {
     IDBYTEARRAYSIZE = 64,
 
     UUIDSIZE = 16,
-
     FLAGSIZE = 1,
 
     FLAGSIDTYPEOFFSET = FLAGSIZE - 1,
@@ -96,6 +98,7 @@ enum {
          * possible exceptions make it difficult to do.
          */
     HASHSIZE = 20,
+    UUID_NODE_LENGTH = 6,
 
     CODATGROUPIDOFFSET = 0,
     CODATIDOFFSET = CODATGROUPIDOFFSET + UUIDSIZE,
@@ -131,7 +134,6 @@ enum {
 typedef struct {
 
     struct _jxta_id common;
-
     unsigned char data[IDBYTEARRAYSIZE];
 } _jxta_id_uuid;
 
@@ -181,6 +183,7 @@ static Jxta_id *translateTbl[][2] = {
     /******************************************************************************/
     /*                                                                            */
     /******************************************************************************/
+static int jxta_id_uuid_compare_priv(apr_uuid_t * a, apr_uuid_t * b, Jpr_absolute_time time);
 static Jxta_id *translateToWellKnown(Jxta_id * jid);
 static Jxta_id *translateFromWellKnown(Jxta_id * jid);
 static Jxta_status newPeergroupid1(Jxta_id ** pg);
@@ -199,6 +202,191 @@ static Jxta_status getUniqueportion(Jxta_id * jid, JString ** uniq);
 static void doDelete(Jxta_object * jid);
 static Jxta_boolean equals(Jxta_id * jid1, Jxta_id * jid2);
 static unsigned int hashcode(Jxta_id * id);
+static apr_uint32_t uuid_state_seqnum = 0;
+
+typedef struct  {
+	apr_int32_t	time_low;
+	apr_int16_t	time_mid;
+	apr_int16_t	time_hi_and_version;
+	apr_int16_t	clock_seq;
+	apr_byte_t	node[6];
+} _uuid_fmt;
+
+/**
+ Compare the time of a type 1 UUID if the time sequence is equal
+
+    @param a pointer UUID
+    @param b pointer UUID
+
+    @return if (a.seq != b.seq) UUID_NOT_COMPARABLE
+            if (a.seq == b.seq && a.time == b.time UUID_EQUALS
+            if (a.seq == b.seq && a.time > b.time UUID_GREATER_THAN
+            if (a.seq == b.seq && a.time < b.time UUID_LESS_THAN
+
+**/
+int jxta_id_uuid_compare(apr_uuid_t * a, apr_uuid_t * b)
+{
+    if (UUID_EQUALS != jxta_id_uuid_seq_no_compare(a, b)) {
+        return UUID_NOT_COMPARABLE;
+    }
+    return jxta_id_uuid_time_stamp_compare(a, b);
+}
+
+/**
+ Compare the sequence number of UUID a with UUID b
+
+    @param a pointer UUID
+    @param b pointer UUID
+
+    @return if (a == b)    UUID_EQUALS
+         if (a > b)     UUID_GREATER_THAN
+         if (a < b)     UUID_LESS_THAN
+**/
+int jxta_id_uuid_seq_no_compare(apr_uuid_t * a, apr_uuid_t * b) {
+    
+    int res = UUID_EQUALS;
+    _uuid_fmt *uida = (_uuid_fmt *)a;
+    _uuid_fmt *uidb = (_uuid_fmt *)b;
+    apr_uint16_t ia = ntohs(uida->clock_seq);
+    apr_uint16_t ib = ntohs(uidb->clock_seq);
+    if (ia != ib) {
+        res = (ia > ib ? UUID_GREATER_THAN:UUID_LESS_THAN);
+    }
+    return res;
+}
+
+/**
+ Compare the time stamp of UUID a with UUID b
+
+    @param a pointer UUID
+    @param b pointer UUID
+
+    @return if (a == b)    UUID_EQUALS
+         if (a > b)     UUID_GREATER_THAN
+         if (a < b)     UUID_LESS_THAN
+**/
+int jxta_id_uuid_time_stamp_compare(apr_uuid_t * a, apr_uuid_t * b) {
+    return jxta_id_uuid_compare_priv(a, b, 0);
+}
+
+/**
+ Compare the timestamp of UUID with absolute time
+
+    @param a pointer UUID
+    @param time absolute time
+
+    @return if (a.time == absolute time) UUID_EQUALS
+            if (a.time > absolute time) UUID_GREATER_THAN
+            if (a.time < absolute time) UUID_LESS_THAN
+**/
+int jxta_id_uuid_time_compare(apr_uuid_t * a, Jpr_absolute_time time) {
+    return jxta_id_uuid_compare_priv(a, NULL, time);
+}
+
+static int jxta_id_uuid_compare_priv(apr_uuid_t * a, apr_uuid_t * b, Jpr_absolute_time time) {
+
+    apr_uint64_t atime = 0;
+    apr_uint32_t timela;
+    apr_uint32_t timelb;
+    apr_uint16_t timesa;
+    apr_uint16_t timesb;
+    apr_uint64_t tmp_int;
+
+    timesa = (ntohs(((_uuid_fmt *)a)->time_hi_and_version) & 0x0fff);
+
+    if (NULL != b) {
+        timesb = (ntohs(((_uuid_fmt *)b)->time_hi_and_version) & 0x0fff);
+        if (timesa != timesb) {
+            return timesa > timesb ? UUID_GREATER_THAN:UUID_LESS_THAN;
+        }
+    } else {
+        tmp_int = timesa * pow(2, 48);
+        atime += tmp_int;
+    }
+
+    timesa = ntohs(((_uuid_fmt *)a)->time_mid);
+
+    if (NULL != b) {
+        timesb = ntohs(((_uuid_fmt *)b)->time_mid);
+        if (timesa != timesb) {
+            return timesa > timesb ? UUID_GREATER_THAN:UUID_LESS_THAN;
+        }
+    } else {
+        tmp_int = timesa * pow(2, 32);
+        atime += tmp_int;
+    }
+
+    timela = ntohl(((_uuid_fmt *)a)->time_low);
+
+    if (NULL != b) {
+        timelb = ntohl(((_uuid_fmt *)b)->time_low);
+        if (timela != timelb) {
+            return timela > timelb ? UUID_GREATER_THAN:UUID_LESS_THAN;
+        }
+    } else {
+
+        atime += timela;
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "time compare a: " JPR_ABS_TIME_FMT " time: " JPR_ABS_TIME_FMT "\n", atime, time);
+
+        if (atime != time) {
+            return atime > time ? UUID_GREATER_THAN:UUID_LESS_THAN;
+        }
+    }
+
+    /* fall through means time is equal */
+    if (b != NULL) {
+        timesa = ntohs(((_uuid_fmt *)a)->clock_seq & 0x3fff);
+        timesb = ntohs(((_uuid_fmt *)b)->clock_seq & 0x3fff);
+        if (timesa != timesb) {
+            return timela > timelb ? UUID_GREATER_THAN:UUID_LESS_THAN;
+        }
+    }
+    return UUID_EQUALS;
+}
+
+apr_uuid_t * jxta_id_uuid_increment_seq_number(apr_uuid_t * a) {
+    apr_uuid_t *uuid;
+    uuid = calloc(1, sizeof(apr_uuid_t));
+    if (NULL != uuid) {
+        memmove(uuid, a, sizeof(apr_uuid_t));
+        ((_uuid_fmt *)uuid)->clock_seq = ntohs(((_uuid_fmt *)uuid)->clock_seq);
+        ((_uuid_fmt *)uuid)->clock_seq++;
+    }
+    return uuid;
+}
+
+apr_uuid_t * jxta_id_uuid_new()
+{
+    apr_uint64_t timestamp;
+    _uuid_fmt *uuid_fmt;
+    apr_uuid_t * uuid;
+    uuid = calloc(1, sizeof(apr_uuid_t));
+    char tmp[64];
+    timestamp = apr_time_now();
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Timestamp " JPR_ABS_TIME_FMT "\n", timestamp);
+
+    uuid_fmt = (_uuid_fmt *) uuid->data;
+
+    uuid_fmt->time_low = (apr_uint32_t)(timestamp & 0xFFFFFFFF);
+    uuid_fmt->time_mid = (apr_uint16_t)((timestamp >> 32) & 0xFFFF);
+    uuid_fmt->time_hi_and_version = (apr_uint16_t)((timestamp >> 48) & 0x0FFF);
+    uuid_fmt->time_hi_and_version |= (1 << 12);
+
+    uuid_fmt->clock_seq = ++uuid_state_seqnum | 0x8000;
+
+    memset(uuid_fmt->node, 0, UUID_NODE_LENGTH);
+
+    uuid_fmt->time_low = htonl(uuid_fmt->time_low);
+    uuid_fmt->time_mid = htons(uuid_fmt->time_mid);
+    uuid_fmt->time_hi_and_version = htons(uuid_fmt->time_hi_and_version);
+    uuid_fmt->clock_seq = htons(uuid_fmt->clock_seq);
+
+    apr_uuid_format(tmp, uuid);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "UUID after network %s\n", tmp);
+
+    return uuid;
+}
 
     /******************************************************************************/
     /*                                                                            */
@@ -770,5 +958,6 @@ JXTAIDFormat uuid_format = {
     equals,
     hashcode
 };
+
 
 /* vim: set ts=4 sw=4 et tw=130: */
