@@ -264,8 +264,7 @@ JXTA_DECLARE(Jxta_status) jxta_adv_response_msg_add_advertisement(Jxta_adv_respo
     Jxta_status ret;
     Jxta_adv_response_entry *entry;
 
-    JXTA_OBJECT_CHECK_VALID(myself);
-    JXTA_OBJECT_CHECK_VALID(pid);
+    JXTA_OBJECT_CHECK_VALID(msg);
 
     entry = new_entry(adv, exp);
     ret = jxta_vector_add_object_last(msg->entries, (Jxta_object *) entry);
@@ -278,7 +277,7 @@ JXTA_DECLARE(Jxta_status) jxta_adv_response_get_entries(Jxta_adv_response_msg *m
 {
     Jxta_status ret = JXTA_SUCCESS;
 
-    JXTA_OBJECT_CHECK_VALID(myself);
+    JXTA_OBJECT_CHECK_VALID(msg);
 
     if (NULL != msg->entries) {
         *entries = JXTA_OBJECT_SHARE(msg->entries);
@@ -290,7 +289,7 @@ JXTA_DECLARE(Jxta_advertisement *) jxta_adv_response_entry_get_adv(Jxta_adv_resp
 {
     Jxta_advertisement * ret = NULL;
 
-    JXTA_OBJECT_CHECK_VALID(myself);
+    JXTA_OBJECT_CHECK_VALID(entry);
 
     if (NULL != entry->adv) {
         ret = JXTA_OBJECT_SHARE(entry->adv);
