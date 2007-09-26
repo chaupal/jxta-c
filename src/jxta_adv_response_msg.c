@@ -232,7 +232,7 @@ JXTA_DECLARE(Jxta_status) jxta_adv_response_msg_get_xml(Jxta_adv_response_msg * 
         }
         jstring_append_2(string, "</Adv>");
         JXTA_OBJECT_RELEASE(adv);
-
+        JXTA_OBJECT_RELEASE(entry);
     }
     jstring_append_2(string, "</jxta:AdvResponse>\n");
 
