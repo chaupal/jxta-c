@@ -89,6 +89,8 @@ include_HEADERS = EndpointRouter.h          \
                   jxta_rdv_diffusion_msg.h  \
                   jxta_lease_request_msg.h \
                   jxta_lease_response_msg.h \
+                  jxta_adv_request_msg.h \
+                  jxta_adv_response_msg.h \
                   jxta_rm.h                 \
                   jxta_test_adv.h           \
                   jxta_transport_http_client.h         \
@@ -206,6 +208,8 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_rdv_diffusion_msg.c       \
                      jxta_lease_request_msg.c       \
                      jxta_lease_response_msg.c      \
+                     jxta_adv_request_msg.c       \
+                     jxta_adv_response_msg.c      \
                      jxta_listener.c                \
                      jxta_wm.c                      \
                      jxta_pipe_adv.c                \

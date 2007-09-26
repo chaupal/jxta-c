@@ -372,17 +372,7 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_get_xml(Jxta_lease_response_ms
         char const *attrs[8] = { "type", "jxta:PA" };
         unsigned int free_mask = 0;
         int attr_idx = 2;
-        apr_uuid_t *adv_gen = jxta_lease_adv_info_get_adv_gen(myself->server);
         Jxta_PA *server_adv;
-
-        if (NULL != adv_gen) {
-            attrs[attr_idx++] = "adv_gen";
-
-            apr_uuid_format(tmpbuf, adv_gen);
-            free(adv_gen);
-            free_mask |= (1 << attr_idx);
-            attrs[attr_idx++] = strdup(tmpbuf);
-        }
 
         if (-1L != jxta_lease_adv_info_get_adv_exp(myself->server)) {
             attrs[attr_idx++] = "expiration";
