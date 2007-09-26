@@ -270,6 +270,7 @@ JXTA_DECLARE(Jxta_status) jxta_adv_response_msg_add_advertisement(Jxta_adv_respo
     entry = new_entry(adv, exp);
     ret = jxta_vector_add_object_last(msg->entries, (Jxta_object *) entry);
 
+    JXTA_OBJECT_RELEASE(entry);
     return ret;
 }
 
