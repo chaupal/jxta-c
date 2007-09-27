@@ -2408,7 +2408,7 @@ static Jxta_boolean have_matching_PA(Jxta_peerview * me, Jxta_peerview_peer_info
     apr_uuid_t * adv_gen_ptr;
     apr_uuid_t adv_gen;
     Jxta_vector * requested_PAs=NULL;
-    Jxta_id *id;
+    Jxta_id *id = NULL;
 
     id = jxta_peerview_peer_info_get_peer_id(peer);
     adv_gen_ptr = jxta_peerview_peer_info_get_adv_gen(peer);
@@ -2445,6 +2445,8 @@ static Jxta_boolean have_matching_PA(Jxta_peerview * me, Jxta_peerview_peer_info
         ret = jxta_PA_is_recent(pa, &adv_gen);
     }
 FINAL_EXIT:
+    if (id)
+        JXTA_OBJECT_RELEASE(id);
     if (requested_PAs)
         JXTA_OBJECT_RELEASE(requested_PAs);
     if (jPeerid)
