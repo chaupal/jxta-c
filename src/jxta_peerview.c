@@ -2589,11 +2589,6 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
             } else {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "PONG [%pp] give it a chance to join ours\n", pong);
                 send_pong = TRUE;
-                Jxta_peer * newPeer = jxta_peer_new();
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "PONG [%pp] give it a chance to join ours\n", pong);
-                jxta_peer_set_peerid(newPeer, pid);
-                peerview_send_pong(me, newPeer);
-                JXTA_OBJECT_RELEASE(newPeer);
                 goto UNLOCK_EXIT;
             }
         }
