@@ -54,6 +54,8 @@
  */
 static const char *__log_cat = "PG";
 
+#include <assert.h>
+
 #include "jpr/jpr_excep.h"
 
 #include "jxta_apr.h"
@@ -72,8 +74,10 @@ static const char *__log_cat = "PG";
 #include "jxta_peergroup_private.h"
 #include "jxta_objecthashtable.h"
 #include "jxta_endpoint_service_priv.h"
+#include "jxta_discovery_service.h"
 #include "jxta_util_priv.h"
 #include "jxta_log.h"
+#include "jxta_dr.h"
 
 #ifndef JXTA_SINGLE_THREAD_POOL
 #define JXTA_SINGLE_THREAD_POOL 1
@@ -1450,4 +1454,121 @@ JXTA_DECLARE(Jxta_status) jxta_PG_async_send(Jxta_PG * me, Jxta_message * msg, J
 
     return rv;
 }
+
+static Jxta_status find_peer_PA_remotely(Jxta_discovery_service *ds, JString *pid, Jxta_time_diff timeout, Jxta_PA ** pa)
+{
+    Jxta_status rv = JXTA_SUCCESS;
+    Jxta_listener *l = NULL;
+    Jxta_DiscoveryResponse *dr = NULL;
+    long qid;
+
+    l = jxta_listener_new(NULL, pa, 0, 1);
+    if (NULL == l) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error when createing listener.\n");
+        return JXTA_NOMEM;
+    }
+
+    qid = discovery_service_get_remote_advertisements(ds, NULL, DISC_PEER, "PID", jstring_get_string(pid), 1, l);
+
+    rv = jxta_listener_wait_for_event(l, timeout, JXTA_OBJECT_PPTR(&dr));
+    if (JXTA_SUCCESS == rv) {
+        Jxta_vector * res = NULL;
+        Jxta_PA *padv = NULL;
+
+        jxta_discovery_response_get_advertisements(dr, &res);
+        if (NULL == res) {
+            return JXTA_ITEM_NOTFOUND;
+        }
+
+        assert(jxta_vector_size(res) > 0);
+        jxta_vector_get_object_at(res, JXTA_OBJECT_PPTR(&padv), 0);
+        assert(NULL != padv);
+        JXTA_OBJECT_RELEASE(res);
+        *pa = padv;
+        rv = JXTA_SUCCESS;
+    }
+
+    discovery_service_cancel_remote_query(ds, qid, NULL);
+    JXTA_OBJECT_RELEASE(l);
+
+    return rv;
+}
+
+Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_diff timeout, Jxta_PA ** pa)
+{
+    Jxta_discovery_service *ds = NULL;
+    JString *pid;
+    Jxta_vector *res = NULL;
+    Jxta_status rv = JXTA_ITEM_NOTFOUND;
+
+    jxta_PG_get_discovery_service(me, &ds);
+    jxta_id_to_jstring(peer_id, &pid);
+    discovery_service_get_local_advertisements(ds, DISC_PEER, "PID", jstring_get_string(pid), &res);
+    if (res != NULL) {
+        Jxta_PA *padv = NULL;
+
+        assert(jxta_vector_size(res) > 0);
+        jxta_vector_get_object_at(res, JXTA_OBJECT_PPTR(&padv), 0);
+        assert(NULL != padv);
+        JXTA_OBJECT_RELEASE(res);
+        *pa = padv;
+        rv = JXTA_SUCCESS;
+    }
+
+    if (JXTA_ITEM_NOTFOUND == rv) {
+        if (0 == timeout) {
+            /* do a remote query without listener, the result will be published locally. */
+            discovery_service_get_remote_advertisements(ds, NULL, DISC_PEER, "PID", jstring_get_string(pid), 1, NULL);
+            rv = JXTA_TIMEOUT;
+        } else {
+            rv = find_peer_PA_remotely(ds, pid, timeout, pa);
+        }
+    }
+
+    JXTA_OBJECT_RELEASE(pid);
+    JXTA_OBJECT_RELEASE(ds);
+
+    return rv;
+}
+
+Jxta_status peergroup_find_peer_RA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_diff timeout, Jxta_RouteAdvertisement ** ra)
+{
+    Jxta_discovery_service *ds = NULL;
+    JString *pid;
+    Jxta_vector *res = NULL;
+    Jxta_status rv = JXTA_ITEM_NOTFOUND;
+
+    jxta_PG_get_discovery_service(me, &ds);
+    jxta_id_to_jstring(peer_id, &pid);
+
+    /* find RA in local cm */
+    discovery_service_get_local_advertisements(ds, DISC_ADV, "DstPID", jstring_get_string(pid), &res);
+    if (res != NULL) {
+        Jxta_RouteAdvertisement *route = NULL;
+
+        assert(jxta_vector_size(res) > 0);
+        jxta_vector_get_object_at(res, JXTA_OBJECT_PPTR(&route), 0);
+        assert(NULL != route);
+        JXTA_OBJECT_RELEASE(res);
+        *ra = route;
+        rv = JXTA_SUCCESS;
+    }
+
+    /* Try to find PA, which will have RA. */
+    if (JXTA_ITEM_NOTFOUND == rv) {
+        Jxta_PA *pa = NULL;
+
+        rv = peergroup_find_peer_PA(me, peer_id, timeout, &pa);
+        if (JXTA_SUCCESS == rv) {
+            jxta_endpoint_service_get_route_from_PA(pa, ra);
+            JXTA_OBJECT_RELEASE(pa);
+        }
+    }
+
+    JXTA_OBJECT_RELEASE(pid);
+    JXTA_OBJECT_RELEASE(ds);
+
+    return rv;
+}
+
 /* vim: set ts=4 sw=4 tw=130 et: */

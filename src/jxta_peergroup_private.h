@@ -185,6 +185,29 @@ Jxta_status peergroup_init(Jxta_PG * me, Jxta_PG * parent);
 Jxta_status peergroup_start(Jxta_PG * me);
 Jxta_status peergroup_stop(Jxta_PG * me);
 
+/**
+ * Find the peer advertisement for the peer with the specified peer ID.
+ * 
+ * @param me The peer group in which the peer is searched for.
+ * @param peer_id The peer ID of the peer.
+ * @param timeout The waiting time before return. 0 to be returned immediately.
+ * @param pa The pointer to receive the peer advertisement.
+ * @return JXTA_SUCCESS if a peer advertisement is found. JXTA_TIMEOUT in case
+ *         the peer advertisement is not retrieved with the specified timeout.
+ */
+Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_diff timeout, Jxta_PA ** pa);
+
+/**
+ * Find the route advertisement for the peer with the specified peer ID.
+ * 
+ * @param me The peer group in which the peer is searched for.
+ * @param peer_id The peer ID of the peer.
+ * @param timeout The waiting time before return. 0 to be returned immediately.
+ * @param ra The pointer to receive the route advertisement.
+ * @return JXTA_SUCCESS if a route advertisement is found. JXTA_TIMEOUT in case
+ *         the route advertisement is not retrieved with the specified timeout.
+ */
+Jxta_status peergroup_find_peer_RA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_diff timeout, Jxta_RouteAdvertisement ** ra);
 
 /**
  * get the cache manager for this group

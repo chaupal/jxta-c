@@ -135,6 +135,7 @@
 #define JXTA_DISCOVERY_SERVICE_H
 
 #include "jxta_service.h"
+#include "jxta_listener.h"
 
 #include "jxta_id.h"
 #include "jxta_advertisement.h"
@@ -158,7 +159,7 @@ extern "C" {
 
 typedef struct _jxta_discovery_service Jxta_discovery_service;
 typedef struct _DiscoveryEvent DiscoveryEvent;
-typedef struct _Jxta_discovery_listener Jxta_discovery_listener;
+typedef Jxta_listener Jxta_discovery_listener;
 
 /**
  * This method discovers PeerAdvertisements, GroupAdvertisements and jxta
