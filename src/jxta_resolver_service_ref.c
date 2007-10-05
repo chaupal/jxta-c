@@ -79,6 +79,7 @@ static const char *__log_cat = "RSLVR";
 #include "jxta_routea.h"
 #include "jxta_callback.h"
 #include "jxta_endpoint_service_priv.h"
+#include "jxta_peergroup_private.h"
 
 typedef struct {
     Extends(Jxta_resolver_service);
@@ -666,35 +667,33 @@ static void mru_check(Jxta_resolver_service_ref * me, ResolverQuery * query, Jxt
     size_t i;
     Jxta_RouteAdvertisement *route;
 
-    if (!me->mru) {
-        return;
-    }
-
     route = jxta_resolver_query_get_src_peer_route(query);
     if (route) {
         JXTA_OBJECT_RELEASE(route);
         return;
     }
 
-    apr_thread_mutex_lock(me->mutex);
-    for (i = 0; i < me->mru_size; i++) {
-        if (jxta_id_equals(me->mru[i], peerid)) {
-            apr_thread_mutex_unlock(me->mutex);
-            return;
+    if (me->mru) {
+        apr_thread_mutex_lock(me->mutex);
+        for (i = 0; i < me->mru_size; i++) {
+            if (jxta_id_equals(me->mru[i], peerid)) {
+                apr_thread_mutex_unlock(me->mutex);
+                return;
+            }
         }
-    }
 
-    JXTA_OBJECT_RELEASE(me->mru[me->mru_pos]);
-    me->mru[me->mru_pos++] = JXTA_OBJECT_SHARE(peerid);
-    if (me->mru_pos >= me->mru_capacity) {
-        me->mru_pos = 0;
-    } 
-	
-	if (me->mru_size < me->mru_capacity) {
-		me->mru_size++;
-    }
+        JXTA_OBJECT_RELEASE(me->mru[me->mru_pos]);
+        me->mru[me->mru_pos++] = JXTA_OBJECT_SHARE(peerid);
+        if (me->mru_pos >= me->mru_capacity) {
+            me->mru_pos = 0;
+        } 
+        
+        if (me->mru_size < me->mru_capacity) {
+            me->mru_size++;
+        }
 
-    apr_thread_mutex_unlock(me->mutex);
+        apr_thread_mutex_unlock(me->mutex);
+    }
 
     route = jxta_endpoint_service_get_local_route(me->endpoint);
     jxta_resolver_query_set_src_peer_route(query, route);
@@ -1050,6 +1049,23 @@ Jxta_resolver_service_ref *jxta_resolver_service_ref_new_instance(void)
 
 /* END OF STANDARD SERVICE IMPLEMENTATION CODE */
 
+static void populate_query_source_route(Jxta_resolver_service_ref * me, ResolverQuery * rq)
+{
+    Jxta_id * src_pid;
+    Jxta_status rv;
+    Jxta_RouteAdvertisement *route = NULL;
+
+    src_pid = jxta_resolver_query_get_src_peer_id(rq);
+    rv = peergroup_find_peer_RA(me->group, src_pid, 0, &route);
+    if (JXTA_SUCCESS != rv) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, 
+                "Cannot find the route advertisement, forward resolver query without a route advertisement.");
+    }
+    jxta_resolver_query_set_src_peer_route(rq, route);
+    JXTA_OBJECT_RELEASE(src_pid);
+    JXTA_OBJECT_RELEASE(route);
+}
+
 static Jxta_status learn_route_from_query(Jxta_resolver_service_ref * me, ResolverQuery * rq)
 {
     Jxta_RouteAdvertisement *route = NULL;
@@ -1097,6 +1113,31 @@ static Jxta_status learn_route_from_query(Jxta_resolver_service_ref * me, Resolv
     return rc;
 }
 
+static Jxta_status replace_rq_element(Jxta_resolver_service_ref *me, Jxta_message * msg, ResolverQuery *rq)
+{
+    Jxta_message_element *el = NULL;
+    JString *doc = NULL;
+    Jxta_status rv;
+
+    rv = jxta_resolver_query_get_xml(rq, &doc); 
+    if (JXTA_SUCCESS != rv) {
+        return rv;
+    }
+
+    el = jxta_message_element_new_2("jxta", me->outque, "text/xml", jstring_get_string(doc), jstring_length(doc), NULL);
+    if (NULL == el) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "failed to create message element.\n");
+        JXTA_OBJECT_RELEASE(doc);
+        return JXTA_FAILED;
+    }
+    JXTA_OBJECT_RELEASE(doc);
+
+    jxta_message_remove_element_2(msg, "jxta", me->outque);
+    jxta_message_add_element(msg, el);
+    JXTA_OBJECT_RELEASE(el);
+    return JXTA_SUCCESS;
+}
+
 /*
  * When receiving a resolver query, resolver should call the appropriate handler.
  * Handler will return JXTA_SUCCESS to stop the query, otherwise, the query will be walked.
@@ -1119,6 +1160,7 @@ static Jxta_status JXTA_STDCALL resolver_service_query_cb(Jxta_object * obj, voi
     Jxta_id *src_pid = NULL;
     Jxta_bytevector *bytes = NULL;
     JString *string = NULL;
+    int rq_missing_ra = 0;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Resolver Query Listener, query received\n");
 
@@ -1170,12 +1212,14 @@ static Jxta_status JXTA_STDCALL resolver_service_query_cb(Jxta_object * obj, voi
     JXTA_OBJECT_RELEASE(pid);
     if (jxta_id_equals(src_pid, _self->localPeerId)) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Ignore query that originated at this peer\n");
+        /* give it a chance to continue walk if this peer became a RDV */
         status = JXTA_ITEM_NOTFOUND;
     } else {
-        /*
-         * check if we have a route info as part of the query to respond
-         */
-        learn_route_from_query(_self, rq);
+        /* ensure we have a route info as part of the query to respond */
+        rq_missing_ra = (JXTA_ITEM_NOTFOUND == learn_route_from_query(_self, rq));
+        if (rq_missing_ra) {
+            populate_query_source_route(_self, rq);
+        }
 
         jxta_resolver_query_get_handlername(rq, &handlername);
 
@@ -1200,7 +1244,14 @@ static Jxta_status JXTA_STDCALL resolver_service_query_cb(Jxta_object * obj, voi
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Cannot solve query at edge, done deal\n");
             status = JXTA_SUCCESS;
         } else {
-            status = jxta_rdv_service_walk(_self->rendezvous, msg, _self->instanceName, _self->outque);
+            /* update message with resolver query has route adv if needed */
+            status = (rq_missing_ra) ? replace_rq_element(_self, msg, rq) : JXTA_SUCCESS;
+            if (JXTA_SUCCESS == status) {
+                status = jxta_rdv_service_walk(_self->rendezvous, msg, _self->instanceName, _self->outque);
+            } else {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Discard resolver query %ld without valid route adv.\n",
+                                jxta_resolver_query_get_queryid(rq));
+            }
         }
     }
     JXTA_OBJECT_RELEASE(src_pid);
