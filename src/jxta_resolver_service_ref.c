@@ -1104,7 +1104,7 @@ static Jxta_status learn_route_from_query(Jxta_resolver_service_ref * me, Resolv
     }
 
     rc = discovery_service_publish(discovery, (Jxta_advertisement *) route, DISC_ADV, ROUTEADV_DEFAULT_LIFETIME,
-                                  ROUTEADV_DEFAULT_EXPIRATION);
+                                   LOCAL_ONLY_EXPIRATION);
     JXTA_OBJECT_RELEASE(discovery);
     if (JXTA_SUCCESS != rc) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,
