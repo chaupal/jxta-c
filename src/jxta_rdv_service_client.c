@@ -236,7 +236,7 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
                         const char *serviceParam, const char *target_hash);
 
 static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, void *cookie);
-static Jxta_status JXTA_STDCALL lease_client_cb(Jxta_object * msg, void *arg);
+static Jxta_status JXTA_STDCALL lease_client_cb(Jxta_object * obj, void *arg);
 static Jxta_status handle_leasing_reply(_jxta_rdv_service_client * myself, Jxta_message * msg);
 
 static _jxta_peer_rdv_entry *get_peer_entry(_jxta_rdv_service_client * myself, Jxta_id * peerid, Jxta_boolean create);
@@ -1209,6 +1209,7 @@ static void process_referrals(_jxta_rdv_service_client * myself, Jxta_lease_resp
             if (jxta_vector_contains (myself->candidates, (Jxta_object *) referral_candidate,
                                        (Jxta_object_equals_func) jxta_peer_equals)) {
                 JXTA_OBJECT_RELEASE(referral_candidate);
+                JXTA_OBJECT_RELEASE(referral);
                 continue;
             }
             jxta_id_to_jstring(pid, &jPeerid);
