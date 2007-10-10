@@ -116,6 +116,15 @@ JXTA_DECLARE(Jxta_boolean) jxta_peerview_is_active(Jxta_peerview * pv );
 JXTA_DECLARE(Jxta_boolean) jxta_peerview_set_active(Jxta_peerview * pv, Jxta_boolean active );
 
 /**
+*   Sets the peerview auto cycle on/off.
+*
+*   @param pv The peerview.
+*   @param time Time for auto cycle - > 0 -check peerview state
+*                                       -1 -stop checking state.
+**/
+JXTA_DECLARE(void) jxta_peerview_set_auto_cycle(Jxta_peerview * pv, Jxta_time_diff time );
+
+/**
 *   Returns a vector containing Jxta_peer_entry objects for each of the current
 *   peerview members we are partnered with in other clusters.
 *
@@ -186,6 +195,17 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_add_event_listener(Jxta_peerview * pv, c
 
 JXTA_DECLARE(Jxta_status) jxta_peerview_remove_event_listener(Jxta_peerview * pv, const char *serviceName,
                                                               const char *serviceParam);
+
+/**
+ * Callback to provide a vector of candidate peers from the list of potential peers.
+ *
+ * @param peers Peer entries available for candidates.
+ * @param candidates Candidates 
+ * @return JXTA_SUCCESS If the candidates vector is valid.
+ **/
+typedef Jxta_status (JXTA_STDCALL * Jxta_peerview_candidate_cb) (Jxta_vector const *peers, Jxta_vector **candidates);
+
+
 #ifdef __cplusplus
 #if 0
 {

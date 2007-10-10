@@ -299,6 +299,30 @@ JXTA_DECLARE(const char *) jxta_peerview_pong_msg_get_instance_mask(Jxta_peervie
     }
 }
 
+JXTA_DECLARE(Jxta_vector *) jxta_peerview_pong_msg_get_options(Jxta_peerview_pong_msg * myself) {
+    Jxta_vector *result = jxta_vector_new(0);
+    
+    JXTA_OBJECT_CHECK_VALID(myself);
+    
+    jxta_vector_addall_objects_last( result, myself->options );
+    
+    return result;
+}
+
+JXTA_DECLARE(void) jxta_peerview_pong_msg_clear_options(Jxta_peerview_pong_msg * myself ) {
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    jxta_vector_clear( myself->options );
+}
+
+JXTA_DECLARE(void) jxta_peerview_pong_msg_add_option(Jxta_peerview_pong_msg * myself, Jxta_advertisement *adv ) {
+    JXTA_OBJECT_CHECK_VALID(myself);
+    JXTA_OBJECT_CHECK_VALID(adv);
+
+    jxta_vector_add_object_last( myself->options, (Jxta_object*) adv );
+}
+
+
 JXTA_DECLARE(void) jxta_peerview_pong_msg_set_instance_mask(Jxta_peerview_pong_msg * myself, const char *instance_mask)
 {
     JXTA_OBJECT_CHECK_VALID(myself);
@@ -498,6 +522,9 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml(Jxta_peerview_pong_msg 
     JString *temp;
     unsigned int i=0;
     char tmpbuf[256];   /* We use this buffer to store a string representation of a int */
+    JString *tempstr;
+    unsigned int each_option;
+    unsigned int all_options;
     apr_uuid_t adv_gen;
  
     JXTA_OBJECT_CHECK_VALID(myself);
@@ -675,12 +702,32 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml(Jxta_peerview_pong_msg 
         JXTA_OBJECT_RELEASE(jPeerid);
         JXTA_OBJECT_RELEASE(peer_info);
     }
-    /* FIXME Handle credentials and options */
+    /* FIXME Handle credentials */
+    all_options = jxta_vector_size(myself->options);
+    for( each_option = 0; each_option < all_options; each_option++ ) {
+        Jxta_advertisement * option = NULL;
+
+        res = jxta_vector_get_object_at( myself->options, JXTA_OBJECT_PPTR(&option), each_option );
+
+        if( JXTA_SUCCESS == res ) {
+            res = jxta_advertisement_get_xml( option, &tempstr );
+            if( JXTA_SUCCESS == res ) {
+                jstring_append_1(string, tempstr);
+                JXTA_OBJECT_RELEASE(tempstr);
+                tempstr = NULL;
+            } else {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed generating XML for option [%pp].\n", myself);
+            }
+        } else {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failed getting option [%pp].\n", myself);
+        }
+        JXTA_OBJECT_RELEASE(option);
+    }
 
     jstring_append_2(string, "</jxta:PeerviewPong>\n");
 
     *xml = string;
-    
+
     return JXTA_SUCCESS;
 }
 
@@ -1038,12 +1085,46 @@ static void handle_associate(void *me, const XML_Char * cd, int len)
 
 static void handle_option(void *me, const XML_Char * cd, int len)
 {
+    Jxta_status res = JXTA_SUCCESS;
     Jxta_peerview_pong_msg *myself = (Jxta_peerview_pong_msg *) me;
 
     JXTA_OBJECT_CHECK_VALID(myself);
 
     if( 0 == len ) {
+        const char **atts = ((Jxta_advertisement *) myself)->atts;
+        const char *type = NULL;
+
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <Option> : [%pp]\n", myself);
+
+        /** handle attributes */
+        while (atts && *atts) {
+            if (0 == strcmp(*atts, "type")) {
+                type = atts[1];
+            } else {
+                /* just silently skip it. */
+            }
+
+            atts += 2;
+        }
+        
+        if( NULL != type ) {
+            Jxta_advertisement *new_ad = NULL;
+            
+            res = jxta_advertisement_global_handler((Jxta_advertisement *) myself, type, &new_ad);
+    
+            if( NULL != new_ad ) {
+                /* set new handlers */
+                jxta_advertisement_set_handlers(new_ad, ((Jxta_advertisement *) myself)->parser, (void *) myself);
+
+                 /* hook it into our list of advs */
+                jxta_peerview_pong_msg_add_option(myself, new_ad );
+                JXTA_OBJECT_RELEASE(new_ad);
+            } else {
+                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized Option %s : [%pp]\n", type, myself);
+            }
+        } else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid Option : [%pp]\n", myself);
+        }
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <Option> : [%pp]\n", myself);
     }

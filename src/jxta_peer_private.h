@@ -83,6 +83,7 @@ struct _jxta_peer_entry {
     Jxta_id *peerid;
     Jxta_PA *adv;
     Jxta_time expires;
+    Jxta_vector *options;
 };
 
 typedef struct _jxta_peer_entry _jxta_peer_entry;

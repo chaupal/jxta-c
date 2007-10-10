@@ -103,12 +103,10 @@ static void jxta_rdv_service_destruct(_jxta_rdv_service * rdv);
 
 
 static Jxta_status init(Jxta_module * rdv, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv);
-static Jxta_status start(Jxta_module * myself, char const *argv[]);
+static Jxta_status start(Jxta_module * module, char const *argv[]);
 static void stop(Jxta_module * module);
 
 static Jxta_boolean is_listener_for(_jxta_rdv_service * myself, char const *str);
-
-static void *APR_THREAD_FUNC auto_rdv_thread(apr_thread_t * t, void *arg);
 
 static void rdv_event_delete(Jxta_object * ptr);
 static Jxta_rdv_event *rdv_event_new(_jxta_rdv_service * rdv, Jxta_Rendezvous_event_type event, Jxta_id * id);
@@ -442,7 +440,7 @@ static Jxta_status start(Jxta_module * module, char const *argv[])
 static void stop(Jxta_module * module)
 {
     _jxta_rdv_service *myself = PTValid(module, _jxta_rdv_service);
-
+    Jxta_rdv_service_provider * provider;
     apr_thread_mutex_lock(myself->mutex);
 
     if (!myself->running) {
@@ -456,7 +454,20 @@ static void stop(Jxta_module * module)
     /* disable auto-rdv */
     jxta_rdv_service_set_auto_interval((Jxta_rdv_service *) myself, -1);
 
-    jxta_rdv_service_set_config((Jxta_rdv_service *) myself, config_adhoc);
+    /* jxta_rdv_service_set_config((Jxta_rdv_service *) myself, config_adhoc); */
+    provider = (Jxta_rdv_service_provider *) myself->provider;
+    if (NULL != provider) {
+        PROVIDER_VTBL(provider)->stop(provider);
+        JXTA_OBJECT_RELEASE(provider);
+    }
+    myself->provider = NULL;
+    if (myself->peerview) {
+        jxta_peerview_remove_event_listener(myself->peerview, myself->assigned_id_str, NULL);
+        jxta_listener_stop(myself->peerview_listener);
+        JXTA_OBJECT_RELEASE(myself->peerview_listener);
+        myself->peerview_listener = NULL;
+        JXTA_OBJECT_RELEASE(myself->peerview);
+    }
 
     apr_thread_mutex_unlock(myself->mutex);
 
@@ -790,6 +801,7 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_set_config(Jxta_rdv_service * rdv, Rd
         /* Create a peerview if we are rendezvous or auto_rdv. */
         if (NULL == myself->peerview) {
             myself->peerview = jxta_peerview_new(myself->pool);
+            jxta_peerview_set_auto_cycle(myself->peerview, myself->auto_rdv_interval);
 
             res = peerview_init(myself->peerview, myself->group, jxta_service_get_assigned_ID_priv(rdv));
 
@@ -938,45 +950,15 @@ JXTA_DECLARE(Jxta_time_diff) jxta_rdv_service_auto_interval(Jxta_rdv_service * r
 JXTA_DECLARE(void) jxta_rdv_service_set_auto_interval(Jxta_rdv_service * rdv, Jxta_time_diff interval)
 {
     _jxta_rdv_service *myself = PTValid(rdv, _jxta_rdv_service);
-    apr_status_t res;
 
     apr_thread_mutex_lock(myself->mutex);
 
-    /* spinlock to prevent re-entrant */
-    while (myself->auto_interval_lock) {
-        apr_sleep(10 * 1000);   /* 10 ms */
+    if (myself->peerview == NULL) {
+        apr_thread_mutex_unlock(myself->mutex);
+        return;
     }
-    myself->auto_interval_lock = TRUE;
+    jxta_peerview_set_auto_cycle(myself->peerview, interval);
 
-    if (0 == interval) {
-        interval = DEFAULT_AUTO_RDV_INTERVAL;
-    }
-
-    if ((interval > 0) && (interval < 10000)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Suspiciously low auto-rendezvous interval.\n");
-    }
-
-    myself->auto_rdv_interval = interval;
-    apr_thread_mutex_unlock(myself->mutex);
-
-    if (myself->periodicThread) {
-        apr_thread_mutex_lock(myself->periodicMutex);
-        apr_thread_cond_signal(myself->periodicCond);
-        apr_thread_mutex_unlock(myself->periodicMutex);
-        if (myself->auto_rdv_interval < 0) {
-            apr_thread_join(&res, (apr_thread_t *) myself->periodicThread);
-            myself->periodicThread = NULL;
-        }
-    } else {
-        if (myself->auto_rdv_interval > 0) {
-            /* Mark the service as running now. */
-            apr_thread_create((apr_thread_t **) & myself->periodicThread, NULL, /* no attr */
-                              (apr_thread_start_t) auto_rdv_thread, (void *) myself, myself->pool);
-        }
-    }
-
-    apr_thread_mutex_lock(myself->mutex);
-    myself->auto_interval_lock = FALSE;
     apr_thread_mutex_unlock(myself->mutex);
 }
 
@@ -1055,88 +1037,6 @@ JXTA_DECLARE(JString *) message_id_new(void)
     apr_uuid_format(uuidStr, &uuid);
 
     return jstring_new_2(uuidStr);
-}
-
-static void *APR_THREAD_FUNC auto_rdv_thread(apr_thread_t * thread, void *arg)
-{
-    _jxta_rdv_service *myself = PTValid(arg, _jxta_rdv_service);
-    Jxta_status res = JXTA_SUCCESS;
-    float average_probability = 0.5;
-    unsigned int iterations_since_switch = 0;
-
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Auto-rendezvous thread started.\n");
-
-    while (myself->running && myself->auto_rdv_interval > 0) {
-        float should_be_rdv_probability;
-        float random = rand() / ((float) RAND_MAX);
-        float probability_difference;
-        RdvConfig_configuration new_config;
-
-        /*
-         * Wait for a while until the next iteration.
-         */
-        apr_thread_mutex_lock(myself->periodicMutex);
-        res = apr_thread_cond_timedwait(myself->periodicCond, myself->periodicMutex, myself->auto_rdv_interval * 1000);
-
-        apr_thread_mutex_unlock(myself->periodicMutex);
-
-        if (myself->auto_rdv_interval < 0) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Auto-rendezvous periodic thread is stopping.\n");
-            continue;
-        }
-
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Auto-rendezvous periodic thread RUN.\n");
-
-        /* Initially based upon configuration */
-        should_be_rdv_probability = (config_rendezvous == myself->current_config) ? (float) 0.75 : (float) 0.25;
-
-        /* if we have a parent and it's a rdv, we should want to be one. */
-        if (NULL != myself->parentgroup) {
-            Jxta_rdv_service *rdv = NULL;
-
-            jxta_PG_get_rendezvous_service(myself->parentgroup, &rdv);
-            if (NULL != rdv) {
-                if (config_rendezvous == jxta_rdv_service_config(rdv)) {
-                    should_be_rdv_probability *= 1.25;
-                }
-                JXTA_OBJECT_RELEASE(rdv);
-            }
-        }
-
-        /* If we are close to the long term average accentuate that behaviour */
-        probability_difference = should_be_rdv_probability - average_probability;
-        if ((probability_difference < 0.1) && (probability_difference > -0.1)) {
-            should_be_rdv_probability *= (should_be_rdv_probability < 0.5) ? (float) 0.90 : (float) 1.1;
-        }
-
-        /* Re-calculate the long term probability */
-        average_probability = (float) ((average_probability + should_be_rdv_probability) / 2.0);
-
-        new_config = (should_be_rdv_probability > random) ? config_rendezvous : config_edge;
-
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,
-                        "Auto-rendezvous -- probability = %f average = %f random = %f diff = %f : "
-                        "since last switch = %d : current = %d new = %d \n",
-                        should_be_rdv_probability, average_probability, random, probability_difference, iterations_since_switch,
-                        myself->current_config, new_config);
-
-        /* Refuse to switch if we just switched */
-        if ((myself->current_config != new_config) && (iterations_since_switch > 2)) {
-            jxta_rdv_service_set_config((Jxta_rdv_service *) myself, new_config);
-            iterations_since_switch = 0;
-        } else {
-            iterations_since_switch++;
-        }
-
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Auto-rendezvous periodic thread RUN DONE.\n");
-    }
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Auto-rendezvous thread stopped.\n");
-    apr_thread_exit(thread, JXTA_SUCCESS);
-
-    /* NOTREACHED */
-    return NULL;
 }
 
 Jxta_status rdv_service_get_seeds(Jxta_rdv_service * me, Jxta_vector ** seeds)
@@ -1307,15 +1207,24 @@ static void JXTA_STDCALL peerview_event_listener(Jxta_object * obj, void *arg)
     Jxta_peerview_event *event = (Jxta_peerview_event *) obj;
     _jxta_rdv_service *myself = PTValid(arg, _jxta_rdv_service);
 
-    if (!jxta_id_equals(event->pid, myself->pid)) {
-        /* We are only interested in when *we* join or leave the peerview. */
-        return;
+    if (!myself->running) {
+        /* We don't want to churn while things are shutting down. */
+        goto FINAL_EXIT;
     }
 
     apr_thread_mutex_lock(myself->mutex);
 
-    if (!myself->running) {
-        /* We don't want to churn while things are shutting down. */
+    if (!jxta_id_equals(event->pid, myself->pid)) {
+
+        if (JXTA_PEERVIEW_ADD == event->event) {
+            Jxta_peer *peer = NULL;
+
+            res = jxta_rdv_service_get_peer((Jxta_rdv_service *) myself, event->pid, &peer);
+            if (JXTA_SUCCESS == res) {
+                jxta_peer_set_expires(peer, 0L);
+                JXTA_OBJECT_RELEASE(peer);
+            }
+        }
         goto FINAL_EXIT;
     }
 

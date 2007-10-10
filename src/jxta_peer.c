@@ -106,6 +106,7 @@ _jxta_peer_entry * peer_entry_construct(_jxta_peer_entry * self)
     self->adv = NULL;
     self->peerid = NULL;
     self->expires = 0;
+    self->options = NULL;
 
     return self;
 }
@@ -123,6 +124,9 @@ void peer_entry_destruct(_jxta_peer_entry * self)
         JXTA_OBJECT_RELEASE(self->peerid);
     }
 
+    if (self->options) {
+        JXTA_OBJECT_RELEASE(self->options);
+    }
     apr_thread_mutex_destroy(self->mutex);
     apr_pool_destroy(self->pool);
 
@@ -312,6 +316,41 @@ JXTA_DECLARE(Jxta_status) jxta_peer_set_expires(Jxta_peer * p, Jxta_time expires
     
     apr_thread_mutex_unlock(peer->mutex);
 
+    return JXTA_SUCCESS;
+}
+
+
+JXTA_DECLARE(Jxta_status) jxta_peer_set_options(Jxta_peer * p, Jxta_vector *options)
+{
+    _jxta_peer_entry *peer = PTValid(p, _jxta_peer_entry);
+
+    apr_thread_mutex_lock(peer->mutex);
+
+    peer->options = JXTA_OBJECT_SHARE(options);
+
+    apr_thread_mutex_unlock(peer->mutex);
+
+    return JXTA_SUCCESS;
+}
+
+
+JXTA_DECLARE(Jxta_status) jxta_peer_get_options(Jxta_peer * p, Jxta_vector **options)
+{
+    _jxta_peer_entry *peer = PTValid(p, _jxta_peer_entry);
+
+    if (options == NULL) {
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    apr_thread_mutex_lock(peer->mutex);
+    
+    *options = peer->options;
+    if (*options != NULL) {
+        JXTA_OBJECT_SHARE(*options);
+    }
+    
+    apr_thread_mutex_unlock(peer->mutex);
+    
     return JXTA_SUCCESS;
 }
 

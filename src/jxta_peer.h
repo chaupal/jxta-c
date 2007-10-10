@@ -187,6 +187,24 @@ JXTA_DECLARE(Jxta_status) jxta_peer_set_expires(Jxta_peer * p, Jxta_time expires
  */
 JXTA_DECLARE(Jxta_time) jxta_rdv_service_peer_get_expires(Jxta_service * rdv, Jxta_peer * p);
 
+/**
+ * Set the options for this peer
+ *
+ * @param peer a pointer of the peer entry
+ * @param options a pointer to an options vector
+ * @return a status
+**/
+JXTA_DECLARE(Jxta_status) jxta_peer_set_options(Jxta_peer * p, Jxta_vector *options);
+
+/**
+ * Gets the options for this peer
+ *
+ * @param peer a pointer of the peer entry
+ * @param options a pointer to an options vector pointer
+ * @return a status
+**/
+JXTA_DECLARE(Jxta_status) jxta_peer_get_options(Jxta_peer * p, Jxta_vector **options);
+
 #ifdef __cplusplus
 #if 0
 {

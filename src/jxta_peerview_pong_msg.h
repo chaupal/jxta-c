@@ -111,8 +111,9 @@ JXTA_DECLARE(void) jxta_peerview_pong_msg_set_peer_adv_gen(Jxta_peerview_pong_ms
 JXTA_DECLARE(Jxta_time_diff) jxta_peerview_pong_msg_get_peer_adv_exp(Jxta_peerview_pong_msg * me);
 JXTA_DECLARE(void) jxta_peerview_pong_msg_set_peer_adv_exp(Jxta_peerview_pong_msg * me,  Jxta_time_diff exp);
 
-JXTA_DECLARE(Jxta_vector *) jxta_peerview_pong_msg_get_options(Jxta_peerview_pong_msg * me);
-JXTA_DECLARE(void) jxta_peerview_pong_msg_set_options(Jxta_peerview_pong_msg * me, Jxta_vector *options);
+JXTA_DECLARE(Jxta_vector *) jxta_peerview_pong_msg_get_options(Jxta_peerview_pong_msg * myself);
+JXTA_DECLARE(void) jxta_peerview_pong_msg_clear_options(Jxta_peerview_pong_msg * myself );
+JXTA_DECLARE(void) jxta_peerview_pong_msg_add_option(Jxta_peerview_pong_msg * myself, Jxta_advertisement * adv);
 
 JXTA_DECLARE(Jxta_vector *) jxta_pong_msg_get_partner_infos(Jxta_peerview_pong_msg * myself);
 JXTA_DECLARE(void) jxta_pong_msg_clear_partner_infos(Jxta_peerview_pong_msg * myself );
