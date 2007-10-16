@@ -351,7 +351,7 @@ static void log_error(XML_Parser parser, const char *document_name)
 
 JXTA_DECLARE(Jxta_status) jxta_advertisement_parse_charbuffer(Jxta_advertisement * ad, const char *buf, size_t len)
 {
-    Jxta_status res;
+    Jxta_status res=JXTA_SUCCESS;
     size_t offset = 0;
     XML_Parser parser;
  
@@ -394,7 +394,7 @@ JXTA_DECLARE(Jxta_status) jxta_advertisement_parse_charbuffer(Jxta_advertisement
 JXTA_DECLARE(Jxta_status) jxta_advertisement_parse_file(Jxta_advertisement * ad, FILE * instream)
 {
     char buf[BUFSIZ];           /*  8192 */
-    Jxta_status res;
+    Jxta_status res=JXTA_SUCCESS;
     int done;
     XML_Parser parser;
 
@@ -553,7 +553,8 @@ static void advertisement_start_element(void *me, const char *ename, const char 
     
     ad->handler_stk[ad->depth++] = ad->curr_handler;
     ad->atts = atts;
-    
+    ad->currElement = ename;
+
     att = atts;
     
     /* Find the "type" attribute, if present */
@@ -628,9 +629,8 @@ static void advertisement_start_element(void *me, const char *ename, const char 
         }
 
     /* process the element via handlers */ 
-
     for( each_element_key = 0; each_element_key < 3; each_element_key++ ) {
-        const char *element_key;
+        const char *element_key=NULL;
         unsigned int each_kwd;
 
         switch( each_element_key ) {
