@@ -55,6 +55,7 @@
   */
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
 #ifdef WIN32
 #include <float.h>
 #define isnan(a)      _isnan(a) 
@@ -83,6 +84,14 @@ static void query_examine_object(Jxta_query_context * jctx, xmlXPathObjectPtr cu
 static void query_split_Ns(Jxta_query_context * jctx, const char *q, Jxta_boolean bPrefix, Jxta_boolean bName);
 
 static Jxta_status query_xform_query(Jxta_query_context * jctx, const char *query);
+
+/* Function calls contain 10 steps on the libxml stack. */
+#define NB_WILD_STEPS (20 - 1)
+
+static void jxta_wildxpath_handler(xmlXPathParserContextPtr ctxt, int nargs);
+static void jxta_wildxpath_append_subexpr(const char* subexpr, xmlXPathCompExprPtr outcomp, xmlXPathCompExprPtr* subcomps, int i, int* s, int* start, int* last);
+static int  jxta_wildxpath_haswildcard(const char* pattern);
+
 
 /** 
  * Delete function to destroy the context object
@@ -297,7 +306,9 @@ JXTA_DECLARE(Jxta_status)
             query_reset_context(jctx);
             query_SQL(jctx);
         } else {
-            res = xmlXPathCompiledEval(comp, ctxt);
+            jxta_wildxpath_init(ctxt);
+            res = jxta_wildxpath_eval_comp(ctxt, comp);
+            jxta_wildxpath_cleanup(ctxt);
         }
         xmlXPathFreeCompExpr(comp);
         jctx->xpathcomp = NULL;
@@ -904,5 +915,397 @@ static void query_examine_object(Jxta_query_context * jctx, xmlXPathObjectPtr cu
         break;
     }
 }
+
+/**
+ * jxta_wildxpath_init:
+ * @xpathCtx:       The XPath context that will be initialized for wildcard matching.
+ *
+ * Prepares an XPath context to be used for wildcard matcing.  Registers the wildcard
+ * handler callback function and associates it with the tag "wild".  If the XPath parser
+ * encounters a function call in the form "wild(arg1, arg2)" it will call the hander callback.
+ *
+ * Returns 0 on success and a negative value otherwise.
+ */
+JXTA_DECLARE(int)
+    jxta_wildxpath_init(const xmlXPathContextPtr xpathCtx)
+{
+    int status = -1;
+
+    assert(xpathCtx);
+
+    if (xpathCtx)
+    {
+        /* Add the handler to the list of xpath functions.  Associate it with the token "wild" */
+        status = xmlXPathRegisterFunc(xpathCtx, (xmlChar *)"wild", jxta_wildxpath_handler);
+    }
+    return(status);
+}
+
+
+/**
+ * jxta_wildxpath_cleanup:
+ * @xpathCtx:       The XPath context that will be have wildcard matching uninitialized.
+ *
+ * Removes wildcard matching capabilities from an XPath context.
+ *
+ * Returns 0 on success and a negative value otherwise.
+ */
+JXTA_DECLARE(int)
+    jxta_wildxpath_cleanup(const xmlXPathContextPtr xpathCtx)
+{
+    int status = -1;
+
+    assert(xpathCtx);
+
+    if (xpathCtx)
+    {
+        /*
+         * Remove the handler to the list of xpath functions.  Disassociate it with
+         * the token "wild". Note: passing NULL to xmlXPathRegisterFunc will delist whatever is assoicated
+         * with "wild".
+         */
+        status = xmlXPathRegisterFunc(xpathCtx, (xmlChar *)"wild", NULL);
+    }
+    return(status);
+}
+
+/**
+ * jxta_wildxpath_handler:
+ * @ctxt:       the XPath context that is being used for wildcard matching
+ * @nargs:      number of arguments for the "wild" function.
+ *
+ * Callback handler function for XPath wildcards.  This function should only be called by libxml.
+ * If the XPath parser encounters a function call in the form "wild(arg1, arg2)" it
+ * will call the hander callback.  This handler function was registered
+ * in the call to jxta_wildxpath_init().  Be sure to call
+ * jxta_wildxpath_init() before attempting to evaluate an XPath expression with wildcards. 
+ * 
+ * Returns NONE
+ */
+static void jxta_wildxpath_handler(xmlXPathParserContextPtr ctxt, int nargs)
+{
+    xmlNodeSetPtr arg1 = NULL;      /* First argument from stack (third popped) */
+    xmlXPathObjectPtr arg2 = NULL;  /* Second argument from stack (second popped) */
+    xmlXPathObjectPtr arg3 = NULL;  /* Third argument from stack (first popped) */
+    xmlNodeSetPtr cur = NULL;       /* Result nodeset */
+    int i = 0;
+    int want_match = 0;
+    int is_match = 0;
+
+    /*
+     * Note: arguments are passed on libxml's internal stack.  We need
+     * to use libxml's functions to pop argments off the stack and push results on.
+     *
+     * Note: the prototype of the handler must contain ctxt as the first arg.  Libxml
+     * defines macros which expect it.
+     *
+     */
+
+    assert(ctxt);
+
+    /* Are there two arguments waiting on the stack for us? */
+    CHECK_ARITY(3); 
+
+    /* Is third argument a number? */
+    CHECK_TYPE(XPATH_NUMBER); 
+    arg3 = valuePop(ctxt);
+    want_match = arg3->floatval == 1.0;
+
+    /* Is second argument a string? */
+    CHECK_TYPE(XPATH_STRING); 
+    arg2 = valuePop(ctxt);
+
+    /* Is the first argument a nodeset? */
+    CHECK_TYPE(XPATH_NODESET); 
+    arg1 = xmlXPathPopNodeSet(ctxt);
+
+    /* Get ready to store the result */
+    cur = xmlXPathNodeSetCreate(NULL); 
+
+    /* Loop thru the node set */
+    for(; i < arg1->nodeNr; i++)
+    {
+        /* Attempt to match pattern */
+        is_match = fnmatch((char *)arg2->stringval, (char *)arg1->nodeTab[i]->children->content, 0) == 0;
+
+        /* Does the content of the current node match the wildcard expression? */
+        if(want_match == is_match)
+        {
+            /* Yes, add the node to the resulting nodeset */
+            xmlXPathNodeSetAdd(cur, arg1->nodeTab[i]);
+        }
+    }
+
+    /* Put the resulting nodeset on the libxml stack. */
+    valuePush(ctxt, xmlXPathWrapNodeSet(cur));
+
+    /* Cleanup arguments */
+    xmlXPathFreeNodeSet(arg1);  
+    xmlXPathFreeObject(arg2);
+    xmlXPathFreeObject(arg3);
+
+    return;
+}
+ 
+ /**
+ * jxta_wildxpath_eval_expr:
+ * @xpathCtx:   the XPath context that is being used for wildcard matching
+ * @xpathExpr:  the XPath expression to be evaluated.
+ *
+ * Evaluates an XPath expression containing wildcards.  Be sure to call
+ * jxta_wildxpath_init() before attempting to evaluate an XPath expression with wildcards and
+ * jxta_wildxpath_cleanup() when you are done evaluating XPath expressions on a context.
+ * 
+ * Returns xmlXPathObjectPtr pointer to a node list resulting from evaluating the expression.
+ */
+JXTA_DECLARE(xmlXPathObjectPtr)
+    jxta_wildxpath_eval_expr(const xmlXPathContextPtr xpathCtx, const xmlChar* xpathExpr)
+{
+    xmlXPathCompExprPtr incomp = NULL;  /* Compiled XPath expression */
+    xmlXPathObjectPtr outobj = NULL;    /* Resulting nodeset */
+
+    assert(xpathCtx);
+    assert(xpathExpr);
+
+    incomp = xmlXPathCompile(BAD_CAST xpathExpr);           /* Compile the XPath expression. */ 
+    outobj = jxta_wildxpath_eval_comp(xpathCtx, incomp);    /* Evaluate the compiled expression */
+    xmlXPathFreeCompExpr(incomp);                           /* Cleanup the compiled expression */
+    return outobj;  /* Give matching nodeset to caller. */
+}
+
+ /**
+ * jxta_wildxpath_append_subexpr:
+ * @subexpr:   the subexpression that you want to copy to the end of the XPath expression.
+ * @outcomp:  the resulting compiled ouput.
+ * @subcomps:  the caller's pointer or the compiled subexpression
+ * @i: Index of caller's position into the main compiled expresssion.
+ * @s:  Index into subcomps
+ * @start: Position where compiled subexpression got appended.
+ * @last: Position where compiled subexpression gets appended.
+ *
+ * Copies a compiled XPath subexpression onto the end of an XPath expression and links them together.
+ *
+ * Returns None.
+ */
+ static void jxta_wildxpath_append_subexpr(const char* subexpr, xmlXPathCompExprPtr outcomp, xmlXPathCompExprPtr* subcomps, int i, int* s, int* start, int* last)
+ {
+    int j = 0;
+
+    assert(subexpr);
+    assert(outcomp);
+    assert(subcomps);
+    assert(s);
+    assert(start);
+    assert(last);
+
+    subcomps[*s] = xmlXPathCompile((xmlChar*)subexpr);
+
+    /* Append the equivalent expresison to the end of the output */
+    for(j = 0, *start = *last; j < subcomps[*s]->last; j++, (*last)++)
+    {
+        outcomp->steps[*last] = subcomps[*s]->steps[j];
+
+        /* Adjust child references */
+        if(outcomp->steps[*last].ch1 >= 0)
+        {
+            outcomp->steps[*last].ch1 += *start;
+        }
+        if(outcomp->steps[*last].ch2 >= 0)
+        {
+            outcomp->steps[*last].ch2 += *start;
+        }
+    }
+
+    /* Make the original compiled expression point to the subexpression */
+    outcomp->steps[i] = outcomp->steps[*last-1];
+    s++;
+} 
+
+
+ /**
+ * jxta_wildxpath_haswildcard:
+ * @pattern:   search string.
+ *
+ * Tests a search string for any '*' or '?' wildcards.
+ * 
+ * Returns 1 if the pattern has a wildcard, 0 otherwise.
+ */
+static int
+jxta_wildxpath_haswildcard(const char* pattern)
+{
+    int i = 0;
+    int haswild = 0;
+
+    assert(pattern);
+
+    while(pattern[i] != 0)
+    {
+        if(pattern[i] == '*' || pattern[i] == '?')
+        {
+            haswild = 1;
+            break;
+        }
+        i++;
+    }
+
+    return haswild;
+}
+
+
+ /**
+ * jxta_wildxpath_eval_comp:
+ * @xpathCtx:   the XPath context that is being used for wildcard matching
+ * @incomp:     the compiled XPath expression to be evaluated.
+ *
+ * Evaluates an XPath compiled expression containing wildcards.  Be sure to call
+ * jxta_wildxpath_init() before attempting to evaluate an XPath expression with wildcards and
+ * jxta_wildxpath_cleanup() when you are done evaluating XPath expressions on a context.
+ * 
+ * This function takes a compiled expression and checks for comparisions between a nodeset and a string.
+ * If it finds a comparision between the two, it creates an equivalent compiled expression
+ * that calls the wildcard function handler.
+ * 
+ * Returns xmlXPathObjectPtr pointer to a node list resulting from evaluating the expression.
+ */
+JXTA_DECLARE(xmlXPathObjectPtr)
+    jxta_wildxpath_eval_comp(const xmlXPathContextPtr xpathCtx, const xmlXPathCompExprPtr incomp)
+{
+    xmlXPathCompExprPtr* subcomps = NULL; /* Intermediate compiled xpath sub expressions.  Used to generate function call steps. */
+    xmlXPathCompExprPtr outcomp = incomp; /* The equivalent compiled expression containing calls to wildcard handler. */
+    xmlXPathStepOp* in = NULL;          /* Curent node */
+    xmlXPathStepOp* ch1 = NULL;         /* First child of current node */
+    xmlXPathStepOp* ch2 = NULL;         /* Second child of current node */
+    xmlXPathObjectPtr obj = NULL;       /* Intermediate libxml object for holding a string */
+    xmlXPathObjectPtr outobj = NULL;    /* Resulting node set */
+    char subexpr[100] = "";             /* String to hold a sub expression */
+    int last = 0;                       /* Position where compiled subexpression gets appended. */
+    int start = 0;                      /* Position where compiled subexpression got appended. */
+    int i = 0;                          /* Iterator */
+    int n = 0;                          /* Count of equals operators */
+    int s = 0;                          /* Index into subcomps */
+
+    assert(xpathCtx);
+    assert(incomp);
+
+    /* Get rough guesstimate of how many equals operators we may need to evaluate. */
+    for(i = 0, n = 0; i < incomp->nbStep; i++)
+    {
+        in = &incomp->steps[i]; /* Get current step */
+        n += in->op == XPATH_OP_EQUAL;
+    }
+
+    /* If contains equals operator */
+    if(n > 0) 
+    {
+        /* Allocate memory for compiled subexpresions */
+        subcomps = (xmlXPathCompExprPtr*) calloc(n, sizeof(xmlXPathCompExprPtr));
+
+        /* Allocate memory for results */
+        outcomp = (xmlXPathCompExprPtr) calloc(1, sizeof(xmlXPathCompExpr));
+        outcomp->steps = (xmlXPathStepOp*) calloc(incomp->nbStep + n * NB_WILD_STEPS, sizeof(xmlXPathStepOp));
+
+        /* Calculate final step counts */
+        outcomp->nbStep = incomp->nbStep + (n * NB_WILD_STEPS) - (n * NB_WILD_STEPS - 2) + 1;
+        outcomp->maxStep = outcomp->nbStep;
+
+        /* Initialize append position */
+        outcomp->last = incomp->last;
+        last = incomp->nbStep;
+
+        /* Loop thru compiled input expression */
+        for(i = 0; i < incomp->nbStep; i++)
+        {
+            /* Copy the step */
+            in = &incomp->steps[i];
+            outcomp->steps[i] = *in;
+
+            /* If the step is an equals (with a wildcard) */
+            if(in->op == XPATH_OP_EQUAL)
+            {
+                ch1 = &incomp->steps[in->ch1];
+                ch2 = &incomp->steps[in->ch2];
+                obj = (xmlXPathObjectPtr) ch2->value4; /* Get the object containing any string value */
+
+                if(ch1->op == XPATH_OP_COLLECT && ch2->op == XPATH_OP_VALUE && obj->type == XPATH_STRING && ch1->value == AXIS_CHILD)
+                {
+                    if(jxta_wildxpath_haswildcard((char*)obj->stringval))
+                    {
+                        obj = (xmlXPathObjectPtr) ch2->value4;
+                        sprintf(subexpr, " wild(%s,'%s',%d) ", (char*) ch1->value5, obj->stringval, in->value);
+                        jxta_wildxpath_append_subexpr(subexpr, outcomp, subcomps, i, &s, &start, &last);
+                    }
+                }
+                else if(ch1->op == XPATH_OP_COLLECT && ch2->op == XPATH_OP_VALUE && obj->type == XPATH_STRING && ch1->value == AXIS_ATTRIBUTE)
+                {
+                    if(jxta_wildxpath_haswildcard((char*)obj->stringval))
+                    {
+                        obj = (xmlXPathObjectPtr) ch2->value4;
+                        sprintf(subexpr, " wild(@%s,'%s',%d) ", (char*) ch1->value5, obj->stringval, in->value);
+                        jxta_wildxpath_append_subexpr(subexpr, outcomp, subcomps, i, &s, &start, &last);
+                    }
+                }
+                else if(ch1->op == XPATH_OP_COLLECT && ch1->value == AXIS_ATTRIBUTE && ch2->op == XPATH_OP_COLLECT && ch2->value == AXIS_CHILD)
+                {
+                    if(jxta_wildxpath_haswildcard((char*) ch2->value5))
+                    {
+                        sprintf(subexpr, " wild(@%s,'%s',%d) ", (char*) ch1->value5, (char*) ch2->value5, in->value);
+                        jxta_wildxpath_append_subexpr(subexpr, outcomp, subcomps, i, &s, &start, &last);
+                    }
+                }
+                else if(ch1->op == XPATH_OP_NODE && ch2->op == XPATH_OP_VALUE && obj->type == XPATH_STRING)
+                {
+                    if(jxta_wildxpath_haswildcard((char*)obj->stringval))
+                    {
+                        obj = (xmlXPathObjectPtr) ch2->value4;
+                        sprintf(subexpr, " wild(.,'%s',%d) ", obj->stringval, in->value);
+                        jxta_wildxpath_append_subexpr(subexpr, outcomp, subcomps, i, &s, &start, &last);
+                    }
+                }
+            }
+        }
+    }
+
+/*#define _DUMP_EXPRESSIONS*/
+#ifdef _DUMP_EXPRESSIONS
+    FILE* fp;
+    fp = fopen("expressions.txt", "w+");
+    xmlXPathDebugDumpCompExpr(fp, incomp, 0);
+    for(i = 0; i < s; i++) 
+    {
+        xmlXPathDebugDumpCompExpr(fp, subcomps[i], 0);
+    }
+    xmlXPathDebugDumpCompExpr(fp, outcomp, 0);
+    fclose(fp);
+#endif
+
+    /* Evaluate the output expression and get the resulting nodeset. */
+    outobj = xmlXPathCompiledEval(outcomp, xpathCtx);
+
+    /* Free up objects */
+    for(i = 0; i < s; i++) 
+    {
+        if(subcomps[i] != NULL)
+        {
+            xmlXPathFreeCompExpr(subcomps[i]);
+        }
+    }
+
+    if(subcomps != NULL)
+    {
+        free(subcomps);
+    }
+
+    if(outcomp != NULL && outcomp != incomp)
+    {
+        if(outcomp->steps != NULL)
+        {
+            free(outcomp->steps);
+        }
+        free(outcomp);
+    }
+
+    return outobj;
+}
+
 
 /* vim: set ts=4 sw=4 et tw=130: */
