@@ -160,13 +160,12 @@ struct _jxta_rdv_service_provider {
 
     Jxta_peerview *peerview;
 
-    void *ep_cookie;
-
     /** Pipe service of the *PARENT* peergroup **/
     Jxta_PG *parentgroup;
     Jxta_PGID *parentgid;
     Jxta_pipe_service *pipes;
     Jxta_pipe *seed_pipe;
+    Jxta_object *prop_cookie;
 };
 
 typedef struct _jxta_rdv_service_provider _jxta_rdv_service_provider;

@@ -138,9 +138,9 @@ struct _jxta_rdv_service_server {
 
     /* state */
 
-    void *ep_cookie_leasing;
-    void *ep_cookie_walker;
     Jxta_hashtable *clients;
+    Jxta_object *leasing_cookie;
+    Jxta_object *walker_cookie;
 };
 
 /**
@@ -290,7 +290,6 @@ int client_entry_creation_time_compare(Jxta_peer ** me, Jxta_peer ** target)
 
     _jxta_peer_client_entry *myself = PTValid(*me, _jxta_peer_client_entry);
     _jxta_peer_client_entry *themself = PTValid(*target, _jxta_peer_client_entry);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "client_entry_creation_time_compare\n");
 
     if (myself->creation_time < themself->creation_time) {
         return -1;
@@ -368,8 +367,15 @@ static void Jxta_rdv_service_server_destruct(_jxta_rdv_service_server * myself)
     JXTA_OBJECT_RELEASE(myself->clients);
 
     /* Release the services object this instance was using */
-    if (myself->rdvConfig != NULL)
-        JXTA_OBJECT_RELEASE(myself->rdvConfig);
+    if (NULL != myself->rdvConfig)
+         JXTA_OBJECT_RELEASE(myself->rdvConfig);
+ 
+    if (NULL != myself->leasing_cookie) {
+        JXTA_OBJECT_RELEASE(myself->leasing_cookie);
+    }
+    if (NULL != myself->walker_cookie) {
+        JXTA_OBJECT_RELEASE(myself->walker_cookie);
+    }
 
     /* call the base classe's dtor. */
     jxta_rdv_service_provider_destruct((_jxta_rdv_service_provider *) myself);
@@ -484,8 +490,9 @@ static Jxta_status start(Jxta_rdv_service_provider * provider)
 
     pg = jxta_service_get_peergroup_priv((Jxta_service*) provider->service);
     jxta_PG_get_discovery_service(pg, &myself->discovery);
-    jxta_PG_add_recipient(pg, &myself->ep_cookie_leasing, RDV_V3_MSID, JXTA_RDV_LEASING_SERVICE_NAME, leasing_cb, myself);
-    jxta_PG_add_recipient(pg, &myself->ep_cookie_walker, RDV_V3_MSID, JXTA_RDV_WALKER_SERVICE_NAME, walker_cb, myself);
+
+    rdv_service_add_cb((Jxta_rdv_service *)provider->service, &myself->leasing_cookie, RDV_V3_MSID, JXTA_RDV_LEASING_SERVICE_NAME, leasing_cb, myself);
+    rdv_service_add_cb((Jxta_rdv_service *)provider->service, &myself->walker_cookie, RDV_V3_MSID, JXTA_RDV_WALKER_SERVICE_NAME, walker_cb, myself);
 
     res = jxta_rdv_service_provider_start(provider);
 
@@ -548,10 +555,14 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
         jxta_rdv_service_provider_unlock_priv(provider);
         return APR_SUCCESS;
     }
+    if (myself->leasing_cookie) {
+        rdv_service_remove_cb((Jxta_rdv_service *) provider->service, myself->leasing_cookie);
+    }
+    if (myself->walker_cookie) {
+        rdv_service_remove_cb((Jxta_rdv_service *) provider->service, myself->walker_cookie);
+    }
 
     pg = jxta_service_get_peergroup_priv((Jxta_service*) provider->service);
-    jxta_PG_remove_recipient(pg, myself->ep_cookie_leasing);
-    jxta_PG_remove_recipient(pg, myself->ep_cookie_walker);
 
     if (myself->discovery != NULL) {
         JXTA_OBJECT_RELEASE(myself->discovery);

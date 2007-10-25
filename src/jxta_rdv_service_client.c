@@ -205,8 +205,8 @@ struct _jxta_rdv_service_client {
     Jxta_vector *candidates;
     _jxta_peer_rdv_entry *candidate;
 
-    void *ep_cookie;
     Jxta_PA *localPeerAdv;
+    Jxta_object *leasing_cookie;
 };
 
 /**
@@ -420,6 +420,10 @@ static void rdv_client_destruct(_jxta_rdv_service_client * myself)
         JXTA_OBJECT_RELEASE(myself->candidate);
     }
 
+    if (NULL != myself->leasing_cookie) {
+        JXTA_OBJECT_RELEASE(myself->leasing_cookie);
+    }
+
     /* Release the services object this instance was using */
     if (myself->discovery != NULL) {
         JXTA_OBJECT_RELEASE(myself->discovery);
@@ -529,7 +533,8 @@ static Jxta_status start(Jxta_rdv_service_provider * provider)
      ** Add the Rendezvous Service Endpoint callback
      **/
     pg = jxta_service_get_peergroup_priv((Jxta_service*) provider->service);
-    jxta_PG_add_recipient(pg, &myself->ep_cookie, RDV_V3_MSID, JXTA_RDV_LEASING_SERVICE_NAME, lease_client_cb, myself);
+
+    rdv_service_add_cb((Jxta_rdv_service *) provider->service, &myself->leasing_cookie, RDV_V3_MSID, JXTA_RDV_LEASING_SERVICE_NAME, lease_client_cb, myself);
 
     jxta_rdv_service_provider_lock_priv(provider);
 
@@ -570,17 +575,15 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
         jxta_rdv_service_provider_unlock_priv(provider);
         return APR_SUCCESS;
     }
-
+    if (myself->leasing_cookie) {
+        rdv_service_remove_cb((Jxta_rdv_service *) provider->service, myself->leasing_cookie);
+    }
     /* We need to tell the background task that it has to die. */
     myself->running = FALSE;
 
     jxta_rdv_service_provider_unlock_priv(provider);
     apr_thread_pool_tasks_cancel(provider->thread_pool, myself);
     jxta_rdv_service_provider_lock_priv(provider);
-
-    assert(NULL != myself->ep_cookie);
-    pg = jxta_service_get_peergroup_priv((Jxta_service*) provider->service);
-    jxta_PG_remove_recipient(pg, myself->ep_cookie);
 
     /* Release the services object this instance was using */
     if (myself->discovery != NULL) {
@@ -1213,7 +1216,7 @@ static void process_referrals(_jxta_rdv_service_client * myself, Jxta_lease_resp
                 continue;
             }
             jxta_id_to_jstring(pid, &jPeerid);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Adding referral %s \n", jstring_get_string(jPeerid));
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Adding referral %s \n", jstring_get_string(jPeerid));
 
             jxta_vector_add_object_first(myself->candidates, (Jxta_object *) referral_candidate);
             JXTA_OBJECT_RELEASE(jPeerid);
@@ -1294,7 +1297,7 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
             jxta_id_get_uniqueportion(peerid, &uniq);
             JXTA_OBJECT_RELEASE(peerid);
 
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Removing expired RDV : %s\n", jstring_get_string(uniq));
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Removing expired RDV : %s\n", jstring_get_string(uniq));
 
             res = jxta_hashtable_del(myself->rdvs, jstring_get_string(uniq), jstring_length(uniq) + 1, NULL);
 

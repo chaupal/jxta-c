@@ -95,7 +95,7 @@ const char JXTA_PEERVIEW_NS_NAME[] = "jxta";
 /**
 *   Interval at which we re-evaluate all of the peers within the peerview.
 **/
-static const apr_interval_time_t JXTA_PEERVIEW_MAINTAIN_INTERVAL = 30 * APR_USEC_PER_SEC;
+static const apr_interval_time_t JXTA_PEERVIEW_MAINTAIN_INTERVAL = 20 * APR_USEC_PER_SEC;
 
 static const unsigned int LONELINESS_VALUE = 3;
 
@@ -104,7 +104,7 @@ static const unsigned int LONELINESS_VALUE = 3;
 **/
 static const apr_interval_time_t JXTA_PEERVIEW_ADD_INTERVAL = 30 * APR_USEC_PER_SEC;
 
-#define JXTA_PEERVIEW_PVE_EXPIRATION (20 * 60 * JPR_INTERVAL_ONE_SECOND)
+#define JXTA_PEERVIEW_PVE_EXPIRATION (3 * 60 * JPR_INTERVAL_ONE_SECOND)
 #define JXTA_PEERVIEW_PVE_PING_DUE (JXTA_PEERVIEW_PVE_EXPIRATION / 4)
 #define JXTA_PEERVIEW_PVE_PONG_DUE (JXTA_PEERVIEW_PVE_EXPIRATION / 8)
 
@@ -2239,10 +2239,6 @@ static Jxta_status joining_peerview(Jxta_peerview * me, const char *pv_mask)
     /* This is the first pong response from a peerview member. Oh happy day, we have found a peerview. */
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "[%pp] Found peerview instance : %s\n", me, pv_mask);
 
-    /* cancel this peerview */
-    me->activity_add = FALSE;
-    apr_thread_pool_tasks_cancel(me->thread_pool, me);
-
     if (NULL != me->activity_locate_seeds) {
         assert(PV_LOCATING == me->state);
         if (NULL != me->activity_locate_seeds) {
@@ -3929,6 +3925,7 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
     all_clients = jxta_vector_size(myself->activity_add_candidate_peers);
 
     myself->activity_add_candidate_pongs_sent = 0;
+
     for (each_client = 0; (each_client < all_clients) && (each_client < MAXIMUM_CLIENT_INVITATIONS); each_client++) {
         Jxta_peer *invitee;
 
@@ -3937,7 +3934,6 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
         if (JXTA_SUCCESS != res) {
             continue;
         }
-
         res = peerview_send_pong(myself, invitee);
 
         if (JXTA_SUCCESS != res) {
@@ -4035,7 +4031,7 @@ static int ranking_sort(Jxta_peer **peer_a, Jxta_peer **peer_b)
     }
     ranking_a = suit_a * will_a;
     ranking_b = suit_b * suit_b;
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Auto-rendezous ranking_a:%f ranking_b:%f\n" ,ranking_a, ranking_b);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Auto-rendezous ranking_a:%f ranking_b:%f\n" ,ranking_a, ranking_b);
     if (options_a)
         JXTA_OBJECT_RELEASE(options_a);
     if (options_b)
@@ -4132,7 +4128,7 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
 
     /* Refuse to switch if we just switched */
     if ((jxta_rdv_service_config(rdv) != new_config) && (me->iterations_since_switch > 2)) {
-        jxta_rdv_service_set_config(rdv, new_config);
+        rdv_service_switch_config(rdv, new_config);
         me->iterations_since_switch = 0;
     } else {
         me->iterations_since_switch++;

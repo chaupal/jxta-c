@@ -55,6 +55,8 @@
 
 static const char *__log_cat = "RdvSvc";
 
+#include <assert.h>
+
 #include "jxta_apr.h"
 #include "jpr/jpr_excep_proto.h"
 
@@ -112,6 +114,10 @@ static void rdv_event_delete(Jxta_object * ptr);
 static Jxta_rdv_event *rdv_event_new(_jxta_rdv_service * rdv, Jxta_Rendezvous_event_type event, Jxta_id * id);
 
 static void JXTA_STDCALL peerview_event_listener(Jxta_object * obj, void *arg);
+static Jxta_status JXTA_STDCALL leasing_cb(Jxta_object * obj, void *arg);
+static Jxta_status JXTA_STDCALL walker_cb(Jxta_object * obj, void *arg);
+static Jxta_status JXTA_STDCALL prop_cb(Jxta_object * obj, void *arg);
+static Jxta_status JXTA_STDCALL call_entry(Jxta_object * obj, void *arg, JString * key_j);
 
 static _jxta_rdv_service_methods const JXTA_RDV_SERVICE_METHODS = {
     {
@@ -126,6 +132,16 @@ static _jxta_rdv_service_methods const JXTA_RDV_SERVICE_METHODS = {
      service_on_option_set},
     "_jxta_rdv_service_methods"
 };
+
+struct _provider_callback_entry {
+    Extends(Jxta_object);
+    Jxta_callback_func func;
+    Jxta_rdv_service_provider *provider;
+    void *arg;
+    JString *key;
+};
+
+typedef struct _provider_callback_entry _provider_callback_entry;
 
 /**
  * This is the Generic Rendezvous Service
@@ -177,6 +193,31 @@ Jxta_rdv_service *jxta_rdv_service_new_instance(void)
     return (Jxta_rdv_service *) jxta_rdv_service_construct(myself, &JXTA_RDV_SERVICE_METHODS);
 }
 
+static void provider_entry_delete(Jxta_object * obj)
+{
+    _provider_callback_entry *myself = (_provider_callback_entry *) obj;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Provider entry delete\n");
+
+    if (myself->key)
+        JXTA_OBJECT_RELEASE(myself->key);
+    if (myself->arg)
+        JXTA_OBJECT_RELEASE(myself->arg);
+    /* free the object itself */
+    free((void *) myself);
+}
+
+static _provider_callback_entry *provider_callback_entry_new(void)
+{
+    /* Allocate an instance of this service */
+    _provider_callback_entry *myself = (_provider_callback_entry *) calloc(1, sizeof(_provider_callback_entry));
+
+    if (NULL != myself) {
+        /* Initialize the object */
+        JXTA_OBJECT_INIT(myself, provider_entry_delete, 0);
+    }
+    return myself;
+}
+
 /**
  * The base rdv service ctor (not public: the only public way to make a new pg 
  * is to instantiate one of the derived types).
@@ -195,6 +236,9 @@ static _jxta_rdv_service *jxta_rdv_service_construct(_jxta_rdv_service * myself,
         /* Create the pool & mutex */
         apr_pool_create(&myself->pool, NULL);
         res = apr_thread_mutex_create(&myself->mutex, APR_THREAD_MUTEX_NESTED,  /* nested */
+                                      myself->pool);
+
+        res = apr_thread_mutex_create(&myself->cb_mutex, APR_THREAD_MUTEX_NESTED,  /* nested */
                                       myself->pool);
 
         myself->group = NULL;
@@ -217,11 +261,8 @@ static _jxta_rdv_service *jxta_rdv_service_construct(_jxta_rdv_service * myself,
          * create the RDV event listener table
          */
         myself->evt_listener_table = jxta_hashtable_new(1);
-
+        myself->callback_table = jxta_hashtable_new(1);
         myself->running = FALSE;
-        res = apr_thread_cond_create(&myself->periodicCond, myself->pool);
-        res = apr_thread_mutex_create(&myself->periodicMutex, APR_THREAD_MUTEX_DEFAULT, myself->pool);
-        myself->periodicThread = NULL;
     }
 
     return myself;
@@ -254,6 +295,11 @@ static void jxta_rdv_service_destruct(_jxta_rdv_service * rdv)
         JXTA_OBJECT_RELEASE(myself->evt_listener_table);
     }
 
+    if (NULL != myself->callback_table) {
+        JXTA_OBJECT_RELEASE(myself->callback_table);
+        myself->callback_table = NULL;
+    }
+
     if (NULL != myself->pid) {
         JXTA_OBJECT_RELEASE(myself->pid);
     }
@@ -269,10 +315,18 @@ static void jxta_rdv_service_destruct(_jxta_rdv_service * rdv)
     if (NULL != myself->active_seeds) {
         JXTA_OBJECT_RELEASE(myself->active_seeds);
     }
+    if (NULL != myself->lease_key_j) {
+        JXTA_OBJECT_RELEASE(myself->lease_key_j);
+    }
+    if (NULL != myself->walker_key_j) {
+        JXTA_OBJECT_RELEASE(myself->walker_key_j);
+    }
+    if (NULL != myself->prop_key_j) {
+        JXTA_OBJECT_RELEASE(myself->prop_key_j);
+    }
 
     apr_thread_mutex_destroy(myself->mutex);
-    apr_thread_mutex_destroy(myself->periodicMutex);
-    apr_thread_cond_destroy(myself->periodicCond);
+    apr_thread_mutex_destroy(myself->cb_mutex);
 
     /* Free the pool used to allocate the thread and mutex */
     apr_pool_destroy(myself->pool);
@@ -394,6 +448,7 @@ static Jxta_status init(Jxta_module * rdv, Jxta_PG * group, Jxta_id * assigned_i
 
     jxta_PG_get_endpoint_service(group, &(myself->endpoint));
 
+
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Rendezvous service inited : %s \n", myself->assigned_id_str);
 
     return res;
@@ -420,13 +475,26 @@ static Jxta_status start(Jxta_module * module, char const *argv[])
     }
 
     myself->running = TRUE;
+    myself->switch_config = FALSE;
+    myself->lease_key_j = jstring_new_2(RDV_V3_MSID);
+    jstring_append_2(myself->lease_key_j, JXTA_RDV_LEASING_SERVICE_NAME);
+    jxta_PG_add_recipient(myself->group, &myself->ep_cookie_leasing, RDV_V3_MSID, JXTA_RDV_LEASING_SERVICE_NAME, leasing_cb, myself);
+
+    myself->walker_key_j = jstring_new_2(RDV_V3_MSID);
+    jstring_append_2(myself->walker_key_j, JXTA_RDV_WALKER_SERVICE_NAME);
+    jxta_PG_add_recipient(myself->group, &myself->ep_cookie_walker, RDV_V3_MSID, JXTA_RDV_WALKER_SERVICE_NAME, walker_cb, myself);
+
+    myself->prop_key_j = jstring_new_2(RDV_V3_MSID);
+    jstring_append_2(myself->prop_key_j, JXTA_RDV_PROPAGATE_SERVICE_NAME);
+    jxta_PG_add_recipient(myself->group, &myself->ep_cookie_prop, RDV_V3_MSID, JXTA_RDV_PROPAGATE_SERVICE_NAME, prop_cb, myself);
+
     apr_thread_mutex_unlock(myself->mutex);
 
     jxta_rdv_service_set_auto_interval((Jxta_rdv_service *) myself, myself->auto_rdv_interval);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Rendezvous service started.\n");
 
-    return jxta_rdv_service_set_config((Jxta_rdv_service *) myself, myself->config);
+    return rdv_service_switch_config((Jxta_rdv_service *) myself, myself->config);
 }
 
 /**
@@ -454,7 +522,6 @@ static void stop(Jxta_module * module)
     /* disable auto-rdv */
     jxta_rdv_service_set_auto_interval((Jxta_rdv_service *) myself, -1);
 
-    /* jxta_rdv_service_set_config((Jxta_rdv_service *) myself, config_adhoc); */
     provider = (Jxta_rdv_service_provider *) myself->provider;
     if (NULL != provider) {
         PROVIDER_VTBL(provider)->stop(provider);
@@ -468,6 +535,15 @@ static void stop(Jxta_module * module)
         myself->peerview_listener = NULL;
         JXTA_OBJECT_RELEASE(myself->peerview);
     }
+
+    assert(NULL != myself->ep_cookie_leasing);
+    jxta_PG_remove_recipient(myself->group, myself->ep_cookie_leasing);
+
+    assert(NULL != myself->ep_cookie_walker);
+    jxta_PG_remove_recipient(myself->group, myself->ep_cookie_walker);
+
+    assert(NULL != myself->ep_cookie_prop);
+    jxta_PG_remove_recipient(myself->group, myself->ep_cookie_prop);
 
     apr_thread_mutex_unlock(myself->mutex);
 
@@ -747,6 +823,15 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_set_config(Jxta_rdv_service * rdv, Rd
 {
     Jxta_status res = JXTA_SUCCESS;
     _jxta_rdv_service *myself = PTValid(rdv, _jxta_rdv_service);
+    myself->switch_config = TRUE;
+    myself->new_config = config;
+    return res;
+}
+
+JXTA_DECLARE(Jxta_status) rdv_service_switch_config(Jxta_rdv_service * rdv, RdvConfig_configuration config)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    _jxta_rdv_service *myself = PTValid(rdv, _jxta_rdv_service);
     Jxta_rdv_service_provider *newProvider;
     Jxta_rdv_service_provider *oldProvider;
     RendezVousStatus new_status = myself->current_config;
@@ -851,12 +936,11 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_set_config(Jxta_rdv_service * rdv, Rd
     myself->current_config = config;
     myself->status = new_status;
     oldProvider = (Jxta_rdv_service_provider *) myself->provider;
-    myself->provider = NULL;
 
     if (NULL != oldProvider) {
         res = PROVIDER_VTBL(oldProvider)->stop(oldProvider);
         JXTA_OBJECT_RELEASE(oldProvider);
-
+        myself->provider = NULL;
         if (JXTA_SUCCESS != res) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failed stopping rdv provider [%pp]\n", myself);
         }
@@ -865,13 +949,20 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_set_config(Jxta_rdv_service * rdv, Rd
     res = PROVIDER_VTBL(newProvider)->init(newProvider, myself);
 
     if (JXTA_SUCCESS == res) {
+        myself->provider = newProvider;
+        apr_thread_mutex_unlock(myself->mutex);
+
         res = PROVIDER_VTBL(newProvider)->start(newProvider);
+        apr_thread_mutex_lock(myself->mutex);
+        locked = TRUE;
     }
 
     if (JXTA_SUCCESS != res) {
+        if (NULL != myself->provider) {
+            JXTA_OBJECT_RELEASE(myself->provider);
+        }
+        myself->provider = NULL;
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failed initing/starting rdv provider [%pp]\n", myself);
-    } else {
-        myself->provider = newProvider;
     }
 
     /* Stop the peerview if necessary */
@@ -1204,6 +1295,7 @@ Jxta_status rdv_service_send_seed_request(Jxta_rdv_service * rdv)
 static void JXTA_STDCALL peerview_event_listener(Jxta_object * obj, void *arg)
 {
     Jxta_status res = 0;
+    Jxta_boolean locked = FALSE;
     Jxta_peerview_event *event = (Jxta_peerview_event *) obj;
     _jxta_rdv_service *myself = PTValid(arg, _jxta_rdv_service);
 
@@ -1213,6 +1305,7 @@ static void JXTA_STDCALL peerview_event_listener(Jxta_object * obj, void *arg)
     }
 
     apr_thread_mutex_lock(myself->mutex);
+    locked = TRUE;
 
     if (!jxta_id_equals(event->pid, myself->pid)) {
 
@@ -1263,8 +1356,145 @@ static void JXTA_STDCALL peerview_event_listener(Jxta_object * obj, void *arg)
     }
 
   FINAL_EXIT:
+    if (locked)
+        apr_thread_mutex_unlock(myself->mutex);
+}
 
+Jxta_status rdv_service_remove_cb(Jxta_rdv_service * me, Jxta_object *cookie)
+{
+    Jxta_vector *entries = NULL;
+    Jxta_status res = JXTA_SUCCESS;
+    _jxta_rdv_service *myself = PTValid(me,_jxta_rdv_service);
+
+    apr_thread_mutex_lock(myself->mutex);
+    if (NULL != myself->callback_table) {
+        _provider_callback_entry * e_cookie;
+        _provider_callback_entry * entry;
+        e_cookie = (_provider_callback_entry *) cookie;
+        res = jxta_hashtable_get(myself->callback_table, jstring_get_string(e_cookie->key), jstring_length(e_cookie->key), JXTA_OBJECT_PPTR(&entry));
+        if (JXTA_ITEM_NOTFOUND != res) {
+            if (entry == (_provider_callback_entry *) cookie) {
+                jxta_hashtable_del(myself->callback_table, jstring_get_string(entry->key), jstring_length(entry->key), NULL);
+            }
+            JXTA_OBJECT_RELEASE(entry);
+        }
+    }
     apr_thread_mutex_unlock(myself->mutex);
+    if (entries)
+        JXTA_OBJECT_RELEASE(entries);
+    return res;
+}
+
+Jxta_status rdv_service_add_cb(Jxta_rdv_service * me, Jxta_object ** cookie, const char *name, const char *param,
+                                                Jxta_callback_func func, void *arg)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    _jxta_rdv_service *myself = PTValid(me,_jxta_rdv_service);
+    _provider_callback_entry *entry=NULL;
+    JString *jkey = NULL;
+    Jxta_boolean locked = FALSE;
+
+    apr_thread_mutex_lock(myself->mutex);
+    locked = TRUE;
+
+    entry = provider_callback_entry_new();
+    if (NULL == entry) {
+        res = JXTA_NOMEM;
+        goto FINAL_EXIT;
+    }
+
+    entry->func = func;
+    entry->arg = JXTA_OBJECT_SHARE(arg);
+    entry->provider = myself->provider;
+    jkey = jstring_new_2(name);
+
+    if (NULL == jkey) {
+        res = JXTA_NOMEM;
+        goto FINAL_EXIT;
+    }
+    jstring_append_2(jkey, param);
+    entry->key = JXTA_OBJECT_SHARE(jkey);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Adding entry[%pp]  with key: %s\n",entry, jstring_get_string(entry->key));
+    jxta_hashtable_put(myself->callback_table, jstring_get_string(jkey), jstring_length(jkey), (Jxta_object *)entry);
+    *cookie = JXTA_OBJECT_SHARE(entry);
+
+FINAL_EXIT:
+    if (jkey)
+        JXTA_OBJECT_RELEASE(jkey);
+    if (entry)
+        JXTA_OBJECT_RELEASE(entry);
+    if (locked)
+        apr_thread_mutex_unlock(myself->mutex);
+
+    return res;
+}
+
+static Jxta_status JXTA_STDCALL leasing_cb(Jxta_object * obj, void *arg)
+{
+    Jxta_status res;
+    _jxta_rdv_service *myself = PTValid(arg, _jxta_rdv_service);
+    res = call_entry(obj, arg, myself->lease_key_j);
+    return res;
+}
+
+static Jxta_status JXTA_STDCALL walker_cb(Jxta_object * obj, void *arg)
+{
+    Jxta_status res;
+    _jxta_rdv_service *myself = PTValid(arg, _jxta_rdv_service);
+    res = call_entry(obj, arg, myself->walker_key_j);
+    return res;
+}
+
+
+static Jxta_status JXTA_STDCALL prop_cb(Jxta_object * obj, void *arg)
+{
+    Jxta_status res;
+    _jxta_rdv_service *myself = PTValid(arg, _jxta_rdv_service);
+    res = call_entry(obj, arg, myself->prop_key_j);
+    return res;
+}
+
+
+static Jxta_status JXTA_STDCALL call_entry(Jxta_object * obj, void *arg, JString * key_j)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    _jxta_rdv_service *myself = PTValid(arg, _jxta_rdv_service);
+    _provider_callback_entry *entry=NULL;
+    Jxta_boolean locked = FALSE;
+
+    apr_thread_mutex_lock(myself->mutex);
+    locked = TRUE;
+    if (NULL == myself->callback_table) goto FINAL_EXIT;
+
+    res = jxta_hashtable_get(myself->callback_table, jstring_get_string(key_j), jstring_length(key_j), JXTA_OBJECT_PPTR(&entry));
+    if (JXTA_ITEM_NOTFOUND == res) {
+        goto FINAL_EXIT;
+    }
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "entry_provider[%pp]  myself->provider[%pp]\n",entry->provider, myself->provider);
+    if (entry->provider != myself->provider) {
+        JXTA_OBJECT_RELEASE(entry);
+        res = JXTA_ITEM_NOTFOUND;
+        goto FINAL_EXIT;
+    }
+    Jxta_message *msg = (Jxta_message *) obj;
+
+    JXTA_OBJECT_CHECK_VALID(msg);
+    apr_thread_mutex_unlock(myself->mutex);
+    locked = FALSE;
+
+    res = entry->func((Jxta_object *) msg, entry->arg);
+    JXTA_OBJECT_RELEASE(entry);
+
+    if (myself->switch_config) {
+        apr_thread_mutex_lock(myself->cb_mutex);
+        rdv_service_switch_config((Jxta_rdv_service *) myself, myself->new_config);
+        myself->switch_config = FALSE;
+        apr_thread_mutex_unlock(myself->cb_mutex);
+    }
+FINAL_EXIT:
+    if (locked)
+        apr_thread_mutex_unlock(myself->mutex);
+    return res;
 }
 
 /* vim: set ts=4 sw=4 tw=130 et: */

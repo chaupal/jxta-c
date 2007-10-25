@@ -109,6 +109,8 @@ _jxta_rdv_service_provider *jxta_rdv_service_provider_construct(_jxta_rdv_servic
     myself->pipes = NULL;
     myself->seed_pipe = NULL;
 
+    myself->prop_cookie = NULL;
+
     return myself;
 }
 
@@ -130,6 +132,10 @@ void jxta_rdv_service_provider_destruct(_jxta_rdv_service_provider * myself)
 
     if (NULL != myself->parentgid) {
         JXTA_OBJECT_RELEASE(myself->parentgid);
+    }
+
+    if (NULL != myself->prop_cookie) {
+        JXTA_OBJECT_RELEASE(myself->prop_cookie);
     }
 
     JXTA_OBJECT_RELEASE(myself->peerview);
@@ -188,8 +194,8 @@ Jxta_status jxta_rdv_service_provider_start(Jxta_rdv_service_provider * me)
     /*
      * Add the Rendezvous Service Message receiver
      */
-    res = jxta_PG_add_recipient(me->pg, &me->ep_cookie, RDV_V3_MSID, JXTA_RDV_PROPAGATE_SERVICE_NAME,
-                                rdv_service_provider_prop_cb, me);
+    res = rdv_service_add_cb((Jxta_rdv_service *)me->service, &me->prop_cookie, RDV_V3_MSID, JXTA_RDV_PROPAGATE_SERVICE_NAME, rdv_service_provider_prop_cb, me);
+
     if (JXTA_SUCCESS != res) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not register propagate callback.[%pp].\n", me);
     }
@@ -202,8 +208,9 @@ Jxta_status jxta_rdv_service_provider_stop(Jxta_rdv_service_provider * me)
     Jxta_status res = JXTA_SUCCESS;
     PTValid(me, _jxta_rdv_service_provider);
 
-    assert(NULL != me->ep_cookie);
-    res = jxta_PG_remove_recipient(me->pg, me->ep_cookie);
+    if (me->prop_cookie) {
+        rdv_service_remove_cb((Jxta_rdv_service *) me->service, me->prop_cookie);
+    }
     if (JXTA_SUCCESS != res) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not deregister propagate callback.[%pp].\n", me);
     }

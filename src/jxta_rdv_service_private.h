@@ -133,12 +133,10 @@ typedef enum RendezVousStatuses RendezVousStatus;
 struct _jxta_rdv_service {
     Extends(Jxta_service);
     apr_thread_mutex_t *mutex;
+    apr_thread_mutex_t *cb_mutex;
     apr_pool_t *pool;
 
     volatile Jxta_boolean running;
-    apr_thread_cond_t *periodicCond;
-    apr_thread_mutex_t *periodicMutex;
-    volatile apr_thread_t *periodicThread;
 
     Jxta_PG *group;
     Jxta_PG *parentgroup;
@@ -148,6 +146,8 @@ struct _jxta_rdv_service {
     Jxta_RdvConfigAdvertisement *rdvConfig;
     RdvConfig_configuration current_config;
     RdvConfig_configuration config;
+    RdvConfig_configuration new_config;
+    Jxta_boolean switch_config;
 
     Jxta_vector *active_seeds;
     Jxta_time last_seeding_update;
@@ -158,6 +158,7 @@ struct _jxta_rdv_service {
     Jxta_endpoint_service *endpoint;
 
     Jxta_hashtable *evt_listener_table;
+    Jxta_hashtable *callback_table;
 
     RendezVousStatus status;
 
@@ -166,12 +167,20 @@ struct _jxta_rdv_service {
     Jxta_peerview *peerview;
 
     Jxta_listener *peerview_listener;
+
+    void *ep_cookie_leasing;
+    void *ep_cookie_walker;
+    void *ep_cookie_prop;
+    JString *lease_key_j;
+    JString *walker_key_j;
+    JString *prop_key_j;
 };
 
 /**
 *    Private typedef for Rendezvous services.
 **/
 typedef struct _jxta_rdv_service _jxta_rdv_service;
+
 
 /**
 *    Create a new rdv event and sent it to the listeners.
@@ -199,6 +208,26 @@ extern Jxta_status rdv_service_get_seeds(Jxta_rdv_service * me, Jxta_vector ** s
 */
 extern Jxta_status rdv_service_add_referral_seed(Jxta_rdv_service * me, Jxta_peer * seed);
 
+/**
+ * 
+ * Add a callback for the rendezvous service
+**/
+extern Jxta_status rdv_service_add_cb(Jxta_rdv_service * me, Jxta_object **cookie, const char *name, const char *param,
+                                                Jxta_callback_func func, void *arg);
+
+/**
+ *
+ * Remove the callback from the rendezvous service
+ *
+**/
+extern Jxta_status rdv_service_remove_cb(Jxta_rdv_service * me, Jxta_object *cookie);
+
+/**
+ *
+ * Switch the config
+ *
+**/
+extern Jxta_status rdv_service_switch_config(Jxta_rdv_service * rdv, RdvConfig_configuration config);
 
 /**
 *   Sends a broadcast request for seeds.
@@ -220,12 +249,14 @@ extern Jxta_rdv_service_provider *jxta_rdv_service_client_new(apr_pool_t * pool)
 **/
 extern Jxta_rdv_service_provider *jxta_rdv_service_server_new(apr_pool_t * pool);
 
+
 /**
  * Create a new message id
  * 
  * @return JString containing the message ID.
  */
 JXTA_DECLARE(JString *) message_id_new(void);
+
 
 #define JXTA_RDV_SERVICE_VTBL(self) (((_jxta_rdv_service_methods*)(((_jxta_module*) (self))->methods))
 
