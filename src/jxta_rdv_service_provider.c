@@ -134,10 +134,6 @@ void jxta_rdv_service_provider_destruct(_jxta_rdv_service_provider * myself)
         JXTA_OBJECT_RELEASE(myself->parentgid);
     }
 
-    if (NULL != myself->prop_cookie) {
-        JXTA_OBJECT_RELEASE(myself->prop_cookie);
-    }
-
     JXTA_OBJECT_RELEASE(myself->peerview);
 
     free(myself->assigned_id_str);
@@ -210,6 +206,8 @@ Jxta_status jxta_rdv_service_provider_stop(Jxta_rdv_service_provider * me)
 
     if (me->prop_cookie) {
         rdv_service_remove_cb((Jxta_rdv_service *) me->service, me->prop_cookie);
+        JXTA_OBJECT_RELEASE(me->prop_cookie);
+        me->prop_cookie = NULL;
     }
     if (JXTA_SUCCESS != res) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not deregister propagate callback.[%pp].\n", me);

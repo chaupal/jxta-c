@@ -370,13 +370,6 @@ static void Jxta_rdv_service_server_destruct(_jxta_rdv_service_server * myself)
     if (NULL != myself->rdvConfig)
          JXTA_OBJECT_RELEASE(myself->rdvConfig);
  
-    if (NULL != myself->leasing_cookie) {
-        JXTA_OBJECT_RELEASE(myself->leasing_cookie);
-    }
-    if (NULL != myself->walker_cookie) {
-        JXTA_OBJECT_RELEASE(myself->walker_cookie);
-    }
-
     /* call the base classe's dtor. */
     jxta_rdv_service_provider_destruct((_jxta_rdv_service_provider *) myself);
 
@@ -557,9 +550,13 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
     }
     if (myself->leasing_cookie) {
         rdv_service_remove_cb((Jxta_rdv_service *) provider->service, myself->leasing_cookie);
+        JXTA_OBJECT_RELEASE(myself->leasing_cookie);
+        myself->leasing_cookie = NULL;
     }
     if (myself->walker_cookie) {
         rdv_service_remove_cb((Jxta_rdv_service *) provider->service, myself->walker_cookie);
+        JXTA_OBJECT_RELEASE(myself->walker_cookie);
+        myself->walker_cookie = NULL;
     }
 
     pg = jxta_service_get_peergroup_priv((Jxta_service*) provider->service);

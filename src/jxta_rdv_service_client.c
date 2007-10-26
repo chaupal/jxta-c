@@ -420,10 +420,6 @@ static void rdv_client_destruct(_jxta_rdv_service_client * myself)
         JXTA_OBJECT_RELEASE(myself->candidate);
     }
 
-    if (NULL != myself->leasing_cookie) {
-        JXTA_OBJECT_RELEASE(myself->leasing_cookie);
-    }
-
     /* Release the services object this instance was using */
     if (myself->discovery != NULL) {
         JXTA_OBJECT_RELEASE(myself->discovery);
@@ -577,6 +573,8 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
     }
     if (myself->leasing_cookie) {
         rdv_service_remove_cb((Jxta_rdv_service *) provider->service, myself->leasing_cookie);
+        JXTA_OBJECT_RELEASE(myself->leasing_cookie);
+        myself->leasing_cookie = NULL;
     }
     /* We need to tell the background task that it has to die. */
     myself->running = FALSE;
