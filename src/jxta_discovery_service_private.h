@@ -59,7 +59,6 @@
 
 #include "jxta_discovery_service.h"
 #include "jxta_service_private.h"
-#include "jxta_query.h"
 #include "jxta_cred.h"
 
 /****************************************************************

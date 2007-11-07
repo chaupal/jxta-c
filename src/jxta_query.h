@@ -80,6 +80,7 @@ extern "C" {
 struct _jxta_query_context {
     JXTA_OBJECT_HANDLE;
     Jxta_vector *queries;       /* predicates */
+    Jxta_vector *attr_queries;  /* attribute predicates */
     JString *documentName;      /* document name in case wild card name space */
     JString *sort;              /* sort from the compiled expression */
     JString *prefix;            /* prefix of the name space */
@@ -102,9 +103,14 @@ struct _jxta_query_context {
     xmlXPathCompExprPtr xpathcomp;  /* compiled XPath expression pointer */
     int found;                  /* items found */
     Jxta_boolean first;         /* no elements have been processed */
+    Jxta_boolean compound_query; /* create a compound SQL query */
+    Jxta_boolean intersect;     /* use INTERSECT SELECT if AND */
+    Jxta_boolean is_function;   /* processing a function */
     int levelNumber;            /* number of predicates before the level changes */
     int currLevel;              /* current level during the scan */
     int endOfCollection;        /* end of current collection */
+    int step;                   /* step within the compiled XPath */
+    JString *log_j;             /* string for log messages */
 };
 
 
@@ -120,7 +126,10 @@ struct _jxta_query_element {
     Jxta_boolean negative;
     Jxta_boolean isNumeric;
     Jxta_boolean hasWildcard;
+    Jxta_boolean isReplicated;
     JString *jValue;
+    int step;
+    Jxta_boolean intersect;
 };
 
 typedef struct _jxta_query_element Jxta_query_element;
@@ -136,6 +145,8 @@ JXTA_DECLARE(Jxta_status)
     jxta_query_XPath(Jxta_query_context * ctx, const char *advXML, Jxta_boolean bResults);
 
 
+JXTA_DECLARE(Jxta_status)
+    jxta_query_compound_XPath(Jxta_query_context * ctx, const char *advXML, Jxta_boolean bResults);
 
 JXTA_DECLARE(void) jxta_query_build_SQL_operator(JString * elem, JString * sqloper, JString * value, JString * result);
 

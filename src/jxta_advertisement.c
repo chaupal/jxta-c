@@ -102,6 +102,7 @@ struct _jxta_advertisement_new_func {
 
 static Jxta_advertisement_new_func *advertisement_new_func_new(const JxtaAdvertisementNewFunc new_func);
 static void advertisement_new_func_delete(Jxta_object * obj);
+static const char ** advertisement_get_tagnames_1(Jxta_advertisement * ad, Jxta_boolean check_replication);
 
 
 /* static apr_pool_t * global_ad_pool; */
@@ -109,6 +110,11 @@ static void advertisement_new_func_delete(Jxta_object * obj);
 *   This is a "global" registry for advertisement handlers.
 */
 static Jxta_hashtable *global_ad_table = NULL;
+
+/**
+*   This is a "global" table for element/attributes that are replicated
+*/
+static Jxta_hashtable *global_ad_replication_table = NULL;
 
 static void advertisement_handle_chardata(void *me, const XML_Char * cd, int len);
 static void advertisement_start_element(void *me, const char *ename, const char **atts);
@@ -247,6 +253,11 @@ JXTA_DECLARE(const char *) jxta_advertisement_get_document_name(Jxta_advertiseme
 
 JXTA_DECLARE(char *) jxta_advertisement_get_string(Jxta_advertisement * ad, Jxta_index * ji)
 {
+    return jxta_advertisement_get_string_1(ad, ji, NULL);
+}
+
+JXTA_DECLARE(char *) jxta_advertisement_get_string_1(Jxta_advertisement * ad, Jxta_index * ji, Jxta_kwd_entry_flags * flags)
+{
     int i, j, m;
     const Kwdtab *tags_table = ad->dispatch_table;
     char *full_index_name;
@@ -288,6 +299,7 @@ JXTA_DECLARE(char *) jxta_advertisement_get_string(Jxta_advertisement * ad, Jxta
             return NULL;
         i = m;
     }
+    if (NULL != flags) *flags = tags_table[i].tokentype;
     if (tags_table[i].get != NULL) {
         return tags_table[i].get(ad);
     } else if (tags_table[i].get_parm != NULL) {
@@ -305,6 +317,11 @@ JXTA_DECLARE(char *) jxta_advertisement_get_string(Jxta_advertisement * ad, Jxta
  * to change it.
  */
 JXTA_DECLARE(const char **) jxta_advertisement_get_tagnames(Jxta_advertisement * ad)
+{
+    return advertisement_get_tagnames_1(ad, FALSE);
+}
+
+static const char ** advertisement_get_tagnames_1(Jxta_advertisement * ad, Jxta_boolean check_replication)
 {
     const Kwdtab *tags_table = ad->dispatch_table;
     int i = 1;                  /* The first entry is not interresting */
@@ -328,8 +345,13 @@ JXTA_DECLARE(const char **) jxta_advertisement_get_tagnames(Jxta_advertisement *
     i = 1;
     while (tags_table[i].kwd != NULL) {
         /* Do not return those that do not have get_xxx_string support */
-        if (tags_table[i].get != NULL || tags_table[i].get_parm)
-            tags[numtags++] = tags_table[i].kwd;
+        if (tags_table[i].get != NULL || tags_table[i].get_parm) {
+            /* if checking replication don't return non replicated */
+            if (check_replication && (tags_table[i].tokentype & NO_REPLICATION)) {
+            } else {
+                tags[numtags++] = tags_table[i].kwd;
+            }
+        }
         ++i;
     }
     tags[numtags] = NULL;
@@ -478,11 +500,48 @@ static void advertisement_new_func_delete(Jxta_object * me)
 JXTA_DECLARE(void) jxta_advertisement_register_global_handler(const char *doc_type, const JxtaAdvertisementNewFunc ad_new_function)
 {
     Jxta_advertisement_new_func *new_func = advertisement_new_func_new(ad_new_function);
-
+    Jxta_advertisement *new_ad = NULL;
+    const char **tags;
+    const char **tags_save;
     jxta_hashtable_put(global_ad_table, doc_type, strlen(doc_type) + 1, (Jxta_object *) new_func);
+
     JXTA_OBJECT_RELEASE(new_func);
 
+    new_ad = (Jxta_advertisement *) (*ad_new_function) ();
+
+    if( NULL == new_ad ) {
+        return;
+    }
+
+    tags = advertisement_get_tagnames_1(new_ad, TRUE);
+    tags_save = tags;
+    while (*tags) {
+        JString *replicated_tag;
+
+        replicated_tag = jstring_new_2(doc_type);
+        jstring_append_2(replicated_tag, *tags);
+        jxta_hashtable_put(global_ad_replication_table, jstring_get_string(replicated_tag)
+                            , jstring_length(replicated_tag), (Jxta_object *) replicated_tag);
+        tags++;
+
+        JXTA_OBJECT_RELEASE(replicated_tag);
+    }
+    free((void *) tags_save);
+
+    JXTA_OBJECT_RELEASE(new_ad);
+
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "jxta_advertisement_global_register : registered : %s\n", doc_type);
+}
+
+JXTA_DECLARE(Jxta_boolean) jxta_advertisement_is_element_replicated(const char *ns_elem_attr)
+{
+    Jxta_object *obj = NULL;
+    Jxta_boolean res;
+    jxta_hashtable_get(global_ad_replication_table, ns_elem_attr, strlen(ns_elem_attr), &obj);
+    res = NULL == obj ? FALSE: TRUE;
+    if (res)
+        JXTA_OBJECT_RELEASE(obj);
+    return res;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_advertisement_global_handler(Jxta_advertisement * ad, const char *doc_type, Jxta_advertisement** new_ad)
@@ -530,6 +589,9 @@ void jxta_advertisement_cleanup(void)
 {
     if (global_ad_table != NULL) {
         JXTA_OBJECT_RELEASE(global_ad_table);
+    }
+    if (global_ad_replication_table != NULL) {
+        JXTA_OBJECT_RELEASE(global_ad_replication_table);
     }
 }
 
@@ -904,6 +966,7 @@ JXTA_DECLARE(Jxta_vector *) jxta_advertisement_return_indexes(const char *idx[])
 void jxta_advertisement_register_global_handlers(void)
 {
     global_ad_table = jxta_hashtable_new(32);
+    global_ad_replication_table = jxta_hashtable_new(32);
 
     /* Core advertisement types */
     jxta_advertisement_register_global_handler("jxta:MCA", (JxtaAdvertisementNewFunc) jxta_MCA_new);
@@ -935,6 +998,10 @@ void jxta_advertisement_register_global_handlers(void)
     jxta_advertisement_register_global_handler("demo:TestAdvertisement", (JxtaAdvertisementNewFunc) jxta_test_adv_new);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Global ad hash table initialized\n");
+
+
+    return ;
 }
+
 
 /* vim: set ts=4 sw=4 tw=130 et: */

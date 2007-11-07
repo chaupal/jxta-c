@@ -214,9 +214,13 @@ typedef Jxta_vector *(JXTA_STDCALL * JxtaAdvertisementGetIndexFunc) (Jxta_advert
 
 typedef void (*Jxta_advertisement_node_handler) (void *, const XML_Char *, int);
 
+typedef int Jxta_kwd_entry_flags;
+
+#define NO_REPLICATION 0x8000
+
 struct _kwdtab {
     const char *kwd;
-    int tokentype;
+    Jxta_kwd_entry_flags tokentype;
     Jxta_advertisement_node_handler nodeparse;
 
     char *(JXTA_STDCALL * get) (Jxta_advertisement *);
@@ -252,7 +256,6 @@ struct _jxta_advertisement {
     const char **atts;
     JString *accum;
     Jxta_advertisement_node_handler curr_handler;
-    /** @deprecated Never used */
     const char *currElement;
 };
 
@@ -395,6 +398,20 @@ JXTA_DECLARE(void) jxta_advertisement_set_printer(Jxta_advertisement * ad, Print
  */
 JXTA_DECLARE(char *) jxta_advertisement_get_string(Jxta_advertisement * ad, Jxta_index * ji);
 
+/**  Many fields of an advertisement struct can be represented as 
+ * a character string, which may be obtained by this function.
+ * 
+ * @param Jxta_advertisement * ad
+ * @param char * key for advertisement field desired
+ * @param Jxta_index_flags * flags indicating properties of the value
+ *
+ * @return char * representation of value corresponding to 
+ *         key.
+ *
+ * @warning Returns a copy that must be freed.
+ */
+JXTA_DECLARE(char *) jxta_advertisement_get_string_1(Jxta_advertisement * ad, Jxta_index * ji, Jxta_kwd_entry_flags * flags);
+
 /** Messages saved in a buffer can be parsed later using 
  * this function.
  * 
@@ -437,6 +454,16 @@ JXTA_DECLARE(const char **) jxta_advertisement_get_tagnames(Jxta_advertisement *
  * @return nothing
  */
 JXTA_DECLARE(void) jxta_advertisement_register_global_handler(const char *key, const JxtaAdvertisementNewFunc ad_new_function);
+
+/**
+ *
+ * Returns whether a particulare ns:element/attribute should be replicated.
+ *
+ * @param const char * concatenation of the namespace:element/attribute
+ *
+ * @return TRUE-advertisement wants this element replicated FALSE- do not replicate
+*/
+JXTA_DECLARE(Jxta_boolean) jxta_advertisement_is_element_replicated(const char *ns_elem_attr);
 
 /**
 *

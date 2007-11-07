@@ -67,6 +67,9 @@ extern "C" {
 #include <jxta_cm.h>
 
 #define SQL_SELECT " SELECT "
+#define SQL_IN " IN "
+#define SQL_INTERSECT " INTERSECT "
+#define SQL_UNION " UNION "
 #define SQL_UPDATE " UPDATE "
 #define SQL_INSERT_INTO " INSERT INTO "
 #define SQL_DROP_TABLE "DROP TABLE "

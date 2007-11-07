@@ -55,6 +55,8 @@
 
 #include <limits.h>
 #include <stdlib.h>
+#include <assert.h>
+
 #include "jpr/jpr_excep_proto.h"
 #include "jxta_errno.h"
 #include "jxta_debug.h"
@@ -678,10 +680,10 @@ static Jxta_status queryLocal(Jxta_discovery_service_ref * discovery, Jxta_crede
     Jxta_status status = JXTA_SUCCESS;
     Jxta_cache_entry **entries;
     Jxta_vector *responses;
-    const char *xmlString = "<jxta:query xmlns:jxta=\"http://jxta.org\"/>";
     int i;
     unsigned int j;
 
+    assert(TRUE == jContext->compound_query);
     responses = jxta_vector_new(1);
 
     for (j = 0; j < jxta_vector_size(jContext->queries); j++) {
@@ -697,67 +699,38 @@ static Jxta_status queryLocal(Jxta_discovery_service_ref * discovery, Jxta_crede
 
     i = 0;
     while (entries != NULL && entries[i] != NULL) {
-        JString * jDoc;
-        Jxta_ProfferAdvertisement *prof_adv = NULL;
-        JString *out = NULL;
+        Jxta_advertisement * adv;
         Jxta_cache_entry * cache_entry;
-        cache_entry = entries[i];
-        prof_adv = cache_entry->profadv;
-        out = jstring_new_0();
-        jxta_proffer_adv_print(prof_adv, out);
-        xmlString = jstring_get_string(out);
-        jDoc = jxta_proffer_adv_get_nameSpace(prof_adv);
-        if (NULL != jDoc) {
-            jstring_reset(jContext->documentName, NULL);
-            jstring_append_1(jContext->documentName, jDoc);
-            JXTA_OBJECT_RELEASE(jDoc);
-        }
-        /* get result if this advertisement matches */
-        status = jxta_query_XPath(jContext, xmlString, TRUE);
-        if (out != NULL) {
-            JXTA_OBJECT_RELEASE(out);
-        }
-        if (status == JXTA_SUCCESS) {
-            if (jContext->found > 0) {
-                Jxta_vector * adv_vec = NULL;
-                Jxta_advertisement * adv;
-                adv = cache_entry->adv;
-                jxta_advertisement_get_advs(adv, &adv_vec);
+        Jxta_vector * adv_vec=NULL;
 
-                for (j=0; NULL != adv_vec && j<jxta_vector_size(adv_vec); j++) {
-                    Jxta_advertisement * advertisement;
-                    jxta_vector_get_object_at(adv_vec, JXTA_OBJECT_PPTR(&advertisement), j);
-                    if (ads_only) {
-                        jxta_vector_add_object_last(responses, (Jxta_object *) advertisement);
-                    } else {
-                        Jxta_query_result * qres = NULL;
-                        qres = calloc(1, sizeof(Jxta_query_result));
-                        JXTA_OBJECT_INIT(qres, discovery_result_free, NULL);
-                        qres->adv = JXTA_OBJECT_SHARE(advertisement);
-                        qres->lifetime = cache_entry->lifetime;
-                        qres->expiration = cache_entry->expiration;
-                        jxta_vector_add_object_last(responses, (Jxta_object *) qres);
-                        JXTA_OBJECT_RELEASE(qres);
-                    }
-                    JXTA_OBJECT_RELEASE(advertisement);
-                }
-                if (adv_vec)
-                    JXTA_OBJECT_RELEASE(adv_vec);
+        cache_entry = entries[i++];
+        adv = cache_entry->adv;
+
+        jxta_advertisement_get_advs(adv, &adv_vec);
+
+        for (j=0; NULL != adv_vec && j<jxta_vector_size(adv_vec); j++) {
+            Jxta_advertisement * advertisement;
+            jxta_vector_get_object_at(adv_vec, JXTA_OBJECT_PPTR(&advertisement), j);
+            if (ads_only) {
+                jxta_vector_add_object_last(responses, (Jxta_object *) advertisement);
             } else {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Proffer did not match\n");
+                Jxta_query_result * qres = NULL;
+                qres = calloc(1, sizeof(Jxta_query_result));
+                JXTA_OBJECT_INIT(qres, discovery_result_free, NULL);
+                qres->adv = JXTA_OBJECT_SHARE(advertisement);
+                qres->lifetime = cache_entry->lifetime;
+                qres->expiration = cache_entry->expiration;
+                jxta_vector_add_object_last(responses, (Jxta_object *) qres);
+                JXTA_OBJECT_RELEASE(qres);
             }
-        } else if (JXTA_INVALID_ARGUMENT == status) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "query failed %i\n", (int) status);
-            while (entries[i]) {
-                JXTA_OBJECT_RELEASE(entries[i++]);
-            }
-            goto FINAL_EXIT;
-        } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "queryLocal return from XPath %i\n", (int) status);
+            JXTA_OBJECT_RELEASE(advertisement);
         }
-        JXTA_OBJECT_RELEASE(entries[i++]);
+        if (NULL != adv_vec)
+            JXTA_OBJECT_RELEASE(adv_vec);
+        if (NULL != cache_entry)
+            JXTA_OBJECT_RELEASE(cache_entry);
     }
-  FINAL_EXIT:
+
     if (entries)
         free(entries);
     *advertisements = responses;
@@ -828,7 +801,7 @@ Jxta_status getLocalGroupsQuery (Jxta_discovery_service * self, const char *quer
     }
 
     /* compile the XPath statement */
-    status = jxta_query_XPath(jContext, xmlString, FALSE);
+    status = jxta_query_compound_XPath(jContext, xmlString, FALSE);
     if (JXTA_SUCCESS != status) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Cannot compile query in getLocalGroupsQuery --- %s\n", query);
         goto FINAL_EXIT;
@@ -1413,6 +1386,10 @@ static Jxta_status discovery_service_send_to_replica(Jxta_discovery_service_ref 
 
             replicaPeer = NULL;
             jxta_vector_get_object_at(jContext->queries, JXTA_OBJECT_PPTR(&elem), i);
+            if (!elem->isReplicated) {
+                JXTA_OBJECT_RELEASE(elem);
+                continue;
+            }
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "%s elem - %s \n", jstring_get_string(elem->jBoolean),
                             jstring_get_string(elem->jSQL));
             if (elem->isNumeric) {
@@ -1621,7 +1598,7 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
         }
 
         /* compile the XPath statement */
-        status = jxta_query_XPath(jContext, xmlString, FALSE);
+        status = jxta_query_compound_XPath(jContext, xmlString, FALSE);
 
         if (status != JXTA_SUCCESS) {
             goto finishTop;
@@ -1664,6 +1641,12 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
         JXTA_OBJECT_RELEASE(qAdvs);
         qAdvs = NULL;
         keys[found_count] = NULL;
+        if (0 == found_count) {
+            JXTA_OBJECT_RELEASE(jContext);
+            jContext = jxta_query_new(jstring_get_string(extendedQuery));
+            /* re-compile with no compound query */
+            jxta_query_XPath(jContext, xmlString, FALSE);
+        }
     }
     if (NULL == keys || NULL == keys[0]) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No keys locally \n");

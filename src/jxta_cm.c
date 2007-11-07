@@ -376,6 +376,8 @@ static Jxta_status cm_advertisement_remove(DBSpace * dbSpace, const char *nameSp
 static Jxta_cache_entry **cm_proffer_advertisements_build(DBSpace * dbSpace, apr_pool_t * pool, apr_dbd_results_t * res,
                                                           Jxta_boolean adv_present);
 
+static Jxta_cache_entry **cm_advertisements_build(DBSpace * dbSpace, apr_pool_t * pool, apr_dbd_results_t * res);
+
 static void cm_proffer_advertisements_columns_build(JString * columns);
 
 static Jxta_status cm_item_insert(DBSpace * dbSpace, const char *table, const char *nameSpace, const char *key,
@@ -2376,12 +2378,16 @@ static Jxta_status secondary_indexing(Jxta_cm * me, DBSpace * dbSpace, Folder * 
         const char *range = NULL;
         Jxta_index *ji = NULL;
         Jxta_boolean send_this_srdi = TRUE;
+        Jxta_kwd_entry_flags flags;
+
         jrange = NULL;
+
         status = jxta_vector_get_object_at(sv, JXTA_OBJECT_PPTR(&ji), i);
         if (status == JXTA_SUCCESS) {
             char *element = NULL;
             char *attrib = NULL;
             int len = 0;
+
             Jxta_range *rge = NULL;
 
             element = (char *) jstring_get_string(ji->element);
@@ -2411,7 +2417,7 @@ static Jxta_status secondary_indexing(Jxta_cm * me, DBSpace * dbSpace, Folder * 
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "secondary_indexing return from get vector %i\n", (int) status);
             continue;
         }
-        val = jxta_advertisement_get_string(adv, ji);
+        val = jxta_advertisement_get_string_1(adv, ji, &flags);
         if (val == NULL) {
             if (jrange)
                 JXTA_OBJECT_RELEASE(jrange);
@@ -2423,14 +2429,15 @@ static Jxta_status secondary_indexing(Jxta_cm * me, DBSpace * dbSpace, Folder * 
         jskey = jstring_new_2(full_index_name);
         JXTA_OBJECT_RELEASE(ji);
         statusRet =
-            cm_item_insert(dbSpace, CM_TBL_ELEM_ATTRIBUTES, documentName, key, full_index_name, val, range, exp, exp_others);
+            cm_item_insert(dbSpace, CM_TBL_ELEM_ATTRIBUTES, documentName, key, full_index_name, val, range, exp,
+                            flags & NO_REPLICATION ? 0:exp_others);
         if (JXTA_SUCCESS != statusRet) {
             send_this_srdi = FALSE;
         }
         free(full_index_name);
 
         /* Publish SRDI delta */
-        if (exp > 0 && srdi_delta && exp_others > 0 && send_this_srdi) {
+        if (exp > 0 && srdi_delta && exp_others > 0 && send_this_srdi && !(flags & NO_REPLICATION)) {
             Jxta_sequence_number seq_number;
             apr_thread_mutex_lock(me->mutex);
             seq_number = ++me->delta_seq_number;
@@ -3241,7 +3248,7 @@ Jxta_cache_entry **cm_query_ctx(Jxta_cm * me, Jxta_credential ** scope, int thre
     apr_dbd_results_t *res = NULL;
     JString *jSQLcmd = NULL;
     JString *jJoin = NULL;
-    JString *jOrder = NULL;
+    JString *jGroup = NULL;
     Jxta_cache_entry **addsStart = NULL;
     Jxta_boolean needOR = FALSE;
     JString *lastGroup = NULL;
@@ -3253,8 +3260,7 @@ Jxta_cache_entry **cm_query_ctx(Jxta_cm * me, Jxta_credential ** scope, int thre
     jJoin = jstring_new_0();
 
     /* the advid in the first column is used by cm_proffer_advertisements_build to populate the profid in Jxta_cache_entry */
-    jstring_append_2(jJoin, CM_COL_JOIN SQL_DOT CM_COL_AdvId SQL_COMMA CM_COL_SRC SQL_DOT CM_COL_AdvId);
-    jstring_append_2(jJoin, SQL_COMMA CM_COL_SRC SQL_DOT CM_COL_Name SQL_COMMA CM_COL_SRC SQL_DOT CM_COL_Value);
+    jstring_append_2(jJoin, CM_COL_JOIN SQL_DOT CM_COL_AdvId);
     jstring_append_2(jJoin, SQL_COMMA CM_COL_SRC SQL_DOT CM_COL_NameSpace);
     jstring_append_2(jJoin, SQL_COMMA CM_COL_SRC SQL_DOT CM_COL_TimeOut SQL_COMMA CM_COL_SRC SQL_DOT CM_COL_TimeOutForOthers);
     jstring_append_2(jJoin, SQL_COMMA CM_COL_Advert);
@@ -3297,7 +3303,7 @@ Jxta_cache_entry **cm_query_ctx(Jxta_cm * me, Jxta_credential ** scope, int thre
         SQL_VALUE(jSQLcmd, me->jGroupID_string);
         jstring_append_2(jSQLcmd, SQL_RIGHT_PAREN);
     }
-    jOrder = jstring_new_2(SQL_ORDER CM_COL_SRC SQL_DOT CM_COL_AdvId);
+    jGroup = jstring_new_2(SQL_GROUP CM_COL_SRC SQL_DOT CM_COL_AdvId);
 
     if (NULL != jContext->queryNameSpace) {
         ns = jstring_get_string(jContext->queryNameSpace);
@@ -3313,14 +3319,14 @@ Jxta_cache_entry **cm_query_ctx(Jxta_cm * me, Jxta_credential ** scope, int thre
     }
     while (*dbSpaces) {
         Jxta_cache_entry **tempAdds;
-        rv = cm_sql_select_join_generic(*dbSpaces, pool, jJoin, jOrder, &res, jSQLcmd, needOR ? FALSE : TRUE);
+        rv = cm_sql_select_join_generic(*dbSpaces, pool, jJoin, jGroup, &res, jSQLcmd, needOR ? FALSE : TRUE);
         if (rv) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- cm_query_ctx Select join failed: %s %i\n",
                             (*dbSpaces)->conn->log_id, (*dbSpaces)->id, apr_dbd_error((*dbSpaces)->conn->driver,
                                                                                       (*dbSpaces)->conn->sql, rv), rv);
             goto FINAL_EXIT;
         }
-        tempAdds = cm_proffer_advertisements_build(*dbSpaces, pool, res, TRUE);
+        tempAdds = cm_advertisements_build(*dbSpaces, pool, res);
 
         if (NULL != tempAdds) {
             addsStart = (Jxta_cache_entry **) cm_arrays_concatenate((Jxta_object **) addsStart, (Jxta_object **) tempAdds);
@@ -3355,8 +3361,8 @@ Jxta_cache_entry **cm_query_ctx(Jxta_cm * me, Jxta_credential ** scope, int thre
         JXTA_OBJECT_RELEASE(jSQLcmd);
     if (jJoin)
         JXTA_OBJECT_RELEASE(jJoin);
-    if (jOrder)
-        JXTA_OBJECT_RELEASE(jOrder);
+    if (jGroup)
+        JXTA_OBJECT_RELEASE(jGroup);
     if (dbSpacesSave)
         free(dbSpacesSave);
     JXTA_OBJECT_RELEASE(columns);
@@ -3364,6 +3370,112 @@ Jxta_cache_entry **cm_query_ctx(Jxta_cm * me, Jxta_credential ** scope, int thre
 
     return resultsReturn;
 }
+
+static Jxta_cache_entry **cm_advertisements_build(DBSpace * dbSpace, apr_pool_t * pool, apr_dbd_results_t * res)
+{
+    Jxta_status status;
+    const char *nameSpace;
+    const char *lifetime;
+    const char *expiration;
+    const char *adv = NULL;
+    const char *advid = NULL;
+    int nTuples, i, rv;
+    Jxta_cache_entry **results = NULL;
+    Jxta_cache_entry **ret = NULL;
+    Jxta_cache_entry *cache_entry = NULL;
+    apr_dbd_row_t *row = NULL;
+    Jxta_advertisement *jAdv = NULL;
+    int column_count;
+
+    /**
+    *    Column Order
+    *    ------------
+    *    AdvId
+    *    NameSpace
+    *    Timeout
+    *    TimeoutForOthers
+    *    Advertisement
+    **/
+
+    nTuples = apr_dbd_num_tuples(dbSpace->conn->driver, res);
+    if (nTuples == 0)
+        return NULL;
+    column_count = apr_dbd_num_cols(dbSpace->conn->driver, res);
+    assert(column_count == 5);
+    ret = calloc(nTuples + 1, sizeof(struct cache_entry *));
+    if (NULL == ret) 
+        goto FINAL_EXIT;
+    results = ret;
+    i = 0;
+    for (rv = apr_dbd_get_row(dbSpace->conn->driver, pool, res, &row, -1);
+         rv == 0; rv = apr_dbd_get_row(dbSpace->conn->driver, pool, res, &row, -1)) {
+        if (NULL != cache_entry) {
+            JXTA_OBJECT_RELEASE(cache_entry);
+        }
+        cache_entry = calloc(1, sizeof(Jxta_cache_entry));
+        if (NULL == cache_entry) {
+            goto FINAL_EXIT;
+        }
+        JXTA_OBJECT_INIT(cache_entry, cache_entry_free, NULL);
+        advid = apr_dbd_get_entry(dbSpace->conn->driver, row, 0);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d Adv ID: %s\n", dbSpace->conn->log_id,
+                        advid ? advid : "NULL");
+        if (advid == NULL) {
+            continue;
+        }
+        nameSpace = apr_dbd_get_entry(dbSpace->conn->driver, row, 1);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d Namespace: %s\n", dbSpace->conn->log_id,
+                        nameSpace ? nameSpace : "NULL");
+        if (nameSpace == NULL) {
+            continue;
+        }
+        lifetime = apr_dbd_get_entry(dbSpace->conn->driver, row, 2);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d Timeout: %s\n", dbSpace->conn->log_id,
+                        lifetime ? lifetime : "NULL");
+        if (lifetime == NULL) {
+            continue;
+        }
+        expiration = apr_dbd_get_entry(dbSpace->conn->driver, row, 3);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d Expiration: %s\n", dbSpace->conn->log_id,
+                        expiration ? expiration : "NULL");
+        if (expiration == NULL) {
+            continue;
+        }
+        adv = apr_dbd_get_entry(dbSpace->conn->driver, row, 4);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d Adv: %s\n", dbSpace->conn->log_id, adv ? adv : "NULL");
+        if (adv == NULL) {
+            continue;
+        }
+        jAdv = jxta_advertisement_new();
+        if (NULL == jAdv) {
+            goto FINAL_EXIT;
+        }
+        status = jxta_advertisement_parse_charbuffer(jAdv, adv, strlen(adv));
+        if (JXTA_SUCCESS != status) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d Unable to parse Adv: %s\n", dbSpace->conn->log_id,
+                            adv ? adv : "NULL");
+            JXTA_OBJECT_RELEASE(jAdv);
+            jAdv = NULL;
+            continue;
+        }
+        cache_entry->adv = jAdv;
+        jAdv = NULL;
+        sscanf(lifetime, jstring_get_string(jInt64_for_format), &cache_entry->lifetime);
+        sscanf(expiration, jstring_get_string(jInt64_for_format), &cache_entry->expiration);
+        *(results++) = cache_entry;
+        cache_entry = NULL;
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "db_id: %d Add advertisement with advid %s\n",
+                        dbSpace->conn->log_id, NULL == advid ? "(null)" : advid);
+    }
+    *(results) = NULL;
+  FINAL_EXIT:
+    if (NULL != cache_entry)
+        JXTA_OBJECT_RELEASE(cache_entry);
+    if (jAdv)
+        JXTA_OBJECT_RELEASE(jAdv);
+    return ret;
+}
+
 
 static void cm_proffer_advertisements_columns_build(JString * columns)
 {
@@ -3769,6 +3881,10 @@ Jxta_vector *cm_query_replica(Jxta_cm * self, JString * nameSpace, Jxta_vector *
             bool = SQL_OR;
         } else {
             status = jxta_vector_get_object_at(queries, JXTA_OBJECT_PPTR(&elem), i);
+            if (!elem->isReplicated) {
+                JXTA_OBJECT_RELEASE(elem);
+                continue;
+            }
             bool = jstring_get_string(elem->jBoolean);
             elemSQL = jstring_get_string(elem->jSQL);
             JXTA_OBJECT_RELEASE(elem);
