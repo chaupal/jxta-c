@@ -927,6 +927,8 @@ static void handle_adv(void *me, const XML_Char * cd, int len)
                 break;
 
             case GLOBAL :
+                if (myself->peer_adv)
+                    JXTA_OBJECT_RELEASE(myself->peer_adv);
                 myself->peer_adv = jxta_PA_new();
                 myself->peer_adv_gen_set = peer_adv_gen_set;
                 myself->peer_adv_gen = peer_adv_gen;

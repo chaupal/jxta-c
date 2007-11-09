@@ -544,10 +544,6 @@ static void peerview_destruct(Jxta_peerview * myself)
         peerview_stop(myself);
     }
 
-    if (NULL != myself->group) {
-        JXTA_OBJECT_RELEASE(myself->group);
-    }
-
     myself->thread_pool = NULL;
 
     if (NULL != myself->groupUniqueID) {
@@ -659,7 +655,7 @@ JXTA_DECLARE(Jxta_status) peerview_init(Jxta_peerview * pv, Jxta_PG * group, Jxt
 
     JXTA_OBJECT_RELEASE(string);
 
-    myself->group = JXTA_OBJECT_SHARE(group);
+    myself->group = group;
 
     myself->thread_pool = jxta_PG_thread_pool_get(group);
     jxta_PG_get_parentgroup(myself->group, &parentgroup);
@@ -1574,6 +1570,7 @@ static Jxta_status peerview_send_pong(Jxta_peerview * myself, Jxta_peer * dest)
                         JXTA_OBJECT_RELEASE(jPeerid);
                     free(target_hash);
                     free(target_hash_radius);
+                    JXTA_OBJECT_RELEASE(pve);
                 }
             }
             JXTA_OBJECT_RELEASE(peer);
@@ -1613,6 +1610,7 @@ static Jxta_status peerview_send_pong(Jxta_peerview * myself, Jxta_peer * dest)
                         JXTA_OBJECT_RELEASE(jPeerid);
                     free(target_hash);
                     free(target_hash_radius);
+                    JXTA_OBJECT_RELEASE(pve);
                 }
             }
             JXTA_OBJECT_RELEASE(peer);
@@ -1675,6 +1673,7 @@ static Jxta_status peerview_send_address_assign(Jxta_peerview * myself, Jxta_pee
     free(temp);
 
     res = jxta_peerview_address_assign_msg_get_xml(addr_assign, &addr_assign_xml);
+    JXTA_OBJECT_RELEASE(pa);
     JXTA_OBJECT_RELEASE(addr_assign);
     if (JXTA_SUCCESS != res) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed to generate address assign xml. [%pp]\n", myself);
@@ -1748,6 +1747,7 @@ static Jxta_status peerview_send_adv_request(Jxta_peerview * myself, Jxta_id * d
     pid = jxta_PA_get_PID(pa);
     jxta_adv_request_msg_set_src_peer_id(adv_req_msg, pid);
     JXTA_OBJECT_RELEASE(pid);
+    JXTA_OBJECT_RELEASE(pa);
     res = jxta_adv_request_msg_get_xml(adv_req_msg, &adv_req_xml);
     if (JXTA_SUCCESS != res) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed to generate PA request xml. [%pp]\n", myself);
@@ -1777,10 +1777,7 @@ static Jxta_status peerview_send_adv_response(Jxta_peerview * myself, Jxta_peer 
     Jxta_status res;
     Jxta_message *msg = NULL;
     Jxta_message_element *el = NULL;
-    Jxta_PA *pa;
     JString *adv_rsp_xml = NULL;
-
-    jxta_PG_get_PA(myself->group, &pa);
 
     res = jxta_adv_response_msg_get_xml(adv_rsp_msg, &adv_rsp_xml);
     if (JXTA_SUCCESS != res) {
