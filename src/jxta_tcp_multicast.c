@@ -252,8 +252,6 @@ static void tcp_multicast_free(Jxta_object * obj)
 {
     TcpMulticast *self = (TcpMulticast *) obj;
 
-    JXTA_OBJECT_CHECK_VALID(self);
-
     if (self == NULL)
         return;
 
