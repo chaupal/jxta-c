@@ -572,7 +572,7 @@ static void handle_lease_request_msg(void *me, const XML_Char * cd, int len)
             } else if (0 == strcmp(*atts, "client_id")) {
                 JString *idstr = jstring_new_2(atts[1]);
                 jstring_trim(idstr);
-
+                if (myself->client_id) JXTA_OBJECT_RELEASE(myself->client_id);
                 if (JXTA_SUCCESS != jxta_id_from_jstring(&myself->client_id, idstr)) {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,
                                     FILEANDLINE "ID parse failure for client_id [%pp]\n", myself);

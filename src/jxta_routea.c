@@ -390,12 +390,12 @@ JXTA_DECLARE(Jxta_status) jxta_RouteAdvertisement_get_xml(Jxta_RouteAdvertisemen
     if( NULL != pid ) {
         jstring_append_2(string, "<DstPID>");
         res = jxta_id_to_jstring( pid, &tmpref);
+        JXTA_OBJECT_RELEASE(pid);
         if( JXTA_SUCCESS != res ) {           
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed generating <DstPID>. [%pp]\n", ad);
             JXTA_OBJECT_RELEASE(string);
             return res;
         }
-        JXTA_OBJECT_RELEASE(pid);
         jstring_append_1(string, tmpref);
         jstring_append_2(string, "</DstPID>");
         JXTA_OBJECT_RELEASE(tmpref);

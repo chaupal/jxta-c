@@ -814,6 +814,9 @@ static void svc_delete(Jxta_object * me)
     if (ad->parm != NULL)
         JXTA_OBJECT_RELEASE(ad->parm);
 
+    if (ad->text_parm != NULL)
+        JXTA_OBJECT_RELEASE(ad->text_parm);
+
     jxta_advertisement_destruct((Jxta_advertisement *) ad);
     
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Svc FREE [%pp]\n", ad );    
@@ -859,6 +862,7 @@ JXTA_DECLARE(Jxta_status) jxta_svc_parse_file(Jxta_svc * myself, FILE * stream)
 JXTA_DECLARE(JString*) jxta_svc_get_IsClient(Jxta_svc * relay_svc )
 {
     Jxta_RelayAdvertisement * relay;
+    JString *is_client_j;
 
     JXTA_OBJECT_CHECK_VALID(relay_svc);
 
@@ -869,8 +873,10 @@ JXTA_DECLARE(JString*) jxta_svc_get_IsClient(Jxta_svc * relay_svc )
     }
     
     JXTA_OBJECT_CHECK_VALID(relay);
-    
-    return jxta_RelayAdvertisement_get_IsClient(relay);
+    is_client_j = jxta_RelayAdvertisement_get_IsClient(relay);
+    JXTA_OBJECT_RELEASE(relay);
+
+    return is_client_j;
 }
 
 /* vi: set ts=4 sw=4 tw=130 et: */

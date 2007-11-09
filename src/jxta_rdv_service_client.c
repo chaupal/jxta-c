@@ -539,7 +539,7 @@ static Jxta_status start(Jxta_rdv_service_provider * provider)
     myself->running = TRUE;
 
     apr_res = apr_thread_pool_schedule(provider->thread_pool, rdv_client_maintain_task,
-                                       JXTA_OBJECT_SHARE(myself), apr_time_from_sec(1), myself);
+                                       myself, apr_time_from_sec(1), myself);
 
     jxta_rdv_service_provider_unlock_priv(provider);
 
