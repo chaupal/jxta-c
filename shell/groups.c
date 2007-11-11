@@ -192,7 +192,6 @@ void jxta_groups_start(Jxta_object * appl, int argv, char **arg)
                 sprintf(buf, "group%d", i);
                 name = jstring_new_2(buf);
                 jxta_vector_get_object_at(res_vec, JXTA_OBJECT_PPTR(&pgadv), i);
-                JXTA_OBJECT_SHARE(pgadv);
                 sh_obj = JxtaShellObject_new(name, (Jxta_object *) pgadv, env_type);
                 JxtaShellEnvironment_add_0(environment, sh_obj);
                 JXTA_OBJECT_RELEASE(sh_obj);
