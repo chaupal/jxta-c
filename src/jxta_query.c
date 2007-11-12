@@ -615,66 +615,8 @@ static Jxta_status query_precedence(Jxta_query_context * jctx, xmlXPathCompExprP
 
                 break;
             }
-        case XPATH_OP_PREDICATE:
-            {
-                JString *jAOREntry;
-                if (TRUE) break;
-                if (-1 != op->ch1 && op->ch1 > 4) {
-                    jAOREntry = jstring_new_0();
-                    jstring_append_2(jAOREntry,"\n)\n");
-                    if (NULL != aor_entries[op->ch1]) {
-                        jstring_append_1(aor_entries[op->ch1], jAOREntry);
-                    } else {
-                        aor_entries[op->ch1] = JXTA_OBJECT_SHARE(jAOREntry);
-                    }
-                    JXTA_OBJECT_RELEASE(jAOREntry);
-                }
-                if (-1 != op->ch2 && op->ch2 > 4) {
-                    if (-1 == op->ch1) {
-                        xmlXPathStepOpPtr find_node;
-                        int coll = j;
-                        for (coll = j; coll < comp->last; coll++) {
-                            find_node = &comp->steps[coll];
-                            if (XPATH_OP_NODE != find_node->op) continue;
-                            jAOREntry = jstring_new_2("\n)\n");
-                            if (NULL != aor_entries[coll]) {
-                                jstring_append_1(aor_entries[coll], jAOREntry);
-                            } else {
-                                aor_entries[coll] = JXTA_OBJECT_SHARE(jAOREntry);
-                            }
-                            JXTA_OBJECT_RELEASE(jAOREntry);
-                            break;
-                        }
-                    }
-                    jAOREntry = jstring_new_2("\n(\n");
-                    if (NULL != aor_entries[op->ch2]) {
-                        jstring_append_1(aor_entries[op->ch2], jAOREntry);
-                    } else {
-                        aor_entries[op->ch2] = JXTA_OBJECT_SHARE(jAOREntry);
-                    }
-                    JXTA_OBJECT_RELEASE(jAOREntry);
-                }
-                QUERY_LOG_ADD(jctx,"step %i  ch1 %i  ch2 %i PREDICATE\n", j, op->ch1, op->ch2);
-                jctx->currLevel++;
-                break;
-            }
             /* no compiler warnings */
-            case XPATH_OP_END:
-            case XPATH_OP_EQUAL:
-            case XPATH_OP_CMP:
-            case XPATH_OP_PLUS:
-            case XPATH_OP_MULT:
-            case XPATH_OP_UNION:
-            case XPATH_OP_ROOT:
-            case XPATH_OP_NODE:
-            case XPATH_OP_RESET:
-            case XPATH_OP_COLLECT:
-            case XPATH_OP_VARIABLE:
-            case XPATH_OP_VALUE:
-            case XPATH_OP_FUNCTION:
-            case XPATH_OP_ARG:
-            case XPATH_OP_FILTER:
-            case XPATH_OP_RANGETO:
+            default:
                 break;
         }
     }
