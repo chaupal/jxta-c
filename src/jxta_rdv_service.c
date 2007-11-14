@@ -1049,6 +1049,7 @@ JXTA_DECLARE(void) jxta_rdv_service_set_auto_interval(Jxta_rdv_service * rdv, Jx
         return;
     }
     jxta_peerview_set_auto_cycle(myself->peerview, interval);
+    myself->auto_rdv_interval = interval;
 
     apr_thread_mutex_unlock(myself->mutex);
 }
