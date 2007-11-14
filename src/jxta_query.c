@@ -227,6 +227,8 @@ static Jxta_query_element *query_entry_new(JString * jSQL, JString * jBoolean, J
     ns_elem = jstring_clone(jNameSpace);
     jstring_append_1(ns_elem, jName);
     qel->isReplicated = jxta_advertisement_is_element_replicated(jstring_get_string(ns_elem));
+    jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_PARANOID, "This element: %s  replicated:%s\n"
+            , jstring_get_string(ns_elem) , qel->isReplicated == TRUE ? "true":"false" );
     JXTA_OBJECT_RELEASE(ns_elem);
     if ('#' == *val) {
         qel->isNumeric = TRUE;
@@ -342,8 +344,14 @@ JXTA_DECLARE(Jxta_status) jxta_query_XPath(Jxta_query_context * jctx, const char
 
         /* if no results are needed just return SQL */
         if (!bResults) {
+            const char *query_string;
             query_reset_context(jctx);
-            query_SQL(jctx);
+            query_string = jstring_get_string(jctx->origQuery);
+            query_string++;
+            status = query_find_Ns(jctx, query_string, FALSE);
+            if (JXTA_SUCCESS == status) {
+                query_SQL(jctx);
+            }
         } else {
             jxta_wildxpath_init(ctxt);
             res = jxta_wildxpath_eval_comp(ctxt, comp);
@@ -424,7 +432,6 @@ static Jxta_status query_xform_query(Jxta_query_context * jctx, const char *quer
     } else {
         jstring_append_2(jctx->newQuery, "/*");
         jstring_append_2(jctx->newQuery, query);
-        return status;
     }
     return status;
 }
@@ -944,9 +951,16 @@ static Jxta_status query_create_SQL(Jxta_query_context * jctx, xmlXPathCompExprP
     jctx->first = TRUE;
     int last_predicate = 0;
     for (j = 0; j < jxta_vector_size(jctx->queries); j++) {
+        Jxta_status status;
         Jxta_query_element *elem;
-        jxta_vector_get_object_at(jctx->queries, JXTA_OBJECT_PPTR(&elem), j);
-        if (!elem->isReplicated && !jctx->compound_query) continue;
+        status = jxta_vector_get_object_at(jctx->queries, JXTA_OBJECT_PPTR(&elem), j);
+        if (JXTA_SUCCESS != status) {
+            continue;
+        }
+        if (!elem->isReplicated && !jctx->compound_query) {
+            JXTA_OBJECT_RELEASE(elem);
+            continue;
+        }
         if (NULL == aor_entries[elem->step]) {
             aor_entries[elem->step] = JXTA_OBJECT_SHARE(elem->jSQL);
         } else {
@@ -1021,6 +1035,7 @@ static void query_queries_add(Jxta_query_context * jctx)
             JString *jSQL=jstring_new_0();
             Jxta_query_element *jEntry=NULL;
             JString *elem=NULL;
+            JString *jns=NULL;
             elem = jstring_new_0();
             jstring_append_1(elem, jctx->element);
             if (TRUE == jctx->bAttribute) {
@@ -1030,7 +1045,12 @@ static void query_queries_add(Jxta_query_context * jctx)
             } else {
                 jxta_query_build_SQL_operator(elem, jctx->sqloper, jctx->value, jSQL);
             }
-            jEntry = query_entry_new(jSQL, jctx->sort, jctx->sqloper, jctx->nameSpace, elem, jctx->value);
+            jns = jstring_new_0();
+            jstring_append_1(jns, jctx->prefix);
+            jstring_append_2(jns, ":");
+            jstring_append_1(jns, jctx->name);
+            jEntry = query_entry_new(jSQL, jctx->sort, jctx->sqloper, jns, elem, jctx->value);
+            JXTA_OBJECT_RELEASE(jns);
             jEntry->step = jctx->step;
             jEntry->intersect = jctx->intersect;
             jxta_vector_add_object_first(jctx->queries, (Jxta_object *) jEntry);
