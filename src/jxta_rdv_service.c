@@ -1043,13 +1043,13 @@ JXTA_DECLARE(void) jxta_rdv_service_set_auto_interval(Jxta_rdv_service * rdv, Jx
     _jxta_rdv_service *myself = PTValid(rdv, _jxta_rdv_service);
 
     apr_thread_mutex_lock(myself->mutex);
+    myself->auto_rdv_interval = interval;
 
     if (myself->peerview == NULL) {
         apr_thread_mutex_unlock(myself->mutex);
         return;
     }
     jxta_peerview_set_auto_cycle(myself->peerview, interval);
-    myself->auto_rdv_interval = interval;
 
     apr_thread_mutex_unlock(myself->mutex);
 }
