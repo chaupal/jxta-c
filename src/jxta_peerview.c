@@ -2628,6 +2628,7 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
     Jxta_id *pid = NULL;
     Peerview_entry *pve = NULL;
     Jxta_boolean send_pong = FALSE;
+    Jxta_boolean locked = FALSE;
 
     /* TODO 20060926 bondolo Valdiate credential on pong message */
 
@@ -2640,6 +2641,7 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
     }
 
     apr_thread_mutex_lock(me->mutex);
+    locked = TRUE;
 
     if (me->instance_mask) {
         assert(PV_MAINTENANCE == me->state || PV_ADDRESSING == me->state || PV_ANNOUNCING == me->state);
@@ -2662,6 +2664,8 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
     }
 
     pve = peerview_get_pve(me, pid);
+    apr_thread_mutex_unlock(me->mutex);
+    locked = FALSE;
 
     if (NULL == pve) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "PONG [%pp] is being handled as new\n", pong);
@@ -2671,7 +2675,7 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
             send_pong = TRUE;
         }
     } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "PONG [%pp] is being handled as existing pong\n", pong);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "PONG [%pp] is being handled as existing pong\n", pong);
         res = handle_existing_pve_pong(me, pve, pong);
     }
 
@@ -2687,8 +2691,8 @@ UNLOCK_EXIT:
         peerview_send_pong(me, newPeer);
         JXTA_OBJECT_RELEASE(newPeer);
     }
-
-    apr_thread_mutex_unlock(me->mutex);
+    if (locked)
+        apr_thread_mutex_unlock(me->mutex);
 
 FINAL_EXIT:
 
