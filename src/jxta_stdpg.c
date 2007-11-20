@@ -376,6 +376,7 @@ void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assign
         peername_to_use = jxta_PA_get_Name(it->config_adv);
     } else {
         JXTA_OBJECT_SHARE(group);
+        if (it->home_group) JXTA_OBJECT_RELEASE(it->home_group);
         it->home_group = group;
 
         /*
@@ -446,8 +447,11 @@ void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assign
             peergroup_get_cache_manager(group, &cache_manager);
         }
         if (cache_manager) {
+            Jxta_cm *cm_tmp;
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Found a cache manager --- go shared\n");
+            cm_tmp = cache_manager;
             cache_manager = cm_shared_DB_new(cache_manager, gid_to_use);
+            JXTA_OBJECT_RELEASE(cm_tmp);
         }
     }
     if (!cache_manager) {
