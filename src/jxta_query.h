@@ -139,6 +139,13 @@ JXTA_DECLARE(Jxta_status)
 
 JXTA_DECLARE(void) jxta_query_build_SQL_operator(JString * elem, JString * sqloper, JString * value, JString * result);
 
+/*VWF*/
+JXTA_DECLARE(int)               jxta_wildxpath_init(const xmlXPathContextPtr xpathCtx);
+JXTA_DECLARE(int)               jxta_wildxpath_cleanup(const xmlXPathContextPtr xpathCtx);
+JXTA_DECLARE(xmlXPathObjectPtr) jxta_wildxpath_eval_comp(const xmlXPathContextPtr xpathCtx, const xmlXPathCompExprPtr incomp);
+JXTA_DECLARE(xmlXPathObjectPtr) jxta_wildxpath_eval_expr(const xmlXPathContextPtr xpathCtx, const xmlChar* xpathExpr);
+
+
 /************************************************************************
  * 									*
  * 			Parser Types					*
