@@ -1026,7 +1026,7 @@ static void jxta_wildxpath_handler(xmlXPathParserContextPtr ctxt, int nargs)
     for(; i < arg1->nodeNr; i++)
     {
         /* Attempt to match pattern */
-        is_match = fnmatch((char *)arg2->stringval, (char *)arg1->nodeTab[i]->children->content, 0) == 0;
+        is_match = apr_fnmatch((char *)arg2->stringval, (char *)arg1->nodeTab[i]->children->content, 0) == 0;
 
         /* Does the content of the current node match the wildcard expression? */
         if(want_match == is_match)
