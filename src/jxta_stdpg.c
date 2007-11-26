@@ -376,7 +376,6 @@ void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assign
         peername_to_use = jxta_PA_get_Name(it->config_adv);
     } else {
         JXTA_OBJECT_SHARE(group);
-        if (it->home_group) JXTA_OBJECT_RELEASE(it->home_group);
         it->home_group = group;
 
         /*
