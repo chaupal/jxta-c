@@ -519,9 +519,6 @@ static void stop(Jxta_module * module)
 
     myself->running = FALSE;
 
-    /* disable auto-rdv */
-    jxta_rdv_service_set_auto_interval((Jxta_rdv_service *) myself, -1);
-
     provider = (Jxta_rdv_service_provider *) myself->provider;
     if (NULL != provider) {
         PROVIDER_VTBL(provider)->stop(provider);

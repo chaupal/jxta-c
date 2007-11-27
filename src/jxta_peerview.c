@@ -851,6 +851,9 @@ Jxta_status peerview_stop(Jxta_peerview * pv)
 
     myself->running = FALSE;
 
+    if (myself->auto_cycle > 0) {
+        apr_thread_pool_tasks_cancel(myself->thread_pool, &myself->auto_cycle);
+    }
     apr_thread_pool_tasks_cancel(myself->thread_pool, myself);
     
     jxta_vector_clear(myself->activity_maintain_referral_peers);
