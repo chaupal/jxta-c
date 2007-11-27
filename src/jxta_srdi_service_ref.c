@@ -136,7 +136,6 @@ typedef struct {
 
     Jxta_boolean stop;
     Jxta_boolean republish;
-    Jxta_PG *parentgroup;
     Jxta_PGID *gid;
     JString *groupUniqueID;
     Jxta_rdv_service *rendezvous;
@@ -155,6 +154,7 @@ Jxta_status jxta_srdi_service_ref_init(Jxta_module * module, Jxta_PG * group, Jx
     Jxta_srdi_service_ref *me;
     Jxta_PA *conf_adv = NULL;
     Jxta_svc *svc = NULL;
+    Jxta_PG *parentgroup = NULL;
 
     me = (Jxta_srdi_service_ref *) module;
 
@@ -163,14 +163,17 @@ Jxta_status jxta_srdi_service_ref_init(Jxta_module * module, Jxta_PG * group, Jx
     }
 
     me->group = group;
-    jxta_PG_get_parentgroup(me->group, &me->parentgroup);
+    jxta_PG_get_parentgroup(me->group, &parentgroup);
     jxta_PG_get_GID(group, &me->gid);
     peergroup_get_cache_manager(group, &me->cm);
     jxta_id_get_uniqueportion(me->gid, &me->groupUniqueID);
     jxta_PG_get_configadv(group, &conf_adv);
-    if (NULL == conf_adv && NULL != me->parentgroup) {
-        jxta_PG_get_configadv(me->parentgroup, &conf_adv);
+    if (NULL == conf_adv && NULL != parentgroup) {
+        jxta_PG_get_configadv(parentgroup, &conf_adv);
     }
+    if (NULL != parentgroup)
+        JXTA_OBJECT_RELEASE(parentgroup);
+
     if (conf_adv != NULL) {
         jxta_PA_get_Svc_with_id(conf_adv, jxta_srdi_classid, &svc);
         if (NULL != svc) {
@@ -1085,8 +1088,6 @@ static void jxta_srdi_service_ref_destruct(Jxta_srdi_service_ref * srdi)
         JXTA_OBJECT_RELEASE(srdi->groupUniqueID);
     if (srdi->gid)
         JXTA_OBJECT_RELEASE(srdi->gid);
-    if (srdi->parentgroup)
-        JXTA_OBJECT_RELEASE(srdi->parentgroup);
 
     srdi->thisType = NULL;
 

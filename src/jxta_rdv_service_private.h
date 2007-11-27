@@ -139,7 +139,6 @@ struct _jxta_rdv_service {
     volatile Jxta_boolean running;
 
     Jxta_PG *group;
-    Jxta_PG *parentgroup;
     Jxta_id *pid;
     char *assigned_id_str;
 

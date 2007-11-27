@@ -242,7 +242,6 @@ static _jxta_rdv_service *jxta_rdv_service_construct(_jxta_rdv_service * myself,
                                       myself->pool);
 
         myself->group = NULL;
-        myself->parentgroup = NULL;
         myself->pid = NULL;
         myself->assigned_id_str = NULL;
 
@@ -306,10 +305,6 @@ static void jxta_rdv_service_destruct(_jxta_rdv_service * rdv)
 
     if (NULL != myself->assigned_id_str) {
         free(myself->assigned_id_str);
-    }
-
-    if (NULL != myself->parentgroup) {
-        JXTA_OBJECT_RELEASE(myself->parentgroup);
     }
 
     if (NULL != myself->active_seeds) {
@@ -394,6 +389,7 @@ static Jxta_status init(Jxta_module * rdv, Jxta_PG * group, Jxta_id * assigned_i
     _jxta_rdv_service *myself = PTValid(rdv, _jxta_rdv_service);
     JString *assigned_id_str;
     Jxta_PA *conf_adv = NULL;
+    Jxta_PG *parentgroup = NULL;
 
     res = jxta_service_init((Jxta_service *) rdv, group, assigned_id, impl_adv);
 
@@ -410,12 +406,14 @@ static Jxta_status init(Jxta_module * rdv, Jxta_PG * group, Jxta_id * assigned_i
 
     myself->group = group; /* Not shared to prevent a circular dependency */
 
-    jxta_PG_get_parentgroup(group, &myself->parentgroup);
+    jxta_PG_get_parentgroup(group, &parentgroup);
 
     jxta_PG_get_configadv(group, &conf_adv);
-    if (NULL == conf_adv && NULL != myself->parentgroup) {
-        jxta_PG_get_configadv(myself->parentgroup, &conf_adv);
+    if (NULL == conf_adv && NULL != parentgroup) {
+        jxta_PG_get_configadv(parentgroup, &conf_adv);
     }
+    if (NULL != parentgroup)
+        JXTA_OBJECT_RELEASE(parentgroup);
 
     if (conf_adv != NULL) {
         Jxta_svc *svc = NULL;
