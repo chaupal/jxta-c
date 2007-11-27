@@ -229,7 +229,7 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     discovery->impl_adv = impl_adv ? JXTA_OBJECT_SHARE(impl_adv) : NULL;
     jxta_PG_get_configadv(group, &conf_adv);
     if (!conf_adv) {
-        Jxta_PG *parentgroup;
+        Jxta_PG *parentgroup=NULL;
 
         jxta_PG_get_parentgroup(discovery->group, &parentgroup);
         if (parentgroup) {
@@ -745,8 +745,7 @@ static Jxta_status authorizeGroup(Jxta_PG * check_group, Jxta_credential *groupC
     Jxta_boolean authorized=FALSE;
     Jxta_id *groupId=NULL;
 /* DISABLED */
-    if (TRUE) return JXTA_SUCCESS;
-
+/*
     jxta_credential_get_peergroupid(groupCred, &groupId);
     jxta_lookup_group_instance(groupId, &pg);
     if (pg == check_group) {
@@ -774,6 +773,7 @@ FINAL_EXIT:
     if (parent)
         JXTA_OBJECT_RELEASE(parent);
     if (!authorized) status = JXTA_FAILED;
+*/
     return status;
 }
 
