@@ -953,7 +953,7 @@ JXTA_DECLARE(void) jxta_endpoint_service_demux_addr(Jxta_endpoint_service * serv
         goto FINAL_EXIT;
     }
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Demux: No demux listener for %s\n", destStr);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Demux: No demux listener for %s\n", destStr);
     /* end of listener section to be deprecated */
   FINAL_EXIT:
     free(destStr);
