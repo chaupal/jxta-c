@@ -4109,8 +4109,8 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
 
     new_config = jxta_rdv_service_config(rdv);
 
-    /* if there are too many peers in the pv and this peer is not configured as a rendezvous */
-    if (!need_additional_peers(me, DEFAULT_CLUSTER_MEMBERS) && !(config_rendezvous == ((_jxta_rdv_service *)rdv)->config)) {
+    /* if there are too many peers in the pv */
+    if (!need_additional_peers(me, DEFAULT_CLUSTER_MEMBERS) ) {
         me->loneliness_factor = 0;
         new_config = remain_in_peerview(me, DEFAULT_CLUSTER_MEMBERS) == FALSE ? config_edge : config_rendezvous;
     } else if (jxta_rdv_service_config(rdv) == config_edge) {
