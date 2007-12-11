@@ -1431,12 +1431,13 @@ static Jxta_status JXTA_STDCALL resolver_service_srdi_cb(Jxta_object * obj, void
  */
 static long getid(Jxta_resolver_service_ref * resolver)
 {
+    long qid = 0;
     PTValid(resolver, Jxta_resolver_service_ref);
     apr_thread_mutex_lock(resolver->mutex);
-    resolver->query_id++;
+    qid = ++resolver->query_id;
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "queryid: %ld\n", resolver->query_id);
     apr_thread_mutex_unlock(resolver->mutex);
-    return resolver->query_id;
+    return qid;
 }
 
 #ifdef GUNZIP_ENABLED
