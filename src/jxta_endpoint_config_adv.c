@@ -84,6 +84,8 @@ struct _jxta_EndPointConfigAdvertisement {
     Jxta_time_diff nc_timeout_max;
     size_t ncrq_size;
     size_t ncrq_retry;
+    int init_threads;
+    int max_threads;
 };
 
 /* Forward decl. of un-exported function */
@@ -101,10 +103,23 @@ void handleJxta_EndPointConfigAdvertisement(void *userdata, const XML_Char * cd,
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Begining parse of jxta:EndPointConfig\n");
 
     while (atts && *atts) {
-        if (0 == strcmp(*atts, "type")) {
+        if (0 == strcmp(*atts, "threads_init")) {
+            if (0 == strcmp(atts[1], "default")) {
+                ad->init_threads = -1;
+            } else {
+                ad->init_threads = atoi(atts[1]);
+            }
+        } else if (0 == strcmp(*atts, "threads_max")) {
+            if (0 == strcmp(atts[1], "default")) {
+                ad->max_threads = -1;
+            } else {
+                ad->max_threads = atoi(atts[1]);
+            }
+        } else if (0 == strcmp(*atts, "type")) {
             /* just silently skip it. */
         }
-        atts += 2;
+
+        atts+=2;
     }
 }
 
@@ -189,7 +204,24 @@ JXTA_DECLARE(Jxta_status) jxta_EndPointConfigAdvertisement_get_xml(Jxta_EndPoint
     int timeout;
 
     jstring_append_2(string, "<!-- JXTA EndPoint Configuration Advertisement -->\n");
-    jstring_append_2(string, "<jxta:EndPointConfig xmlns:jxta=\"http://jxta.org\" type=\"jxta:EndPointConfig\">\n");
+    jstring_append_2(string, "<jxta:EndPointConfig xmlns:jxta=\"http://jxta.org\" type=\"jxta:EndPointConfig\" ");
+
+    if(me->init_threads == -1) {
+        jstring_append_2(string, "threads_init=\"default\" ");
+    }
+    else {
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), "threads_init=\"%d\" ", me->init_threads);
+        jstring_append_2(string, tmpbuf);
+    }
+
+    if(me->max_threads == -1) {
+        jstring_append_2(string, "threads_max=\"default\">\n");
+    }
+    else {
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), "threads_max=\"%d\">\n", me->max_threads);
+        jstring_append_2(string, tmpbuf);
+    }
+
     jstring_append_2(string, "<!-- NegativeCache timeout - seconds -->\n");
     jstring_append_2(string, "<NegativeCache\n");
     timeout = (int) (me->nc_timeout_init / 1000);
@@ -225,6 +257,8 @@ Jxta_EndPointConfigAdvertisement *jxta_EndPointConfigAdvertisement_construct(Jxt
         self->nc_timeout_max = (Jxta_time_diff) 5 * 60 * 1000;
         self->ncrq_size = 5;
         self->ncrq_retry = 20;
+        self->init_threads = -1;
+        self->max_threads = -1;
     }
 
     return self;
@@ -267,6 +301,16 @@ JXTA_DECLARE(void) jxta_EndPointConfigAdvertisement_parse_file(Jxta_EndPointConf
 {
 
     jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+}
+
+int endpoint_config_threads_init(Jxta_EndPointConfigAdvertisement * me)
+{
+    return (-1 == me->init_threads) ? 1 : me->init_threads;
+}
+
+int endpoint_config_threads_maximum(Jxta_EndPointConfigAdvertisement * me)
+{
+    return (-1 == me->max_threads) ? 5 : me->max_threads;
 }
 
 /* vim: set ts=4 sw=4 et tw=130: */

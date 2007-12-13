@@ -160,6 +160,10 @@ struct jxta_endpoint_service {
     /* Nonblocking I/O */
     volatile apr_size_t pollfd_cnt;
     apr_pollset_t *pollset;
+
+    /* Endpoint service gets its own threadpool */
+    apr_pool_t *mypool;
+    apr_thread_pool_t *thd_pool;
 };
 
 static Jxta_listener *lookup_listener(Jxta_endpoint_service * me, Jxta_endpoint_address * addr);
@@ -663,9 +667,11 @@ static void* APR_THREAD_FUNC do_poll(apr_thread_t * thd, void * arg)
      */
     rv = endpoint_service_poll(me, 1000000L);
     running = jxta_module_state((Jxta_module*) me);
+
     if ((JXTA_MODULE_STARTED == running || JXTA_MODULE_STARTING == running) && me->pollfd_cnt) {
-        apr_thread_pool_push(jxta_PG_thread_pool_get(me->my_group), do_poll, me, APR_THREAD_TASK_PRIORITY_HIGHEST, me);
+        apr_thread_pool_push(me->thd_pool, do_poll, me, APR_THREAD_TASK_PRIORITY_HIGHEST, me);
     }
+
     return JXTA_SUCCESS;
 }
 
@@ -677,9 +683,33 @@ static Jxta_status endpoint_start(Jxta_module * me, const char *args[])
     PTValid(myself, Jxta_endpoint_service);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Starting ...\n");
-    if (myself->pollfd_cnt) {
-        apr_thread_pool_push(jxta_PG_thread_pool_get(myself->my_group), do_poll, myself, APR_THREAD_TASK_PRIORITY_HIGHEST, myself);
+
+    /* Endpoint service has own threadpool */
+    /* TODO set num threads here when we have platformconfig setup */
+    int init_threads = endpoint_config_threads_init(myself->config);
+    int max_threads = endpoint_config_threads_maximum(myself->config);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Initializing DONE THREADS\n");
+
+    if (NULL == myself->mypool) {
+        apr_pool_create(&myself->mypool, NULL);
+        if (myself->mypool == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Cannot create pool for threadpools.");
+        }
     }
+
+    if (NULL == myself->thd_pool) {
+        apr_thread_pool_create(&myself->thd_pool, init_threads, max_threads, myself->mypool);
+        if (myself->thd_pool == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Cannot create threadpool.");
+        }
+    }
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Initializing DONE POOL, init_threads=%d, max_threads=%d\n",init_threads, max_threads);
+
+    if (myself->pollfd_cnt) {
+        apr_thread_pool_push(myself->thd_pool, do_poll, myself, APR_THREAD_TASK_PRIORITY_HIGHEST, myself);
+    }
+
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Started\n");
     return JXTA_SUCCESS;
 }
@@ -689,7 +719,15 @@ static void endpoint_stop(Jxta_module * self)
     Jxta_endpoint_service *me = PTValid(self, Jxta_endpoint_service);
 
     /* stop the thread that processes outgoing messages */
-    apr_thread_pool_tasks_cancel(jxta_PG_thread_pool_get(me->my_group), me);
+    apr_thread_pool_tasks_cancel(me->thd_pool, me);
+
+    if(me->thd_pool) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "apr_thread_pool_destroy(service->thd_pool);\n");
+        apr_thread_pool_destroy(me->thd_pool);
+        me->thd_pool = NULL;
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "finished apr_thread_pool_destroy(service->thd_pool);\n");
+    }
+
     if (NULL != me->router_transport) {
         JXTA_OBJECT_RELEASE(me->router_transport);
         me->router_transport = NULL;
@@ -783,6 +821,13 @@ void jxta_endpoint_service_destruct(Jxta_endpoint_service * service)
         service->config = NULL;
     }
 
+
+
+
+
+
+
+
     service->thisType = NULL;
 
     jxta_service_destruct((Jxta_service *) service);
@@ -802,6 +847,8 @@ Jxta_endpoint_service *jxta_endpoint_service_construct(Jxta_endpoint_service * s
     service->my_group = NULL;
     service->my_groupid = NULL;
     service->router_transport = NULL;
+    service->thd_pool = NULL;
+    service->mypool = NULL;
 
     return service;
 }
@@ -1143,7 +1190,7 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_add_poll(Jxta_endpoint_service *
     Jxta_status rv;
     Tc_elt * tc;
     Jxta_module_state running;
-    
+
     rv = tc_new(&tc, fn, s, arg, jxta_PG_pool_get(me->my_group));
     if (rv != JXTA_SUCCESS) {
         *cookie = NULL;
@@ -1153,8 +1200,9 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_add_poll(Jxta_endpoint_service *
     apr_thread_mutex_lock(me->mutex);
     rv = apr_pollset_add(me->pollset, &tc->fd);
     running = jxta_module_state((Jxta_module*) me);
+
     if (0 == me->pollfd_cnt++ && (JXTA_MODULE_STARTED == running || JXTA_MODULE_STARTING == running)) {
-        apr_thread_pool_push(jxta_PG_thread_pool_get(me->my_group), do_poll, me, APR_THREAD_TASK_PRIORITY_HIGHEST, me);
+        apr_thread_pool_push(me->thd_pool, do_poll, me, APR_THREAD_TASK_PRIORITY_HIGHEST, me);
     }
     apr_thread_mutex_unlock(me->mutex);
     if (rv != JXTA_SUCCESS) {
@@ -1709,7 +1757,8 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ex(Jxta_endpoint_service * 
         Msg_task *task;
 
         task = msg_task_create(me, msg);
-        apr_thread_pool_push(jxta_PG_thread_pool_get(me->my_group), outgoing_message_thread, task, task_priority(msg), me);
+        apr_thread_pool_push(me->thd_pool, outgoing_message_thread, task, task_priority(msg), me);
+
         apr_atomic_inc32(&me->msg_task_cnt);
 
         baseAddrStr = jxta_endpoint_address_get_transport_addr(dest_addr);
@@ -2029,7 +2078,7 @@ void jxta_endpoint_service_transport_event(Jxta_endpoint_service * me, Jxta_tran
             JXTA_OBJECT_RELEASE(ea);
         }
         break;
-        
+
     case JXTA_TRANSPORT_OUTBOUND_CONNECTED:
         assert(e->dest_addr);
         assert(e->peer_id);
@@ -2079,7 +2128,7 @@ void jxta_endpoint_service_transport_event(Jxta_endpoint_service * me, Jxta_tran
 
 JXTA_DECLARE(Jxta_status) jxta_endpoint_service_get_thread_pool(Jxta_endpoint_service *me, apr_thread_pool_t **tp)
 {
-    *tp = jxta_PG_thread_pool_get(me->my_group);
+    *tp = me->thd_pool;
     return JXTA_SUCCESS;
 }
 

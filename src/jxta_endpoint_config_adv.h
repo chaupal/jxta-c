@@ -90,6 +90,9 @@ JXTA_DECLARE(size_t) jxta_epcfg_get_ncrq_size(Jxta_EndPointConfigAdvertisement *
 JXTA_DECLARE(void) jxta_epcfg_set_ncrq_retry(Jxta_EndPointConfigAdvertisement * me, size_t cnt);
 JXTA_DECLARE(size_t) jxta_epcfg_get_ncrq_retry(Jxta_EndPointConfigAdvertisement * me);
 
+JXTA_DECLARE(int) endpoint_config_threads_init(Jxta_EndPointConfigAdvertisement * me);
+JXTA_DECLARE(int) endpoint_config_threads_maximum(Jxta_EndPointConfigAdvertisement * me);
+
 /**
 *   For other advertisement types which want to parse EndPointConfig as a sub-section.    
 **/
