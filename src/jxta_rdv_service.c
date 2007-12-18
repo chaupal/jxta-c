@@ -255,13 +255,14 @@ static _jxta_rdv_service *jxta_rdv_service_construct(_jxta_rdv_service * myself,
 
         myself->rdvConfig = NULL;
         myself->active_seeds = NULL;
-
+        myself->is_demoting = FALSE;
         /*
          * create the RDV event listener table
          */
         myself->evt_listener_table = jxta_hashtable_new(1);
         myself->callback_table = jxta_hashtable_new(1);
         myself->running = FALSE;
+        myself->service_start = 0L;
     }
 
     return myself;
@@ -487,6 +488,7 @@ static Jxta_status start(Jxta_module * module, char const *argv[])
     jxta_PG_add_recipient(myself->group, &myself->ep_cookie_prop, RDV_V3_MSID, JXTA_RDV_PROPAGATE_SERVICE_NAME, prop_cb, myself);
 
     apr_thread_mutex_unlock(myself->mutex);
+    myself->service_start = (Jxta_time) jpr_time_now();
 
     jxta_rdv_service_set_auto_interval((Jxta_rdv_service *) myself, myself->auto_rdv_interval);
 
@@ -724,6 +726,15 @@ JXTA_DECLARE(Jxta_boolean) jxta_rdv_service_is_rendezvous(Jxta_rdv_service * rdv
     return ((status_rendezvous == myself->status) || (status_auto_rendezvous == myself->status));
 }
 
+JXTA_DECLARE(Jxta_boolean) jxta_rdv_service_is_demoting(Jxta_rdv_service * rdv)
+{
+
+    _jxta_rdv_service *myself = PTValid(rdv, _jxta_rdv_service);
+
+    return myself->is_demoting;
+
+}
+
 JXTA_DECLARE(Jxta_status) jxta_rdv_service_add_seed(Jxta_rdv_service * rdv, Jxta_peer * peer)
 {
     _jxta_rdv_service *myself = PTValid(rdv, _jxta_rdv_service);
@@ -814,6 +825,13 @@ JXTA_DECLARE(RdvConfig_configuration) jxta_rdv_service_config(Jxta_rdv_service *
     return myself->current_config;
 }
 
+JXTA_DECLARE(Jxta_time_diff) jxta_rdv_service_get_running_time(Jxta_rdv_service * rdv)
+{
+    _jxta_rdv_service *myself = PTValid(rdv, _jxta_rdv_service);
+
+    return jpr_time_now() - myself->service_start;
+}
+
 JXTA_DECLARE(Jxta_status) jxta_rdv_service_set_config(Jxta_rdv_service * rdv, RdvConfig_configuration config)
 {
     Jxta_status res = JXTA_SUCCESS;
@@ -843,6 +861,7 @@ JXTA_DECLARE(Jxta_status) rdv_service_switch_config(Jxta_rdv_service * rdv, RdvC
 
     apr_thread_mutex_lock(myself->mutex);
     locked = TRUE;
+    myself->service_start = (Jxta_time) jpr_time_now();
 
     switch (config) {
     case config_adhoc:
@@ -945,8 +964,8 @@ JXTA_DECLARE(Jxta_status) rdv_service_switch_config(Jxta_rdv_service * rdv, RdvC
 
     if (JXTA_SUCCESS == res) {
         myself->provider = newProvider;
+        myself->is_demoting = FALSE;
         apr_thread_mutex_unlock(myself->mutex);
-
         res = PROVIDER_VTBL(newProvider)->start(newProvider);
         apr_thread_mutex_lock(myself->mutex);
         locked = TRUE;
@@ -982,7 +1001,8 @@ JXTA_DECLARE(Jxta_status) rdv_service_switch_config(Jxta_rdv_service * rdv, RdvC
     case status_auto_rendezvous:
     case status_rendezvous:
         /* Adjust the activity mode of the peerview. */
-        jxta_peerview_set_active(myself->peerview, (config_rendezvous == config));
+        myself->is_demoting = FALSE;
+        jxta_peerview_set_active(myself->peerview, config_rendezvous == config);
         break;
 
     default:
@@ -990,11 +1010,11 @@ JXTA_DECLARE(Jxta_status) rdv_service_switch_config(Jxta_rdv_service * rdv, RdvC
     }
 
   FINAL_EXIT:
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "[%pp] Rendezvous provider status : %s\n", myself,
+                    JXTA_RDV_STATUS_NAMES[new_status]);
     if (locked)
         apr_thread_mutex_unlock(myself->mutex);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "[%pp] Rendezvous provider status : %s\n", myself,
-                    JXTA_RDV_STATUS_NAMES[new_status]);
 
     return res;
 }
@@ -1307,7 +1327,7 @@ static void JXTA_STDCALL peerview_event_listener(Jxta_object * obj, void *arg)
 
         if (JXTA_PEERVIEW_ADD == event->event) {
             Jxta_peer *peer = NULL;
-
+            /* if this peer has a lease revoke it */
             res = jxta_rdv_service_get_peer((Jxta_rdv_service *) myself, event->pid, &peer);
             if (JXTA_SUCCESS == res) {
                 jxta_peer_set_expires(peer, 0L);
@@ -1319,20 +1339,20 @@ static void JXTA_STDCALL peerview_event_listener(Jxta_object * obj, void *arg)
 
     switch (event->event) {
     case JXTA_PEERVIEW_ADD:
-        if (status_auto_edge == myself->status) {
-            /* Joined peerview, we need to switch to rdv mode. */
-            res = jxta_rdv_service_set_config((Jxta_rdv_service *) myself, config_rendezvous);
+        myself->is_demoting = FALSE;
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "ADD EVENT FROM PEERVIEW \n");
+        /* Joined peerview, we need to switch to rdv mode. */
+        res = jxta_rdv_service_set_config((Jxta_rdv_service *) myself, config_rendezvous);
 
-            if (JXTA_SUCCESS != res) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failed to switch to RDV config. [%pp]\n", myself);
-            }
-        } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Ignoring PEERVIEW_ADD. Current state : %s [%pp]\n",
-                            JXTA_RDV_STATUS_NAMES[myself->status], myself);
+        if (JXTA_SUCCESS != res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failed to switch to RDV config. [%pp]\n", myself);
         }
+
         break;
 
     case JXTA_PEERVIEW_REMOVE:
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "REMOVE EVENT FROM PEERVIEW \n");
+
         if (status_auto_rendezvous == myself->status) {
             /* Left peerview, we need to switch to edge mode. */
             res = jxta_rdv_service_set_config((Jxta_rdv_service *) myself, config_edge);
@@ -1346,6 +1366,12 @@ static void JXTA_STDCALL peerview_event_listener(Jxta_object * obj, void *arg)
         }
         break;
 
+    case JXTA_PEERVIEW_DEMOTE:
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "DEMOTE EVENT FROM PEERVIEW \n");
+        if (status_rendezvous == myself->status) {
+            myself->is_demoting = TRUE;
+        } 
+        break;
     default:
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Catch All for event %d ignored\n", event->event);
         break;
@@ -1376,6 +1402,7 @@ Jxta_status rdv_service_remove_cb(Jxta_rdv_service * me, Jxta_object *cookie)
         }
     }
     apr_thread_mutex_unlock(myself->mutex);
+
     if (entries)
         JXTA_OBJECT_RELEASE(entries);
     return res;
@@ -1441,7 +1468,6 @@ static Jxta_status JXTA_STDCALL walker_cb(Jxta_object * obj, void *arg)
     return res;
 }
 
-
 static Jxta_status JXTA_STDCALL prop_cb(Jxta_object * obj, void *arg)
 {
     Jxta_status res;
@@ -1449,7 +1475,6 @@ static Jxta_status JXTA_STDCALL prop_cb(Jxta_object * obj, void *arg)
     res = call_entry(obj, arg, myself->prop_key_j);
     return res;
 }
-
 
 static Jxta_status JXTA_STDCALL call_entry(Jxta_object * obj, void *arg, JString * key_j)
 {

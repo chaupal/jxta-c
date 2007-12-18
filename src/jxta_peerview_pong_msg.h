@@ -61,6 +61,7 @@
 #include "jxta_vector.h"
 #include "jxta_cred.h"
 #include "jxta_pa.h"
+#include "jxta_peer.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,6 +69,19 @@ extern "C" {
 };
 #endif
 #endif
+
+    typedef enum rdv_states {
+    RDV_STATE_RENDEZVOUS=0,
+    RDV_STATE_EDGE=1,
+    RDV_STATE_DEMOTING=2
+    } Jxta_pong_msg_rdv_state;
+
+    typedef enum pong_action {
+    PONG_INVITE=0,
+    PONG_PROMOTE=1,
+    PONG_DEMOTE=2,
+    PONG_STATUS=3
+    } Jxta_pong_msg_action;
 
 
 /**
@@ -90,6 +104,10 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_parse_file(Jxta_peerview_pong_m
 JXTA_DECLARE(Jxta_id*) jxta_peerview_pong_msg_get_peer_id(Jxta_peerview_pong_msg * me);
 JXTA_DECLARE(void) jxta_peerview_pong_msg_set_peer_id(Jxta_peerview_pong_msg * me, Jxta_id* id);
 
+JXTA_DECLARE(Jxta_pong_msg_action) jxta_peerview_pong_msg_get_action(Jxta_peerview_pong_msg * me);
+JXTA_DECLARE(const char *) jxta_peerview_pong_msg_action_text(Jxta_peerview_pong_msg * me);
+JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_set_action(Jxta_peerview_pong_msg * me, Jxta_pong_msg_action action);
+
 JXTA_DECLARE(Jxta_credential*) jxta_peerview_pong_msg_get_credential(Jxta_peerview_pong_msg * me);
 JXTA_DECLARE(void) jxta_peerview_pong_msg_set_credential(Jxta_peerview_pong_msg * me, Jxta_credential* credential);
 
@@ -101,6 +119,14 @@ JXTA_DECLARE(void) jxta_peerview_pong_msg_set_target_hash(Jxta_peerview_pong_msg
 
 JXTA_DECLARE(const char *) jxta_peerview_pong_msg_get_target_hash_radius(Jxta_peerview_pong_msg * me);
 JXTA_DECLARE(void) jxta_peerview_pong_msg_set_target_hash_radius(Jxta_peerview_pong_msg * me, const char *target_hash_radius);
+
+JXTA_DECLARE(Jxta_pong_msg_rdv_state) jxta_peerview_pong_msg_get_state(Jxta_peerview_pong_msg * myself);
+JXTA_DECLARE(const char *) jxta_peerview_pong_msg_state_text(Jxta_peerview_pong_msg * me);
+JXTA_DECLARE(Jxta_boolean) jxta_peerview_pong_msg_is_rendezvous(Jxta_peerview_pong_msg * myself);
+JXTA_DECLARE(void) jxta_peerview_pong_msg_set_rendezvous(Jxta_peerview_pong_msg * myself, Jxta_boolean rdv);
+
+JXTA_DECLARE(Jxta_boolean) jxta_peerview_pong_msg_is_demoting(Jxta_peerview_pong_msg * myself);
+JXTA_DECLARE(void) jxta_peerview_pong_msg_set_is_demoting(Jxta_peerview_pong_msg * myself, Jxta_boolean demote);
 
 JXTA_DECLARE(Jxta_PA *) jxta_peerview_pong_msg_get_peer_adv(Jxta_peerview_pong_msg * me);
 JXTA_DECLARE(void) jxta_peerview_pong_msg_set_peer_adv(Jxta_peerview_pong_msg * me, Jxta_PA *peer_adv);
@@ -118,9 +144,14 @@ JXTA_DECLARE(void) jxta_peerview_pong_msg_add_option(Jxta_peerview_pong_msg * my
 JXTA_DECLARE(Jxta_vector *) jxta_pong_msg_get_partner_infos(Jxta_peerview_pong_msg * myself);
 JXTA_DECLARE(void) jxta_pong_msg_clear_partner_infos(Jxta_peerview_pong_msg * myself );
 JXTA_DECLARE(void) jxta_pong_msg_add_partner_info(Jxta_peerview_pong_msg * myself, Jxta_id * peer,  apr_uuid_t * adv_gen_ptr, const char *target_hash, const char *target_hash_radius);
+
 JXTA_DECLARE(Jxta_vector *) jxta_pong_msg_get_associate_infos(Jxta_peerview_pong_msg * myself);
 JXTA_DECLARE(void) jxta_pong_msg_clear_associate_infos(Jxta_peerview_pong_msg * myself );
 JXTA_DECLARE(void) jxta_pong_msg_add_associate_info(Jxta_peerview_pong_msg * myself,  Jxta_id * peer, apr_uuid_t * adv_gen_ptr, const char *target_hash, const char *target_hash_radius);
+
+JXTA_DECLARE(Jxta_vector *) jxta_pong_msg_get_candidate_infos(Jxta_peerview_pong_msg * myself);
+JXTA_DECLARE(void) jxta_pong_msg_add_candidate_info(Jxta_peerview_pong_msg * myself, Jxta_peer * peer);
+
 /** 
 *   Accessors for Jxta_peerview_peer_info
 **/

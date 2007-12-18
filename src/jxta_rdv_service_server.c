@@ -185,7 +185,7 @@ static Jxta_status walk_to_view (Jxta_rdv_service_provider * provider, Jxta_vect
 
 static void *APR_THREAD_FUNC periodic_task(apr_thread_t * thread, void *myself);
 
-static Jxta_status JXTA_STDCALL leasing_cb(Jxta_object * msg, void *arg);
+static Jxta_status JXTA_STDCALL leasing_cb(Jxta_object * obj, void *arg);
 static void JXTA_STDCALL seeding_listener(Jxta_object * obj, void *arg);
 static Jxta_status handle_lease_request(_jxta_rdv_service_server * myself, Jxta_message * msg, Jxta_message_element * el);
 static Jxta_status handle_lease_response(_jxta_rdv_service_server * myself, Jxta_message * msg, Jxta_message_element * el);
@@ -367,9 +367,17 @@ static void Jxta_rdv_service_server_destruct(_jxta_rdv_service_server * myself)
     JXTA_OBJECT_RELEASE(myself->clients);
 
     /* Release the services object this instance was using */
+
     if (NULL != myself->rdvConfig)
-         JXTA_OBJECT_RELEASE(myself->rdvConfig);
- 
+        JXTA_OBJECT_RELEASE(myself->rdvConfig);
+
+    if (NULL != myself->leasing_cookie) {
+        JXTA_OBJECT_RELEASE(myself->leasing_cookie);
+    }
+    if (NULL != myself->walker_cookie) {
+        JXTA_OBJECT_RELEASE(myself->walker_cookie);
+    }
+
     /* call the base classe's dtor. */
     jxta_rdv_service_provider_destruct((_jxta_rdv_service_provider *) myself);
 
@@ -548,6 +556,7 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
         jxta_rdv_service_provider_unlock_priv(provider);
         return APR_SUCCESS;
     }
+
     if (myself->leasing_cookie) {
         rdv_service_remove_cb((Jxta_rdv_service *) provider->service, myself->leasing_cookie);
         JXTA_OBJECT_RELEASE(myself->leasing_cookie);
@@ -990,6 +999,9 @@ static Jxta_status handle_lease_request(_jxta_rdv_service_server * myself, Jxta_
         lease_requested = myself->OFFERED_LEASE_DURATION;
     }
 
+    /* if the rendezvous is demoting don't offer any more leases */
+    if (provider->service->is_demoting) lease_requested = 0;
+
     pa = jxta_lease_request_msg_get_client_adv(lease_request);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Lease Request (" JPR_DIFF_TIME_FMT " secs) from : %s\n",
@@ -1013,18 +1025,18 @@ static Jxta_status handle_lease_request(_jxta_rdv_service_server * myself, Jxta_
         }
 
         if (lease_requested > 0) {
+            Jxta_vector * options=NULL;
             Jxta_time_diff current_exp = jxta_peer_get_expires((Jxta_peer *) peer);
 
             lease_event = (current_exp != JPR_ABSOLUTE_TIME_MAX) ? JXTA_RDV_CLIENT_RECONNECTED : JXTA_RDV_CLIENT_CONNECTED;
             jxta_peer_set_expires((Jxta_peer *) peer, jpr_time_now() + lease_requested);
 
+            options = jxta_lease_request_msg_get_options(lease_request);
             /* Copy any options */
-            if (NULL != peer->options) {
-                JXTA_OBJECT_RELEASE(peer->options);
-                peer->options = NULL;
+            if (NULL != options) {
+                jxta_peer_set_options((Jxta_peer *) peer, options);
+                JXTA_OBJECT_RELEASE(options);
             }
-
-            peer->options = jxta_lease_request_msg_get_options(lease_request);
         } else {
             /* Disconnect */
             jxta_peer_set_expires((Jxta_peer *) peer, 0);
@@ -1056,7 +1068,10 @@ static Jxta_status handle_lease_request(_jxta_rdv_service_server * myself, Jxta_
     /*
      * Send a response to a referral or lease request.
      */
-    if (((NULL == peer) && (0 == lease_requested)) || ((NULL != peer) && (lease_requested > 0))) {
+    if (((NULL == peer) && (0 == lease_requested)) 
+            || ((NULL != peer) && (lease_requested > 0))
+            ||   (provider->service->is_demoting))
+    {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "[%pp] Sending lease offer (" JPR_DIFF_TIME_FMT "secs) to : %s\n",
                         myself, (lease_requested / 1000), jstring_get_string(client_peerid_str));
 

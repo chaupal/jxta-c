@@ -80,7 +80,8 @@ typedef struct _jxta_peerview Jxta_peerview;
  **/
 typedef enum Jxta_Peerview_event_types {
     JXTA_PEERVIEW_ADD = 1,
-    JXTA_PEERVIEW_REMOVE = 2
+    JXTA_PEERVIEW_REMOVE = 2,
+    JXTA_PEERVIEW_DEMOTE = 3
 } Jxta_Peerview_event_type;
 
 /**

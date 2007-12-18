@@ -319,13 +319,16 @@ JXTA_DECLARE(Jxta_status) jxta_peer_set_expires(Jxta_peer * p, Jxta_time expires
     return JXTA_SUCCESS;
 }
 
-
 JXTA_DECLARE(Jxta_status) jxta_peer_set_options(Jxta_peer * p, Jxta_vector *options)
 {
     _jxta_peer_entry *peer = PTValid(p, _jxta_peer_entry);
 
     apr_thread_mutex_lock(peer->mutex);
 
+    if (NULL != peer->options) {
+        JXTA_OBJECT_RELEASE(peer->options);
+        peer->options = NULL;
+    }
     peer->options = JXTA_OBJECT_SHARE(options);
 
     apr_thread_mutex_unlock(peer->mutex);
@@ -352,6 +355,23 @@ JXTA_DECLARE(Jxta_status) jxta_peer_get_options(Jxta_peer * p, Jxta_vector **opt
     apr_thread_mutex_unlock(peer->mutex);
     
     return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_peer_clear_options(Jxta_peer * p)
+{
+    _jxta_peer_entry *peer = PTValid(p, _jxta_peer_entry);
+
+    apr_thread_mutex_lock(peer->mutex);
+
+    if (NULL != peer->options) {
+        JXTA_OBJECT_RELEASE(peer->options);
+        peer->options = NULL;
+    }
+
+    apr_thread_mutex_unlock(peer->mutex);
+
+    return JXTA_SUCCESS;
+
 }
 
 JXTA_DECLARE(Jxta_boolean) jxta_peer_equals( Jxta_peer* a, Jxta_peer* b )

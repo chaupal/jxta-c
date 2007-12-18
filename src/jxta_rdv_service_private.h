@@ -164,15 +164,15 @@ struct _jxta_rdv_service {
     Jxta_rdv_service_provider *provider;
 
     Jxta_peerview *peerview;
-
     Jxta_listener *peerview_listener;
-
     void *ep_cookie_leasing;
     void *ep_cookie_walker;
     void *ep_cookie_prop;
     JString *lease_key_j;
     JString *walker_key_j;
     JString *prop_key_j;
+    Jxta_boolean is_demoting;
+    Jxta_time service_start;
 };
 
 /**

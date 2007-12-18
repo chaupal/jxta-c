@@ -134,6 +134,10 @@ void jxta_rdv_service_provider_destruct(_jxta_rdv_service_provider * myself)
         JXTA_OBJECT_RELEASE(myself->parentgid);
     }
 
+    if (NULL != myself->prop_cookie) {
+        JXTA_OBJECT_RELEASE(myself->prop_cookie);
+    }
+
     JXTA_OBJECT_RELEASE(myself->peerview);
 
     free(myself->assigned_id_str);

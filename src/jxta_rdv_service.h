@@ -217,6 +217,14 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_remove_event_listener(Jxta_rdv_servic
 JXTA_DECLARE(Jxta_boolean) jxta_rdv_service_is_rendezvous(Jxta_rdv_service * rdv);
 
 /**
+* Test if the auto rendezvous is being demoted and shedding its obligations
+*
+* @param rdv a pointer to the instance of the Rendezvous Service
+* @return TRUE if the peer is being demoted and shedding its obligations
+**/
+JXTA_DECLARE(Jxta_boolean) jxta_rdv_service_is_demoting(Jxta_rdv_service * rdv);
+
+/**
 * Adds an Propagation listener. The listener is invoked when there is a incoming
 * propagated message for the given EndpointAddress.
 *
@@ -359,6 +367,8 @@ JXTA_DECLARE(void) jxta_rdv_service_set_auto_interval(Jxta_rdv_service * rdv, Jx
 * @return The peerview of the peer or NULL if there is no active peerview.
 */
 JXTA_DECLARE(Jxta_peerview *) jxta_rdv_service_get_peerview(Jxta_rdv_service * rdv);
+
+JXTA_DECLARE(Jxta_time_diff) jxta_rdv_service_get_running_time(Jxta_rdv_service * rdv);
 
 #ifdef __cplusplus
 #if 0
