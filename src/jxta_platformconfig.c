@@ -192,6 +192,7 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
   jxta_vector_add_object_last(services, (Jxta_object *) epsvc);
   jxta_vector_add_object_last(services, (Jxta_object *) discsvc);
   jxta_vector_add_object_last(services, (Jxta_object *) cachesvc);
+  JXTA_OBJECT_RELEASE(services);
   
   jxta_id_peerid_new_1(&pid, jxta_id_defaultNetPeerGroupID);
   jxta_PA_set_PID(config_adv, pid);
