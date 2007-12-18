@@ -70,7 +70,12 @@
 #include "jxta_shell_getopt.h"
 #include "jxta_rdv_service_private.h"
 #include "jxta_peerview_priv.h"
+#include "jxta_rdv_lease_options.h"
 #include "rdvstatus.h"
+
+static const char *__log_cat = "rdvstatus";
+
+void print_options(Jxta_peer * peer, JString *out_string);
 
 static Jxta_PG *group;
 static JxtaShellEnvironment *environment;
@@ -133,7 +138,7 @@ void print_peerview_peer( JString *outputLine, Jxta_peer *peer )
    jstring_append_1(outputLine, string);
    JXTA_OBJECT_RELEASE(string);
 
-       expires = jxta_peer_get_expires(peer);
+   expires = jxta_peer_get_expires(peer);
 
    if (expires >= currentTime) {
        expires -= currentTime;
@@ -144,6 +149,7 @@ void print_peerview_peer( JString *outputLine, Jxta_peer *peer )
    }
 
    jstring_append_2(outputLine, linebuff);
+   print_options(peer, outputLine);
 
    jstring_append_2(outputLine, "\n");
 }
@@ -156,31 +162,12 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
     Jxta_vector *peers = NULL;
     unsigned int i;
     char linebuff[64];
+    Jxta_time_diff time;
     Jxta_peerview *pv = jxta_rdv_service_get_peerview(rdv);
     Jxta_peer *selfPVE = NULL;
 
     RdvConfig_configuration config = jxta_rdv_service_config(rdv);
     Jxta_time_diff auto_interval = jxta_rdv_service_auto_interval(rdv);
-
-    jstring_append_2(outputLine, "Rendezvous service config : ");
-
-    switch (config) {
-    case config_adhoc:
-        jstring_append_2(outputLine, "ad-hoc\n");
-        break;
-
-    case config_edge:
-        jstring_append_2(outputLine, "client\n");
-        break;
-
-    case config_rendezvous:
-        jstring_append_2(outputLine, "rendezvous\n");
-        break;
-
-    default:
-        jstring_append_2(outputLine, "[unknown]\n");
-        break;
-    }
 
     jstring_append_2(outputLine, "Auto-rdv check interval : ");
 
@@ -199,30 +186,30 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
         sprintf(linebuff, "Cluster number:%i\n", jxta_peerview_get_cluster_number(pv));
         jstring_append_2(outputLine, linebuff);
 
-    /* Get the list of peers */
+        /* Get the list of peers */
         err = jxta_peerview_get_globalview(pv, &peers);
-    if (err != JXTA_SUCCESS) {
-            jstring_append_2(outputLine, "Failed getting the associate peers.\n");
-        res = FALSE;
-        goto Common_Exit;
-    }
-
-        jstring_append_2(outputLine, "\nAssociate Peers:\n");
-
-    for (i = 0; i < jxta_vector_size(peers); ++i) {
-        Jxta_peer *peer = NULL;
-
-        err = jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer), i);
         if (err != JXTA_SUCCESS) {
-            jstring_append_2(outputLine, "Failed getting a peer.\n");
+            jstring_append_2(outputLine, "Failed getting the associate peers.\n");
             res = FALSE;
             goto Common_Exit;
         }
 
+        jstring_append_2(outputLine, "\nAssociate Peers:\n");
+
+        for (i = 0; i < jxta_vector_size(peers); ++i) {
+            Jxta_peer *peer = NULL;
+
+            err = jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer), i);
+            if (err != JXTA_SUCCESS) {
+                jstring_append_2(outputLine, "Failed getting a peer.\n");
+                res = FALSE;
+                goto Common_Exit;
+            }
+
             print_peerview_peer( outputLine, peer );
 
             JXTA_OBJECT_RELEASE(peer);
-        }
+            }
 
         JXTA_OBJECT_RELEASE(peers);
 
@@ -250,16 +237,15 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
                 jstring_append_2(outputLine, "Failed getting a peer.\n");
                 res = FALSE;
                 goto Common_Exit;
-        }
+            }
 
             print_peerview_peer( outputLine, peer );
 
-        JXTA_OBJECT_RELEASE(peer);
-    }
+            JXTA_OBJECT_RELEASE(peer);
+        }
         
-    JXTA_OBJECT_RELEASE(peers);
+        JXTA_OBJECT_RELEASE(peers);
     }
-
     jstring_append_2(outputLine, "\nConnections:\n");
 
     /* Get the list of peers */
@@ -306,27 +292,59 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
 
         expires = jxta_peer_get_expires(peer);
 
-            currentTime = jpr_time_now();
+        currentTime = jpr_time_now();
 
         if (expires > currentTime) {
             Jxta_time_diff remaining = (Jxta_time_diff) (expires - currentTime);;
             Jxta_time_diff seconds = 0;
 
-           seconds = remaining / (1000);
+            seconds = remaining / (1000);
 
-            sprintf(linebuff, "\tLease : " JPR_DIFF_TIME_FMT " second(s)\n", seconds);
+            sprintf(linebuff, "\tLease : " JPR_DIFF_TIME_FMT " second(s)", seconds);
 
-            jstring_append_2(outputLine, linebuff);
         } else {
-            sprintf(linebuff, "\tLease : expired\n");
-            jstring_append_2(outputLine, linebuff);
+            sprintf(linebuff, "\tLease : expired");
         }
+        jstring_append_2(outputLine, linebuff);
+
+        print_options(peer, outputLine);
+        jstring_append_2(outputLine, "\n");
 
         JXTA_OBJECT_RELEASE(peer);
     }
     
     JXTA_OBJECT_RELEASE(peers);
-    JXTA_OBJECT_RELEASE(pv);
+    if (pv)
+        JXTA_OBJECT_RELEASE(pv);
+    jstring_append_2(outputLine, "Rendezvous service config : ");
+
+    switch (config) {
+    case config_adhoc:
+        jstring_append_2(outputLine, "ad-hoc\n");
+        break;
+
+    case config_edge:
+        jstring_append_2(outputLine, "client\n");
+        break;
+
+    case config_rendezvous:
+        jstring_append_2(outputLine, "rendezvous\n");
+        break;
+
+    default:
+        jstring_append_2(outputLine, "[unknown]\n");
+        break;
+    }
+
+
+    if (jxta_rdv_service_is_demoting(rdv)) {
+        jstring_append_2(outputLine, "demoting\n");
+    }
+    time = jxta_rdv_service_get_running_time(rdv);
+    apr_snprintf(linebuff, sizeof(linebuff), JPR_DIFF_TIME_FMT, time / 1000);
+    jstring_append_2(outputLine, " running_time: ");
+    jstring_append_2(outputLine, linebuff);
+    jstring_append_2(outputLine, " s\n");
 
   Common_Exit:
     if (jstring_length(outputLine) > 0) {
@@ -359,6 +377,40 @@ void jxta_rdvstatus_print_help(Jxta_object * appl)
     JXTA_OBJECT_RELEASE(inputLine);
 }
 
+void print_options(Jxta_peer * peer, JString *out_string)
+{
+    Jxta_vector *options;
+    unsigned int i;
+    jxta_peer_get_options(peer, &options);
+    if (NULL == options) {
+         return;
+    }
+       for (i=0; i < jxta_vector_size(options); i++) {
+            Jxta_status res;
+            char tmp[256];
+            Jxta_rdv_lease_options * lease_option;
+            res = jxta_vector_get_object_at(options, JXTA_OBJECT_PPTR(&lease_option), i);
+
+            if (JXTA_SUCCESS != res) {
+                continue;
+            }
+            if (NULL == lease_option) continue;
+            if (strcmp(jxta_advertisement_get_document_name((Jxta_advertisement *) lease_option), "jxta:RdvLeaseOptions")) {
+                JXTA_OBJECT_RELEASE(lease_option);
+                lease_option = NULL;
+                continue;
+            }
+            jstring_append_2(out_string, "\t");
+            apr_snprintf(tmp, sizeof(tmp), "%d", jxta_rdv_lease_options_get_suitability(lease_option));
+            jstring_append_2(out_string, " suit:");
+            jstring_append_2(out_string, tmp);
+            apr_snprintf(tmp, sizeof(tmp), "%d", jxta_rdv_lease_options_get_willingness(lease_option));
+            jstring_append_2(out_string, " will:");
+            jstring_append_2(out_string, tmp);
+            JXTA_OBJECT_RELEASE(lease_option);
+        }
+        JXTA_OBJECT_RELEASE(options);
+}
 
 void jxta_rdvstatus_start(Jxta_object * appl, int argc, char **argv)
 {
