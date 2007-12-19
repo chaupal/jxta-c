@@ -3301,42 +3301,6 @@ static Jxta_status peerview_remove_pve(Jxta_peerview * myself, Jxta_PID * pid)
     return res;
 }
 
-static void peerview_notify_pves(Jxta_peerview * me, Jxta_peerview_pong_msg * pong)
-{
-    Jxta_status res;
-    Jxta_vector * pves;
-    unsigned int each_pve;
-    unsigned int all_pves;
-
-    /* send pong message to all peers in the peerview */
-
-    apr_thread_mutex_lock(me->mutex);
-
-    res = jxta_vector_clone(me->clusters[me->my_cluster].members, &pves, 0, INT_MAX);
-    if (JXTA_SUCCESS != res) {
-        goto FINAL_EXIT;
-    }
-    all_pves = jxta_vector_size(pves);
-
-    for (each_pve = 0; each_pve < all_pves; each_pve++) {
-        Jxta_peerview_pong_msg * pong;
-        Jxta_peer * peer;
-
-        res = jxta_vector_get_object_at(pves, JXTA_OBJECT_PPTR(&peer), each_pve);
-        if (JXTA_SUCCESS != res ) {
-            continue;
-        }
-
-        peerview_send_pong(me, peer, PONG_STATUS, FALSE);
-        JXTA_OBJECT_RELEASE(pong);
-        JXTA_OBJECT_RELEASE(peer);
-    }
-
-FINAL_EXIT:
-
-    apr_thread_mutex_unlock(me->mutex);
-}
-
 static Jxta_vector *peerview_get_all_pves(Jxta_peerview * myself)
 {
 
