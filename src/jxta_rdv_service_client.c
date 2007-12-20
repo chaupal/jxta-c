@@ -102,7 +102,7 @@ static const Jxta_time_diff CONNECT_THREAD_NAP_TIME_NORMAL = ((Jxta_time_diff) 6
  * means that we are not connected to a rdv.
  * Measured in relative microseconds.
  **/
-static const Jxta_time_diff CONNECT_THREAD_NAP_TIME_FAST = ((Jxta_time_diff) 15) * 1000; /* 2 Seconds */
+static const Jxta_time_diff CONNECT_THREAD_NAP_TIME_FAST = ((Jxta_time_diff) 2) * 1000; /* 2 Seconds */
 
 /**
  * Minimal number of rendezvous this client will attempt to connect to.
@@ -1207,7 +1207,7 @@ static void process_referrals(_jxta_rdv_service_client * myself, Jxta_lease_resp
             Jxta_peer *referral_candidate = NULL;
             Jxta_PA *referral_adv = jxta_lease_adv_info_get_adv(referral);
             pid  = jxta_PA_get_PID(referral_adv);
-            if (NULL != ignore_pid && jxta_id_equals(pid, ignore_pid)) {
+            if (NULL != ignore_pid && jxta_id_equals(pid, ignore_pid) && all_referrals > 1) {
                 JXTA_OBJECT_RELEASE(pid);
                 JXTA_OBJECT_RELEASE(referral);
                 continue;
