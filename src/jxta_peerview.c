@@ -100,7 +100,7 @@ static const apr_interval_time_t JXTA_PEERVIEW_MAINTAIN_INTERVAL = 20 * APR_USEC
 /**
 *   Number of intervals before becoming a rendezvous
 **/
-static const unsigned int LONELINESS_VALUE = 2;
+static const unsigned int DEFAULT_LONELINESS_FACTOR = 2;
 
 /**
 *   Interval at which we (may) attempt to nominate additional peers to join the peerview.
@@ -111,8 +111,8 @@ static const apr_interval_time_t JXTA_PEERVIEW_ADD_INTERVAL = 15 * APR_USEC_PER_
 #define JXTA_PEERVIEW_PVE_PING_DUE (JXTA_PEERVIEW_PVE_EXPIRATION / 4)
 #define JXTA_PEERVIEW_PVE_PONG_DUE (JXTA_PEERVIEW_PVE_EXPIRATION / 8)
 
-#define JXTA_PEERVIEW_CANDIDATE_VOTE (5 * JPR_INTERVAL_ONE_SECOND)
-#define JXTA_PEERVIEW_VOTING_EXPIRATION (3 * JXTA_PEERVIEW_CANDIDATE_VOTE)
+#define JXTA_PEERVIEW_VOTING_EXPIRATION (5 * JPR_INTERVAL_ONE_SECOND)
+#define JXTA_PEERVIEW_VOTING_WAIT (3 * JXTA_PEERVIEW_VOTING_EXPIRATION)
 
 static const unsigned int DEFAULT_CLUSTERS_COUNT = 2;
 
@@ -527,15 +527,11 @@ static Jxta_peerview *peerview_construct(Jxta_peerview * myself, apr_pool_t * pa
 
         myself->rdvConfig = NULL;
         myself->pa_refresh = PA_REFRESH_INTERVAL;
-        myself->clusters_count = DEFAULT_CLUSTERS_COUNT;
-        myself->cluster_members = DEFAULT_CLUSTER_MEMBERS;
-        myself->replicas_count = DEFAULT_REPLICATION_FACTOR;
 
         myself->endpoint = NULL;
         myself->discovery = NULL;
         myself->rdv = NULL;
 
-        myself->pves = jxta_hashtable_new(DEFAULT_CLUSTERS_COUNT * DEFAULT_CLUSTER_MEMBERS * 2);
         myself->my_cluster = INT_MAX;
         myself->clusters = NULL;
         myself->self_pve = NULL;
@@ -719,7 +715,67 @@ JXTA_DECLARE(Jxta_status) peerview_init(Jxta_peerview * pv, Jxta_PG * group, Jxt
     } else {
         myself->my_willingness = (jxta_RdvConfig_get_config(myself->rdvConfig) == config_rendezvous) ? 100:0;
     }
-    res = peerview_init_cluster(myself);
+    if (-1 == jxta_RdvConfig_pv_clusters(myself->rdvConfig)) {
+        jxta_RdvConfig_pv_set_clusters(myself->rdvConfig, DEFAULT_CLUSTERS_COUNT);
+    }
+
+    if (-1 == jxta_RdvConfig_pv_members(myself->rdvConfig)) {
+        jxta_RdvConfig_pv_set_members(myself->rdvConfig, DEFAULT_CLUSTER_MEMBERS);
+    }
+
+    if (-1 == jxta_RdvConfig_pv_replication(myself->rdvConfig)) {
+        jxta_RdvConfig_pv_set_replication(myself->rdvConfig, DEFAULT_REPLICATION_FACTOR);
+    }
+
+    if (-1 == jxta_RdvConfig_pv_loneliness(myself->rdvConfig)) {
+        jxta_RdvConfig_pv_set_loneliness(myself->rdvConfig, DEFAULT_LONELINESS_FACTOR);
+    }
+
+    if (-1 == jxta_RdvConfig_pv_max_locate_probes(myself->rdvConfig)) {
+        jxta_RdvConfig_pv_set_max_locate_probes(myself->rdvConfig, DEFAULT_MAX_LOCATE_PROBES);
+    }
+
+    if (-1 == jxta_RdvConfig_pv_max_address_requests(myself->rdvConfig)) {
+        jxta_RdvConfig_pv_set_max_address_requests(myself->rdvConfig, DEFAULT_MAX_ADDRESS_REQUESTS);
+    }
+
+    if (-1 == jxta_RdvConfig_pv_max_ping_probes(myself->rdvConfig)) {
+        jxta_RdvConfig_pv_set_max_ping_probes(myself->rdvConfig, DEFAULT_MAX_PING_PROBES);
+    }
+
+    if (-1 == jxta_RdvConfig_pv_add_interval(myself->rdvConfig)) {
+        jxta_RdvConfig_pv_set_add_interval(myself->rdvConfig, JXTA_PEERVIEW_ADD_INTERVAL);
+    }
+
+    if (-1 == jxta_RdvConfig_pv_maintenance_interval(myself->rdvConfig)) {
+        jxta_RdvConfig_pv_set_maintenance_interval(myself->rdvConfig, JXTA_PEERVIEW_MAINTAIN_INTERVAL);
+    }
+
+    if (-1 == jxta_RdvConfig_pv_entry_expires(myself->rdvConfig)) {
+        jxta_RdvConfig_pv_set_entry_expires(myself->rdvConfig, JXTA_PEERVIEW_PVE_EXPIRATION);
+    }
+
+    if (-1 == jxta_RdvConfig_pv_ping_due(myself->rdvConfig)) {
+        jxta_RdvConfig_pv_set_ping_due(myself->rdvConfig, JXTA_PEERVIEW_PVE_PING_DUE);
+    }
+
+    if (-1 == jxta_RdvConfig_pv_pong_due(myself->rdvConfig)) {
+        jxta_RdvConfig_pv_set_pong_due(myself->rdvConfig, JXTA_PEERVIEW_PVE_PONG_DUE);
+    }
+
+    if (-1 == jxta_RdvConfig_pv_voting_expiration(myself->rdvConfig)) {
+        jxta_RdvConfig_pv_set_voting_expiration(myself->rdvConfig, JXTA_PEERVIEW_VOTING_EXPIRATION);
+    }
+
+    if (-1 == jxta_RdvConfig_pv_voting_wait(myself->rdvConfig)) {
+        jxta_RdvConfig_pv_set_voting_wait(myself->rdvConfig, JXTA_PEERVIEW_VOTING_WAIT);
+    }
+
+    myself->clusters_count = jxta_RdvConfig_pv_clusters(myself->rdvConfig);
+    myself->cluster_members = jxta_RdvConfig_pv_members(myself->rdvConfig);
+    myself->replicas_count = jxta_RdvConfig_pv_replication(myself->rdvConfig);
+    myself->pves = jxta_hashtable_new(myself->clusters_count * myself->cluster_members * 2);
+
 
     if (NULL != parentgroup) {
         JXTA_OBJECT_RELEASE(parentgroup);
@@ -805,6 +861,8 @@ Jxta_status peerview_start(Jxta_peerview * pv)
 
     apr_thread_mutex_lock(myself->mutex);
 
+    res = peerview_init_cluster(myself);
+
     /* Register Endpoint Listener for Peerview protocol. */
     jxta_PG_get_endpoint_service(myself->group, &(myself->endpoint));
     jxta_PG_add_recipient(myself->group, &myself->ep_cookie, RDV_V3_MSID, JXTA_PEERVIEW_NAME, peerview_protocol_cb, myself);
@@ -825,10 +883,13 @@ Jxta_status peerview_start(Jxta_peerview * pv)
         }
 
     }
+
     apr_thread_mutex_unlock(myself->mutex);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Peerview started for group %s / %s \n", myself->groupUniqueID,
+    if (JXTA_SUCCESS == res) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Peerview started for group %s / %s \n", myself->groupUniqueID,
                     myself->assigned_id_str);
+    }
 
     return res;
 }
@@ -1603,7 +1664,7 @@ static Jxta_status peerview_send_pong(Jxta_peerview * myself, Jxta_peer * dest, 
         JXTA_OBJECT_RELEASE(rdv_options);
     }
 
-    jxta_peerview_pong_msg_set_peer_adv_exp(pong, JXTA_PEERVIEW_PVE_EXPIRATION);
+    jxta_peerview_pong_msg_set_peer_adv_exp(pong, jxta_RdvConfig_pv_entry_expires(myself->rdvConfig));
 
     if (candidates_only) {
         for (i = 0; i < jxta_vector_size(myself->activity_add_candidate_peers); i++) {
@@ -2405,7 +2466,7 @@ static Jxta_status create_pve_from_pong(Jxta_peerview * me, Jxta_peerview_pong_m
     pve = peerview_entry_new(pid, NULL, pa);
 
     /* Ping the new entry in maintenance task. */
-    jxta_peer_set_expires((Jxta_peer *) pve, jpr_time_now() + JXTA_PEERVIEW_PVE_PING_DUE);
+    jxta_peer_set_expires((Jxta_peer *) pve, jpr_time_now() + jxta_RdvConfig_pv_ping_due(me->rdvConfig));
 
     BN_hex2bn(&pve->target_hash, jxta_peerview_pong_msg_get_target_hash(pong));
     BN_hex2bn(&pve->target_hash_radius, jxta_peerview_pong_msg_get_target_hash_radius(pong));
@@ -2418,7 +2479,7 @@ static Jxta_status create_pve_from_pong(Jxta_peerview * me, Jxta_peerview_pong_m
 
     pve->adv_exp = jxta_peerview_pong_msg_get_peer_adv_exp(pong);
     if (-1L == pve->adv_exp) {
-        pve->adv_exp = JXTA_PEERVIEW_PVE_EXPIRATION;
+        pve->adv_exp = jxta_RdvConfig_pv_entry_expires(me->rdvConfig);
     }
     pve->adv_gen_set = TRUE;
     memmove(&pve->adv_gen, adv_gen, sizeof(apr_uuid_t));
@@ -2574,7 +2635,7 @@ static Jxta_boolean peerview_handle_promotion(Jxta_peerview * me, Jxta_peerview_
     } else if (!myself->activity_add_voting) {
         /* this peer didn't initiate the voting just send candidates */
         /* note the time that an election will end */
-        me->activity_add_voting_ends = jpr_time_now() + JXTA_PEERVIEW_VOTING_EXPIRATION;
+        me->activity_add_voting_ends = jpr_time_now() + jxta_RdvConfig_pv_voting_wait(myself->rdvConfig);
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE,"Send promotion response to : %s\n", jstring_get_string(jPeerid));
         rsp = TRUE;
@@ -2769,7 +2830,7 @@ static Jxta_status handle_existing_pve_pong(Jxta_peerview * me, Peerview_entry *
         pve->adv_exp = jxta_peerview_pong_msg_get_peer_adv_exp(pong);
 
         if (-1L == pve->adv_exp) {
-            pve->adv_exp = JXTA_PEERVIEW_PVE_EXPIRATION;
+            pve->adv_exp = jxta_RdvConfig_pv_entry_expires(me->rdvConfig);
         }
 
         if ((NULL != me->self_pve) && (0 != jxta_peer_get_expires((Jxta_peer *) me->self_pve))) {
@@ -2780,7 +2841,7 @@ static Jxta_status handle_existing_pve_pong(Jxta_peerview * me, Peerview_entry *
             /* We aren't in the peerview. Greatly foreshorten the expiration so that a pong msg will be sent by
                maintenance task. */
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "We aren't in the peerview. Greatly foreshorten the expiration\n");
-            jxta_peer_set_expires((Jxta_peer *) pve, jpr_time_now() + JXTA_PEERVIEW_PVE_PONG_DUE);
+            jxta_peer_set_expires((Jxta_peer *) pve, jpr_time_now() + jxta_RdvConfig_pv_pong_due(me->rdvConfig));
         }
 
         memmove(&pve->adv_gen, adv_gen, sizeof(apr_uuid_t));
@@ -3779,7 +3840,7 @@ static void *APR_THREAD_FUNC activity_peerview_locate(apr_thread_t * thread, voi
         return NULL;
     }
 
-    if (myself->activity_locate_probes >= DEFAULT_MAX_LOCATE_PROBES) {
+    if (myself->activity_locate_probes >= jxta_RdvConfig_pv_max_locate_probes(myself->rdvConfig)) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "ACT[locate] [%pp]: Locate failed. Creating a new peerview instance.\n",
                         myself);
         create_new_peerview(myself);
@@ -3858,7 +3919,7 @@ static void *APR_THREAD_FUNC activity_peerview_addressing(apr_thread_t * thread,
         }
 
         /* Send an address request. */
-        if (address_requests_sent < DEFAULT_MAX_ADDRESS_REQUESTS) {
+        if (address_requests_sent < jxta_RdvConfig_pv_max_address_requests(myself->rdvConfig)) {
             res = peerview_send_address_request(myself, (Jxta_peer *) a_pve);
             address_requests_sent++;
         }
@@ -3870,7 +3931,7 @@ static void *APR_THREAD_FUNC activity_peerview_addressing(apr_thread_t * thread,
     
     /* Reschedule another check. */
     apr_status_t apr_res = apr_thread_pool_schedule(myself->thread_pool, activity_peerview_addressing, myself, 
-                                                    JXTA_PEERVIEW_MAINTAIN_INTERVAL, myself);
+                                                    jxta_RdvConfig_pv_maintenance_interval(myself->rdvConfig), myself);
 
     if (APR_SUCCESS != apr_res) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "ACT[addressing] [%pp]: Could not reschedule activity.\n",
@@ -3953,7 +4014,7 @@ static Jxta_status probe_referrals(Jxta_peerview * me)
 
     jxta_vector_shuffle(me->activity_maintain_referral_peers);  /* We use this for probes so shuffle it. */
 
-    while ((me->activity_maintain_referral_pings_sent < DEFAULT_MAX_PING_PROBES)
+    while ((me->activity_maintain_referral_pings_sent < jxta_RdvConfig_pv_max_ping_probes(me->rdvConfig))
            && (me->activity_maintain_referral_pings_sent < jxta_vector_size(me->activity_maintain_referral_peers))) {
 
         res = jxta_vector_get_object_at(me->activity_maintain_referral_peers, JXTA_OBJECT_PPTR(&ping_peer),
@@ -4008,7 +4069,7 @@ static Jxta_status check_pves(Jxta_peerview * me, Jxta_vector *pves)
             JXTA_OBJECT_RELEASE(a_pve);
             continue;
         }
-        if ((expires - now) <= JXTA_PEERVIEW_PVE_PING_DUE) {
+        if ((expires - now) <= jxta_RdvConfig_pv_ping_due(me->rdvConfig)) {
             /* Ping for refresh */
             res = peerview_send_ping(me, (Jxta_peer *) a_pve, &a_pve->adv_gen);
         }
@@ -4057,7 +4118,7 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
 
     /* Reschedule another check. */
     apr_status_t apr_res = apr_thread_pool_schedule(myself->thread_pool, activity_peerview_maintain, myself, 
-                                                    JXTA_PEERVIEW_MAINTAIN_INTERVAL, myself);
+                                                    jxta_RdvConfig_pv_maintenance_interval(myself->rdvConfig), myself);
 
     if (APR_SUCCESS != apr_res) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "ACT[maintain] [%pp]: Could not reschedule activity.\n",
@@ -4068,10 +4129,9 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "ACT[maintain] activity add: %s\n", myself->activity_add ? "true":"false");
 
-    if (!myself->activity_add && need_additional_peers(myself, DEFAULT_CLUSTER_MEMBERS)) {
+    if (!myself->activity_add && need_additional_peers(myself, myself->cluster_members)) {
         /* Start the add activity? */
-        /* apr_res = apr_thread_pool_schedule(myself->thread_pool, activity_peerview_add, myself, 
-                                                        JXTA_PEERVIEW_ADD_INTERVAL, myself); */
+
         myself->activity_add = TRUE;
         apr_res = apr_thread_pool_push(myself->thread_pool, activity_peerview_add, myself,
                                             APR_THREAD_TASK_PRIORITY_HIGH, myself);
@@ -4129,11 +4189,11 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "ACT[add] [%pp]: Running. \n", myself);
 
     apr_thread_mutex_lock(myself->mutex);
-
     myself->activity_add = TRUE;
+
     locked = TRUE;
 
-    if (PV_STOPPED == myself->state || !myself->active || !need_additional_peers(myself, DEFAULT_CLUSTER_MEMBERS)) {
+    if (PV_STOPPED == myself->state || !myself->active || !need_additional_peers(myself, myself->cluster_members)) {
         myself->activity_add = FALSE;
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "ACT[add] [%pp]: Done. \n", myself);
         goto FINAL_EXIT;
@@ -4198,7 +4258,7 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
                 JXTA_OBJECT_RELEASE(peer);
             }
             if (myself->activity_add_voting) {
-                myself->activity_add_candidate_requests_expiration = jpr_time_now() + JXTA_PEERVIEW_CANDIDATE_VOTE;
+                myself->activity_add_candidate_requests_expiration = jpr_time_now() + jxta_RdvConfig_pv_voting_expiration(myself->rdvConfig);
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "ACT[add] ------------- INIT ELECTION ---------- \n");
             }
         }
@@ -4253,7 +4313,7 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
     if (myself->running) {
         /* Reschedule another check. */
         apr_status_t apr_res = apr_thread_pool_schedule(myself->thread_pool, activity_peerview_add, myself, 
-                                                        JXTA_PEERVIEW_ADD_INTERVAL, myself);
+                                                        jxta_RdvConfig_pv_add_interval(myself->rdvConfig), myself);
 
         if (APR_SUCCESS != apr_res) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "ACT[add] [%pp]: Could not reschedule activity.\n",
@@ -4505,7 +4565,7 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
     }
 
     /* if there are too many peers in the pv */
-    if (!need_additional_peers(me, DEFAULT_CLUSTER_MEMBERS) ) {
+    if (!need_additional_peers(me, me->cluster_members) ) {
         me->loneliness_factor = 0;
         if (!demoted) {
             if (remain_in_peerview(me, DEFAULT_CLUSTER_MEMBERS) == FALSE) {
@@ -4527,7 +4587,7 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
             res = jxta_rdv_service_get_peers(rdv, &rdvs);
         }
         if (JXTA_SUCCESS == res) {
-            if (jxta_vector_size(rdvs) == 0 && ++me->loneliness_factor > LONELINESS_VALUE) {
+            if (jxta_vector_size(rdvs) == 0 && ++me->loneliness_factor > jxta_RdvConfig_pv_loneliness(me->rdvConfig)) {
                 /* force it */
                 me->iterations_since_switch = 3;
                 new_config = config_rendezvous;

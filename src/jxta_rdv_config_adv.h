@@ -95,20 +95,11 @@ JXTA_DECLARE(void) jxta_RdvConfig_set_max_clients(Jxta_RdvConfigAdvertisement *,
 JXTA_DECLARE(int) jxta_RdvConfig_get_max_ttl(Jxta_RdvConfigAdvertisement *);
 JXTA_DECLARE(void) jxta_RdvConfig_set_max_ttl(Jxta_RdvConfigAdvertisement *, int);
 
-JXTA_DECLARE(int) jxta_RdvConfig_get_min_happy_peerview(Jxta_RdvConfigAdvertisement *);
-JXTA_DECLARE(void) jxta_RdvConfig_set_min_happy_peerview(Jxta_RdvConfigAdvertisement *, int);
-
 JXTA_DECLARE(int) jxta_RdvConfig_get_max_probed(Jxta_RdvConfigAdvertisement *);
 JXTA_DECLARE(void) jxta_RdvConfig_set_max_probed(Jxta_RdvConfigAdvertisement *, int);
 
 JXTA_DECLARE(int) jxta_RdvConfig_get_min_connected_rendezvous(Jxta_RdvConfigAdvertisement * ad);
 JXTA_DECLARE(void) jxta_RdvConfig_set_min_connected_rendezvous(Jxta_RdvConfigAdvertisement *, int);
-
-JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_interval_peerview(Jxta_RdvConfigAdvertisement *);
-JXTA_DECLARE(void) jxta_RdvConfig_set_interval_peerview(Jxta_RdvConfigAdvertisement *, Jxta_time_diff);
-
-JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_pve_expires_peerview(Jxta_RdvConfigAdvertisement *);
-JXTA_DECLARE(void) jxta_RdvConfig_set_pve_expires_peerview(Jxta_RdvConfigAdvertisement *, Jxta_time_diff);
 
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_connect_cycle_normal(Jxta_RdvConfigAdvertisement *);
 JXTA_DECLARE(void) jxta_RdvConfig_set_connect_cycle_normal(Jxta_RdvConfigAdvertisement *, Jxta_time_diff);
@@ -134,6 +125,9 @@ JXTA_DECLARE(void) jxta_RdvConfig_set_lease_margin(Jxta_RdvConfigAdvertisement *
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_auto_rdv_interval(Jxta_RdvConfigAdvertisement * ad);
 JXTA_DECLARE(void) jxta_RdvConfig_set_auto_rdv_interval(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff auto_rdv_interval);
 
+JXTA_DECLARE(unsigned int) jxta_RdvConfig_get_auto_rdv_willingness(Jxta_RdvConfigAdvertisement * ad);
+JXTA_DECLARE(void) jxta_RdvConfig_set_auto_rdv_willingness(Jxta_RdvConfigAdvertisement * ad, unsigned int auto_rdv_interval);
+
 JXTA_DECLARE(Jxta_boolean) jxta_RdvConfig_use_only_seeds(Jxta_RdvConfigAdvertisement *);
 JXTA_DECLARE(void) jxta_RdvConfig_set_use_only_seeds(Jxta_RdvConfigAdvertisement *, Jxta_boolean);
 
@@ -148,6 +142,50 @@ JXTA_DECLARE(void) jxta_RdvConfig_set_connect_delay(Jxta_RdvConfigAdvertisement 
 
 JXTA_DECLARE(char *) jxta_RdvConfigAdvertisement_get_Jxta_RdvConfigAdvertisement(Jxta_RdvConfigAdvertisement *);
 JXTA_DECLARE(void) jxta_RdvConfigAdvertisement_set_Jxta_RdvConfigAdvertisement(Jxta_RdvConfigAdvertisement *, char *);
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_clusters(Jxta_RdvConfigAdvertisement *, unsigned int);
+JXTA_DECLARE(unsigned int) jxta_RdvConfig_pv_clusters(Jxta_RdvConfigAdvertisement *);
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_members(Jxta_RdvConfigAdvertisement *, unsigned int);
+JXTA_DECLARE(unsigned int) jxta_RdvConfig_pv_members(Jxta_RdvConfigAdvertisement *);
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_replication(Jxta_RdvConfigAdvertisement *, unsigned int);
+JXTA_DECLARE(unsigned int) jxta_RdvConfig_pv_replication(Jxta_RdvConfigAdvertisement *);
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_loneliness(Jxta_RdvConfigAdvertisement *, unsigned int);
+JXTA_DECLARE(unsigned int) jxta_RdvConfig_pv_loneliness(Jxta_RdvConfigAdvertisement *);
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_max_locate_probes(Jxta_RdvConfigAdvertisement *, unsigned int);
+JXTA_DECLARE(unsigned int) jxta_RdvConfig_pv_max_locate_probes(Jxta_RdvConfigAdvertisement *);
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_max_address_requests(Jxta_RdvConfigAdvertisement *, unsigned int);
+JXTA_DECLARE(unsigned int) jxta_RdvConfig_pv_max_address_requests(Jxta_RdvConfigAdvertisement *);
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_max_ping_probes(Jxta_RdvConfigAdvertisement *, unsigned int);
+JXTA_DECLARE(unsigned int) jxta_RdvConfig_pv_max_ping_probes(Jxta_RdvConfigAdvertisement *);
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_add_interval(Jxta_RdvConfigAdvertisement *, Jxta_time_diff time);
+JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_add_interval(Jxta_RdvConfigAdvertisement *);
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_maintenance_interval(Jxta_RdvConfigAdvertisement *, Jxta_time_diff time);
+JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_maintenance_interval(Jxta_RdvConfigAdvertisement *);
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_entry_expires(Jxta_RdvConfigAdvertisement *, Jxta_time_diff time);
+JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_entry_expires(Jxta_RdvConfigAdvertisement *);
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_ping_due(Jxta_RdvConfigAdvertisement *, Jxta_time_diff time);
+JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_ping_due(Jxta_RdvConfigAdvertisement *);
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_pong_due(Jxta_RdvConfigAdvertisement *, Jxta_time_diff time);
+JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_pong_due(Jxta_RdvConfigAdvertisement *);
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_voting_expiration(Jxta_RdvConfigAdvertisement *, Jxta_time_diff time);
+JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_voting_expiration(Jxta_RdvConfigAdvertisement *);
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_voting_wait(Jxta_RdvConfigAdvertisement *, Jxta_time_diff time);
+JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_voting_wait(Jxta_RdvConfigAdvertisement *);
+
+
 
 /**
 *   For other advertisement types which want to parse RdvConfig as a sub-section.    
