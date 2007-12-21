@@ -507,9 +507,7 @@ JString *Pid = NULL;
 
 static Jxta_status JXTA_STDCALL accept_cb(void *param, void *arg)
 {
-#ifdef UNUSED_VWF
-apr_pollfd_t *fd = param;
-#endif
+    apr_pollfd_t *fd = param;
     Jxta_transport_tcp *me = arg;
     Jxta_transport_tcp_connection *conn;
     apr_socket_t *input_socket = NULL;

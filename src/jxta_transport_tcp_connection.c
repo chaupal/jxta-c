@@ -967,9 +967,7 @@ static Jxta_status drain_socket(Jxta_transport_tcp_connection *me)
 static Jxta_status JXTA_STDCALL read_cb(void *param, void *arg)
 {
     Jxta_transport_tcp_connection *me = arg;
-#ifdef UNUSED_VWF
     apr_pollfd_t *fd = param;
-#endif
     apr_thread_pool_t *tp;
     Jxta_status rv;
 

@@ -763,15 +763,11 @@ static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * mes
     Jxta_message_element *msgElem = NULL;
     Jxta_endpoint_address *address = NULL;
     unsigned char *tmp = NULL;
-#ifdef UNUSED_VWF
     unsigned char *zipped = NULL;
-#endif
     unsigned char *bytes = NULL;
-#ifdef UNUSED_VWF
     size_t zipped_len = 0;
     int ret = 0;
     size_t byte_len = 0;
-#endif
     JString *doc = NULL;
     Jxta_bytevector *jSend_buf = NULL;
     Jxta_status status;
@@ -1346,11 +1342,8 @@ static Jxta_status JXTA_STDCALL resolver_service_srdi_cb(Jxta_object * obj, void
             unsigned char *bytes = NULL;
             unsigned char *uncompr = NULL;
             unsigned long uncomprLen = 0;
-#ifdef UNUSED_VWF
             int size, err;
-#else
-            int size;
-#endif
+
             Jxta_bytevector *jb = jxta_message_element_get_value(element);
             size = jxta_bytevector_size(jb);
             bytes = calloc(1, size);
