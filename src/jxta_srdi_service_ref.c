@@ -123,8 +123,11 @@ static Jxta_status forwardSrdiMessage(Jxta_srdi_service * service, Jxta_resolver
                                       Jxta_expiration_time expiration);
 static Jxta_status forwardSrdiEntries(Jxta_srdi_service * service, Jxta_resolver_service * resolver, Jxta_peer * peer,
                                       Jxta_id * srcPid, Jxta_vector * entries, JString * queueName, JString * jKey);
+
+#ifdef UNUSED_VWF
 static Jxta_status forwardSrdiEntry(Jxta_srdi_service * service, Jxta_resolver_service * resolver, Jxta_peer * peer,
                                     Jxta_id * srcPid, Jxta_SRDIEntryElement * entry, JString * queueName);
+#endif
 typedef struct {
     Extends(Jxta_srdi_service);
     Jxta_PG *group;
@@ -225,7 +228,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
     Jxta_vector *allEntries = NULL;
     Jxta_SRDIEntryElement *entry;
     JString *replicaExpression;
-    Jxta_status status;
+    Jxta_status status = JXTA_FAILED;
     unsigned int i = 0;
     int ttl;
     Jxta_hashtable *peersHash = NULL;
@@ -348,18 +351,18 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
     replicaLocs = jxta_hashtable_keys_get(peersHash);
     replicaLocsSave = (char **) replicaLocs;
     while (NULL != replicaLocs && *replicaLocs) {
-        Jxta_status stat;
+        Jxta_status sstat;
         Jxta_peer *sendPeer;
         Jxta_vector *peersVector = NULL;
 
-        stat = jxta_hashtable_get(peersHash, *replicaLocs, strlen(*replicaLocs) + 1, JXTA_OBJECT_PPTR(&peersVector));
-        if (JXTA_SUCCESS != stat) {
+        sstat = jxta_hashtable_get(peersHash, *replicaLocs, strlen(*replicaLocs) + 1, JXTA_OBJECT_PPTR(&peersVector));
+        if (JXTA_SUCCESS != sstat) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error getting entry from peers hash key:%s \n", *replicaLocs);
             free(*replicaLocs++);
             continue;
         }
-        stat = jxta_vector_remove_object_at(peersVector, JXTA_OBJECT_PPTR(&sendPeer), 0);
-        if (JXTA_SUCCESS == stat && jxta_vector_size(peersVector) > 0) {
+        sstat = jxta_vector_remove_object_at(peersVector, JXTA_OBJECT_PPTR(&sendPeer), 0);
+        if (JXTA_SUCCESS == sstat && jxta_vector_size(peersVector) > 0) {
             forwardSrdiEntries((Jxta_srdi_service *) me, resolver, sendPeer, me->peerID, peersVector, queueName, jPkey);
         }
         JXTA_OBJECT_RELEASE(peersVector);
@@ -663,13 +666,13 @@ static Jxta_peer *getNumericReplica(Jxta_srdi_service * me, Jxta_range * rge, co
             if (NULL == val && jxta_srdi_cfg_get_no_range(myself->config)) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Query when replica includes value returns NULL\n");
             } else {
-                const char *attribute;
+                const char *aattribute;
                 JString *replicaExpression = NULL;
 
                 replicaExpression = jstring_new_2(jxta_range_get_element(rge));
-                attribute = jxta_range_get_attribute(rge);
-                if (NULL != attribute) {
-                    jstring_append_2(replicaExpression, attribute);
+                aattribute = jxta_range_get_attribute(rge);
+                if (NULL != aattribute) {
+                    jstring_append_2(replicaExpression, aattribute);
                 }
                 if (jxta_srdi_cfg_get_no_range(myself->config)) {
                     jstring_append_2(replicaExpression, val);
@@ -785,6 +788,7 @@ static Jxta_status forwardSrdiEntries(Jxta_srdi_service * service, Jxta_resolver
     return res;
 }
 
+#ifdef UNUSED_VWF
     /**
      *  forward srdi message to another peer
      *
@@ -811,6 +815,7 @@ static Jxta_status forwardSrdiEntry(Jxta_srdi_service * service, Jxta_resolver_s
         JXTA_OBJECT_RELEASE(entries);
     return res;
 }
+#endif
 
 static Jxta_vector *searchSrdi(Jxta_srdi_service * me, const char *handler, const char *ns, const char *attr, const char *val)
 {
@@ -1056,9 +1061,9 @@ static void jxta_srdi_service_ref_construct(Jxta_srdi_service_ref * srdi, Jxta_s
      * we do not extend Jxta_srdi_service_methods; so the type string
      * is that of the base table
      */
-    PTValid(methods, Jxta_srdi_service_methods);
+    Jxta_srdi_service_methods* service_methods = PTValid(methods, Jxta_srdi_service_methods);
 
-    jxta_srdi_service_construct((Jxta_srdi_service *) srdi, (Jxta_srdi_service_methods const *) methods);
+    jxta_srdi_service_construct((Jxta_srdi_service *) srdi, service_methods);
 
     /* Set our rt type checking string */
     srdi->thisType = "Jxta_srdi_service_ref";
@@ -1066,33 +1071,33 @@ static void jxta_srdi_service_ref_construct(Jxta_srdi_service_ref * srdi, Jxta_s
 
 static void jxta_srdi_service_ref_destruct(Jxta_srdi_service_ref * srdi)
 {
-    PTValid(srdi, Jxta_srdi_service_ref);
+    Jxta_srdi_service_ref *myself = PTValid(srdi, Jxta_srdi_service_ref);
 
-    if (srdi->endpoint != 0)
-        JXTA_OBJECT_RELEASE(srdi->endpoint);
-    if (srdi->rendezvous != 0)
-        JXTA_OBJECT_RELEASE(srdi->rendezvous);
+    if (myself->endpoint != 0)
+        JXTA_OBJECT_RELEASE(myself->endpoint);
+    if (myself->rendezvous != 0)
+        JXTA_OBJECT_RELEASE(myself->rendezvous);
 
-    if (srdi->instanceName != 0)
-        JXTA_OBJECT_RELEASE(srdi->instanceName);
+    if (myself->instanceName != 0)
+        JXTA_OBJECT_RELEASE(myself->instanceName);
 
-    if (srdi->srdi_queue_name)
-        JXTA_OBJECT_RELEASE(srdi->srdi_queue_name);
-    if (srdi->cm != 0)
-        JXTA_OBJECT_RELEASE(srdi->cm);
-    if (srdi->peerID != 0)
-        JXTA_OBJECT_RELEASE(srdi->peerID);
-    if (srdi->config)
-        JXTA_OBJECT_RELEASE(srdi->config);
-    if (srdi->groupUniqueID)
-        JXTA_OBJECT_RELEASE(srdi->groupUniqueID);
-    if (srdi->gid)
-        JXTA_OBJECT_RELEASE(srdi->gid);
+    if (myself->srdi_queue_name)
+        JXTA_OBJECT_RELEASE(myself->srdi_queue_name);
+    if (myself->cm != 0)
+        JXTA_OBJECT_RELEASE(myself->cm);
+    if (myself->peerID != 0)
+        JXTA_OBJECT_RELEASE(myself->peerID);
+    if (myself->config)
+        JXTA_OBJECT_RELEASE(myself->config);
+    if (myself->groupUniqueID)
+        JXTA_OBJECT_RELEASE(myself->groupUniqueID);
+    if (myself->gid)
+        JXTA_OBJECT_RELEASE(myself->gid);
 
-    srdi->thisType = NULL;
+    myself->thisType = NULL;
 
     /* call the base classe's dtor. */
-    jxta_srdi_service_destruct((Jxta_srdi_service *) srdi);
+    jxta_srdi_service_destruct((Jxta_srdi_service *) myself);
 
 }
 

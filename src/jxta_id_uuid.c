@@ -183,7 +183,7 @@ static Jxta_id *translateTbl[][2] = {
     /******************************************************************************/
     /*                                                                            */
     /******************************************************************************/
-static int jxta_id_uuid_compare_priv(apr_uuid_t * a, apr_uuid_t * b, Jpr_absolute_time time);
+static int jxta_id_uuid_compare_priv(apr_uuid_t * a, apr_uuid_t * b, Jpr_absolute_time ttime);
 static Jxta_id *translateToWellKnown(Jxta_id * jid);
 static Jxta_id *translateFromWellKnown(Jxta_id * jid);
 static Jxta_status newPeergroupid1(Jxta_id ** pg);
@@ -273,17 +273,17 @@ int jxta_id_uuid_time_stamp_compare(apr_uuid_t * a, apr_uuid_t * b) {
  Compare the timestamp of UUID with absolute time
 
     @param a pointer UUID
-    @param time absolute time
+    @param ttime absolute time
 
     @return if (a.time == absolute time) UUID_EQUALS
             if (a.time > absolute time) UUID_GREATER_THAN
             if (a.time < absolute time) UUID_LESS_THAN
 **/
-int jxta_id_uuid_time_compare(apr_uuid_t * a, Jpr_absolute_time time) {
-    return jxta_id_uuid_compare_priv(a, NULL, time);
+int jxta_id_uuid_time_compare(apr_uuid_t * a, Jpr_absolute_time ttime) {
+    return jxta_id_uuid_compare_priv(a, NULL, ttime);
 }
 
-static int jxta_id_uuid_compare_priv(apr_uuid_t * a, apr_uuid_t * b, Jpr_absolute_time time) {
+static int jxta_id_uuid_compare_priv(apr_uuid_t * a, apr_uuid_t * b, Jpr_absolute_time ttime) {
 
     apr_uint64_t atime = 0;
     apr_uint32_t timela;
@@ -326,10 +326,10 @@ static int jxta_id_uuid_compare_priv(apr_uuid_t * a, apr_uuid_t * b, Jpr_absolut
     } else {
 
         atime += timela;
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "time compare a: " JPR_ABS_TIME_FMT " time: " JPR_ABS_TIME_FMT "\n", atime, time);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "time compare a: " JPR_ABS_TIME_FMT " time: " JPR_ABS_TIME_FMT "\n", atime, ttime);
 
-        if (atime != time) {
-            return atime > time ? UUID_GREATER_THAN:UUID_LESS_THAN;
+        if (atime != ttime) {
+            return atime > ttime ? UUID_GREATER_THAN:UUID_LESS_THAN;
         }
     }
 

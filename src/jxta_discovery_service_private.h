@@ -104,7 +104,7 @@ struct _jxta_discovery_service_methods {
      Jxta_status(*cancelRemoteQuery) (Jxta_discovery_service * me, long query_id, Jxta_discovery_listener ** listener);
 
      Jxta_status(*getLocalAdv) (Jxta_discovery_service * self,
-                                short type, const char *attribute, const char *value, Jxta_vector ** advertisements);
+                                short type, const char *aattribute, const char *value, Jxta_vector ** advertisements);
 
      Jxta_status(*getLocalQuery) (Jxta_discovery_service * self, const char *query, Jxta_vector ** advertisements);
 
@@ -121,9 +121,9 @@ struct _jxta_discovery_service_methods {
 
      Jxta_status(*remove_listener) (Jxta_discovery_service * self, Jxta_discovery_listener * listener);
 
-     Jxta_status(*getLifetime) (Jxta_discovery_service * service, short type, Jxta_id * advId, Jxta_expiration_time * exp);
+     Jxta_status(*getLifetime) (Jxta_discovery_service * service, short type, Jxta_id * advId, Jxta_expiration_time * eexp);
 
-     Jxta_status(*getExpiration) (Jxta_discovery_service * service, short type, Jxta_id * advId, Jxta_expiration_time * exp);
+     Jxta_status(*getExpiration) (Jxta_discovery_service * service, short type, Jxta_id * advId, Jxta_expiration_time * eexp);
 };
 
 Jxta_status getLocalGroupsQuery (Jxta_discovery_service * self, const char *query,

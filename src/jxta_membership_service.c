@@ -65,8 +65,8 @@
 void jxta_membership_service_construct(Jxta_membership_service * service, Jxta_membership_service_methods * methods)
 {
 
-    PTValid(methods, Jxta_membership_service_methods);
-    jxta_service_construct((Jxta_service *) service, (Jxta_service_methods *) methods);
+    Jxta_membership_service_methods* service_methods = PTValid(methods, Jxta_membership_service_methods);
+    jxta_service_construct((Jxta_service *) service, (Jxta_service_methods*) service_methods);
     /*
      * The cast is to work around the const qualifier embedded in the
      * public typedef Jxta_membership_service
@@ -91,32 +91,32 @@ void jxta_membership_service_destruct(Jxta_membership_service * service)
 JXTA_DECLARE(Jxta_status)
     jxta_membership_service_apply(Jxta_membership_service * self, Jxta_credential * authcred, Jxta_membership_authenticator ** auth)
 {
-    PTValid(self, Jxta_membership_service);
-    return VTBL->membership_apply(self, authcred, auth);
+    Jxta_membership_service* myself = PTValid(self, Jxta_membership_service);
+    return VTBL->membership_apply(myself, authcred, auth);
 
 }
 
 JXTA_DECLARE(Jxta_status)
     jxta_membership_service_join(Jxta_membership_service * self, Jxta_membership_authenticator * auth, Jxta_credential ** newcred)
 {
-    PTValid(self, Jxta_membership_service);
-    return VTBL->membership_join(self, auth, newcred);
+    Jxta_membership_service* myself = PTValid(self, Jxta_membership_service);
+    return VTBL->membership_join(myself, auth, newcred);
 
 }
 
 JXTA_DECLARE(Jxta_status)
     jxta_membership_service_resign(Jxta_membership_service * self)
 {
-    PTValid(self, Jxta_membership_service);
-    return VTBL->membership_resign(self);
+    Jxta_membership_service* myself = PTValid(self, Jxta_membership_service);
+    return VTBL->membership_resign(myself);
 
 }
 
 JXTA_DECLARE(Jxta_status)
     jxta_membership_service_get_currentcreds(Jxta_membership_service * self, Jxta_vector ** creds)
 {
-    PTValid(self, Jxta_membership_service);
-    return VTBL->membership_currentcreds(self, creds);
+    Jxta_membership_service* myself = PTValid(self, Jxta_membership_service);
+    return VTBL->membership_currentcreds(myself, creds);
 
 }
 
@@ -124,7 +124,7 @@ JXTA_DECLARE(Jxta_status)
 JXTA_DECLARE(Jxta_status)
     jxta_membership_service_makecred(Jxta_membership_service * self, JString * somecred, Jxta_credential ** cred)
 {
-    PTValid(self, Jxta_membership_service);
-    return VTBL->membership_makecred(self, somecred, cred);
+    Jxta_membership_service* myself = PTValid(self, Jxta_membership_service);
+    return VTBL->membership_makecred(myself, somecred, cred);
 
 }

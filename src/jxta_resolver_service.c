@@ -62,8 +62,8 @@
 void jxta_resolver_service_construct(Jxta_resolver_service * service, Jxta_resolver_service_methods * methods)
 {
 
-    PTValid(methods, Jxta_resolver_service_methods);
-    jxta_service_construct((Jxta_service *) service, (Jxta_service_methods *) methods);
+    Jxta_resolver_service_methods* service_methods = PTValid(methods, Jxta_resolver_service_methods);
+    jxta_service_construct((Jxta_service *) service, (Jxta_service_methods *) service_methods);
     service->thisType = "Jxta_resolver_service";
 }
 
@@ -92,8 +92,8 @@ void jxta_resolver_service_destruct(Jxta_resolver_service * service)
 JXTA_DECLARE(Jxta_status) jxta_resolver_service_registerQueryHandler(Jxta_resolver_service * service, JString * name,
                                                                      Jxta_callback * handler)
 {
-    PTValid(service, Jxta_resolver_service);
-    return VTBL->registerQueryHandler(service, name, handler);
+    Jxta_resolver_service* resolver_service = PTValid(service, Jxta_resolver_service);
+    return VTBL->registerQueryHandler(resolver_service, name, handler);
 }
 
 /**
@@ -105,8 +105,8 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_registerQueryHandler(Jxta_resolv
   */
 JXTA_DECLARE(Jxta_status) jxta_resolver_service_unregisterQueryHandler(Jxta_resolver_service * service, JString * name)
 {
-    PTValid(service, Jxta_resolver_service);
-    return VTBL->unregisterQueryHandler(service, name);
+    Jxta_resolver_service* resolver_service = PTValid(service, Jxta_resolver_service);
+    return VTBL->unregisterQueryHandler(resolver_service, name);
 }
 
 /**
@@ -119,8 +119,8 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_unregisterQueryHandler(Jxta_reso
  */
 JXTA_DECLARE(Jxta_status) jxta_resolver_service_registerSrdiHandler(Jxta_resolver_service * service, JString * name, Jxta_listener * handler)
 {
-    PTValid(service, Jxta_resolver_service);
-    return VTBL->registerSrdiHandler(service, name, handler);
+    Jxta_resolver_service* resolver_service = PTValid(service, Jxta_resolver_service);
+    return VTBL->registerSrdiHandler(resolver_service, name, handler);
 }
 
 /**
@@ -132,8 +132,8 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_registerSrdiHandler(Jxta_resolve
   */
 JXTA_DECLARE(Jxta_status) jxta_resolver_service_unregisterSrdiHandler(Jxta_resolver_service * service, JString * name)
 {
-    PTValid(service, Jxta_resolver_service);
-    return VTBL->unregisterSrdiHandler(service, name);
+    Jxta_resolver_service* resolver_service = PTValid(service, Jxta_resolver_service);
+    return VTBL->unregisterSrdiHandler(resolver_service, name);
 }
 
 /**
@@ -146,8 +146,8 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_unregisterSrdiHandler(Jxta_resol
  */
 JXTA_DECLARE(Jxta_status) jxta_resolver_service_registerResHandler(Jxta_resolver_service * service, JString * name, Jxta_listener * handler)
 {
-    PTValid(service, Jxta_resolver_service);
-    return VTBL->registerResponseHandler(service, name, handler);
+    Jxta_resolver_service* resolver_service = PTValid(service, Jxta_resolver_service);
+    return VTBL->registerResponseHandler(resolver_service, name, handler);
 }
 
 /**
@@ -159,8 +159,8 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_registerResHandler(Jxta_resolver
   */
 JXTA_DECLARE(Jxta_status) jxta_resolver_service_unregisterResHandler(Jxta_resolver_service * service, JString * name)
 {
-    PTValid(service, Jxta_resolver_service);
-    return VTBL->unregisterResponseHandler(service, name);
+    Jxta_resolver_service* resolver_service = PTValid(service, Jxta_resolver_service);
+    return VTBL->unregisterResponseHandler(resolver_service, name);
 }
 
 /**
@@ -175,8 +175,8 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_unregisterResHandler(Jxta_resolv
  */
 JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendQuery(Jxta_resolver_service * service, ResolverQuery * query, Jxta_id * peerid)
 {
-    PTValid(service, Jxta_resolver_service);
-    return VTBL->sendQuery(service, query, peerid);
+    Jxta_resolver_service* resolver_service = PTValid(service, Jxta_resolver_service);
+    return VTBL->sendQuery(resolver_service, query, peerid);
 }
 
 /**
@@ -186,8 +186,8 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendQuery(Jxta_resolver_service 
  */
 JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendResponse(Jxta_resolver_service * service, ResolverResponse * response, Jxta_id * peerid)
 {
-    PTValid(service, Jxta_resolver_service);
-    return VTBL->sendResponse(service, response, peerid);
+    Jxta_resolver_service* resolver_service = PTValid(service, Jxta_resolver_service);
+    return VTBL->sendResponse(resolver_service, response, peerid);
 }
 
 /**
@@ -197,15 +197,15 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendResponse(Jxta_resolver_servi
  */
 JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendSrdi(Jxta_resolver_service * service, ResolverSrdi * message, Jxta_id * peerid)
 {
-    PTValid(service, Jxta_resolver_service);
-    return VTBL->sendSrdi(service, message, peerid);
+    Jxta_resolver_service* resolver_service = PTValid(service, Jxta_resolver_service);
+    return VTBL->sendSrdi(resolver_service, message, peerid);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_resolver_service_create_query(Jxta_resolver_service * service, JString * handlername, 
                                                              JString * query, Jxta_resolver_query ** rq)
 {
-    PTValid(service, Jxta_resolver_service);
-    return VTBL->create_query(service, handlername, query, rq);
+    Jxta_resolver_service* resolver_service = PTValid(service, Jxta_resolver_service);
+    return VTBL->create_query(resolver_service, handlername, query, rq);
 }
 
 /* vim: set ts=4 sw=4 et tw=130: */

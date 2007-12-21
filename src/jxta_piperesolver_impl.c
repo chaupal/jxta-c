@@ -1257,7 +1257,9 @@ static void JXTA_STDCALL srdi_listener(Jxta_object * obj, void *arg)
     Jxta_vector *entries = NULL;
     JString *jPeerid = NULL;
     JString *jPrimaryKey = NULL;
+#ifdef UNUSED_VWF
     unsigned int i;
+#endif
     Jxta_id *peerid = NULL;
     Jxta_boolean bReplica = FALSE;
 

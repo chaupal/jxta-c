@@ -62,8 +62,8 @@
 void jxta_peerinfo_service_construct(Jxta_peerinfo_service * service, Jxta_peerinfo_service_methods * methods)
 {
 
-    PTValid(methods, Jxta_peerinfo_service_methods);
-    jxta_service_construct((Jxta_service *) service, (Jxta_service_methods *) methods);
+    Jxta_peerinfo_service_methods* service_methods = PTValid(methods, Jxta_peerinfo_service_methods);
+    jxta_service_construct((Jxta_service *) service, (Jxta_service_methods *) service_methods);
     service->thisType = "Jxta_peerinfo_service";
 }
 
@@ -85,26 +85,26 @@ void jxta_peerinfo_service_destruct(Jxta_peerinfo_service * service)
 Jxta_status
 peerinfo_service_get_remote_peerinfo(Jxta_peerinfo_service * service, Jxta_id * peerid, Jxta_peerinfo_listener * listener)
 {
-    PTValid(service, Jxta_peerinfo_service);
-    return VTBL->getRemotePeerInfo(service, peerid, listener);
+    Jxta_peerinfo_service *info_service = PTValid(service, Jxta_peerinfo_service);
+    return VTBL->getRemotePeerInfo(info_service, peerid, listener);
 }
 
 
 Jxta_status peerinfo_service_get_local_peerinfo(Jxta_peerinfo_service * service, Jxta_id * peerid, Jxta_object ** adv)
 {
-    PTValid(service, Jxta_peerinfo_service);
-    return VTBL->getLocalPeerInfo(service, peerid, adv);
+    Jxta_peerinfo_service *info_service = PTValid(service, Jxta_peerinfo_service);
+    return VTBL->getLocalPeerInfo(info_service, peerid, adv);
 }
 
 
 Jxta_status peerinfo_service_get_my_peerinfo(Jxta_peerinfo_service * service, Jxta_object ** adv)
 {
-    PTValid(service, Jxta_peerinfo_service);
-    return VTBL->getPeerInfoService(service, adv);
+    Jxta_peerinfo_service* info_service = PTValid(service, Jxta_peerinfo_service);
+    return VTBL->getPeerInfoService(info_service, adv);
 }
 
 Jxta_status peerinfo_service_flush_advertisement(Jxta_peerinfo_service * service, Jxta_id * peerid)
 {
-    PTValid(service, Jxta_peerinfo_service);
-    return VTBL->flushPeerInfo(service, peerid);
+    Jxta_peerinfo_service* info_service = PTValid(service, Jxta_peerinfo_service);
+    return VTBL->flushPeerInfo(info_service, peerid);
 }

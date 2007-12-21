@@ -232,8 +232,9 @@ JXTA_DECLARE(Jxta_status) jxta_qos_get(const Jxta_qos * me, const char * name, c
 
 JXTA_DECLARE(Jxta_status) jxta_qos_set_long(Jxta_qos * me, const char * name, long value)
 {
+#ifdef UNUSED_VWF
     void * old_val = NULL;
-
+#endif
     qos_lock(me);
     if (me->immutable) {
         qos_unlock(me);

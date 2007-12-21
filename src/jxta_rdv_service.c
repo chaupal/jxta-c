@@ -107,9 +107,9 @@ static void jxta_rdv_service_destruct(_jxta_rdv_service * rdv);
 static Jxta_status init(Jxta_module * rdv, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv);
 static Jxta_status start(Jxta_module * module, char const *argv[]);
 static void stop(Jxta_module * module);
-
+#ifdef UNUSED_VWF
 static Jxta_boolean is_listener_for(_jxta_rdv_service * myself, char const *str);
-
+#endif
 static void rdv_event_delete(Jxta_object * ptr);
 static Jxta_rdv_event *rdv_event_new(_jxta_rdv_service * rdv, Jxta_Rendezvous_event_type event, Jxta_id * id);
 
@@ -224,9 +224,9 @@ static _provider_callback_entry *provider_callback_entry_new(void)
  **/
 static _jxta_rdv_service *jxta_rdv_service_construct(_jxta_rdv_service * myself, _jxta_rdv_service_methods const *methods)
 {
-    PTValid(methods, _jxta_rdv_service_methods);
+    _jxta_rdv_service_methods* service_methods = PTValid(methods, _jxta_rdv_service_methods);
 
-    myself = (_jxta_rdv_service *) jxta_service_construct((Jxta_service *) myself, (Jxta_service_methods const *) methods);
+    myself = (_jxta_rdv_service *) jxta_service_construct((Jxta_service *) myself, (Jxta_service_methods const *) service_methods);
 
     if (NULL != myself) {
         apr_status_t res = APR_SUCCESS;
@@ -1069,7 +1069,7 @@ JXTA_DECLARE(void) jxta_rdv_service_set_auto_interval(Jxta_rdv_service * rdv, Jx
     apr_thread_mutex_unlock(myself->mutex);
 }
 
-
+#ifdef UNUSED_VWF
 static Jxta_boolean is_listener_for(_jxta_rdv_service * myself, char const *str)
 {
     Jxta_boolean res = FALSE;
@@ -1083,7 +1083,7 @@ static Jxta_boolean is_listener_for(_jxta_rdv_service * myself, char const *str)
 
     return res;
 }
-
+#endif
 /**
 * Create a new rendezvous event and send it to all of the registered listeners.
 **/
@@ -1198,23 +1198,23 @@ Jxta_status rdv_service_get_seeds(Jxta_rdv_service * me, Jxta_vector ** seeds)
         all_uris = jxta_vector_size(seeding_uris);
 
         for (each_uri = 0; each_uri < all_uris; each_uri++) {
-            Jxta_endpoint_address *addr;
+            Jxta_endpoint_address *aaddr;
             Jxta_vector *more_addresses = NULL;
 
-            res = jxta_vector_remove_object_at(seeding_uris, JXTA_OBJECT_PPTR(&addr), 0);
+            res = jxta_vector_remove_object_at(seeding_uris, JXTA_OBJECT_PPTR(&aaddr), 0);
 
             if (JXTA_SUCCESS != res) {
                 continue;
             }
 
             /* FIXME 20060813 bondolo Handle seeding URIs here */
-            if (0 == strcmp(jxta_endpoint_address_get_protocol_name(addr), "http")) {
+            if (0 == strcmp(jxta_endpoint_address_get_protocol_name(aaddr), "http")) {
                 /* FIXME 20060815 bondolo Handle http seeding URIs here */
-            } else if (0 == strcmp(jxta_endpoint_address_get_protocol_name(addr), "file")) {
+            } else if (0 == strcmp(jxta_endpoint_address_get_protocol_name(aaddr), "file")) {
                 /* FIXME 20060815 bondolo Handle file seeding URIs here */
             } else {
                 /* XXX 20060819 bondolo Move Peerview pipe seeding to here */
-                char *uri = jxta_endpoint_address_to_string(addr);
+                char *uri = jxta_endpoint_address_to_string(aaddr);
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Unhandled seeding URI : %s\n", uri);
                 free(uri);
             }
@@ -1225,18 +1225,18 @@ Jxta_status rdv_service_get_seeds(Jxta_rdv_service * me, Jxta_vector ** seeds)
 
                 for (each_additional_seed = all_additional_seed - 1; each_additional_seed < all_additional_seed;
                      each_additional_seed--) {
-                    Jxta_endpoint_address *addr;
+                    Jxta_endpoint_address *aaddrs;
 
-                    res = jxta_vector_remove_object_at(more_addresses, JXTA_OBJECT_PPTR(&addr), 0);
+                    res = jxta_vector_remove_object_at(more_addresses, JXTA_OBJECT_PPTR(&aaddrs), 0);
 
                     if (JXTA_SUCCESS == res) {
                         Jxta_peer *seed = jxta_peer_new();
 
-                        jxta_peer_set_address(seed, addr);
+                        jxta_peer_set_address(seed, aaddrs);
                         jxta_peer_set_expires(seed, jpr_time_now() + SEEDING_REFRESH_INTERVAL);
 
                         jxta_vector_add_object_first(new_seeds, (Jxta_object *) seed);
-                        JXTA_OBJECT_RELEASE(addr);
+                        JXTA_OBJECT_RELEASE(aaddrs);
                         JXTA_OBJECT_RELEASE(seed);
                     }
                 }
@@ -1245,7 +1245,7 @@ Jxta_status rdv_service_get_seeds(Jxta_rdv_service * me, Jxta_vector ** seeds)
                 more_addresses = NULL;
             }
 
-            JXTA_OBJECT_RELEASE(addr);
+            JXTA_OBJECT_RELEASE(aaddr);
         }
 
         JXTA_OBJECT_RELEASE(seeding_uris);

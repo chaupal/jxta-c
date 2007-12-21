@@ -179,14 +179,14 @@ JXTA_DECLARE(Jxta_status) jxta_cm_save_replica(Jxta_cm * self, JString * handler
  *
  * @param Jxta_cm (A ptr to) the cm object to apply the operation to
  * @param folder_name the name of the folder
- * @param attribute the selector attribute
+ * @param aattribute the selector attribute
  * @param value the selector value
  * @param n_adv The maximum number of advs to retrieve.
  * @return A null terminated list of char* each pointing at the primary key
  * of one matching advertisement.
  * @deprecated This API is being removed and the cm is taken private see jxta_cm_private.h
  */
-JXTA_DECLARE(char **) jxta_cm_search(Jxta_cm * cm, char *folder_name, const char *attribute, const char *value, int n_adv);
+JXTA_DECLARE(char **) jxta_cm_search(Jxta_cm * cm, char *folder_name, const char *aattribute, const char *value, int n_adv);
 
 /**
  * Search for advertisements that match the XPath type query.
@@ -261,13 +261,13 @@ JXTA_DECLARE(Jxta_status) jxta_cm_restore_bytes(Jxta_cm * cm, char *folder_name,
  * @param Jxta_cm (A ptr to) the cm object to apply the operation to
  * @param folder_name the name of the folder
  * @param primary_key the primary key with which to associate that advertisement.
- * @param time The expiration time of that advertisement.
+ * @param ttime The expiration time of that advertisement.
  * @return Jxta_status JXTA_SUCCESS if the advertisement exists and has an expiration time. An error
  * code otherwise.
  * @deprecated This API is being removed and the cm is taken private see jxta_cm_private.h
  */
 JXTA_DECLARE(Jxta_status) jxta_cm_get_expiration_time(Jxta_cm * cm, char *folder_name, char *primary_key,
-                                                      Jxta_expiration_time * time);
+                                                      Jxta_expiration_time * ttime);
 
 /**
  * Get the timeoutforothers expiration time of an advertisement.
@@ -275,13 +275,13 @@ JXTA_DECLARE(Jxta_status) jxta_cm_get_expiration_time(Jxta_cm * cm, char *folder
  * @param Jxta_cm (A ptr to) the cm object to apply the operation to
  * @param folder_name the name of the folder
  * @param primary_key the primary key with which to associate that advertisement.
- * @param time The timeoutforothers expiration time of that advertisement.
+ * @param ttime The timeoutforothers expiration time of that advertisement.
  * @return Jxta_status JXTA_SUCCESS if the advertisement exists and has an expiration time. An error
  * code otherwise.
  * @deprecated This API is being removed and the cm is taken private see jxta_cm_private.h
  */
 JXTA_DECLARE(Jxta_status) jxta_cm_get_others_time(Jxta_cm * self, char *folder_name, char *primary_key,
-                                                  Jxta_expiration_time * time);
+                                                  Jxta_expiration_time * ttime);
 
 /**
  * delete files which life-time has ended.

@@ -332,14 +332,14 @@ Jxta_status cm_save_replica_elements(Jxta_cm * self, JString * handler, JString 
  *
  * @param Jxta_cm (A ptr to) the cm object to apply the operation to
  * @param folder_name the name of the folder
- * @param attribute the selector attribute
+ * @param aattribute the selector attribute
  * @param value the selector value
  * @param no_locals if true don't return zero expiration entries
  * @param n_adv The maximum number of advs to retrieved
  * @return A null terminated list of char* each pointing at the primary key
  * of one matching advertisement.
  */
-char ** cm_search(Jxta_cm * cm, char *folder_name, const char *attribute, const char *value, Jxta_boolean no_locals, int n_adv);
+char ** cm_search(Jxta_cm * cm, char *folder_name, const char *aattribute, const char *value, Jxta_boolean no_locals, int n_adv);
 
 /**
  * Search for advertisements that match the XPath type query.
@@ -429,24 +429,24 @@ Jxta_status cm_restore_bytes(Jxta_cm * cm, char *folder_name, char *primary_key,
  * @param Jxta_cm (A ptr to) the cm object to apply the operation to
  * @param folder_name the name of the folder
  * @param primary_key the primary key with which to associate that advertisement.
- * @param time The expiration time of that advertisement.
+ * @param ttime The expiration time of that advertisement.
  * @return Jxta_status JXTA_SUCCESS if the advertisement exists and has an expiration time. An error
  * code otherwise.
  */
 Jxta_status cm_get_expiration_time(Jxta_cm * cm, char *folder_name, char *primary_key,
-                                                      Jxta_expiration_time * time);
+                                                      Jxta_expiration_time * ttime);
 /**
  * Get the timeoutforothers expiration time of an advertisement.
  *
  * @param Jxta_cm (A ptr to) the cm object to apply the operation to
  * @param folder_name the name of the folder
  * @param primary_key the primary key with which to associate that advertisement.
- * @param time The timeoutforothers expiration time of that advertisement.
+ * @param ttime The timeoutforothers expiration time of that advertisement.
  * @return Jxta_status JXTA_SUCCESS if the advertisement exists and has an expiration time. An error
  * code otherwise.
  */
 Jxta_status cm_get_others_time(Jxta_cm * self, char *folder_name, char *primary_key,
-                                                  Jxta_expiration_time * time);
+                                                  Jxta_expiration_time * ttime);
 
 /**
  * delete files which life-time has ended.
@@ -497,7 +497,7 @@ void cm_remove_srdi_entries(Jxta_cm * self, JString * peerid);
  * @param jPeerid string of peerid to udate
  * @param time limit entries to this time
 */
-Jxta_status cm_update_srdi_times(Jxta_cm * me, JString * jPeerid, Jxta_time time);
+Jxta_status cm_update_srdi_times(Jxta_cm * me, JString * jPeerid, Jxta_time ttime);
 
 /**
  * get the new SRDI index entry for the provided folder since

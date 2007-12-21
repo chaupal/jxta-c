@@ -116,10 +116,10 @@ void handleJxta_DiscoveryConfigAdvertisement(void *userdata, const XML_Char * cd
     }
 }
 
-JXTA_DECLARE(void) jxta_discovery_config_set_delta_update_cycle(Jxta_DiscoveryConfigAdvertisement * adv, int time)
+JXTA_DECLARE(void) jxta_discovery_config_set_delta_update_cycle(Jxta_DiscoveryConfigAdvertisement * adv, int ttime)
 {
-    if (time > 0) {
-        adv->delta_update_cycle = time;
+    if (ttime > 0) {
+        adv->delta_update_cycle = ttime;
     }
 
 }
@@ -129,10 +129,10 @@ JXTA_DECLARE(Jxta_time_diff) jxta_discovery_config_get_delta_update_cycle(Jxta_D
     return adv->delta_update_cycle;
 
 }
-JXTA_DECLARE(void) jxta_discovery_config_set_expired_adv_cycle(Jxta_DiscoveryConfigAdvertisement * adv, int time)
+JXTA_DECLARE(void) jxta_discovery_config_set_expired_adv_cycle(Jxta_DiscoveryConfigAdvertisement * adv, int ttime)
 {
-    if (time > 0) {
-        adv->expired_adv_cycle = time;
+    if (ttime > 0) {
+        adv->expired_adv_cycle = ttime;
     }
 
 }

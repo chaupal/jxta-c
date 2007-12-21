@@ -385,8 +385,9 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
  **/
 static Jxta_status get_peer(Jxta_rdv_service_provider * provider, Jxta_id * peerid, Jxta_peer ** peer)
 {
+#ifdef UNUSED_VWF
     _jxta_rdv_service_adhoc *myself = (_jxta_rdv_service_adhoc *) PTValid(provider, _jxta_rdv_service_adhoc);
-
+#endif
     /* Nothing is ever found. */
     return JXTA_ITEM_NOTFOUND;
 }
@@ -400,8 +401,9 @@ static Jxta_status get_peer(Jxta_rdv_service_provider * provider, Jxta_id * peer
  **/
 static Jxta_status get_peers(Jxta_rdv_service_provider * provider, Jxta_vector ** peerlist)
 {
+#ifdef UNUSED_VWF
     _jxta_rdv_service_adhoc *myself = (_jxta_rdv_service_adhoc *) PTValid(provider, _jxta_rdv_service_adhoc);
-
+#endif
     /* Test arguments first */
     if (peerlist == NULL) {
         /* Invalid args. */

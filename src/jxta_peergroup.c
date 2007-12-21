@@ -840,8 +840,8 @@ JXTA_DECLARE(Jxta_MSID *) jxta_genericpeergroup_specid_get(void)
  */
 void jxta_PG_construct(Jxta_PG * self, Jxta_PG_methods * methods)
 {
-    PTValid(methods, Jxta_PG_methods);
-    jxta_service_construct((Jxta_service *) self, (Jxta_service_methods *) methods);
+    Jxta_PG_methods* pgmethods = PTValid(methods, Jxta_PG_methods);
+    jxta_service_construct((Jxta_service *) self, (Jxta_service_methods *) pgmethods);
     self->thisType = "Jxta_PG";
 }
 
@@ -947,36 +947,36 @@ void jxta_PG_destruct(Jxta_PG * me)
 
 JXTA_DECLARE(void) jxta_PG_get_loader(Jxta_PG * self, Jxta_loader ** loader)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->get_loader) (self, loader);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->get_loader) (myself, loader);
 }
 
 JXTA_DECLARE(void) jxta_PG_get_PGA(Jxta_PG * self, Jxta_PGA ** pga)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->get_PGA) (self, pga);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->get_PGA) (myself, pga);
 }
 
 JXTA_DECLARE(void) jxta_PG_get_PA(Jxta_PG * self, Jxta_PA ** pa)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->get_PA) (self, pa);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->get_PA) (myself, pa);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_PG_lookup_service(Jxta_PG * self, Jxta_id * name, Jxta_service ** result)
 {
-    PTValid(self, Jxta_PG);
-    return (VTBL->lookup_service) (self, name, result);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    return (VTBL->lookup_service) (myself, name, result);
 }
 
 JXTA_DECLARE(void) jxta_PG_lookup_service_e(Jxta_PG * self, Jxta_id * name, Jxta_service ** result, Throws)
 {
     Jxta_status res;
-    PTValid(self, Jxta_PG);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
 
     JXTA_DEPRECATED_API();
 
-    res = (VTBL->lookup_service) (self, name, result);
+    res = (VTBL->lookup_service) (myself, name, result);
 
     if (JXTA_SUCCESS != res) {
         Throw(res);
@@ -985,26 +985,26 @@ JXTA_DECLARE(void) jxta_PG_lookup_service_e(Jxta_PG * self, Jxta_id * name, Jxta
 
 JXTA_DECLARE(Jxta_boolean) jxta_PG_is_compatible(Jxta_PG * self, JString * compat)
 {
-    PTValid(self, Jxta_PG);
-    return (VTBL->is_compatible) (self, compat);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    return (VTBL->is_compatible) (myself, compat);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_PG_loadfromimpl_module(Jxta_PG * self, Jxta_id * assigned_id,
                                                       Jxta_advertisement * impl, Jxta_module ** result)
 {
-    PTValid(self, Jxta_PG);
-    return (VTBL->loadfromimpl_module) (self, assigned_id, impl, result);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    return (VTBL->loadfromimpl_module) (myself, assigned_id, impl, result);
 }
 
 JXTA_DECLARE(void) jxta_PG_loadfromimpl_module_e(Jxta_PG * self, Jxta_id * assigned_id,
                                                  Jxta_advertisement * impl, Jxta_module ** mod, Throws)
 {
     Jxta_status res;
-    PTValid(self, Jxta_PG);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
 
     JXTA_DEPRECATED_API();
 
-    res = (VTBL->loadfromimpl_module) (self, assigned_id, impl, mod);
+    res = (VTBL->loadfromimpl_module) (myself, assigned_id, impl, mod);
 
     if (JXTA_SUCCESS != res) {
         Throw(res);
@@ -1014,19 +1014,19 @@ JXTA_DECLARE(void) jxta_PG_loadfromimpl_module_e(Jxta_PG * self, Jxta_id * assig
 JXTA_DECLARE(Jxta_status) jxta_PG_loadfromid_module(Jxta_PG * self, Jxta_id * assigned_id,
                                                     Jxta_MSID * spec_id, int where, Jxta_module ** result)
 {
-    PTValid(self, Jxta_PG);
-    return (VTBL->loadfromid_module) (self, assigned_id, spec_id, where, result);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    return (VTBL->loadfromid_module) (myself, assigned_id, spec_id, where, result);
 }
 
 JXTA_DECLARE(void) jxta_PG_loadfromid_module_e(Jxta_PG * self, Jxta_id * assigned_id,
                                                Jxta_MSID * spec_id, int where, Jxta_module ** mod, Throws)
 {
     Jxta_status res;
-    PTValid(self, Jxta_PG);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
 
     JXTA_DEPRECATED_API();
 
-    res = (VTBL->loadfromid_module) (self, assigned_id, spec_id, where, mod);
+    res = (VTBL->loadfromid_module) (myself, assigned_id, spec_id, where, mod);
 
     if (JXTA_SUCCESS != res) {
         Throw(res);
@@ -1035,26 +1035,26 @@ JXTA_DECLARE(void) jxta_PG_loadfromid_module_e(Jxta_PG * self, Jxta_id * assigne
 
 JXTA_DECLARE(void) jxta_PG_set_labels(Jxta_PG * self, JString * name, JString * description)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->set_labels) (self, name, description);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->set_labels) (myself, name, description);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_PG_newfromadv(Jxta_PG * self, Jxta_advertisement * pgAdv,
                                              Jxta_vector * resource_groups, Jxta_PG ** pg)
 {
-    PTValid(self, Jxta_PG);
-    return (VTBL->newfromadv) (self, pgAdv, resource_groups, pg);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    return (VTBL->newfromadv) (myself, pgAdv, resource_groups, pg);
 }
 
 JXTA_DECLARE(void) jxta_PG_newfromadv_e(Jxta_PG * self,
                                         Jxta_advertisement * pgAdv, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws)
 {
     Jxta_status res;
-    PTValid(self, Jxta_PG);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
 
     JXTA_DEPRECATED_API();
 
-    res = (VTBL->newfromadv) (self, pgAdv, resource_groups, pg);
+    res = (VTBL->newfromadv) (myself, pgAdv, resource_groups, pg);
 
     if (JXTA_SUCCESS != res) {
         Throw(res);
@@ -1065,8 +1065,8 @@ JXTA_DECLARE(Jxta_status) jxta_PG_newfromimpl(Jxta_PG * self, Jxta_PGID * gid,
                                               Jxta_advertisement * impl, JString * name,
                                               JString * description, Jxta_vector * resource_groups, Jxta_PG ** result)
 {
-    PTValid(self, Jxta_PG);
-    return (VTBL->newfromimpl) (self, gid, impl, name, description, resource_groups, result);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    return (VTBL->newfromimpl) (myself, gid, impl, name, description, resource_groups, result);
 }
 
 JXTA_DECLARE(void) jxta_PG_newfromimpl_e(Jxta_PG * self, Jxta_PGID * gid,
@@ -1074,11 +1074,11 @@ JXTA_DECLARE(void) jxta_PG_newfromimpl_e(Jxta_PG * self, Jxta_PGID * gid,
                                          JString * description, Jxta_vector * resource_groups, Jxta_PG ** pg, Throws)
 {
     Jxta_status res;
-    PTValid(self, Jxta_PG);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
 
     JXTA_DEPRECATED_API();
 
-    res = (VTBL->newfromimpl) (self, gid, impl, name, description, resource_groups, pg);
+    res = (VTBL->newfromimpl) (myself, gid, impl, name, description, resource_groups, pg);
 
     if (JXTA_SUCCESS != res) {
         Throw(res);
@@ -1087,18 +1087,18 @@ JXTA_DECLARE(void) jxta_PG_newfromimpl_e(Jxta_PG * self, Jxta_PGID * gid,
 
 JXTA_DECLARE(Jxta_status) jxta_PG_newfromid(Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * resource_groups, Jxta_PG ** result)
 {
-    PTValid(self, Jxta_PG);
-    return (VTBL->newfromid) (self, gid, resource_groups, result);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    return (VTBL->newfromid) (myself, gid, resource_groups, result);
 }
 
 JXTA_DECLARE(void) jxta_PG_newfromid_e(Jxta_PG * self, Jxta_PGID * gid, Jxta_vector * resource_groups, Jxta_PG ** result, Throws)
 {
     Jxta_status res;
-    PTValid(self, Jxta_PG);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
 
     JXTA_DEPRECATED_API();
 
-    res = (VTBL->newfromid) (self, gid, resource_groups, result);
+    res = (VTBL->newfromid) (myself, gid, resource_groups, result);
 
     if (JXTA_SUCCESS != res) {
         Throw(res);
@@ -1107,123 +1107,123 @@ JXTA_DECLARE(void) jxta_PG_newfromid_e(Jxta_PG * self, Jxta_PGID * gid, Jxta_vec
 
 JXTA_DECLARE(void) jxta_PG_get_rendezvous_service(Jxta_PG * self, Jxta_rdv_service ** rdv)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->get_rendezvous_service) (self, rdv);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->get_rendezvous_service) (myself, rdv);
 }
 JXTA_DECLARE(void) jxta_PG_get_endpoint_service(Jxta_PG * self, Jxta_endpoint_service ** endp)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->get_endpoint_service) (self, endp);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->get_endpoint_service) (myself, endp);
 }
 
 JXTA_DECLARE(void) jxta_PG_get_resolver_service(Jxta_PG * self, Jxta_resolver_service ** res)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->get_resolver_service) (self, res);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->get_resolver_service) (myself, res);
 }
 
 JXTA_DECLARE(void) jxta_PG_get_discovery_service(Jxta_PG * self, Jxta_discovery_service ** disco)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->get_discovery_service) (self, disco);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->get_discovery_service) (myself, disco);
 }
 
 JXTA_DECLARE(void) jxta_PG_get_peerinfo_service(Jxta_PG * self, Jxta_peerinfo_service ** peerinfo)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->get_peerinfo_service) (self, peerinfo);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->get_peerinfo_service) (myself, peerinfo);
 }
 
 JXTA_DECLARE(void) jxta_PG_get_membership_service(Jxta_PG * self, Jxta_membership_service ** memb)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->get_membership_service) (self, memb);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->get_membership_service) (myself, memb);
 }
 
 JXTA_DECLARE(void) jxta_PG_get_pipe_service(Jxta_PG * self, Jxta_pipe_service ** pipe)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->get_pipe_service) (self, pipe);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->get_pipe_service) (myself, pipe);
 }
 
 JXTA_DECLARE(void) jxta_PG_get_cache_manager(Jxta_PG * self, Jxta_cm ** cm)
 {
-    PTValid(self, Jxta_PG);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
     JXTA_DEPRECATED_API();
-    (VTBL->get_cache_manager) (self, cm);
+    (VTBL->get_cache_manager) (myself, cm);
 
 }
 
 JXTA_DECLARE(void) jxta_PG_set_cache_manager(Jxta_PG * self, Jxta_cm * cm)
 {
-    PTValid(self, Jxta_PG);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
     JXTA_DEPRECATED_API();
-    (VTBL->set_cache_manager) (self, cm);
+    (VTBL->set_cache_manager) (myself, cm);
 }
 
 JXTA_DECLARE(void) jxta_PG_get_srdi_service(Jxta_PG * self, Jxta_srdi_service ** srdi)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->get_srdi_service) (self, srdi);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->get_srdi_service) (myself, srdi);
 }
 
 JXTA_DECLARE(void) jxta_PG_get_GID(Jxta_PG * self, Jxta_PGID ** gid)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->get_GID) (self, gid);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->get_GID) (myself, gid);
 }
 
 JXTA_DECLARE(void) jxta_PG_get_PID(Jxta_PG * self, Jxta_PID ** pid)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->get_PID) (self, pid);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->get_PID) (myself, pid);
 }
 
 JXTA_DECLARE(void) jxta_PG_get_groupname(Jxta_PG * self, JString ** nm)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->get_groupname) (self, nm);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->get_groupname) (myself, nm);
 }
 
 JXTA_DECLARE(void) jxta_PG_get_peername(Jxta_PG * self, JString ** nm)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->get_peername) (self, nm);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->get_peername) (myself, nm);
 }
 
 JXTA_DECLARE(void) jxta_PG_get_configadv(Jxta_PG * self, Jxta_PA ** adv)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->get_configadv) (self, adv);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->get_configadv) (myself, adv);
 }
 
 JXTA_DECLARE(void) jxta_PG_get_genericpeergroupMIA(Jxta_PG * self, Jxta_MIA ** mia)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->get_genericpeergroupMIA) (self, mia);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->get_genericpeergroupMIA) (myself, mia);
 }
 
 JXTA_DECLARE(void) jxta_PG_set_resourcegroups(Jxta_PG * self, Jxta_vector * resource_groups)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->set_resourcegroups) (self, resource_groups);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->set_resourcegroups) (myself, resource_groups);
 }
 
 JXTA_DECLARE(void) jxta_PG_get_resourcegroups(Jxta_PG * self, Jxta_vector ** resource_groups)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->get_resourcegroups) (self, resource_groups);
+   Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->get_resourcegroups) (myself, resource_groups);
 }
 
 JXTA_DECLARE(void) jxta_PG_get_parentgroup(Jxta_PG * self, Jxta_PG ** parent_group)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->get_parentgroup) (self, parent_group);
+   Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->get_parentgroup) (myself, parent_group);
 }
 
 JXTA_DECLARE(void) jxta_PG_get_compatstatement(Jxta_PG * self, JString ** compat)
 {
-    PTValid(self, Jxta_PG);
+    self = PTValid(self, Jxta_PG);
     (VTBL->get_compatstatement) (self, compat);
 }
 
@@ -1267,26 +1267,26 @@ JXTA_DECLARE(Jxta_status) jxta_PG_new_custom_netpg(Jxta_PG ** new_netpg, Jxta_MI
 
 JXTA_DECLARE(Jxta_status) jxta_PG_add_relay_address(Jxta_PG * self, Jxta_RdvAdvertisement * relay)
 {
-    PTValid(self, Jxta_PG);
-    return (VTBL->add_relay_address) (self, relay);
+   Jxta_PG* myself = PTValid(self, Jxta_PG);
+    return (VTBL->add_relay_address) (myself, relay);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_PG_remove_relay_address(Jxta_PG * self, Jxta_id * relayid)
 {
-    PTValid(self, Jxta_PG);
-    return (VTBL->remove_relay_address) (self, relayid);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    return (VTBL->remove_relay_address) (myself, relayid);
 }
 
 void peergroup_get_cache_manager(Jxta_PG * self, Jxta_cm ** cm)
 {
-    PTValid(self, Jxta_PG);
+    self = PTValid(self, Jxta_PG);
     (VTBL->get_cache_manager) (self, cm);
 }
 
 void peergroup_set_cache_manager(Jxta_PG * self, Jxta_cm * cm)
 {
-    PTValid(self, Jxta_PG);
-    (VTBL->set_cache_manager) (self, cm);
+    Jxta_PG* myself = PTValid(self, Jxta_PG);
+    (VTBL->set_cache_manager) (myself, cm);
 }
 
 Jxta_status jxta_PG_module_initialize(void)

@@ -376,11 +376,11 @@ JXTA_DECLARE(Jxta_time_diff) jxta_peerview_address_request_msg_get_peer_adv_exp(
     return myself->peer_adv_exp;
 }
 
-JXTA_DECLARE(void) jxta_peerview_address_request_msg_set_peer_adv_exp(Jxta_peerview_address_request_msg * myself, Jxta_time_diff exp)
+JXTA_DECLARE(void) jxta_peerview_address_request_msg_set_peer_adv_exp(Jxta_peerview_address_request_msg * myself, Jxta_time_diff expiration)
 {
     JXTA_OBJECT_CHECK_VALID(myself);
 
-    myself->peer_adv_exp = exp;
+    myself->peer_adv_exp = expiration;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_peerview_address_request_msg_parse_charbuffer(Jxta_peerview_address_request_msg * myself, const char *buf, int len)

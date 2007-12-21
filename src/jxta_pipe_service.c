@@ -523,7 +523,7 @@ static Jxta_status jxta_pipe_service_init(Jxta_module * module, Jxta_PG * group,
                                           Jxta_advertisement * impl_adv)
 {
 
-    Jxta_pipe_service *self = (Jxta_pipe_service *) module;
+    Jxta_pipe_service *self = PTValid(module, Jxta_pipe_service);
     apr_status_t res;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Pipe Service init\n");
@@ -533,9 +533,6 @@ static Jxta_status jxta_pipe_service_init(Jxta_module * module, Jxta_PG * group,
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument\n");
         return JXTA_INVALID_ARGUMENT;
     }
-
-
-    PTValid(self, Jxta_pipe_service);
 
     apr_pool_create(&self->pool, NULL);
     /* Create the mutex */
@@ -638,9 +635,7 @@ static Jxta_status start(Jxta_module * module, const char *argv[])
 static void stop(Jxta_module * module)
 {
 
-    Jxta_pipe_service *self = (Jxta_pipe_service *) module;
-
-    PTValid(self, Jxta_pipe_service);
+    Jxta_pipe_service *self = PTValid(module, Jxta_pipe_service);
 
     /* Test arguments first */
     if (self == NULL) {
@@ -675,16 +670,16 @@ JXTA_DECLARE(Jxta_status)
     jxta_pipe_service_timed_connect(Jxta_pipe_service * self,
                                 Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_vector * peers, Jxta_pipe ** pipe)
 {
-    PTValid(self, Jxta_pipe_service);
+    Jxta_pipe_service* myself = PTValid(self, Jxta_pipe_service);
 
-    return VTBL(self)->timed_connect(self, adv, timeout, peers, pipe);
+    return VTBL(myself)->timed_connect(myself, adv, timeout, peers, pipe);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_pipe_service_deny(Jxta_pipe_service * self, Jxta_pipe_adv * adv)
 {
-    PTValid(self, Jxta_pipe_service);
+    Jxta_pipe_service* myself = PTValid(self, Jxta_pipe_service);
 
-    return VTBL(self)->deny(self, adv);
+    return VTBL(myself)->deny(myself, adv);
 }
 
 
@@ -692,27 +687,27 @@ JXTA_DECLARE(Jxta_status)
     jxta_pipe_service_connect(Jxta_pipe_service * self,
                           Jxta_pipe_adv * adv, Jxta_time_diff timeout, Jxta_vector * peers, Jxta_listener * listener)
 {
-    PTValid(self, Jxta_pipe_service);
+    Jxta_pipe_service* myself = PTValid(self, Jxta_pipe_service);
 
-    return VTBL(self)->connect(self, adv, timeout, peers, listener);
+    return VTBL(myself)->connect(myself, adv, timeout, peers, listener);
 }
 
 
 JXTA_DECLARE(Jxta_status) jxta_pipe_service_timed_accept(Jxta_pipe_service * self, Jxta_pipe_adv * adv, Jxta_time_diff timeout,
                                                          Jxta_pipe ** pipe)
 {
-    PTValid(self, Jxta_pipe_service);
+    Jxta_pipe_service* myself = PTValid(self, Jxta_pipe_service);
 
-    return VTBL(self)->timed_accept(self, adv, timeout, pipe);
+    return VTBL(myself)->timed_accept(myself, adv, timeout, pipe);
 }
 
 
 JXTA_DECLARE(Jxta_status) jxta_pipe_service_add_accept_listener(Jxta_pipe_service * self, Jxta_pipe_adv * adv,
                                                                 Jxta_listener * listener)
 {
-    PTValid(self, Jxta_pipe_service);
+    Jxta_pipe_service* myself = PTValid(self, Jxta_pipe_service);
 
-    return VTBL(self)->add_accept_listener(self, adv, listener);
+    return VTBL(myself)->add_accept_listener(myself, adv, listener);
 }
 
 
@@ -720,50 +715,50 @@ JXTA_DECLARE(Jxta_status) jxta_pipe_service_add_accept_listener(Jxta_pipe_servic
 JXTA_DECLARE(Jxta_status) jxta_pipe_service_remove_accept_listener(Jxta_pipe_service * self, Jxta_pipe_adv * adv,
                                                                    Jxta_listener * listener)
 {
-    PTValid(self, Jxta_pipe_service);
+    Jxta_pipe_service* myself = PTValid(self, Jxta_pipe_service);
 
-    return VTBL(self)->remove_accept_listener(self, adv, listener);
+    return VTBL(myself)->remove_accept_listener(myself, adv, listener);
 }
 
 
 
 JXTA_DECLARE(Jxta_status) jxta_pipe_service_get_resolver(Jxta_pipe_service * self, Jxta_pipe_resolver ** resolver)
 {
-    PTValid(self, Jxta_pipe_service);
+    Jxta_pipe_service* myself = PTValid(self, Jxta_pipe_service);
 
-    return VTBL(self)->get_resolver(self, resolver);
+    return VTBL(myself)->get_resolver(myself, resolver);
 }
 
 
 JXTA_DECLARE(Jxta_status) jxta_pipe_service_set_resolver(Jxta_pipe_service * self,
                                                          Jxta_pipe_resolver * new_resolver, Jxta_pipe_resolver ** old)
 {
-    PTValid(self, Jxta_pipe_service);
+    Jxta_pipe_service* myself = PTValid(self, Jxta_pipe_service);
 
-    return VTBL(self)->set_resolver(self, new_resolver, old);
+    return VTBL(myself)->set_resolver(myself, new_resolver, old);
 }
 
 
 JXTA_DECLARE(Jxta_status) jxta_pipe_service_lookup_impl(Jxta_pipe_service * self, const char *name,
                                                         Jxta_pipe_service_impl ** impl)
 {
-    PTValid(self, Jxta_pipe_service);
+    Jxta_pipe_service* myself = PTValid(self, Jxta_pipe_service);
 
-    return VTBL(self)->lookup_impl(self, name, impl);
+    return VTBL(myself)->lookup_impl(myself, name, impl);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_pipe_service_add_impl(Jxta_pipe_service * self, const char *name, Jxta_pipe_service_impl * impl)
 {
-    PTValid(self, Jxta_pipe_service);
+    Jxta_pipe_service* myself = PTValid(self, Jxta_pipe_service);
 
-    return VTBL(self)->add_impl(self, name, impl);
+    return VTBL(myself)->add_impl(myself, name, impl);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_pipe_service_remove_impl(Jxta_pipe_service * self, const char *name, Jxta_pipe_service_impl * impl)
 {
-    PTValid(self, Jxta_pipe_service);
+    Jxta_pipe_service* myself = PTValid(self, Jxta_pipe_service);
 
-    return VTBL(self)->remove_impl(self, name, impl);
+    return VTBL(myself)->remove_impl(myself, name, impl);
 }
 
 

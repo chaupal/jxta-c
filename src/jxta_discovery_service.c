@@ -62,9 +62,9 @@
  */
 void jxta_discovery_service_construct(Jxta_discovery_service * service, Jxta_discovery_service_methods * methods)
 {
-    PTValid(methods, Jxta_discovery_service_methods);
+    Jxta_discovery_service_methods* service_methods = PTValid(methods, Jxta_discovery_service_methods);
 
-    jxta_service_construct((Jxta_service *) service, (Jxta_service_methods *) methods);
+    jxta_service_construct((Jxta_service *) service, (Jxta_service_methods *) service_methods);
     service->thisType = "Jxta_discovery_service";
 }
 
@@ -84,16 +84,16 @@ void jxta_discovery_service_destruct(Jxta_discovery_service * service)
 
 
 JXTA_DECLARE(long) discovery_service_get_remote_advertisements(Jxta_discovery_service * service, Jxta_id * peerid,
-                                                               short type, const char *attribute, const char *value, 
+                                                               short type, const char *aattribute, const char *value, 
                                                                int threshold, Jxta_discovery_listener * listener)
 {
     Jxta_discovery_query *dq = NULL;
     long qid = 0;
 
-    PTValid(service, Jxta_discovery_service);
+    Jxta_discovery_service* discovery_service = PTValid(service, Jxta_discovery_service);
 
-    dq = jxta_discovery_query_new_1(type, attribute, value, threshold, NULL);
-    qid = VTBL->remoteQuery(service, peerid, dq, listener);
+    dq = jxta_discovery_query_new_1(type, aattribute, value, threshold, NULL);
+    qid = VTBL->remoteQuery(discovery_service, peerid, dq, listener);
     JXTA_OBJECT_RELEASE(dq);
     return qid;
 }
@@ -104,10 +104,10 @@ JXTA_DECLARE(long) discovery_service_remote_query(Jxta_discovery_service * servi
     Jxta_discovery_query *dq = NULL;
     long qid;
 
-    PTValid(service, Jxta_discovery_service);
+    Jxta_discovery_service* discovery_service = PTValid(service, Jxta_discovery_service);
 
     dq = jxta_discovery_query_new_2(query, threshold, NULL);
-    qid = VTBL->remoteQuery(service, peerid, dq, listener);
+    qid = VTBL->remoteQuery(discovery_service, peerid, dq, listener);
     JXTA_OBJECT_RELEASE(dq);
     return qid;
 }
@@ -115,30 +115,30 @@ JXTA_DECLARE(long) discovery_service_remote_query(Jxta_discovery_service * servi
 JXTA_DECLARE(long) discovery_service_remote_query_1(Jxta_discovery_service * service, Jxta_id * peerid, 
                                                     Jxta_discovery_query * query, Jxta_discovery_listener * listener)
 {
-    PTValid(service, Jxta_discovery_service);
-    return VTBL->remoteQuery(service, peerid, query, listener);
+    Jxta_discovery_service* discovery_service = PTValid(service, Jxta_discovery_service);
+    return VTBL->remoteQuery(discovery_service, peerid, query, listener);
 }
 
 JXTA_DECLARE(Jxta_status) discovery_service_cancel_remote_query(Jxta_discovery_service * service, long query_id,
                                                                 Jxta_discovery_listener ** listener)
 {
-    PTValid(service, Jxta_discovery_service);
-    return VTBL->cancelRemoteQuery(service, query_id, listener);
+    Jxta_discovery_service* discovery_service = PTValid(service, Jxta_discovery_service);
+    return VTBL->cancelRemoteQuery(discovery_service, query_id, listener);
 }
 
 JXTA_DECLARE(Jxta_status)
     discovery_service_get_local_advertisements(Jxta_discovery_service * service,
-                                           short type, const char *attribute, const char *value, Jxta_vector ** advertisements)
+                                           short type, const char *aattribute, const char *value, Jxta_vector ** advertisements)
 {
-    PTValid(service, Jxta_discovery_service);
-    return VTBL->getLocalAdv(service, type, attribute, value, advertisements);
+    Jxta_discovery_service* discovery_service = PTValid(service, Jxta_discovery_service);
+    return VTBL->getLocalAdv(discovery_service, type, aattribute, value, advertisements);
 }
 
 JXTA_DECLARE(Jxta_status)
     discovery_service_local_query(Jxta_discovery_service * service, const char *query, Jxta_vector ** advertisements)
 {
-    PTValid(service, Jxta_discovery_service);
-    return VTBL->getLocalQuery(service, query, advertisements);
+    Jxta_discovery_service* discovery_service = PTValid(service, Jxta_discovery_service);
+    return VTBL->getLocalQuery(discovery_service, query, advertisements);
 }
 
 JXTA_DECLARE(Jxta_status)
@@ -146,8 +146,8 @@ JXTA_DECLARE(Jxta_status)
                           Jxta_advertisement * adv,
                           short type, Jxta_expiration_time lifetime, Jxta_expiration_time lifetimeForOthers)
 {
-    PTValid(service, Jxta_discovery_service);
-    return VTBL->publish(service, adv, type, lifetime, lifetimeForOthers);
+    Jxta_discovery_service* discovery_service = PTValid(service, Jxta_discovery_service);
+    return VTBL->publish(discovery_service, adv, type, lifetime, lifetimeForOthers);
 
 }
 
@@ -155,54 +155,54 @@ JXTA_DECLARE(Jxta_status)
     discovery_service_remote_publish(Jxta_discovery_service * service,
                                  Jxta_id * peerid, Jxta_advertisement * adv, short type, Jxta_expiration_time expirationtime)
 {
-    PTValid(service, Jxta_discovery_service);
-    return VTBL->remotePublish(service, peerid, adv, type, expirationtime, NULL);
+    Jxta_discovery_service* discovery_service = PTValid(service, Jxta_discovery_service);
+    return VTBL->remotePublish(discovery_service, peerid, adv, type, expirationtime, NULL);
 }
 
 JXTA_DECLARE(Jxta_status) discovery_service_remote_publish_1(Jxta_discovery_service * service, Jxta_id * peerid, 
                                                              Jxta_advertisement * adv, short type, 
                                                              Jxta_expiration_time expirationtime, const Jxta_qos * qos)
 {
-    PTValid(service, Jxta_discovery_service);
-    return VTBL->remotePublish(service, peerid, adv, type, expirationtime, qos);
+    Jxta_discovery_service* discovery_service = PTValid(service, Jxta_discovery_service);
+    return VTBL->remotePublish(discovery_service, peerid, adv, type, expirationtime, qos);
 }
 
 JXTA_DECLARE(Jxta_status)
     discovery_service_flush_advertisements(Jxta_discovery_service * service, char *id, short type)
 {
-    PTValid(service, Jxta_discovery_service);
-    return VTBL->flush(service, id, type);
+    Jxta_discovery_service* discovery_service = PTValid(service, Jxta_discovery_service);
+    return VTBL->flush(discovery_service, id, type);
 
 }
 
 JXTA_DECLARE(Jxta_status)
     discovery_service_add_discovery_listener(Jxta_discovery_service * service, Jxta_discovery_listener * listener)
 {
-    PTValid(service, Jxta_discovery_service);
-    return VTBL->add_listener(service, listener);
+    Jxta_discovery_service* discovery_service = PTValid(service, Jxta_discovery_service);
+    return VTBL->add_listener(discovery_service, listener);
 
 }
 
 JXTA_DECLARE(Jxta_status)
     discovery_service_remove_discovery_listener(Jxta_discovery_service * service, Jxta_discovery_listener * listener)
 {
-    PTValid(service, Jxta_discovery_service);
-    return VTBL->remove_listener(service, listener);
+    Jxta_discovery_service* discovery_service = PTValid(service, Jxta_discovery_service);
+    return VTBL->remove_listener(discovery_service, listener);
 
 }
 
 JXTA_DECLARE(Jxta_status)
-    discovery_service_get_lifetime(Jxta_discovery_service * service, short type, Jxta_id * advId, Jxta_expiration_time * exp)
+    discovery_service_get_lifetime(Jxta_discovery_service * service, short type, Jxta_id * advId, Jxta_expiration_time * expriation)
 {
-    PTValid(service, Jxta_discovery_service);
-    return VTBL->getLifetime(service, type, advId, exp);
+    Jxta_discovery_service* discovery_service = PTValid(service, Jxta_discovery_service);
+    return VTBL->getLifetime(discovery_service, type, advId, expriation);
 }
 
 JXTA_DECLARE(Jxta_status)
-    discovery_service_get_expiration(Jxta_discovery_service * service, short type, Jxta_id * advId, Jxta_expiration_time * exp)
+    discovery_service_get_expiration(Jxta_discovery_service * service, short type, Jxta_id * advId, Jxta_expiration_time * expriation)
 {
-    PTValid(service, Jxta_discovery_service);
-    return VTBL->getExpiration(service, type, advId, exp);
+    Jxta_discovery_service* discovery_service = PTValid(service, Jxta_discovery_service);
+    return VTBL->getExpiration(discovery_service, type, advId, expriation);
 }
 
 /* vim: set ts=4 sw=4 tw=130 et: */

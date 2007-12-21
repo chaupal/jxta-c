@@ -260,7 +260,9 @@ static void stop(Jxta_module * module)
 
 static JString *name_get(Jxta_transport * self)
 {
+#ifdef UNUSED_VWF
     PTValid(self, Jxta_router_client);
+#endif
     return jstring_new_2("jxta");
 }
 
@@ -797,7 +799,9 @@ static Jxta_endpoint_address *jxta_router_select_best_address(Jxta_router_client
     Jxta_endpoint_address *eaddr = NULL;
     Jxta_endpoint_address *best_addr = NULL;
     unsigned int i;
+#ifdef UNUSED_VWF
     Jxta_boolean found_http = FALSE;
+#endif
     char *caddress = NULL;
     int metric, best = INT_MIN;
 
@@ -922,6 +926,7 @@ static Jxta_RouteAdvertisement *search_in_local_cm(Jxta_router_client * self, Jx
     return route;
 }
 
+#ifdef UNUSED_VWF
 static Jxta_endpoint_address * demangle_ea(Jxta_router_client * me, Jxta_endpoint_address * ea)
 {
     Jxta_endpoint_address * new_ea = NULL;
@@ -943,6 +948,7 @@ static Jxta_endpoint_address * demangle_ea(Jxta_router_client * me, Jxta_endpoin
 
     return new_ea;
 }
+#endif
 
 static JxtaEndpointMessenger *messenger_get(Jxta_transport * t, Jxta_endpoint_address * dest)
 {
@@ -988,8 +994,9 @@ static JxtaEndpointMessenger *messenger_get(Jxta_transport * t, Jxta_endpoint_ad
 static
 Jxta_boolean ping(Jxta_transport * t, Jxta_endpoint_address * addr)
 {
+#ifdef UNUSED_VWF
     PTValid(t, Jxta_router_client);
-
+#endif
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "NOT YET IMPLEMENTED\n");
     return FALSE;
 }
@@ -997,7 +1004,9 @@ Jxta_boolean ping(Jxta_transport * t, Jxta_endpoint_address * addr)
 static
 void propagate(Jxta_transport * tpt, Jxta_message * msg, const char *service_name, const char *service_params)
 {
+#ifdef UNUSED_VWF
     Jxta_router_client *self = PTValid(tpt, Jxta_router_client);
+#endif
 
   /**
    ** The JXTA Endpoint Router does not implement propagation.
@@ -1006,22 +1015,25 @@ void propagate(Jxta_transport * tpt, Jxta_message * msg, const char *service_nam
 
 Jxta_boolean allow_overload_p(Jxta_transport * tpt)
 {
+#ifdef UNUSED_VWF
     Jxta_router_client *self = PTValid(tpt, Jxta_router_client);
-
+#endif
     return FALSE;
 }
 
 Jxta_boolean allow_routing_p(Jxta_transport * tpt)
 {
+#ifdef UNUSED_VWF
     Jxta_router_client *self = PTValid(tpt, Jxta_router_client);
-
+#endif
     return TRUE;
 }
 
 Jxta_boolean connection_oriented_p(Jxta_transport * tpt)
 {
+#ifdef UNUSED_VWF
     Jxta_router_client *self = PTValid(tpt, Jxta_router_client);
-
+#endif
     return TRUE;
 }
 
@@ -1048,8 +1060,8 @@ Jxta_router_client *jxta_router_client_construct(Jxta_router_client * self, Jxta
 {
     apr_status_t res;
 
-    PTValid(methods, Jxta_transport_methods);
-    jxta_transport_construct((Jxta_transport *) self, (Jxta_transport_methods const *) methods);
+    Jxta_transport_methods* transport_methods = PTValid(methods, Jxta_transport_methods);
+    jxta_transport_construct((Jxta_transport *) self, (Jxta_transport_methods const *) transport_methods);
     self->thisType = "Jxta_router_client";
     self->_super.direction = JXTA_OUTBOUND;
 
@@ -1092,49 +1104,49 @@ Jxta_router_client *jxta_router_client_construct(Jxta_router_client * self, Jxta
  */
 void jxta_router_client_destruct(Jxta_router_client * self)
 {
-    PTValid(self, Jxta_router_client);
+    Jxta_router_client* myself = PTValid(self, Jxta_router_client);
 
-    if (self->discovery) {
-        JXTA_OBJECT_RELEASE(self->discovery);
-        self->discovery = NULL;
+    if (myself->discovery) {
+        JXTA_OBJECT_RELEASE(myself->discovery);
+        myself->discovery = NULL;
     }
 
-    if (self->peers) {
-        JXTA_OBJECT_RELEASE(self->peers);
-        self->peers = NULL;
+    if (myself->peers) {
+        JXTA_OBJECT_RELEASE(myself->peers);
+        myself->peers = NULL;
     }
 
-    if (self->localPeerIdString) {
-        free(self->localPeerIdString);
-        self->localPeerIdString = NULL;
+    if (myself->localPeerIdString) {
+        free(myself->localPeerIdString);
+        myself->localPeerIdString = NULL;
     }
 
-    if (self->localPeerId) {
-        JXTA_OBJECT_RELEASE(self->localPeerId);
-        self->localPeerId = NULL;
+    if (myself->localPeerId) {
+        JXTA_OBJECT_RELEASE(myself->localPeerId);
+        myself->localPeerId = NULL;
     }
 
-    if (self->router_name) {
-        free(self->router_name);
-        self->router_name = NULL;
+    if (myself->router_name) {
+        free(myself->router_name);
+        myself->router_name = NULL;
     }
 
-    if (self->localPeerAddr) {
-        JXTA_OBJECT_RELEASE(self->localPeerAddr);
-        self->localPeerAddr = NULL;
+    if (myself->localPeerAddr) {
+        JXTA_OBJECT_RELEASE(myself->localPeerAddr);
+        myself->localPeerAddr = NULL;
     }
 
-    if (self->mutex) {
-        apr_thread_mutex_destroy(self->mutex);
-        self->mutex = NULL;
+    if (myself->mutex) {
+        apr_thread_mutex_destroy(myself->mutex);
+        myself->mutex = NULL;
     }
 
-    if (self->pool) {
-        apr_pool_destroy(self->pool);
-        self->pool = NULL;
+    if (myself->pool) {
+        apr_pool_destroy(myself->pool);
+        myself->pool = NULL;
     }
 
-    jxta_transport_destruct((Jxta_transport *) self);
+    jxta_transport_destruct((Jxta_transport *) myself);
 }
 
 static void router_free(Jxta_object * obj)

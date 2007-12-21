@@ -176,7 +176,7 @@ typedef Jxta_listener Jxta_discovery_listener;
  * @param  Jxta_discovery_service the service 
  * @param  peerid peerid of the peer to send the query to. A NULL ID causes a propagation
  * @param  type  DISC_PEER, DISC_GROUP, or DISC_ADV
- * @param  attribute  attribute name to narrow discovery to
+ * @param  aattribute  attribute name to narrow discovery to
  * @param  value value of attribute to narrow discovery to
  * @param  threshold the upper limit of responses from one peer
  * @param  listener the listener which will be called back when responses are received
@@ -185,7 +185,7 @@ typedef Jxta_listener Jxta_discovery_listener;
 JXTA_DECLARE(long) discovery_service_get_remote_advertisements(Jxta_discovery_service * service,
                                                                Jxta_id * peerid,
                                                                short type,
-                                                               const char *attribute,
+                                                               const char *aattribute,
                                                                const char *value, int threshold,
                                                                Jxta_discovery_listener * listener);
 
@@ -222,14 +222,14 @@ JXTA_DECLARE(Jxta_status) discovery_service_cancel_remote_query(Jxta_discovery_s
  * Retrieve Stored Peer, Group, and General JXTA Advertisements
  * @param  Jxta_discovery_service the service 
  * @param  type  DISC_PEER, DISC_GROUP, or DISC_ADV
- * @param  attribute  attribute name to narrow discovery to
+ * @param  aattribute  attribute name to narrow discovery to
  * @param  value value of attribute to narrow discovery to
  * @param  advertisements pointer to the Jxta_vector to return
  * @return Jxta_status
  * @see Jxta_status
  */
 JXTA_DECLARE(Jxta_status) discovery_service_get_local_advertisements(Jxta_discovery_service * service,
-                                                                     short type, const char *attribute, const char *value,
+                                                                     short type, const char *aattribute, const char *value,
                                                                      Jxta_vector ** advertisements);
 
 /**
@@ -332,7 +332,7 @@ JXTA_DECLARE(Jxta_status) discovery_service_remove_discovery_listener(Jxta_disco
  * @see Jxta_status
  */
 JXTA_DECLARE(Jxta_status) discovery_service_get_lifetime(Jxta_discovery_service * service, short type, Jxta_id * advId,
-                                                         Jxta_expiration_time * exp);
+                                                         Jxta_expiration_time * expriation);
 
 /**
  * Get an advertisement's expiration value.
@@ -345,7 +345,7 @@ JXTA_DECLARE(Jxta_status) discovery_service_get_lifetime(Jxta_discovery_service 
  * @see Jxta_status
  */
 JXTA_DECLARE(Jxta_status) discovery_service_get_expiration(Jxta_discovery_service * service, short type, Jxta_id * advId,
-                                                           Jxta_expiration_time * exp);
+                                                           Jxta_expiration_time * expriation);
 
 #ifdef __cplusplus
 #if 0

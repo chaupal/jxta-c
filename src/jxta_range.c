@@ -82,7 +82,7 @@ struct _jxta_range {
     double low;
 };
 
-static void range_get_elem_attr(const char * elemAttr, char **element, char **attribute);
+static void range_get_elem_attr(const char * elemAttr, char **element, char **aattribute);
 static Jxta_hashtable *global_range_table = NULL;
 
 static void range_delete(Jxta_object * obj)
@@ -159,7 +159,7 @@ JXTA_DECLARE(Jxta_range *)
 }
 
 JXTA_DECLARE(Jxta_status)
-    jxta_range_add(Jxta_range * rge, const char *nspace, const char *element, const char *attribute, const char *range,
+    jxta_range_add(Jxta_range * rge, const char *nspace, const char *element, const char *aattribute, const char *range,
                Jxta_boolean force)
 {
     Jxta_status ret;
@@ -171,17 +171,17 @@ JXTA_DECLARE(Jxta_status)
     int len=0;
     char *full_index_name = NULL;
 
-    if (attribute != NULL) {
-        len = strlen(nspace) + strlen(attribute) + strlen(element) + 3;
+    if (aattribute != NULL) {
+        len = strlen(nspace) + strlen(aattribute) + strlen(element) + 3;
         full_index_name = (char *) calloc(1, len);
-        apr_snprintf(full_index_name, len, "%s %s %s", nspace, element, attribute);
+        apr_snprintf(full_index_name, len, "%s %s %s", nspace, element, aattribute);
     } else {
         len = strlen(nspace) + strlen(element) + 2;
         full_index_name = (char *) calloc(1, len);
         apr_snprintf(full_index_name, len, "%s %s", nspace, element);
     }
 
-    tmp = attribute;
+    tmp = aattribute;
     rangeSave = (char *) range;
     memset(low, '\0', 32);
     memset(high, '\0', 32);
@@ -219,8 +219,8 @@ JXTA_DECLARE(Jxta_status)
         }
         rge->nameSpace = strdup(nspace);
         rge->element = strdup(element);
-        if (NULL != attribute) {
-            rge->attribute = strdup(attribute);
+        if (NULL != aattribute) {
+            rge->attribute = strdup(aattribute);
         } else {
             rge->attribute = NULL;
         }
@@ -246,18 +246,18 @@ JXTA_DECLARE(void)
     jxta_range_set_range(Jxta_range *rge, const char *nSpace, const char *elemAttr, const char *range)
 {
     char * element;
-    char * attribute;
+    char * aattribute;
 
-    range_get_elem_attr(elemAttr, &element, &attribute);
+    range_get_elem_attr(elemAttr, &element, &aattribute);
     if (NULL != range) {
-        jxta_range_add(rge, nSpace, element, attribute, range, TRUE);
+        jxta_range_add(rge, nSpace, element, aattribute, range, TRUE);
     }
     if (element) free(element);
-    if (attribute) free(attribute);
+    if (aattribute) free(aattribute);
 }
 
 JXTA_DECLARE(Jxta_status)
-    jxta_range_remove(Jxta_range * rge, const char *nspace, const char *element, const char *attribute, const char *range)
+    jxta_range_remove(Jxta_range * rge, const char *nspace, const char *element, const char *aattribute, const char *range)
 {
     Jxta_status res = JXTA_SUCCESS;
 
@@ -281,13 +281,13 @@ JXTA_DECLARE(void)
     jxta_range_set_element_attr(Jxta_range *rge, const char *elementAttr)
 {
     char * element=NULL;
-    char * attribute=NULL;
+    char * aattribute=NULL;
 
-    range_get_elem_attr(elementAttr, &element, &attribute);
+    range_get_elem_attr(elementAttr, &element, &aattribute);
     if (rge->element) free(rge->element);
     rge->element = element;
     if (rge->attribute) free(rge->attribute);
-    rge->attribute = attribute;
+    rge->attribute = aattribute;
 }
 
 JXTA_DECLARE(void)
@@ -304,10 +304,10 @@ JXTA_DECLARE(const char *)
 }
 
 JXTA_DECLARE(void)
-    jxta_range_set_attribute(Jxta_range *rge, const char *attribute)
+    jxta_range_set_attribute(Jxta_range *rge, const char *aattribute)
 {
     if (rge->attribute) free(rge->attribute);
-    rge->attribute = strdup(attribute);
+    rge->attribute = strdup(aattribute);
 }
 
 JXTA_DECLARE(const char *)
@@ -407,7 +407,7 @@ JXTA_DECLARE(Jxta_status)
     return JXTA_NOTIMP;
 }
 
-static void range_get_elem_attr(const char * elemAttr, char **element, char **attribute)
+static void range_get_elem_attr(const char * elemAttr, char **element, char **aattribute)
 {
    char *elem=NULL;
    char *attr=NULL;
@@ -428,7 +428,7 @@ static void range_get_elem_attr(const char * elemAttr, char **element, char **at
        tmp++;
    }
    *element = elem;
-   *attribute = attr;
+   *aattribute = attr;
 }
 
 /* vim: set ts=4 sw=4 et tw=130: */

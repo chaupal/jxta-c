@@ -255,9 +255,9 @@ static void *APR_THREAD_FUNC http_poller_body(apr_thread_t * t, void *arg)
 
     status = http_client_connect(poller->htcli);
     if (APR_SUCCESS != status) {
-        char msg[256];
-        apr_strerror(status, msg, sizeof(msg));
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed connect : %s \n", msg);
+        char mmsg[256];
+        apr_strerror(status, mmsg, sizeof(msg));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed connect : %s \n", mmsg);
         poller->running = FALSE;
         apr_thread_exit(t, !APR_SUCCESS);
     }

@@ -537,8 +537,9 @@ static void stop(Jxta_module * module)
  */
 static JString *name_get(Jxta_transport * relay)
 {
+#ifdef UNUSED
     _jxta_transport_relay *self = PTValid(relay, _jxta_transport_relay);
-
+#endif
     return jstring_new_2("relay");
 }
 
@@ -558,8 +559,9 @@ static Jxta_endpoint_address *publicaddr_get(Jxta_transport * relay)
  */
 static Jxta_boolean ping(Jxta_transport * relay, Jxta_endpoint_address * addr)
 {
+#ifdef UNUSED
     _jxta_transport_relay *self = PTValid(relay, _jxta_transport_relay);
-
+#endif
     /* FIXME 20050119 If the address requested is the relay we should return true */
 
     return FALSE;
@@ -570,8 +572,9 @@ static Jxta_boolean ping(Jxta_transport * relay, Jxta_endpoint_address * addr)
  */
 static void propagate(Jxta_transport * relay, Jxta_message * msg, const char *service_name, const char *service_params)
 {
+#ifdef UNUSED_VWF
     _jxta_transport_relay *self = PTValid(relay, _jxta_transport_relay);
-
+#endif
     /* this code intentionally left blank */
 }
 
@@ -580,8 +583,9 @@ static void propagate(Jxta_transport * relay, Jxta_message * msg, const char *se
  */
 static Jxta_boolean allow_overload_p(Jxta_transport * relay)
 {
+#ifdef UNUSED
     _jxta_transport_relay *self = PTValid(relay, _jxta_transport_relay);
-
+#endif
     return FALSE;
 }
 
@@ -590,8 +594,9 @@ static Jxta_boolean allow_overload_p(Jxta_transport * relay)
  */
 static Jxta_boolean allow_routing_p(Jxta_transport * relay)
 {
+#ifdef UNUSED
     _jxta_transport_relay *self = PTValid(relay, _jxta_transport_relay);
-
+#endif
     return TRUE;
 }
 
@@ -600,8 +605,9 @@ static Jxta_boolean allow_routing_p(Jxta_transport * relay)
  */
 static Jxta_boolean connection_oriented_p(Jxta_transport * relay)
 {
+#ifdef UNUSED
     _jxta_transport_relay *self = PTValid(relay, _jxta_transport_relay);
-
+#endif
     return TRUE;
 }
 
@@ -612,8 +618,8 @@ _jxta_transport_relay *jxta_transport_relay_construct(Jxta_transport * relay, Jx
 {
     _jxta_transport_relay *self = NULL;
 
-    PTValid(methods, Jxta_transport_methods);
-    self = (_jxta_transport_relay *) jxta_transport_construct(relay, (Jxta_transport_methods const *) methods);
+    Jxta_transport_methods* transport_methods = PTValid(methods, Jxta_transport_methods);
+    self = (_jxta_transport_relay *) jxta_transport_construct(relay, (Jxta_transport_methods const *) transport_methods);
     self->_super.direction = JXTA_OUTBOUND;
 
     if (NULL != self) {
@@ -1205,22 +1211,22 @@ static void check_relay_lease(_jxta_transport_relay * self, _jxta_peer_relay_ent
     Jxta_time expires;
     char *add = NULL;
 
-    PTValid(peer, _jxta_peer_relay_entry);
+    _jxta_peer_relay_entry* peer_relay = PTValid(peer, _jxta_peer_relay_entry);
 
     /*
      * check if the peer has still a valid relay
      */
 
-    jxta_peer_lock((Jxta_peer *) peer);
+    jxta_peer_lock((Jxta_peer *) peer_relay);
 
     add = jxta_endpoint_service_get_relay_addr(self->endpoint);
     if (add == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "lost relay connection\n");
-        peer->is_connected = FALSE;
-        peer->try_connect = FALSE;
-        peer->connectTime = 0;
-        peer->connectRetryDelay = RELAY_MIN_RETRY_DELAY;
-        jxta_peer_unlock((Jxta_peer *) peer);
+        peer_relay->is_connected = FALSE;
+        peer_relay->try_connect = FALSE;
+        peer_relay->connectTime = 0;
+        peer_relay->connectRetryDelay = RELAY_MIN_RETRY_DELAY;
+        jxta_peer_unlock((Jxta_peer *) peer_relay);
 
         /*
          * remove the relay address from our local route
@@ -1359,10 +1365,11 @@ static void connect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_entr
     Jxta_endpoint_address *destAddr = NULL;
     JString *tmp = NULL;
     JString *tmp1 = NULL;
+#ifdef UNUSED_VWF
     Jxta_transport *transport = NULL;
     JxtaEndpointMessenger *endpoint_messenger = NULL;
     Jxta_endpoint_address *addr = NULL;
-
+#endif
     jxta_peer_lock((Jxta_peer *) peer);
 
     if (peer->connectTime > currentTime) {
@@ -1458,9 +1465,11 @@ static void reconnect_to_relay(_jxta_transport_relay * self, _jxta_peer_relay_en
     Jxta_endpoint_address *destAddr = NULL;
     JString *tmp = NULL;
     JString *tmp1 = NULL;
+#ifdef UNUSED_VWF
     Jxta_transport *transport = NULL;
     JxtaEndpointMessenger *endpoint_messenger = NULL;
     Jxta_endpoint_address *addr = NULL;
+#endif
     JString *request;
     Jxta_message_element *msgElem;
 

@@ -210,7 +210,7 @@ JXTA_DECLARE(Jxta_status) jxta_adv_response_msg_get_xml(Jxta_adv_response_msg * 
         Jxta_advertisement *adv;
         Jxta_expiration_time exp;
         Jxta_adv_response_entry * entry;
-        JString *xml;
+        JString *xxml;
         char buf[128];
         JString *encode_xml;
         if (JXTA_SUCCESS != jxta_vector_get_object_at(myself->entries, JXTA_OBJECT_PPTR(&entry), i)) {
@@ -223,11 +223,11 @@ JXTA_DECLARE(Jxta_status) jxta_adv_response_msg_get_xml(Jxta_adv_response_msg * 
         apr_snprintf(buf, sizeof(buf), "%" APR_INT64_T_FMT "\"", entry->expiration);
         jstring_append_2(string, buf);
         jstring_append_2(string, ">");
-        jxta_advertisement_get_xml(adv, &xml);
-        if (NULL != xml) {
-            jxta_xml_util_encode_jstring(xml, &encode_xml);
+        jxta_advertisement_get_xml(adv, &xxml);
+        if (NULL != xxml) {
+            jxta_xml_util_encode_jstring(xxml, &encode_xml);
             jstring_append_1(string, encode_xml);
-            JXTA_OBJECT_RELEASE(xml);
+            JXTA_OBJECT_RELEASE(xxml);
             JXTA_OBJECT_RELEASE(encode_xml);
         }
         jstring_append_2(string, "</Adv>");
@@ -259,14 +259,14 @@ static Jxta_adv_response_entry * new_entry(Jxta_advertisement *adv, Jxta_expirat
     return entry;
 }
 
-JXTA_DECLARE(Jxta_status) jxta_adv_response_msg_add_advertisement(Jxta_adv_response_msg *msg, Jxta_advertisement *adv, Jxta_expiration_time exp)
+JXTA_DECLARE(Jxta_status) jxta_adv_response_msg_add_advertisement(Jxta_adv_response_msg *msg, Jxta_advertisement *adv, Jxta_expiration_time expiration)
 {
     Jxta_status ret;
     Jxta_adv_response_entry *entry;
 
     JXTA_OBJECT_CHECK_VALID(msg);
 
-    entry = new_entry(adv, exp);
+    entry = new_entry(adv, expiration);
     ret = jxta_vector_add_object_last(msg->entries, (Jxta_object *) entry);
 
     JXTA_OBJECT_RELEASE(entry);

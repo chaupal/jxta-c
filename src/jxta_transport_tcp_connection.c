@@ -967,7 +967,9 @@ static Jxta_status drain_socket(Jxta_transport_tcp_connection *me)
 static Jxta_status JXTA_STDCALL read_cb(void *param, void *arg)
 {
     Jxta_transport_tcp_connection *me = arg;
+#ifdef UNUSED_VWF
     apr_pollfd_t *fd = param;
+#endif
     apr_thread_pool_t *tp;
     Jxta_status rv;
 
@@ -1085,7 +1087,7 @@ JXTA_DECLARE(Jxta_status) jxta_transport_tcp_connection_send_message(Jxta_transp
      * i.e, only when sent throught EndpointRouter.
      * However, JXTA-JSE requires src to be set no matter what.
      */
-    addr = jxta_transport_publicaddr_get(_self->tp);
+    addr = jxta_transport_publicaddr_get((Jxta_transport*) _self->tp);
     jxta_message_set_source(msg, addr);
     JXTA_OBJECT_RELEASE(addr);
 
@@ -1247,19 +1249,19 @@ Tcp_connection_state tcp_connection_state(Jxta_transport_tcp_connection *me)
 
 Jxta_status tcp_connection_get_messenger(Jxta_transport_tcp_connection *me, apr_interval_time_t timeout, TcpMessenger **msgr)
 {
-    apr_interval_time_t wait;
+    apr_interval_time_t wwait;
     apr_time_t elapsed;
     
-    wait = 100000; /* 100 ms */
+    wwait = 100000; /* 100 ms */
     elapsed = 0;
     while (CONN_CONNECTED != me->connection_state && elapsed < timeout) {
         if (CONN_DISCONNECTED == me->connection_state) {
             *msgr = NULL;
             return JXTA_FAILED;
         }
-        apr_sleep(wait);
-        elapsed += wait;
-        wait <<= 2;
+        apr_sleep(wwait);
+        elapsed += wwait;
+        wwait <<= 2;
     }
 
     if (CONN_CONNECTED != me->connection_state) {

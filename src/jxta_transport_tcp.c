@@ -93,10 +93,12 @@ static const char *__log_cat = "TCP_TRANSPORT";
 /*************************************************************************
  **
  *************************************************************************/
+#ifdef UNUSED_VWF
 static const char *MESSAGE_SOURCE_NS = "jxta";
 static const char *MESSAGE_DESTINATION_NS = "jxta";
 static const char *MESSAGE_SOURCE_NAME = "EndpointSourceAddress";
 static const char *MESSAGE_DESTINATION_NAME = "EndpointDestinationAddress";
+#endif
 
 /********************************************************************************/
 /*                                                                              */
@@ -288,7 +290,9 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     _jxta_transport_tcp *_self = PTValid(module, _jxta_transport_tcp);
     apr_status_t status;
     Jxta_id *id;
-    JString *Pid = NULL;
+#ifdef UNUSED_VWF
+JString *Pid = NULL;
+#endif
     Jxta_PA *conf_adv = NULL;
     Jxta_svc *svc = NULL;
     Jxta_TCPTransportAdvertisement *tta;
@@ -503,7 +507,9 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
 
 static Jxta_status JXTA_STDCALL accept_cb(void *param, void *arg)
 {
-    apr_pollfd_t *fd = param;
+#ifdef UNUSED_VWF
+apr_pollfd_t *fd = param;
+#endif
     Jxta_transport_tcp *me = arg;
     Jxta_transport_tcp_connection *conn;
     apr_socket_t *input_socket = NULL;
@@ -783,8 +789,9 @@ static JxtaEndpointMessenger *messenger_get(Jxta_transport * me, Jxta_endpoint_a
 /******************************************************************************/
 static Jxta_boolean ping(Jxta_transport * me, Jxta_endpoint_address * addr)
 {
+#ifdef UNUSED_VWF
     _jxta_transport_tcp *_self = PTValid(me, _jxta_transport_tcp);
-
+#endif
     /* XXX bondolo 20050513 This implementation just makes things worse... */
     return TRUE;
 }
@@ -808,8 +815,9 @@ static void propagate(Jxta_transport * me, Jxta_message * msg, const char *servi
 /******************************************************************************/
 static Jxta_boolean allow_overload_p(Jxta_transport * me)
 {
+#ifdef UNUSED_VWF
     _jxta_transport_tcp *_self = PTValid(me, _jxta_transport_tcp);
-
+#endif
     return FALSE;
 }
 
@@ -818,8 +826,9 @@ static Jxta_boolean allow_overload_p(Jxta_transport * me)
 /******************************************************************************/
 static Jxta_boolean allow_routing_p(Jxta_transport * me)
 {
+#ifdef UNUSED_VWF
     _jxta_transport_tcp *_self = PTValid(me, _jxta_transport_tcp);
-
+#endif
     return TRUE;
 }
 
@@ -828,7 +837,9 @@ static Jxta_boolean allow_routing_p(Jxta_transport * me)
 /******************************************************************************/
 static Jxta_boolean connection_oriented_p(Jxta_transport * me)
 {
-    _jxta_transport_tcp *_self = PTValid(me, _jxta_transport_tcp);
+#ifdef UNUSED_VWF
+_jxta_transport_tcp *_self = PTValid(me, _jxta_transport_tcp);
+#endif
 
     return TRUE;
 }
@@ -839,8 +850,8 @@ static Jxta_boolean connection_oriented_p(Jxta_transport * me)
 /******************************************************************************/
 static Jxta_transport_tcp *jxta_transport_tcp_construct(_jxta_transport_tcp * _self, Jxta_transport_tcp_methods const *methods)
 {
-    PTValid(methods, Jxta_transport_methods);
-    jxta_transport_construct((Jxta_transport *) _self, (Jxta_transport_methods const *) methods);
+    Jxta_transport_methods* transport_methods = PTValid(methods, Jxta_transport_methods);
+    jxta_transport_construct((Jxta_transport *) _self, (Jxta_transport_methods const *) transport_methods);
 
     _self->thisType = "_jxta_transport_tcp";
 
@@ -971,15 +982,17 @@ char *jxta_transport_tcp_get_local_ipaddr(Jxta_transport_tcp * me)
 
 apr_port_t jxta_transport_tcp_get_local_port(Jxta_transport_tcp * me)
 {
+#ifdef UNUSED_VWF
     _jxta_transport_tcp *_self = PTValid(me, _jxta_transport_tcp);
-
+#endif
     return me->port;
 }
 
 JString *jxta_transport_tcp_get_peerid(Jxta_transport_tcp * me)
 {
+#ifdef UNUSED_VWF
     _jxta_transport_tcp *_self = PTValid(me, _jxta_transport_tcp);
-
+#endif
     return JXTA_OBJECT_SHARE(me->peerid);
 }
 

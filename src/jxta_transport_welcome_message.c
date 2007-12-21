@@ -66,7 +66,9 @@ static const char *__log_cat = "WELCOME_MSG";
 static const char* GREETING = "JXTAHELLO";
 static const char* SPACE = " ";
 static const char* CURRENTVERSION = "3.0";
+#ifdef UNUSED_VWF
 static const char* CRLF = "\r\n";
+#endif
 static const Jxta_welcome_message_version CURRENT_VERSION = JXTA_WELCOME_MESSAGE_VERSION_3_0;
 
 struct _welcome_message {
@@ -85,7 +87,9 @@ struct _welcome_message {
 
 typedef struct _welcome_message _welcome_message_mutable;
 
+#ifdef UNUSED_VWF
 static Jxta_status welcome_message_parse(_welcome_message_mutable * me);
+#endif
 static _welcome_message_mutable * welcome_message_new(void);
 static void welcome_message_free(Jxta_object * me);
 

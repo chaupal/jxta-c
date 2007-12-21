@@ -510,11 +510,11 @@ JXTA_DECLARE(Jxta_time_diff) jxta_peerview_pong_msg_get_peer_adv_exp(Jxta_peervi
     return myself->peer_adv_exp;
 }
 
-JXTA_DECLARE(void) jxta_peerview_pong_msg_set_peer_adv_exp(Jxta_peerview_pong_msg * myself, Jxta_time_diff exp)
+JXTA_DECLARE(void) jxta_peerview_pong_msg_set_peer_adv_exp(Jxta_peerview_pong_msg * myself, Jxta_time_diff expiration)
 {
     JXTA_OBJECT_CHECK_VALID(myself);
 
-    myself->peer_adv_exp = exp;
+    myself->peer_adv_exp = expiration;
 }
 
 JXTA_DECLARE(Jxta_pong_msg_rdv_state) jxta_peerview_pong_msg_get_state(Jxta_peerview_pong_msg * myself)
@@ -667,13 +667,13 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml(Jxta_peerview_pong_msg 
         char const *attrs[8] = { "type", "jxta:PA" };
         unsigned int free_mask = 0;
         int attr_idx = 2;
-        apr_uuid_t *adv_gen = jxta_peerview_pong_msg_get_peer_adv_gen(myself);
+        apr_uuid_t *aadv_gen = jxta_peerview_pong_msg_get_peer_adv_gen(myself);
  
-        if (NULL != adv_gen) {
+        if (NULL != aadv_gen) {
             attrs[attr_idx++] = "adv_gen";
 
-            apr_uuid_format(tmpbuf, adv_gen);
-            free(adv_gen);
+            apr_uuid_format(tmpbuf, aadv_gen);
+            free(aadv_gen);
             free_mask |= (1 << attr_idx);
             attrs[attr_idx++] = strdup(tmpbuf);
         }

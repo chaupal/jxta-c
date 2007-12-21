@@ -181,9 +181,7 @@ static void stop(Jxta_module * membership)
  */
 static void get_mia(Jxta_service * membership, Jxta_advertisement ** mia)
 {
-
-    Jxta_membership_service_null *self = (Jxta_membership_service_null *) membership;
-    PTValid(self, Jxta_membership_service_null);
+    Jxta_membership_service_null *self = PTValid(membership, Jxta_membership_service_null);
 
     JXTA_OBJECT_SHARE(self->impl_adv);
     *mia = self->impl_adv;
@@ -196,9 +194,9 @@ static void get_mia(Jxta_service * membership, Jxta_advertisement ** mia)
  */
 static void get_interface(Jxta_service * self, Jxta_service ** svc)
 {
-    PTValid(self, Jxta_membership_service_null);
+    Jxta_membership_service_null* myself = PTValid(self, Jxta_membership_service_null);
 
-    JXTA_OBJECT_SHARE(self);
+    JXTA_OBJECT_SHARE(myself);
     *svc = self;
 }
 
@@ -221,13 +219,11 @@ static Jxta_status join(Jxta_membership_service * self, Jxta_membership_authenti
 
 static Jxta_status resign(Jxta_membership_service * svc)
 {
-    Jxta_membership_service_null *self = (Jxta_membership_service_null *) svc;
     Jxta_id *pg;
     Jxta_id *peer;
     Jxta_object *cred;
     JString *identity = jstring_new_0();
-
-    PTValid(self, Jxta_membership_service_null);
+    Jxta_membership_service_null* self = PTValid(svc, Jxta_membership_service_null);
 
     assert(0 == jxta_vector_size(self->creds));
 
@@ -308,9 +304,9 @@ void jxta_membership_service_null_construct(Jxta_membership_service_null * self,
      * we do not extend Jxta_Membership_service_methods; so the type string
      * is that of the base table
      */
-    PTValid(methods, Jxta_membership_service_methods);
+    Jxta_membership_service_methods* service_methods = PTValid(methods, Jxta_membership_service_methods);
 
-    jxta_membership_service_construct((Jxta_membership_service *) self, (Jxta_membership_service_methods *) methods);
+    jxta_membership_service_construct((Jxta_membership_service *) self, (Jxta_membership_service_methods *) service_methods);
 
     /* Set our rt type checking string */
     self->thisType = "Jxta_membership_service_null";
@@ -318,7 +314,7 @@ void jxta_membership_service_null_construct(Jxta_membership_service_null * self,
 
 void jxta_membership_service_null_destruct(Jxta_membership_service_null * self)
 {
-    PTValid(self, Jxta_membership_service_null);
+    self = PTValid(self, Jxta_membership_service_null);
 
     /* release/free/destroy our own stuff */
     if (NULL != self->creds) {

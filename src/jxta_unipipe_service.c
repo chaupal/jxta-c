@@ -176,8 +176,9 @@ Jxta_pipe_service_impl *jxta_unipipe_service_new_instance(Jxta_pipe_service * pi
 {
     Jxta_unipipe_service *self = NULL;
     Jxta_status res;
+#ifdef UNUSED_VWF
     Jxta_id *gid = NULL;
-
+#endif
     self = (Jxta_unipipe_service *) malloc(sizeof(Jxta_unipipe_service));
     memset(self, 0, sizeof(Jxta_unipipe_service));
     JXTA_OBJECT_INIT(self, jxta_unipipe_service_free, 0);

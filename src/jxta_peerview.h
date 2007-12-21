@@ -120,10 +120,10 @@ JXTA_DECLARE(Jxta_boolean) jxta_peerview_set_active(Jxta_peerview * pv, Jxta_boo
 *   Sets the peerview auto cycle on/off.
 *
 *   @param pv The peerview.
-*   @param time Time for auto cycle - > 0 -check peerview state
+*   @param ttime Time for auto cycle - > 0 -check peerview state
 *                                       -1 -stop checking state.
 **/
-JXTA_DECLARE(void) jxta_peerview_set_auto_cycle(Jxta_peerview * pv, Jxta_time_diff time );
+JXTA_DECLARE(void) jxta_peerview_set_auto_cycle(Jxta_peerview * pv, Jxta_time_diff ttime );
 
 /**
 *   Returns a vector containing Jxta_peer_entry objects for each of the current

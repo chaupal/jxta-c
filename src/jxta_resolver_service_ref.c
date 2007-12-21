@@ -327,8 +327,7 @@ static void stop(Jxta_module * resolver)
  */
 static void get_mia(Jxta_service * resolver, Jxta_advertisement ** mia)
 {
-    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
-    PTValid(self, Jxta_resolver_service_ref);
+    Jxta_resolver_service_ref *self = PTValid(resolver, Jxta_resolver_service_ref);
 
     JXTA_OBJECT_SHARE(self->impl_adv);
     *mia = self->impl_adv;
@@ -341,9 +340,9 @@ static void get_mia(Jxta_service * resolver, Jxta_advertisement ** mia)
  */
 static void get_interface(Jxta_service * self, Jxta_service ** svc)
 {
-    PTValid(self, Jxta_resolver_service_ref);
+    Jxta_resolver_service_ref* myself = PTValid(self, Jxta_resolver_service_ref);
 
-    JXTA_OBJECT_SHARE(self);
+    JXTA_OBJECT_SHARE(myself);
     *svc = self;
 }
 
@@ -362,8 +361,7 @@ static void get_interface(Jxta_service * self, Jxta_service ** svc)
 Jxta_status registerQueryHandler(Jxta_resolver_service * resolver, JString * name, Jxta_callback * handler)
 {
     char const *hashname;
-    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
-    PTValid(self, Jxta_resolver_service_ref);
+    Jxta_resolver_service_ref *self = PTValid(resolver, Jxta_resolver_service_ref);
 
     hashname = jstring_get_string(name);
 
@@ -388,8 +386,7 @@ static Jxta_status unregisterQueryHandler(Jxta_resolver_service * resolver, JStr
     char const *hashname;
     Jxta_status status;
 
-    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
-    PTValid(self, Jxta_resolver_service_ref);
+    Jxta_resolver_service_ref *self = PTValid(resolver, Jxta_resolver_service_ref);
 
     hashname = jstring_get_string(name);
 
@@ -409,8 +406,7 @@ static Jxta_status unregisterQueryHandler(Jxta_resolver_service * resolver, JStr
 Jxta_status registerSrdiHandler(Jxta_resolver_service * resolver, JString * name, Jxta_listener * handler)
 {
     char const *hashname;
-    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
-    PTValid(self, Jxta_resolver_service_ref);
+    Jxta_resolver_service_ref *self = PTValid(resolver, Jxta_resolver_service_ref);
 
     hashname = jstring_get_string(name);
 
@@ -434,8 +430,7 @@ static Jxta_status unregisterSrdiHandler(Jxta_resolver_service * resolver, JStri
     Jxta_object *ignore = 0;
     char const *hashname;
     Jxta_status status;
-    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
-    PTValid(self, Jxta_resolver_service_ref);
+    Jxta_resolver_service_ref *self = PTValid(resolver, Jxta_resolver_service_ref);
 
     hashname = jstring_get_string(name);
 
@@ -455,8 +450,7 @@ static Jxta_status unregisterSrdiHandler(Jxta_resolver_service * resolver, JStri
 Jxta_status registerResponseHandler(Jxta_resolver_service * resolver, JString * name, Jxta_listener * handler)
 {
     char const *hashname;
-    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
-    PTValid(self, Jxta_resolver_service_ref);
+    Jxta_resolver_service_ref *self = PTValid(resolver, Jxta_resolver_service_ref);
     hashname = jstring_get_string(name);
 
     if (strlen(hashname) != 0) {
@@ -480,8 +474,7 @@ static Jxta_status unregisterResponseHandler(Jxta_resolver_service * resolver, J
     char const *hashname;
     Jxta_status status;
 
-    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
-    PTValid(self, Jxta_resolver_service_ref);
+    Jxta_resolver_service_ref *self = PTValid(resolver, Jxta_resolver_service_ref);
 
     hashname = jstring_get_string(name);
 
@@ -705,9 +698,8 @@ static Jxta_status sendQuery(Jxta_resolver_service * resolver, ResolverQuery * q
     JString *doc;
     Jxta_status status;
     const Jxta_qos * qos;
-    Jxta_resolver_service_ref *myself = (Jxta_resolver_service_ref *) resolver;
+    Jxta_resolver_service_ref *myself = PTValid(resolver, Jxta_resolver_service_ref);
 
-    PTValid(myself, Jxta_resolver_service_ref);
     /* Test arguments first */
     if ((myself == NULL) || (query == NULL)) {
         /* Invalid args. */
@@ -747,9 +739,8 @@ static Jxta_status sendResponse(Jxta_resolver_service * resolver, ResolverRespon
 {
     JString *doc;
     Jxta_status status;
-    Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
 
-    PTValid(self, Jxta_resolver_service_ref);
+    Jxta_resolver_service_ref *self = PTValid(resolver, Jxta_resolver_service_ref);
 
     /* Test arguments first */
     if ((resolver == NULL) || (response == NULL)) {
@@ -772,11 +763,15 @@ static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * mes
     Jxta_message_element *msgElem = NULL;
     Jxta_endpoint_address *address = NULL;
     unsigned char *tmp = NULL;
+#ifdef UNUSED_VWF
     unsigned char *zipped = NULL;
+#endif
     unsigned char *bytes = NULL;
+#ifdef UNUSED_VWF
     size_t zipped_len = 0;
     int ret = 0;
     size_t byte_len = 0;
+#endif
     JString *doc = NULL;
     Jxta_bytevector *jSend_buf = NULL;
     Jxta_status status;
@@ -953,9 +948,9 @@ void jxta_resolver_service_ref_construct(Jxta_resolver_service_ref * self, Jxta_
      * we do not extend Jxta_resolver_service_methods; so the type string
      * is that of the base table
      */
-    PTValid(methods, Jxta_resolver_service_methods);
+    Jxta_resolver_service_methods* service_methods = PTValid(methods, Jxta_resolver_service_methods);
 
-    jxta_resolver_service_construct((Jxta_resolver_service *) self, (Jxta_resolver_service_methods *) methods);
+    jxta_resolver_service_construct((Jxta_resolver_service *) self, (Jxta_resolver_service_methods *) service_methods);
 
     /* Set our rt type checking string */
     self->thisType = "Jxta_resolver_service_ref";
@@ -963,41 +958,41 @@ void jxta_resolver_service_ref_construct(Jxta_resolver_service_ref * self, Jxta_
 
 void jxta_resolver_service_ref_destruct(Jxta_resolver_service_ref * self)
 {
-    PTValid(self, Jxta_resolver_service_ref);
+    Jxta_resolver_service_ref* myself = PTValid(self, Jxta_resolver_service_ref);
 
     /* release/free/destroy our own stuff */
     mru_capacity_set(self, 0);
-    if (self->rendezvous != 0) {
-        JXTA_OBJECT_RELEASE(self->rendezvous);
+    if (myself->rendezvous != 0) {
+        JXTA_OBJECT_RELEASE(myself->rendezvous);
     }
-    if (self->endpoint != 0) {
-        JXTA_OBJECT_RELEASE(self->endpoint);
+    if (myself->endpoint != 0) {
+        JXTA_OBJECT_RELEASE(myself->endpoint);
     }
-    if (self->localPeerId != 0) {
-        JXTA_OBJECT_RELEASE(self->localPeerId);
+    if (myself->localPeerId != 0) {
+        JXTA_OBJECT_RELEASE(myself->localPeerId);
     }
-    if (self->queryhandlers != 0) {
-        JXTA_OBJECT_RELEASE(self->queryhandlers);
+    if (myself->queryhandlers != 0) {
+        JXTA_OBJECT_RELEASE(myself->queryhandlers);
     }
-    if (self->responsehandlers != 0) {
-        JXTA_OBJECT_RELEASE(self->responsehandlers);
+    if (myself->responsehandlers != 0) {
+        JXTA_OBJECT_RELEASE(myself->responsehandlers);
     }
-    if (self->srdihandlers != 0) {
-        JXTA_OBJECT_RELEASE(self->srdihandlers);
-    }
-
-    self->group = NULL;
-
-    if (self->impl_adv != 0) {
-        JXTA_OBJECT_RELEASE(self->impl_adv);
-    }
-    if (self->assigned_id != 0) {
-        JXTA_OBJECT_RELEASE(self->assigned_id);
+    if (myself->srdihandlers != 0) {
+        JXTA_OBJECT_RELEASE(myself->srdihandlers);
     }
 
-    apr_thread_mutex_destroy(self->mutex);
+    myself->group = NULL;
+
+    if (myself->impl_adv != 0) {
+        JXTA_OBJECT_RELEASE(myself->impl_adv);
+    }
+    if (myself->assigned_id != 0) {
+        JXTA_OBJECT_RELEASE(myself->assigned_id);
+    }
+
+    apr_thread_mutex_destroy(myself->mutex);
     /* call the base classe's dtor. */
-    jxta_resolver_service_destruct((Jxta_resolver_service *) self);
+    jxta_resolver_service_destruct((Jxta_resolver_service *) myself);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Destruction finished\n");
 }
@@ -1152,7 +1147,9 @@ static Jxta_status JXTA_STDCALL resolver_service_query_cb(Jxta_object * obj, voi
     Jxta_object *handler = NULL;
     ResolverQuery *rq = NULL;
     JString *handlername = NULL;
+#ifdef UNUSED_VWF
     Jxta_boolean drop_query = FALSE;
+#endif
     Jxta_status status;
     Jxta_resolver_service_ref *_self = (Jxta_resolver_service_ref *) me;
     JString *pid = NULL;
@@ -1349,7 +1346,11 @@ static Jxta_status JXTA_STDCALL resolver_service_srdi_cb(Jxta_object * obj, void
             unsigned char *bytes = NULL;
             unsigned char *uncompr = NULL;
             unsigned long uncomprLen = 0;
+#ifdef UNUSED_VWF
             int size, err;
+#else
+            int size;
+#endif
             Jxta_bytevector *jb = jxta_message_element_get_value(element);
             size = jxta_bytevector_size(jb);
             bytes = calloc(1, size);
@@ -1432,11 +1433,11 @@ static Jxta_status JXTA_STDCALL resolver_service_srdi_cb(Jxta_object * obj, void
 static long getid(Jxta_resolver_service_ref * resolver)
 {
     long qid = 0;
-    PTValid(resolver, Jxta_resolver_service_ref);
-    apr_thread_mutex_lock(resolver->mutex);
-    qid = ++resolver->query_id;
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "queryid: %ld\n", resolver->query_id);
-    apr_thread_mutex_unlock(resolver->mutex);
+    Jxta_resolver_service_ref* res = PTValid(resolver, Jxta_resolver_service_ref);
+    apr_thread_mutex_lock(res->mutex);
+    qid = ++res->query_id;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "queryid: %ld\n", res->query_id);
+    apr_thread_mutex_unlock(res->mutex);
     return qid;
 }
 

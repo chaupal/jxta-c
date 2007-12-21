@@ -109,7 +109,7 @@ JXTA_DECLARE(Jxta_range *)
  * @param Jxta_range* rge - Range object
  * @param const char* nspace - Name space of the advertisement
  * @param const char* element - Element
- * @param const char* attribute - Attribute
+ * @param const char* aattribute - Attribute
  * @param const char* range - Range is specified as "(high :: low)"
  * @param Jxta_boolean force - If a range exists replace it.
  *
@@ -117,7 +117,7 @@ JXTA_DECLARE(Jxta_range *)
  * 
 **/
 JXTA_DECLARE(Jxta_status)
-    jxta_range_add(Jxta_range *rge, const char *nspace, const char *element, const char *attribute, const char *range, Jxta_boolean force);
+    jxta_range_add(Jxta_range *rge, const char *nspace, const char *element, const char *aattribute, const char *range, Jxta_boolean force);
     
 /**
  * Remove the specified range.
@@ -125,14 +125,14 @@ JXTA_DECLARE(Jxta_status)
  * @param Jxta_range* rge - Range object
  * @param const char* nspace - Name space of the advertisement
  * @param const char* element - Element
- * @param const char* attribute - Attribute
+ * @param const char* aattribute - Attribute
  * @param const char* range - Range is specified as "(high :: low)"
  *
  * @return Jxta_status
  * 
 **/    
 JXTA_DECLARE(Jxta_status)
-    jxta_range_remove(Jxta_range *rge, const char *nspace, const char *element, const char *attribute, const char *range);
+    jxta_range_remove(Jxta_range *rge, const char *nspace, const char *element, const char *aattribute, const char *range);
 /**
  * Get the position where the value falls with the specified range given the number of segments.
  * 
@@ -229,7 +229,7 @@ JXTA_DECLARE(void)
 **/
     
 JXTA_DECLARE(void)
-    jxta_range_set_attribute(Jxta_range *rge, const char *attribute);    
+    jxta_range_set_attribute(Jxta_range *rge, const char *aattribute);    
 /**
  * Get the attribute for this range
  *

@@ -1231,7 +1231,8 @@ static void jxta_wildxpath_handler(xmlXPathParserContextPtr ctxt, int nargs)
     /* Is third argument a number? */
     CHECK_TYPE(XPATH_NUMBER); 
     arg3 = valuePop(ctxt);
-    want_match = arg3->floatval == 1.0;
+/*    want_match = (int) (arg3->floatval == 1.0);*/
+    want_match = (int) (fabs(arg3->floatval - 1.0) < 0.0001);
 
     /* Is second argument a string? */
     CHECK_TYPE(XPATH_STRING); 

@@ -75,7 +75,7 @@ int jxta_id_uuid_time_stamp_compare(apr_uuid_t * a, apr_uuid_t * b);
 
 int jxta_id_uuid_seq_no_compare(apr_uuid_t * a, apr_uuid_t * b);
 
-int jxta_id_uuid_time_compare(apr_uuid_t * a, Jpr_absolute_time time);
+int jxta_id_uuid_time_compare(apr_uuid_t * a, Jpr_absolute_time jprtime);
 
 apr_uuid_t * jxta_id_uuid_increment_seq_number(apr_uuid_t * a);
 

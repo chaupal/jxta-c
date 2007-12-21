@@ -164,25 +164,25 @@ JXTA_DECLARE(unsigned int) jxta_RdvConfig_pv_max_address_requests(Jxta_RdvConfig
 JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_max_ping_probes(Jxta_RdvConfigAdvertisement *, unsigned int);
 JXTA_DECLARE(unsigned int) jxta_RdvConfig_pv_max_ping_probes(Jxta_RdvConfigAdvertisement *);
 
-JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_add_interval(Jxta_RdvConfigAdvertisement *, Jxta_time_diff time);
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_add_interval(Jxta_RdvConfigAdvertisement *, Jxta_time_diff ttime);
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_add_interval(Jxta_RdvConfigAdvertisement *);
 
-JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_maintenance_interval(Jxta_RdvConfigAdvertisement *, Jxta_time_diff time);
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_maintenance_interval(Jxta_RdvConfigAdvertisement *, Jxta_time_diff ttime);
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_maintenance_interval(Jxta_RdvConfigAdvertisement *);
 
-JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_entry_expires(Jxta_RdvConfigAdvertisement *, Jxta_time_diff time);
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_entry_expires(Jxta_RdvConfigAdvertisement *, Jxta_time_diff ttime);
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_entry_expires(Jxta_RdvConfigAdvertisement *);
 
-JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_ping_due(Jxta_RdvConfigAdvertisement *, Jxta_time_diff time);
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_ping_due(Jxta_RdvConfigAdvertisement *, Jxta_time_diff ttime);
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_ping_due(Jxta_RdvConfigAdvertisement *);
 
-JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_pong_due(Jxta_RdvConfigAdvertisement *, Jxta_time_diff time);
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_pong_due(Jxta_RdvConfigAdvertisement *, Jxta_time_diff ttime);
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_pong_due(Jxta_RdvConfigAdvertisement *);
 
-JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_voting_expiration(Jxta_RdvConfigAdvertisement *, Jxta_time_diff time);
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_voting_expiration(Jxta_RdvConfigAdvertisement *, Jxta_time_diff ttime);
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_voting_expiration(Jxta_RdvConfigAdvertisement *);
 
-JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_voting_wait(Jxta_RdvConfigAdvertisement *, Jxta_time_diff time);
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_voting_wait(Jxta_RdvConfigAdvertisement *, Jxta_time_diff ttime);
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_voting_wait(Jxta_RdvConfigAdvertisement *);
 
 

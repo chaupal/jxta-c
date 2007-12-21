@@ -186,7 +186,9 @@ static Jxta_status walk_to_view (Jxta_rdv_service_provider * provider, Jxta_vect
 static void *APR_THREAD_FUNC periodic_task(apr_thread_t * thread, void *myself);
 
 static Jxta_status JXTA_STDCALL leasing_cb(Jxta_object * obj, void *arg);
+#ifdef UNUSED_VWF
 static void JXTA_STDCALL seeding_listener(Jxta_object * obj, void *arg);
+#endif
 static Jxta_status handle_lease_request(_jxta_rdv_service_server * myself, Jxta_message * msg, Jxta_message_element * el);
 static Jxta_status handle_lease_response(_jxta_rdv_service_server * myself, Jxta_message * msg, Jxta_message_element * el);
 
@@ -511,6 +513,7 @@ static Jxta_status start(Jxta_rdv_service_provider * provider)
     return JXTA_SUCCESS;
 }
 
+#ifdef UNUSED_VWF
 static Jxta_status open_adv_pipe(Jxta_rdv_service_provider * provider)
 {
     Jxta_status res = JXTA_SUCCESS;
@@ -534,6 +537,7 @@ static Jxta_status open_adv_pipe(Jxta_rdv_service_provider * provider)
 
     return JXTA_SUCCESS;
 }
+#endif
 
 /**
  * Stops an instance of the Rendezvous server. (a provider method)
@@ -650,10 +654,12 @@ static Jxta_status propagate(Jxta_rdv_service_provider * provider, Jxta_message 
                              const char *serviceParam, int ttl)
 {
     Jxta_status res;
-    _jxta_rdv_service_server *myself = (_jxta_rdv_service_server *) PTValid(provider, _jxta_rdv_service_server);
     Jxta_rdv_diffusion *header;
 
+    _jxta_rdv_service_server *myself  = PTValid(provider, _jxta_rdv_service_server);
     JXTA_OBJECT_CHECK_VALID(msg);
+
+    myself = myself; /*VWF, this is here to avoid "unused" compile warning.*/
 
     msg = jxta_message_clone(msg);
 
@@ -1615,6 +1621,7 @@ static Jxta_status JXTA_STDCALL walk_handler(_jxta_rdv_service_server * myself, 
     return res;
 }
 
+#ifdef UNUSED_VWF
 static void JXTA_STDCALL seeding_listener(Jxta_object * obj, void *arg)
 {
     Jxta_status res = leasing_cb(obj, arg);
@@ -1623,5 +1630,6 @@ static void JXTA_STDCALL seeding_listener(Jxta_object * obj, void *arg)
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error in listener :%d \n", res);
     }
 }
+#endif
 
 /* vim: set ts=4 sw=4  tw=130 et: */

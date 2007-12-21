@@ -81,8 +81,9 @@ static int jxta_object_increment_refcount(Jxta_object * obj);
 
 static int jxta_object_decrement_refcount(Jxta_object * obj);
 
+#ifdef UNUSED_VWF
 static void jxta_object_set_refcount(Jxta_object * obj, int count);
-
+#endif
 static Jxta_boolean jxta_object_check_initialized(Jxta_object *, const char *, const int);
 
 static Jxta_object *jxta_object_set_initialized(Jxta_object *, const char *, const int);
@@ -231,13 +232,14 @@ JXTA_DECLARE(int) _jxta_object_get_refcount(Jxta_object * obj)
     return count;
 }
 
+#ifdef UNUSED_VWF
 static void jxta_object_set_refcount(Jxta_object * obj, int count)
 {
     jxta_object_mutexGet();
     obj->_refCount = count;
     jxta_object_mutexRel();
 }
-
+#endif
 JXTA_DECLARE(Jxta_boolean) _jxta_object_check_valid(Jxta_object * obj, const char *file, int line)
 {
     Jxta_boolean res;

@@ -565,7 +565,9 @@ static Jxta_status start(Jxta_rdv_service_provider * provider)
 static Jxta_status stop(Jxta_rdv_service_provider * provider)
 {
     Jxta_status res = JXTA_SUCCESS;
+#ifdef UNUSED_VWF
     Jxta_PG * pg;
+#endif
     _jxta_rdv_service_client *myself = PTValid(provider, _jxta_rdv_service_client);
 
     jxta_rdv_service_provider_lock_priv(provider);
@@ -655,8 +657,9 @@ static Jxta_status propagate(Jxta_rdv_service_provider * provider, Jxta_message 
                              const char *serviceParam, int ttl)
 {
     Jxta_status res;
-    _jxta_rdv_service_client *myself = PTValid(provider, _jxta_rdv_service_client);
+    _jxta_rdv_service_client *myself  = PTValid(provider, _jxta_rdv_service_client);
     Jxta_rdv_diffusion *header;
+    myself = myself; /*VWF, this is here to avoid "unused" compile warning.*/
 
     JXTA_OBJECT_CHECK_VALID(msg);
 
@@ -705,10 +708,11 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
                         const char *serviceParam, const char *target_hash)
 {
     Jxta_status res;
-    _jxta_rdv_service_client *myself = PTValid(provider, _jxta_rdv_service_client);
     Jxta_rdv_diffusion *header = NULL;
 
+    _jxta_rdv_service_client *myself  = PTValid(provider, _jxta_rdv_service_client);
     JXTA_OBJECT_CHECK_VALID(msg);
+    myself = myself; /*VWF, this is here to avoid "unused" compile warning.*/
 
     msg = jxta_message_clone(msg);
 

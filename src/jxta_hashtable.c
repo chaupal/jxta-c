@@ -215,18 +215,18 @@ JXTA_DECLARE(Jxta_hashtable *) jxta_hashtable_new(size_t initial_usage)
 static unsigned long hash(const void *key, size_t ksz)
 {
     const unsigned char *s = (const unsigned char *) key;
-    unsigned long hash = 0;
+    unsigned long hhash = 0;
     while (ksz--) {
-        hash += *s++;
-        hash += (hash << 10);
-        hash ^= (hash >> 6);
+        hhash += *s++;
+        hhash += (hhash << 10);
+        hhash ^= (hhash >> 6);
     }
-    hash += (hash << 3);
-    hash ^= (hash >> 11);
-    hash += (hash << 15);
+    hhash += (hhash << 3);
+    hhash ^= (hhash >> 11);
+    hhash += (hhash << 15);
 
     /* hash_key zero is invalid. it remaps to 1 */
-    return hash ? hash : 1;
+    return hhash ? hhash : 1;
 }
 
 

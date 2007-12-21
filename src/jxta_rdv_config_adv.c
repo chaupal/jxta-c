@@ -195,11 +195,11 @@ JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_connect_cycle_normal(Jxta_RdvCon
     return ad->connect_cycle_normal;
 }
 
-JXTA_DECLARE(void) jxta_RdvConfig_set_connect_cycle_normal(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff time)
+JXTA_DECLARE(void) jxta_RdvConfig_set_connect_cycle_normal(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff ttime)
 {
     JXTA_OBJECT_CHECK_VALID(ad);
 
-    ad->connect_cycle_normal = time;
+    ad->connect_cycle_normal = ttime;
 }
 
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_connect_cycle_fast(Jxta_RdvConfigAdvertisement * ad)
@@ -209,11 +209,11 @@ JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_connect_cycle_fast(Jxta_RdvConfi
     return ad->connect_cycle_fast;
 }
 
-JXTA_DECLARE(void) jxta_RdvConfig_set_connect_cycle_fast(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff time)
+JXTA_DECLARE(void) jxta_RdvConfig_set_connect_cycle_fast(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff ttime)
 {
     JXTA_OBJECT_CHECK_VALID(ad);
 
-    ad->connect_cycle_fast = time;
+    ad->connect_cycle_fast = ttime;
 }
 
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_min_retry_delay(Jxta_RdvConfigAdvertisement * ad)
@@ -223,11 +223,11 @@ JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_min_retry_delay(Jxta_RdvConfigAd
     return ad->min_retry_delay;
 }
 
-JXTA_DECLARE(void) jxta_RdvConfig_set_min_retry_delay(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff time)
+JXTA_DECLARE(void) jxta_RdvConfig_set_min_retry_delay(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff ttime)
 {
     JXTA_OBJECT_CHECK_VALID(ad);
 
-    ad->min_retry_delay = time;
+    ad->min_retry_delay = ttime;
 }
 
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_max_retry_delay(Jxta_RdvConfigAdvertisement * ad)
@@ -237,11 +237,11 @@ JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_max_retry_delay(Jxta_RdvConfigAd
     return ad->max_retry_delay;
 }
 
-JXTA_DECLARE(void) jxta_RdvConfig_set_max_retry_delay(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff time)
+JXTA_DECLARE(void) jxta_RdvConfig_set_max_retry_delay(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff ttime)
 {
     JXTA_OBJECT_CHECK_VALID(ad);
 
-    ad->max_retry_delay = time;
+    ad->max_retry_delay = ttime;
 }
 
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_lease_duration(Jxta_RdvConfigAdvertisement * ad)
@@ -265,11 +265,11 @@ JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_lease_renewal_delay(Jxta_RdvConf
     return ad->lease_renewal_delay;
 }
 
-JXTA_DECLARE(void) jxta_RdvConfig_set_lease_renewal_delay(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff time)
+JXTA_DECLARE(void) jxta_RdvConfig_set_lease_renewal_delay(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff ttime)
 {
     JXTA_OBJECT_CHECK_VALID(ad);
 
-    ad->lease_renewal_delay = time;
+    ad->lease_renewal_delay = ttime;
 }
 
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_lease_margin(Jxta_RdvConfigAdvertisement * ad)
@@ -422,16 +422,16 @@ JXTA_DECLARE(unsigned int) jxta_RdvConfig_pv_max_ping_probes(Jxta_RdvConfigAdver
     return ad->pv_max_ping_probes;
 }
 
-JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_add_interval(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff time)
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_add_interval(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff ttime)
 {
     JXTA_OBJECT_CHECK_VALID(ad);
 
     /* prevent flooding */
-    if (time < (3 * APR_USEC_PER_SEC)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Add interval not set to " JPR_DIFF_TIME_FMT ". Must be greater than 3 seconds. Remains at default. [%pp]\n",time, ad);
+    if (ttime < (3 * APR_USEC_PER_SEC)) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Add interval not set to " JPR_DIFF_TIME_FMT ". Must be greater than 3 seconds. Remains at default. [%pp]\n",ttime, ad);
         return JXTA_INVALID_ARGUMENT;
     }
-    ad->pv_add_interval = time;
+    ad->pv_add_interval = ttime;
     return JXTA_SUCCESS;
 }
 
@@ -441,10 +441,10 @@ JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_add_interval(Jxta_RdvConfigAdvert
     return ad->pv_add_interval;
 }
 
-JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_maintenance_interval(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff time)
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_maintenance_interval(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff ttime)
 {
     JXTA_OBJECT_CHECK_VALID(ad);
-    ad->pv_maintenance_interval = time;
+    ad->pv_maintenance_interval = ttime;
     return JXTA_SUCCESS;
 }
 
@@ -454,10 +454,10 @@ JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_maintenance_interval(Jxta_RdvConf
     return ad->pv_maintenance_interval;
 }
 
-JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_entry_expires(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff time)
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_entry_expires(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff ttime)
 {
     JXTA_OBJECT_CHECK_VALID(ad);
-    ad->pv_entry_expires = time;
+    ad->pv_entry_expires = ttime;
     return JXTA_SUCCESS;
 }
 
@@ -468,14 +468,14 @@ JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_entry_expires(Jxta_RdvConfigAdver
 
 }
 
-JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_ping_due(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff time)
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_ping_due(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff ttime)
 {
     JXTA_OBJECT_CHECK_VALID(ad);
-    if (time > ad->pv_entry_expires) {
+    if (ttime > ad->pv_entry_expires) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Ping due not set. Must be less than entry expires. [%pp]\n", ad);
         return JXTA_INVALID_ARGUMENT;
     }
-    ad->pv_ping_due = time;
+    ad->pv_ping_due = ttime;
     return JXTA_SUCCESS;
 }
 
@@ -485,15 +485,15 @@ JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_ping_due(Jxta_RdvConfigAdvertisem
     return ad->pv_ping_due;
 }
 
-JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_pong_due(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff time)
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_pong_due(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff ttime)
 {
     JXTA_OBJECT_CHECK_VALID(ad);
 
-    if (time > ad->pv_entry_expires) {
+    if (ttime > ad->pv_entry_expires) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Pong due not set. Must be less than entry expires. [%pp]\n", ad);
         return JXTA_INVALID_ARGUMENT;
     }
-    ad->pv_pong_due = time;
+    ad->pv_pong_due = ttime;
     return JXTA_SUCCESS;
 }
 
@@ -503,10 +503,10 @@ JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_pong_due(Jxta_RdvConfigAdvertisem
     return ad->pv_pong_due;
 }
 
-JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_voting_expiration(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff time)
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_voting_expiration(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff ttime)
 {
     JXTA_OBJECT_CHECK_VALID(ad);
-    ad->pv_voting_expiration = time;
+    ad->pv_voting_expiration = ttime;
     return JXTA_SUCCESS;
 }
 
@@ -517,10 +517,10 @@ JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_voting_expiration(Jxta_RdvConfigA
 
 }
 
-JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_voting_wait(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff time)
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_voting_wait(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff ttime)
 {
     JXTA_OBJECT_CHECK_VALID(ad);
-    ad->pv_voting_wait = time;
+    ad->pv_voting_wait = ttime;
     return JXTA_SUCCESS;
 }
 

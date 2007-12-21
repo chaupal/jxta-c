@@ -145,10 +145,14 @@ static void jxta_message_delete(Jxta_object * ptr);
 static void Jxta_message_element_delete(Jxta_object * ptr);
 
 static char *string_read(ReadFunc read_func, void *stream);
+#ifdef UNUSED_VWF
 static char *string_read4(ReadFunc read_func, void *stream);
+#endif
 static char *name_read(ReadFunc read_func, void *stream, char const **names_table, int names_count);
 static Jxta_status string_write(WriteFunc write_func, void *stream, const char *str);
+#ifdef UNUSED_VWF
 static Jxta_status string_write4(WriteFunc write_func, void *stream, const char *str);
+#endif
 static char *parseqname(char const *srcqname, char **ns, char **ncname);
 
 static Jxta_status JXTA_STDCALL get_message_to_jstring(void *stream, char const *buf, size_t len);
@@ -257,7 +261,9 @@ JXTA_DECLARE(Jxta_message *) jxta_message_new(void)
 
 JXTA_DECLARE(Jxta_message *) jxta_message_clone(Jxta_message * old)
 {
+#ifdef UNUSED_VWF
     Jxta_status res = JXTA_SUCCESS;
+#endif
     Jxta_message *msg;
     
     JXTA_OBJECT_CHECK_VALID(old);
@@ -665,6 +671,7 @@ JXTA_DECLARE(Jxta_status) jxta_message_remove_element_2(Jxta_message * msg, char
     return JXTA_ITEM_NOTFOUND;
 }
 
+#ifdef UNUSED_VWF
 static Jxta_status string_write4(WriteFunc write_func, void *stream, const char *str)
 {
     Jxta_status res;
@@ -680,7 +687,7 @@ static Jxta_status string_write4(WriteFunc write_func, void *stream, const char 
 
     return res;
 }
-
+#endif
 static Jxta_status string_write(WriteFunc write_func, void *stream, const char *str)
 {
     Jxta_status res;
@@ -695,7 +702,7 @@ static Jxta_status string_write(WriteFunc write_func, void *stream, const char *
 
     return res;
 }
-
+#ifdef UNUSED_VWF
 static char *string_read4(ReadFunc read_func, void *stream)
 {
     Jxta_status res;
@@ -725,7 +732,7 @@ static char *string_read4(ReadFunc read_func, void *stream)
 
     return data;
 }
-
+#endif
 static char *string_read(ReadFunc read_func, void *stream)
 {
     Jxta_status res;

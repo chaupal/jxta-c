@@ -75,9 +75,9 @@ JXTA_DECLARE(void) jxta_DiscoveryConfigAdvertisement_parse_charbuffer(Jxta_Disco
 JXTA_DECLARE(void) jxta_DiscoveryConfigAdvertisement_parse_file(Jxta_DiscoveryConfigAdvertisement *, FILE * stream);
 JXTA_DECLARE(Jxta_vector *) jxta_DiscoveryConfigAdvertisement_get_indexes(void);
 
-JXTA_DECLARE(void) jxta_discovery_config_set_delta_update_cycle(Jxta_DiscoveryConfigAdvertisement * adv, int time);
+JXTA_DECLARE(void) jxta_discovery_config_set_delta_update_cycle(Jxta_DiscoveryConfigAdvertisement * adv, int ttime);
 JXTA_DECLARE(Jxta_time_diff) jxta_discovery_config_get_delta_update_cycle(Jxta_DiscoveryConfigAdvertisement * adv);
-JXTA_DECLARE(void) jxta_discovery_config_set_expired_adv_cycle(Jxta_DiscoveryConfigAdvertisement * adv, int time);
+JXTA_DECLARE(void) jxta_discovery_config_set_expired_adv_cycle(Jxta_DiscoveryConfigAdvertisement * adv, int ttime);
 JXTA_DECLARE(Jxta_time_diff) jxta_discovery_config_get_expired_adv_cycle(Jxta_DiscoveryConfigAdvertisement * adv);
 
 /**

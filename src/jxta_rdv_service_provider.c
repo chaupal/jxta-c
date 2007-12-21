@@ -189,15 +189,15 @@ Jxta_status jxta_rdv_service_provider_init(Jxta_rdv_service_provider * provider,
 Jxta_status jxta_rdv_service_provider_start(Jxta_rdv_service_provider * me)
 {
     Jxta_status res = JXTA_SUCCESS;
-    PTValid(me, _jxta_rdv_service_provider);
+    _jxta_rdv_service_provider* myself = PTValid(me, _jxta_rdv_service_provider);
 
     /*
      * Add the Rendezvous Service Message receiver
      */
-    res = rdv_service_add_cb((Jxta_rdv_service *)me->service, &me->prop_cookie, RDV_V3_MSID, JXTA_RDV_PROPAGATE_SERVICE_NAME, rdv_service_provider_prop_cb, me);
+    res = rdv_service_add_cb((Jxta_rdv_service *)myself->service, &myself->prop_cookie, RDV_V3_MSID, JXTA_RDV_PROPAGATE_SERVICE_NAME, rdv_service_provider_prop_cb, myself);
 
     if (JXTA_SUCCESS != res) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not register propagate callback.[%pp].\n", me);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not register propagate callback.[%pp].\n", myself);
     }
 
     return res;
@@ -206,15 +206,15 @@ Jxta_status jxta_rdv_service_provider_start(Jxta_rdv_service_provider * me)
 Jxta_status jxta_rdv_service_provider_stop(Jxta_rdv_service_provider * me)
 {
     Jxta_status res = JXTA_SUCCESS;
-    PTValid(me, _jxta_rdv_service_provider);
+    _jxta_rdv_service_provider* myself = PTValid(me, _jxta_rdv_service_provider);
 
-    if (me->prop_cookie) {
-        rdv_service_remove_cb((Jxta_rdv_service *) me->service, me->prop_cookie);
-        JXTA_OBJECT_RELEASE(me->prop_cookie);
-        me->prop_cookie = NULL;
+    if (myself->prop_cookie) {
+        rdv_service_remove_cb((Jxta_rdv_service *) myself->service, me->prop_cookie);
+        JXTA_OBJECT_RELEASE(myself->prop_cookie);
+        myself->prop_cookie = NULL;
     }
     if (JXTA_SUCCESS != res) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not deregister propagate callback.[%pp].\n", me);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not deregister propagate callback.[%pp].\n", myself);
     }
 
     return res;
@@ -429,7 +429,7 @@ Jxta_status jxta_rdv_service_provider_prop_to_peers(Jxta_rdv_service_provider * 
                 continue;
             }
 
-            PTValid(peer, _jxta_peer_entry);
+            peer = PTValid(peer, _jxta_peer_entry);
 
             if (jxta_peer_get_expires(peer) > jpr_time_now()) {
                 /* This is a connected peer, send the message to this peer */
@@ -471,6 +471,7 @@ Jxta_status jxta_rdv_service_provider_prop_to_peers(Jxta_rdv_service_provider * 
     return JXTA_SUCCESS;
 }
 
+#ifdef UNUSED_VWF
 /**
  * Construct the associated peergroup RDV seed prop pipe advertisement.
  *
@@ -517,6 +518,7 @@ static Jxta_pipe_adv *provider_get_seed_pipeadv(Jxta_rdv_service_provider * myse
 
     return adv;
 }
+#endif
 
 Jxta_status provider_send_seed_request(Jxta_rdv_service_provider * me)
 {
@@ -606,6 +608,7 @@ Jxta_status provider_send_seed_request(Jxta_rdv_service_provider * me)
     return res;
 }
 
+#ifdef UNUSED_VWF
 static Jxta_status open_adv_pipe(Jxta_rdv_service_provider * myself)
 {
     Jxta_status res = JXTA_SUCCESS;
@@ -630,5 +633,6 @@ static Jxta_status open_adv_pipe(Jxta_rdv_service_provider * myself)
 
     return JXTA_SUCCESS;
 }
+#endif
 
 /* vi: set ts=4 sw=4 tw=130 et: */

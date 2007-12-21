@@ -216,8 +216,9 @@ Jxta_pipe_service_impl *jxta_wire_service_new_instance(Jxta_pipe_service * pipe_
     JString *pid = NULL;
     JString *tmp = NULL;
     char *tmpid;
+#ifdef UNUSED_VWF
     Jxta_id *gid = NULL;
-
+#endif
     self = (Jxta_wire_service *) malloc(sizeof(Jxta_wire_service));
     memset(self, 0, sizeof(Jxta_wire_service));
     JXTA_OBJECT_INIT(self, jxta_wire_service_free, 0);

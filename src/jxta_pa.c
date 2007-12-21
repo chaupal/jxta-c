@@ -546,11 +546,12 @@ JXTA_DECLARE(JString *) jxta_PA_get_Dbg(Jxta_PA * ad)
     return NULL;
 }
 
+#ifdef UNUSED_VWF
 static char *JXTA_STDCALL jxta_PA_get_Dbg_string(Jxta_advertisement * ad)
 {
     return NULL;
 }
-
+#endif
 JXTA_DECLARE(void) jxta_PA_set_Dbg(Jxta_PA * ad, JString * dbg)
 {
     /* do nothing */

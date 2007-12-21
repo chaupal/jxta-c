@@ -140,7 +140,9 @@ static HttpClientMessenger *http_client_messenger_new(Jxta_transport_http * tp, 
 static HttpClientMessenger *get_http_client_messenger(Jxta_transport_http * tp, char *host, int port);
 
 static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv);
+#ifdef UNUSED_VWF
 static void init_e(Jxta_module * module, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv, Throws);
+#endif
 static Jxta_status start(Jxta_module * module, const char *argv[]);
 static void stop(Jxta_module * module);
 static JString *name_get(Jxta_transport * self);
@@ -216,11 +218,11 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     Jxta_id *id;
     JString *uniquePid;
     char *tmp;
-    Jxta_transport_http *self;
     Jxta_PA *conf_adv = NULL;
     Jxta_svc *svc = NULL;
     Jxta_HTTPTransportAdvertisement *hta;
     JString *isclient = NULL;
+    Jxta_transport_http *self = PTValid(module, Jxta_transport_http);
 
 #ifndef WIN32
 
@@ -232,8 +234,6 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     sigaction(SIGPIPE, &sa, NULL);
 #endif
 
-    self = (Jxta_transport_http *) module;
-    PTValid(self, Jxta_transport_http);
 
     self->trailing_average = trailing_average_new(60);
 
@@ -404,10 +404,7 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
 /******************************************************************************/
 static Jxta_status start(Jxta_module * module, const char *argv[])
 {
-    Jxta_transport_http *self;
-
-    self = (Jxta_transport_http *) module;
-    PTValid(self, Jxta_transport_http);
+    Jxta_transport_http *self = PTValid(module, Jxta_transport_http);
 
     jxta_endpoint_service_add_transport(self->endpoint, (Jxta_transport *) self);
 
@@ -419,10 +416,7 @@ static Jxta_status start(Jxta_module * module, const char *argv[])
 /******************************************************************************/
 static void stop(Jxta_module * module)
 {
-    Jxta_transport_http *self;
-
-    self = (Jxta_transport_http *) module;
-    PTValid(self, Jxta_transport_http);
+    Jxta_transport_http *self = PTValid(module, Jxta_transport_http);
 
     jxta_endpoint_service_remove_transport(self->endpoint, (Jxta_transport *) self);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "don't know how to stop yet.\n");
@@ -437,8 +431,9 @@ static void stop(Jxta_module * module)
 /******************************************************************************/
 static JString *name_get(Jxta_transport * self)
 {
+#ifdef UNUSED_VWF
     PTValid(self, Jxta_transport_http);
-
+#endif
     return jstring_new_2("http");
 }
 
@@ -447,8 +442,7 @@ static JString *name_get(Jxta_transport * self)
 /******************************************************************************/
 static Jxta_endpoint_address *publicaddr_get(Jxta_transport * t)
 {
-    Jxta_transport_http *self = (Jxta_transport_http *) t;
-    PTValid(self, Jxta_transport_http);
+    Jxta_transport_http *self = PTValid((Jxta_transport_http *) t, Jxta_transport_http);
 
     return JXTA_OBJECT_SHARE(self->address);
 }
@@ -464,8 +458,7 @@ static JxtaEndpointMessenger *messenger_get(Jxta_transport * t, Jxta_endpoint_ad
     char *colon;
     int port = DEFAULT_PORT;
 
-    Jxta_transport_http *self = (Jxta_transport_http *) t;
-    PTValid(self, Jxta_transport_http);
+    Jxta_transport_http *self = PTValid((Jxta_transport_http *) t, Jxta_transport_http);
 
     protocol_address = (char*) jxta_endpoint_address_get_protocol_address(dest);
 
@@ -490,7 +483,9 @@ static JxtaEndpointMessenger *messenger_get(Jxta_transport * t, Jxta_endpoint_ad
 /******************************************************************************/
 static Jxta_boolean ping(Jxta_transport * t, Jxta_endpoint_address * addr)
 {
+#ifdef UNUSED_VWF
     PTValid(t, Jxta_transport_http);
+#endif
     return FALSE;
 }
 
@@ -508,8 +503,10 @@ static void propagate(Jxta_transport * t, Jxta_message * msg, const char *servic
 /******************************************************************************/
 static Jxta_boolean allow_overload_p(Jxta_transport * tr)
 {
+#ifdef UNUSED_VWF
     Jxta_transport_http *self = (Jxta_transport_http *) tr;
     PTValid(self, Jxta_transport_http);
+#endif
     return FALSE;
 }
 
@@ -518,8 +515,10 @@ static Jxta_boolean allow_overload_p(Jxta_transport * tr)
 /******************************************************************************/
 static Jxta_boolean allow_routing_p(Jxta_transport * tr)
 {
+#ifdef UNUSED_VWF
     Jxta_transport_http *self = (Jxta_transport_http *) tr;
     PTValid(self, Jxta_transport_http);
+#endif
     return TRUE;
 }
 
@@ -528,8 +527,10 @@ static Jxta_boolean allow_routing_p(Jxta_transport * tr)
 /******************************************************************************/
 static Jxta_boolean connection_oriented_p(Jxta_transport * tr)
 {
+#ifdef UNUSED_VWF
     Jxta_transport_http *self = (Jxta_transport_http *) tr;
     PTValid(self, Jxta_transport_http);
+#endif
     return TRUE;
 }
 
@@ -538,8 +539,8 @@ static Jxta_boolean connection_oriented_p(Jxta_transport * tr)
 /******************************************************************************/
 void jxta_transport_http_construct(Jxta_transport_http * self, Jxta_transport_http_methods * methods)
 {
-    PTValid(methods, Jxta_transport_methods);
-    jxta_transport_construct((Jxta_transport *) self, (Jxta_transport_methods *) methods);
+    Jxta_transport_methods* transport_methods = PTValid(methods, Jxta_transport_methods);
+    jxta_transport_construct((Jxta_transport *) self, (Jxta_transport_methods *) transport_methods);
     self->_super.metric = 2; /* value decided as JSE implemetnation */
     self->_super.direction = JXTA_OUTBOUND;
 
@@ -566,30 +567,30 @@ void jxta_transport_http_construct(Jxta_transport_http * self, Jxta_transport_ht
  */
 void jxta_transport_http_destruct(Jxta_transport_http * self)
 {
-    PTValid(self, Jxta_transport_http);
-    if (self->address != NULL) {
-        JXTA_OBJECT_RELEASE(self->address);
+    Jxta_transport_http* myself = PTValid(self, Jxta_transport_http);
+    if (myself->address != NULL) {
+        JXTA_OBJECT_RELEASE(myself->address);
     }
-    if (self->endpoint) {
-        JXTA_OBJECT_RELEASE(self->endpoint);
+    if (myself->endpoint) {
+        JXTA_OBJECT_RELEASE(myself->endpoint);
     }
-    self->group = NULL;
+    myself->group = NULL;
 
-    if (self->clientMessengers != NULL) {
-        JXTA_OBJECT_RELEASE(self->clientMessengers);
+    if (myself->clientMessengers != NULL) {
+        JXTA_OBJECT_RELEASE(myself->clientMessengers);
     }
-    if (self->peerid != NULL) {
-        free(self->peerid);
-    }
-
-    if (self->pool) {
-        apr_thread_mutex_destroy(self->mutex);
-        apr_pool_destroy(self->pool);
+    if (myself->peerid != NULL) {
+        free(myself->peerid);
     }
 
-    trailing_average_free(self->trailing_average);
+    if (myself->pool) {
+        apr_thread_mutex_destroy(myself->mutex);
+        apr_pool_destroy(myself->pool);
+    }
 
-    jxta_transport_destruct((Jxta_transport *) self);
+    trailing_average_free(myself->trailing_average);
+
+    jxta_transport_destruct((Jxta_transport *) myself);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Destruction finished\n");
 }

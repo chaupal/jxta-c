@@ -334,9 +334,11 @@ static apr_status_t cm_sql_table_create(DBSpace * dbSpace, const char *table, co
 
 static Jxta_status cm_sql_table_found(DBSpace * dbSpace, const char *table);
 
+#ifdef UNUSED_VWF
 static int cm_sql_table_drop(DBSpace * dbSpace, char *table);
+#endif
 
-static Jxta_status cm_sql_index_found(DBSpace * dbSpace, const char *index);
+static Jxta_status cm_sql_index_found(DBSpace * dbSpace, const char *iindex);
 
 static int cm_sql_index_create(DBSpace * dbSpace, const char *table, const char **fields);
 
@@ -370,9 +372,9 @@ static Jxta_status cm_advertisement_save(DBSpace * dbSpace, const char *key, Jxt
 
 static Jxta_status cm_advertisement_update(DBSpace * dbSpace, JString * jNameSpace, JString * jKey, JString * jXml,
                                            Jxta_expiration_time timeOutForMe, Jxta_expiration_time timeOutForOthers);
-
+#ifdef UNUSED_VWF
 static Jxta_status cm_advertisement_remove(DBSpace * dbSpace, const char *nameSpace, const char *key);
-
+#endif
 static Jxta_cache_entry **cm_proffer_advertisements_build(DBSpace * dbSpace, apr_pool_t * pool, apr_dbd_results_t * res,
                                                           Jxta_boolean adv_present);
 
@@ -977,11 +979,11 @@ static Jxta_status cm_name_spaces_process(Jxta_cm * self)
             DBSpace *dbSpace = NULL;
             const char *asString;
             const char *nsType;
-            Jxta_status stat;
+            Jxta_status sstat;
             nsType = jstring_get_string(jAdvType);
             asString = jstring_get_string(jName);
-            stat = jxta_hashtable_get(self->resolvedAdvs, nsType, strlen(nsType), JXTA_OBJECT_PPTR(&resAdvType));
-            if (JXTA_SUCCESS != stat) {
+            sstat = jxta_hashtable_get(self->resolvedAdvs, nsType, strlen(nsType), JXTA_OBJECT_PPTR(&resAdvType));
+            if (JXTA_SUCCESS != sstat) {
                 dbSpace = cm_dbSpace_get(self, asString);
                 if (NULL == dbSpace)
                     dbSpace = JXTA_OBJECT_SHARE(self->defaultDB);
@@ -2009,7 +2011,7 @@ static Jxta_status cm_srdi_seq_number_update(Jxta_cm * me, JString * jPeerid, Jx
     return status;
 }
 
-Jxta_status cm_update_srdi_times(Jxta_cm * me, JString * jPeerid, Jxta_time time)
+Jxta_status cm_update_srdi_times(Jxta_cm * me, JString * jPeerid, Jxta_time ttime)
 {
     Jxta_status status = JXTA_SUCCESS;
     apr_status_t rv;
@@ -2041,7 +2043,7 @@ Jxta_status cm_update_srdi_times(Jxta_cm * me, JString * jPeerid, Jxta_time time
 
     /* find if original timeout is greater than time */
     jstring_append_2(jWhere, SQL_AND CM_COL_OriginalTimeout SQL_GREATER_THAN);
-    apr_snprintf(aTmp, sizeof(aTmp), "%" APR_INT64_T_FMT, time);
+    apr_snprintf(aTmp, sizeof(aTmp), "%" APR_INT64_T_FMT, ttime);
     jstring_append_2(jWhere, aTmp);
     dbSpace = JXTA_OBJECT_SHARE(me->bestChoiceDB);
 
@@ -2109,7 +2111,7 @@ Jxta_status cm_update_srdi_times(Jxta_cm * me, JString * jPeerid, Jxta_time time
     /* create the column for the update */
     jUpdateColumns = jstring_new_2(CM_COL_TimeOut SQL_EQUAL);
     memset(aTmp, 0, sizeof(aTmp));
-    apr_snprintf(aTmp, sizeof(aTmp), JPR_ABS_TIME_FMT, time);
+    apr_snprintf(aTmp, sizeof(aTmp), JPR_ABS_TIME_FMT, ttime);
     jstring_append_2(jUpdateColumns, aTmp);
 
     /* for each db */
@@ -3079,12 +3081,12 @@ Jxta_status cm_save_replica_elements(Jxta_cm * me, JString * handler, JString * 
 
 /* search for advertisements with specific (attribute,value) pairs */
 /* a NULL pointer means the end of the list */
-char **cm_search(Jxta_cm * self, char *folder_name, const char *attribute, const char *value, Jxta_boolean no_locals, int n_adv)
+char **cm_search(Jxta_cm * self, char *folder_name, const char *aattribute, const char *value, Jxta_boolean no_locals, int n_adv)
 {
     char **all_primaries;
 
     JString *where = jstring_new_0();
-    JString *jAttr = jstring_new_2(attribute);
+    JString *jAttr = jstring_new_2(aattribute);
     JString *jVal = jstring_new_2(value);
     JString *jGroup = jstring_new_0();
 
@@ -3107,7 +3109,7 @@ char **cm_search(Jxta_cm * self, char *folder_name, const char *attribute, const
 
     all_primaries = cm_sql_get_primary_keys(self, folder_name, CM_TBL_ELEM_ATTRIBUTES, where, jGroup, n_adv);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "got a query for attr - %s  val - %s \n", attribute, value);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "got a query for attr - %s  val - %s \n", aattribute, value);
     JXTA_OBJECT_RELEASE(where);
     JXTA_OBJECT_RELEASE(jAttr);
     JXTA_OBJECT_RELEASE(jVal);
@@ -3118,12 +3120,12 @@ char **cm_search(Jxta_cm * self, char *folder_name, const char *attribute, const
 
 /* search for advertisements with specific (attribute,value) pairs */
 /* a NULL pointer means the end of the list */
-char **cm_search_srdi(Jxta_cm * self, char *folder_name, const char *attribute, const char *value, int n_adv)
+char **cm_search_srdi(Jxta_cm * self, char *folder_name, const char *aattribute, const char *value, int n_adv)
 {
     char **all_primaries;
 
     JString *where = jstring_new_0();
-    JString *jAttr = jstring_new_2(attribute);
+    JString *jAttr = jstring_new_2(aattribute);
     JString *jVal = jstring_new_2(value);
     JString *jGroup = jstring_new_0();
 
@@ -3144,7 +3146,7 @@ char **cm_search_srdi(Jxta_cm * self, char *folder_name, const char *attribute, 
 
     all_primaries = cm_sql_get_primary_keys(self, folder_name, CM_TBL_SRDI, where, jGroup, n_adv);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "got a query for attr - %s  val - %s \n", attribute, value);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "got a query for attr - %s  val - %s \n", aattribute, value);
     JXTA_OBJECT_RELEASE(where);
     JXTA_OBJECT_RELEASE(jAttr);
     JXTA_OBJECT_RELEASE(jVal);
@@ -4172,7 +4174,7 @@ Jxta_status cm_restore_bytes(Jxta_cm * self, char *folder_name, char *primary_ke
     return status;
 }
 
-static Jxta_status cm_get_time(Jxta_cm * self, const char *folder_name, const char *primary_key, Jxta_expiration_time * time,
+static Jxta_status cm_get_time(Jxta_cm * self, const char *folder_name, const char *primary_key, Jxta_expiration_time * ttime,
                                const char *time_name)
 {
     Folder *folder = NULL;
@@ -4234,7 +4236,7 @@ static Jxta_status cm_get_time(Jxta_cm * self, const char *folder_name, const ch
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "db_id: %d %s expiration time retreived \n", dbSpace->conn->log_id,
                         dbSpace->id);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, jstring_get_string(fmtTime), exp[0]);
-        *time = exp[0];
+        *ttime = exp[0];
     }
 
   finish:
@@ -4251,15 +4253,15 @@ static Jxta_status cm_get_time(Jxta_cm * self, const char *folder_name, const ch
     return status;
 }
 
-Jxta_status cm_get_others_time(Jxta_cm * self, char *folder_name, char *primary_key, Jxta_expiration_time * time)
+Jxta_status cm_get_others_time(Jxta_cm * self, char *folder_name, char *primary_key, Jxta_expiration_time * ttime)
 {
-    return cm_get_time(self, folder_name, primary_key, time, CM_COL_TimeOutForOthers);
+    return cm_get_time(self, folder_name, primary_key, ttime, CM_COL_TimeOutForOthers);
 }
 
 /* Get the expiration time of an advertisement */
-Jxta_status cm_get_expiration_time(Jxta_cm * self, char *folder_name, char *primary_key, Jxta_expiration_time * time)
+Jxta_status cm_get_expiration_time(Jxta_cm * self, char *folder_name, char *primary_key, Jxta_expiration_time * ttime)
 {
-    return cm_get_time(self, folder_name, primary_key, time, CM_COL_TimeOut);
+    return cm_get_time(self, folder_name, primary_key, ttime, CM_COL_TimeOut);
 }
 
 /* delete files where the expiration time is less than curr_expiration */
@@ -4816,14 +4818,14 @@ static int cm_sql_index_create(DBSpace * dbSpace, const char *table, const char 
     return ret;
 }
 
-static Jxta_status cm_sql_index_found(DBSpace * dbSpace, const char *index)
+static Jxta_status cm_sql_index_found(DBSpace * dbSpace, const char *iindex)
 {
     int rv = 0;
     Jxta_status status = JXTA_ITEM_NOTFOUND;
     JString *where = jstring_new_0();
     JString *columns = jstring_new_0();
     JString *statement = jstring_new_0();
-    JString *jIndex = jstring_new_2(index);
+    JString *jIndex = jstring_new_2(iindex);
     JString *jType = jstring_new_2(SQL_COLUMN_Type_index);
     apr_dbd_results_t *res = NULL;
     apr_pool_t *pool = NULL;
@@ -4870,6 +4872,7 @@ static Jxta_status cm_sql_index_found(DBSpace * dbSpace, const char *index)
 
 }
 
+#ifdef UNUSED_VWF
 static int cm_sql_table_drop(DBSpace * dbSpace, char *table)
 {
     int rv = 0;
@@ -4883,7 +4886,7 @@ static int cm_sql_table_drop(DBSpace * dbSpace, char *table)
 
     return rv;
 }
-
+#endif
 static Jpr_interval_time lifetime_get(Jpr_interval_time base, Jpr_interval_time span)
 {
     Jpr_interval_time lifetime;
@@ -5306,6 +5309,7 @@ static Jxta_status cm_srdi_index_save(Jxta_cm * me, const char *alias, JString *
     JXTA_OBJECT_RELEASE(jSeq);
     return status;
 }
+#ifdef UNUSED_VWF
 static Jxta_status cm_advertisement_remove(DBSpace * dbSpace, const char *nameSpace, const char *key)
 {
     Jxta_status status = JXTA_SUCCESS;
@@ -5343,7 +5347,7 @@ static Jxta_status cm_advertisement_remove(DBSpace * dbSpace, const char *nameSp
     return status;
 
 }
-
+#endif
 static Jxta_status cm_item_update(DBSpace * dbSpace, const char *table, JString * jNameSpace, JString * jKey,
                                   JString * jElemAttr, JString * jVal, JString * jRange, Jxta_expiration_time timeOutForMe,
                                   Jxta_expiration_time timeOutForOthers)
@@ -6553,18 +6557,18 @@ JXTA_DECLARE(Jxta_status) jxta_cm_save_replica(Jxta_cm * self, JString * handler
 
 /* search for advertisements with specific (attribute,value) pairs */
 /* a NULL pointer means the end of the list */
-JXTA_DECLARE(char **) jxta_cm_search(Jxta_cm * self, char *folder_name, const char *attribute, const char *value, int n_adv)
+JXTA_DECLARE(char **) jxta_cm_search(Jxta_cm * self, char *folder_name, const char *aattribute, const char *value, int n_adv)
 {
     JXTA_DEPRECATED_API();
-    return cm_search(self, folder_name, attribute, value, FALSE, n_adv);
+    return cm_search(self, folder_name, aattribute, value, FALSE, n_adv);
 }
 
 /* search for advertisements with specific (attribute,value) pairs */
 /* a NULL pointer means the end of the list */
-JXTA_DECLARE(char **) jxta_cm_search_srdi(Jxta_cm * self, char *folder_name, const char *attribute, const char *value, int n_adv)
+JXTA_DECLARE(char **) jxta_cm_search_srdi(Jxta_cm * self, char *folder_name, const char *aattribute, const char *value, int n_adv)
 {
     JXTA_DEPRECATED_API();
-    return cm_search_srdi(self, folder_name, attribute, value, n_adv);
+    return cm_search_srdi(self, folder_name, aattribute, value, n_adv);
 }
 
 JXTA_DECLARE(Jxta_advertisement **) jxta_cm_sql_query(Jxta_cm * self, const char *folder_name, JString * where)
@@ -6587,18 +6591,18 @@ JXTA_DECLARE(Jxta_status) jxta_cm_restore_bytes(Jxta_cm * self, char *folder_nam
 }
 
 JXTA_DECLARE(Jxta_status) jxta_cm_get_others_time(Jxta_cm * self, char *folder_name, char *primary_key,
-                                                  Jxta_expiration_time * time)
+                                                  Jxta_expiration_time * ttime)
 {
     JXTA_DEPRECATED_API();
-    return cm_get_time(self, folder_name, primary_key, time, CM_COL_TimeOutForOthers);
+    return cm_get_time(self, folder_name, primary_key, ttime, CM_COL_TimeOutForOthers);
 }
 
 /* Get the expiration time of an advertisement */
 JXTA_DECLARE(Jxta_status) jxta_cm_get_expiration_time(Jxta_cm * self, char *folder_name, char *primary_key,
-                                                      Jxta_expiration_time * time)
+                                                      Jxta_expiration_time * ttime)
 {
     JXTA_DEPRECATED_API();
-    return cm_get_time(self, folder_name, primary_key, time, CM_COL_TimeOut);
+    return cm_get_time(self, folder_name, primary_key, ttime, CM_COL_TimeOut);
 }
 
 /* delete files where the expiration time is less than curr_expiration */

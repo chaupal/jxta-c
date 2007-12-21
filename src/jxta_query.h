@@ -59,6 +59,7 @@
 #include "jxta_vector.h"
 
 #include "jstring.h"
+#undef XMLCALL
 #include <libxml/xpath.h>
 #include <libxml/tree.h>
 #include <libxml/parser.h>

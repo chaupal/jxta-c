@@ -104,7 +104,7 @@ JXTA_DECLARE(apr_uuid_t *) jxta_peerview_address_request_msg_get_peer_adv_gen(Jx
 JXTA_DECLARE(void) jxta_peerview_address_request_msg_set_peer_adv_gen(Jxta_peerview_address_request_msg * me, apr_uuid_t const *adv_gen);
 
 JXTA_DECLARE(Jxta_time_diff) jxta_peerview_address_request_msg_get_peer_adv_exp(Jxta_peerview_address_request_msg * me);
-JXTA_DECLARE(void) jxta_peerview_address_request_msg_set_peer_adv_exp(Jxta_peerview_address_request_msg * me,  Jxta_time_diff exp);
+JXTA_DECLARE(void) jxta_peerview_address_request_msg_set_peer_adv_exp(Jxta_peerview_address_request_msg * me,  Jxta_time_diff expiration);
 
 JXTA_DECLARE(Jxta_vector *) jxta_peerview_address_request_msg_get_options(Jxta_peerview_address_request_msg * me);
 JXTA_DECLARE(void) jxta_peerview_address_request_msg_set_options(Jxta_peerview_address_request_msg * me, Jxta_vector *options);

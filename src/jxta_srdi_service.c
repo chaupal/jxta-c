@@ -62,8 +62,8 @@
 void jxta_srdi_service_construct(Jxta_srdi_service * service, Jxta_srdi_service_methods const * methods)
 {
 
-    PTValid(methods, Jxta_srdi_service_methods);
-    jxta_service_construct((Jxta_service *) service, (Jxta_service_methods const *) methods);
+    Jxta_srdi_service_methods* service_methods = PTValid(methods, Jxta_srdi_service_methods);
+    jxta_service_construct((Jxta_service *) service, (Jxta_service_methods const *) service_methods);
     service->thisType = "Jxta_srdi_service";
 }
 
@@ -85,57 +85,57 @@ void jxta_srdi_service_destruct(Jxta_srdi_service * service)
 JXTA_DECLARE(Jxta_status) jxta_srdi_replicateEntries(Jxta_srdi_service * service, Jxta_resolver_service * resolver,
                                                      Jxta_SRDIMessage * srdiMsg, JString * queueName)
 {
-    PTValid(service, Jxta_srdi_service);
-    return VTBL->replicateEntries(service, resolver, srdiMsg, queueName);
+    Jxta_srdi_service* srdi_service = PTValid(service, Jxta_srdi_service);
+    return VTBL->replicateEntries(srdi_service, resolver, srdiMsg, queueName);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi(Jxta_srdi_service * service, Jxta_resolver_service * resolver, JString * instance,
                                              ResolverSrdi * srdi, Jxta_id * peer)
 {
-    PTValid(service, Jxta_srdi_service);
-    return VTBL->pushSrdi(service, resolver, instance, srdi, peer);
+    Jxta_srdi_service* srdi_service = PTValid(service, Jxta_srdi_service);
+    return VTBL->pushSrdi(srdi_service, resolver, instance, srdi, peer);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi_msg(Jxta_srdi_service * service, Jxta_resolver_service * resolver, JString * instance,
                                              Jxta_SRDIMessage * msg, Jxta_id * peer)
 {
-    PTValid(service, Jxta_srdi_service);
-    return VTBL->pushSrdi_msg(service, resolver, instance, msg, peer);
+    Jxta_srdi_service* srdi_service = PTValid(service, Jxta_srdi_service);
+    return VTBL->pushSrdi_msg(srdi_service, resolver, instance, msg, peer);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_forwardQuery_peer(Jxta_srdi_service * service, Jxta_resolver_service * resolver,
                                                       Jxta_id * peer, ResolverQuery * query)
 {
-    PTValid(service, Jxta_srdi_service);
-    return VTBL->forwardQuery_peer(service, resolver, peer, query);
+    Jxta_srdi_service* srdi_service = PTValid(service, Jxta_srdi_service);
+    return VTBL->forwardQuery_peer(srdi_service, resolver, peer, query);
 }
 
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_forwardQuery_peers(Jxta_srdi_service * service, Jxta_resolver_service * resolver,
                                                        Jxta_vector * peers, ResolverQuery * query)
 {
-    PTValid(service, Jxta_srdi_service);
-    return VTBL->forwardQuery_peers(service, resolver, peers, query);
+    Jxta_srdi_service* srdi_service = PTValid(service, Jxta_srdi_service);
+    return VTBL->forwardQuery_peers(srdi_service, resolver, peers, query);
 }
 
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_forwardQuery_threshold(Jxta_srdi_service * service, Jxta_resolver_service * resolver,
                                                            Jxta_vector * peers, ResolverQuery * query, int threshold)
 {
-    PTValid(service, Jxta_srdi_service);
-    return VTBL->forwardQuery_threshold(service, resolver, peers, query, threshold);
+    Jxta_srdi_service* srdi_service = PTValid(service, Jxta_srdi_service);
+    return VTBL->forwardQuery_threshold(srdi_service, resolver, peers, query, threshold);
 }
 
 JXTA_DECLARE(Jxta_peer *) jxta_srdi_getReplicaPeer(Jxta_srdi_service * service, const char *expression)
 {
-    PTValid(service, Jxta_srdi_service);
-    return VTBL->getReplicaPeer(service, expression);
+    Jxta_srdi_service* srdi_service = PTValid(service, Jxta_srdi_service);
+    return VTBL->getReplicaPeer(srdi_service, expression);
 }
 
 JXTA_DECLARE(Jxta_peer *) jxta_srdi_getNumericReplica(Jxta_srdi_service * service, Jxta_range * rge, const char *value)
 {
-    PTValid(service, Jxta_srdi_service);
-    return VTBL->getNumericReplica(service, rge, value);
+    Jxta_srdi_service* srdi_service = PTValid(service, Jxta_srdi_service);
+    return VTBL->getNumericReplica(srdi_service, rge, value);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_forwardSrdiMessage(Jxta_srdi_service * service, Jxta_resolver_service * resolver,
@@ -144,13 +144,13 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_forwardSrdiMessage(Jxta_srdi_service * servi
                                                        const char *primaryKey, const char *secondarykey, const char *value,
                                                        Jxta_expiration_time expiration)
 {
-    PTValid(service, Jxta_srdi_service);
-    return VTBL->forwardSrdiMessage(service, resolver, peer, srcPid, primaryKey, secondarykey, value, expiration);
+    Jxta_srdi_service* srdi_service = PTValid(service, Jxta_srdi_service);
+    return VTBL->forwardSrdiMessage(srdi_service, resolver, peer, srcPid, primaryKey, secondarykey, value, expiration);
 }
 
 JXTA_DECLARE(Jxta_vector *) jxta_srdi_searchSrdi(Jxta_srdi_service * service, const char *handler, const char *ns,
                                                  const char *attr, const char *val)
 {
-    PTValid(service, Jxta_srdi_service);
-    return VTBL->searchSrdi(service, handler, ns, attr, val);
+    Jxta_srdi_service* srdi_service = PTValid(service, Jxta_srdi_service);
+    return VTBL->searchSrdi(srdi_service, handler, ns, attr, val);
 }

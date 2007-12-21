@@ -86,7 +86,7 @@ JXTA_DECLARE(Jxta_advertisement *) jxta_adv_response_entry_get_adv(Jxta_adv_resp
 JXTA_DECLARE(Jxta_expiration_time) jxta_adv_response_entry_get_expiration(Jxta_adv_response_entry * me);
 
 JXTA_DECLARE(Jxta_status) jxta_adv_response_get_entries(Jxta_adv_response_msg *msg, Jxta_vector **entries);
-JXTA_DECLARE(Jxta_status) jxta_adv_response_msg_add_advertisement(Jxta_adv_response_msg *msg, Jxta_advertisement *adv, Jxta_expiration_time exp);
+JXTA_DECLARE(Jxta_status) jxta_adv_response_msg_add_advertisement(Jxta_adv_response_msg *msg, Jxta_advertisement *adv, Jxta_expiration_time expiration);
 #ifdef __cplusplus
 #if 0
 {

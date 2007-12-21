@@ -172,8 +172,9 @@ static void handleDestPID(void *me, const XML_Char * cd, int len)
         return;
     } else {
         JString *tmp = jstring_new_1(len);
+#ifdef UNUSED_VWF
         Jxta_id *pid = NULL;
-
+#endif
         jstring_append_0(tmp, (char *) cd, len);
         jstring_trim(tmp);
 

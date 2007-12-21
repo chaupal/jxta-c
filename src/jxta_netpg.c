@@ -97,10 +97,10 @@ static const char *__log_cat = "NETPG";
 static void netpg_stop(Jxta_module * self)
 {
     Jxta_netpg *it = (Jxta_netpg *) self;
-    PTValid(self, Jxta_netpg);
+    Jxta_netpg* myself = PTValid(self, Jxta_netpg);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before stop :%d.\n",
-                    JXTA_OBJECT_GET_REFCOUNT(self));
+                    JXTA_OBJECT_GET_REFCOUNT(myself));
 
     /* We stop http and router ourselves (as well as endpoint) */
     if (it->http != NULL) {
@@ -120,7 +120,7 @@ static void netpg_stop(Jxta_module * self)
     }
 
     /* Think of this as "Super.stop()" */
-    ((Jxta_module_methods *) & jxta_stdpg_methods)->stop(self);
+    ((Jxta_module_methods *) & jxta_stdpg_methods)->stop((Jxta_module*)myself);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count after stop :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(self));
@@ -131,13 +131,11 @@ static Jxta_status netpg_start(Jxta_module * me, const char *args[])
 {
     Jxta_status rv;
     const char *noargs[] = { NULL };
-    Jxta_netpg *myself = (Jxta_netpg *) me;
+    Jxta_netpg* myself = PTValid(me, Jxta_netpg);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before start :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(me));
 
-    PTValid(me, Jxta_netpg);
-
-    rv = peergroup_start((Jxta_PG *) me);
+    rv = peergroup_start((Jxta_PG *) myself);
     if (JXTA_SUCCESS != rv) {
         return rv;
     }
@@ -251,10 +249,10 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
         memmove(&uuid, uuid_ptr, sizeof(apr_uuid_t));
         free(uuid_ptr);
     } else {
-        Jpr_absolute_time time;
+        Jpr_absolute_time ttime;
         int cmp;
-        time = apr_time_now();
-        cmp = jxta_id_uuid_time_compare(&uuid, time);
+        ttime = apr_time_now();
+        cmp = jxta_id_uuid_time_compare(&uuid, ttime);
         if (UUID_EQUALS == cmp) {
             /* time was moved back on this system */
             jxta_id_uuid_increment_seq_number(&uuid);
@@ -454,8 +452,8 @@ void jxta_netpg_construct(Jxta_netpg * self, Jxta_netpg_methods const *methods)
      * Jxta_PG_methods and has the same rt type checking signature. So that's
      * what we must check for.
      */
-    PTValid(methods, Jxta_PG_methods);
-    jxta_stdpg_construct((Jxta_stdpg *) self, (Jxta_stdpg_methods const *) methods);
+    Jxta_PG_methods* pgmethods = PTValid(methods, Jxta_PG_methods);
+    jxta_stdpg_construct((Jxta_stdpg *) self, (Jxta_stdpg_methods const *) pgmethods);
 
     self->thisType = "Jxta_netpg";
     self->tcp = NULL;
@@ -473,7 +471,7 @@ void jxta_netpg_construct(Jxta_netpg * self, Jxta_netpg_methods const *methods)
  */
 void jxta_netpg_destruct(Jxta_netpg * self)
 {
-    PTValid(self, Jxta_netpg);
+    Jxta_netpg* myself = PTValid(self, Jxta_netpg);
 
     /*
      * FIXME: jice@jxta.org - 20020222
@@ -492,20 +490,20 @@ void jxta_netpg_destruct(Jxta_netpg * self)
      */
 
     /* We are handling http and router directly for now. */
-    if (self->relay != NULL) {
-        JXTA_OBJECT_RELEASE(self->relay);
+    if (myself->relay != NULL) {
+        JXTA_OBJECT_RELEASE(myself->relay);
     }
-    if (self->tcp != NULL) {
-        JXTA_OBJECT_RELEASE(self->tcp);
+    if (myself->tcp != NULL) {
+        JXTA_OBJECT_RELEASE(myself->tcp);
     }
-    if (self->http != NULL) {
-        JXTA_OBJECT_RELEASE(self->http);
+    if (myself->http != NULL) {
+        JXTA_OBJECT_RELEASE(myself->http);
     }
-    if (self->router != NULL) {
-        JXTA_OBJECT_RELEASE(self->router);
+    if (myself->router != NULL) {
+        JXTA_OBJECT_RELEASE(myself->router);
     }
 
-    jxta_stdpg_destruct((Jxta_stdpg *) self);
+    jxta_stdpg_destruct((Jxta_stdpg *) myself);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Destruction finished\n");
 }

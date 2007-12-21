@@ -174,8 +174,7 @@ static void stop(Jxta_module * peerinfo)
 static void get_mia(Jxta_service * peerinfo, Jxta_advertisement ** mia)
 {
 
-    Jxta_peerinfo_service_ref *self = (Jxta_peerinfo_service_ref *) peerinfo;
-    PTValid(self, Jxta_peerinfo_service_ref);
+    Jxta_peerinfo_service_ref *self = PTValid(peerinfo, Jxta_peerinfo_service_ref);
 
     JXTA_OBJECT_SHARE(self->impl_adv);
     *mia = self->impl_adv;
@@ -188,9 +187,9 @@ static void get_mia(Jxta_service * peerinfo, Jxta_advertisement ** mia)
  */
 static void get_interface(Jxta_service * self, Jxta_service ** svc)
 {
-    PTValid(self, Jxta_peerinfo_service_ref);
+    Jxta_peerinfo_service_ref* myself = PTValid(self, Jxta_peerinfo_service_ref);
 
-    JXTA_OBJECT_SHARE(self);
+    JXTA_OBJECT_SHARE(myself);
     *svc = self;
 }
 
@@ -258,9 +257,9 @@ void jxta_peerinfo_service_ref_construct(Jxta_peerinfo_service_ref * self, Jxta_
      * we do not extend Jxta_Peerinfo_service_methods; so the type string
      * is that of the base table
      */
-    PTValid(methods, Jxta_peerinfo_service_methods);
+    Jxta_peerinfo_service_methods* service_methods = PTValid(methods, Jxta_peerinfo_service_methods);
 
-    jxta_peerinfo_service_construct((Jxta_peerinfo_service *) self, (Jxta_peerinfo_service_methods *) methods);
+    jxta_peerinfo_service_construct((Jxta_peerinfo_service *) self, (Jxta_peerinfo_service_methods *) service_methods);
 
     /* Set our rt type checking string */
     self->thisType = "Jxta_peerinfo_service_ref";
@@ -268,34 +267,34 @@ void jxta_peerinfo_service_ref_construct(Jxta_peerinfo_service_ref * self, Jxta_
 
 void jxta_peerinfo_service_ref_destruct(Jxta_peerinfo_service_ref * self)
 {
-    PTValid(self, Jxta_peerinfo_service_ref);
+    Jxta_peerinfo_service_ref* myself = PTValid(self, Jxta_peerinfo_service_ref);
 
     /* release/free/destroy our own stuff */
 
-    if (self->resolver != NULL) {
-        JXTA_OBJECT_RELEASE(self->resolver);
+    if (myself->resolver != NULL) {
+        JXTA_OBJECT_RELEASE(myself->resolver);
     }
-    if (self->localPeerId != NULL) {
-        JXTA_OBJECT_RELEASE(self->localPeerId);
+    if (myself->localPeerId != NULL) {
+        JXTA_OBJECT_RELEASE(myself->localPeerId);
     }
-    if (self->instanceName != NULL) {
-        JXTA_OBJECT_RELEASE(self->instanceName);
+    if (myself->instanceName != NULL) {
+        JXTA_OBJECT_RELEASE(myself->instanceName);
     }
 
-    self->group = NULL;
+    myself->group = NULL;
 
-    if (self->impl_adv != NULL) {
-        JXTA_OBJECT_RELEASE(self->impl_adv);
+    if (myself->impl_adv != NULL) {
+        JXTA_OBJECT_RELEASE(myself->impl_adv);
     }
-    if (self->assigned_id != NULL) {
-        JXTA_OBJECT_RELEASE(self->assigned_id);
+    if (myself->assigned_id != NULL) {
+        JXTA_OBJECT_RELEASE(myself->assigned_id);
     }
-    if (self->pool != NULL) {
-        apr_pool_destroy(self->pool);
+    if (myself->pool != NULL) {
+        apr_pool_destroy(myself->pool);
     }
 
     /* call the base classe's dtor. */
-    jxta_peerinfo_service_destruct((Jxta_peerinfo_service *) self);
+    jxta_peerinfo_service_destruct((Jxta_peerinfo_service *) myself);
 
     JXTA_LOG("Destruction finished\n");
 }

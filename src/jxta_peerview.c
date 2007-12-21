@@ -57,10 +57,12 @@ static const char *__log_cat = "PV";
 
 #include <stddef.h>
 #include <assert.h>
+#include <math.h>
 
 #include <openssl/bn.h>
 #include <openssl/sha.h>
 #include <apr_uuid.h>
+
 #include "jxta_apr.h"
 
 #include "jxta_peerview_priv.h"
@@ -1011,13 +1013,13 @@ JXTA_DECLARE(Jxta_boolean) jxta_peerview_is_active(Jxta_peerview * me)
     return result;
 }
 
-JXTA_DECLARE(void) jxta_peerview_set_auto_cycle(Jxta_peerview * pv, Jxta_time_diff time )
+JXTA_DECLARE(void) jxta_peerview_set_auto_cycle(Jxta_peerview * pv, Jxta_time_diff ttime )
 {
     Jxta_peerview *myself = PTValid(pv, Jxta_peerview);
 
     apr_thread_mutex_lock(myself->mutex);
 
-    myself->auto_cycle = 1000 * time;
+    myself->auto_cycle = 1000 * ttime;
 
     apr_thread_mutex_unlock(myself->mutex);
 
@@ -1168,7 +1170,7 @@ JXTA_DECLARE(unsigned int) jxta_peerview_get_cluster_number(Jxta_peerview * me)
 JXTA_DECLARE(Jxta_status) jxta_peerview_gen_hash(Jxta_peerview * me, unsigned char const *value, size_t length, BIGNUM ** hash)
 {
     Jxta_status res = JXTA_SUCCESS;
-    Jxta_peerview *myself = PTValid(me, Jxta_peerview);
+    me = PTValid(me, Jxta_peerview);
     unsigned char digest[SHA_DIGEST_LENGTH];
 
     if (NULL == hash) {
@@ -1702,9 +1704,9 @@ static Jxta_status peerview_send_pong(Jxta_peerview * myself, Jxta_peer * dest, 
         target_hash = BN_bn2hex(pve->target_hash);
         target_hash_radius = BN_bn2hex(pve->target_hash_radius);
         if (NULL != jxta_peer_adv((Jxta_peer *) pve)) {
-            apr_uuid_t adv_gen;
-            if (jxta_PA_get_SN(jxta_peer_adv((Jxta_peer *) pve), &adv_gen)) {
-                jxta_pong_msg_add_partner_info(pong, peerId, &adv_gen, target_hash, target_hash_radius);
+            apr_uuid_t aadv_gen;
+            if (jxta_PA_get_SN(jxta_peer_adv((Jxta_peer *) pve), &aadv_gen)) {
+                jxta_pong_msg_add_partner_info(pong, peerId, &aadv_gen, target_hash, target_hash_radius);
             }
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "There's no PA for %s\n", jstring_get_string(jPeerid));
@@ -1745,9 +1747,9 @@ static Jxta_status peerview_send_pong(Jxta_peerview * myself, Jxta_peer * dest, 
         target_hash = BN_bn2hex(pve->target_hash);
         target_hash_radius = BN_bn2hex(pve->target_hash_radius);
         if (NULL != jxta_peer_adv((Jxta_peer *) pve)) {
-            apr_uuid_t adv_gen;
-            if (jxta_PA_get_SN(jxta_peer_adv((Jxta_peer *) pve), &adv_gen)) {
-                jxta_pong_msg_add_associate_info(pong, peerId, &adv_gen, target_hash, target_hash_radius);
+            apr_uuid_t aadv_gen;
+            if (jxta_PA_get_SN(jxta_peer_adv((Jxta_peer *) pve), &aadv_gen)) {
+                jxta_pong_msg_add_associate_info(pong, peerId, &aadv_gen, target_hash, target_hash_radius);
             }
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "There's no PA for %s\n", jstring_get_string(jPeerid));
@@ -4423,11 +4425,11 @@ static int ranking_sort(Jxta_peer **peer_a, Jxta_peer **peer_b)
     willingness = &will_a;
     while (TRUE) {
        for (i=0; i < jxta_vector_size(options); i++) {
-            Jxta_status res;
+            Jxta_status rres;
 
-            res = jxta_vector_get_object_at(options, JXTA_OBJECT_PPTR(lease_option), i);
+            rres = jxta_vector_get_object_at(options, JXTA_OBJECT_PPTR(lease_option), i);
 
-            if (JXTA_SUCCESS != res) {
+            if (JXTA_SUCCESS != rres) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "[%pp]: Could not get options.\n", options);
                 continue;
             }
@@ -4458,7 +4460,7 @@ static int ranking_sort(Jxta_peer **peer_a, Jxta_peer **peer_b)
         JXTA_OBJECT_RELEASE(lease_option_a);
     if (lease_option_b)
         JXTA_OBJECT_RELEASE(lease_option_b);
-    if (ranking_a != ranking_b) {
+    if (fabs(ranking_a - ranking_b) > 0.0001) {
         res = 1;
         if (ranking_a < ranking_b) res = -1;
      } else {

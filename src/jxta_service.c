@@ -70,8 +70,8 @@ Jxta_service *jxta_service_construct(Jxta_service * svc, Jxta_service_methods co
 {
     Jxta_service *self = NULL;
 
-    PTValid(methods, Jxta_service_methods);
-    self = (Jxta_service *) jxta_module_construct((_jxta_module *) svc, (Jxta_module_methods const *) methods);
+    Jxta_service_methods* service_methods = PTValid(methods, Jxta_service_methods);
+    self = (Jxta_service *) jxta_module_construct((_jxta_module *) svc, (Jxta_module_methods const *) service_methods);
 
     if (NULL != self) {
         self->thisType = "Jxta_service";

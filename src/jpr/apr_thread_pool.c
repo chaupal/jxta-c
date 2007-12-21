@@ -210,7 +210,7 @@ static void *APR_THREAD_FUNC thread_pool_func(apr_thread_t * t, void *param)
     apr_status_t rv = APR_SUCCESS;
     apr_thread_pool_t *me = param;
     apr_thread_pool_task_t *task = NULL;
-    apr_interval_time_t wait;
+    apr_interval_time_t wwait;
     struct apr_thread_list_elt *elt;
 
     elt = apr_pcalloc(me->pool, sizeof(*elt));
@@ -260,11 +260,11 @@ static void *APR_THREAD_FUNC thread_pool_func(apr_thread_t * t, void *param)
 
         ++me->idle_cnt;
         APR_RING_INSERT_TAIL(me->idle_thds, elt, apr_thread_list_elt, link);
-        wait = (me->scheduled_task_cnt) ? waiting_time(me) : -1;
+        wwait = (me->scheduled_task_cnt) ? waiting_time(me) : -1;
         apr_thread_mutex_unlock(me->lock);
         apr_thread_mutex_lock(me->cond_lock);
-        if (wait >= 0) {
-            rv = apr_thread_cond_timedwait(me->cond, me->cond_lock, wait);
+        if (wwait >= 0) {
+            rv = apr_thread_cond_timedwait(me->cond, me->cond_lock, wwait);
         }
         else {
             rv = apr_thread_cond_wait(me->cond, me->cond_lock);
@@ -341,7 +341,7 @@ APR_DECLARE(apr_status_t) apr_thread_pool_destroy(apr_thread_pool_t * me)
 static apr_thread_pool_task_t *task_new(apr_thread_pool_t * me,
                                         apr_thread_start_t func,
                                         void *param, apr_byte_t priority,
-                                        void *owner, apr_time_t time)
+                                        void *owner, apr_time_t ttime)
 {
     apr_thread_pool_task_t *t;
 
@@ -360,8 +360,8 @@ static apr_thread_pool_task_t *task_new(apr_thread_pool_t * me,
     t->func = func;
     t->param = param;
     t->owner = owner;
-    if (time > 0) {
-        t->dispatch.time = apr_time_now() + time;
+    if (ttime > 0) {
+        t->dispatch.time = apr_time_now() + ttime;
     }
     else {
         t->dispatch.priority = priority;
@@ -417,7 +417,7 @@ static apr_thread_pool_task_t *add_if_empty(apr_thread_pool_t * me,
 */
 static apr_status_t schedule_task(apr_thread_pool_t * me,
                                   apr_thread_start_t func, void *param,
-                                  void *owner, apr_interval_time_t time)
+                                  void *owner, apr_interval_time_t ttime)
 {
     apr_thread_pool_task_t *t;
     apr_thread_pool_task_t *t_loc;
@@ -425,7 +425,7 @@ static apr_status_t schedule_task(apr_thread_pool_t * me,
     apr_status_t rv = APR_SUCCESS;
     apr_thread_mutex_lock(me->lock);
 
-    t = task_new(me, func, param, 0, owner, time);
+    t = task_new(me, func, param, 0, owner, ttime);
     if (NULL == t) {
         apr_thread_mutex_unlock(me->lock);
         return APR_ENOMEM;
@@ -529,10 +529,10 @@ APR_DECLARE(apr_status_t) apr_thread_pool_push(apr_thread_pool_t * me,
 APR_DECLARE(apr_status_t) apr_thread_pool_schedule(apr_thread_pool_t * me,
                                                    apr_thread_start_t func,
                                                    void *param,
-                                                   apr_interval_time_t time,
+                                                   apr_interval_time_t ttime,
                                                    void *owner)
 {
-    return schedule_task(me, func, param, owner, time);
+    return schedule_task(me, func, param, owner, ttime);
 }
 
 APR_DECLARE(apr_status_t) apr_thread_pool_top(apr_thread_pool_t * me,

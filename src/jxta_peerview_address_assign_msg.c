@@ -340,8 +340,9 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_address_assign_msg_get_xml(Jxta_peerview
     Jxta_status res;
     JString *string;
     JString *temp;
+#ifdef UNUSED_VWF
     char tmpbuf[256];   /* We use this buffer to store a string representation of a int */
- 
+#endif
     JXTA_OBJECT_CHECK_VALID(myself);
 
     if (xml == NULL) {

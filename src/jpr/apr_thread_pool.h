@@ -103,14 +103,14 @@ APR_DECLARE(apr_status_t) apr_thread_pool_push(apr_thread_pool_t * me,
  * @param me The thread pool
  * @param func The task function
  * @param param The parameter for the task function
- * @param time Time in microseconds
+ * @param ttime Time in microseconds
  * @param owner Owner of this task.
  * @return APR_SUCCESS if the task had been scheduled successfully
  */
 APR_DECLARE(apr_status_t) apr_thread_pool_schedule(apr_thread_pool_t * me,
                                                    apr_thread_start_t func,
                                                    void *param,
-                                                   apr_interval_time_t time,
+                                                   apr_interval_time_t ttime,
                                                    void *owner);
 
 /**
