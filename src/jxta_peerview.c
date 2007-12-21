@@ -1704,9 +1704,9 @@ static Jxta_status peerview_send_pong(Jxta_peerview * myself, Jxta_peer * dest, 
         target_hash = BN_bn2hex(pve->target_hash);
         target_hash_radius = BN_bn2hex(pve->target_hash_radius);
         if (NULL != jxta_peer_adv((Jxta_peer *) pve)) {
-            apr_uuid_t aadv_gen;
-            if (jxta_PA_get_SN(jxta_peer_adv((Jxta_peer *) pve), &aadv_gen)) {
-                jxta_pong_msg_add_partner_info(pong, peerId, &aadv_gen, target_hash, target_hash_radius);
+            apr_uuid_t adv_gen;
+            if (jxta_PA_get_SN(jxta_peer_adv((Jxta_peer *) pve), &adv_gen)) {
+                jxta_pong_msg_add_partner_info(pong, peerId, &adv_gen, target_hash, target_hash_radius);
             }
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "There's no PA for %s\n", jstring_get_string(jPeerid));
@@ -1747,9 +1747,9 @@ static Jxta_status peerview_send_pong(Jxta_peerview * myself, Jxta_peer * dest, 
         target_hash = BN_bn2hex(pve->target_hash);
         target_hash_radius = BN_bn2hex(pve->target_hash_radius);
         if (NULL != jxta_peer_adv((Jxta_peer *) pve)) {
-            apr_uuid_t aadv_gen;
-            if (jxta_PA_get_SN(jxta_peer_adv((Jxta_peer *) pve), &aadv_gen)) {
-                jxta_pong_msg_add_associate_info(pong, peerId, &aadv_gen, target_hash, target_hash_radius);
+            apr_uuid_t adv_gen;
+            if (jxta_PA_get_SN(jxta_peer_adv((Jxta_peer *) pve), &adv_gen)) {
+                jxta_pong_msg_add_associate_info(pong, peerId, &adv_gen, target_hash, target_hash_radius);
             }
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "There's no PA for %s\n", jstring_get_string(jPeerid));
