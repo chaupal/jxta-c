@@ -4460,7 +4460,7 @@ static int ranking_sort(Jxta_peer **peer_a, Jxta_peer **peer_b)
         JXTA_OBJECT_RELEASE(lease_option_b);
     if (fabs(ranking_a - ranking_b) > 0.0001) {
         res = 1;
-        if (ranking_a < ranking_b) res = -1;
+        if (ranking_a > ranking_b) res = -1;
      } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Auto-rendezous ranking equal check peers %s %s\n"
                 , jstring_get_string(peerida_j), jstring_get_string(peeridb_j) );
