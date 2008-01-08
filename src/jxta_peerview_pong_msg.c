@@ -1366,8 +1366,16 @@ static void handle_option(void *me, const XML_Char * cd, int len)
     
             if( NULL != new_ad ) {
                 /* set new handlers */
-                jxta_advertisement_set_handlers(new_ad, ((Jxta_advertisement *) myself)->parser, (void *) myself);
 
+                if(myself->parse_context == GLOBAL ||
+                    myself->parse_context == CANDIDATE ||
+                    myself->parse_context == PARTNER ||
+                    myself->parse_context == ASSOCIATE)
+                {
+                    //If the parse_context is UNKNOWN it will cause a segfault so we won't set the handlers for that case
+                    jxta_advertisement_set_handlers(new_ad, ((Jxta_advertisement *) myself)->parser, (void *) myself);
+                }
+                
                 switch (myself->parse_context) {
                     case UNKNOWN:
                         break;
