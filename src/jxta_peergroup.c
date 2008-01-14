@@ -1232,6 +1232,19 @@ JXTA_DECLARE(Jxta_status) jxta_PG_new_netpg(Jxta_PG ** new_netpg)
     return jxta_PG_new_custom_netpg(new_netpg, NULL);
 }
 
+JXTA_DECLARE(Jxta_status) jxta_PG_new_netpg_1(Jxta_PG ** new_netpg)
+{
+    Jxta_module *npg = NULL;
+    Jxta_status res = JXTA_SUCCESS;
+
+    res = jxta_defloader_instantiate("builtin:netpg", &npg);
+
+    if (JXTA_SUCCESS == res)
+        *new_netpg = (Jxta_PG *) npg;
+
+    return res;
+}
+
 JXTA_DECLARE(Jxta_status) jxta_PG_new_custom_netpg(Jxta_PG ** new_netpg, Jxta_MIA * mia)
 {
     Jxta_module *npg = NULL;

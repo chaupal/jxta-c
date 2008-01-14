@@ -836,6 +836,20 @@ JXTA_DECLARE(void) jxta_PG_get_srdi_service(Jxta_PG * self, Jxta_srdi_service **
 JXTA_DECLARE(Jxta_status) jxta_PG_new_netpg(Jxta_PG ** new_netpg);
 
 /*
+ * Returns an instance of the default net peer group. A call to
+ * jxta_module_init and jxta_module_start must be called by the application
+ * to initialize and start the net peer group.
+ *
+ * @param new_netpg pointer to a memory area where to store a reference
+ * to the newly created instance.
+ *
+ * @return Jxta_status JXTA_SUCCESS if the net peergroup was instantiated as
+ * described above. Otherwise, an error code is returned and *new_netpg is not
+ * affected.
+*/
+JXTA_DECLARE(Jxta_status) jxta_PG_new_netpg_1(Jxta_PG ** new_netpg);
+
+/*
  * Returns an initialized and ready to use (but not started) instance of
  * a custom net peer group. All extra services are loaded
  *
