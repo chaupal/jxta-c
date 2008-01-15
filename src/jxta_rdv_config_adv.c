@@ -117,6 +117,60 @@ struct _jxta_RdvConfigAdvertisement {
     /* Forward decl. of un-exported function */
 static void jxta_RdvConfigAdvertisement_delete(Jxta_object *);
 
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_clone(Jxta_RdvConfigAdvertisement * ad, Jxta_RdvConfigAdvertisement ** ret_clone)
+{
+    Jxta_RdvConfigAdvertisement * clone;
+    Jxta_status ret = JXTA_SUCCESS;
+
+    clone = jxta_RdvConfigAdvertisement_new();
+
+    clone->config = ad->config;
+
+    clone->max_ttl = ad->max_ttl;
+    clone->auto_rdv_interval = ad->auto_rdv_interval;
+    clone->probe_relays = ad->probe_relays;
+    clone->max_clients = ad->max_clients;
+    clone->lease_duration = ad->lease_duration;
+    clone->lease_margin = ad->lease_margin;
+    clone->min_retry_delay = ad->min_retry_delay;
+    clone->max_retry_delay = ad->max_retry_delay;
+    clone->connect_cycle_normal = ad->connect_cycle_normal;
+    clone->connect_cycle_fast = ad->connect_cycle_fast;
+    clone->lease_renewal_delay = ad->lease_renewal_delay;
+    clone->rdva_refresh = ad->rdva_refresh;
+    clone->connect_delay = ad->connect_delay;
+    clone->min_connected_rendezvous = ad->min_connected_rendezvous;
+    clone->use_only_seeds = ad->use_only_seeds;
+
+    ret = jxta_vector_clone(ad->seeds, &clone->seeds,  0, INT_MAX );
+    if (JXTA_SUCCESS != ret) goto ERROR_EXIT;
+    ret = jxta_vector_clone(ad->seeding, &clone->seeding,  0, INT_MAX );
+    if (JXTA_SUCCESS != ret) goto ERROR_EXIT;
+
+    /* Peerview attributes */
+    clone->pv_clusters = ad->pv_clusters;
+    clone->pv_members = ad->pv_members;
+    clone->pv_replication = ad->pv_replication;
+    clone->pv_loneliness = ad->pv_loneliness;
+    clone->pv_add_interval = ad->pv_add_interval;
+    clone->pv_maintenance_interval = ad->pv_maintenance_interval;
+    clone->pv_max_locate_probes = ad->pv_max_locate_probes;
+    clone->pv_max_address_requests = ad->pv_max_address_requests;
+    clone->pv_max_ping_probes = ad->pv_max_ping_probes;
+    clone->pv_entry_expires = ad->pv_entry_expires;
+    clone->pv_ping_due = ad->pv_ping_due;
+    clone->pv_pong_due = ad->pv_pong_due;
+    clone->pv_voting_expiration = ad->pv_voting_expiration;
+    clone->pv_voting_wait = ad->pv_voting_wait;
+    *ret_clone = clone;
+
+ERROR_EXIT:
+    if (JXTA_SUCCESS != ret) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not create rendezvous config clone error: %d\n", ret);
+        JXTA_OBJECT_RELEASE(clone);
+    }
+    return ret;
+}
 
 JXTA_DECLARE(RdvConfig_configuration) jxta_RdvConfig_get_config(Jxta_RdvConfigAdvertisement * ad)
 {

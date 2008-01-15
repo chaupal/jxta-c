@@ -317,6 +317,15 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_directed_walk(Jxta_rdv_service * rdv,
 JXTA_DECLARE(Jxta_boolean) jxta_rdv_service_peer_is_connected(Jxta_rdv_service * rdv, Jxta_peer * peer);
 
 /**
+* Returns the current rendezvous configuration advertisement of this rendezvous service instance
+*
+* @param rdv a pointer to the instance of the Rendezvous Service
+*
+* @return pointer to the rendezvous config advertisement
+**/
+JXTA_DECLARE(Jxta_RdvConfigAdvertisement *) jxta_rdv_service_config_adv(Jxta_rdv_service * rdv);
+
+/**
 * Returns the current rendezvous configuration of this peer within the
 * current peer group.
 *

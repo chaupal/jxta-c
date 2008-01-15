@@ -81,6 +81,7 @@ enum RdvConfig_configurations {
 typedef enum RdvConfig_configurations RdvConfig_configuration;
 
 JXTA_DECLARE(Jxta_RdvConfigAdvertisement *) jxta_RdvConfigAdvertisement_new(void);
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_clone(Jxta_RdvConfigAdvertisement * ad, Jxta_RdvConfigAdvertisement ** ret_clone);
 JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdvertisement *, JString **);
 JXTA_DECLARE(void) jxta_RdvConfigAdvertisement_parse_charbuffer(Jxta_RdvConfigAdvertisement *, const char *, size_t len);
 JXTA_DECLARE(void) jxta_RdvConfigAdvertisement_parse_file(Jxta_RdvConfigAdvertisement *, FILE * stream);

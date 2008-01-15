@@ -424,8 +424,14 @@ static Jxta_status init(Jxta_module * rdv, Jxta_PG * group, Jxta_id * assigned_i
         JXTA_OBJECT_RELEASE(conf_adv);
 
         if (svc != NULL) {
-            myself->rdvConfig = jxta_svc_get_RdvConfig(svc);
+            Jxta_RdvConfigAdvertisement *rdv_config_adv = NULL;
 
+            rdv_config_adv = jxta_svc_get_RdvConfig(svc);
+
+            if (NULL != rdv_config_adv) {
+                res = jxta_RdvConfig_clone(rdv_config_adv, &myself->rdvConfig);
+                JXTA_OBJECT_RELEASE(rdv_config_adv);
+            }
             JXTA_OBJECT_RELEASE(svc);
         }
     }
@@ -823,6 +829,14 @@ JXTA_DECLARE(RdvConfig_configuration) jxta_rdv_service_config(Jxta_rdv_service *
     _jxta_rdv_service *myself = PTValid(rdv, _jxta_rdv_service);
 
     return myself->current_config;
+}
+
+JXTA_DECLARE(Jxta_RdvConfigAdvertisement *) jxta_rdv_service_config_adv(Jxta_rdv_service * rdv)
+{
+
+    _jxta_rdv_service *myself  = PTValid(rdv, _jxta_rdv_service);
+
+    return myself->rdvConfig;
 }
 
 JXTA_DECLARE(Jxta_time_diff) jxta_rdv_service_get_running_time(Jxta_rdv_service * rdv)
