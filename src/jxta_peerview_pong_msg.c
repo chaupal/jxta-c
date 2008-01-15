@@ -813,7 +813,7 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml(Jxta_peerview_pong_msg 
         Jxta_peer *peer=NULL;
         Jxta_id *pid;
         Jxta_PA *padv;
-        Jxta_vector * options;
+        Jxta_vector * options = NULL;
 
         res = jxta_vector_get_object_at(myself->candidates, JXTA_OBJECT_PPTR(&peer), i);
         if (JXTA_SUCCESS != res) continue;
@@ -852,7 +852,6 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml(Jxta_peerview_pong_msg 
         }
 
         jstring_append_2(string, "</Candidate>\n");
-        JXTA_OBJECT_RELEASE(jPeerid);
         JXTA_OBJECT_RELEASE(peer);
      }
 
@@ -892,6 +891,7 @@ static Jxta_status print_options_xml(JString *xml_string_j, Jxta_vector * option
         }
         JXTA_OBJECT_RELEASE(option);
     }
+
     return res;
 } 
 /** 
