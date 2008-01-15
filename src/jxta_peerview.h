@@ -93,6 +93,27 @@ typedef struct _jxta_peerview_event {
     Jxta_id *pid;
 } Jxta_peerview_event;
 
+
+/**
+ * Callback to provide a vector of candidate peers from the list of potential peers.
+ *
+ * @param peers Peer entries available as candidates.
+ * @param candidates Candidates to use.
+ * @return JXTA_SUCCESS If the candidates vector is valid.
+ **/
+typedef Jxta_status (JXTA_STDCALL * Jxta_peerview_candidate_list_func) (Jxta_vector const *peers, Jxta_vector **candidates);
+
+/**
+ * Callback to provide a target hash or cluster number.
+ *
+ * @param peer Peer requesting the address assignment
+ * @param cluster Location to store the cluster number to assign.
+ * @param target_hash Specific target hash to assign.
+ * @return JXTA_SUCCESS If the cluster or target hash have been set.
+ *          JXTA_NOT_CONFIGURED If neither the cluster or target_hash have been set.
+ **/
+typedef Jxta_status (JXTA_STDCALL * Jxta_peerview_address_req_func) (Jxta_peer *peer, unsigned int *cluster, BIGNUM **target_hash);
+
 /**
 *   Returns TRUE if this peer is an active member of the peerview.
 *   @param pv The peerview.
@@ -165,6 +186,17 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_get_localview(Jxta_peerview * pv, Jxta_v
 JXTA_DECLARE(unsigned int) jxta_peerview_get_localview_size(Jxta_peerview * pv);
 
 /**
+*   Returns a vector containing Jxta_peer_entry objects for each of the current
+*   peerview members within the specified cluster.
+*
+*   @param pv The peerview.
+*   @param cluster Cluster number requested.
+*   @param view the address of the destination vector for the entries.
+*   @return JXTA_SUCCESS if entries could be retrieved otherwise false.
+*/
+JXTA_DECLARE(Jxta_status) jxta_peerview_get_cluster_view(Jxta_peerview * pv, unsigned int cluster, Jxta_vector ** view);
+
+/**
 *
 **/
 JXTA_DECLARE(Jxta_status) jxta_peerview_gen_hash(Jxta_peerview * me, unsigned char const *value, size_t length, BIGNUM ** hash);
@@ -198,13 +230,43 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_remove_event_listener(Jxta_peerview * pv
                                                               const char *serviceParam);
 
 /**
- * Callback to provide a vector of candidate peers from the list of potential peers.
+ * Set the callback function for ranking peers in the peerview. The callback is called when the maintenance cycle 
+ * is evaluating whether to remain in the peerview.
  *
- * @param peers Peer entries available for candidates.
- * @param candidates Candidates 
- * @return JXTA_SUCCESS If the candidates vector is valid.
- **/
-typedef Jxta_status (JXTA_STDCALL * Jxta_peerview_candidate_cb) (Jxta_vector const *peers, Jxta_vector **candidates);
+ *  @param pv The peerview.
+ *  @param cb The callback function that compares peers passed by the jxta_vector_qsort function.
+ *  @return JXTA_SUCCESS The callback has been registered.
+*/
+JXTA_DECLARE(Jxta_status) jxta_peerview_set_ranking_order_cb(Jxta_peerview * pv, Jxta_object_compare_func cb);
+
+/**
+ * Set the callback function for sorting the candidate list. This callback is called before a candidate is selected
+ * to recruit for the peerview.
+ * 
+ *  @param pv The peerview.
+ *  @param cb The callback function that compares peers passed by the jxta_vector_qsort function.
+ *  @return JXTA_SUCCESS The callback has been registered.
+*/
+JXTA_DECLARE(Jxta_status) jxta_peerview_set_candidate_order_cb(Jxta_peerview * pv, Jxta_object_compare_func cb);
+
+/**
+ * Set the callback for providing a candidate list. This function is called when a candidate list is required. This callback
+ * is used to retrieve a candidate list.
+ * 
+ *  @param pv The peerview.
+ *  @param cb The callback function that returns the candidates to use.
+ *  @return JXTA_SUCCESS The callback has been registered.
+*/
+JXTA_DECLARE(Jxta_status) jxta_peerview_set_candidate_list_cb(Jxta_peerview * pv,  Jxta_peerview_candidate_list_func cb);
+
+/**
+ * Set the callback for providing a target_hash or cluster number when a peer requests an address assignment.
+ * 
+ *  @param pv The peerview.
+ *  @param cb The callback function that returns the cluster number or target hash the peer should be assigned.
+ *  @return JXTA_SUCCESS The callback has been registered.
+*/
+JXTA_DECLARE(Jxta_status) jxta_peerview_set_address_cb(Jxta_peerview * pv,  Jxta_peerview_address_req_func cb);
 
 
 #ifdef __cplusplus
