@@ -671,15 +671,16 @@ JXTA_DECLARE(Jxta_status) peerview_init(Jxta_peerview * pv, Jxta_PG * group, Jxt
 {
     Jxta_status res = JXTA_SUCCESS;
     Jxta_peerview *myself = PTValid(pv, Jxta_peerview);
-    Jxta_PA *conf_adv = NULL;
-    Jxta_PG *parentgroup = NULL;
-    JString *string;
+    JString *string = NULL;
+    Jxta_rdv_service *rdv = NULL;
 
     jxta_id_to_jstring(assigned_id, &string);
 
     myself->assigned_id_str = strdup(jstring_get_string(string));
 
     if (NULL == myself->assigned_id_str) {
+        if (string != NULL)
+            JXTA_OBJECT_RELEASE(string);
         return JXTA_NOMEM;
     }
 
@@ -688,7 +689,6 @@ JXTA_DECLARE(Jxta_status) peerview_init(Jxta_peerview * pv, Jxta_PG * group, Jxt
     myself->group = group;
 
     myself->thread_pool = jxta_PG_thread_pool_get(group);
-    jxta_PG_get_parentgroup(myself->group, &parentgroup);
     jxta_PG_get_PID(group, &myself->pid);
     jxta_PG_get_GID(group, &myself->gid);
     jxta_id_get_uniqueportion(myself->gid, &string);
@@ -696,19 +696,10 @@ JXTA_DECLARE(Jxta_status) peerview_init(Jxta_peerview * pv, Jxta_PG * group, Jxt
     JXTA_OBJECT_RELEASE(string);
 
     /* Determine our configuration */
-    jxta_PG_get_configadv(group, &conf_adv);
-    if (NULL == conf_adv && NULL != parentgroup) {
-        jxta_PG_get_configadv(parentgroup, &conf_adv);
-    }
-
-    if (conf_adv != NULL) {
-        Jxta_svc *svc;
-        jxta_PA_get_Svc_with_id(conf_adv, jxta_rendezvous_classid, &svc);
-        if (NULL != svc) {
-            myself->rdvConfig = jxta_svc_get_RdvConfig(svc);
-            JXTA_OBJECT_RELEASE(svc);
-        }
-        JXTA_OBJECT_RELEASE(conf_adv);
+    jxta_PG_get_rendezvous_service(group, &rdv);
+    if (NULL != rdv) {
+        myself->rdvConfig = (Jxta_RdvConfigAdvertisement *) JXTA_OBJECT_SHARE(jxta_rdv_service_config_adv(rdv));
+        JXTA_OBJECT_RELEASE(rdv);
     }
 
     if (NULL == myself->rdvConfig) {
@@ -779,11 +770,6 @@ JXTA_DECLARE(Jxta_status) peerview_init(Jxta_peerview * pv, Jxta_PG * group, Jxt
     myself->cluster_members = jxta_RdvConfig_pv_members(myself->rdvConfig);
     myself->replicas_count = jxta_RdvConfig_pv_replication(myself->rdvConfig);
     myself->pves = jxta_hashtable_new(myself->clusters_count * myself->cluster_members * 2);
-
-
-    if (NULL != parentgroup) {
-        JXTA_OBJECT_RELEASE(parentgroup);
-    }
 
     return res;
 }
