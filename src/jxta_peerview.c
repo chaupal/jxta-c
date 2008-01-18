@@ -4272,12 +4272,6 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
         /* Get candidates from the application */
         res = (* myself->candidate_list_cb)(myself->activity_add_candidate_peers, &rdv_clients);
 
-    } else if (0 == jxta_vector_size(myself->activity_add_candidate_peers)) {
-        locked = FALSE;
-        apr_thread_mutex_unlock(myself->mutex);
-
-        /* Get some candidates from the RDV Server . We won't be running unless the peer is a rdv */
-        res = jxta_rdv_service_get_peers(myself->rdv, &rdv_clients);
     }
 
     if (JXTA_SUCCESS != res) {
