@@ -1871,7 +1871,7 @@ FINAL_EXIT:
         JXTA_OBJECT_RELEASE(jName);
     if (jWhere)
         JXTA_OBJECT_RELEASE(jWhere);
-    JXTA_OBJECT_RELEASE(jWhere);
+
     JXTA_OBJECT_RELEASE(jColumns);
     if (dbSRDI)
         JXTA_OBJECT_RELEASE(dbSRDI);
