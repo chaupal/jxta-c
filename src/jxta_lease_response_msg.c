@@ -373,6 +373,7 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_get_xml(Jxta_lease_response_ms
         unsigned int free_mask = 0;
         int attr_idx = 2;
         Jxta_PA *server_adv;
+        apr_uuid_t *aadv_gen=NULL;
 
         if (-1L != jxta_lease_adv_info_get_adv_exp(myself->server)) {
             attrs[attr_idx++] = "expiration";
@@ -382,12 +383,23 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_get_xml(Jxta_lease_response_ms
             attrs[attr_idx++] = strdup(tmpbuf);
         }
 
-        attrs[attr_idx] = NULL;
+        aadv_gen = jxta_lease_adv_info_get_adv_gen(myself->server);
+        if (NULL != aadv_gen) {
+            attrs[attr_idx++] = "adv_gen";
+            free_mask |= (1 << attr_idx);
+            apr_uuid_format(tmpbuf, aadv_gen);
+            free(aadv_gen);
+            attrs[attr_idx++] = strdup(tmpbuf);
+        }
 
         server_adv = jxta_lease_adv_info_get_adv(myself->server);
 
         jxta_PA_get_xml_1(server_adv, &tempstr, "ServerAdv", attrs);
+
+
         JXTA_OBJECT_RELEASE(server_adv);
+
+        attrs[attr_idx] = NULL;
 
         for (attr_idx = 0; attrs[attr_idx]; attr_idx++) {
             if (free_mask & (1 << attr_idx)) {

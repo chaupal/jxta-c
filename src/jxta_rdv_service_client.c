@@ -1107,6 +1107,9 @@ static Jxta_status handle_leasing_reply(_jxta_rdv_service_client * myself, Jxta_
             server_adv_gen = NULL;
         } else {
             /* publish the *current* peer advertisement with lifetime of the lease length */
+            if (NULL != server_adv) {
+                JXTA_OBJECT_RELEASE(server_adv);
+            }
             jxta_peer_get_adv((Jxta_peer *) peer, &server_adv);
             server_adv_exp = lease;
         }
@@ -1214,6 +1217,7 @@ static void process_referrals(_jxta_rdv_service_client * myself, Jxta_lease_resp
             if (NULL != ignore_pid && jxta_id_equals(pid, ignore_pid) && all_referrals > 1) {
                 JXTA_OBJECT_RELEASE(pid);
                 JXTA_OBJECT_RELEASE(referral);
+                JXTA_OBJECT_RELEASE(referral_adv);
                 continue;
             }
             referral_candidate = (Jxta_peer *) rdv_entry_new();

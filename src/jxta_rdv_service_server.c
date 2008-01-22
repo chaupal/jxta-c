@@ -1308,8 +1308,7 @@ static Jxta_status send_connect_reply(_jxta_rdv_service_server * myself, Jxta_id
     jxta_lease_response_msg_set_server_id(lease_response, provider->local_peer_id);
     jxta_lease_response_msg_set_offered_lease(lease_response, lease_offered);
 
-    /* FIXME 20060811 bondolo Use a real advertisement generation */
-    apr_uuid_get(&adv_gen);
+    jxta_PA_get_SN(provider->local_pa, &adv_gen);
 
     jxta_lease_response_msg_set_server_adv_info(lease_response, provider->local_pa, &adv_gen, DEFAULT_LEASE_DURATION * 2);
 
