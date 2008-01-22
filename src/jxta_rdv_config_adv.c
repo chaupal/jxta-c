@@ -142,9 +142,10 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfig_clone(Jxta_RdvConfigAdvertisement * ad,
     clone->min_connected_rendezvous = ad->min_connected_rendezvous;
     clone->use_only_seeds = ad->use_only_seeds;
 
-    ret = jxta_vector_clone(ad->seeds, &clone->seeds,  0, INT_MAX );
+    ret = jxta_vector_addall_objects_last(clone->seeds, ad->seeds);
     if (JXTA_SUCCESS != ret) goto ERROR_EXIT;
-    ret = jxta_vector_clone(ad->seeding, &clone->seeding,  0, INT_MAX );
+
+    ret = jxta_vector_addall_objects_last(clone->seeding, ad->seeding);
     if (JXTA_SUCCESS != ret) goto ERROR_EXIT;
 
     /* Peerview attributes */
