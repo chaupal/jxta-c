@@ -960,6 +960,7 @@ Jxta_status peerview_stop(Jxta_peerview * pv)
     if (myself->auto_cycle > 0) {
         apr_thread_pool_tasks_cancel(myself->thread_pool, &myself->auto_cycle);
     }
+    apr_thread_pool_tasks_cancel(myself->thread_pool, &myself->activity_add);
     apr_thread_pool_tasks_cancel(myself->thread_pool, myself);
     
     jxta_vector_clear(myself->activity_maintain_referral_peers);
@@ -1720,9 +1721,9 @@ static Jxta_status peerview_send_pong(Jxta_peerview * myself, Jxta_peer * dest, 
                 JXTA_OBJECT_RELEASE(client);
             }
         }
-    } else {
-        res =  jxta_peerview_get_localview(myself, &peers);
     }
+
+    res =  jxta_peerview_get_localview(myself, &peers);
     for (i = 0; NULL != peers && i < jxta_vector_size(peers); ++i) {
         Jxta_id * peerId=NULL;
         Jxta_peer * peer=NULL;
@@ -2657,6 +2658,7 @@ static Jxta_boolean peerview_handle_promotion(Jxta_peerview * me, Jxta_peerview_
     Jxta_id *pid=NULL;
     JString * jPeerid=NULL;
     Jxta_vector * candidates_rcvd=NULL;
+    Jxta_boolean kickstart_activity_add=FALSE;
 
     pid = jxta_peerview_pong_msg_get_peer_id(pong);
 
@@ -2669,7 +2671,8 @@ static Jxta_boolean peerview_handle_promotion(Jxta_peerview * me, Jxta_peerview_
             && jxta_vector_size(myself->activity_add_candidate_voting_peers) > 0
             && myself->activity_add_candidate_requests_expiration > jpr_time_now()) {
         /* process the list */
-
+        unsigned int referral_size = 0;
+        unsigned int local_view_size = 0;
         for (i=0; jxta_vector_size(myself->activity_add_candidate_voting_peers) > 0; i++) {
             Jxta_peer * peer;
             /* only allow one response per peer */
@@ -2686,8 +2689,16 @@ static Jxta_boolean peerview_handle_promotion(Jxta_peerview * me, Jxta_peerview_
             JXTA_OBJECT_RELEASE(peer);
         }
 
-        if (jxta_vector_size(candidates_rcvd) > 0) {
+        referral_size = jxta_pong_msg_get_partners_size(pong);
+        local_view_size = jxta_peerview_get_localview_size(myself) - 1;
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE,"Referral size: %d  Local view size: %d\n", referral_size, local_view_size);
+
+        /* if there is a better candidate or referrals are available */
+        if (jxta_vector_size(candidates_rcvd) > 0 || referral_size > local_view_size) {
             jxta_vector_clear(myself->activity_add_candidate_peers);
+        } else if (0 == jxta_vector_size(myself->activity_add_candidate_voting_peers)) {
+            kickstart_activity_add = TRUE;
         }
 
     } else if (!myself->activity_add_voting) {
@@ -2701,6 +2712,7 @@ static Jxta_boolean peerview_handle_promotion(Jxta_peerview * me, Jxta_peerview_
         rsp = TRUE;
         if (NULL != candidates) {
             num_candidates = jxta_vector_size(candidates);
+            jxta_vector_clear(myself->activity_add_candidate_peers);
             for (i = 0; i < num_candidates; i++) {
                 Jxta_peer *peer;
                 res = jxta_vector_get_object_at(candidates, JXTA_OBJECT_PPTR(&peer), i);
@@ -2715,13 +2727,32 @@ static Jxta_boolean peerview_handle_promotion(Jxta_peerview * me, Jxta_peerview_
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE,"Send promotion response with %d candidates to : %s\n", num_candidates, jstring_get_string(jPeerid));
 
     } else {
+        kickstart_activity_add = TRUE;
         /* the polls are closed */
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE,"----------------  Polls are closed - clear the voting peers \n");
+
         jxta_vector_clear(myself->activity_add_candidate_voting_peers);
+
     }
+    if (kickstart_activity_add) {
+        apr_status_t apr_res;
+        apr_thread_pool_tasks_cancel(myself->thread_pool,&myself->activity_add);
 
-FINAL_EXIT:
+        myself->activity_add_candidate_requests_expiration = jpr_time_now();
+        myself->activity_add_voting_ends = jpr_time_now();
 
+        apr_res = apr_thread_pool_push(myself->thread_pool, activity_peerview_add, myself,
+                                            APR_THREAD_TASK_PRIORITY_HIGH, &myself->activity_add);
+        if (APR_SUCCESS != apr_res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,
+                            FILEANDLINE "Handle promotion[%pp]: Could not start add activity.\n", pong);
+            myself->activity_add = FALSE;
+        } else {
+            myself->activity_add = TRUE;
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Handle promotion [%pp]: Started [Add].\n", pong);
+        }
+
+    }
     if (NULL != pid)
         JXTA_OBJECT_RELEASE(pid);
     if (jPeerid)
@@ -2952,6 +2983,7 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
     Jxta_boolean locked = FALSE;
 
     apr_thread_mutex_lock(me->mutex);
+    locked = TRUE;
 
     action = jxta_peerview_pong_msg_get_action(pong);
 
@@ -4215,7 +4247,7 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
 
         myself->activity_add = TRUE;
         apr_res = apr_thread_pool_push(myself->thread_pool, activity_peerview_add, myself,
-                                            APR_THREAD_TASK_PRIORITY_HIGH, myself);
+                                            APR_THREAD_TASK_PRIORITY_HIGH, &myself->activity_add);
         if (APR_SUCCESS != apr_res) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,
                             FILEANDLINE "ACT[maintain] [%pp]: Could not start add activity.\n", myself);
@@ -4448,7 +4480,7 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
     if (myself->running) {
         /* Reschedule another check. */
         apr_status_t apr_res = apr_thread_pool_schedule(myself->thread_pool, activity_peerview_add, myself, 
-                                                        jxta_RdvConfig_pv_add_interval(myself->rdvConfig), myself);
+                                                        jxta_RdvConfig_pv_add_interval(myself->rdvConfig), &myself->activity_add);
 
         if (APR_SUCCESS != apr_res) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "ACT[add] [%pp]: Could not reschedule activity.\n",

@@ -1419,6 +1419,17 @@ JXTA_DECLARE(Jxta_vector *) jxta_pong_msg_get_partner_infos(Jxta_peerview_pong_m
     }
 }
 
+JXTA_DECLARE(unsigned int) jxta_pong_msg_get_partners_size(Jxta_peerview_pong_msg * myself)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    if (NULL != myself->partners) {
+        return jxta_vector_size(myself->partners);
+    } else {
+        return 0;
+    }
+}
+
 JXTA_DECLARE(void) jxta_pong_msg_clear_partner_infos(Jxta_peerview_pong_msg * myself )
 {
     JXTA_OBJECT_CHECK_VALID(myself);

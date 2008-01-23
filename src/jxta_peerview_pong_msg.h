@@ -142,6 +142,7 @@ JXTA_DECLARE(void) jxta_peerview_pong_msg_clear_options(Jxta_peerview_pong_msg *
 JXTA_DECLARE(void) jxta_peerview_pong_msg_add_option(Jxta_peerview_pong_msg * myself, Jxta_advertisement * adv);
 
 JXTA_DECLARE(Jxta_vector *) jxta_pong_msg_get_partner_infos(Jxta_peerview_pong_msg * myself);
+JXTA_DECLARE(unsigned int) jxta_pong_msg_get_partners_size(Jxta_peerview_pong_msg * myself);
 JXTA_DECLARE(void) jxta_pong_msg_clear_partner_infos(Jxta_peerview_pong_msg * myself );
 JXTA_DECLARE(void) jxta_pong_msg_add_partner_info(Jxta_peerview_pong_msg * myself, Jxta_id * peer,  apr_uuid_t * adv_gen_ptr, const char *target_hash, const char *target_hash_radius);
 
