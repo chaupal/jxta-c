@@ -391,6 +391,7 @@ static Jxta_boolean remain_in_peerview(Jxta_peerview *me, unsigned int size);
 static Jxta_boolean is_for_alternative(Jxta_peerview * me, const char *pv_mask);
 static Jxta_status process_referrals(Jxta_peerview * me, Jxta_peerview_pong_msg * pong);
 static void trim_only_candidates(Jxta_vector * possible_v);
+static Jxta_status get_best_rdv_candidates(Jxta_peerview *myself, Jxta_vector **candidates, int nums);
 
 static Jxta_status build_histogram(Jxta_vector ** histo, Jxta_vector * peers, BIGNUM * minimum, BIGNUM * maximum);
 
@@ -2655,24 +2656,26 @@ static Jxta_boolean peerview_handle_promotion(Jxta_peerview * me, Jxta_peerview_
     Jxta_peerview *myself = PTValid(me, Jxta_peerview);
     Jxta_id *pid=NULL;
     JString * jPeerid=NULL;
+    Jxta_vector * candidates_rcvd=NULL;
 
     pid = jxta_peerview_pong_msg_get_peer_id(pong);
 
     jxta_id_to_jstring(pid, &jPeerid);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE,"Handle promotion [%pp] from : %s\n", pong, jstring_get_string(jPeerid));
+    candidates_rcvd = jxta_pong_msg_get_candidate_infos(pong);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE,"Handle promotion [%pp] from : %s with %d candidates\n", pong, jstring_get_string(jPeerid), jxta_vector_size(candidates_rcvd));
 
     /* if this peer started the voting and the polls are still open */
     if (myself->activity_add_voting
             && jxta_vector_size(myself->activity_add_candidate_voting_peers) > 0
             && myself->activity_add_candidate_requests_expiration > jpr_time_now()) {
         /* process the list */
-        Jxta_vector * candidates_rcvd=NULL;
 
         for (i=0; jxta_vector_size(myself->activity_add_candidate_voting_peers) > 0; i++) {
             Jxta_peer * peer;
             /* only allow one response per peer */
             res = jxta_vector_get_object_at(myself->activity_add_candidate_voting_peers, JXTA_OBJECT_PPTR(&peer), i);
             if (JXTA_SUCCESS != res) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,"Unable to retrieve peer from voting peers [%pp]\n", myself->activity_add_candidate_voting_peers);
                 continue;
             }
             if (jxta_id_equals(jxta_peer_peerid(peer), pid)) {
@@ -2683,32 +2686,48 @@ static Jxta_boolean peerview_handle_promotion(Jxta_peerview * me, Jxta_peerview_
             JXTA_OBJECT_RELEASE(peer);
         }
 
-        candidates_rcvd = jxta_pong_msg_get_candidate_infos(pong);
         if (jxta_vector_size(candidates_rcvd) > 0) {
             jxta_vector_clear(myself->activity_add_candidate_peers);
         }
 
-        JXTA_OBJECT_RELEASE(candidates_rcvd);
-
-
     } else if (!myself->activity_add_voting) {
-        /* this peer didn't initiate the voting just send candidates */
+        Jxta_vector * candidates = NULL;
+        unsigned int num_candidates = 0;
         /* note the time that an election will end */
         me->activity_add_voting_ends = jpr_time_now() + jxta_RdvConfig_pv_voting_wait(myself->rdvConfig);
 
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE,"Send promotion response to : %s\n", jstring_get_string(jPeerid));
+        res = get_best_rdv_candidates(myself, &candidates, 1);
+
         rsp = TRUE;
+        if (NULL != candidates) {
+            num_candidates = jxta_vector_size(candidates);
+            for (i = 0; i < num_candidates; i++) {
+                Jxta_peer *peer;
+                res = jxta_vector_get_object_at(candidates, JXTA_OBJECT_PPTR(&peer), i);
+                if (JXTA_SUCCESS != res) {
+                    continue;
+                }
+                jxta_vector_add_object_last(myself->activity_add_candidate_peers, (Jxta_object *) peer);
+                JXTA_OBJECT_RELEASE(peer);
+            }
+            JXTA_OBJECT_RELEASE(candidates);
+        }
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE,"Send promotion response with %d candidates to : %s\n", num_candidates, jstring_get_string(jPeerid));
 
     } else {
         /* the polls are closed */
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE,"----------------  Polls are closed - clear the voting peers \n");
         jxta_vector_clear(myself->activity_add_candidate_voting_peers);
     }
+
+FINAL_EXIT:
+
     if (NULL != pid)
         JXTA_OBJECT_RELEASE(pid);
     if (jPeerid)
         JXTA_OBJECT_RELEASE(jPeerid);
-
+    if (candidates_rcvd)
+        JXTA_OBJECT_RELEASE(candidates_rcvd);
     return rsp;
 }
 
@@ -3889,12 +3908,15 @@ static void *APR_THREAD_FUNC activity_peerview_locate(apr_thread_t * thread, voi
     Jxta_peerview *myself = PTValid(cookie, Jxta_peerview);
     apr_status_t apr_res;
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "ACT[locate] [%pp]: Running. \n", myself);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "ACT[locate] [%pp]: Running.\n", myself);
 
     apr_thread_mutex_lock(myself->mutex);
 
     if (PV_LOCATING != myself->state) {
-        assert(NULL == myself->activity_locate_seeds);
+        if (NULL != myself->activity_locate_seeds) {
+            JXTA_OBJECT_RELEASE(myself->activity_locate_seeds);
+            myself->activity_locate_seeds = NULL;
+        }
         apr_thread_mutex_unlock(myself->mutex);
         return NULL;
     }
@@ -4049,7 +4071,7 @@ static void *APR_THREAD_FUNC activity_peerview_announce(apr_thread_t * thread, v
     apr_thread_mutex_lock(myself->mutex);
 
     myself->state = PV_MAINTENANCE;
- 
+
     apr_thread_mutex_unlock(myself->mutex);
     if (APR_SUCCESS != apr_thread_pool_push(myself->thread_pool, activity_peerview_maintain, myself,
                                             APR_THREAD_TASK_PRIORITY_HIGH, myself)) {
@@ -4231,6 +4253,52 @@ static Jxta_boolean need_additional_peers(Jxta_peerview * me, int max_check)
     return need_additional;
 }
 
+static Jxta_status get_best_rdv_candidates(Jxta_peerview *myself, Jxta_vector **candidates, int nums)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    Jxta_vector *rdv_clients = NULL;
+    Jxta_peer * peer;
+    unsigned int i;
+    Jxta_vector * candidates_v = NULL;
+
+    res = jxta_rdv_service_get_peers(myself->rdv, &rdv_clients);
+    if (JXTA_SUCCESS != res) {
+        goto FINAL_EXIT;
+    }
+    trim_only_candidates(rdv_clients);
+
+    if (jxta_vector_size(rdv_clients) < 1) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "No Candidates received from the rendezvous.\n");
+        res = JXTA_ITEM_NOTFOUND;
+        goto FINAL_EXIT;
+    }
+
+    jxta_vector_qsort(rdv_clients, myself->candidate_cb);
+
+    for (i = 0; i < jxta_vector_size(rdv_clients) && i < nums; i++) {
+        res = jxta_vector_get_object_at(rdv_clients, JXTA_OBJECT_PPTR(&peer), i);
+        if (JXTA_SUCCESS != res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Error getting an entry from the rdv clients.\n");
+            continue;
+        }
+        if (NULL == candidates_v) {
+            candidates_v = jxta_vector_new(0);
+            if (NULL == candidates_v) {
+                res = JXTA_NOMEM;
+                goto FINAL_EXIT;
+            }
+        }
+        jxta_vector_add_object_last(candidates_v, (Jxta_object *) peer);
+    }
+
+FINAL_EXIT:
+
+    *candidates = candidates_v;
+    if (rdv_clients)
+        JXTA_OBJECT_RELEASE(rdv_clients);
+    return res;
+}
+
 /**
 *   The add task is responsible for :
 *       - adding additional peers to the peerview.
@@ -4262,7 +4330,7 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
     if ((myself->activity_add_candidate_requests_expiration > jpr_time_now()
             && jxta_vector_size(myself->activity_add_candidate_voting_peers) > 0)
             || myself->activity_add_voting_ends > jpr_time_now()) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "ACT[add] Can't send msgs right now because an election is being held\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "ACT[add] Can't send msgs right now because an election is being held\n");
         goto RERUN_EXIT;
     }
 
@@ -4290,22 +4358,18 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
             goto RERUN_EXIT;
         }
         all_clients = jxta_vector_size(pves);
-        res = jxta_rdv_service_get_peers(myself->rdv, &rdv_clients);
-        if (JXTA_SUCCESS != res) {
+
+        res = get_best_rdv_candidates(myself, &rdv_clients, 1);
+
+        if (JXTA_SUCCESS != res || jxta_vector_size(rdv_clients) < 1) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "ACT[add] No Candidates found.\n");
             goto RERUN_EXIT;
         }
-        trim_only_candidates(rdv_clients);
-
-        if (jxta_vector_size(rdv_clients) < 1) goto RERUN_EXIT;
-
         if (myself->candidate_cb) {
             jxta_vector_qsort(rdv_clients, myself->candidate_cb);
         }
 
-        if (0 == all_clients) {
-            /* use attached edges */
-            myself->activity_add_voting = FALSE;
-        } else {
+        if (0 != all_clients) {
             if (myself->activity_add_candidate_peers)
                 JXTA_OBJECT_RELEASE(myself->activity_add_candidate_peers);
 
