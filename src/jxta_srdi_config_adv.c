@@ -221,7 +221,7 @@ Jxta_SrdiConfigAdvertisement *jxta_SrdiConfigAdvertisement_construct(Jxta_SrdiCo
     if (NULL != self) {
         self->noRangeWithValue=FALSE;
         self->replicationThreshold = DEFAULT_REPLICATION_THRESHOLD;
-        self->SRDIDeltaSupport = FALSE;
+        self->SRDIDeltaSupport = TRUE;
     }
     return self;
 }
