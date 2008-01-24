@@ -1890,14 +1890,12 @@ static Jxta_status cm_srdi_seq_number_update(Jxta_cm * me, JString * jPeerid, Jx
     JString *jUpdate_final = NULL;
     JString *jUpdate_sql = NULL;
     JString *jWhere = NULL;
-    JString *jWhere_seq = NULL;
     JString *jWhere_index = NULL;
     JString *jColumns = NULL;
     JString *jName = NULL;
     JString *jAdvId = NULL;
     jWhere = NULL;
-    jWhere_seq = jstring_new_0();
-    jWhere_index = jstring_new_0();
+
     status = cm_srdi_index_get(me, jPeerid, entry->seqNumber, &dbSRDI, &jAdvId, &jName, &bReplica, &jWhere_index);
     if (JXTA_SUCCESS != status) {
         goto FINAL_EXIT;
@@ -2000,8 +1998,8 @@ static Jxta_status cm_srdi_seq_number_update(Jxta_cm * me, JString * jPeerid, Jx
         JXTA_OBJECT_RELEASE(jName);
     if (jWhere)
         JXTA_OBJECT_RELEASE(jWhere);
-    JXTA_OBJECT_RELEASE(jWhere_seq);
-    JXTA_OBJECT_RELEASE(jWhere_index);
+    if (jWhere_index)
+        JXTA_OBJECT_RELEASE(jWhere_index);
     JXTA_OBJECT_RELEASE(jColumns);
 
     if (dbSpace)
