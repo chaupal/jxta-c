@@ -441,10 +441,6 @@ Jxta_status srdi_message_print(Jxta_SRDIMessage * ad, JString * js)
         if (NULL == anElement) {
             continue;
         }
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "srdi - key:%s AdvId:%s \n", 
-                        anElement->key ? jstring_get_string(anElement->key) : "(null)",
-                        anElement->advId ? jstring_get_string(anElement->advId) : "(null)");
-
         jstring_append_2(js, "<Entry ");
         apr_snprintf(buf, 512, " Expiration=\"%" APR_INT64_T_FMT "\"",
                       anElement->expiration);
