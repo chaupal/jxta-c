@@ -1840,7 +1840,7 @@ static Jxta_status discovery_send_srdi_msg(Jxta_discovery_service_ref *discovery
     }
 
     srdi = jxta_resolver_srdi_new_1(discovery->instanceName, messageString, peerid);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "%s\n", jstring_get_string(messageString));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "%s\n", jstring_get_string(messageString));
     JXTA_OBJECT_RELEASE(messageString);
     if (srdi == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Cannot allocate a resolver srdi message\n");
