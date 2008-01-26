@@ -4289,7 +4289,7 @@ static Jxta_status get_best_rdv_candidates(Jxta_peerview *myself, Jxta_vector **
 {
     Jxta_status res = JXTA_SUCCESS;
     Jxta_vector *rdv_clients = NULL;
-    Jxta_peer * peer;
+    Jxta_peer * peer = NULL;
     unsigned int i;
     Jxta_vector * candidates_v = NULL;
 
@@ -4321,11 +4321,15 @@ static Jxta_status get_best_rdv_candidates(Jxta_peerview *myself, Jxta_vector **
             }
         }
         jxta_vector_add_object_last(candidates_v, (Jxta_object *) peer);
+        JXTA_OBJECT_RELEASE(peer);
+        peer = NULL;
     }
 
 FINAL_EXIT:
 
     *candidates = candidates_v;
+    if (peer)
+        JXTA_OBJECT_RELEASE(peer);
     if (rdv_clients)
         JXTA_OBJECT_RELEASE(rdv_clients);
     return res;

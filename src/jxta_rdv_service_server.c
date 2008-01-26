@@ -1238,13 +1238,15 @@ static Jxta_status handle_lease_response(_jxta_rdv_service_server * myself, Jxta
         if (jxta_lease_adv_info_get_adv_exp(referral) > 0) {
             Jxta_peer *referral_seed = jxta_peer_new();
             Jxta_PA *referral_adv = jxta_lease_adv_info_get_adv(referral);
+            Jxta_id *referral_PID = jxta_PA_get_PID(referral_adv);
 
             jxta_peer_set_adv(referral_seed, referral_adv);
-            jxta_peer_set_peerid(referral_seed, jxta_PA_get_PID(referral_adv));
+            jxta_peer_set_peerid(referral_seed, referral_PID);
 
             jxta_peer_set_expires(referral_seed, jpr_time_now() + jxta_lease_adv_info_get_adv_exp(referral));
 
             rdv_service_add_referral_seed((Jxta_rdv_service *) provider->service, referral_seed);
+            JXTA_OBJECT_RELEASE(referral_PID);
             JXTA_OBJECT_RELEASE(referral_seed);
             JXTA_OBJECT_RELEASE(referral_adv);
         }
