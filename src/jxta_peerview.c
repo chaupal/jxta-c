@@ -4512,11 +4512,13 @@ static void trim_only_candidates(Jxta_vector * possible_v)
 {
     Jxta_status status;
     unsigned int i;
+    Jxta_vector * options = NULL;
+    Jxta_peer * peer = NULL;
+    unsigned int j;
+    unsigned int willingness;
+    
     for (i = 0; i < jxta_vector_size(possible_v); i++) {
-        Jxta_peer * peer;
-        Jxta_vector * options;
-        unsigned int j;
-        unsigned int willingness = 0;
+        willingness = 0;
 
         status = jxta_vector_get_object_at(possible_v, JXTA_OBJECT_PPTR(&peer), i);
         if (JXTA_SUCCESS != status) {
@@ -4524,6 +4526,12 @@ static void trim_only_candidates(Jxta_vector * possible_v)
         }
         if (jxta_peer_get_expires(peer) > jpr_time_now()) {
             jxta_peer_get_options(peer, &options);
+            if (NULL == options) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "[%pp]: peer options were NULL.\n", peer);
+                JXTA_OBJECT_RELEASE(peer);
+                peer = NULL;
+                continue;
+            }
             for (j=0; j < jxta_vector_size(options); j++) {
                 Jxta_status res;
                 Jxta_rdv_lease_options * lease_option;
@@ -4544,11 +4552,14 @@ static void trim_only_candidates(Jxta_vector * possible_v)
                 willingness = (jxta_rdv_lease_options_get_willingness(lease_option));
                 JXTA_OBJECT_RELEASE(lease_option);
             }
+            JXTA_OBJECT_RELEASE(options);
         }
         if (willingness < 1) {
             jxta_vector_remove_object_at(possible_v, NULL, i);
             i--;
         }
+        JXTA_OBJECT_RELEASE(peer);
+        peer = NULL;
     }
 }
 
