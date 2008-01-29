@@ -4031,7 +4031,7 @@ Jxta_vector *cm_query_replica(Jxta_cm * self, JString * nameSpace, Jxta_vector *
                     peersHash = jxta_hashtable_new(jxta_vector_size(peerEntries));
                 }
                 tmpPeer = jstring_get_string(peer);
-                if (jxta_hashtable_get(peersHash, tmpPeer, strlen(tmpPeer), JXTA_OBJECT_PPTR(&peer)) != JXTA_SUCCESS) {
+                if (jxta_hashtable_contains(peersHash, tmpPeer, strlen(tmpPeer)) != JXTA_SUCCESS) {
                     jxta_hashtable_put(peersHash, tmpPeer, strlen(tmpPeer), (Jxta_object *) peer);
                 }
                 JXTA_OBJECT_RELEASE(peer);
