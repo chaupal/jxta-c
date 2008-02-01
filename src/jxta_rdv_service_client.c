@@ -798,7 +798,7 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
 *   @param myself Our "this" pointer.
 *   @param peer The peer from which we will request a lease.
  **/
-static void send_lease_request(_jxta_rdv_service_client * myself, _jxta_peer_rdv_entry * peer)
+static Jxta_status send_lease_request(_jxta_rdv_service_client * myself, _jxta_peer_rdv_entry * peer)
 {
     Jxta_status res = JXTA_SUCCESS;
     _jxta_rdv_service_provider *provider = PTSuper(myself);
@@ -936,6 +936,8 @@ static void send_lease_request(_jxta_rdv_service_client * myself, _jxta_peer_rdv
 
   FINAL_EXIT:
     jxta_peer_unlock((Jxta_peer *) peer);
+
+    return res;
 }
 
 /**
@@ -1423,19 +1425,14 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
         }
         if (NULL != myself->candidate) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Send lease request to candidate\n");
-            send_lease_request(myself, myself->candidate);
+            if(send_lease_request(myself, myself->candidate) != JXTA_SUCCESS)
+            {
+                rdv_service_send_seed_request((Jxta_rdv_service *) (PTSuper(myself))->service);
+            }
         } else {
             rdv_service_send_seed_request((Jxta_rdv_service *) (PTSuper(myself))->service);
         }
-    } else {
-        /* We don't need any of the current candidates. */
-        jxta_vector_clear(myself->candidates);
-
-        if (NULL != myself->candidate) {
-            JXTA_OBJECT_RELEASE(myself->candidate);
-            myself->candidate = NULL;
-        }
-    }
+    } 
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Rendezvous Client Periodic RUN DONE.\n");
 
