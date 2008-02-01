@@ -1290,6 +1290,7 @@ Jxta_status rdv_service_get_seeds(Jxta_rdv_service * me, Jxta_vector ** seeds)
 Jxta_status rdv_service_add_referral_seed(Jxta_rdv_service * me, Jxta_peer * seed)
 {
 
+    Jxta_status res = JXTA_SUCCESS;
     _jxta_rdv_service *myself = PTValid(me, _jxta_rdv_service);
 
     apr_thread_mutex_lock(myself->mutex);
@@ -1298,11 +1299,15 @@ Jxta_status rdv_service_add_referral_seed(Jxta_rdv_service * me, Jxta_peer * see
         myself->active_seeds = jxta_vector_new(0);
     }
 
-    jxta_vector_add_object_first(myself->active_seeds, (Jxta_object *) seed);
+    if (!jxta_vector_contains(myself->active_seeds, (Jxta_object *) seed,
+                                       (Jxta_object_equals_func) jxta_peer_equals)) {
+
+        res = jxta_vector_add_object_first(myself->active_seeds, (Jxta_object *) seed);
+    }
 
     apr_thread_mutex_unlock(myself->mutex);
 
-    return JXTA_SUCCESS;
+    return res;
 }
 
 

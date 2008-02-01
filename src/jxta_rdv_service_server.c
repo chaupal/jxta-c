@@ -1215,10 +1215,15 @@ static Jxta_status handle_lease_response(_jxta_rdv_service_server * myself, Jxta
         jxta_peer_set_peerid(server_seed, server_peerid);
         jxta_peer_set_expires(server_seed, jpr_time_now() + server_adv_exp);
 
-        rdv_service_add_referral_seed((Jxta_rdv_service *) provider->service, server_seed);
+        res = rdv_service_add_referral_seed((Jxta_rdv_service *) provider->service, server_seed);
+
+        if (JXTA_SUCCESS != res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unable to add referral seed rc:%d\n", res);
+        }
+
         JXTA_OBJECT_RELEASE(server_seed);
 
-        if (myself->discovery != NULL) {
+        if (res == JXTA_SUCCESS && myself->discovery != NULL) {
             discovery_service_publish(myself->discovery, (Jxta_advertisement *) server_adv, DISC_PEER,
                                       (Jxta_expiration_time) server_adv_exp, LOCAL_ONLY_EXPIRATION);
         }
@@ -1245,7 +1250,12 @@ static Jxta_status handle_lease_response(_jxta_rdv_service_server * myself, Jxta
 
             jxta_peer_set_expires(referral_seed, jpr_time_now() + jxta_lease_adv_info_get_adv_exp(referral));
 
-            rdv_service_add_referral_seed((Jxta_rdv_service *) provider->service, referral_seed);
+            res = rdv_service_add_referral_seed((Jxta_rdv_service *) provider->service, referral_seed);
+
+            if (JXTA_SUCCESS != res) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unable to add referral seed rc:%d\n", res);
+            }
+
             JXTA_OBJECT_RELEASE(referral_PID);
             JXTA_OBJECT_RELEASE(referral_seed);
             JXTA_OBJECT_RELEASE(referral_adv);
