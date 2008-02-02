@@ -1234,13 +1234,14 @@ static Jxta_status handle_lease_response(_jxta_rdv_service_server * myself, Jxta
     all_referrals = jxta_vector_size(referrals);
     for (each_referral = 0; each_referral < all_referrals; each_referral++) {
         Jxta_lease_adv_info *referral = NULL;
-
+        Jxta_expiration_time expiration;
         res = jxta_vector_get_object_at(referrals, JXTA_OBJECT_PPTR(&referral), each_referral);
         if (JXTA_SUCCESS != res) {
             continue;
         }
+        expiration = jxta_lease_adv_info_get_adv_exp(referral);
 
-        if (jxta_lease_adv_info_get_adv_exp(referral) > 0) {
+        if (expiration > 0) {
             Jxta_peer *referral_seed = jxta_peer_new();
             Jxta_PA *referral_adv = jxta_lease_adv_info_get_adv(referral);
             Jxta_id *referral_PID = jxta_PA_get_PID(referral_adv);
@@ -1248,7 +1249,7 @@ static Jxta_status handle_lease_response(_jxta_rdv_service_server * myself, Jxta
             jxta_peer_set_adv(referral_seed, referral_adv);
             jxta_peer_set_peerid(referral_seed, referral_PID);
 
-            jxta_peer_set_expires(referral_seed, jpr_time_now() + jxta_lease_adv_info_get_adv_exp(referral));
+            jxta_peer_set_expires(referral_seed, jpr_time_now() + expiration);
 
             res = rdv_service_add_referral_seed((Jxta_rdv_service *) provider->service, referral_seed);
 
@@ -1334,11 +1335,20 @@ static Jxta_status send_connect_reply(_jxta_rdv_service_server * myself, Jxta_id
         Jxta_peer *peer;
         Jxta_id *peerId;
         Jxta_boolean add_peer = FALSE;
+        Jxta_time expiration;
         ret = jxta_vector_get_object_at(referrals, JXTA_OBJECT_PPTR(&peer), i);
         if (JXTA_SUCCESS != ret) {
             continue;
         }
+        expiration = jxta_peer_get_expires(peer) - jpr_time_now();
+
+        if (expiration <= 0) {
+            JXTA_OBJECT_RELEASE(peer);
+            continue;
+        }
+
         jxta_peer_get_peerid(peer, &peerId);
+
         if (jxta_id_equals(peerId, provider->local_peer_id)) {
             if (!this_peer_added)
                 add_peer = TRUE;
@@ -1347,7 +1357,7 @@ static Jxta_status send_connect_reply(_jxta_rdv_service_server * myself, Jxta_id
             add_peer = TRUE;
         }
         if (add_peer) {
-            jxta_lease_response_msg_add_referral_adv(lease_response, jxta_peer_adv(peer), jxta_peer_get_expires(peer) - jpr_time_now());
+            jxta_lease_response_msg_add_referral_adv(lease_response, jxta_peer_adv(peer), expiration);
         }
         JXTA_OBJECT_RELEASE(peerId);
         JXTA_OBJECT_RELEASE(peer);
