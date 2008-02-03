@@ -2586,11 +2586,11 @@ static Jxta_status process_referrals(Jxta_peerview * me, Jxta_peerview_pong_msg 
         Jxta_id * id = NULL;
         Jxta_PA *jpa=NULL;
         JString *jPeerid=NULL;
+
         res = jxta_vector_get_object_at(referrals, JXTA_OBJECT_PPTR(&peer), each_referral);
         if (JXTA_SUCCESS != res) {
             continue;
         }
-
         referral_pid = jxta_peerview_peer_info_get_peer_id(peer);
         if (jxta_id_equals(referral_pid, me->pid)) {
             JXTA_OBJECT_RELEASE(peer);
@@ -2600,12 +2600,17 @@ static Jxta_status process_referrals(Jxta_peerview * me, Jxta_peerview_pong_msg 
         jxta_id_to_jstring(referral_pid, &jPeerid); 
         res = jxta_peerview_peer_info_get_adv_gen_id(peer, &id);
         if (!peerview_check_pve(me, referral_pid)) {
-            /* Not in pve, see if we have a referral already. */
-            Jxta_peer *ping_target = jxta_peer_new();
-            Jxta_PA *peer_adv = jxta_peerview_peer_info_get_peer_adv(peer);
+            Jxta_peer *ping_target = NULL;
+            Jxta_PA *peer_adv = NULL;
+
+            ping_target = jxta_peer_new();
+            peer_adv = jxta_peerview_peer_info_get_peer_adv(peer);
             jxta_peer_set_peerid(ping_target, referral_pid);
             jxta_peer_set_adv(ping_target, peer_adv);
             JXTA_OBJECT_RELEASE(peer_adv);
+
+            /* Not in pve, see if we have a referral already. */
+
             if (!jxta_vector_contains (me->activity_maintain_referral_peers, (Jxta_object *) ping_target,
                                        (Jxta_object_equals_func) jxta_peer_equals)) {
                 jxta_vector_add_object_last(me->activity_maintain_referral_peers, (Jxta_object *) ping_target);
@@ -2618,10 +2623,12 @@ static Jxta_status process_referrals(Jxta_peerview * me, Jxta_peerview_pong_msg 
                 }
             }
             JXTA_OBJECT_RELEASE(ping_target);
+
         } else {
             if (id != NULL) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,"Referral is duplicate: %s\n", jstring_get_string(jPeerid));
                 if (FALSE == have_matching_PA(me, peer, &jpa)) {
+
                     if (NULL == need_pids) {
                         need_pids = jxta_vector_new(0);
                     }
@@ -2629,6 +2636,7 @@ static Jxta_status process_referrals(Jxta_peerview * me, Jxta_peerview_pong_msg 
                 }
             }
         }
+
         if (jPeerid)
             JXTA_OBJECT_RELEASE(jPeerid);
         if (id)
@@ -4112,6 +4120,22 @@ static void *APR_THREAD_FUNC activity_peerview_announce(apr_thread_t * thread, v
     return NULL;
 }
 
+static void remove_connected_referrals(Jxta_peerview * me)
+{
+    unsigned int i;
+    for (i = 0; i < jxta_vector_size(me->activity_maintain_referral_peers); i++) {
+        Jxta_peer *peer = NULL;
+
+        jxta_vector_get_object_at(me->activity_maintain_referral_peers, JXTA_OBJECT_PPTR(&peer), i);
+
+        if (peerview_check_pve(me, jxta_peer_peerid(peer))) {
+
+            jxta_vector_remove_object_at(me->activity_maintain_referral_peers, NULL, i);
+        }
+        JXTA_OBJECT_RELEASE(peer);
+    }
+}
+
 static Jxta_status probe_referrals(Jxta_peerview * me)
 {
     unsigned int each_old_ping;
@@ -4123,6 +4147,10 @@ static Jxta_status probe_referrals(Jxta_peerview * me)
         jxta_vector_remove_object_at(me->activity_maintain_referral_peers, NULL, 0);
     }
     me->activity_maintain_referral_pings_sent = 0;
+
+    /* if we have a connection remove it from the referrals */
+    remove_connected_referrals(me);
+
     /* Send ping messages to any referrals from pong responses. */
 
     jxta_vector_shuffle(me->activity_maintain_referral_peers);  /* We use this for probes so shuffle it. */
@@ -4176,7 +4204,7 @@ static Jxta_status check_pves(Jxta_peerview * me, Jxta_vector *pves)
         expires = jxta_peer_get_expires((Jxta_peer *) a_pve);
 
         if (expires <= now) {
-            /* It's dead Jim. Remove it from the peerview. */
+            /* It's dead Jim. Remove it from the peerview */
 
             peerview_remove_pve(me, jxta_peer_peerid((Jxta_peer *) a_pve));
             JXTA_OBJECT_RELEASE(a_pve);
