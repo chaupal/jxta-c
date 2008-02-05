@@ -1165,13 +1165,13 @@ Jxta_status rdv_service_get_seeds(Jxta_rdv_service * me, Jxta_vector ** seeds)
     Jxta_status res = JXTA_SUCCESS;
     _jxta_rdv_service *myself = PTValid(me, _jxta_rdv_service);
     Jxta_time currentTime = (Jxta_time) jpr_time_now();
+    Jxta_vector *new_seeds = NULL;
+    unsigned int i;
 
     /* XXX 20060918 Narrow this mutex */
     apr_thread_mutex_lock(myself->mutex);
 
     if ((NULL == myself->active_seeds) || ((myself->last_seeding_update + SEEDING_REFRESH_INTERVAL) < currentTime)) {
-        Jxta_vector *new_seeds;
-        Jxta_vector *old_seeds;
         Jxta_vector *seed_uris;
         Jxta_vector *seeding_uris;
         unsigned int all_uris;
@@ -1264,21 +1264,63 @@ Jxta_status rdv_service_get_seeds(Jxta_rdv_service * me, Jxta_vector ** seeds)
 
         JXTA_OBJECT_RELEASE(seeding_uris);
 
-        old_seeds = myself->active_seeds;
-        myself->active_seeds = new_seeds;
-
-        if (NULL != old_seeds) {
-            JXTA_OBJECT_RELEASE(old_seeds);
-        }
-
         /* Update again because fetch may have taken some time. */
         myself->last_seeding_update = (Jxta_time) jpr_time_now();
+    }
+
+    if (NULL == myself->active_seeds || 0 == jxta_vector_size(myself->active_seeds)) {
+
+        if (NULL != myself->active_seeds) {
+            JXTA_OBJECT_RELEASE(myself->active_seeds);
+        }
+        myself->active_seeds = new_seeds;
+
+    } else if (NULL != new_seeds) {
+
+        for (i = 0; i < jxta_vector_size(new_seeds); i++) {
+            Jxta_peer * seed = NULL;
+            unsigned int j;
+            Jxta_boolean found = FALSE;
+
+            if (JXTA_SUCCESS != jxta_vector_get_object_at(new_seeds, JXTA_OBJECT_PPTR(&seed),  i))
+                continue;
+
+            /* see if there is a newer one */
+            for (j=0; j < jxta_vector_size(myself->active_seeds); j++) {
+                Jxta_peer * active_seed;
+
+                jxta_vector_get_object_at(myself->active_seeds, JXTA_OBJECT_PPTR(&active_seed), j);
+                if (jxta_peer_equals(active_seed, seed)) {
+
+                    jxta_peer_set_expires(active_seed, jxta_peer_get_expires(seed));
+                    found = TRUE;
+                }
+                JXTA_OBJECT_RELEASE(active_seed);
+                if (found) break;
+            }
+
+            if (!found)
+                jxta_vector_add_object_first(myself->active_seeds, (Jxta_object *) seed);
+
+            JXTA_OBJECT_RELEASE(seed);
+        }
     }
 
     if (NULL == myself->active_seeds) {
         *seeds = jxta_vector_new(1);
         res = JXTA_SUCCESS;
     } else {
+        for (i = jxta_vector_size(myself->active_seeds); i > 0 ; i--) {
+            Jxta_peer * seed;
+
+            jxta_vector_get_object_at(myself->active_seeds, JXTA_OBJECT_PPTR(&seed), i - 1);
+
+            if (jxta_peer_get_expires(seed) <= jpr_time_now()) {
+                jxta_vector_remove_object_at(myself->active_seeds, NULL, i - 1);
+            }
+
+            JXTA_OBJECT_RELEASE(seed);
+        }
         res = jxta_vector_clone(myself->active_seeds, seeds, 0, INT_MAX);
     }
 
@@ -1302,7 +1344,9 @@ Jxta_status rdv_service_add_referral_seed(Jxta_rdv_service * me, Jxta_peer * see
     if (!jxta_vector_contains(myself->active_seeds, (Jxta_object *) seed,
                                        (Jxta_object_equals_func) jxta_peer_equals)) {
 
-        res = jxta_vector_add_object_first(myself->active_seeds, (Jxta_object *) seed);
+        if (!jxta_id_equals(jxta_peer_peerid(seed), myself->pid)) {
+            res = jxta_vector_add_object_first(myself->active_seeds, (Jxta_object *) seed);
+        }
     }
 
     apr_thread_mutex_unlock(myself->mutex);
