@@ -4123,14 +4123,14 @@ static void *APR_THREAD_FUNC activity_peerview_announce(apr_thread_t * thread, v
 static void remove_connected_referrals(Jxta_peerview * me)
 {
     unsigned int i;
-    for (i = 0; i < jxta_vector_size(me->activity_maintain_referral_peers); i++) {
+    for (i = jxta_vector_size(me->activity_maintain_referral_peers); i > 0; i--) {
         Jxta_peer *peer = NULL;
 
-        jxta_vector_get_object_at(me->activity_maintain_referral_peers, JXTA_OBJECT_PPTR(&peer), i);
+        jxta_vector_get_object_at(me->activity_maintain_referral_peers, JXTA_OBJECT_PPTR(&peer), i - 1);
 
         if (peerview_check_pve(me, jxta_peer_peerid(peer))) {
 
-            jxta_vector_remove_object_at(me->activity_maintain_referral_peers, NULL, i);
+            jxta_vector_remove_object_at(me->activity_maintain_referral_peers, NULL, i - 1);
         }
         JXTA_OBJECT_RELEASE(peer);
     }
