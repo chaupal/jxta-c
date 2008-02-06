@@ -1498,7 +1498,7 @@ Jxta_status cm_remove_advertisements(Jxta_cm * self, const char *folder_name, ch
     }
 
 FINAL_EXIT:
-    if (pool)
+    if (NULL != pool)
         apr_pool_destroy(pool);
     JXTA_OBJECT_RELEASE(jKey);
     JXTA_OBJECT_RELEASE(folder);
@@ -1795,6 +1795,10 @@ static Jxta_status cm_srdi_index_get(Jxta_cm * me, JString * jPeerid, Jxta_seque
     JXTA_OBJECT_RELEASE(jWhere_index);
     JXTA_OBJECT_RELEASE(jColumns);
 
+    if (NULL != pool) {
+        apr_pool_destroy(pool);
+    }
+
     if (dbSpace) {
         JXTA_OBJECT_RELEASE(dbSpace);
     }
@@ -1871,6 +1875,9 @@ FINAL_EXIT:
         JXTA_OBJECT_RELEASE(jName);
     if (jWhere)
         JXTA_OBJECT_RELEASE(jWhere);
+
+    if (NULL != pool)
+        apr_pool_destroy(pool);
 
     JXTA_OBJECT_RELEASE(jColumns);
     if (dbSRDI)
@@ -2201,6 +2208,9 @@ Jxta_status cm_update_srdi_times(Jxta_cm * me, JString * jPeerid, Jxta_time ttim
         JXTA_OBJECT_RELEASE(jReplicaAdvIds);
     if (where)
         JXTA_OBJECT_RELEASE(where);
+
+    if (NULL != pool)
+        apr_pool_destroy(pool);
     return status;
 }
 
@@ -2336,7 +2346,7 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jHand
         dbSpaces++;
     }
     free(dbSpacesSave);
-    if (pool)
+    if (NULL != pool)
         apr_pool_destroy(pool);
     if (jVal)
         JXTA_OBJECT_RELEASE(jVal);
@@ -2795,7 +2805,7 @@ static Jxta_status cm_srdi_transaction_save(Jxta_cm_srdi_task * task_parms)
             JXTA_OBJECT_RELEASE(vElements);
     }
   FINAL_EXIT:
-    if (pool)
+    if (NULL != pool)
         apr_pool_destroy(pool);
     if (xactionElements)
         JXTA_OBJECT_RELEASE(xactionElements);
@@ -3232,7 +3242,8 @@ Jxta_advertisement **cm_sql_query(Jxta_cm * self, const char *folder_name, JStri
 
   finish:
     JXTA_OBJECT_RELEASE(columns);
-    apr_pool_destroy(pool);
+    if (NULL != pool)
+        apr_pool_destroy(pool);
 
     return results;
 }
@@ -3317,7 +3328,7 @@ Jxta_cache_entry **cm_query_ctx(Jxta_cm * me, Jxta_credential ** scope, int thre
         goto FINAL_EXIT;
     }
     while (*dbSpaces) {
-        Jxta_cache_entry **tempAdds;
+        Jxta_cache_entry **tempAdds = NULL;
         rv = cm_sql_select_join_generic(*dbSpaces, pool, jJoin, jGroup, &res, jSQLcmd, needOR ? FALSE : TRUE);
         if (rv) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- cm_query_ctx Select join failed: %s %i\n",
@@ -3365,7 +3376,8 @@ Jxta_cache_entry **cm_query_ctx(Jxta_cm * me, Jxta_credential ** scope, int thre
     if (dbSpacesSave)
         free(dbSpacesSave);
     JXTA_OBJECT_RELEASE(columns);
-    apr_pool_destroy(pool);
+    if (NULL != pool)
+        apr_pool_destroy(pool);
 
     return resultsReturn;
 }
