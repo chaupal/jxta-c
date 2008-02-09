@@ -1866,6 +1866,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
     JString *jPrimaryKey = NULL;
     Jxta_peer *peer;
     Jxta_boolean bReplica = TRUE;
+    Jxta_boolean am_rdv = FALSE;
     Jxta_id *peerid = NULL;
     Jxta_rdv_service *rdv;
     Jxta_discovery_service_ref *discovery = PTValid(arg, Jxta_discovery_service_ref);
@@ -1874,11 +1875,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
 
     rdv = discovery->rdv;
 
-    if ( config_rendezvous != jxta_rdv_service_config( rdv ) ) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Not a rendezvous, ignoring message.\n");
-        return;
-    }
-
+    am_rdv = jxta_rdv_service_is_rendezvous((Jxta_rdv_service *) rdv);
     smsg = jxta_srdi_message_new();
 
     status = jxta_srdi_message_parse_charbuffer(smsg, jstring_get_string((JString *) obj), jstring_length((JString *) obj));
@@ -1886,7 +1883,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed parsing SRDI message\n");
         goto FINAL_EXIT;
     }
-    
+
     jxta_srdi_message_get_peerID(smsg, &peerid);
     jxta_id_to_jstring(peerid, &jPeerid);
     jxta_srdi_message_get_primaryKey(smsg, &jPrimaryKey);
@@ -1898,7 +1895,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
 
     status = jxta_srdi_message_get_resend_entries(smsg, &entries);
 
-    if ( !jxta_rdv_service_is_rendezvous((Jxta_rdv_service *) rdv) && entries == NULL) {
+    if (!am_rdv && entries == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "ooops - got a srdi message without resend entries and i'm not a rendezvous \n");
         goto FINAL_EXIT;
     }
@@ -1910,13 +1907,15 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
 
         /* clear them from the delta entries */
         if (NULL != resendDelta) {
+
             cm_remove_srdi_delta_entries(discovery->cm, jPeerid, resendDelta);
             discovery_send_srdi_msg(discovery, peerid, jPrimaryKey, resendDelta);
             JXTA_OBJECT_RELEASE(resendDelta);
         }
         JXTA_OBJECT_RELEASE(entries);
         entries = NULL;
-
+        if (!am_rdv)
+            goto FINAL_EXIT;
     }
 
     status = jxta_srdi_message_get_entries(smsg, &entries);
