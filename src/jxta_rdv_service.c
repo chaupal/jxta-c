@@ -1304,6 +1304,8 @@ Jxta_status rdv_service_get_seeds(Jxta_rdv_service * me, Jxta_vector ** seeds)
 
             JXTA_OBJECT_RELEASE(seed);
         }
+
+        JXTA_OBJECT_RELEASE(new_seeds);
     }
 
     if (NULL == myself->active_seeds) {
