@@ -2446,12 +2446,12 @@ static Jxta_status secondary_indexing(Jxta_cm * me, DBSpace * dbSpace, Folder * 
         free(full_index_name);
 
         /* Publish SRDI delta */
-        if (exp > 0 && srdi_delta && exp_others > 0 && send_this_srdi && !(flags & NO_REPLICATION)) {
+        if (exp > 0 && srdi_delta && exp_others > 0 && send_this_srdi) {
             Jxta_sequence_number seq_number;
             apr_thread_mutex_lock(me->mutex);
             seq_number = ++me->delta_seq_number;
             apr_thread_mutex_unlock(me->mutex);
-            entry = jxta_srdi_new_element_3(jskey, jval, jns, jPkey, jrange, exp, seq_number);
+            entry = jxta_srdi_new_element_4(jskey, jval, jns, jPkey, jrange, exp, seq_number, !(flags & NO_REPLICATION));
             if (entry != NULL) {
                 cm_srdi_delta_add(srdi_delta, folder, entry);
                 JXTA_OBJECT_RELEASE(entry);

@@ -957,10 +957,6 @@ static Jxta_status query_create_SQL(Jxta_query_context * jctx, xmlXPathCompExprP
         if (JXTA_SUCCESS != status) {
             continue;
         }
-        if (!elem->isReplicated && !jctx->compound_query) {
-            JXTA_OBJECT_RELEASE(elem);
-            continue;
-        }
         if (NULL == aor_entries[elem->step]) {
             aor_entries[elem->step] = JXTA_OBJECT_SHARE(elem->jSQL);
         } else {

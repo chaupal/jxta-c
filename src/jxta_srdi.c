@@ -240,6 +240,7 @@ static void handleEntry(void *userdata, const XML_Char * cd, int len)
      * option. We depend on it. There must be exactly one non-empty call
      * per address.
      */
+     entry->replicate = TRUE;
     if (atts != NULL) {
         while (*atts) {
             if (0 == strcmp("SKey", *atts)) {
@@ -268,7 +269,10 @@ static void handleEntry(void *userdata, const XML_Char * cd, int len)
                     jstring_reset(entry->range, NULL);
                 }
                 jstring_append_0(entry->range, atts[1], strlen(atts[1]));
+            } else if (0 == strcmp("replicate", *atts)) {
+                entry->replicate = FALSE;
             }
+            
             atts += 2;
         }
     }
@@ -477,6 +481,11 @@ Jxta_status srdi_message_print(Jxta_SRDIMessage * ad, JString * js)
             jstring_append_2(js, tmpbuf);
             jstring_append_2(js, "\"");
         }
+
+        if (anElement->replicate == FALSE) {
+            jstring_append_2(js, " replicate=\"FALSE\"");
+        }
+        
         jstring_append_2(js, ">\n");
         if (NULL != anElement->value) {
             jstring_append_1(js, anElement->value);
@@ -637,6 +646,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_element_clone(Jxta_SRDIEntryElem
 
     assert(!entry->resend);
     newEntry->resend = FALSE;
+    newEntry->replicate = entry->replicate;
     newEntry->seqNumber = entry->seqNumber;
     newEntry->expiration = entry->expiration;
 
@@ -668,6 +678,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_1(JString * key, JSt
     dse->expiration = expiration;
     dse->seqNumber = 0;
     dse->resend = FALSE;
+    dse->replicate = TRUE;
     return dse;
 }
 
@@ -690,6 +701,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_2(JString * key, JSt
     dse->seqNumber = 0;
     dse->expiration = expiration;
     dse->resend = FALSE;
+    dse->replicate = TRUE;
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "This is the spot in number 2 %s \n", jstring_get_string(dse->key));
     return dse;
 }
@@ -714,7 +726,33 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_3(JString * key, JSt
     dse->seqNumber = seqNumber;
     dse->expiration = expiration;
     dse->resend = FALSE;
+    dse->replicate = TRUE;
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "This is the spot in number 3 %s \n", jstring_get_string(dse->key));
+    return dse;
+}
+
+
+JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_4(JString * key, JString * value, JString * nameSpace,
+                                                              JString * advId, JString * jrange, Jxta_expiration_time expiration,
+                                                              Jxta_sequence_number seqNumber, Jxta_boolean replicate)
+{
+    Jxta_SRDIEntryElement *dse = jxta_srdi_new_element();
+
+    dse->key = JXTA_OBJECT_SHARE(key);
+    dse->value = JXTA_OBJECT_SHARE(value);
+    dse->nameSpace = JXTA_OBJECT_SHARE(nameSpace);
+    if (advId) {
+     dse->advId = JXTA_OBJECT_SHARE(advId);
+    } else {
+     dse->advId = JXTA_OBJECT_SHARE(value);
+    }
+    if (jrange) {
+     dse->range = JXTA_OBJECT_SHARE(jrange);
+    }
+    dse->seqNumber = seqNumber;
+    dse->expiration = expiration;
+    dse->resend = FALSE;
+    dse->replicate = replicate;
     return dse;
 }
 

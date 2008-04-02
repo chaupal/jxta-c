@@ -263,7 +263,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
         Jxta_SRDIEntryElement *newEntry = NULL;
         entry = NULL;
         jxta_vector_get_object_at(allEntries, JXTA_OBJECT_PPTR(&entry), i);
-        if (entry == NULL) {
+        if (entry == NULL || !(entry->replicate)) {
             continue;
         }
         newEntry = jxta_srdi_new_element_3(entry->key, entry->value, entry->nameSpace, entry->advId, entry->range, entry->expiration, entry->seqNumber);
