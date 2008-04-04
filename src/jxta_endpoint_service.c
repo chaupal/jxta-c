@@ -1639,6 +1639,7 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_propagate(Jxta_endpoint_service 
     svc = jstring_new_2(JXTA_ENDPOINT_SERVICE_NAME);
     if (svc == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory\n");
+        JXTA_OBJECT_RELEASE(tps);
         return JXTA_NOMEM;
     }
     jstring_append_2(svc, ":");

@@ -1435,7 +1435,8 @@ static void JXTA_STDCALL peerview_event_listener(Jxta_object * obj, void *arg)
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "DEMOTE EVENT FROM PEERVIEW \n");
         if (status_rendezvous == myself->status) {
             myself->is_demoting = TRUE;
-        } 
+        } 		
+        rdv_service_switch_config((Jxta_rdv_service *)myself, config_edge);
         break;
     default:
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Catch All for event %d ignored\n", event->event);

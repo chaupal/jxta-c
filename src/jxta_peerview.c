@@ -276,6 +276,11 @@ struct _jxta_peerview {
     *   To generate peer view events 
     **/
     Jxta_hashtable *event_listener_table;
+    /**
+    *  Maintains queue of active events.  An event must be added to the list prior to 
+    *  scheduling a new call_event_listeners thread
+    */
+    Jxta_vector *event_list;
 
     volatile Peerview_state state;
 
@@ -356,6 +361,7 @@ static Peerview_entry *peerview_get_pve(Jxta_peerview * myself, Jxta_PID * pid);
 static Jxta_boolean peerview_check_pve(Jxta_peerview * myself, Jxta_PID * pid);
 static Jxta_status peerview_add_pve(Jxta_peerview * myself, Peerview_entry * pve);
 static Jxta_status peerview_remove_pve(Jxta_peerview * myself, Jxta_PID * pid);
+static Jxta_status peerview_remove_pve_1(Jxta_peerview * myself, Jxta_PID * pid, Jxta_boolean generate_event);
 static Jxta_vector *peerview_get_all_pves(Jxta_peerview * myself);
 static Jxta_status peerview_clear_pves(Jxta_peerview * myself, Jxta_boolean notify);
 
@@ -378,7 +384,7 @@ static Jxta_status peerview_send_address_assign(Jxta_peerview * myself, Jxta_pee
 static Jxta_status peerview_send_pvm(Jxta_peerview * me, Jxta_peer * dest, Jxta_message * msg);
 static Jxta_status peerview_send_adv_request(Jxta_peerview * myself, Jxta_id * dest_id, Jxta_vector *need_pids);
 
-static void call_event_listeners(Jxta_peerview * myself, Jxta_Peerview_event_type event, Jxta_id * id);
+static void *APR_THREAD_FUNC call_event_listeners_thread(apr_thread_t * thread, void *arg);
 
 static unsigned int cluster_for_hash(Jxta_peerview * myself, BIGNUM * target_hash);
 static Jxta_boolean have_matching_PA(Jxta_peerview * me, Jxta_peerview_peer_info *peer, Jxta_PA ** requested_PA);
@@ -629,6 +635,10 @@ static void peerview_destruct(Jxta_peerview * myself)
     if (NULL != myself->event_listener_table) {
         JXTA_OBJECT_RELEASE(myself->event_listener_table);
     }
+    
+    if (NULL != myself->event_list) {
+        JXTA_OBJECT_RELEASE(myself->event_list);
+    }
 
     if (NULL !=  myself->activity_maintain_referral_peers) {
         JXTA_OBJECT_RELEASE(myself->activity_maintain_referral_peers);
@@ -771,6 +781,7 @@ JXTA_DECLARE(Jxta_status) peerview_init(Jxta_peerview * pv, Jxta_PG * group, Jxt
     myself->cluster_members = jxta_RdvConfig_pv_members(myself->rdvConfig);
     myself->replicas_count = jxta_RdvConfig_pv_replication(myself->rdvConfig);
     myself->pves = jxta_hashtable_new(myself->clusters_count * myself->cluster_members * 2);
+    myself->event_list = jxta_vector_new(2);
 
     return res;
 }
@@ -965,6 +976,7 @@ Jxta_status peerview_stop(Jxta_peerview * pv)
     
     jxta_vector_clear(myself->activity_maintain_referral_peers);
     jxta_vector_clear(myself->activity_add_candidate_peers);
+    jxta_vector_clear(myself->event_list);
 
     jxta_PG_remove_recipient(myself->group, myself->ep_cookie);
     myself->state = PV_STOPPED;
@@ -1505,19 +1517,25 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_remove_event_listener(Jxta_peerview * pv
     return res;
 }
 
-
-static void call_event_listeners(Jxta_peerview * myself, Jxta_Peerview_event_type event, Jxta_id * id)
+static void *APR_THREAD_FUNC call_event_listeners_thread(apr_thread_t * thread, void *arg)
 {
-    Jxta_peerview_event *pv_event = peerview_event_new(event, id);
+    Jxta_peerview *myself = PTValid(arg, Jxta_peerview);
+    Jxta_peerview_event *pv_event = NULL;
     Jxta_status res = JXTA_SUCCESS;
     Jxta_vector *lis = NULL;
-
-    if (NULL == pv_event) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Could not create peerview event object.\n");
-        return;
+    
+    if (myself->state == PV_STOPPED) {
+        return NULL;
     }
 
     apr_thread_mutex_lock(myself->mutex);
+    
+    res = jxta_vector_remove_object_at(myself->event_list, JXTA_OBJECT_PPTR(&pv_event), 0);
+    if (JXTA_SUCCESS != res) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "No events in queue to send to listeners\n");
+        apr_thread_mutex_unlock(myself->mutex);
+        return NULL;
+    }
 
     lis = jxta_hashtable_values_get(myself->event_listener_table);
     apr_thread_mutex_unlock(myself->mutex);
@@ -1542,6 +1560,8 @@ static void call_event_listeners(Jxta_peerview * myself, Jxta_Peerview_event_typ
     }
 
     JXTA_OBJECT_RELEASE(pv_event);
+    
+    return NULL;
 }
 
 static Jxta_status peerview_send_address_request(Jxta_peerview * myself, Jxta_peer * dest)
@@ -3059,11 +3079,10 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
     if (NULL == pve) {
         if (!jxta_rdv_service_is_rendezvous(me->rdv) && PONG_INVITE == action) {
             me->state = PV_LOCATING;
+            /* must unlock mutex while calling rdv_service functions that lock rdv mutex */
             apr_thread_mutex_unlock(me->mutex);
-            locked = FALSE;
             rdv_service_switch_config(me->rdv, config_rendezvous);
             apr_thread_mutex_lock(me->mutex);
-            locked = TRUE;
             if (me->self_pve) {
                 jxta_peer_set_expires((Jxta_peer *) me->self_pve, 0);
             }
@@ -3357,16 +3376,22 @@ static Jxta_status peerview_add_pve(Jxta_peerview * myself, Peerview_entry * pve
 
   FINAL_EXIT:
 
-    apr_thread_mutex_unlock(myself->mutex);
-
     /*
      * Notify the peerview listeners that we added a rdv peer from our local rpv 
      */
     if (!found) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Added PVE for %s [%pp] to cluster %d\n", jstring_get_string(pid_str),
                         pve, pve_cluster);
-        call_event_listeners(myself, JXTA_PEERVIEW_ADD, jxta_peer_peerid((Jxta_peer *) pve));
+        if ((PV_STOPPED != myself->state) && jxta_id_equals(myself->pid, jxta_peer_peerid((Jxta_peer *) pve))) {
+            Jxta_peerview_event *event = peerview_event_new(JXTA_PEERVIEW_ADD, jxta_peer_peerid((Jxta_peer *) pve));
+            res = jxta_vector_add_object_last(myself->event_list, (Jxta_object *)event);
+            JXTA_OBJECT_RELEASE(event);
+            apr_thread_pool_push(myself->thread_pool, call_event_listeners_thread, (void*) myself, 
+                                 APR_THREAD_TASK_PRIORITY_HIGH, myself);
+        }
     }
+
+    apr_thread_mutex_unlock(myself->mutex);
 
     JXTA_OBJECT_RELEASE(pid_str);
 
@@ -3404,7 +3429,7 @@ static Jxta_status peerview_remove_pves(Jxta_peerview * myself)
             continue;
         }
 
-        peerview_remove_pve(myself, jxta_peer_peerid((Jxta_peer *) a_pve));
+        peerview_remove_pve_1(myself, jxta_peer_peerid((Jxta_peer *) a_pve), FALSE);
 
         JXTA_OBJECT_RELEASE(a_pve);
     }
@@ -3414,6 +3439,11 @@ static Jxta_status peerview_remove_pves(Jxta_peerview * myself)
 }
 
 static Jxta_status peerview_remove_pve(Jxta_peerview * myself, Jxta_PID * pid)
+{
+    return peerview_remove_pve_1(myself, pid, TRUE);
+} 
+
+static Jxta_status peerview_remove_pve_1(Jxta_peerview * myself, Jxta_PID * pid, Jxta_boolean generate_event)
 {
     Jxta_status res = JXTA_SUCCESS;
     JString *pid_str;
@@ -3472,18 +3502,24 @@ static Jxta_status peerview_remove_pve(Jxta_peerview * myself, Jxta_PID * pid)
 
   FINAL_EXIT:
 
-    apr_thread_mutex_unlock(myself->mutex);
-
     /*
      * Notify the peerview listeners that we removed a rdv peer from our local rpv 
      */
     if (found) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Removed PVE for %s\n", jstring_get_string(pid_str));
-        call_event_listeners(myself, JXTA_PEERVIEW_REMOVE, pid);
+        if (generate_event && (PV_STOPPED != myself->state) && jxta_id_equals(myself->pid, pid)) {
+            Jxta_peerview_event *event = peerview_event_new(JXTA_PEERVIEW_REMOVE, pid);
+            res = jxta_vector_add_object_last(myself->event_list, (Jxta_object *) event);
+            JXTA_OBJECT_RELEASE(event);
+            apr_thread_pool_push(myself->thread_pool, call_event_listeners_thread, (void*) myself, 
+                                 APR_THREAD_TASK_PRIORITY_HIGH, myself);
+        }
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to remove PVE for %s. Not Found.\n",
                         jstring_get_string(pid_str));
     }
+
+    apr_thread_mutex_unlock(myself->mutex);
 
     JXTA_OBJECT_RELEASE(pid_str);
 
@@ -3526,8 +3562,6 @@ static Jxta_status peerview_clear_pves(Jxta_peerview * myself, Jxta_boolean noti
 
     myself->pves_modcount++;
 
-    apr_thread_mutex_unlock(myself->mutex);
-
     /*
      * Notify the peerview listeners that we removed the rdv peers from our local rpv.
      */
@@ -3536,15 +3570,22 @@ static Jxta_status peerview_clear_pves(Jxta_peerview * myself, Jxta_boolean noti
         Peerview_entry *a_pve;
 
         res = jxta_vector_remove_object_at(current_pves, JXTA_OBJECT_PPTR(&a_pve), 0);
-
         if (JXTA_SUCCESS == res) {
-            if (notify) {
-                call_event_listeners(myself, JXTA_PEERVIEW_REMOVE, jxta_peer_peerid((Jxta_peer *) a_pve));
+            if (notify && (PV_STOPPED != myself->state) && 
+                jxta_id_equals(jxta_peer_peerid((Jxta_peer *) a_pve), myself->pid)) {
+                
+                Jxta_peerview_event *event = peerview_event_new(JXTA_PEERVIEW_REMOVE, jxta_peer_peerid((Jxta_peer *) a_pve));
+                res = jxta_vector_add_object_last(myself->event_list, (Jxta_object *) event);
+                JXTA_OBJECT_RELEASE(event);
+                apr_thread_pool_push(myself->thread_pool, call_event_listeners_thread, (void*) myself, 
+                                     APR_THREAD_TASK_PRIORITY_HIGH, myself);
             }
             JXTA_OBJECT_RELEASE(a_pve);
         }
     }
 
+    apr_thread_mutex_unlock(myself->mutex);
+    
     JXTA_OBJECT_RELEASE(current_pves);
 
     return res;
@@ -4867,10 +4908,21 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
     if ((jxta_rdv_service_config(rdv) != new_config) && (me->iterations_since_switch > 2)) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO,"Auto-rendezvous new_config -- %s\n", new_config == config_edge ? "edge":"rendezvous");
         if (config_edge == new_config) {
-            call_event_listeners(me, JXTA_PEERVIEW_DEMOTE, id);
+            /* the switch is done in the rdv_service in this case */
             peerview_remove_pves(me);
+            apr_thread_mutex_lock(me->mutex);
+            if (PV_STOPPED != me->state) {
+                Jxta_peerview_event *event = peerview_event_new(JXTA_PEERVIEW_DEMOTE, id);
+                res = jxta_vector_add_object_last(me->event_list, (Jxta_object *) event);
+                JXTA_OBJECT_RELEASE(event);
+                apr_thread_pool_push(me->thread_pool, call_event_listeners_thread, (void*) me, 
+                                     APR_THREAD_TASK_PRIORITY_HIGH, me);
+            }
+            apr_thread_mutex_unlock(me->mutex);
         }
-        rdv_service_switch_config(rdv, new_config);
+        else {
+            rdv_service_switch_config(rdv, new_config);
+        }
         me->iterations_since_switch = 0;
     } else {
         me->iterations_since_switch++;
