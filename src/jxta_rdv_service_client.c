@@ -1293,6 +1293,8 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
 
     rdvs = jxta_hashtable_values_get(myself->rdvs);
 
+    jxta_rdv_service_provider_unlock_priv(provider);
+
     for (each_rdv = 0; each_rdv < jxta_vector_size(rdvs); each_rdv++) {
         _jxta_peer_rdv_entry *peer;
 
@@ -1325,11 +1327,14 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
 
     JXTA_OBJECT_RELEASE(rdvs);
 
+    jxta_rdv_service_provider_lock_priv(provider);
     /*
      *   The second pass, wherein we try to renew any existing leases as needed via check_peer_connect.
      */
     rdvs = jxta_hashtable_values_get(myself->rdvs);
 
+    jxta_rdv_service_provider_unlock_priv(provider);
+    
     for (each_rdv = 0; each_rdv < jxta_vector_size(rdvs); each_rdv++) {
         _jxta_peer_rdv_entry *peer;
 
@@ -1435,6 +1440,8 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
     } 
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Rendezvous Client Periodic RUN DONE.\n");
+
+    jxta_rdv_service_provider_lock_priv(provider);
 
     if (myself->running) {
         /* Reschedule another check. */

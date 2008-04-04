@@ -524,12 +524,14 @@ static void stop(Jxta_module * module)
     }
 
     myself->running = FALSE;
+    apr_thread_mutex_unlock(myself->mutex);
 
     provider = (Jxta_rdv_service_provider *) myself->provider;
     if (NULL != provider) {
         PROVIDER_VTBL(provider)->stop(provider);
         JXTA_OBJECT_RELEASE(provider);
     }
+    apr_thread_mutex_lock(myself->mutex);
     myself->provider = NULL;
     if (myself->peerview) {
         jxta_peerview_remove_event_listener(myself->peerview, myself->assigned_id_str, NULL);

@@ -731,6 +731,11 @@ static void endpoint_stop(Jxta_module * self)
         JXTA_OBJECT_RELEASE(me->router_transport);
         me->router_transport = NULL;
     }
+    
+    /* delete tables and stuff */
+    nc_destroy(me);
+    messengers_destroy(me);
+    
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Stopped.\n");
 }
 
@@ -783,9 +788,6 @@ void jxta_endpoint_service_destruct(Jxta_endpoint_service * service)
 {
     Jxta_endpoint_service* endpoint_service = PTValid(service, Jxta_endpoint_service);
 
-    /* delete tables and stuff */
-    nc_destroy(endpoint_service);
-    messengers_destroy(endpoint_service);
     JXTA_OBJECT_RELEASE(endpoint_service->transport_table);
 
     if (endpoint_service->relay_addr)
