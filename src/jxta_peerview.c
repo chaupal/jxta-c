@@ -4818,6 +4818,7 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
     Jxta_vector *rdvs = NULL;
     Jxta_id *id = NULL;
     Jxta_boolean check_peers_size = FALSE;
+    Jxta_boolean increment_loneliness = FALSE;
     int tmp_iterations_since_switch = -1;
     Jxta_boolean locked = FALSE;
 
@@ -4872,9 +4873,10 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
             }
         }
     } else if (jxta_rdv_service_config(rdv) == config_edge) {
+        check_peers_size = TRUE;
+        increment_loneliness = TRUE;
         if ((me->loneliness_factor + 1) > jxta_RdvConfig_pv_loneliness(me->rdvConfig)) {
             /* force it */
-            check_peers_size = TRUE;
             tmp_iterations_since_switch = 3;
             tmp_config = config_rendezvous;
         }
@@ -4888,8 +4890,10 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
         if (JXTA_SUCCESS == res) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Should be switching if %d is 0\n", jxta_vector_size(rdvs));
             if (0 == jxta_vector_size(rdvs)) {
-                if (tmp_iterations_since_switch >= 0) {
+                if (increment_loneliness == TRUE) {
                     ++me->loneliness_factor;
+                }
+                if (tmp_iterations_since_switch >= 0) {
                     me->iterations_since_switch = tmp_iterations_since_switch;
                 }
                 new_config = tmp_config;
