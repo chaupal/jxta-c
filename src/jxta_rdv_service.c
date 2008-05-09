@@ -118,9 +118,9 @@ static Jxta_status JXTA_STDCALL leasing_cb(Jxta_object * obj, void *arg);
 static Jxta_status JXTA_STDCALL walker_cb(Jxta_object * obj, void *arg);
 static Jxta_status JXTA_STDCALL prop_cb(Jxta_object * obj, void *arg);
 static Jxta_status JXTA_STDCALL call_entry(Jxta_object * obj, void *arg, JString * key_j);
-Jxta_status rdv_service_toggle_auto_rdv(_jxta_rdv_service* rdv, Jxta_boolean enableAuto);
-Jxta_status rdv_service_stop_peerview(_jxta_rdv_service * myself);
-Jxta_status rdv_service_start_peerview(_jxta_rdv_service * myself, RdvConfig_configuration * config);
+static Jxta_status rdv_service_toggle_auto_rdv(_jxta_rdv_service* rdv, Jxta_boolean enableAuto);
+static Jxta_status rdv_service_stop_peerview(_jxta_rdv_service * myself);
+static Jxta_status rdv_service_start_peerview(_jxta_rdv_service * myself, RdvConfig_configuration * config);
 
 static _jxta_rdv_service_methods const JXTA_RDV_SERVICE_METHODS = {
     {
