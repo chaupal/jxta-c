@@ -811,7 +811,7 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml(Jxta_peerview_pong_msg 
     }
     for (i = 0; i < jxta_vector_size(myself->candidates); i++) {
         Jxta_peer *peer=NULL;
-        Jxta_id *pid;
+        Jxta_id *pid = NULL;
         Jxta_PA *padv;
         Jxta_vector * options = NULL;
 
@@ -822,6 +822,7 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml(Jxta_peerview_pong_msg 
         jstring_append_2(string, " peer_id = \"");
         jxta_peer_get_peerid(peer, &pid);
         jxta_id_to_jstring(pid, &jPeerid);
+        JXTA_OBJECT_RELEASE(pid);
         jstring_append_2(string, jstring_get_string(jPeerid));
         jstring_append_2(string, "\"");
         JXTA_OBJECT_RELEASE(jPeerid);
@@ -849,6 +850,7 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml(Jxta_peerview_pong_msg 
 
         if (NULL != options) {
             print_options_xml(string, options);
+            JXTA_OBJECT_RELEASE(options);
         }
 
         jstring_append_2(string, "</Candidate>\n");
