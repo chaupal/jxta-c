@@ -94,7 +94,7 @@
  *   is only interested in other peers, and not about additional peers they may
  *   know about. to achieve this effect for peer discovery set the Threshold to 0
  *   <p/>
- *   Advertisements are stored in a persist ant local cache. When a peers boots
+ *   Advertisements are stored in a persistent local cache. When a peers boots
  *   up the same cache is referenced. this is an area where several optimizations
  *   can take place, and intelligence about discovery patterns, etc. <p/>
  *   Another feature of discovery is automatic discovery, a peer initiates a
