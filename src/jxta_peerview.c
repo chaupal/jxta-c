@@ -959,6 +959,12 @@ Jxta_status peerview_stop(Jxta_peerview * pv)
     Jxta_peerview *myself = PTValid(pv, Jxta_peerview);
 
     apr_thread_mutex_lock(myself->mutex);
+    
+    if (myself->running == FALSE) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Peerview(%pp) not running\n", pv);
+        apr_thread_mutex_unlock(myself->mutex);
+        return JXTA_FAILED;
+    }
 
     /* FIXME bondolo Announce that we are shutting down */
 

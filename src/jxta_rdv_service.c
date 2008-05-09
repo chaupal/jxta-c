@@ -533,13 +533,7 @@ static void stop(Jxta_module * module)
     }
     apr_thread_mutex_lock(myself->mutex);
     myself->provider = NULL;
-    if (myself->peerview) {
-        jxta_peerview_remove_event_listener(myself->peerview, myself->assigned_id_str, NULL);
-        jxta_listener_stop(myself->peerview_listener);
-        JXTA_OBJECT_RELEASE(myself->peerview_listener);
-        myself->peerview_listener = NULL;
-        JXTA_OBJECT_RELEASE(myself->peerview);
-    }
+    rdv_service_stop_peerview(myself);
 
     assert(NULL != myself->ep_cookie_leasing);
     jxta_PG_remove_recipient(myself->group, myself->ep_cookie_leasing);
