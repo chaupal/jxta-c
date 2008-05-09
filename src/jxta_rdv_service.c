@@ -118,6 +118,9 @@ static Jxta_status JXTA_STDCALL leasing_cb(Jxta_object * obj, void *arg);
 static Jxta_status JXTA_STDCALL walker_cb(Jxta_object * obj, void *arg);
 static Jxta_status JXTA_STDCALL prop_cb(Jxta_object * obj, void *arg);
 static Jxta_status JXTA_STDCALL call_entry(Jxta_object * obj, void *arg, JString * key_j);
+Jxta_status rdv_service_toggle_auto_rdv(_jxta_rdv_service* rdv, Jxta_boolean enableAuto);
+Jxta_status rdv_service_stop_peerview(_jxta_rdv_service * myself);
+Jxta_status rdv_service_start_peerview(_jxta_rdv_service * myself, RdvConfig_configuration * config);
 
 static _jxta_rdv_service_methods const JXTA_RDV_SERVICE_METHODS = {
     {
@@ -851,6 +854,131 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_set_config(Jxta_rdv_service * rdv, Rd
     return res;
 }
 
+Jxta_status rdv_service_start_peerview(_jxta_rdv_service * myself, RdvConfig_configuration * config)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    if (NULL == myself->peerview) {
+        myself->peerview = jxta_peerview_new(myself->pool);
+        jxta_peerview_set_auto_cycle(myself->peerview, myself->auto_rdv_interval);
+
+        res = peerview_init(myself->peerview, myself->group, jxta_service_get_assigned_ID_priv((Jxta_rdv_service*) myself));
+
+        if (JXTA_SUCCESS != res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failed to init peerview %d\n", res);
+            JXTA_OBJECT_RELEASE(myself->peerview);
+
+            myself->peerview = NULL;
+            if (config != NULL) {
+                *config = config_adhoc;
+            }
+            goto FINAL_EXIT;
+        }
+
+        /* Add a listener to peerview events */
+        myself->peerview_listener = jxta_listener_new((Jxta_listener_func) peerview_event_listener, myself, 1, 1);
+
+        if (myself->peerview_listener != NULL) {
+            jxta_listener_start(myself->peerview_listener);
+            res =
+                jxta_peerview_add_event_listener(myself->peerview, myself->assigned_id_str, NULL, myself->peerview_listener);
+
+        } else {
+            res = JXTA_FAILED;
+        }
+
+        if (JXTA_SUCCESS != res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,
+                            FILEANDLINE "Failed to add an event listener to peerview events\n");
+            goto FINAL_EXIT;
+        }
+
+        res = peerview_start(myself->peerview);
+
+        if (JXTA_SUCCESS != res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failed to start peerview %d\n", res);
+            goto FINAL_EXIT;
+        }
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "[%pp] Created new peerview [%pp].\n", myself, myself->peerview);
+    }
+
+  FINAL_EXIT:
+    return res;
+}
+
+Jxta_status rdv_service_stop_peerview(_jxta_rdv_service * myself)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    if (NULL != myself->peerview) {
+        res = jxta_peerview_remove_event_listener(myself->peerview, myself->assigned_id_str, NULL);
+        jxta_listener_stop(myself->peerview_listener);
+        JXTA_OBJECT_RELEASE(myself->peerview_listener);
+        myself->peerview_listener = NULL;
+
+        res = peerview_stop(myself->peerview);
+
+        JXTA_OBJECT_RELEASE(myself->peerview);
+
+        myself->peerview = NULL;
+    }
+    return res;
+}
+
+Jxta_status rdv_service_toggle_auto_rdv(_jxta_rdv_service* rdv, Jxta_boolean enableAuto)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    _jxta_rdv_service *myself = PTValid(rdv, _jxta_rdv_service);
+    RendezVousStatus new_status;
+    Jxta_boolean locked = FALSE;
+
+    apr_thread_mutex_lock(myself->mutex);
+    locked = TRUE;
+   
+    switch (myself->current_config) {
+    case config_edge:
+        new_status = enableAuto ? status_auto_edge : status_edge;
+        break;
+
+    case config_rendezvous:
+        new_status = enableAuto ?  status_auto_rendezvous : status_rendezvous ;
+        break;
+
+    case config_adhoc:
+    default:
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "Cannot toggle: Current config is not client or rdv, just exit\n");
+        res = JXTA_INVALID_ARGUMENT;
+        goto FINAL_EXIT;
+    }
+
+    /* Create or destroy peerview*/
+    switch (new_status) {
+    case status_adhoc:
+    case status_edge:
+        res = rdv_service_stop_peerview(myself);
+        break;
+
+    case status_auto_edge:
+    case status_auto_rendezvous:
+    case status_rendezvous:
+        /* Create a peerview if we are rendezvous or auto_rdv. */
+        res = rdv_service_start_peerview(myself, NULL);
+        if (JXTA_SUCCESS == res) {
+            jxta_peerview_set_active(myself->peerview, (config_rendezvous == myself->current_config));
+        }
+        break;
+
+    default:
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Unrecognized status %d\n", new_status);
+        break;
+    }        
+
+    FINAL_EXIT:
+        if (locked)
+            apr_thread_mutex_unlock(myself->mutex);
+
+    return res;
+}
+
 JXTA_DECLARE(Jxta_status) rdv_service_switch_config(Jxta_rdv_service * rdv, RdvConfig_configuration config)
 {
     Jxta_status res = JXTA_SUCCESS;
@@ -908,47 +1036,9 @@ JXTA_DECLARE(Jxta_status) rdv_service_switch_config(Jxta_rdv_service * rdv, RdvC
     case status_auto_rendezvous:
     case status_rendezvous:
         /* Create a peerview if we are rendezvous or auto_rdv. */
-        if (NULL == myself->peerview) {
-            myself->peerview = jxta_peerview_new(myself->pool);
-            jxta_peerview_set_auto_cycle(myself->peerview, myself->auto_rdv_interval);
-
-            res = peerview_init(myself->peerview, myself->group, jxta_service_get_assigned_ID_priv(rdv));
-
-            if (JXTA_SUCCESS != res) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failed to init peerview %d\n", res);
-                JXTA_OBJECT_RELEASE(myself->peerview);
-
-                myself->peerview = NULL;
-                config = config_adhoc;
-                goto FINAL_EXIT;
-            }
-
-            /* Add a listener to peerview events */
-            myself->peerview_listener = jxta_listener_new((Jxta_listener_func) peerview_event_listener, myself, 1, 1);
-
-            if (myself->peerview_listener != NULL) {
-                jxta_listener_start(myself->peerview_listener);
-                res =
-                    jxta_peerview_add_event_listener(myself->peerview, myself->assigned_id_str, NULL, myself->peerview_listener);
-
-            } else {
-                res = JXTA_FAILED;
-            }
-
-            if (JXTA_SUCCESS != res) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,
-                                FILEANDLINE "Failed to add an event listener to peerview events\n");
-                goto FINAL_EXIT;
-            }
-
-            res = peerview_start(myself->peerview);
-
-            if (JXTA_SUCCESS != res) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failed to start peerview %d\n", res);
-                goto FINAL_EXIT;
-            }
-
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "[%pp] Created new peerview [%pp].\n", myself, myself->peerview);
+        res = rdv_service_start_peerview(myself, &config);
+        if (JXTA_SUCCESS != res) {
+            goto FINAL_EXIT;
         }
         break;
 
@@ -993,18 +1083,7 @@ JXTA_DECLARE(Jxta_status) rdv_service_switch_config(Jxta_rdv_service * rdv, RdvC
     switch (new_status) {
     case status_adhoc:
     case status_edge:
-        if (NULL != myself->peerview) {
-            res = jxta_peerview_remove_event_listener(myself->peerview, myself->assigned_id_str, NULL);
-            jxta_listener_stop(myself->peerview_listener);
-            JXTA_OBJECT_RELEASE(myself->peerview_listener);
-            myself->peerview_listener = NULL;
-
-            res = peerview_stop(myself->peerview);
-
-            JXTA_OBJECT_RELEASE(myself->peerview);
-
-            myself->peerview = NULL;
-        }
+        res = rdv_service_stop_peerview(myself);
         break;
 
     case status_auto_edge:
@@ -1066,16 +1145,32 @@ JXTA_DECLARE(Jxta_time_diff) jxta_rdv_service_auto_interval(Jxta_rdv_service * r
 JXTA_DECLARE(void) jxta_rdv_service_set_auto_interval(Jxta_rdv_service * rdv, Jxta_time_diff interval)
 {
     _jxta_rdv_service *myself = PTValid(rdv, _jxta_rdv_service);
+    Jxta_boolean enable_auto_rdv = FALSE;
+    Jxta_boolean disable_auto_rdv = FALSE;
 
     apr_thread_mutex_lock(myself->mutex);
+    if ((myself->auto_rdv_interval == -1 || interval == -1) && interval != myself->auto_rdv_interval) {
+        if (interval == -1) {
+            disable_auto_rdv = TRUE;
+        }
+        else {
+            enable_auto_rdv = TRUE;
+        }
+    }
+    
+    
     myself->auto_rdv_interval = interval;
 
-    if (myself->peerview == NULL) {
-        apr_thread_mutex_unlock(myself->mutex);
-        return;
+    if (disable_auto_rdv) {
+        rdv_service_toggle_auto_rdv(myself, FALSE);
+    } 
+    else if (enable_auto_rdv) {
+        rdv_service_toggle_auto_rdv(myself, TRUE);
     }
-    jxta_peerview_set_auto_cycle(myself->peerview, interval);
-
+    else if (myself->peerview != NULL) {
+        jxta_peerview_set_auto_cycle(myself->peerview, interval);
+    }
+    
     apr_thread_mutex_unlock(myself->mutex);
 }
 
