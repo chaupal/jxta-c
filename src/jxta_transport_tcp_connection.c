@@ -340,10 +340,12 @@ static Jxta_transport_tcp_connection *tcp_connection_new(Jxta_transport_tcp * tp
 static void tcp_connection_free(Jxta_object * me)
 {
     _jxta_transport_tcp_connection *myself = (_jxta_transport_tcp_connection *) me;
-    apr_thread_pool_t *tp;
+    apr_thread_pool_t *tp = NULL;
 
     jxta_endpoint_service_get_thread_pool(myself->endpoint, &tp);
-    apr_thread_pool_tasks_cancel(tp, myself);
+    if (tp != NULL) {
+        apr_thread_pool_tasks_cancel(tp, myself);
+    }
     /* myself->ipaddr is allocated in myself->pool so we need not to free */
     if (myself->endpoint) {
         JXTA_OBJECT_RELEASE(myself->endpoint);
