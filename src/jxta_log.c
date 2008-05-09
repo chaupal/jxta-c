@@ -36,6 +36,7 @@ static apr_pool_t *_jxta_log_pool = NULL;
 
 static Jxta_log_callback _jxta_log_func = NULL;
 static void *_jxta_log_user_data = NULL;
+static apr_thread_mutex_t *_jxta_log_mutex = NULL;
 static unsigned int _jxta_log_initialized = 0;
 static Jxta_log_selector *_jxta_log_default_selector;
 
@@ -67,6 +68,14 @@ JXTA_DECLARE(Jxta_status) jxta_log_initialize()
         return rv;
     }
 
+    rv = apr_thread_mutex_create(&_jxta_log_mutex, APR_THREAD_MUTEX_NESTED, _jxta_log_pool);
+
+    if (APR_SUCCESS != rv) {
+        apr_pool_destroy(_jxta_log_pool);
+        _jxta_log_initialized = 0;
+        return rv;
+    }
+
     _jxta_log_default_selector = jxta_log_selector_new_and_set("*.warning-fatal", &rv);
 
     if (NULL == _jxta_log_default_selector) {
@@ -89,8 +98,12 @@ JXTA_DECLARE(void) jxta_log_terminate()
         return;
     }
 
-    jxta_log_using(NULL, NULL);
+    if (_jxta_log_user_data != NULL)
+    {
+        jxta_log_file_close((Jxta_log_file*)_jxta_log_user_data);
+    }
     jxta_log_selector_delete(_jxta_log_default_selector);
+    apr_thread_mutex_destroy(_jxta_log_mutex);
     apr_pool_destroy(_jxta_log_pool);
     apr_pool_terminate();
     _jxta_log_pool = NULL;
@@ -98,8 +111,10 @@ JXTA_DECLARE(void) jxta_log_terminate()
 
 JXTA_DECLARE(void) jxta_log_using(Jxta_log_callback log_cb, void *user_data)
 {
+    apr_thread_mutex_lock(_jxta_log_mutex);
     _jxta_log_func = log_cb;
     _jxta_log_user_data = user_data;
+    apr_thread_mutex_unlock(_jxta_log_mutex);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_log_append(const char *cat, int level, const char *fmt, ...)
@@ -108,7 +123,6 @@ JXTA_DECLARE(Jxta_status) jxta_log_append(const char *cat, int level, const char
     va_list ap;
     char *message;
     int length;
-    
     if (NULL == _jxta_log_func) {
         return JXTA_SUCCESS;
     }
@@ -124,7 +138,9 @@ JXTA_DECLARE(Jxta_status) jxta_log_append(const char *cat, int level, const char
     apr_vsnprintf(message, length, fmt, ap);
     va_end(ap);
 
+    apr_thread_mutex_lock(_jxta_log_mutex);
     rv = (*_jxta_log_func) (_jxta_log_user_data, cat, level, message);
+    apr_thread_mutex_unlock(_jxta_log_mutex);
     free(message);
 
     return rv;
@@ -154,7 +170,9 @@ JXTA_DECLARE(Jxta_status) jxta_log_appendv(const char *cat, int level, const cha
         apr_vsnprintf(message, length, fmt, ap2);
         va_end(ap2);
 
+        apr_thread_mutex_lock(_jxta_log_mutex);
         rv = (*_jxta_log_func) (_jxta_log_user_data, cat, level, message);
+        apr_thread_mutex_unlock(_jxta_log_mutex);
 
         free(message);
     }
@@ -662,6 +680,7 @@ JXTA_DECLARE(Jxta_status)
 {
     if (NULL == self)
         return JXTA_INVALID_ARGUMENT;
+    apr_thread_mutex_lock(_jxta_log_mutex);
     if (self == _jxta_log_user_data) {
         jxta_log_using(NULL, NULL);
     }
@@ -671,10 +690,13 @@ JXTA_DECLARE(Jxta_status)
     if (NULL != self->thefile && stdout != self->thefile) {
         fclose(self->thefile);
     }
+    self->thefile = NULL;
 
     jpr_thread_mutex_unlock(self->mutex);
     jpr_thread_mutex_destroy(self->mutex);
+    self->mutex = NULL;
     free(self);
+    apr_thread_mutex_unlock(_jxta_log_mutex);
     return JXTA_SUCCESS;
 }
 
