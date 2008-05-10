@@ -569,6 +569,7 @@ static void messengers_destroy(Jxta_endpoint_service * me)
         apr_hash_this(hi, (const void **) &ta, NULL, (void **) &ptr);
         assert(NULL != ptr);
         assert(ta == ptr->ta);
+        apr_hash_set(me->messengers, ptr->ta, APR_HASH_KEY_STRING, NULL);
 
         free(ptr->ta);
         JXTA_OBJECT_RELEASE(ptr->msgr);
