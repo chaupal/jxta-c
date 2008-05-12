@@ -974,18 +974,21 @@ Jxta_status peerview_stop(Jxta_peerview * pv)
 
     myself->running = FALSE;
 
+    myself->state = PV_STOPPED;
+    apr_thread_mutex_unlock(myself->mutex);
     if (myself->auto_cycle > 0) {
         apr_thread_pool_tasks_cancel(myself->thread_pool, &myself->auto_cycle);
     }
     apr_thread_pool_tasks_cancel(myself->thread_pool, &myself->activity_add);
     apr_thread_pool_tasks_cancel(myself->thread_pool, myself);
+    apr_thread_mutex_lock(myself->mutex);
     
     jxta_vector_clear(myself->activity_maintain_referral_peers);
     jxta_vector_clear(myself->activity_add_candidate_peers);
     jxta_vector_clear(myself->event_list);
 
     jxta_PG_remove_recipient(myself->group, myself->ep_cookie);
-    myself->state = PV_STOPPED;
+    myself->ep_cookie = NULL;
 
     apr_thread_mutex_unlock(myself->mutex);
 
