@@ -211,6 +211,7 @@ static Jxta_status start(Jxta_module * module, const char *argv[])
     rv = endpoint_service_add_recipient(self->endpoint, &self->ep_cookie, self->router_name, JXTA_ENDPOINT_ROUTER_SVC_PAR,
                                         router_client_cb, self);
     if (JXTA_SUCCESS != rv) {
+        apr_thread_mutex_unlock(self->mutex);
         return rv;
     }
 
@@ -689,13 +690,18 @@ static Jxta_status messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
 
             apr_thread_mutex_lock(messenger->router->mutex);
             if (FALSE != messenger->router->started) {
-                jxta_endpoint_service_demux(messenger->router->endpoint, msg);
+                /* Share the endpoint to avoid having to lock the router
+                 * while processing the message */
+                Jxta_endpoint_service *router_endpoint = JXTA_OBJECT_SHARE(messenger->router->endpoint);
+                apr_thread_mutex_unlock(messenger->router->mutex);
+                jxta_endpoint_service_demux(router_endpoint, msg);
+                JXTA_OBJECT_RELEASE(router_endpoint);
                 status = JXTA_SUCCESS;
             } else {
+                apr_thread_mutex_unlock(messenger->router->mutex);
                 status = JXTA_FAILED;
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Trying to send a message after router was stopped.\n");
             }
-            apr_thread_mutex_unlock(messenger->router->mutex);
             JXTA_OBJECT_RELEASE(dest);
             return status;
         } else {
@@ -756,9 +762,16 @@ static int reachable_address(Jxta_router_client * router, Jxta_endpoint_address 
 {
     Jxta_transport *transport = NULL;
     JxtaEndpointMessenger *messenger = NULL;
+    
+    apr_thread_mutex_lock(router->mutex);
+    if (FALSE == router->started) {
+        apr_thread_mutex_unlock(router->mutex);
+        return INT_MIN;
+    }
 
     transport = jxta_endpoint_service_lookup_transport(router->endpoint, jxta_endpoint_address_get_protocol_name(addr));
     if (transport) {
+        apr_thread_mutex_unlock(router->mutex);
         messenger = jxta_transport_messenger_get(transport, addr);
         if (messenger) {
             JXTA_OBJECT_RELEASE(transport);
@@ -766,6 +779,9 @@ static int reachable_address(Jxta_router_client * router, Jxta_endpoint_address 
             return jxta_transport_metric_get(transport);
         }
         JXTA_OBJECT_RELEASE(transport);
+    }
+    else {
+        apr_thread_mutex_unlock(router->mutex);
     }
 
     return INT_MIN;
@@ -781,6 +797,7 @@ static Jxta_endpoint_address *jxta_router_select_best_route(Jxta_router_client *
         apr_thread_mutex_unlock(router->mutex);
         return NULL;
     }
+    apr_thread_mutex_unlock(router->mutex);
 
     /* try first the direct route, then relay */
     addr = jxta_router_select_best_address(router, ap);
@@ -788,7 +805,6 @@ static Jxta_endpoint_address *jxta_router_select_best_route(Jxta_router_client *
         addr = jxta_router_select_best_address(router, hop);
     }
 
-    apr_thread_mutex_unlock(router->mutex);
     return addr;
 }
 
