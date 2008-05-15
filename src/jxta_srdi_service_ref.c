@@ -457,6 +457,7 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Found %s - Removing from entries\n", aTmp);
             JXTA_OBJECT_RELEASE(saveEntry);
             jxta_vector_remove_object_at(entries, NULL, i);
+            i--;
             JXTA_OBJECT_RELEASE(jNewValue);
         }
         JXTA_OBJECT_RELEASE(entry);
