@@ -932,39 +932,12 @@ static Jxta_status query_srdi(Jxta_discovery_service_ref * self, Jxta_query_cont
     scan = cache_entries;
     while (scan != NULL && *scan) {
         Jxta_cache_entry *cache_entry;
-        Jxta_ProfferAdvertisement *profferAdv;
-        JString *jAdvert;
-        JString *jDocName;
 
-        /* skip operation if the jConext is not valid */
-        if (JXTA_INVALID_ARGUMENT == status) {
-            JXTA_OBJECT_RELEASE(*scan++);
-            continue;
-        }
         cache_entry = *scan;
-        profferAdv = cache_entry->profadv;
-        jAdvert = jstring_new_0();
-        jxta_proffer_adv_print(profferAdv, jAdvert);
-        jDocName = jxta_proffer_adv_get_nameSpace(profferAdv);
-        if (NULL != jDocName) {
-            jstring_reset(jContext->documentName, NULL);
-            jstring_append_1(jContext->documentName, jDocName);
-        }
-        /* get result if this advertisement matches */
-        status = jxta_query_XPath(jContext, jstring_get_string(jAdvert), TRUE);
 
-        if (status == JXTA_SUCCESS) {
-            if (jContext->found > 0) {
-                jxta_vector_add_object_last(responses, (Jxta_object *) cache_entry->profid);
-            }
-        } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "XPath query failed %i\n", (int) status);
-        }
+        jxta_vector_add_object_last(responses, (Jxta_object *) cache_entry->profid);
+
         JXTA_OBJECT_RELEASE(cache_entry);
-        JXTA_OBJECT_RELEASE(jAdvert);
-        if (jDocName != NULL) {
-            JXTA_OBJECT_RELEASE(jDocName);
-        }
         scan++;
     }
     free(cache_entries);
@@ -1638,10 +1611,11 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
         qAdvs = NULL;
         keys[found_count] = NULL;
         if (0 == found_count) {
-            JXTA_OBJECT_RELEASE(jContext);
+            if (NULL != jContext)
+                JXTA_OBJECT_RELEASE(jContext);
             jContext = jxta_query_new(jstring_get_string(extendedQuery));
-            /* re-compile with no compound query */
-            jxta_query_XPath(jContext, xmlString, FALSE);
+            jxta_query_set_compound_table(jContext, CM_TBL_SRDI_SRC);
+            jxta_query_compound_XPath(jContext, xmlString, FALSE);
         }
     }
     if (NULL == keys || NULL == keys[0]) {

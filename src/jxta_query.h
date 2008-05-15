@@ -105,6 +105,7 @@ struct _jxta_query_context {
     int found;                  /* items found */
     Jxta_boolean first;         /* no elements have been processed */
     Jxta_boolean compound_query; /* create a compound SQL query */
+    JString *compound_table;    /* table for compound query */
     Jxta_boolean intersect;     /* use INTERSECT SELECT if AND */
     Jxta_boolean is_function;   /* processing a function */
     int levelNumber;            /* number of predicates before the level changes */
@@ -150,6 +151,8 @@ JXTA_DECLARE(Jxta_status)
     jxta_query_compound_XPath(Jxta_query_context * ctx, const char *advXML, Jxta_boolean bResults);
 
 JXTA_DECLARE(void) jxta_query_build_SQL_operator(JString * elem, JString * sqloper, JString * value, JString * result);
+
+JXTA_DECLARE(void) jxta_query_set_compound_table(Jxta_query_context * jctx, const char *table);
 
 JXTA_DECLARE(int)               jxta_wildxpath_init(const xmlXPathContextPtr xpathCtx);
 JXTA_DECLARE(int)               jxta_wildxpath_cleanup(const xmlXPathContextPtr xpathCtx);

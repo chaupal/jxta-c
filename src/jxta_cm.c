@@ -3699,55 +3699,84 @@ static Jxta_object **cm_arrays_concatenate(Jxta_object ** destination, Jxta_obje
     return newDest;
 }
 
-Jxta_cache_entry **cm_sql_query_srdi(Jxta_cm * self, const char *ns, JString * where)
+Jxta_cache_entry **cm_sql_query_srdi_ns(Jxta_cm * self, const char *ns, JString * where)
 {
     DBSpace **dbSpace = NULL;
     DBSpace **dbSpaceSave = NULL;
+    JString *group_j = NULL;
     JString *whereClone = jstring_clone(where);
     apr_pool_t *pool = NULL;
     apr_status_t aprs;
     apr_dbd_results_t *res = NULL;
     Jxta_cache_entry **cache_entries = NULL;
-    JString *sort = NULL;
     int rv;
     JString *columns = jstring_new_0();
     aprs = apr_pool_create(&pool, NULL);
     if (aprs != APR_SUCCESS) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "%s -- Unable to create apr_pool: %d\n", (*dbSpace)->id, aprs);
-        goto finish;
+        goto FINAL_EXIT;
     }
 
-    cm_proffer_advertisements_columns_build(columns);
+    jstring_append_2(columns, CM_COL_SRC SQL_DOT CM_COL_Peerid SQL_COMMA CM_COL_SRC SQL_DOT CM_COL_AdvId);
+    jstring_append_2(columns, SQL_COMMA CM_COL_SRC SQL_DOT CM_COL_TimeOut SQL_COMMA CM_COL_SRC SQL_DOT CM_COL_TimeOutForOthers);
 
     jstring_append_2(whereClone, SQL_AND);
     cm_sql_append_timeout_check_greater(whereClone);
-    sort = jstring_new_2(SQL_ORDER);
-    jstring_append_2(sort, CM_COL_AdvId);
-    jstring_append_2(sort, SQL_COMMA);
-    jstring_append_2(sort, CM_COL_Peerid);
+    group_j = jstring_new_2(SQL_GROUP CM_COL_SRC SQL_DOT CM_COL_Peerid);
 
     dbSpace = cm_dbSpaces_get(self, ns, NULL, FALSE);
     dbSpaceSave = dbSpace;
     while (*dbSpace) {
-        Jxta_cache_entry **tempAdds = NULL;
-        rv = cm_sql_select(*dbSpace, pool, CM_TBL_SRDI_SRC, &res, columns, whereClone, sort, TRUE);
+        int nTuples = 0;
+
+        rv = cm_sql_select(*dbSpace, pool, CM_TBL_SRDI_SRC, &res, columns, whereClone, group_j, TRUE);
 
         if (rv) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- jxta_cm_sql_query_srdi Select failed: %s %i\n",
                             (*dbSpace)->conn->log_id, (*dbSpace)->id, apr_dbd_error((*dbSpace)->conn->driver,
                                                                                     (*dbSpace)->conn->sql, rv), rv);
-            goto finish;
+            goto FINAL_EXIT;
         }
-        tempAdds = cm_proffer_advertisements_build(*dbSpace, pool, res, FALSE);
-        if (NULL != tempAdds) {
-            cache_entries =
-                (Jxta_cache_entry **) cm_arrays_concatenate((Jxta_object **) cache_entries, (Jxta_object **) tempAdds);
-            free(tempAdds);
+
+        nTuples = apr_dbd_num_tuples((*dbSpace)->conn->driver, res);
+
+        if (nTuples > 0) {
+            Jxta_cache_entry **tempAdds = NULL;
+            Jxta_cache_entry **tempAddsSave = NULL;
+
+            tempAdds = calloc(nTuples + 1, sizeof(struct cache_entry *));
+
+            if (NULL == tempAdds) {
+                goto FINAL_EXIT;
+            }
+            tempAddsSave = tempAdds;
+
+            while (nTuples > 0) {
+                apr_dbd_row_t *row;
+
+                rv = apr_dbd_get_row((*dbSpace)->conn->driver, pool, res, &row, -1);
+
+                if (rv == 0) {
+                    const char * entry;
+                    Jxta_cache_entry * cache_entry;
+
+                    entry = apr_dbd_get_entry((*dbSpace)->conn->driver, row, 0);
+                    cache_entry = calloc(1, sizeof(Jxta_cache_entry));
+                    JXTA_OBJECT_INIT(cache_entry, cache_entry_free, NULL);
+
+                    cache_entry->profid = jstring_new_2(entry);
+                    *(tempAdds++) = cache_entry;
+                }
+                nTuples--;
+            }
+            cache_entries = (Jxta_cache_entry **) cm_arrays_concatenate((Jxta_object **) cache_entries, (Jxta_object **) tempAddsSave);
+            free(tempAddsSave);
         }
         JXTA_OBJECT_RELEASE(*dbSpace);
         dbSpace++;
     }
-  finish:
+
+  FINAL_EXIT:
     while (*dbSpace) {
         JXTA_OBJECT_RELEASE(*dbSpace);
         dbSpace++;
@@ -3755,77 +3784,13 @@ Jxta_cache_entry **cm_sql_query_srdi(Jxta_cm * self, const char *ns, JString * w
     if (dbSpaceSave) {
         free(dbSpaceSave);
     }
-    if (sort)
-        JXTA_OBJECT_RELEASE(sort);
     if (NULL != pool)
         apr_pool_destroy(pool);
+    if (group_j)
+        JXTA_OBJECT_RELEASE(group_j);
     JXTA_OBJECT_RELEASE(columns);
     JXTA_OBJECT_RELEASE(whereClone);
     return cache_entries;
-}
-
-Jxta_cache_entry **cm_sql_query_srdi_ns(Jxta_cm * self, const char *ns, JString * where)
-{
-    DBSpace **dbSpace = NULL;
-    DBSpace **dbSpaceSave = NULL;
-    JString *order = NULL;
-    JString *whereClone = jstring_clone(where);
-    apr_pool_t *pool = NULL;
-    apr_status_t aprs;
-    apr_dbd_results_t *res = NULL;
-    Jxta_object **addsStart = NULL;
-    int rv;
-    JString *columns = jstring_new_0();
-    aprs = apr_pool_create(&pool, NULL);
-    if (aprs != APR_SUCCESS) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "%s -- Unable to create apr_pool: %d\n", (*dbSpace)->id, aprs);
-        goto finish;
-    }
-
-    cm_proffer_advertisements_columns_build(columns);
-
-    jstring_append_2(whereClone, SQL_AND);
-    cm_sql_append_timeout_check_greater(whereClone);
-    order = jstring_new_2(SQL_ORDER);
-    jstring_append_2(order, CM_COL_AdvId);
-    jstring_append_2(order, SQL_COMMA);
-    jstring_append_2(order, CM_COL_Peerid);
-
-    dbSpace = cm_dbSpaces_get(self, ns, NULL, FALSE);
-    dbSpaceSave = dbSpace;
-    while (*dbSpace) {
-        Jxta_cache_entry **tempAdds = NULL;
-        rv = cm_sql_select(*dbSpace, pool, CM_TBL_SRDI_SRC, &res, columns, whereClone, order, TRUE);
-
-        if (rv) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- jxta_cm_sql_query_srdi Select failed: %s %i\n",
-                            (*dbSpace)->conn->log_id, (*dbSpace)->id, apr_dbd_error((*dbSpace)->conn->driver,
-                                                                                    (*dbSpace)->conn->sql, rv), rv);
-            goto finish;
-        }
-        tempAdds = cm_proffer_advertisements_build(*dbSpace, pool, res, FALSE);
-        if (NULL != tempAdds) {
-            addsStart = cm_arrays_concatenate((Jxta_object **) addsStart, (Jxta_object **) tempAdds);
-            free(tempAdds);
-        }
-        JXTA_OBJECT_RELEASE(*dbSpace);
-        dbSpace++;
-    }
-  finish:
-    while (*dbSpace) {
-        JXTA_OBJECT_RELEASE(*dbSpace);
-        dbSpace++;
-    }
-    if (dbSpaceSave) {
-        free(dbSpaceSave);
-    }
-    if (NULL != pool)
-        apr_pool_destroy(pool);
-    if (order)
-        JXTA_OBJECT_RELEASE(order);
-    JXTA_OBJECT_RELEASE(columns);
-    JXTA_OBJECT_RELEASE(whereClone);
-    return (Jxta_cache_entry **) addsStart;
 }
 
 Jxta_vector *cm_query_replica(Jxta_cm * self, JString * nameSpace, Jxta_vector * queries)

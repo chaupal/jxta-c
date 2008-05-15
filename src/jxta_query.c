@@ -140,6 +140,8 @@ static void jxta_query_ctx_delete(Jxta_object * jo)
     JXTA_OBJECT_RELEASE(jc->level2);
     JXTA_OBJECT_RELEASE(jc->newQuery);
     JXTA_OBJECT_RELEASE(jc->origQuery);
+    if (jc->compound_table)
+        JXTA_OBJECT_RELEASE(jc->compound_table);
     if (jc->log_j)
         JXTA_OBJECT_RELEASE(jc->log_j);
     if (NULL != jc->xpathcomp) {
@@ -278,6 +280,14 @@ JXTA_DECLARE(Jxta_status) jxta_query_compound_XPath(Jxta_query_context * jctx, c
 {
     jctx->compound_query = TRUE;
     return jxta_query_XPath(jctx, advXML, bResults);
+}
+
+JXTA_DECLARE(void) jxta_query_set_compound_table(Jxta_query_context * jctx, const char *table)
+{
+    if (NULL != jctx->compound_table) {
+        JXTA_OBJECT_RELEASE(jctx->compound_table);
+    }
+    jctx->compound_table = jstring_new_2(table);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_query_XPath(Jxta_query_context * jctx, const char *advXML, Jxta_boolean bResults)
@@ -1005,7 +1015,13 @@ static void query_SQL_string_build(Jxta_query_context * jctx, JString * jPredica
             if (jctx->compound_query) {
                 /* set up for compound query --- get the advid from the element/attributes table */
                 jstring_append_2(jSQL, SQL_SELECT CM_COL_SRC SQL_DOT CM_COL_AdvId);
-                jstring_append_2(jSQL, SQL_FROM CM_TBL_ELEM_ATTRIBUTES_SRC SQL_WHERE );
+                jstring_append_2(jSQL, SQL_FROM);
+                if (NULL != jctx->compound_table) {
+                    jstring_append_1(jSQL, jctx->compound_table);
+                } else {
+                    jstring_append_2(jSQL, CM_TBL_ELEM_ATTRIBUTES_SRC);
+                }
+                jstring_append_2(jSQL, SQL_WHERE );
             }
 
             if (jctx->first) {

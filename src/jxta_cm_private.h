@@ -381,16 +381,6 @@ struct jxta_cache_entry ** cm_query_ctx(Jxta_cm * self, Jxta_credential **scope,
  * Search for entries in the SRDI with a raw SQL query WHERE string.
  *
  * @param Jxta_cm (A ptr to) the cm object to apply the operation to
- * @param folder_name the name of the folder
- * @param where - A WHERE clause SQL string.
- * @return A null terminated list of Jxta_cache_entries.
- */
-Jxta_cache_entry ** cm_sql_query_srdi(Jxta_cm * self, const char *folder_name, JString * where);
-
-/**
- * Search for entries in the SRDI with a raw SQL query WHERE string.
- *
- * @param Jxta_cm (A ptr to) the cm object to apply the operation to
  * @param ns name space for the query
  * @param where - A WHERE clause SQL string.
  * @return A null terminated list of Jxta_cache_entry with advid as meta data.
