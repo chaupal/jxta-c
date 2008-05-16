@@ -1855,6 +1855,14 @@ Jxta_status cm_get_srdi_with_seq_number(Jxta_cm * me, JString * jPeerid, Jxta_se
         rv = apr_dbd_get_row(dbSRDI->conn->driver, pool, res, &row, -1);
         value = apr_dbd_get_entry(dbSRDI->conn->driver, row, 0);
         nameSpace = apr_dbd_get_entry(dbSRDI->conn->driver, row, 1);
+        if (NULL != entry->value)
+            JXTA_OBJECT_RELEASE(entry->value);
+        if (NULL != entry->key)
+            JXTA_OBJECT_RELEASE(entry->key);
+        if (NULL != entry->advId)
+            JXTA_OBJECT_RELEASE(entry->advId);
+        if (NULL != entry->nameSpace)
+            JXTA_OBJECT_RELEASE(entry->nameSpace);
         entry->value = jstring_new_2(value);
         entry->key = jstring_clone(jName);
         entry->advId = jstring_clone(jAdvId);
