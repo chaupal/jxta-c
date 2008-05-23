@@ -99,7 +99,6 @@ typedef struct {
     Extends(Jxta_discovery_service);
 
     volatile Jxta_boolean running;
-    apr_thread_pool_t *thread_pool;
 
     Jxta_DiscoveryConfigAdvertisement *config;
     JString *instanceName;
@@ -336,6 +335,7 @@ static Jxta_status start(Jxta_module * discovery, const char *argv[])
     Jxta_discovery_service_ref * me = (Jxta_discovery_service_ref *) discovery;
     Jxta_PA *padv;
 
+
     jxta_PG_get_PA(me->group, &padv);
 
     publish((Jxta_discovery_service *) me, (Jxta_advertisement *) padv, DISC_PEER, PA_EXPIRATION_LIFE,
@@ -343,7 +343,6 @@ static Jxta_status start(Jxta_module * discovery, const char *argv[])
     JXTA_OBJECT_RELEASE(padv);
 
     /* start an SRDI push and Cache clean up function */
-    me->thread_pool = jxta_PG_thread_pool_get(me->group);
     advertisement_handling_func(NULL, me);
 
     return JXTA_SUCCESS;
@@ -359,6 +358,8 @@ static void stop(Jxta_module * module)
 {
     apr_status_t status;
     int i;
+    apr_thread_pool_t *tp;
+
     Jxta_discovery_service_ref *discovery = PTValid(module, Jxta_discovery_service_ref);
 
     /* Test arguments first */
@@ -369,7 +370,11 @@ static void stop(Jxta_module * module)
     jxta_service_lock((Jxta_service*) discovery);
     /* We need to tell the background thread that it has to die. */
     discovery->running = FALSE;
-    apr_thread_pool_tasks_cancel(discovery->thread_pool, discovery);
+
+    tp = jxta_PG_thread_pool_get(discovery->group);
+    if (NULL != tp) {
+        apr_thread_pool_tasks_cancel(tp, discovery);
+    }
     jxta_service_unlock((Jxta_service*) discovery);
 
     for (i = 0; i < 3; i++) {
@@ -2084,7 +2089,7 @@ static void JXTA_STDCALL discovery_service_response_listener(Jxta_object * obj, 
     discovery_response_set_discovery_service(dr, (Jxta_discovery_service*) discovery);
     jxta_discovery_response_parse_charbuffer(dr, jstring_get_string(response), jstring_length(response));
     JXTA_OBJECT_RELEASE(response);
-    jxta_discovery_response_get_peer_advertisement(dr, (Jxta_advertisement **) (&peerAdv));
+    jxta_discovery_response_get_peer_advertisement(dr, (Jxta_advertisement **) &peerAdv);
     if (NULL != peerAdv) {
         id = jxta_PA_get_PID(peerAdv);
         jxta_id_to_jstring(id, &jID);
@@ -2159,6 +2164,8 @@ static void *APR_THREAD_FUNC advertisement_handling_func(apr_thread_t * thread, 
     Jxta_time_diff delta_cycle=0;
     Jxta_time_diff expired_diff;
     Jxta_time_diff delta_diff;
+    apr_thread_pool_t * tp;
+
     Jxta_discovery_service_ref *discovery = (Jxta_discovery_service_ref *) arg;
 
     /* As long as discovery is running */
@@ -2207,7 +2214,11 @@ static void *APR_THREAD_FUNC advertisement_handling_func(apr_thread_t * thread, 
 
 FINAL_EXIT:
 
-    apr_thread_pool_schedule(discovery->thread_pool, advertisement_handling_func, discovery, wait_time * 1000, discovery); 
+    tp = jxta_PG_thread_pool_get(discovery->group);
+
+    if (NULL != tp) {
+        apr_thread_pool_schedule(tp, advertisement_handling_func, discovery, wait_time * 1000, discovery); 
+    }
     return NULL;
 }
 
