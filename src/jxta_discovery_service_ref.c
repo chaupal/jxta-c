@@ -2089,7 +2089,7 @@ static void JXTA_STDCALL discovery_service_response_listener(Jxta_object * obj, 
     discovery_response_set_discovery_service(dr, (Jxta_discovery_service*) discovery);
     jxta_discovery_response_parse_charbuffer(dr, jstring_get_string(response), jstring_length(response));
     JXTA_OBJECT_RELEASE(response);
-    jxta_discovery_response_get_peer_advertisement(dr, (Jxta_advertisement **) &peerAdv);
+    jxta_discovery_response_get_peer_advertisement(dr, (Jxta_advertisement **) JXTA_OBJECT_PPTR(&peerAdv));
     if (NULL != peerAdv) {
         id = jxta_PA_get_PID(peerAdv);
         jxta_id_to_jstring(id, &jID);
