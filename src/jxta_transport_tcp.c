@@ -675,6 +675,8 @@ static Jxta_status start(Jxta_module * module, const char *argv[])
 static void stop(Jxta_module * me)
 {
     _jxta_transport_tcp *myself = PTValid(me, _jxta_transport_tcp);
+    apr_thread_pool_t *tp = NULL;
+
 
     if (myself->be_server) {
         if (myself->srv_poll) {
@@ -689,7 +691,11 @@ static void stop(Jxta_module * me)
         tcp_multicast_stop(myself->multicast);
     }
 
-    apr_thread_pool_tasks_cancel(jxta_PG_thread_pool_get(myself->group), (void *) myself);
+    tp = jxta_PG_thread_pool_get(myself->group);
+
+    if (NULL != tp) {
+        apr_thread_pool_tasks_cancel(tp, (void *) myself);
+    }
 
     jxta_endpoint_service_remove_transport(myself->endpoint, (Jxta_transport *) myself);
 
