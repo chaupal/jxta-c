@@ -2819,7 +2819,7 @@ static Jxta_boolean have_matching_PA(Jxta_peerview * me, Jxta_peerview_peer_info
     Jxta_status status = JXTA_SUCCESS;
     JString *query=NULL;
     JString *jPeerid=NULL;
-    Peerview_entry *pve;
+    Peerview_entry *pve=NULL;
     Jxta_PA *pa=NULL;
     apr_uuid_t * adv_gen_ptr;
     apr_uuid_t adv_gen;
