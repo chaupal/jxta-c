@@ -3132,7 +3132,7 @@ UNLOCK_EXIT:
     if (send_pong) {
         Jxta_peer * newPeer = jxta_peer_new();
         jxta_peer_set_peerid(newPeer, pid);
-        peerview_send_pong(me, newPeer, action, send_candidates);
+        res = peerview_send_pong(me, newPeer, action, send_candidates);
         JXTA_OBJECT_RELEASE(newPeer);
     }
     if (locked)
