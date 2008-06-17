@@ -1,6 +1,0 @@
-<?xml version="1.0"?><!DOCTYPE jxta:PGA><jxta:PGA xmlns:jxta="http://jxta.org">
-<GID>urn:jxta:uuid-AD5E14A894E84310B776A2592A0D34F802</GID>
-<MSID>urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE000000010306</MSID>
-<Name>whisp.test</Name>
-<Desc>A trivial group for whisp message peers. Created by Bored Astronaut on Wed Nov 11 00:13:00 2004.</Desc>
-</jxta:PGA>

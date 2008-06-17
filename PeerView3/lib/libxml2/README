@@ -1,7 +1,0 @@
-The libxml2 library has been modified in order to provide wild card searching 
-of text elements with the Enhanced Discovery Service. If wild card searches 
-are not required these steps are not necessary. If there is a libxml2 library 
-available on the system you can use that version, but you won't be able to use
-wildcard searches.
-
-See INSTALL for instructions on building the custom version of libxml2.
