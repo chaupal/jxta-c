@@ -1,0 +1,14 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+datadir=@datadir@
+sysconfdir=@sysconfdir@
+ 
+Name: JXTA
+Description: JXTA is a XML-based peer to peer protocol
+Version: @VERSION@
+Requires: apr-1 >= 1.2.0 apr-util-1 >= 1.2.3 sqlite3 libxml-2.0 openssl
+Libs: -L${libdir} -ljxta
+Cflags: -I${includedir}
+

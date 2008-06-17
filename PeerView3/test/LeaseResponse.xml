@@ -1,0 +1,101 @@
+<jxta:LeaseResponse xmlns:jxta="http://jxta.org"
+   server_id="urn:jxta:uuid-59616261646162614E50472050325033A1691B1C75EB4310A9AD97CB6D95384203"
+   offered_lease="200000">
+	<Credential type="jxta:NullCred">
+		<PeerGroupID>urn:jxta:jxta-NetGroup</PeerGroupID>
+		<PeerID>urn:jxta:uuid-59616261646162614E50472050325033A1691B1C75EB4310A9AD97CB6D95384203</PeerID>
+		<Identity>mtn2</Identity>
+	</Credential>
+        <ServerAdv type="jxta:PA" adv_gen="d5db4fac-28de-11db-ad4a-0011d858b975" expiration="3600000">
+	    <PID>
+		    urn:jxta:uuid-59616261646162614E50472050325033A1691B1C75EB4310A9AD97CB6D95384203
+	    </PID>
+	    <Name>
+		    bondolo1
+	    </Name>
+	    <Svc>
+		    <MCID>
+			    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000105
+		    </MCID>
+		    <Parm>
+			    <RootCert>
+				    MIICOjCCAaOgAwIBAgIBATANBgkqhkiG9w0BAQUFADBlMRUwEwYDVQQKEwx3d3cu
+anh0YS5vcmcxCzAJBgNVBAcTAlNGMQswCQYDVQQGEwJVUzETMBEGA1UEAxMKZGRv
+b2xpbi1DQTEdMBsGA1UECxMUMDAyQTA2MjVCRjAzMjBDNEVGQTcwHhcNMDIwMTE2
+MTYwMDQyWhcNMTIwMTE2MTYwMDQyWjBlMRUwEwYDVQQKEwx3d3cuanh0YS5vcmcx
+CzAJBgNVBAcTAlNGMQswCQYDVQQGEwJVUzETMBEGA1UEAxMKZGRvb2xpbi1DQTEd
+MBsGA1UECxMUMDAyQTA2MjVCRjAzMjBDNEVGQTcwgZswCwYJKoZIhvcNAQEBA4GL
+ADCBhwKBgQCultWzIg2osmQ5h1+j2ewsf89zWFsHfje/4aK2K8zWXKs/g36lNJ/o
+Uhc0LIdzLyTEnsUKhGX9fX91kgHCMHyQ+rDYGIf80a/AcCszN10kX1JUgSp20jw3
+PKwJ/tyf8vfhHcup2KgJ5t75ZABdFw6P5cqGiLs19Hb8kk1P8Hr3kwIBETANBgkq
+hkiG9w0BAQUFAAOBgQB1np7sSmS2sf9Jzt/JV3AHxv/Gk8GI4SX3o1Fu4h0kC/9C
+WR64sRNI4KByfMJJ1nuib+XMV+NoYUbwNPj+bL1lL9AjVupdQl7r+zBnYjb2/ofy
+k0kp4xjbf0qlKnV6SRPh6JcRxpDDtSoEFyLIf5Vp5/pBEAFCSNksHub4hBULxw==
+			    </RootCert>
+		    </Parm>
+	    </Svc>
+	    <Svc>
+                    <MCID>
+                            urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000805
+                    </MCID>
+                    <Parm>
+                            <jxta:RA xmlns:jxta="http://jxta.org">
+                                    <Dst>
+                                            <jxta:APA xmlns:jxta="http://jxta.org">
+                                                    <EA>
+                                                            http://192.18.191.108:9700
+                                                    </EA>
+                                            </jxta:APA>
+                                    </Dst>
+                            </jxta:RA>
+                    </Parm>
+            </Svc>
+    </ServerAdv>
+    <ReferralAdv type="jxta:PA" expiration="31341345">
+	    <PID>
+		    urn:jxta:uuid-59616261646162614A78746150325033E77C11AEE46F428D948AB4B0A62FBB1803
+	    </PID>
+	    <Name>
+		    bondolo2
+	    </Name>
+	    <Svc>
+		    <MCID>
+			    urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000105
+		    </MCID>
+		    <Parm>
+			    <RootCert>
+					MIICDjCCAXegAwIBAgIBATANBgkqhkiG9w0BAQUFADBNMRUwEwYDVQQKEwx3d3cuanh0YS5vcmcx
+FTATBgNVBAMTDGJvbmRvbG8gMi1DQTEdMBsGA1UECxMUNERGNUM1MUQwMUU1MUMzQkRFNUQwHhcN
+MDUwMTI2MTk1OTIwWhcNMTUwMTI2MTk1OTIwWjBNMRUwEwYDVQQKEwx3d3cuanh0YS5vcmcxFTAT
+BgNVBAMTDGJvbmRvbG8gMi1DQTEdMBsGA1UECxMUNERGNUM1MUQwMUU1MUMzQkRFNUQwgZ8wDQYJ
+KoZIhvcNAQEBBQADgY0AMIGJAoGBAL6eiaZifG5u4fzMq3pHTcJnbeJjV82qUO/O6kKMRxcR2fbG
+ppHOBd3tqRMc6siX+Ev2yRNpZJvl47jkLrUDo/F4WwT+VZpMxIt/oCLIYpNeOerqKeKExtYMV5QJ
+CSsyykiv5oIzOrrU/W2wBT+ggdF66Yq0MlqiHRtW8gXSS/XhAgMBAAEwDQYJKoZIhvcNAQEFBQAD
+gYEAHxGqVniqJNWd8JdUIL47e30kPQLEwWy7HSkiTGVXDQdPXjyZWOjbqgIsPDZRd+XW4zEBkktr
+r6DgCXhaIuuCjsOFB/dnl4WZA66GDelHQS8ikO0FxweOYyT5pFdbbpnqvZ8QPjMgt3jV8ZCDAspX
+aMw49UnT2wiEf1Jlqeqs0UA=
+			    </RootCert>
+		    </Parm>
+	    </Svc>
+	    <Svc>
+                    <MCID>
+                            urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000805
+                    </MCID>
+                    <Parm>
+                            <jxta:RA xmlns:jxta="http://jxta.org">
+                                    <Dst>
+                                            <jxta:APA xmlns:jxta="http://jxta.org">
+                                                    <EA>
+                                                            tcp://192.18.191.109:9701
+                                                    </EA>
+                                                    <EA>
+                                                            http://192.18.191.109:9700
+                                                    </EA>
+                                            </jxta:APA>
+                                    </Dst>
+                            </jxta:RA>
+                    </Parm>
+            </Svc>
+    </ReferralAdv>
+    <Option type="jxta:RdvServerOptions" edge_walk="false"/>
+</jxta:LeaseResponse>

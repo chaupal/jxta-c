@@ -1,0 +1,220 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE jxta:MIA>
+
+<jxta:MIA xmlns:jxta="http://jxta.org">
+	<MSID>
+		urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE000000010206
+	</MSID>
+	<Comp>
+		<Efmt>
+			JDK1.4
+		</Efmt>
+		<Bind>
+			V1.0 Ref Impl
+		</Bind>
+	</Comp>
+	<Code>
+		net.jxta.impl.peergroup.ShadowPeerGroup
+	</Code>
+	<PURI>
+		http://www.jxta.org/download/jxta.jar
+	</PURI>
+	<Prov>
+		sun.com
+	</Prov>
+	<Desc>
+		Default NetPeerGroup reference implementation.
+	</Desc>
+	<Parm>
+		<Svc>
+			<jxta:MIA xmlns:jxta="http://jxta.org">
+				<MSID>
+					urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE000000060106
+				</MSID>
+				<Comp>
+					<Efmt>
+						JDK1.4
+					</Efmt>
+					<Bind>
+						V1.0 Ref Impl
+					</Bind>
+				</Comp>
+				<Code>
+					net.jxta.impl.rendezvous.RendezVousServiceImpl
+				</Code>
+				<PURI>
+					http://www.jxta.org/download/jxta.jar
+				</PURI>
+				<Prov>
+					sun.com
+				</Prov>
+				<Desc>
+					Reference Implementation of the Rendezvous service
+				</Desc>
+			</jxta:MIA>
+		</Svc>
+		<Svc>
+			<jxta:MIA xmlns:jxta="http://jxta.org">
+				<MSID>
+					urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE000000030106
+				</MSID>
+				<Comp>
+					<Efmt>
+						JDK1.4
+					</Efmt>
+					<Bind>
+						V1.0 Ref Impl
+					</Bind>
+				</Comp>
+				<Code>
+					net.jxta.impl.discovery.DiscoveryServiceImpl
+				</Code>
+				<PURI>
+					http://www.jxta.org/download/jxta.jar
+				</PURI>
+				<Prov>
+					sun.com
+				</Prov>
+				<Desc>
+					Reference Implementation of the DiscoveryService service
+				</Desc>
+			</jxta:MIA>
+		</Svc>
+		<Svc>
+			<jxta:MIA xmlns:jxta="http://jxta.org">
+				<MSID>
+					urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE000000050106
+				</MSID>
+				<Comp>
+					<Efmt>
+						JDK1.4
+					</Efmt>
+					<Bind>
+						V1.0 Ref Impl
+					</Bind>
+				</Comp>
+				<Code>
+					net.jxta.impl.membership.NullMembershipService
+				</Code>
+				<PURI>
+					http://www.jxta.org/download/jxta.jar
+				</PURI>
+				<Prov>
+					sun.com
+				</Prov>
+				<Desc>
+					Reference Implementation of the MembershipService service
+				</Desc>
+			</jxta:MIA>
+		</Svc>
+		<Svc>
+			<jxta:MIA xmlns:jxta="http://jxta.org">
+				<MSID>
+					urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE000000070106
+				</MSID>
+				<Comp>
+					<Efmt>
+						JDK1.4
+					</Efmt>
+					<Bind>
+						V1.0 Ref Impl
+					</Bind>
+				</Comp>
+				<Code>
+					net.jxta.impl.peer.PeerInfoServiceImpl
+				</Code>
+				<PURI>
+					http://www.jxta.org/download/jxta.jar
+				</PURI>
+				<Prov>
+					sun.com
+				</Prov>
+				<Desc>
+					Reference Implementation of the Peerinfo service
+				</Desc>
+			</jxta:MIA>
+		</Svc>
+		<Svc>
+			<jxta:MIA xmlns:jxta="http://jxta.org">
+				<MSID>
+					urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE000000020106
+				</MSID>
+				<Comp>
+					<Efmt>
+						JDK1.4
+					</Efmt>
+					<Bind>
+						V1.0 Ref Impl
+					</Bind>
+				</Comp>
+				<Code>
+					net.jxta.impl.resolver.ResolverServiceImpl
+				</Code>
+				<PURI>
+					http://www.jxta.org/download/jxta.jar
+				</PURI>
+				<Prov>
+					sun.com
+				</Prov>
+				<Desc>
+					Reference Implementation of the ResolverService service
+				</Desc>
+			</jxta:MIA>
+		</Svc>
+		<Svc>
+			<jxta:MIA xmlns:jxta="http://jxta.org">
+				<MSID>
+					urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE000000040106
+				</MSID>
+				<Comp>
+					<Efmt>
+						JDK1.4
+					</Efmt>
+					<Bind>
+						V1.0 Ref Impl
+					</Bind>
+				</Comp>
+				<Code>
+					net.jxta.impl.pipe.PipeServiceImpl
+				</Code>
+				<PURI>
+					http://www.jxta.org/download/jxta.jar
+				</PURI>
+				<Prov>
+					sun.com
+				</Prov>
+				<Desc>
+					Reference Implementation of the PipeService service
+				</Desc>
+			</jxta:MIA>
+		</Svc>
+		<App>
+			<jxta:MIA xmlns:jxta="http://jxta.org">
+				<MSID>
+					urn:jxta:uuid-DEADBEEFDEAFBABAFEEDBABE0000000C0206
+				</MSID>
+				<Comp>
+					<Efmt>
+						JDK1.4
+					</Efmt>
+					<Bind>
+						V1.0 Ref Impl
+					</Bind>
+				</Comp>
+				<Code>
+					net.jxta.impl.shell.bin.Shell.Shell
+				</Code>
+				<PURI>
+					http://www.jxta.org/download/jxta.jar
+				</PURI>
+				<Prov>
+					sun.com
+				</Prov>
+				<Desc>
+					JXTA Shell reference implementation
+				</Desc>
+			</jxta:MIA>
+		</App>
+	</Parm>
+</jxta:MIA>

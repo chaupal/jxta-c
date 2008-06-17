@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioProject
+	ProjectType="Visual C++"
+	Version="7.10"
+	Name="dq_adv_test"
+	ProjectGUID="{79B95FE1-F674-4C3A-83A3-28F40ABCEB58}"
+	Keyword="Win32Proj">
+	<Platforms>
+		<Platform
+			Name="Win32"/>
+	</Platforms>
+	<Configurations>
+		<Configuration
+			Name="Debug|Win32"
+			OutputDirectory="Debug"
+			IntermediateDirectory="Debug"
+			ConfigurationType="1"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				FavorSizeOrSpeed="0"
+				AdditionalIncludeDirectories="..\..\..\src,$(APACHE2)\include;$(XML2)\include"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;STANDALONE;JXTA_STATIC;JPR_STATIC;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
+				MinimalRebuild="TRUE"
+				ExceptionHandling="FALSE"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="3"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="FALSE"
+				DebugInformationFormat="3"
+				CompileAs="0"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib expat.lib libxml2.lib zdll.lib wsock32.lib"
+				OutputFile="$(OutDir)/dq_adv_test.exe"
+				LinkIncremental="2"
+				AdditionalLibraryDirectories="&quot;$(APACHE2)\lib&quot;;$(ZLIB)\lib;$(SQLITE3)\lib;$(XML2)\lib;$(OPENSSL)\lib"
+				IgnoreDefaultLibraryNames="MSVCRT.lib"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="$(OutDir)/dq_adv_test.pdb"
+				SubSystem="1"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				Description="copy DLLs"
+				CommandLine="copy &quot;$(OPENSSL)\bin\*.dll&quot; $(ConfigurationName)
+copy &quot;$(APACHE2)\bin\*.dll&quot; $(ConfigurationName)
+copy &quot;$(ZLIB)\bin\*.dll&quot;  $(ConfigurationName)
+copy &quot;$(SQLITE3)\bin\*.dll&quot;  $(ConfigurationName)
+copy &quot;$(XML2)\bin\*.dll&quot;  $(ConfigurationName)
+copy &quot;$(SolutionDir)jxta\jxtadll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)
+copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)
+"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="Release"
+			IntermediateDirectory="Release"
+			ConfigurationType="1"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="0"
+				FavorSizeOrSpeed="1"
+				AdditionalIncludeDirectories="..\..\..\src,$(APACHE2)\include;$(XML2)\include"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;STANDALONE;JXTA_STATIC;JPR_STATIC;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
+				StringPooling="FALSE"
+				ExceptionHandling="FALSE"
+				RuntimeLibrary="2"
+				BufferSecurityCheck="FALSE"
+				EnableFunctionLevelLinking="FALSE"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="FALSE"
+				DebugInformationFormat="0"
+				CompileAs="0"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="libeay32.lib libapr-1.lib libaprutil-1.lib expat.lib libxml2.lib zdll.lib wsock32.lib"
+				OutputFile="$(OutDir)/dq_adv_test.exe"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="&quot;$(APACHE2)\lib&quot;;$(ZLIB)\lib;$(SQLITE3)\lib;$(XML2)\lib;$(OPENSSL)\lib"
+				IgnoreDefaultLibraryNames=""
+				GenerateDebugInformation="TRUE"
+				SubSystem="1"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				Description="copy DLLs"
+				CommandLine="copy &quot;$(OPENSSL)\bin\*.dll&quot; $(ConfigurationName)
+copy &quot;$(APACHE2)\bin\*.dll&quot; $(ConfigurationName)
+copy &quot;$(ZLIB)\bin\*.dll&quot;  $(ConfigurationName)
+copy &quot;$(SQLITE3)\bin\*.dll&quot;  $(ConfigurationName)
+copy &quot;$(XML2)\bin\*.dll&quot;  $(ConfigurationName)
+copy &quot;$(SolutionDir)jxta\jxtadll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)
+copy &quot;$(SolutionDir)jxta\jprdll\$(ConfigurationName)\*.dll&quot; $(ConfigurationName)
+"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+		</Configuration>
+	</Configurations>
+	<References>
+	</References>
+	<Files>
+		<Filter
+			Name="Quelldateien"
+			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
+			<File
+				RelativePath="..\..\..\test\dq_adv_test.c">
+			</File>
+			<File
+				RelativePath="..\..\..\test\unittest_jxta_func.c">
+			</File>
+		</Filter>
+		<Filter
+			Name="Headerdateien"
+			Filter="h;hpp;hxx;hm;inl;inc;xsd"
+			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
+			<File
+				RelativePath="..\..\..\test\unittest_jxta_func.h">
+			</File>
+		</Filter>
+		<Filter
+			Name="Ressourcendateien"
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
+			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}">
+		</Filter>
+	</Files>
+	<Globals>
+	</Globals>
+</VisualStudioProject>

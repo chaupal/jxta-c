@@ -1,0 +1,11 @@
+<jxta:PeerviewPing xmlns:jxta="http://jxta.org"
+   src_id="urn:jxta:uuid-59616261646162614A78746150325033DC95B0D32EB9492798BCA9C4ABFBE6C603"
+   dst_id="urn:jxta:uuid-59616261646162614E50472050325033A1691B1C75EB4310A9AD97CB6D95384203"
+   dst_adv_gen="2b84b57c-28dc-11db-a34f-0011d858b975" >
+	<Credential type="jxta:NullCred">
+		<PeerGroupID>urn:jxta:jxta-NetGroup</PeerGroupID>
+		<PeerID>urn:jxta:uuid-59616261646162614A78746150325033DC95B0D32EB9492798BCA9C4ABFBE6C603</PeerID>
+		<Identity>mtn1</Identity>
+	</Credential>
+        <Option type="jxta:MadeupOptions" foobar="true"/>
+</jxta:PeerviewPing>

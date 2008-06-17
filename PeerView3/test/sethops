@@ -1,0 +1,394 @@
+#!/bin/bash
+
+# See usage function for documentation.
+
+VERSION=VERSION_1.0
+
+N1_ADDR_DEFAULT=127.0.0.121
+N2_ADDR_DEFAULT=127.0.0.122
+N3_ADDR_DEFAULT=127.0.0.123
+N4_ADDR_DEFAULT=127.0.0.124
+N5_ADDR_DEFAULT=127.0.0.125
+
+N1_PORT_DEFAULT=9701
+N2_PORT_DEFAULT=9702
+N3_PORT_DEFAULT=9703
+N4_PORT_DEFAULT=9704
+N5_PORT_DEFAULT=9705
+
+# Locks down the nodes while we are changing the tables.
+# This will prevent any resent data from getting accepted while we are
+# transistioning the tables.
+function lock
+{
+	echo 'Locking nodes...' 1>&2
+	iptables -A INPUT -d $N1A -j DROP
+	iptables -A INPUT -d $N2A -j DROP
+	iptables -A INPUT -d $N3A -j DROP
+	iptables -A INPUT -d $N4A -j DROP
+	iptables -A INPUT -d $N5A -j DROP
+}
+
+# Allow packets to flow to the nodes subject to the new configuration
+function unlock
+{
+	echo 'UnLocking nodes...' 1>&2
+	iptables -D INPUT -d $N1A -j DROP
+	iptables -D INPUT -d $N2A -j DROP
+	iptables -D INPUT -d $N3A -j DROP
+	iptables -D INPUT -d $N4A -j DROP
+	iptables -D INPUT -d $N5A -j DROP
+}
+
+# Flush out the iptables
+function cleanup 
+{
+	echo 'Cleaning up tables...' 1>&2
+	echo 'Open all links...' 1>&2
+	iptables -D INPUT -p tcp -j multihop 2>/dev/null
+	iptables -F multihop 2>/dev/null
+	iptables -X multihop 2>/dev/null
+}
+
+# All links connected, clear out the table 
+# 1-2-3-4-5
+#	TO
+#FROM	N1	N2	N3	N4	N5
+#N1	A	A	A	A	A	
+#N2	A	A	A	A	A
+#N3	A	A	A	A	A
+#N4	A	A	A	A	A
+#N5	A	A	A	A	A
+function setup
+{
+	echo 'Setting up tables...' 1>&2
+	iptables -N multihop
+	iptables -I INPUT 1 -p tcp -j multihop 
+}
+
+# Disable a link between nodes
+function drop 
+{
+	iptables -A multihop -p tcp -s $1 -d $2 -j DROP
+}
+
+# Break link 1x2 (A=accept, D=drop)
+# 1x2-3-4-5
+#	TO
+#FROM	N1	N2	N3	N4	N5
+#N1	A	D	D	D	D
+#N2	D	A	A	A	A
+#N3	D	A	A	A	A
+#N4	D	A	A	A	A
+#N5	D	A	A	A	A
+function break_1x2
+{
+	echo "Dropping link 1x2..." 1>&2
+	drop $N1A $N2A
+	drop $N1A $N3A
+	drop $N1A $N4A
+	drop $N1A $N5A
+
+	drop $N2A $N1A
+	drop $N3A $N1A
+	drop $N4A $N1A
+	drop $N5A $N1A
+}
+
+# Break link 2x3 (A=accept, D=drop)
+# 1-2x3-4-5
+#	TO
+#FROM	N1	N2	N3	N4	N5
+#N1	A	A	D	D	D
+#N2	A	A	D	D	D
+#N3	D	D	A	A	A
+#N4	D	D	A	A	A
+#N5	D	D	A	A	A
+function break_2x3
+{
+	echo "Dropping link 2x3..." 1>&2
+	drop $N1A $N3A
+	drop $N1A $N4A
+	drop $N1A $N5A
+
+	drop $N2A $N3A
+	drop $N2A $N4A
+	drop $N2A $N5A
+
+	drop $N3A $N1A
+	drop $N3A $N2A
+
+	drop $N4A $N1A
+	drop $N4A $N2A
+
+	drop $N5A $N1A
+	drop $N5A $N2A
+}
+
+# Break link 3x4 (A=accept, D=drop)
+# 1-2-3x4-5
+#	TO
+#FROM	N1	N2	N3	N4	N5
+#N1	A	A	A	D	D
+#N2	A	A	A	D	D
+#N3	A	A	A	D	D
+#N4	D	D	D	A	A
+#N5	D	D	D	A	A
+function break_3x4
+{
+	echo "Dropping link 3x4..." 1>&2
+	drop $N1A $N4A
+	drop $N1A $N5A
+
+	drop $N2A $N4A
+	drop $N2A $N5A
+
+	drop $N3A $N4A
+	drop $N3A $N5A
+
+	drop $N4A $N1A
+	drop $N4A $N2A
+	drop $N4A $N3A
+
+	drop $N5A $N1A
+	drop $N5A $N2A
+	drop $N5A $N3A
+}
+
+# Break link 4x5 (A=accept, D=drop)
+# 1-2-3-4x5
+#	TO
+#FROM	N1	N2	N3	N4	N5
+#N1	A	A	A	A	D
+#N2	A	A	A	A	D
+#N3	A	A	A	A	D
+#N4	A	A	A	A	D
+#N5	D	D	D	D	A
+function break_4x5
+{
+	echo "Dropping link 4x5..." 1>&2
+	drop $N1A $N5A
+	drop $N2A $N5A
+	drop $N3A $N5A
+	drop $N4A $N5A
+
+	drop $N5A $N1A
+	drop $N5A $N2A
+	drop $N5A $N3A
+	drop $N5A $N4A
+}
+
+
+# Do port scanning on nodes to verify that we have done things correcctly.
+# Note: Jxta-C peers being up and running.
+function testports
+{
+	echo -------------------
+	echo From $N1A:
+	echo -n "To $N1A "
+	nmap -sT -p $N1P -P0 -S $N1A $N1A 2>/dev/null | grep unknown
+	echo -n "To $N2A "
+	nmap -sT -p $N2P -P0 -S $N1A $N2A 2>/dev/null | grep unknown
+	echo -n "To $N3A "
+	nmap -sT -p $N3P -P0 -S $N1A $N3A 2>/dev/null | grep unknown
+	echo -n "To $N4A "
+	nmap -sT -p $N4P -P0 -S $N1A $N4A 2>/dev/null | grep unknown
+	echo -n "To $N5A "
+	nmap -sT -p $N5P -P0 -S $N1A $N5A 2>/dev/null | grep unknown
+
+	echo -------------------
+	echo From $N2A:
+	echo -n "To $N1A "
+	nmap -sT -p $N1P -P0 -S $N2A $N1A 2>/dev/null | grep unknown
+	echo -n "To $N2A "
+	nmap -sT -p $N2P -P0 -S $N2A $N2A 2>/dev/null | grep unknown
+	echo -n "To $N3A "
+	nmap -sT -p $N3P -P0 -S $N2A $N3A 2>/dev/null | grep unknown
+	echo -n "To $N4A "
+	nmap -sT -p $N4P -P0 -S $N2A $N4A 2>/dev/null | grep unknown
+	echo -n "To $N5A "
+	nmap -sT -p $N5P -P0 -S $N2A $N5A 2>/dev/null | grep unknown
+
+	echo -------------------
+	echo From $N3A:
+	echo -n "To $N1A "
+	nmap -sT -p $N1P -P0 -S $N3A $N1A 2>/dev/null | grep unknown
+	echo -n "To $N2A "
+	nmap -sT -p $N2P -P0 -S $N3A $N2A 2>/dev/null | grep unknown
+	echo -n "To $N3A "
+	nmap -sT -p $N3P -P0 -S $N3A $N3A 2>/dev/null | grep unknown
+	echo -n "To $N4A "
+	nmap -sT -p $N4P -P0 -S $N3A $N4A 2>/dev/null | grep unknown
+	echo -n "To $N5A "
+	nmap -sT -p $N5P -P0 -S $N3A $N5A 2>/dev/null | grep unknown
+
+	echo -------------------
+	echo From $N4A:
+	echo -n "To $N1A "
+	nmap -sT -p $N1P -P0 -S $N4A $N1A 2>/dev/null | grep unknown
+	echo -n "To $N2A "
+	nmap -sT -p $N2P -P0 -S $N4A $N2A 2>/dev/null | grep unknown
+	echo -n "To $N3A "
+	nmap -sT -p $N3P -P0 -S $N4A $N3A 2>/dev/null | grep unknown
+	echo -n "To $N4A "
+	nmap -sT -p $N4P -P0 -S $N4A $N4A 2>/dev/null | grep unknown
+	echo -n "To $N5A "
+	nmap -sT -p $N5P -P0 -S $N4A $N5A 2>/dev/null | grep unknown
+
+	echo -------------------
+	echo From $N5A:
+	echo -n "To $N1A "
+	nmap -sT -p $N1P -P0 -S $N5A $N1A 2>/dev/null | grep unknown
+	echo -n "To $N2A "
+	nmap -sT -p $N2P -P0 -S $N5A $N2A 2>/dev/null | grep unknown
+	echo -n "To $N3A "
+	nmap -sT -p $N3P -P0 -S $N5A $N3A 2>/dev/null | grep unknown
+	echo -n "To $N4A "
+	nmap -sT -p $N4P -P0 -S $N5A $N4A 2>/dev/null | grep unknown
+	echo -n "To $N5A "
+	nmap -sT -p $N5P -P0 -S $N5A $N5A 2>/dev/null | grep unknown
+}
+
+function usage
+{
+	echo "     usage: $0 [-c] [-h] [-L] [-t] [-v] [links]"
+	echo
+	echo "        Note: This script must be run as super-user!!!"
+	echo
+	echo "        Sets up a simulated multihop environment for testing Jxta-C by manipulating the firewall iptables."
+	echo "        Manipulations of the iptables are stateless.  Subsequent calls will change the configuration of the simulated multihop enviornment. "
+	echo
+	echo "        This script assumes you have 5 Jxta-C peers running on the same machine.  It models the peers as connected chain with each peer"
+	echo "        running on it's own 'physical node'.  It does this by ip aliasing, (http://www.faqs.org/docs/Linux-mini/IP-Alias.html).  In other"
+	echo "        each peer must bind to a different IP address (node) and port."
+	echo
+	echo "        SETUP:"
+	echo "        To use this script you must first setup your test environment:"
+	echo "          1) Create an ip aliased address for each node on the same interface.  Choose ipaddresses which are not currently in use on your LAN."
+	echo "              Be sure to clean these up when you no longer need them for testing"
+        echo "              To alias IP Addresses on an ethernet device for example:"
+	echo "              # ip addr add 127.0.0.121 label lo:1 dev lo:1"
+	echo "              # ip addr add 127.0.0.122 label lo:2 dev lo:2"
+	echo "              # ip addr add 127.0.0.123 label lo:3 dev lo:3"
+	echo "              # ip addr add 127.0.0.124 label lo:4 dev lo:4"
+	echo "              # ip addr add 127.0.0.125 label lo:5 dev lo:5"
+	echo
+	echo "              If you alias the ip addresses to anything other than those in the example above.  Be sure to change enviornment variables"
+	echo "              N1A thru N5A accordingly."
+	echo "          2) Setup and run 5 Jxta-C peers.  In the PlatformConfig file for each peer assign an IP address corresponding in to an IP aliased address"
+	echo "              that you set in step 1 above.  You will want to assign the ip address in the <InterfaceAddress> field and the port in the"
+	echo "              <Port> field of the <jxta:TransportAdvertisement>.  For example:"
+	echo
+	echo "              <jxta:TransportAdvertisement xmlns:jxta=\"http://jxta.org\" type=\"jxta:TCPTransportAdvertisement\">"
+	echo "              <Protocol>tcp</Protocol>"
+	echo "              <Port>9701</Port>"
+	echo "              <MulticastOff/><MulticastAddr>224.0.1.85</MulticastAddr>"
+	echo "              <MulticastPort>1234</MulticastPort>"
+	echo "              <MulticastSize>16384</MulticastSize>"
+	echo "              <InterfaceAddress>192.168.1.121</InterfaceAddress>"
+	echo "              <Server></Server>"
+	echo "              <ConfigMode>auto</ConfigMode>"
+	echo "              </jxta:TransportAdvertisement>"
+	echo "          3) Verify that everything is talking by using a packet sniffer, for example Wireshark (http://www.wireshark.org/)"
+	echo "             You will want to watch traffice on the loopback interface."
+	echo
+	echo "        USAGE:"
+	echo "        [links] is a string of nodes numbers from 1 to 5 and separated by a - for linked nodes and a x for unlinked simulated nodes."
+	echo "        Breaking a link will effectively block traffic to and from the pair of ip addresses connected by the link."
+	echo
+	echo "        By default:"
+	echo "             NODE     IP ADDRESS    ENV VARIABLE PORT   ENV VARIABLE"
+	echo "             ----     ------------- ------------ ----   ------------"
+	echo "             1        127.0.0.121   N1A          9701   N1P"
+	echo "             2        127.0.0.122   N2A          9702   N2P"
+	echo "             3        127.0.0.123   N3A          9703   N3P"
+	echo "             4        127.0.0.124   N4A          9704   N4P"
+	echo "             5        127.0.0.125   N5A          9705   N5P"
+	echo "        The default ip addresses and port numbers can be changed by overriding the environment variables."
+	echo
+	echo "        Options:"
+	echo "        -c will cleanup up the state of the iptables."
+	echo "        -h will display this usage info."
+	echo "        -L will list the state of the iptables."
+	echo "        -t will test the connection between ip addresses by performing port"
+	echo "           scanning (this might take a few minutes).   Note: Jxta-C peers must be up and running on the nodes."
+        echo "           A report of the tests will be displayed.  If you notice that any port is closed, this is an indication that your Jxta-C peer"
+	echo "           has terminated and that you should restart your Jxta-C peer."
+	echo "        -v display version number"
+	echo
+	echo "        For example: $0 1x2-3-4x5"
+	echo "        Create multihop iptable entries where links between 1 and 2, and 4 and 5 are unlinked (broken)."
+	echo
+	echo "        For example: $0 -L 1-2x3-4x5"
+	echo "        Create multihop iptable entries where links between 2 and 3, and 4 and 5 are unlinked (broken).  Then print the contents of the iptables."
+	echo
+	echo "        For example: $0 -L 1-2-3-4-5"
+	echo "        Create multihop iptable entries where all nodes are connected."
+	echo
+	echo "        For example: $0 -L -t 1x2x3x4x5"
+	echo "        Create multihop iptable entries where all nodes are disconnected.  Then list the iptables.  Then test the links."
+	echo
+	echo "        For example: $0 -c -v"
+	echo "        Give the version number.  Clean the contents of the iptables from a previous multihop run."
+	echo
+	echo "        For example: $0 -L"
+	echo "        Just list the contents of the iptables."
+	echo
+	echo "        For example: $0 -t"
+	echo "        Just test the links between nodes."
+}
+
+# No args, print usage and quit.
+if [ -z $1 ]; then usage; exit; fi
+
+# Process options
+while getopts "chLtv" opt; do
+	case $opt in
+		c  ) cleanup;;
+		h  ) usage; exit;;
+		L  ) DOLIST=1;;
+		t  ) DOTEST=1;;
+		v  ) echo $VERSION;;
+		\? ) usage; exit;;
+	esac
+done
+shift $(($OPTIND - 1))
+
+# Use enviornment variables if available, otherwise setup defaults
+if [ -z $N1A ]; then N1A=$N1_ADDR_DEFAULT; fi
+if [ -z $N2A ]; then N2A=$N2_ADDR_DEFAULT; fi
+if [ -z $N3A ]; then N3A=$N3_ADDR_DEFAULT; fi
+if [ -z $N4A ]; then N4A=$N4_ADDR_DEFAULT; fi
+if [ -z $N5A ]; then N5A=$N5_ADDR_DEFAULT; fi
+
+if [ -z $N1P ]; then N1P=$N1_PORT_DEFAULT; fi
+if [ -z $N2P ]; then N2P=$N2_PORT_DEFAULT; fi
+if [ -z $N3P ]; then N3P=$N3_PORT_DEFAULT; fi
+if [ -z $N4P ]; then N4P=$N4_PORT_DEFAULT; fi
+if [ -z $N5P ]; then N5P=$N5_PORT_DEFAULT; fi
+
+# If we are given a link map, cleanup from previous run.
+if [ -n "$1" ]; then lock; fi
+if [ -n "$1" ]; then cleanup; fi
+
+# If we are going to break links, the setup multihop table.
+if echo $1 | grep -q 'x'; then setup; fi
+
+# Set the dropped connections
+if echo $1 | grep -q 'x2'; then break_1x2; fi
+if echo $1 | grep -q 'x3'; then break_2x3; fi
+if echo $1 | grep -q 'x4'; then break_3x4; fi
+if echo $1 | grep -q 'x5'; then break_4x5; fi
+
+# Unlock the table.
+if [ -n "$1" ]; then unlock; fi
+
+# Print iptable listing now
+if [ -n "$DOLIST" ]; then iptables -L; fi
+
+# Test the links
+if [ -n "$DOTEST" ]; then testports; fi
+
+exit
+
+
