@@ -1,3 +1,1689 @@
+2008-06-17 10:46:49  r248  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/Makefile.am
+
+	Remove .svn directory files from the distribution
+
+2008-06-10 03:40:43  r247  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	Not returning proper status
+
+2008-06-09 16:22:50  r246  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	Remove compiler warning
+
+2008-06-05 10:08:35  r245  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/shell/publish.c
+
+	Add timeout and multiple advertisement options
+
+2008-05-23 16:00:34  r244  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_tcp.c
+
+	Check thread_pool pointer is valid when stopping
+
+2008-05-23 09:46:30  r243  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service_ref.c
+
+	Remove compiler warning.
+
+2008-05-23 08:47:18  r242  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service_ref.c
+
+	Don't save thread pool pointer. Retrieve from PG.
+
+2008-05-16 14:35:10  r241  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_cm.c
+
+	prevent potential memory leaks
+
+2008-05-15 13:30:50  r240  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_cm.c
+	   M /jxta-c/branches/PeerView3/src/jxta_cm_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service_ref.c
+	   M /jxta-c/branches/PeerView3/src/jxta_query.c
+	   M /jxta-c/branches/PeerView3/src/jxta_query.h
+
+	Issue 37 - Use compound SQL query for the SRDI
+
+2008-05-15 13:28:35  r239  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_service_ref.c
+
+	Fix indexing problem after removing object
+
+2008-05-13 08:06:40  r238  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_router_client.c
+
+	Allow router to be unlocked while making calls to the underlying transport
+
+2008-05-12 12:54:10  r237  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	Fix shutdown hang related to r235
+
+2008-05-09 17:14:22  r236  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_service.c
+
+	clear the entry from the hash table
+
+2008-05-09 15:53:10  r235  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+
+	Issue 22: One more update to define the toggle functions as static.
+
+2008-05-09 15:38:25  r234  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+
+	Issue 22 - Enable auto-rdv to be started and stopped using set_auto_interval function
+
+2008-05-09 10:59:51  r233  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_log.c
+
+	fix log switchover/shutdown race condition.  Also, note that when using jxta object tracking, if jxta is terminated properly, the log will not catch the release of any static resources deleted by the final termination sequence since the default log selector is only warning-fatal.
+
+2008-05-09 10:56:40  r232  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_tcp_connection.c
+
+	fix segfault introduced by revision 227
+
+2008-05-09 10:54:12  r231  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+
+	fix peerview stop race condition
+
+2008-05-09 10:52:58  r230  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.c
+
+	fix memory leaks
+
+2008-05-09 10:51:30  r229  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service.h
+
+	fix typo in comments
+
+2008-04-28 16:59:15  r228  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	fix auto rdv to self-promote due to loneliness.  This was broken by a previous update to prevent deadlock
+
+2008-04-04 16:05:57  r227  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_client.c
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_service_ref.c
+
+	more deadlock and memory leak fixes
+	also, moved negative cache and messengers destroy functions from endpoint_destruct to endpoint_stop
+
+2008-04-03 17:06:35  r226  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+
+	fix peerview/rdv service deadlock
+
+2008-04-02 11:28:52  r225  brian_wilson
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_cm.c
+	   M /jxta-c/branches/PeerView3/src/jxta_query.c
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi.c
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi.h
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_service_ref.c
+
+	fixes the storage of srdi entries and replication
+
+2008-03-11 09:30:43  r224  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+
+	memory leak and deadlock fixes
+
+2008-02-21 17:25:24  r223  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_test_adv.c
+
+	size of 1 creates hashtable warning messages
+
+2008-02-08 17:06:28  r222  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service_ref.c
+
+	Edge peer should process SRDI resend delta messages
+
+2008-02-05 20:29:15  r221  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_cm.c
+
+	pool memory leaks
+
+2008-02-04 17:25:27  r220  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	Check all entries in the vector
+
+2008-02-04 17:15:03  r219  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+
+	Add new seeds to the active seeds
+
+2008-02-03 09:59:50  r218  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	Remove connected peers as referrals
+
+2008-02-01 17:28:32  r217  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_server.c
+
+	Expired peers should not be sent as referrals
+
+2008-02-01 15:15:18  r216  brian_wilson
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_client.c
+
+	fix the way the rdv_client handles leases and allows the client to broadcast a seed request if known seeds are down
+
+2008-02-01 14:23:26  r215  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_server.c
+
+	check for duplicate seeds
+
+2008-01-29 15:44:43  r214  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_cm.c
+
+	memory leak
+
+2008-01-29 12:48:49  r213  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	memory leak
+
+2008-01-25 18:37:22  r212  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_server.c
+
+	memory leaks
+
+2008-01-25 08:38:59  r211  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service_ref.c
+
+	Adjust logging level
+
+2008-01-25 08:36:27  r210  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi.c
+
+	Remove log msg not needed
+
+2008-01-23 18:06:53  r209  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_config_adv.c
+
+	Change delta option default to "on"
+
+2008-01-23 18:01:47  r208  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_cm.c
+
+	fix memory leak and remove unused variable
+
+2008-01-23 11:31:17  r207  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.h
+
+	- Don't promote if referrals are available
+	- Start activity add when all voting peers have responded
+
+2008-01-22 20:13:07  r206  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	- send best candidate properly
+	- release locate seeds when state changes
+
+2008-01-22 16:06:24  r205  slowhog
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jpr/apr_thread_pool.c
+	   M /jxta-c/branches/PeerView3/src/jpr/apr_thread_pool.h
+
+	update to latest version from apr, svn.r614369 + patch from issue 43876
+
+2008-01-22 15:22:43  r203  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_config_adv.c
+
+	memory leaks
+
+2008-01-22 09:29:59  r202  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_cm.c
+
+	Remove unwanted Warning log msg and adjust logging level of another
+
+2008-01-21 17:08:14  r201  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_cm.c
+
+	remove a double release
+
+2008-01-21 17:07:45  r200  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_lease_response_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_client.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_server.c
+
+	fix memory leak and use adv_gen for the server ad
+
+2008-01-18 11:47:47  r199  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	Appears to be leftover code and causes a memory leak when voting is not in progress
+
+2008-01-16 15:27:05  r198  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	Obtain RdvConfigAdvertisement from rdv instance instead of the parent PG PlatformConfig
+
+2008-01-14 19:44:10  r197  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.c
+
+	Fix double release
+
+2008-01-14 19:36:28  r196  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.h
+
+	Issue 24 - API enhancements for PV3
+
+2008-01-14 17:02:25  r195  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_config_adv.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_config_adv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.h
+
+	Clone the rdv config advertisement for the service
+
+2008-01-14 14:43:48  r194  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peergroup.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peergroup.h
+
+	Add API call that returns an uninitialized net peer group instance
+
+2008-01-08 15:21:28  r193  brian_wilson
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.c
+
+	a seg fault would occur if the handlers were set for the UNKNOWN state
+
+2008-01-07 10:04:20  r192  brian_wilson
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	fix the order of the ranking results
+
+2007-12-21 11:27:53  r191  vfinley
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+2007-12-21 10:43:51  r190  vfinley
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+2007-12-21 10:13:57  r189  vfinley
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_resolver_service_ref.c
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_tcp.c
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_tcp_connection.c
+
+2007-12-21 09:08:49  r188  vfinley
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jpr/apr_thread_pool.c
+	   M /jxta-c/branches/PeerView3/src/jpr/apr_thread_pool.h
+	   M /jxta-c/branches/PeerView3/src/jxta_adv_response_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_adv_response_msg.h
+	   M /jxta-c/branches/PeerView3/src/jxta_cm.c
+	   M /jxta-c/branches/PeerView3/src/jxta_cm.h
+	   M /jxta-c/branches/PeerView3/src/jxta_cm_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_config_adv.c
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_config_adv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service.h
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service_ref.c
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_hashtable.c
+	   M /jxta-c/branches/PeerView3/src/jxta_id_uuid.c
+	   M /jxta-c/branches/PeerView3/src/jxta_id_uuid_priv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_membership_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_membership_service_null.c
+	   M /jxta-c/branches/PeerView3/src/jxta_message.c
+	   M /jxta-c/branches/PeerView3/src/jxta_netpg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_object.c
+	   M /jxta-c/branches/PeerView3/src/jxta_pa.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peergroup.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerinfo_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerinfo_service_ref.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_address_assign_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_address_request_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_address_request_msg.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.h
+	   M /jxta-c/branches/PeerView3/src/jxta_pipe_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_piperesolver_impl.c
+	   M /jxta-c/branches/PeerView3/src/jxta_qos.c
+	   M /jxta-c/branches/PeerView3/src/jxta_query.c
+	   M /jxta-c/branches/PeerView3/src/jxta_query.h
+	   M /jxta-c/branches/PeerView3/src/jxta_range.c
+	   M /jxta-c/branches/PeerView3/src/jxta_range.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_config_adv.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_config_adv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_adhoc.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_client.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_provider.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_server.c
+	   M /jxta-c/branches/PeerView3/src/jxta_relay.c
+	   M /jxta-c/branches/PeerView3/src/jxta_resolver_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_resolver_service_ref.c
+	   M /jxta-c/branches/PeerView3/src/jxta_routea.c
+	   M /jxta-c/branches/PeerView3/src/jxta_router_client.c
+	   M /jxta-c/branches/PeerView3/src/jxta_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_service_ref.c
+	   M /jxta-c/branches/PeerView3/src/jxta_stdpg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_transport.c
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_http.c
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_http_poller.c
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_tcp.c
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_tcp_connection.c
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_welcome_message.c
+	   M /jxta-c/branches/PeerView3/src/jxta_unipipe_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_wire_service.c
+
+	Modifications to handle compiler warnings
+
+2007-12-19 21:43:29  r187  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_client.c
+
+	-Reduce nap time of maintenance task
+	-If there's no referral, don't ignore the responding peer
+
+2007-12-19 16:15:25  r186  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_config_adv.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_config_adv.h
+
+	Issue 26 - Configuration of peerview attributes
+
+2007-12-19 07:58:16  r185  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	remove unused function
+
+2007-12-18 14:05:28  r184  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/shell/rdvstatus.c
+
+	Add additional peerview information.
+
+2007-12-18 13:57:30  r183  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peer.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_client.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_provider.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_server.c
+
+	Issue 21 - Promotion/Demotion protocol
+
+2007-12-18 09:04:40  r182  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_platformconfig.c
+
+	memory leak
+
+2007-12-13 12:46:35  r181  vfinley
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_config_adv.c
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_config_adv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_query.h
+
+	Changes for threadpool
+
+2007-12-11 14:45:15  r180  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_resolver_service_ref.c
+
+	race condition fix
+
+2007-12-04 10:29:48  r179  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	Peers configured as rendezvous should switch to edge in auto mode.
+
+2007-11-27 13:06:24  r178  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_service_ref.c
+
+	Issue 11 Do not hold on to parent group reference
+
+2007-11-27 12:58:20  r177  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service_ref.c
+
+	Comment disabled code
+
+2007-11-27 12:55:19  r176  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_service.c
+
+	Modify log message level
+
+2007-11-27 11:48:09  r175  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+
+	- Cancel proper owner for the auto interval
+	- Rendezvous service should leave auto interval unchanged when stopping
+
+2007-11-26 09:21:16  r174  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_stdpg.c
+
+	unnecessary
+
+2007-11-20 11:48:23  r171  vfinley
+	Changed paths:
+	   A /jxta-c/branches/PeerView3/test/sethops
+
+	Multihop test enviornment simulation
+
+2007-11-20 11:14:42  r170  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_stdpg.c
+
+	memory leaks
+
+2007-11-18 11:56:51  r169  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	- unlock mutex before handling pong message
+
+2007-11-16 10:28:21  r168  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_advertisement.c
+
+	save non replicated tags in the global registry
+
+2007-11-14 15:08:24  r167  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_query.c
+
+	handle non-compound queries properly
+	memory leak fix
+
+2007-11-14 11:30:15  r166  brian_wilson
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+
+	Moved the auto_rdv_interval assignment before the check for the null peerview.  This will allow the peerview to be created.
+
+2007-11-14 11:24:08  r165  brian_wilson
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+
+	The auto_rdv_interval was only getting set at startup and not in the jxta_rdv_service_set_auto_interval.
+	This kept the peerview from being created in the rdv_service_switch_config unless the auto_rdv was enabled in the platform config.
+
+2007-11-12 14:07:01  r164  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_query.c
+
+	remove unnecessary code
+
+2007-11-11 13:31:48  r163  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/shell/groups.c
+
+	memory leak
+
+2007-11-09 15:33:12  r162  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_tcp_multicast.c
+
+	Remove deceptive error when object checking is enabled
+
+2007-11-09 15:17:43  r161  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.c
+
+	memory leaks
+
+2007-11-09 11:11:57  r160  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_lease_request_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_client.c
+	   M /jxta-c/branches/PeerView3/src/jxta_routea.c
+	   M /jxta-c/branches/PeerView3/src/jxta_svc.c
+
+	memory leaks
+
+2007-11-07 07:00:45  r159  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_advertisement.c
+	   M /jxta-c/branches/PeerView3/src/jxta_advertisement.h
+	   M /jxta-c/branches/PeerView3/src/jxta_cm.c
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service_ref.c
+	   M /jxta-c/branches/PeerView3/src/jxta_query.c
+	   M /jxta-c/branches/PeerView3/src/jxta_query.h
+	   M /jxta-c/branches/PeerView3/src/jxta_sql.h
+
+	Issue 20 - use compound SQL queries
+
+2007-11-01 23:09:46  r158  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_query.c
+
+	fix implicit declaration warning and use apr_fnmatch
+
+2007-10-26 14:43:42  r157  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_client.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_provider.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_server.c
+
+	memory leak fixes
+
+2007-10-25 10:02:46  r156  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_client.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_provider.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_provider_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_server.c
+
+	Issue 18 Move handling of provider callbacks to the rdv service.
+
+2007-10-24 10:07:51  r155  vfinley
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_apr.h
+	   M /jxta-c/branches/PeerView3/src/jxta_apr.h.in
+	   M /jxta-c/branches/PeerView3/src/jxta_query.c
+	   M /jxta-c/branches/PeerView3/src/jxta_query.h
+
+	Added code XPATH wildcard support with jxta.  Superceeds the need for libxml2 patch.
+
+2007-10-16 11:18:46  r154  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_advertisement.c
+	   M /jxta-c/branches/PeerView3/src/jxta_test_adv.c
+
+	Parsing of test advertisement failed.
+
+2007-10-12 13:44:45  r153  ExocetRick
+	Changed paths:
+	   A /jxta-c/branches/PeerView3/test/generateConfigs.sh
+
+	Initial commit for script that generates any number of peer environments
+
+2007-10-10 06:01:07  r152  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peer.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peer.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peer_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+
+	Issue 16 enhance auto rdv capabilities
+
+2007-10-10 05:20:55  r151  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_client.c
+
+	memory leak
+
+2007-10-09 13:33:14  r150  slowhog
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_resolver_service_ref.c
+
+	pull in the change in trunk
+
+2007-10-05 15:51:21  r148  slowhog
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peergroup.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peergroup_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_resolver_service_ref.c
+
+	pull in fix in r.147 from trunk
+
+2007-09-30 15:58:01  r146  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	should send pong at exit
+
+2007-09-27 15:28:48  r145  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	memory leak
+
+2007-09-26 15:39:31  r144  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_adv_response_msg.c
+
+	Invalid JXTA_OBJECT_CHECK_VALID statements
+
+2007-09-26 10:46:24  r143  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_adv_response_msg.c
+
+	memory leak
+
+2007-09-26 10:09:35  r142  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_adv_response_msg.c
+
+	memory leak
+
+2007-09-25 20:41:56  r141  exocetrick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/Makefile.am
+	   A /jxta-c/branches/PeerView3/src/jxta_adv_request_msg.c
+	   A /jxta-c/branches/PeerView3/src/jxta_adv_request_msg.h
+	   A /jxta-c/branches/PeerView3/src/jxta_adv_response_msg.c
+	   A /jxta-c/branches/PeerView3/src/jxta_adv_response_msg.h
+	   M /jxta-c/branches/PeerView3/src/jxta_lease_response_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_address_request_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.h
+
+	PA optimization of peerview referrals - Issue 14
+
+2007-09-25 20:03:31  r140  exocetrick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_id_uuid.c
+	   A /jxta-c/branches/PeerView3/src/jxta_id_uuid_priv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_netpg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_pa.c
+	   M /jxta-c/branches/PeerView3/src/jxta_pa.h
+	   M /jxta-c/branches/PeerView3/src/jxta_platformconfig.c
+	   M /jxta-c/branches/PeerView3/src/jxta_stdpg.c
+
+	Add a sequence number UUID to the Peer Advertisement - Issue 13
+
+2007-09-24 17:14:29  r139  exocetrick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_address_request_msg.c
+
+	initialize buffer and pointer
+
+2007-09-13 14:37:18  r136  slowhog
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_tcp_connection.c
+
+	set EndpointSourceAddress correctly in TCP
+
+2007-09-12 21:42:27  r134  slowhog
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_router_client.c
+
+	improve log message
+
+2007-09-12 19:33:47  r132  slowhog
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_lease_request_msg.c
+
+	Use -1 as default to indicate not specified value. 0 is reserved to be disconnect or ask for referral.
+
+2007-09-12 13:52:12  r131  slowhog
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_tcp_connection.c
+
+	Prevent segment fault occurs when connection is closed before established completely, ie. returning from endpoint_add_poll.
+
+2007-09-05 09:13:20  r129  exocetrick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_lease_request_msg.c
+
+	memory leak
+
+2007-09-05 08:21:08  r128  exocetrick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	assign existing address if available
+
+2007-09-05 07:41:47  r127  exocetrick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_lease_response_msg.c
+
+	use proper function name
+
+2007-08-31 14:21:31  r126  exocetrick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_server.c
+
+	Use correct expiration time
+
+2007-08-31 12:48:37  r124  exocetrick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_client.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_server.c
+
+	- Implement referrals in lease request/response for a client.
+
+2007-08-29 09:03:00  r123  exocetrick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_server.c
+
+	double release causing segfault
+
+2007-08-28 10:54:04  r122  exocetrick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	Issue 15. For instance collision, send pong, with peer's instance, to other peer for joining.
+
+2007-08-15 18:32:28  r119  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_service_ref.c
+
+	enable $Id$ keyword support
+
+2007-08-15 17:18:01  r118  slowhog
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/shell/TestApplication.c
+	   M /jxta-c/branches/PeerView3/shell/TestApplication.h
+	   M /jxta-c/branches/PeerView3/shell/cat.c
+	   M /jxta-c/branches/PeerView3/shell/cat.h
+	   M /jxta-c/branches/PeerView3/shell/groups.c
+	   M /jxta-c/branches/PeerView3/shell/groups.h
+	   M /jxta-c/branches/PeerView3/shell/join.c
+	   M /jxta-c/branches/PeerView3/shell/join.h
+	   M /jxta-c/branches/PeerView3/shell/jxta_shell_app_env.c
+	   M /jxta-c/branches/PeerView3/shell/jxta_shell_app_env.h
+	   M /jxta-c/branches/PeerView3/shell/jxta_shell_application.c
+	   M /jxta-c/branches/PeerView3/shell/jxta_shell_application.h
+	   M /jxta-c/branches/PeerView3/shell/jxta_shell_environment.c
+	   M /jxta-c/branches/PeerView3/shell/jxta_shell_environment.h
+	   M /jxta-c/branches/PeerView3/shell/jxta_shell_getopt.c
+	   M /jxta-c/branches/PeerView3/shell/jxta_shell_getopt.h
+	   M /jxta-c/branches/PeerView3/shell/jxta_shell_main.c
+	   M /jxta-c/branches/PeerView3/shell/jxta_shell_main.h
+	   M /jxta-c/branches/PeerView3/shell/jxta_shell_object.c
+	   M /jxta-c/branches/PeerView3/shell/jxta_shell_object.h
+	   M /jxta-c/branches/PeerView3/shell/jxta_shell_tokenizer.c
+	   M /jxta-c/branches/PeerView3/shell/jxta_shell_tokenizer.h
+	   M /jxta-c/branches/PeerView3/shell/kdb.c
+	   M /jxta-c/branches/PeerView3/shell/kdb.h
+	   M /jxta-c/branches/PeerView3/shell/leave.c
+	   M /jxta-c/branches/PeerView3/shell/leave.h
+	   M /jxta-c/branches/PeerView3/shell/peers.c
+	   M /jxta-c/branches/PeerView3/shell/peers.h
+	   M /jxta-c/branches/PeerView3/shell/publish.c
+	   M /jxta-c/branches/PeerView3/shell/publish.h
+	   M /jxta-c/branches/PeerView3/shell/rdvcontrol.c
+	   M /jxta-c/branches/PeerView3/shell/rdvcontrol.h
+	   M /jxta-c/branches/PeerView3/shell/rdvstatus.c
+	   M /jxta-c/branches/PeerView3/shell/rdvstatus.h
+	   M /jxta-c/branches/PeerView3/shell/search.c
+	   M /jxta-c/branches/PeerView3/shell/search.h
+	   M /jxta-c/branches/PeerView3/shell/talk.c
+	   M /jxta-c/branches/PeerView3/shell/talk.h
+	   M /jxta-c/branches/PeerView3/shell/whoami.c
+	   M /jxta-c/branches/PeerView3/shell/whoami.h
+	   M /jxta-c/branches/PeerView3/src/EndpointRouter.h
+	   M /jxta-c/branches/PeerView3/src/jdlist.c
+	   M /jxta-c/branches/PeerView3/src/jdlist.h
+	   M /jxta-c/branches/PeerView3/src/jpr/apr_thread_pool.c
+	   M /jxta-c/branches/PeerView3/src/jpr/apr_thread_pool.h
+	   M /jxta-c/branches/PeerView3/src/jpr/inet_ntop.c
+	   M /jxta-c/branches/PeerView3/src/jpr/jpr.c
+	   M /jxta-c/branches/PeerView3/src/jpr/jpr_apr_wrapper.h
+	   M /jxta-c/branches/PeerView3/src/jpr/jpr_ckcompat.c
+	   M /jxta-c/branches/PeerView3/src/jpr/jpr_core.h
+	   M /jxta-c/branches/PeerView3/src/jpr/jpr_errno.h
+	   M /jxta-c/branches/PeerView3/src/jpr/jpr_excep.c
+	   M /jxta-c/branches/PeerView3/src/jpr/jpr_excep.h
+	   M /jxta-c/branches/PeerView3/src/jpr/jpr_excep_proto.h
+	   M /jxta-c/branches/PeerView3/src/jpr/jpr_priv.h
+	   M /jxta-c/branches/PeerView3/src/jpr/jpr_setjmp.h
+	   M /jxta-c/branches/PeerView3/src/jpr/jpr_types.c
+	   M /jxta-c/branches/PeerView3/src/jpr/jpr_types.h
+	   M /jxta-c/branches/PeerView3/src/jstring.c
+	   M /jxta-c/branches/PeerView3/src/jstring.h
+	   M /jxta-c/branches/PeerView3/src/jxta.c
+	   M /jxta-c/branches/PeerView3/src/jxta.h
+	   M /jxta-c/branches/PeerView3/src/jxta_advertisement.c
+	   M /jxta-c/branches/PeerView3/src/jxta_advertisement.h
+	   M /jxta-c/branches/PeerView3/src/jxta_advertisement_priv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_apa.c
+	   M /jxta-c/branches/PeerView3/src/jxta_apa.h
+	   M /jxta-c/branches/PeerView3/src/jxta_apr.h
+	   M /jxta-c/branches/PeerView3/src/jxta_bidipipe.c
+	   M /jxta-c/branches/PeerView3/src/jxta_bidipipe.h
+	   M /jxta-c/branches/PeerView3/src/jxta_boot.c
+	   M /jxta-c/branches/PeerView3/src/jxta_builtinmodules.c
+	   M /jxta-c/branches/PeerView3/src/jxta_builtinmodules_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_bytevector.c
+	   M /jxta-c/branches/PeerView3/src/jxta_bytevector.h
+	   M /jxta-c/branches/PeerView3/src/jxta_cache_config_adv.c
+	   M /jxta-c/branches/PeerView3/src/jxta_cache_config_adv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_callback.c
+	   M /jxta-c/branches/PeerView3/src/jxta_callback.h
+	   M /jxta-c/branches/PeerView3/src/jxta_cm.c
+	   M /jxta-c/branches/PeerView3/src/jxta_cm.h
+	   M /jxta-c/branches/PeerView3/src/jxta_cm_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_constants.c
+	   M /jxta-c/branches/PeerView3/src/jxta_constants.h
+	   M /jxta-c/branches/PeerView3/src/jxta_cred.c
+	   M /jxta-c/branches/PeerView3/src/jxta_cred.h
+	   M /jxta-c/branches/PeerView3/src/jxta_cred_null.c
+	   M /jxta-c/branches/PeerView3/src/jxta_cred_null.h
+	   M /jxta-c/branches/PeerView3/src/jxta_cred_priv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_debug.c
+	   M /jxta-c/branches/PeerView3/src/jxta_debug.h
+	   M /jxta-c/branches/PeerView3/src/jxta_defloader.c
+	   M /jxta-c/branches/PeerView3/src/jxta_defloader_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_config_adv.c
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_config_adv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service.h
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service_ref.c
+	   M /jxta-c/branches/PeerView3/src/jxta_dq.c
+	   M /jxta-c/branches/PeerView3/src/jxta_dq.h
+	   M /jxta-c/branches/PeerView3/src/jxta_dr.c
+	   M /jxta-c/branches/PeerView3/src/jxta_dr.h
+	   M /jxta-c/branches/PeerView3/src/jxta_dr_priv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_address.c
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_address.h
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_config_adv.c
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_config_adv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_messenger.h
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_service.h
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_service_priv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_errno.h
+	   M /jxta-c/branches/PeerView3/src/jxta_hashtable.c
+	   M /jxta-c/branches/PeerView3/src/jxta_hashtable.h
+	   M /jxta-c/branches/PeerView3/src/jxta_hta.c
+	   M /jxta-c/branches/PeerView3/src/jxta_hta.h
+	   M /jxta-c/branches/PeerView3/src/jxta_id.c
+	   M /jxta-c/branches/PeerView3/src/jxta_id.h
+	   M /jxta-c/branches/PeerView3/src/jxta_id_jxta.c
+	   M /jxta-c/branches/PeerView3/src/jxta_id_priv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_id_uuid.c
+	   M /jxta-c/branches/PeerView3/src/jxta_lease_request_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_lease_request_msg.h
+	   M /jxta-c/branches/PeerView3/src/jxta_lease_response_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_lease_response_msg.h
+	   M /jxta-c/branches/PeerView3/src/jxta_listener.c
+	   M /jxta-c/branches/PeerView3/src/jxta_listener.h
+	   M /jxta-c/branches/PeerView3/src/jxta_log.c
+	   M /jxta-c/branches/PeerView3/src/jxta_log.h
+	   M /jxta-c/branches/PeerView3/src/jxta_log_priv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_mca.c
+	   M /jxta-c/branches/PeerView3/src/jxta_mca.h
+	   M /jxta-c/branches/PeerView3/src/jxta_membership_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_membership_service.h
+	   M /jxta-c/branches/PeerView3/src/jxta_membership_service_null.c
+	   M /jxta-c/branches/PeerView3/src/jxta_membership_service_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_message.c
+	   M /jxta-c/branches/PeerView3/src/jxta_message.h
+	   M /jxta-c/branches/PeerView3/src/jxta_mia.c
+	   M /jxta-c/branches/PeerView3/src/jxta_mia.h
+	   M /jxta-c/branches/PeerView3/src/jxta_module.c
+	   M /jxta-c/branches/PeerView3/src/jxta_module.h
+	   M /jxta-c/branches/PeerView3/src/jxta_module_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_msa.c
+	   M /jxta-c/branches/PeerView3/src/jxta_msa.h
+	   M /jxta-c/branches/PeerView3/src/jxta_netpg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_netpg.h
+	   M /jxta-c/branches/PeerView3/src/jxta_netpg_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_object.c
+	   M /jxta-c/branches/PeerView3/src/jxta_object.h
+	   M /jxta-c/branches/PeerView3/src/jxta_object_priv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_object_ptrwrapper.c
+	   M /jxta-c/branches/PeerView3/src/jxta_object_ptrwrapper.h
+	   M /jxta-c/branches/PeerView3/src/jxta_object_type.c
+	   M /jxta-c/branches/PeerView3/src/jxta_object_type.h
+	   M /jxta-c/branches/PeerView3/src/jxta_objecthashtable.c
+	   M /jxta-c/branches/PeerView3/src/jxta_objecthashtable.h
+	   M /jxta-c/branches/PeerView3/src/jxta_pa.c
+	   M /jxta-c/branches/PeerView3/src/jxta_pa.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peer.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peer.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peer_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peergroup.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peergroup.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peergroup_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peerinfo_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerinfo_service.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peerinfo_service_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peerinfo_service_ref.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_address_assign_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_address_assign_msg.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_address_request_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_address_request_msg.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_ping_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_ping_msg.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_priv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_pga.c
+	   M /jxta-c/branches/PeerView3/src/jxta_pga.h
+	   M /jxta-c/branches/PeerView3/src/jxta_pipe_adv.c
+	   M /jxta-c/branches/PeerView3/src/jxta_pipe_adv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_pipe_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_pipe_service.h
+	   M /jxta-c/branches/PeerView3/src/jxta_pipe_service_impl.h
+	   M /jxta-c/branches/PeerView3/src/jxta_piperesolver_impl.c
+	   M /jxta-c/branches/PeerView3/src/jxta_piperesolver_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_piperesolver_msg.h
+	   M /jxta-c/branches/PeerView3/src/jxta_platformconfig.c
+	   M /jxta-c/branches/PeerView3/src/jxta_platformconfig.h
+	   M /jxta-c/branches/PeerView3/src/jxta_pm.c
+	   M /jxta-c/branches/PeerView3/src/jxta_pm.h
+	   M /jxta-c/branches/PeerView3/src/jxta_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_proffer.c
+	   M /jxta-c/branches/PeerView3/src/jxta_proffer.h
+	   M /jxta-c/branches/PeerView3/src/jxta_qos.c
+	   M /jxta-c/branches/PeerView3/src/jxta_qos.h
+	   M /jxta-c/branches/PeerView3/src/jxta_query.c
+	   M /jxta-c/branches/PeerView3/src/jxta_query.h
+	   M /jxta-c/branches/PeerView3/src/jxta_range.c
+	   M /jxta-c/branches/PeerView3/src/jxta_range.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_config_adv.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_config_adv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_diffusion_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_diffusion_msg.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_lease_options.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_lease_options.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_adhoc.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_client.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_provider.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_provider.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_provider_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_server.c
+	   M /jxta-c/branches/PeerView3/src/jxta_relay.c
+	   M /jxta-c/branches/PeerView3/src/jxta_relay.h
+	   M /jxta-c/branches/PeerView3/src/jxta_relaya.c
+	   M /jxta-c/branches/PeerView3/src/jxta_relaya.h
+	   M /jxta-c/branches/PeerView3/src/jxta_resolver_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_resolver_service.h
+	   M /jxta-c/branches/PeerView3/src/jxta_resolver_service_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_resolver_service_ref.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rm.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rm.h
+	   M /jxta-c/branches/PeerView3/src/jxta_routea.c
+	   M /jxta-c/branches/PeerView3/src/jxta_routea.h
+	   M /jxta-c/branches/PeerView3/src/jxta_router_client.c
+	   M /jxta-c/branches/PeerView3/src/jxta_router_service.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rq.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rq.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rr.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rr.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rsrdi.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rsrdi.h
+	   M /jxta-c/branches/PeerView3/src/jxta_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_service.h
+	   M /jxta-c/branches/PeerView3/src/jxta_service_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_socket_tunnel.c
+	   M /jxta-c/branches/PeerView3/src/jxta_socket_tunnel.h
+	   M /jxta-c/branches/PeerView3/src/jxta_sql.h
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi.c
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi.h
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_config_adv.c
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_config_adv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_service.h
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_service_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_service_ref.c
+	   M /jxta-c/branches/PeerView3/src/jxta_stdpg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_stdpg_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_string.c
+	   M /jxta-c/branches/PeerView3/src/jxta_string.h
+	   M /jxta-c/branches/PeerView3/src/jxta_svc.c
+	   M /jxta-c/branches/PeerView3/src/jxta_svc.h
+	   M /jxta-c/branches/PeerView3/src/jxta_tcp_message_packet_header.c
+	   M /jxta-c/branches/PeerView3/src/jxta_tcp_message_packet_header.h
+	   M /jxta-c/branches/PeerView3/src/jxta_tcp_multicast.c
+	   M /jxta-c/branches/PeerView3/src/jxta_tcp_multicast.h
+	   M /jxta-c/branches/PeerView3/src/jxta_test_adv.c
+	   M /jxta-c/branches/PeerView3/src/jxta_test_adv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_transport.c
+	   M /jxta-c/branches/PeerView3/src/jxta_transport.h
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_http.c
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_http_client.c
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_http_client.h
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_http_poller.c
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_http_poller.h
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_tcp.c
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_tcp_connection.c
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_tcp_connection.h
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_tcp_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_welcome_message.c
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_welcome_message.h
+	   M /jxta-c/branches/PeerView3/src/jxta_tta.c
+	   M /jxta-c/branches/PeerView3/src/jxta_tta.h
+	   M /jxta-c/branches/PeerView3/src/jxta_types.h
+	   M /jxta-c/branches/PeerView3/src/jxta_unipipe_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_util_priv.c
+	   M /jxta-c/branches/PeerView3/src/jxta_util_priv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_vector.c
+	   M /jxta-c/branches/PeerView3/src/jxta_vector.h
+	   M /jxta-c/branches/PeerView3/src/jxta_walk_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_walk_msg.h
+	   M /jxta-c/branches/PeerView3/src/jxta_wire_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_wm.c
+	   M /jxta-c/branches/PeerView3/src/jxta_wm.h
+	   M /jxta-c/branches/PeerView3/src/jxta_xml_util.c
+	   M /jxta-c/branches/PeerView3/src/jxta_xml_util.h
+	   M /jxta-c/branches/PeerView3/src/localconf.h
+	   M /jxta-c/branches/PeerView3/src/queue.c
+	   M /jxta-c/branches/PeerView3/src/queue.h
+	   M /jxta-c/branches/PeerView3/src/trailing_average.c
+	   M /jxta-c/branches/PeerView3/src/trailing_average.h
+	   M /jxta-c/branches/PeerView3/test/any_adv_test.c
+	   M /jxta-c/branches/PeerView3/test/apa_adv_test.c
+	   M /jxta-c/branches/PeerView3/test/cm_test.c
+	   M /jxta-c/branches/PeerView3/test/dq_adv_test.c
+	   M /jxta-c/branches/PeerView3/test/dr_adv_test.c
+	   M /jxta-c/branches/PeerView3/test/dummypg_test.c
+	   M /jxta-c/branches/PeerView3/test/dummypg_test_private.h
+	   M /jxta-c/branches/PeerView3/test/endpoint_benchmark.c
+	   M /jxta-c/branches/PeerView3/test/endpoint_stress_test.c
+	   M /jxta-c/branches/PeerView3/test/endpoint_test.c
+	   M /jxta-c/branches/PeerView3/test/excep_test.c
+	   M /jxta-c/branches/PeerView3/test/hta_adv_test.c
+	   M /jxta-c/branches/PeerView3/test/http_client_test.c
+	   M /jxta-c/branches/PeerView3/test/jstring_test.c
+	   M /jxta-c/branches/PeerView3/test/jstring_test.h
+	   M /jxta-c/branches/PeerView3/test/jxta_bench_comm.c
+	   M /jxta-c/branches/PeerView3/test/jxta_bench_pipe_resolution.c
+	   M /jxta-c/branches/PeerView3/test/jxta_bidipipe_test.c
+	   M /jxta-c/branches/PeerView3/test/jxta_bytevector_test.c
+	   M /jxta-c/branches/PeerView3/test/jxta_client_tunnel.c
+	   M /jxta-c/branches/PeerView3/test/jxta_discovery_publication_test.c
+	   M /jxta-c/branches/PeerView3/test/jxta_discovery_test.c
+	   M /jxta-c/branches/PeerView3/test/jxta_hash_test.c
+	   M /jxta-c/branches/PeerView3/test/jxta_id_test.c
+	   M /jxta-c/branches/PeerView3/test/jxta_join_test.c
+	   M /jxta-c/branches/PeerView3/test/jxta_log_unit_test.c
+	   M /jxta-c/branches/PeerView3/test/jxta_objecthash_test.c
+	   M /jxta-c/branches/PeerView3/test/jxta_pg_test.c
+	   M /jxta-c/branches/PeerView3/test/jxta_rdvclient_listener_test.c
+	   M /jxta-c/branches/PeerView3/test/jxta_rdvclient_test.c
+	   M /jxta-c/branches/PeerView3/test/jxta_rdvserver_test.c
+	   M /jxta-c/branches/PeerView3/test/jxta_resolver_test.c
+	   M /jxta-c/branches/PeerView3/test/jxta_server_tunnel.c
+	   M /jxta-c/branches/PeerView3/test/jxta_shell.c
+	   M /jxta-c/branches/PeerView3/test/jxta_vector_test.c
+	   M /jxta-c/branches/PeerView3/test/jxta_xml_util_test.c
+	   M /jxta-c/branches/PeerView3/test/jxtaobject_test.c
+	   M /jxta-c/branches/PeerView3/test/jxtatcptest.c
+	   M /jxta-c/branches/PeerView3/test/lease_msg_test.c
+	   M /jxta-c/branches/PeerView3/test/mia_adv_test.c
+	   M /jxta-c/branches/PeerView3/test/msg_test.c
+	   M /jxta-c/branches/PeerView3/test/npg_test.c
+	   M /jxta-c/branches/PeerView3/test/pa_adv_test.c
+	   M /jxta-c/branches/PeerView3/test/peerlist_test.c
+	   M /jxta-c/branches/PeerView3/test/peerview_address_assign_msg_test.c
+	   M /jxta-c/branches/PeerView3/test/peerview_address_request_msg_test.c
+	   M /jxta-c/branches/PeerView3/test/peerview_ping_msg_test.c
+	   M /jxta-c/branches/PeerView3/test/peerview_pong_msg_test.c
+	   M /jxta-c/branches/PeerView3/test/pg_start_stop_test.c
+	   M /jxta-c/branches/PeerView3/test/pga_adv_test.c
+	   M /jxta-c/branches/PeerView3/test/pga_test.c
+	   M /jxta-c/branches/PeerView3/test/rdv_adv_test.c
+	   M /jxta-c/branches/PeerView3/test/rdv_diffusion_msg_test.c
+	   M /jxta-c/branches/PeerView3/test/rdv_lease_options_test.c
+	   M /jxta-c/branches/PeerView3/test/relay_adv_test.c
+	   M /jxta-c/branches/PeerView3/test/route_adv_test.c
+	   M /jxta-c/branches/PeerView3/test/rq_adv_test.c
+	   M /jxta-c/branches/PeerView3/test/rr_adv_test.c
+	   M /jxta-c/branches/PeerView3/test/srdi_test.c
+	   M /jxta-c/branches/PeerView3/test/svc_adv_test.c
+	   M /jxta-c/branches/PeerView3/test/timer_test.c
+	   M /jxta-c/branches/PeerView3/test/tta_adv_test.c
+	   M /jxta-c/branches/PeerView3/test/unit_test_runner.c
+	   M /jxta-c/branches/PeerView3/test/unittest_jxta_func.c
+	   M /jxta-c/branches/PeerView3/test/unittest_jxta_func.h
+	   M /jxta-c/branches/PeerView3/test/xmltest.c
+	   M /jxta-c/branches/PeerView3/tutorials/jxta_tutorial.h
+	   M /jxta-c/branches/PeerView3/tutorials/jxta_tutorial0.c
+	   M /jxta-c/branches/PeerView3/tutorials/jxta_tutorial1.c
+	   M /jxta-c/branches/PeerView3/tutorials/jxta_tutorial2.c
+	   M /jxta-c/branches/PeerView3/tutorials/jxta_tutorial_args.c
+	   M /jxta-c/branches/PeerView3/tutorials/jxta_tutorial_args.h
+	   M /jxta-c/branches/PeerView3/tutorials/jxta_tutorial_main.c
+	   M /jxta-c/branches/PeerView3/tutorials/jxta_tutorial_shared.c
+	   M /jxta-c/branches/PeerView3/tutorials/jxta_tutorial_shared.h
+	   M /jxta-c/branches/PeerView3/tutorials/shared_tests.c
+	   M /jxta-c/branches/PeerView3/tutorials/whisp.c
+	   M /jxta-c/branches/PeerView3/win32/confgui/src/error.c
+	   M /jxta-c/branches/PeerView3/win32/confgui/src/error.h
+	   M /jxta-c/branches/PeerView3/win32/confgui/src/filebytes.c
+	   M /jxta-c/branches/PeerView3/win32/confgui/src/filebytes.h
+	   M /jxta-c/branches/PeerView3/win32/confgui/src/jxtaconf.h
+	   M /jxta-c/branches/PeerView3/win32/confgui/src/resource.h
+	   M /jxta-c/branches/PeerView3/win32/jxta/jprdll/dllmain.c
+	   M /jxta-c/branches/PeerView3/win32/jxta/jprdll/resource.h
+	   M /jxta-c/branches/PeerView3/win32/jxta/jxtadll/dllmain.c
+	   M /jxta-c/branches/PeerView3/win32/jxta/jxtadll/resource.h
+
+	enable $Id$ keyword support
+
+2007-08-10 17:59:52  r117  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_client.c
+
+	- handle multiple candidates properly
+	- memory leak of the candidate object
+
+2007-08-10 17:30:13  r116  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_client.c
+
+	checking the wrong object
+
+2007-08-09 10:08:02  r115  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_provider.c
+
+	memory leak
+
+	submitted by: Brian Wilson
+
+2007-08-08 19:49:47  r114  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	memory leak
+
+2007-08-08 19:29:52  r113  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_tta.c
+
+	memory leak
+
+2007-08-08 18:40:49  r112  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	memory leaks
+
+2007-08-08 15:33:57  r111  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	memory leaks
+
+2007-08-08 10:41:42  r110  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	ensure we are an active member of a peerview
+
+2007-08-07 18:08:08  r109  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	Allow all rdvs to assign addresses.
+
+2007-08-07 05:07:48  r108  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_lease_response_msg.c
+
+	remove compiler warning
+
+2007-08-07 04:07:43  r107  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_lease_response_msg.c
+
+	memory leaks
+
+2007-08-06 07:22:09  r106  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_ping_msg.c
+
+	memory leak
+
+2007-08-06 06:59:06  r105  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+
+	protect mutex from unlock
+
+2007-08-06 06:51:20  r104  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+
+	fix segfault when there's no config change
+
+2007-08-03 09:55:37  r103  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_service_ref.c
+
+	memory leaks
+
+	reported by: Brian Wilson
+
+2007-08-02 16:53:08  r102  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	assigner should be released
+
+2007-08-02 09:31:38  r101  exocetrick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	memory leak
+
+2007-08-02 07:24:44  r100  exocetrick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	change to correct description
+
+2007-08-01 07:42:17  r99  exocetrick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_address_assign_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_address_request_msg.c
+
+	memory leaks
+
+2007-07-25 08:56:39  r98  slowhog
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_server.c
+
+	Lock is required to ensure atomic operation
+
+	Submitted by: David J Deterra
+
+2007-07-23 19:19:55  r96  slowhog
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_client.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_server.c
+
+	- Weak reference to PG in rdv_service.
+	- be more defensive in rdv_service_client
+	- fix a logical bug in rdv_service_client prevents from probing other RDV candidate
+	- prevent from scheduling job if rdv server is asked to stop.
+	- prevent ftom starting rdv service more than once.
+
+	issue: 12
+	submitted by: David Deterra
+	reviewed by: Henry the slowhog
+
+2007-07-11 19:29:27  r94  slowhog
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_netpg.c
+
+	Fix potential leak
+
+2007-06-28 09:42:26  r92  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	handle merging of a peerview
+
+2007-06-26 13:36:26  r87  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_test_adv.c
+
+	unintended commit - revert to previous
+
+2007-06-26 13:24:16  r86  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_resolver_service_ref.c
+
+	unintended commit - revert to previous file
+
+2007-06-26 13:14:03  r85  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_apr.h
+
+	unintended commit - revert back to previous
+
+2007-06-26 13:02:56  r84  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_apr.h
+	   M /jxta-c/branches/PeerView3/src/jxta_cm.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_resolver_service_ref.c
+	   M /jxta-c/branches/PeerView3/src/jxta_test_adv.c
+
+	display cluster_divisor
+
+2007-06-25 15:36:13  r83  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_cm.c
+
+	modify expiration time in addition to lifetime when an advertisement is updated
+
+2007-06-22 16:31:55  r82  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_cm.c
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service_ref.c
+
+	Additional fixes for zero-expiration ads (see r65)
+
+2007-06-22 12:09:31  r77  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	remove compiler warning
+
+2007-06-22 10:39:40  r76  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi.c
+
+	memory leak
+
+2007-06-22 10:04:48  r75  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_service_ref.c
+
+	fix compiler warnings and consolidate code
+
+2007-06-20 15:42:42  r65  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service_ref.c
+
+	zero expiration ads should be ignored and query continued
+
+2007-06-20 10:34:32  r64  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_diffusion_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_client.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_provider.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_server.c
+
+	handle rdv diffusion for wild card queries and walks.
+
+2007-06-20 09:46:09  r63  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.c
+
+	memory leaks
+
+2007-06-20 09:43:53  r62  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+
+	memory leak
+
+2007-06-19 08:49:39  r54  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_server.c
+
+	remove compiler warnings.
+
+2007-06-19 08:31:33  r53  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_server.c
+
+	Check policy.
+
+2007-06-14 08:44:58  r50  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_cm.c
+
+	messages changed to paranoid
+
+2007-06-11 15:53:42  r43  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service_ref.c
+	   M /jxta-c/branches/PeerView3/src/jxta_proffer.c
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_service_ref.c
+	   M /jxta-c/branches/PeerView3/src/jxta_stdpg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_transport.c
+
+	more memory leak and compiler warning fixes
+
+2007-06-11 14:17:56  r41  ddeterra
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_cm.c
+
+	memory leak and compiler warning fixes
+
+2007-06-07 17:39:36  r40  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_vector.c
+
+	Define functions properly.
+
+2007-06-07 09:22:50  r39  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service_ref.c
+
+	Store replicas properly
+
+2007-06-06 12:58:08  r38  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/shell/rdvstatus.c
+
+	Add the cluster number to the output
+
+2007-06-06 12:14:16  r37  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_router_client.c
+
+	Remove demangle_ea call and pass dest unchanged
+
+2007-06-06 11:21:57  r36  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_server.c
+
+	Implement referrals within the peerview
+
+2007-06-06 11:09:02  r35  ExocetRick
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/src/jxta_vector.c
+	   M /jxta-c/branches/PeerView3/src/jxta_vector.h
+
+	Remove pointer from function reference
+
+2007-05-31 17:13:15  r26  slowhog
+	Changed paths:
+	   M /jxta-c/branches/PeerView3/jxta.net/shell/AssemblyInfo.cs
+	   M /jxta-c/branches/PeerView3/jxta.net/src/AssemblyInfo.cs
+	   M /jxta-c/branches/PeerView3/shell/rdvstatus.c
+	   M /jxta-c/branches/PeerView3/src/Makefile.am
+	   M /jxta-c/branches/PeerView3/src/jpr/apr_thread_pool.c
+	   M /jxta-c/branches/PeerView3/src/jpr/apr_thread_pool.h
+	   M /jxta-c/branches/PeerView3/src/jstring.c
+	   M /jxta-c/branches/PeerView3/src/jxta_advertisement.c
+	   M /jxta-c/branches/PeerView3/src/jxta_advertisement.h
+	   M /jxta-c/branches/PeerView3/src/jxta_bytevector.c
+	   M /jxta-c/branches/PeerView3/src/jxta_cm.c
+	   M /jxta-c/branches/PeerView3/src/jxta_cm_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_discovery_service_ref.c
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_address.c
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_address.h
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_messenger.h
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_service.h
+	   M /jxta-c/branches/PeerView3/src/jxta_endpoint_service_priv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_lease_request_msg.c
+	   M /jxta-c/branches/PeerView3/src/jxta_lease_request_msg.h
+	   M /jxta-c/branches/PeerView3/src/jxta_msa.c
+	   M /jxta-c/branches/PeerView3/src/jxta_object_type.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peer.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peer.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peer_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peergroup.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peergroup.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.c
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview.h
+	   A /jxta-c/branches/PeerView3/src/jxta_peerview_address_assign_msg.c
+	   A /jxta-c/branches/PeerView3/src/jxta_peerview_address_assign_msg.h
+	   A /jxta-c/branches/PeerView3/src/jxta_peerview_address_request_msg.c
+	   A /jxta-c/branches/PeerView3/src/jxta_peerview_address_request_msg.h
+	   A /jxta-c/branches/PeerView3/src/jxta_peerview_ping_msg.c
+	   A /jxta-c/branches/PeerView3/src/jxta_peerview_ping_msg.h
+	   A /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.c
+	   A /jxta-c/branches/PeerView3/src/jxta_peerview_pong_msg.h
+	   M /jxta-c/branches/PeerView3/src/jxta_peerview_priv.h
+	   M /jxta-c/branches/PeerView3/src/jxta_piperesolver_impl.c
+	   M /jxta-c/branches/PeerView3/src/jxta_pm.c
+	   M /jxta-c/branches/PeerView3/src/jxta_pm.h
+	   M /jxta-c/branches/PeerView3/src/jxta_query.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_config_adv.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_config_adv.h
+	   A /jxta-c/branches/PeerView3/src/jxta_rdv_diffusion_msg.c
+	   A /jxta-c/branches/PeerView3/src/jxta_rdv_diffusion_msg.h
+	   A /jxta-c/branches/PeerView3/src/jxta_rdv_lease_options.c
+	   A /jxta-c/branches/PeerView3/src/jxta_rdv_lease_options.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_adhoc.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_client.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_provider.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_provider_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_rdv_service_server.c
+	   M /jxta-c/branches/PeerView3/src/jxta_relay.c
+	   M /jxta-c/branches/PeerView3/src/jxta_relaya.c
+	   M /jxta-c/branches/PeerView3/src/jxta_relaya.h
+	   M /jxta-c/branches/PeerView3/src/jxta_resolver_service_ref.c
+	   M /jxta-c/branches/PeerView3/src/jxta_router_client.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rq.c
+	   M /jxta-c/branches/PeerView3/src/jxta_rq.h
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_service.h
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_service_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_srdi_service_ref.c
+	   M /jxta-c/branches/PeerView3/src/jxta_svc.c
+	   M /jxta-c/branches/PeerView3/src/jxta_svc.h
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_http.c
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_tcp.c
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_tcp_connection.c
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_tcp_connection.h
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_tcp_private.h
+	   M /jxta-c/branches/PeerView3/src/jxta_transport_welcome_message.c
+	   M /jxta-c/branches/PeerView3/src/jxta_tta.c
+	   M /jxta-c/branches/PeerView3/src/jxta_unipipe_service.c
+	   M /jxta-c/branches/PeerView3/src/jxta_util_priv.c
+	   M /jxta-c/branches/PeerView3/src/jxta_walk_msg.c
+	   M /jxta-c/branches/PeerView3/test/LeaseRequest.xml
+	   M /jxta-c/branches/PeerView3/test/Makefile.am
+	   A /jxta-c/branches/PeerView3/test/PeerviewAddressAssign.xml
+	   A /jxta-c/branches/PeerView3/test/PeerviewAddressRequest.xml
+	   A /jxta-c/branches/PeerView3/test/PeerviewPing.xml
+	   A /jxta-c/branches/PeerView3/test/PeerviewPong.xml
+	   A /jxta-c/branches/PeerView3/test/RdvDiffusion.xml
+	   A /jxta-c/branches/PeerView3/test/RelayAdvertisement.xml
+	   D /jxta-c/branches/PeerView3/test/RelayConfig.xml
+	   A /jxta-c/branches/PeerView3/test/ResolverQuery.xml
+	   A /jxta-c/branches/PeerView3/test/endpoint_benchmark.c
+	   M /jxta-c/branches/PeerView3/test/jxta_rdvclient_test.c
+	   M /jxta-c/branches/PeerView3/test/jxta_resolver_test.c
+	   M /jxta-c/branches/PeerView3/test/pa_adv_test.c
+	   A /jxta-c/branches/PeerView3/test/peerview_address_assign_msg_test.c
+	   A /jxta-c/branches/PeerView3/test/peerview_address_request_msg_test.c
+	   A /jxta-c/branches/PeerView3/test/peerview_ping_msg_test.c
+	   A /jxta-c/branches/PeerView3/test/peerview_pong_msg_test.c
+	   A /jxta-c/branches/PeerView3/test/rdv_diffusion_msg_test.c
+	   A /jxta-c/branches/PeerView3/test/rdv_lease_options_test.c
+	   M /jxta-c/branches/PeerView3/test/relay_adv_test.c
+	   M /jxta-c/branches/PeerView3/test/route_adv_test.c
+	   D /jxta-c/branches/PeerView3/test/rq.xml
+	   M /jxta-c/branches/PeerView3/test/rq_adv_test.c
+	   M /jxta-c/branches/PeerView3/test/unit_test_runner.c
+	   M /jxta-c/branches/PeerView3/win32/installdev/jxta.wxs
+
+	Development branch for new peerview protocol
+
 2006-10-11 20:13  slowhog
 
 	* src/jxta_cm.c (1.162): Issue number: 281 Submitted by: Henry the
