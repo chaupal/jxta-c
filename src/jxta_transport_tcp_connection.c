@@ -822,6 +822,7 @@ static apr_status_t process_welcome(Jxta_transport_tcp_connection *me)
     jstring_append_0(wlcm_str, data, len);
     me->its_welcome = welcome_message_new_2(wlcm_str);
     JXTA_OBJECT_RELEASE(wlcm_str);
+    free(data);
 
     if (me->its_welcome == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Remote welcome message is malformed.\n");
