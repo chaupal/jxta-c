@@ -409,7 +409,11 @@ JXTA_DECLARE(Jxta_status) jxta_test_adv_set_IdAttr1(Jxta_test_adv * ad, const ch
 {
 
     if (val != NULL) {
+        if (NULL != ad->IdAttr1) {
+            free(ad->IdAttr1);
+        }
         ad->IdAttr1 = calloc(1, strlen(val) + 1);
+        if (NULL == ad->IdAttr1) return JXTA_NOMEM;
         strcpy(ad->IdAttr1, val);
     } else {
         return JXTA_INVALID_ARGUMENT;
@@ -434,7 +438,12 @@ JXTA_DECLARE(Jxta_status) jxta_test_adv_set_Id(Jxta_test_adv * ad, const char *v
 {
 
     if (val != NULL) {
+        if (NULL != ad->Id) {
+            free(ad->Id);
+        }
         ad->Id = calloc(1, strlen(val) + 1);
+        if (NULL == ad->Id) return JXTA_NOMEM;
+
         strcpy(ad->Id, val);
     } else {
         return JXTA_INVALID_ARGUMENT;
@@ -447,10 +456,19 @@ JXTA_DECLARE(Jxta_status) jxta_test_adv_set_IdAttr(Jxta_test_adv * ad, const cha
 {
 
     if (val != NULL) {
+        if (NULL != ad->IdAttr) {
+            free(ad->IdAttr1);
+        }
         ad->IdAttr = calloc(1, strlen(val) + 1);
+        if (NULL == ad->IdAttr) return JXTA_NOMEM;
         strcpy(ad->IdAttr, val);
         if (NULL != range) {
+            if (NULL != ad->IdAttrRange) {
+                free(ad->IdAttrRange);
+            }
             ad->IdAttrRange = calloc(1, strlen(range) + 1);
+            if (NULL == ad->IdAttrRange) return JXTA_NOMEM;
+
             strcpy(ad->IdAttrRange, range);
             jxta_test_adv_add_range(ad, "testId", "IdAttribute", range);
         }
@@ -487,7 +505,12 @@ JXTA_DECLARE(Jxta_status) jxta_test_adv_set_Type(Jxta_test_adv * ad, const char 
 {
 
     if (val != NULL) {
+        if (NULL != ad->Type) {
+            free(ad->Type);
+        }
         ad->Type = calloc(1, strlen(val) + 1);
+        if (NULL == ad->Type) return JXTA_NOMEM;
+
         strcpy(ad->Type, val);
     } else {
         return JXTA_INVALID_ARGUMENT;
@@ -512,7 +535,12 @@ JXTA_DECLARE(Jxta_status) jxta_test_adv_set_NameAttr1(Jxta_test_adv * ad, const 
 {
 
     if (val != NULL) {
+        if (NULL != ad->NameAttr1) {
+            free(ad->NameAttr1);
+        }
         ad->NameAttr1 = calloc(1, strlen(val) + 1);
+        if (NULL == ad->NameAttr1) return JXTA_NOMEM;
+
         strcpy(ad->NameAttr1, val);
     } else {
         return JXTA_INVALID_ARGUMENT;
@@ -537,7 +565,12 @@ Jxta_status jxta_test_adv_set_NameAttr2(Jxta_test_adv * ad, const char *val)
 {
 
     if (val != NULL) {
-        ad->NameAttr2 = malloc(strlen(val) + 1);
+        if (NULL != ad->NameAttr2) {
+            free(ad->NameAttr2);
+        }
+        ad->NameAttr2 = calloc(1, strlen(val) + 1);
+        if (NULL == ad->NameAttr2) return JXTA_NOMEM;
+
         strcpy(ad->NameAttr2, val);
     } else {
         return JXTA_INVALID_ARGUMENT;
@@ -562,7 +595,12 @@ JXTA_DECLARE(Jxta_status) jxta_test_adv_set_Name(Jxta_test_adv * ad, const char 
 {
 
     if (val != NULL) {
+        if (NULL != ad->Name) {
+            free(ad->Name);
+        }
         ad->Name = calloc(1, strlen(val) + 1);
+        if (NULL == ad->Name) return JXTA_NOMEM;
+
         strcpy(ad->Name, val);
     } else {
         return JXTA_INVALID_ARGUMENT;
@@ -575,10 +613,15 @@ JXTA_DECLARE(Jxta_status) jxta_test_adv_set_GenericNumeric(Jxta_test_adv * ad, c
 {
 
     if (val != NULL) {
+        if (NULL != ad->GenericNumeric) {
+            free(ad->GenericNumeric);
+        }
         ad->GenericNumeric = calloc(1, strlen(val) + 1);
+        if (NULL == ad->GenericNumeric) return JXTA_NOMEM;
         strcpy(ad->GenericNumeric, val);
         if (NULL != range) {
             ad->GenericNumericRange = calloc(1, strlen(range) + 1);
+            if (NULL == ad->GenericNumericRange) return JXTA_NOMEM;
             strcpy(ad->GenericNumericRange, range);
             jxta_test_adv_add_range(ad, "GenericNumeric", NULL, range);
         }
