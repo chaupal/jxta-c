@@ -11,6 +11,8 @@ extern "C" {
 };
 #endif
 
+#define SRDI_DELTA_OPTIMIZATIONS  "3.1"
+
 typedef struct _jxta_version Jxta_version;
 
 JXTA_DECLARE(Jxta_version *) jxta_version_new(void);
