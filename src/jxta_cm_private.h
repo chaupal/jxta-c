@@ -116,10 +116,13 @@ extern "C" {
 #define CM_COL_TimeOut "TimeOut"
 #define CM_COL_OriginalTimeout "TimeOutOriginal"
 #define CM_COL_TimeOutForOthers "TimeOutOthers"
+#define CM_COL_NextUpdate "NextUpdate"
+#define CM_COL_DeltaWindow "DeltaWindow"
 #define CM_COL_Advert "Advert"
 #define CM_COL_SeqNumber "SeqNumber"
 #define CM_COL_DBAlias "DBAlias"
 #define CM_COL_Replica "Replica"
+#define CM_COL_Replicate "Replicate"
 
 typedef struct jxta_cache_entry Jxta_cache_entry;
 
@@ -281,6 +284,14 @@ Jxta_status cm_get_srdi_with_seq_number (Jxta_cm * me, JString * jPeerid, Jxta_s
  */
 void cm_remove_srdi_delta_entries(Jxta_cm * self, JString * jPeerid, Jxta_vector * entries);
 
+Jxta_status cm_get_delta_entries_for_update(Jxta_cm * self, const char *name, JString *peer, Jxta_hashtable ** entries);
+
+Jxta_status cm_update_delta_entries(Jxta_cm * self, JString *jPeerid, JString * jHandler, Jxta_vector * entries, Jxta_expiration_time next_update);
+
+Jxta_status cm_update_delta_entry(Jxta_cm * self, JString * jPeerid, JString * jHandler, Jxta_SRDIEntryElement * entry, Jxta_expiration_time next_update);
+
+Jxta_status cm_expand_delta_entries(Jxta_cm * self, Jxta_vector * msg_entries, JString * peerid, Jxta_vector ** ret_entries);
+
 /**
  * Save the SRDI entry in the SRDI Delta table for the peer.
  *
@@ -290,19 +301,24 @@ void cm_remove_srdi_delta_entries(Jxta_cm * self, JString * jPeerid, Jxta_vector
  * @param entry Jxta_SRDIEntryElement to save
  * @param jNewValue New value if there is an entry in the table for the sequence number
  * @param newSequenceNumber New seqeuence number if an entry exists for this entry
+ * @param update_srdi If set to true the threshold has been met for updating the srdi entry at the rendezvous
+ * @param window The percentage of the expiration used to send SRDI delta updates for duplicates
+ *
  * @return Jxta_status 
  */
-Jxta_status cm_save_delta_entry(Jxta_cm * self, JString * jPeerid, JString * jHandler, Jxta_SRDIEntryElement * entry, JString **jNewValue, Jxta_sequence_number *newSeqNumber);
+Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jHandler, Jxta_SRDIEntryElement * entry,
+                                JString ** jNewValue, Jxta_sequence_number * newSeqNumber, Jxta_boolean * update_srdi, int window);
 
 /**
  * Get the entries with the sequence number in resendEntries
  *
  * @param Jxta_cm (A ptr to) the cm object to apply the operation to
+ * @param peerid_j JString pointer of the peerid string
  * @param resendEntries Jxta_vector of Jxta_SRDIEntryElement
  * @param entries Location to store Jxta_vector of Jxta_SRDIEntryElement with matching sequence numbers
  * @return Jxta_status
  */
-Jxta_status cm_get_resend_delta_entries(Jxta_cm * self, Jxta_vector * resendEntries, Jxta_vector ** entries);
+Jxta_status cm_get_resend_delta_entries(Jxta_cm * self, JString * peerid_j, Jxta_vector * resendEntries, Jxta_vector ** entries);
 
 /**
  * Save the Replica entry in the given folder 

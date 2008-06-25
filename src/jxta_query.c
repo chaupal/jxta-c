@@ -190,7 +190,7 @@ JXTA_DECLARE(Jxta_query_context *) jxta_query_new(const char *q)
     jctx->queryNameSpace = jstring_new_0();
     jctx->origQuery = jstring_new_2(q);
     jctx->sqlcmd = jstring_new_2(SQL_SELECT);
-    jstring_append_2(jctx->sqlcmd, SQL_ASTRIX);
+    jstring_append_2(jctx->sqlcmd, SQL_ASTERISK);
     jstring_append_2(jctx->sqlcmd, SQL_FROM);
     jstring_append_2(jctx->sqlcmd, CM_TBL_ELEM_ATTRIBUTES);
     jstring_append_2(jctx->sqlcmd, SQL_WHERE);

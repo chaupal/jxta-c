@@ -203,6 +203,9 @@ static void DRE_Free(Jxta_object * o)
     if (dre->range) {
         JXTA_OBJECT_RELEASE(dre->range);
     }
+    if (dre->sn_cs_values) {
+        JXTA_OBJECT_RELEASE(dre->sn_cs_values);
+    }
     free((void *) o);
 }
 
@@ -251,6 +254,9 @@ static void handleEntry(void *userdata, const XML_Char * cd, int len)
             } else if (0 == strcmp("nSpace", *atts)) {
                 entry->nameSpace = jstring_new_1(strlen(atts[1]));
                 jstring_append_0(entry->nameSpace, atts[1], strlen(atts[1]));
+            } else if (0 == strcmp("sNs_csv", *atts)) {
+                entry->sn_cs_values = jstring_new_1(strlen(atts[1]));
+                jstring_append_0(entry->sn_cs_values, atts[1], strlen(atts[1]));
             } else if (0 == strcmp("sN", *atts)) {
                 entry->seqNumber = apr_atoi64(atts[1]);
             } else if (0 == strcmp("resend", *atts)) {
@@ -469,7 +475,11 @@ Jxta_status srdi_message_print(Jxta_SRDIMessage * ad, JString * js)
             jstring_append_1(js, anElement->advId);
             jstring_append_2(js, "\"");
         }
-
+        if (NULL != anElement->sn_cs_values) {
+            jstring_append_2(js, " sNs_csv=\"");
+            jstring_append_1(js, anElement->sn_cs_values);
+            jstring_append_2(js, "\"");
+        }
         if (NULL != anElement->range) {
             jstring_append_2(js, " Range=\"");
             jstring_append_1(js, anElement->range);
@@ -628,7 +638,9 @@ static void entry_element_free(Jxta_object * o)
     if (dse->advId != NULL) {
         JXTA_OBJECT_RELEASE(dse->advId);
     }
-    
+    if (dse->sn_cs_values != NULL) {
+        JXTA_OBJECT_RELEASE(dse->sn_cs_values);
+    }
     free((void *) o);
 }
 
@@ -649,6 +661,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_element_clone(Jxta_SRDIEntryElem
     newEntry->replicate = entry->replicate;
     newEntry->seqNumber = entry->seqNumber;
     newEntry->expiration = entry->expiration;
+    newEntry->next_update_time = entry->next_update_time;
 
     if (newEntry->seqNumber > 0) {
         return newEntry;
@@ -678,6 +691,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_1(JString * key, JSt
     dse->expiration = expiration;
     dse->seqNumber = 0;
     dse->resend = FALSE;
+    dse->next_update_time = 0;
     dse->replicate = TRUE;
     return dse;
 }
@@ -701,6 +715,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_2(JString * key, JSt
     dse->seqNumber = 0;
     dse->expiration = expiration;
     dse->resend = FALSE;
+    dse->next_update_time = 0;
     dse->replicate = TRUE;
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "This is the spot in number 2 %s \n", jstring_get_string(dse->key));
     return dse;
@@ -726,6 +741,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_3(JString * key, JSt
     dse->seqNumber = seqNumber;
     dse->expiration = expiration;
     dse->resend = FALSE;
+    dse->next_update_time = 0 ;
     dse->replicate = TRUE;
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "This is the spot in number 3 %s \n", jstring_get_string(dse->key));
     return dse;
@@ -752,6 +768,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_4(JString * key, JSt
     dse->seqNumber = seqNumber;
     dse->expiration = expiration;
     dse->resend = FALSE;
+    dse->next_update_time = 0;
     dse->replicate = replicate;
     return dse;
 }
@@ -766,6 +783,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_resend(Jxta_sequence
     dse->seqNumber = seqNumber;
     dse->expiration = 0;
     dse->resend = TRUE;
+    dse->next_update_time = 0;
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "This is the spot in number 4\n");
     return dse;
 }

@@ -86,9 +86,11 @@ struct _jxta_SrdiConfigAdvertisement {
     int replicationThreshold;
     Jxta_boolean noRangeWithValue;
     Jxta_boolean SRDIDeltaSupport;
+    int SRDIDeltaWindow;
 };
 
 #define DEFAULT_REPLICATION_THRESHOLD 4
+#define DEFAULT_SRDI_DELTA_WINDOW 80
 
     /* Forward decl. of un-exported function */
 static void jxta_SrdiConfigAdvertisement_delete(Jxta_object *);
@@ -110,9 +112,11 @@ void handleJxta_SrdiConfigAdvertisement(void *userdata, const XML_Char * cd, int
         if (0 == strcmp(*atts, "type")) {
             /* just silently skip it. */
         } else if (0 == strcmp(*atts, "SRDIDeltaSupport")) {
-            if (0 == strcmp(atts[1], "yes")) {
-                ad->SRDIDeltaSupport = TRUE;
+            if (0 == strcmp(atts[1], "no")) {
+                ad->SRDIDeltaSupport = FALSE;
             }
+        } else if (0 == strcmp(*atts, "delta_window")) {
+                ad->SRDIDeltaWindow = atoi(atts[1]);
         }
         atts += 2;
     }
@@ -167,6 +171,11 @@ JXTA_DECLARE(Jxta_boolean) jxta_srdi_cfg_is_delta_cache_supported(Jxta_SrdiConfi
     return adv->SRDIDeltaSupport;
 }
 
+JXTA_DECLARE(int) jxta_srdi_cfg_get_delta_window(Jxta_SrdiConfigAdvertisement * adv)
+{
+    return adv->SRDIDeltaWindow;
+}
+
 /** Now, build an array of the keyword structs.  Since 
  * a top-level, or null state may be of interest, 
  * let that lead off.  Then, walk through the enums,
@@ -185,19 +194,25 @@ static const Kwdtab Jxta_SrdiConfigAdvertisement_tags[] = {
 
 JXTA_DECLARE(Jxta_status) jxta_SrdiConfigAdvertisement_get_xml(Jxta_SrdiConfigAdvertisement * ad, JString ** result)
 {
-    char tmpbuf[256];
+    char tmpbuf[64];
     JString *string = jstring_new_0();
     jstring_append_2(string, "<!-- JXTA SRDI Configuration Advertisement -->\n");
     jstring_append_2(string, "<jxta:SrdiConfig xmlns:jxta=\"http://jxta.org\" type=\"jxta:SrdiConfig\"");
     jstring_append_2(string, " SRDIDeltaSupport = \"");
     jstring_append_2(string, ad->SRDIDeltaSupport == TRUE ? "yes":"no");
     jstring_append_2(string, "\"");
+    if (ad->SRDIDeltaSupport) {
+        jstring_append_2(string, " delta_window = \"");
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), "%d", ad->SRDIDeltaWindow);
+        jstring_append_2(string, tmpbuf);
+        jstring_append_2(string, "\"");
+    }
     jstring_append_2(string, ">\n");
     jstring_append_2(string, "<NoRangeReplication withValue=\"");
     jstring_append_2(string, jxta_srdi_cfg_get_no_range(ad) ? "true":"false");
     jstring_append_2(string, "\"/>\n");
     jstring_append_2(string, "<ReplicationThreshold>");
-    apr_snprintf(tmpbuf, 256, "%d", jxta_srdi_cfg_get_replication_threshold(ad));
+    apr_snprintf(tmpbuf, sizeof(tmpbuf), "%d", jxta_srdi_cfg_get_replication_threshold(ad));
     jstring_append_2(string, tmpbuf);
     jstring_append_2(string, "</ReplicationThreshold>\n");
     jstring_append_2(string, "</jxta:SrdiConfig>\n");
@@ -222,6 +237,7 @@ Jxta_SrdiConfigAdvertisement *jxta_SrdiConfigAdvertisement_construct(Jxta_SrdiCo
         self->noRangeWithValue=FALSE;
         self->replicationThreshold = DEFAULT_REPLICATION_THRESHOLD;
         self->SRDIDeltaSupport = TRUE;
+        self->SRDIDeltaWindow = DEFAULT_SRDI_DELTA_WINDOW;
     }
     return self;
 }

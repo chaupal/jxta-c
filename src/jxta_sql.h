@@ -88,7 +88,7 @@ extern "C" {
 #define SQL_DOT "."
 #define SQL_AND " AND "
 #define SQL_OR " OR "
-#define SQL_ASTRIX " * "
+#define SQL_ASTERISK " * "
 #define SQL_LEFT_PAREN "("
 #define SQL_RIGHT_PAREN ")"
 #define SQL_COMMA ","
