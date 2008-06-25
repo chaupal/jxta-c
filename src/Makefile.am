@@ -113,6 +113,7 @@ include_HEADERS = EndpointRouter.h          \
                   jxta_range.h \
 		  jxta_callback.h \
 		  jxta_constants.h \
+		  jxta_version.h		\
 		  jxta_qos.h
 
 
@@ -261,5 +262,6 @@ libjxta_la_SOURCES = jstring.c                      \
 		     jxta_util_priv.c                   \
 		     jxta_callback.c                    \
 		     jxta_constants.c			\
+			 jxta_version.c				\
 		     jxta_qos.c
 

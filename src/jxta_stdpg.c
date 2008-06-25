@@ -529,6 +529,9 @@ void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assign
     jxta_PA_set_Name(it->peer_adv, peername_to_use);
     jxta_PA_set_PID(it->peer_adv, pid_to_use);
     jxta_PA_set_GID(it->peer_adv, gid_to_use);
+    Jxta_version * currentVersion =jxta_version_get_current_version(); 
+    jxta_PA_set_version(it->peer_adv, currentVersion);
+    JXTA_OBJECT_RELEASE(currentVersion);
 
 
     /* build our group adv

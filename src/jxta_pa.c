@@ -95,6 +95,7 @@ struct _jxta_PA {
     Jxta_id *GID;
     JString *Name;
     JString *Desc;
+    Jxta_version *protocol_version;
     Jxta_vector *svclist;
     Jxta_boolean adv_gen_set;
     apr_uuid_t adv_gen;
@@ -123,6 +124,28 @@ static void handleJxta_PA(void *me, const XML_Char * cd, int len)
     if (0 == len) {
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "START <jxta:PA> : [%pp]\n", myself);
+        const char **atts = ((Jxta_advertisement *) myself)->atts;
+
+        while (atts && *atts) {
+            if (0 == strcmp(*atts, "xmlns:jxta")) {
+                /* just silently skip it. */
+            } else if (0 == strcmp(*atts, "pVer")) {
+                const char * verNum = atts[1];
+                char * minorPointer = strstr(verNum, ".");
+                if(minorPointer != NULL) {
+                    jxta_version_set_major_version(myself->protocol_version, atoi(verNum));
+                    jxta_version_set_minor_version(myself->protocol_version, atoi(&(minorPointer[1])));
+                } else {
+                    jxta_version_set_major_version(myself->protocol_version, 1);
+                    jxta_version_set_minor_version(myself->protocol_version, 0);
+                }
+
+            } else {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
+            }
+
+            atts += 2;
+        }
 
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "FINISH <jxta:PA> : [%pp]\n", myself);
@@ -739,6 +762,13 @@ JXTA_DECLARE(Jxta_status) jxta_PA_get_xml_1(Jxta_PA * ad, JString ** xml, char c
         attrs += 2;
     }
 
+    char implString[15];
+    memset(implString, 0, 15);
+    snprintf(implString, 15, " pVer=\"%d.%d\"", 
+                jxta_version_get_major_version(ad->protocol_version),
+                jxta_version_get_minor_version(ad->protocol_version));
+    jstring_append_2(string, implString);
+
     jstring_append_2(string, ">\n");
     
     jstring_append_2(string, "<PID>");
@@ -819,6 +849,7 @@ JXTA_DECLARE(Jxta_PA *) jxta_PA_new()
         ad->GID = JXTA_OBJECT_SHARE(jxta_id_nullID);
         ad->Name = jstring_new_0();
         ad->Desc = jstring_new_0();
+        ad->protocol_version = jxta_version_new();
         ad->svclist = jxta_vector_new(4);
     }
     return ad;
@@ -851,6 +882,11 @@ static void PA_delete(Jxta_object * me)
     if( NULL != ad->svclist ) {
         JXTA_OBJECT_RELEASE(ad->svclist);
         ad->svclist = NULL;
+    }
+
+    if( NULL != ad->protocol_version) {
+        JXTA_OBJECT_RELEASE(ad->protocol_version);
+        ad->protocol_version = NULL;
     }
 
     jxta_advertisement_destruct((Jxta_advertisement *) ad);
@@ -905,6 +941,26 @@ JXTA_DECLARE(Jxta_status) jxta_PA_parse_file(Jxta_PA * myself, FILE * stream)
     }
     
     return res;
+}
+
+JXTA_DECLARE(void) jxta_PA_set_version(Jxta_PA * myself, Jxta_version *version)
+{
+    if(myself->protocol_version) {
+        JXTA_OBJECT_RELEASE(myself->protocol_version);
+    }
+    myself->protocol_version = JXTA_OBJECT_SHARE(version); 
+}
+
+JXTA_DECLARE(Jxta_version*) jxta_PA_get_version(Jxta_PA * myself)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    if( myself->protocol_version != NULL)
+    {
+        return JXTA_OBJECT_SHARE(myself->protocol_version);
+    }
+    
+    return NULL;
 }
 
 /* vi: set ts=4 sw=4 tw=130 et: */

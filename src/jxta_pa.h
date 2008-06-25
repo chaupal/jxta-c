@@ -61,6 +61,7 @@
 #include "jxta_id.h"
 #include "jxta_rdv.h"
 #include "jxta_svc.h"
+#include "jxta_version.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -331,6 +332,25 @@ JXTA_DECLARE(Jxta_RouteAdvertisement *) jxta_PA_add_relay_address(Jxta_PA *, Jxt
  * @return Jxta_status
  */
 JXTA_DECLARE(Jxta_status) jxta_PA_remove_relay_address(Jxta_PA *, Jxta_id *);
+
+/**
+ * Gets the version.
+ *
+ * @param Jxta_PA * peer advertisement.
+ *
+ * @return Jxta_version* The current version.
+ */
+JXTA_DECLARE(Jxta_version *) jxta_PA_get_version(Jxta_PA *);
+
+/**
+ * Sets the services parameters.
+ *
+ * @param Jxta_PA * peer advertisement
+ * @param Jxta_version * a version object 
+ * @return void Doesn't return anything.
+ */
+JXTA_DECLARE(void) jxta_PA_set_version(Jxta_PA *, Jxta_version *);
+
 
 
 #ifdef __cplusplus

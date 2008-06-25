@@ -85,6 +85,7 @@ static const char *__log_cat = "NETPG";
 #include "jxta_mia.h"
 #include "jxta_platformconfig.h"
 #include "jxta_id_uuid_priv.h"
+#include "jxta_version.h"
 
 #ifndef UNUSED
 #ifdef __GNUC__
@@ -259,6 +260,10 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
         }
     }
     jxta_PA_set_SN(config_adv, &uuid);
+
+    Jxta_version * currentVersion =jxta_version_get_current_version();
+    jxta_PA_set_version(config_adv, currentVersion);
+    JXTA_OBJECT_RELEASE(currentVersion);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before init : %d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(self));
