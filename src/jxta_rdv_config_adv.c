@@ -119,56 +119,56 @@ static void jxta_RdvConfigAdvertisement_delete(Jxta_object *);
 
 JXTA_DECLARE(Jxta_status) jxta_RdvConfig_clone(Jxta_RdvConfigAdvertisement * ad, Jxta_RdvConfigAdvertisement ** ret_clone)
 {
-    Jxta_RdvConfigAdvertisement * clone;
+    Jxta_RdvConfigAdvertisement * cclone;
     Jxta_status ret = JXTA_SUCCESS;
 
-    clone = jxta_RdvConfigAdvertisement_new();
+    cclone = jxta_RdvConfigAdvertisement_new();
 
-    clone->config = ad->config;
+    cclone->config = ad->config;
 
-    clone->max_ttl = ad->max_ttl;
-    clone->auto_rdv_interval = ad->auto_rdv_interval;
-    clone->probe_relays = ad->probe_relays;
-    clone->max_clients = ad->max_clients;
-    clone->lease_duration = ad->lease_duration;
-    clone->lease_margin = ad->lease_margin;
-    clone->min_retry_delay = ad->min_retry_delay;
-    clone->max_retry_delay = ad->max_retry_delay;
-    clone->connect_cycle_normal = ad->connect_cycle_normal;
-    clone->connect_cycle_fast = ad->connect_cycle_fast;
-    clone->lease_renewal_delay = ad->lease_renewal_delay;
-    clone->rdva_refresh = ad->rdva_refresh;
-    clone->connect_delay = ad->connect_delay;
-    clone->min_connected_rendezvous = ad->min_connected_rendezvous;
-    clone->use_only_seeds = ad->use_only_seeds;
+    cclone->max_ttl = ad->max_ttl;
+    cclone->auto_rdv_interval = ad->auto_rdv_interval;
+    cclone->probe_relays = ad->probe_relays;
+    cclone->max_clients = ad->max_clients;
+    cclone->lease_duration = ad->lease_duration;
+    cclone->lease_margin = ad->lease_margin;
+    cclone->min_retry_delay = ad->min_retry_delay;
+    cclone->max_retry_delay = ad->max_retry_delay;
+    cclone->connect_cycle_normal = ad->connect_cycle_normal;
+    cclone->connect_cycle_fast = ad->connect_cycle_fast;
+    cclone->lease_renewal_delay = ad->lease_renewal_delay;
+    cclone->rdva_refresh = ad->rdva_refresh;
+    cclone->connect_delay = ad->connect_delay;
+    cclone->min_connected_rendezvous = ad->min_connected_rendezvous;
+    cclone->use_only_seeds = ad->use_only_seeds;
 
-    ret = jxta_vector_addall_objects_last(clone->seeds, ad->seeds);
+    ret = jxta_vector_addall_objects_last(cclone->seeds, ad->seeds);
     if (JXTA_SUCCESS != ret) goto ERROR_EXIT;
 
-    ret = jxta_vector_addall_objects_last(clone->seeding, ad->seeding);
+    ret = jxta_vector_addall_objects_last(cclone->seeding, ad->seeding);
     if (JXTA_SUCCESS != ret) goto ERROR_EXIT;
 
     /* Peerview attributes */
-    clone->pv_clusters = ad->pv_clusters;
-    clone->pv_members = ad->pv_members;
-    clone->pv_replication = ad->pv_replication;
-    clone->pv_loneliness = ad->pv_loneliness;
-    clone->pv_add_interval = ad->pv_add_interval;
-    clone->pv_maintenance_interval = ad->pv_maintenance_interval;
-    clone->pv_max_locate_probes = ad->pv_max_locate_probes;
-    clone->pv_max_address_requests = ad->pv_max_address_requests;
-    clone->pv_max_ping_probes = ad->pv_max_ping_probes;
-    clone->pv_entry_expires = ad->pv_entry_expires;
-    clone->pv_ping_due = ad->pv_ping_due;
-    clone->pv_pong_due = ad->pv_pong_due;
-    clone->pv_voting_expiration = ad->pv_voting_expiration;
-    clone->pv_voting_wait = ad->pv_voting_wait;
-    *ret_clone = clone;
+    cclone->pv_clusters = ad->pv_clusters;
+    cclone->pv_members = ad->pv_members;
+    cclone->pv_replication = ad->pv_replication;
+    cclone->pv_loneliness = ad->pv_loneliness;
+    cclone->pv_add_interval = ad->pv_add_interval;
+    cclone->pv_maintenance_interval = ad->pv_maintenance_interval;
+    cclone->pv_max_locate_probes = ad->pv_max_locate_probes;
+    cclone->pv_max_address_requests = ad->pv_max_address_requests;
+    cclone->pv_max_ping_probes = ad->pv_max_ping_probes;
+    cclone->pv_entry_expires = ad->pv_entry_expires;
+    cclone->pv_ping_due = ad->pv_ping_due;
+    cclone->pv_pong_due = ad->pv_pong_due;
+    cclone->pv_voting_expiration = ad->pv_voting_expiration;
+    cclone->pv_voting_wait = ad->pv_voting_wait;
+    *ret_clone = cclone;
 
 ERROR_EXIT:
     if (JXTA_SUCCESS != ret) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not create rendezvous config clone error: %d\n", ret);
-        JXTA_OBJECT_RELEASE(clone);
+        JXTA_OBJECT_RELEASE(cclone);
     }
     return ret;
 }
@@ -846,6 +846,7 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
     unsigned int eachSeed;
 
 
+    jstring_append_2(string, "<!-- JXTA Rdv Configuration Advertisement times in microseconds -->\n");
     jstring_append_2(string, "<jxta:RdvConfig xmlns:jxta=\"http://jxta.org\"");
     jstring_append_2(string, " config=\"");
     switch (ad->config) {
