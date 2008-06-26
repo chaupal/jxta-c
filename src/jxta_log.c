@@ -753,7 +753,7 @@ JXTA_DECLARE(Jxta_status)
             GetCurrentThreadId(), msg);
 #else
     fprintf(self->thefile, "[%s]-%s-[%s:%d][TID: %p] - %s", cat, _jxta_log_level_labels[level], tm_str, tm.tm_usec,
-            apr_os_thread_current(), msg);
+            (void *) apr_os_thread_current(), msg);
 #endif
     fflush(self->thefile);
 
