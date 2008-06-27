@@ -488,6 +488,10 @@ static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service 
         myself->rdvConfig = jxta_RdvConfigAdvertisement_new();
     }
 
+    if (-1 == jxta_RdvConfig_get_lease_duration(myself->rdvConfig)) {
+        jxta_RdvConfig_set_lease_duration(myself->rdvConfig, DEFAULT_LEASE_INTERVAL);
+    }
+
     if (-1 == jxta_RdvConfig_get_min_connected_rendezvous(myself->rdvConfig)) {
         jxta_RdvConfig_set_min_connected_rendezvous(myself->rdvConfig, MIN_NB_OF_CONNECTED_RDVS);
     }
@@ -844,7 +848,7 @@ static Jxta_status send_lease_request(_jxta_rdv_service_client * myself, _jxta_p
     }
 
     jxta_lease_request_msg_set_client_id(lease_request, provider->local_peer_id);
-    jxta_lease_request_msg_set_requested_lease(lease_request, DEFAULT_LEASE_INTERVAL);
+    jxta_lease_request_msg_set_requested_lease(lease_request, jxta_RdvConfig_get_lease_duration(myself->rdvConfig));
     if (peer->adv_gen) {
         jxta_lease_request_msg_set_server_adv_gen(lease_request, peer->adv_gen);
     }
@@ -854,7 +858,7 @@ static Jxta_status send_lease_request(_jxta_rdv_service_client * myself, _jxta_p
     if (NULL == pa) {
         /* We have only the address. We will include our advertisement as a reverse route. */
         jxta_lease_request_msg_set_client_adv(lease_request, provider->local_pa);
-        jxta_lease_request_msg_set_client_adv_exp(lease_request, DEFAULT_LEASE_INTERVAL * 2);
+        jxta_lease_request_msg_set_client_adv_exp(lease_request, jxta_RdvConfig_get_lease_duration(myself->rdvConfig) * 2);
     } else {
         /* publish PA */
         if (myself->discovery == NULL) {
