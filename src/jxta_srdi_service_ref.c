@@ -106,13 +106,14 @@ static const char *__log_cat = "SrdiSvc";
 #include "jxta_string.h"
 #include "jxta_util_priv.h"
 #include "jxta_endpoint_service_priv.h"
+#include "jxta_discovery_service_private.h"
 
 #include <openssl/bn.h>
 #include <openssl/sha.h>
 
 static Jxta_status start(Jxta_module * mod, const char *argv[]);
 static void stop(Jxta_module * this);
-static void JXTA_STDCALL jxta_srdi_rdv_listener(Jxta_object * obj, void *arg);
+static void JXTA_STDCALL srdi_rdv_listener(Jxta_object * obj, void *arg);
 static Jxta_status JXTA_STDCALL srdi_service_srdi_cb(Jxta_object * obj, void *arg);
 static Jxta_boolean hopcount_ok(ResolverQuery * query, long count);
 static void increment_hop_count(ResolverQuery * query);
@@ -143,7 +144,9 @@ typedef struct {
     Jxta_PGID *gid;
     JString *groupUniqueID;
     Jxta_rdv_service *rendezvous;
+    /* Jxta_discovery_service *discovery; */
     Jxta_endpoint_service *endpoint;
+    Jxta_resolver_service *resolver;
     Jxta_PID *peerID;
     Jxta_cm *cm;
     JString *srdi_queue_name;
@@ -151,6 +154,7 @@ typedef struct {
     Jxta_SrdiConfigAdvertisement *config;
     void *ep_cookie;
 } Jxta_srdi_service_ref;
+static Jxta_status srdi_service_remove_replicas(Jxta_srdi_service_ref * srdi, Jxta_vector * entries);
 
 Jxta_status jxta_srdi_service_ref_init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
 {
@@ -199,6 +203,7 @@ Jxta_status jxta_srdi_service_ref_init(Jxta_module * module, Jxta_PG * group, Jx
 
     jxta_PG_get_rendezvous_service(group, &me->rendezvous);
     jxta_PG_get_endpoint_service(group, &(me->endpoint));
+    jxta_PG_get_resolver_service(group, &(me->resolver));
 
     if (status != JXTA_SUCCESS)
         return JXTA_FAILED;
@@ -246,7 +251,6 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
     ttl = jxta_srdi_message_get_ttl(srdiMsg);
     jxta_srdi_message_get_primaryKey(srdiMsg, &jPkey);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Replicate Entries\n");
 
     if (ttl < 1 || !jxta_rdv_service_is_rendezvous(me->rendezvous) ) {
         goto FINAL_EXIT;
@@ -257,6 +261,8 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
     if (allEntries == NULL) {
         goto FINAL_EXIT;
     }
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Replicate %d Entries\n", jxta_vector_size(allEntries));
 
     replicaExpression = jstring_new_0();
     peersHash = jxta_hashtable_new( 10 );
@@ -292,7 +298,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
             }
             if (ignore_entry) {
                 if (entry)
-                JXTA_OBJECT_RELEASE(entry);
+                    JXTA_OBJECT_RELEASE(entry);
                 if (newEntry)
                     JXTA_OBJECT_RELEASE(newEntry);
                 continue;
@@ -477,12 +483,14 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
                     entry->value = NULL;
                     cm_update_delta_entry(me->cm, jPeer, instance, entry, 0 == entry->next_update_time ? entry->expiration : 0);
                     /* if this advertisement is being updated remove it from the vector */
-                    /* The comma separated value of seq. numbers has been built in another entry */
+                    /* The comma separated value of seq. numbers has been built in another entry by cm_update_delta_entry */
                     status = jxta_hashtable_contains(ads_hash, jstring_get_string(entry->advId), jstring_length(entry->advId));
                     if (JXTA_SUCCESS == status) {
                         jxta_vector_remove_object_at(entries, NULL, i--);
                     } else {
-                        entry->expiration = entry->timeout - nnow;
+                        if (entry->expiration > 0) {
+                            entry->expiration = entry->timeout - nnow;
+                        }
                         entry->seqNumber = 0;
                         jxta_hashtable_put(ads_hash, jstring_get_string(entry->advId), jstring_length(entry->advId), (Jxta_object *) entry);
                         ad = TRUE;
@@ -518,7 +526,7 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
         } else {
             cm_update_delta_entry(me->cm, jPeer, instance, entry, 0 == entry->next_update_time ? entry->timeout - nnow : entry->next_update_time - nnow);
             jxta_vector_remove_object_at(entries, NULL, i--);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Found %s - Removing from entries at loc:%d  new index:%d \n", aTmp, i + 1, i);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Found %s - Removing from entries at loc:%d  new index:%d \n", aTmp, i + 1, i);
         }
         if (saveEntry)
             JXTA_OBJECT_RELEASE(saveEntry);
@@ -910,6 +918,8 @@ static Jxta_status forwardSrdiEntries(Jxta_srdi_service * service, Jxta_resolver
         goto FINAL_EXIT;
     }
 
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Sending to peer %s\n%s\n", jstring_get_string(jPid), jstring_get_string(messageString));
+
     res = jxta_resolver_service_sendSrdi(resolver, srdi, pid);
 
     if (res != JXTA_SUCCESS) {
@@ -1021,7 +1031,26 @@ static Jxta_vector *searchSrdi(Jxta_srdi_service * me, const char *handler, cons
     return ret;
 }
 
-static void JXTA_STDCALL jxta_srdi_rdv_listener(Jxta_object * obj, void *arg)
+static void expire_entries(Jxta_vector * srdi_entries)
+{
+    int i;
+    Jxta_status res = JXTA_SUCCESS;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Expire %d total entries\n", jxta_vector_size(srdi_entries));
+
+    for (i = 0; i < jxta_vector_size(srdi_entries); i++) {
+        Jxta_SRDIEntryElement *entry = NULL;
+        res = jxta_vector_get_object_at(srdi_entries, JXTA_OBJECT_PPTR(&entry), i);
+        if (JXTA_SUCCESS != res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to retrieve SRDI entry\n");
+            continue;
+        }
+        /* expire this entry */
+        entry->expiration = 0;
+        JXTA_OBJECT_RELEASE(entry);
+    }
+}
+
+static void JXTA_STDCALL srdi_rdv_listener(Jxta_object * obj, void *arg)
 {
     Jxta_status res = 0;
     JString *jPeerid = NULL;
@@ -1030,6 +1059,8 @@ static void JXTA_STDCALL jxta_srdi_rdv_listener(Jxta_object * obj, void *arg)
     Jxta_rdv_event *rdv_event = (Jxta_rdv_event *) obj;
     Jxta_srdi_service_ref *me = (Jxta_srdi_service_ref *) arg;
     Jxta_time expires=0;
+    Jxta_vector * srdi_entries = NULL;
+
     /** Get info from the event */
     int type = rdv_event->event;
 
@@ -1045,9 +1076,12 @@ static void JXTA_STDCALL jxta_srdi_rdv_listener(Jxta_object * obj, void *arg)
     }
     switch (type) {
         case JXTA_RDV_CLIENT_DISCONNECTED:
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Connected rdv client disconnected peer in SRDI =%s\n", peerid);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Connected rdv client disconnected peer in SRDI =%s\n", peerid);
             if (NULL != me->cm) {
-                cm_remove_srdi_entries(me->cm, jPeerid);
+                cm_remove_srdi_entries(me->cm, jPeerid, &srdi_entries);
+                if (NULL != srdi_entries) {
+                    srdi_service_remove_replicas(me, srdi_entries);
+                }
             }
             break;
         case JXTA_RDV_CLIENT_CONNECTED:
@@ -1056,28 +1090,24 @@ static void JXTA_STDCALL jxta_srdi_rdv_listener(Jxta_object * obj, void *arg)
             res = jxta_rdv_service_get_peer(me->rendezvous, rdv_event->pid, &peer);
             if (JXTA_SUCCESS != res) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Got a rdv event with an unknown peerid %s\n", peerid);
+                break;
             }
             if (NULL != peer) {
                 expires = jxta_peer_get_expires(peer);
             }
-            if (NULL != me->cm && expires > 0) {
-                res = cm_update_srdi_times(me->cm, jPeerid, expires);
-                if (JXTA_SUCCESS != res) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Error update SRDI times %d\n", res);
-                }
-            }
+
             if (type == JXTA_RDV_CONNECTED) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,
-                            "Connected rdv expires: %" APR_INT64_T_FMT " %s\n",expires, peerid);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE,
+                            "Connected rdv expires: %" APR_INT64_T_FMT " %s\n",expires - jpr_time_now(), peerid);
             }
             else {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,
-                            "Connected rdv client expires: %" APR_INT64_T_FMT " %s\n",expires, peerid);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE,
+                            "Connected rdv client expires: %" APR_INT64_T_FMT " %s\n",expires - jpr_time_now(), peerid);
             }
             break;
         case JXTA_RDV_FAILED:
         case JXTA_RDV_DISCONNECTED:
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Rendezvous %s %s in SRDI\n",
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Rendezvous %s %s in SRDI\n",
                             peerid, JXTA_RDV_FAILED == type ? "FAILED" : "DISCONNECTED");
 
             if (NULL == me->cm) {
@@ -1087,7 +1117,10 @@ static void JXTA_STDCALL jxta_srdi_rdv_listener(Jxta_object * obj, void *arg)
                 break;
             }
             if (NULL != me->cm) {
-                cm_remove_srdi_entries(me->cm, jPeerid);
+                cm_remove_srdi_entries(me->cm, jPeerid, &srdi_entries);
+                if (NULL != srdi_entries) {
+                    srdi_service_remove_replicas(me, srdi_entries);
+                }
             }
             break;
         case JXTA_RDV_RECONNECTED:
@@ -1103,8 +1136,84 @@ static void JXTA_STDCALL jxta_srdi_rdv_listener(Jxta_object * obj, void *arg)
         JXTA_OBJECT_RELEASE(peer);
     if (jPeerid != NULL)
         JXTA_OBJECT_RELEASE(jPeerid);
+    if (srdi_entries)
+        JXTA_OBJECT_RELEASE(srdi_entries);
 }
 
+static Jxta_status srdi_service_remove_replicas(Jxta_srdi_service_ref * srdi, Jxta_vector * entries)
+{
+
+    Jxta_status res = JXTA_SUCCESS;
+    Jxta_vector *advs_v = NULL;
+    Jxta_vector *peers_v = NULL;
+    Jxta_vector *groups_v = NULL;
+    JString * pkey=NULL;
+    int i;
+    Jxta_discovery_service *discovery=NULL;
+
+    expire_entries(entries);
+
+    for (i = 0; i < jxta_vector_size(entries); i++) {
+        Jxta_SRDIEntryElement * entry;
+        jxta_vector_get_object_at(entries, JXTA_OBJECT_PPTR(&entry), i);
+        if (0 == strcmp(jstring_get_string(entry->nameSpace), "jxta:PA")) {
+            if (NULL == peers_v) {
+                peers_v = jxta_vector_new(0);
+            }
+            jxta_vector_add_object_last(peers_v,(Jxta_object *) entry);
+        } else if (0 == strcmp(jstring_get_string(entry->nameSpace), "jxta:PGA")) {
+            if (NULL == groups_v) {
+                groups_v = jxta_vector_new(0);
+            }
+            jxta_vector_add_object_last(groups_v, (Jxta_object *) entry);
+        } else {
+            if (NULL == advs_v) {
+                advs_v = jxta_vector_new(0);
+            }
+            jxta_vector_add_object_last(advs_v, (Jxta_object *) entry);
+        }
+        JXTA_OBJECT_RELEASE(entry);
+    }
+
+    pkey = jstring_new_0();
+
+    jxta_PG_get_discovery_service(srdi->group, &discovery);
+    if (NULL == discovery) goto FINAL_EXIT;
+
+    if (NULL != peers_v) {
+        jstring_reset(pkey, NULL);
+        jstring_append_2(pkey, "Peers");
+        discovery_send_srdi(discovery, pkey, peers_v);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Expire %d peer entries\n", jxta_vector_size(peers_v));
+    }
+    if (NULL != groups_v) {
+        jstring_reset(pkey, NULL);
+        jstring_append_2(pkey, "Groups");
+        discovery_send_srdi(discovery, pkey, groups_v);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Expire %d group entries\n", jxta_vector_size(groups_v));
+    }
+    if (NULL != advs_v) {
+        jstring_reset(pkey, NULL);
+        jstring_append_2(pkey, "Adv");
+        discovery_send_srdi(discovery, pkey, advs_v);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Expire %d adv entries\n", jxta_vector_size(advs_v));
+    }
+
+    JXTA_OBJECT_RELEASE(discovery);
+
+FINAL_EXIT:
+
+    if (peers_v)
+        JXTA_OBJECT_RELEASE(peers_v);
+    if (groups_v)
+        JXTA_OBJECT_RELEASE(groups_v);
+    if (advs_v)
+        JXTA_OBJECT_RELEASE(advs_v);
+    if (pkey)
+        JXTA_OBJECT_RELEASE(pkey);
+
+    return res;
+}
 /* FIXME: is this correct? slowhog 5/9/2006 */
 static Jxta_status JXTA_STDCALL srdi_service_srdi_cb(Jxta_object * obj, void *arg)
 {
@@ -1181,9 +1290,10 @@ static Jxta_status start(Jxta_module * me, const char *argv[])
 
     assert(myself->rendezvous);
     assert(myself->endpoint);
+    assert(myself->resolver);
 
     /** Add a listener to rdv events */
-    listener = jxta_listener_new((Jxta_listener_func) jxta_srdi_rdv_listener, myself, 1, 1);
+    listener = jxta_listener_new((Jxta_listener_func) srdi_rdv_listener, myself, 1, 1);
     if (listener != NULL) {
         jxta_listener_start(listener);
         status = jxta_rdv_service_add_event_listener(myself->rendezvous, "SRDIMessage", "abc", listener);
@@ -1223,7 +1333,8 @@ static void jxta_srdi_service_ref_destruct(Jxta_srdi_service_ref * srdi)
         JXTA_OBJECT_RELEASE(myself->endpoint);
     if (myself->rendezvous != 0)
         JXTA_OBJECT_RELEASE(myself->rendezvous);
-
+    if (myself->resolver != 0)
+        JXTA_OBJECT_RELEASE(myself->resolver);
     if (myself->instanceName != 0)
         JXTA_OBJECT_RELEASE(myself->instanceName);
 

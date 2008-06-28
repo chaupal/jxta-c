@@ -476,24 +476,38 @@ unsigned long cm_hash(const char *str, size_t len);
 void cm_close(Jxta_cm * cm);
 
 /**
- * get the SRDI index entry for the provided folder
+ * retrun SRDI entries from the element/attributes table
  *
  * @param Jxta_cm instance
  * @param folder name
  * @param jAdvId optional advid - returns only the entries of the advID
+ * @param jPeerId optional peerid - returns all entries for a given Peer
  *
  * @return a vector of SRDIElementEntry
  */
-Jxta_vector * cm_get_srdi_entries(Jxta_cm * self, JString * folder_name, JString * jAdvId);
+Jxta_vector * cm_create_srdi_entries(Jxta_cm * self, JString * folder_name, JString * jAdvId, JString * jPeerId);
+
+/**
+ * return SRDI entries from the SRDI table
+ *
+ * @param Jxta_cm instance
+ * @param folder name
+ * @param jAdvId optional advid - returns only the entries of the advID
+ * @param jPeerId optional peerid - returns all entries for a given Peer
+ *
+ * @return a vector of SRDIElementEntry
+ */
+Jxta_vector * cm_get_srdi_entries_1(Jxta_cm * self, JString * folder_name, JString * jAdvId, JString * jPeerId);
 
 /**
  * Remove the SRDI entries for the specified peer
  * 
  * @param Jxta_cm instance
  * @param const char * id - Peerid to remove
+ * @param Jxta_vector **srdi_entries - Return of all entries that are removed
  *
 **/
-void cm_remove_srdi_entries(Jxta_cm * self, JString * peerid);
+void cm_remove_srdi_entries(Jxta_cm * self, JString * peerid, Jxta_vector **srdi_entries);
 
 
 /**
