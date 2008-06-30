@@ -952,7 +952,7 @@ static void handle_peerview_pong_msg(void *me, const XML_Char * cd, int len)
                 action = atoi(atts[1]);
                 myself->pong_action = action;
             } else {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
             }
 
             atts += 2;
@@ -1042,7 +1042,7 @@ static void handle_target_hash(void *me, const XML_Char * cd, int len)
 
                 JXTA_OBJECT_RELEASE(radius);
             } else {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
             }
 
             atts += 2;
@@ -1103,7 +1103,7 @@ static void handle_adv(void *me, const XML_Char * cd, int len)
             } else if (0 == strcmp(*atts, "expiration")) {
                 peer_adv_exp = atol(atts[1]);
             } else {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
             }
 
             atts += 2;
@@ -1180,7 +1180,7 @@ static void handle_partner(void *me, const XML_Char * cd, int len)
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Attribute adv_gen: %s\n", atts[1]);
                 }
             } else {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
             }
 
             atts += 2;
@@ -1245,7 +1245,7 @@ static void handle_associate(void *me, const XML_Char * cd, int len)
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Attribute adv_gen: %s\n", atts[1]);
                 }
             } else {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
             }
 
             atts += 2;
@@ -1310,7 +1310,7 @@ static void handle_candidate(void *me, const XML_Char * cd, int len)
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Attribute adv_gen: %s\n", atts[1]);
                 }
             } else {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
             }
 
             atts += 2;
