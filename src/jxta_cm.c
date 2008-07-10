@@ -4447,6 +4447,8 @@ static Jxta_status cm_create_delta_entries(Jxta_cm * self, JString *peerid, Jxta
     free(sn_ptr_save);
 
 FINAL_EXIT:
+    if (dbSpace)
+        JXTA_OBJECT_RELEASE(dbSpace);
 
     return status;
 }

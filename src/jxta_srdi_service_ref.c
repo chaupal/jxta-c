@@ -630,12 +630,13 @@ static Jxta_status pushSrdi_msg(Jxta_srdi_service * self, Jxta_resolver_service 
         }
     } else {
         res = prep_srdi_updates(self, instance, msg, peer, &srdi);
-    res = pushSrdi_priv(self, resolver, instance, srdi, peer);
+        res = pushSrdi_priv(self, resolver, instance, srdi, peer);
     }
 
     if(srdi != NULL)
-    JXTA_OBJECT_RELEASE(srdi);
-
+        JXTA_OBJECT_RELEASE(srdi);
+    if (peers != NULL)
+        JXTA_OBJECT_RELEASE(peers);
     return res;
 }
 
