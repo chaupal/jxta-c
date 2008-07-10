@@ -1927,8 +1927,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
                 resendDelta = jxta_vector_new(0);
             }
             jxta_vector_add_object_last(resendDelta, (Jxta_object *) entry);
-            jxta_vector_remove_object_at(entries, NULL, i);
-            i--;
+            jxta_vector_remove_object_at(entries, NULL, i--);
         }
         JXTA_OBJECT_RELEASE(entry);
     }

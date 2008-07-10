@@ -94,6 +94,7 @@ struct _jxta_EntryElement {
     JString *advId;
     JString *range;
     JString *sn_cs_values;
+    Jxta_boolean expanded;
     Jxta_sequence_number seqNumber;
     Jxta_boolean resend;
     Jxta_expiration_time timeout;

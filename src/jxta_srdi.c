@@ -783,6 +783,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_resend(Jxta_sequence
     dse->seqNumber = seqNumber;
     dse->expiration = 0;
     dse->resend = TRUE;
+    dse->replicate = TRUE;
     dse->next_update_time = 0;
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "This is the spot in number 4\n");
     return dse;
