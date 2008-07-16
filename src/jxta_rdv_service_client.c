@@ -91,6 +91,11 @@ static const char *__log_cat = "RdvEdge";
 #include "jxta_rdv_service_provider_private.h"
 
 /**
+ * Time the client waits when there is a candidate list call back before attempting a rendezvous connection
+**/
+static const Jxta_time_diff CONNECT_TIME_INTERVAL = ((Jxta_time_diff) 60) * 1000;  /* 1 Minute */
+
+/**
  * "Normal" time the background thread sleeps between runs. "Normal" usually
  * means that we are connected to a rdv.
  * Measured in relative microseconds.
@@ -207,6 +212,8 @@ struct _jxta_rdv_service_client {
 
     Jxta_PA *localPeerAdv;
     Jxta_object *leasing_cookie;
+
+    Jxta_time connect_time;
 };
 
 /**
@@ -498,6 +505,9 @@ static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service 
     if (-1 == jxta_RdvConfig_get_connect_delay(myself->rdvConfig)) {
         jxta_RdvConfig_set_connect_delay(myself->rdvConfig, CONNECT_DELAY);
     }
+    if (-1 == jxta_RdvConfig_get_connect_time_interval(myself->rdvConfig)) {
+        jxta_RdvConfig_set_connect_time_interval(myself->rdvConfig, CONNECT_TIME_INTERVAL);
+    }
     if (-1 == jxta_RdvConfig_get_connect_cycle_fast(myself->rdvConfig)) {
         jxta_RdvConfig_set_connect_cycle_fast(myself->rdvConfig, CONNECT_THREAD_NAP_TIME_FAST);
     }
@@ -550,6 +560,8 @@ static Jxta_status start(Jxta_rdv_service_provider * provider)
                                        myself, apr_time_from_sec(1), myself);
 
     jxta_rdv_service_provider_unlock_priv(provider);
+
+    myself->connect_time = jxta_RdvConfig_get_connect_time_interval(myself->rdvConfig) + jpr_time_now();
 
     rdv_service_generate_event(provider->service, JXTA_RDV_BECAME_EDGE, provider->local_peer_id);
 
@@ -991,10 +1003,53 @@ static Jxta_boolean check_peer_connect(_jxta_rdv_service_client * myself, _jxta_
                     (0 == lastConnectTry) ? 0 : (currentTime - lastConnectTry), connectInterval);
 
     if (((Jxta_time_diff) (expires - currentTime)) < jxta_RdvConfig_get_lease_renewal_delay(myself->rdvConfig)) {
-        /* Time to try a connection */
-        send_lease_request(myself, peer);
-    }
+        Jxta_rdv_service_provider *provider = PTValid(PTSuper(myself), _jxta_rdv_service_provider);
+        Jxta_boolean connect = TRUE;
+        Jxta_vector * new_candidate_list = NULL;
+        Jxta_boolean shuffle;
+        _jxta_peer_rdv_entry * connect_peer = NULL;
 
+        connect = rdv_service_call_candidate_list_cb((Jxta_rdv_service *) provider->service, myself->candidates, &new_candidate_list, &shuffle);
+        if (NULL != new_candidate_list) {
+            JXTA_OBJECT_RELEASE(myself->candidates);
+            myself->candidates = new_candidate_list;
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "new candidate list for checking connection\n");
+            if (jxta_vector_size(new_candidate_list) > 0) {
+                JString * peerid_j = NULL;
+                JString * new_peerid_j = NULL;
+
+                jxta_vector_get_object_at(new_candidate_list, JXTA_OBJECT_PPTR(&connect_peer), 0);
+
+                jxta_id_to_jstring(jxta_peer_peerid((Jxta_peer *) peer), &peerid_j);
+                jxta_id_to_jstring(jxta_peer_peerid((Jxta_peer *) connect_peer), &new_peerid_j);
+                if (0 != strcmp(jstring_get_string(peerid_j), jstring_get_string(new_peerid_j))) {
+                    JString *uniq;
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Removing %s and connecting to %s\n", jstring_get_string(peerid_j), jstring_get_string(new_peerid_j));
+
+                    jxta_id_get_uniqueportion(jxta_peer_peerid((Jxta_peer *) peer), &uniq);
+                    jxta_hashtable_del(myself->rdvs, jstring_get_string(uniq), jstring_length(uniq) + 1, NULL);
+                    JXTA_OBJECT_RELEASE(uniq);
+                } else {
+                    connect_peer = JXTA_OBJECT_SHARE(peer);
+                }
+                JXTA_OBJECT_RELEASE(peerid_j);
+                JXTA_OBJECT_RELEASE(new_peerid_j);
+            }
+        } else {
+            connect_peer = JXTA_OBJECT_SHARE(peer);
+        }
+        if (connect && connect_peer) {
+
+            /* Time to try a connection */
+            send_lease_request(myself, connect_peer);
+
+        } else if (!connect) {
+            /* start the referral and seeding again */
+            myself->connect_time = jxta_RdvConfig_get_connect_time_interval(myself->rdvConfig) + jpr_time_now();
+        }
+        if (connect_peer)
+            JXTA_OBJECT_RELEASE(connect_peer);
+    }
     return TRUE;
 }
 
@@ -1076,8 +1131,8 @@ static Jxta_status handle_leasing_reply(_jxta_rdv_service_client * myself, Jxta_
     peer = get_peer_entry(myself, server_peerid, (lease > 0));
 
     if (NULL == peer) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Ignoring lease offer from [%s] \n",
-                        jstring_get_string(server_peerid_str));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Ignoring lease offer from [%s] with lease of %d\n",
+                        jstring_get_string(server_peerid_str), lease);
         status = JXTA_FAILED;
 
         process_referrals(myself, lease_response, server_peerid);
@@ -1282,6 +1337,7 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
     Jxta_status res;
     _jxta_rdv_service_client *myself = PTValid(cookie, _jxta_rdv_service_client);
     Jxta_rdv_service_provider *provider = PTValid(PTSuper(myself), _jxta_rdv_service_provider);
+
     Jxta_vector *rdvs;
     Jxta_vector *failed_rdvs = jxta_vector_new(0);
     unsigned int nbOfConnectedRdvs = 0;
@@ -1289,11 +1345,11 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Maintain Task RUN [%pp].\n", myself);
 
-    jxta_rdv_service_provider_lock_priv(provider);
-
     if (!myself->running) {
         goto FINAL_EXIT;
     }
+
+    jxta_rdv_service_provider_lock_priv(provider);
 
     rdvs = jxta_hashtable_values_get(myself->rdvs);
 
@@ -1359,12 +1415,15 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
      *   The third leg, wherein we try to locate new rdvs as needed.
      */
     if (nbOfConnectedRdvs < (unsigned int) jxta_RdvConfig_get_min_connected_rendezvous(myself->rdvConfig)) {
+        Jxta_boolean connect = FALSE;
+        Jxta_vector * new_candidate_list = NULL;
+
         if (0 == jxta_vector_size(myself->candidates)) {
             /* Get additional candidates */
             Jxta_vector *active_seeds = NULL;
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Get additional candidates by obtaining seeds.\n");
 
-            res = rdv_service_get_seeds((Jxta_rdv_service *) provider->service, &active_seeds);
+            res = rdv_service_get_seeds((Jxta_rdv_service *) provider->service, &active_seeds, provider->service->shuffle);
 
             if (JXTA_SUCCESS != res) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Could not get any seeds.\n");
@@ -1415,7 +1474,19 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
             }
         }
 
-        while ((NULL == myself->candidate) && (jxta_vector_size(myself->candidates) > 0)) {
+        if (myself->connect_time < jpr_time_now()) {
+            new_candidate_list = NULL;
+            connect = rdv_service_call_candidate_list_cb((Jxta_rdv_service *) provider->service, myself->candidates, &new_candidate_list, &provider->service->shuffle);
+            if (!connect) {
+                myself->connect_time = jxta_RdvConfig_get_connect_time_interval(myself->rdvConfig) + jpr_time_now();
+            }
+        }
+
+        if (NULL != new_candidate_list) {
+            JXTA_OBJECT_RELEASE(myself->candidates);
+            myself->candidates = new_candidate_list;
+        }
+        while (connect && (NULL == myself->candidate) && (jxta_vector_size(myself->candidates) > 0)) {
             /* Try connecting to a new candidate */
             res = jxta_vector_remove_object_at(myself->candidates, JXTA_OBJECT_PPTR(&myself->candidate), 0);
 
@@ -1467,8 +1538,9 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
         }
     }
 
-  FINAL_EXIT:
     jxta_rdv_service_provider_unlock_priv(provider);
+
+  FINAL_EXIT:
 
     if (0 != jxta_vector_size(failed_rdvs)) {
         /* Now outside of sync, send notification of failed Rdvs. */

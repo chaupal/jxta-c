@@ -150,6 +150,7 @@ struct _jxta_rdv_service {
 
     Jxta_vector *active_seeds;
     Jxta_time last_seeding_update;
+    Jxta_boolean shuffle;
 
     volatile Jxta_boolean auto_interval_lock;
     Jxta_time_diff auto_rdv_interval;
@@ -158,6 +159,8 @@ struct _jxta_rdv_service {
 
     Jxta_hashtable *evt_listener_table;
     Jxta_hashtable *callback_table;
+    Jxta_rendezvous_candidate_list_func candidate_list_func;
+    Jxta_time connect_time;
 
     RendezVousStatus status;
 
@@ -165,12 +168,15 @@ struct _jxta_rdv_service {
 
     Jxta_peerview *peerview;
     Jxta_listener *peerview_listener;
+
     void *ep_cookie_leasing;
     void *ep_cookie_walker;
     void *ep_cookie_prop;
+
     JString *lease_key_j;
     JString *walker_key_j;
     JString *prop_key_j;
+
     Jxta_boolean is_demoting;
     Jxta_time service_start;
 };
@@ -200,7 +206,7 @@ extern Jxta_peerview *rdv_service_get_peerview_priv(Jxta_rdv_service * rdv);
 *  @param seeds A vector of seeds. Each is a Jxta_endpoint_address
 *  @return error code.
 */
-extern Jxta_status rdv_service_get_seeds(Jxta_rdv_service * me, Jxta_vector ** seeds);
+extern Jxta_status rdv_service_get_seeds(Jxta_rdv_service * me, Jxta_vector ** seeds, Jxta_boolean shuffle);
 
 /**
 *  Adds a referral seed.
@@ -213,6 +219,8 @@ extern Jxta_status rdv_service_add_referral_seed(Jxta_rdv_service * me, Jxta_pee
 **/
 extern Jxta_status rdv_service_add_cb(Jxta_rdv_service * me, Jxta_object **cookie, const char *name, const char *param,
                                                 Jxta_callback_func func, void *arg);
+
+extern Jxta_boolean rdv_service_call_candidate_list_cb(Jxta_rdv_service * rdv, Jxta_vector * candidates, Jxta_vector ** new_candidates, Jxta_boolean *shuffle);
 
 /**
  *

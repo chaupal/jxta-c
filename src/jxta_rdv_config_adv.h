@@ -144,6 +144,9 @@ JXTA_DECLARE(void) jxta_RdvConfig_set_connect_delay(Jxta_RdvConfigAdvertisement 
 JXTA_DECLARE(char *) jxta_RdvConfigAdvertisement_get_Jxta_RdvConfigAdvertisement(Jxta_RdvConfigAdvertisement *);
 JXTA_DECLARE(void) jxta_RdvConfigAdvertisement_set_Jxta_RdvConfigAdvertisement(Jxta_RdvConfigAdvertisement *, char *);
 
+JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_connect_time_interval(Jxta_RdvConfigAdvertisement *);
+JXTA_DECLARE(void) jxta_RdvConfig_set_connect_time_interval(Jxta_RdvConfigAdvertisement *, Jxta_time_diff);
+
 JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_clusters(Jxta_RdvConfigAdvertisement *, unsigned int);
 JXTA_DECLARE(unsigned int) jxta_RdvConfig_pv_clusters(Jxta_RdvConfigAdvertisement *);
 

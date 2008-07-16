@@ -264,6 +264,8 @@ static _jxta_rdv_service *jxta_rdv_service_construct(_jxta_rdv_service * myself,
          */
         myself->evt_listener_table = jxta_hashtable_new(1);
         myself->callback_table = jxta_hashtable_new(1);
+        myself->candidate_list_func = NULL;
+
         myself->running = FALSE;
         myself->service_start = 0L;
     }
@@ -451,6 +453,8 @@ static Jxta_status init(Jxta_module * rdv, Jxta_PG * group, Jxta_id * assigned_i
     if (0 == myself->auto_rdv_interval) {
         myself->auto_rdv_interval = DEFAULT_AUTO_RDV_INTERVAL;
     }
+
+    myself->connect_time = jxta_RdvConfig_get_connect_time_interval(myself->rdvConfig) + jpr_time_now();
 
     myself->config = jxta_RdvConfig_get_config(myself->rdvConfig);
 
@@ -1251,7 +1255,7 @@ JXTA_DECLARE(JString *) message_id_new(void)
     return jstring_new_2(uuidStr);
 }
 
-Jxta_status rdv_service_get_seeds(Jxta_rdv_service * me, Jxta_vector ** seeds)
+Jxta_status rdv_service_get_seeds(Jxta_rdv_service * me, Jxta_vector ** seeds, Jxta_boolean shuffle)
 {
     Jxta_status res = JXTA_SUCCESS;
     _jxta_rdv_service *myself = PTValid(me, _jxta_rdv_service);
@@ -1295,11 +1299,16 @@ Jxta_status rdv_service_get_seeds(Jxta_rdv_service * me, Jxta_vector ** seeds)
         }
         JXTA_OBJECT_RELEASE(seed_uris);
 
-        /* Shuffle them */
-        jxta_vector_shuffle(new_seeds);
+        if (shuffle) {
+            /* Shuffle them */
+            jxta_vector_shuffle(new_seeds);
+        }
 
         seeding_uris = jxta_RdvConfig_get_seeding(myself->rdvConfig);
-        jxta_vector_shuffle(seeding_uris);
+
+        if (shuffle) {
+            jxta_vector_shuffle(seeding_uris);
+        }
         all_uris = jxta_vector_size(seeding_uris);
 
         for (each_uri = 0; each_uri < all_uris; each_uri++) {
@@ -1464,6 +1473,34 @@ Jxta_status rdv_service_send_seed_request(Jxta_rdv_service * rdv)
     return res;
 }
 
+JXTA_DECLARE(Jxta_status) jxta_rdv_service_set_candidate_list_func(Jxta_rdv_service * rdv, Jxta_rendezvous_candidate_list_func func)
+{
+    _jxta_rdv_service * me = (_jxta_rdv_service *) rdv;
+    me->candidate_list_func = func;
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_boolean) rdv_service_call_candidate_list_cb(Jxta_rdv_service * rdv, Jxta_vector * candidates, Jxta_vector ** new_candidates, Jxta_boolean *shuffle)
+{
+    _jxta_rdv_service * service = (_jxta_rdv_service *) rdv;
+    Jxta_boolean res = TRUE;
+
+    if (config_edge == service->current_config && NULL != service->candidate_list_func ) {
+        Jxta_vector * connections = NULL;
+
+        res = jxta_rdv_service_get_peers(rdv, &connections);
+
+        if (JXTA_SUCCESS == res) {
+            res = (service->candidate_list_func)(connections, candidates, new_candidates, shuffle);
+        }
+
+        if (NULL != connections) {
+            JXTA_OBJECT_RELEASE(connections);
+        }
+    }
+    return res;
+}
+
 static void JXTA_STDCALL peerview_event_listener(Jxta_object * obj, void *arg)
 {
     Jxta_status res = 0;
@@ -1526,7 +1563,7 @@ static void JXTA_STDCALL peerview_event_listener(Jxta_object * obj, void *arg)
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "DEMOTE EVENT FROM PEERVIEW \n");
         if (status_rendezvous == myself->status) {
             myself->is_demoting = TRUE;
-        } 		
+        }
         rdv_service_switch_config((Jxta_rdv_service *)myself, config_edge);
         break;
     default:

@@ -97,6 +97,8 @@ struct _jxta_RdvConfigAdvertisement {
     Jxta_vector *seeds;
     Jxta_vector *seeding;
 
+    Jxta_time_diff connect_time_interval;
+
     /* Peerview attributes */
     int pv_clusters;
     int pv_members;
@@ -363,6 +365,16 @@ JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_connect_delay(Jxta_RdvConfigAdve
 JXTA_DECLARE(void) jxta_RdvConfig_set_connect_delay(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff delay)
 {
     ad->connect_delay = delay;
+}
+
+JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_connect_time_interval(Jxta_RdvConfigAdvertisement * ad)
+{
+    return ad->connect_time_interval;
+}
+
+JXTA_DECLARE(void) jxta_RdvConfig_set_connect_time_interval(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff time)
+{
+    ad->connect_time_interval = time;
 }
 
 /*-----------------------------------  Peerview --------------------------  */
@@ -670,6 +682,8 @@ void handleJxta_RdvConfigAdvertisement(void *me, const XML_Char * cd, int len)
                 myself->auto_rdv_interval = atol(atts[1]);
             } else if (0 == strcmp(*atts, "probeRelays")) {
                 myself->probe_relays = 0 == strcmp(atts[1], "true");
+            } else if (0 == strcmp(*atts, "connectTimeInterval")) {
+                myself->connect_time_interval = atoi(atts[1]);
             } else if (0 == strcmp(*atts, "connectCycleNormal")) {
                 myself->connect_cycle_normal = atoi(atts[1]);
             } else if (0 == strcmp(*atts, "connectCycleFast")) {
@@ -886,6 +900,14 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, " maxClients=\"");
         apr_snprintf(tmpbuf, sizeof(tmpbuf), "%d", ad->max_clients);
+        jstring_append_2(string, tmpbuf);
+        jstring_append_2(string, "\"");
+    }
+
+    if (-1 != ad->connect_time_interval) {
+        jstring_append_2(string, "\n    ");
+        jstring_append_2(string, "connectTimeInterval=\"");
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->connect_time_interval);
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
@@ -1137,6 +1159,7 @@ Jxta_RdvConfigAdvertisement *jxta_RdvConfigAdvertisement_construct(Jxta_RdvConfi
         self->max_retry_delay = -1;
         self->lease_margin = -1;
         self->min_connected_rendezvous = -1;
+        self->connect_time_interval = -1;
         self->connect_cycle_normal = -1;
         self->connect_cycle_fast = -1;
         self->rdva_refresh = -1;

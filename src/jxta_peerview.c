@@ -3975,7 +3975,7 @@ static Jxta_status probe_a_seed(Jxta_peerview * me)
         }
 
         if (NULL != me->rdv) {
-            res = rdv_service_get_seeds(me->rdv, &me->activity_locate_seeds);
+            res = rdv_service_get_seeds(me->rdv, &me->activity_locate_seeds, TRUE);
 
             /* Send a broadcast probe */
             res = rdv_service_send_seed_request(me->rdv);

@@ -194,6 +194,31 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_get_peers(Jxta_rdv_service * rdv, Jxt
 **/
 JXTA_DECLARE(Jxta_status) jxta_rdv_service_add_event_listener(Jxta_rdv_service * rdv, const char *serviceName,
                                                               const char *serviceParam, void *listener);
+/**
+ * Callback to provide a vector of candidate peers from the list of potential peers.
+ *
+ * @param connections A vector containing current connections
+ * @param candidates A vector of candidates that are available.
+ * @param new_candidates A pointer to store a new candidate list.
+ * @param shuffle A pointer to store shuffle indicator.
+ *                TRUE - Shuffle the candidate list
+ *                FALSE - Try rendezvous in candidate list order
+ *
+ * @return  TRUE - attempt connection 
+ *          FALSE - Do not attempt connection (begin referral and seeding again).
+ **/
+typedef Jxta_boolean(JXTA_STDCALL * Jxta_rendezvous_candidate_list_func) ( Jxta_vector * connections, Jxta_vector const *candidates, Jxta_vector **new_candidates, Jxta_boolean *shuffle);
+
+/**
+ * Sets a callback that is invoked before a client attempts connecting to rendezvous peers.
+ * Any modifications to the candidate vector i.e. sorting, trimming, adding can be performed and the client
+ * will use the modified list.
+ *
+ * @param rdv a pointer to the instance of the rendezvous service
+ * @param func function to invoke when rendezvous connection should be attempted
+ * @return error code.
+**/
+JXTA_DECLARE(Jxta_status) jxta_rdv_service_set_candidate_list_func(Jxta_rdv_service * rdv, Jxta_rendezvous_candidate_list_func func);
 
 /**
 * Removes an Event listener
