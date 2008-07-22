@@ -338,7 +338,7 @@ static int jxta_id_uuid_compare_priv(apr_uuid_t * a, apr_uuid_t * b, Jpr_absolut
         timesa = ntohs(((_uuid_fmt *)a)->clock_seq & 0x3fff);
         timesb = ntohs(((_uuid_fmt *)b)->clock_seq & 0x3fff);
         if (timesa != timesb) {
-            return timela > timelb ? UUID_GREATER_THAN:UUID_LESS_THAN;
+            return timesa > timesb ? UUID_GREATER_THAN:UUID_LESS_THAN;
         }
     }
     return UUID_EQUALS;
@@ -348,10 +348,14 @@ apr_uuid_t * jxta_id_uuid_increment_seq_number(apr_uuid_t * a) {
     apr_uuid_t *uuid;
     uuid = calloc(1, sizeof(apr_uuid_t));
     if (NULL != uuid) {
+        apr_uint16_t tmp_seq;
+
         memmove(uuid, a, sizeof(apr_uuid_t));
-        ((_uuid_fmt *)uuid)->clock_seq = ntohs(((_uuid_fmt *)uuid)->clock_seq);
-        ((_uuid_fmt *)uuid)->clock_seq++;
+        tmp_seq = ntohs(((_uuid_fmt *)uuid)->clock_seq);
+        tmp_seq++;
+        ((_uuid_fmt *)uuid)->clock_seq = htons(tmp_seq);
     }
+
     return uuid;
 }
 

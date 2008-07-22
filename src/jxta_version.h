@@ -12,6 +12,7 @@ extern "C" {
 #endif
 
 #define SRDI_DELTA_OPTIMIZATIONS  "3.1"
+#define PEERVIEW_UUID_IMPLEMENTATION "3.1"
 
 typedef struct _jxta_version Jxta_version;
 

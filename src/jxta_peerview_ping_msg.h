@@ -88,6 +88,9 @@ JXTA_DECLARE(void) jxta_peerview_ping_msg_set_dst_peer_id(Jxta_peerview_ping_msg
 JXTA_DECLARE(Jxta_endpoint_address *) jxta_peerview_ping_msg_get_dst_peer_ea(Jxta_peerview_ping_msg * myself);
 JXTA_DECLARE(void) jxta_peerview_ping_msg_set_dst_peer_ea(Jxta_peerview_ping_msg * myself, Jxta_endpoint_address *);
 
+JXTA_DECLARE(Jxta_boolean) jxta_peerview_ping_msg_is_pv_id_only(Jxta_peerview_ping_msg * myself);
+JXTA_DECLARE(void) jxta_peerview_ping_msg_set_pv_id_only(Jxta_peerview_ping_msg * myself, Jxta_boolean id_only);
+
 JXTA_DECLARE(apr_uuid_t*) jxta_peerview_ping_msg_get_dest_peer_adv_gen(Jxta_peerview_ping_msg * me);
 JXTA_DECLARE(void) jxta_peerview_ping_msg_set_dest_peer_adv_gen(Jxta_peerview_ping_msg * me, apr_uuid_t*);
 

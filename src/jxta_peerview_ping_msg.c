@@ -92,7 +92,7 @@ struct _Jxta_peerview_ping_msg {
     Jxta_endpoint_address *dst_peer_ea;
     Jxta_boolean dst_peer_adv_gen_set;
     apr_uuid_t dst_peer_adv_gen;
-    
+    Jxta_boolean pv_id_only;
     Jxta_credential * credential;
     
     Jxta_vector * options;
@@ -175,6 +175,7 @@ static Jxta_peerview_ping_msg *peerview_ping_msg_construct(Jxta_peerview_ping_ms
         myself->src_peer_id = JXTA_OBJECT_SHARE(jxta_id_nullID);
         myself->dst_peer_id = JXTA_OBJECT_SHARE(jxta_id_nullID);
         myself->dst_peer_ea = NULL;
+        myself->pv_id_only = FALSE;
         myself->dst_peer_adv_gen_set = FALSE;
         myself->credential = NULL;
         myself->options = jxta_vector_new(0);
@@ -268,7 +269,9 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_ping_msg_get_xml(Jxta_peerview_ping_msg 
     jstring_append_1(string, tempstr);
     JXTA_OBJECT_RELEASE(tempstr);
     jstring_append_2(string, "\"");
-
+    if (myself->pv_id_only) {
+        jstring_append_2(string, " pv_id_only=\"yes\"");
+    }
     if( !jxta_id_equals(myself->dst_peer_id, jxta_id_nullID)) {
         jstring_append_2(string, " dst_id=\"");
         jxta_id_to_jstring(myself->dst_peer_id, &tempstr);
@@ -366,6 +369,16 @@ JXTA_DECLARE(void) jxta_peerview_ping_msg_set_dst_peer_ea(Jxta_peerview_ping_msg
     }
 }
 
+JXTA_DECLARE(Jxta_boolean) jxta_peerview_ping_msg_is_pv_id_only(Jxta_peerview_ping_msg * myself)
+{
+    return myself->pv_id_only;
+}
+
+JXTA_DECLARE(void) jxta_peerview_ping_msg_set_pv_id_only(Jxta_peerview_ping_msg * myself, Jxta_boolean pv_id_only)
+{
+    myself->pv_id_only = pv_id_only;
+}
+
 JXTA_DECLARE(apr_uuid_t *) jxta_peerview_ping_msg_get_dest_peer_adv_gen(Jxta_peerview_ping_msg * myself)
 {
     JXTA_OBJECT_CHECK_VALID(myself);
@@ -444,6 +457,12 @@ static void handle_peerview_ping_msg(void *me, const XML_Char * cd, int len)
                 /* just silently skip it. */
             } else if (0 == strcmp(*atts, "xmlns:jxta")) {
                 /* just silently skip it. */
+            } else if (0 == strcmp(*atts, "pv_id_only")) {
+                if (0 == strcmp(atts[1], "yes")) {
+                    myself->pv_id_only = TRUE;
+                } else {
+                    myself->pv_id_only = FALSE;
+                }
             } else if (0 == strcmp(*atts, "src_id")) {
                 JString *idstr = jstring_new_2(atts[1]);
                 jstring_trim(idstr);

@@ -109,6 +109,10 @@ struct _Jxta_peerview_pong_msg {
     Jxta_peerview_peer_info * peer;
 
     Jxta_PA *peer_adv;
+    Jxta_boolean pv_id_gen_set;
+    apr_uuid_t pv_id_gen;
+    Jxta_boolean pv_id_gen_only;
+
     Jxta_boolean peer_adv_gen_set;
     apr_uuid_t peer_adv_gen;
     Jxta_time_diff peer_adv_exp;
@@ -120,7 +124,6 @@ struct _Jxta_peerview_pong_msg {
     Jxta_vector *candidates;
 
     Jxta_vector *options;
-
 
     Jxta_pong_msg_rdv_state  rdv_state;
     Jxta_pong_msg_action pong_action;
@@ -213,6 +216,8 @@ JXTA_DECLARE(Jxta_peerview_pong_msg *) jxta_peerview_pong_msg_new(void)
         myself->peer = peerview_peer_info_new( JXTA_OBJECT_SHARE(jxta_id_nullID), NULL, NULL, NULL, NULL );
         myself->credential = NULL;
         myself->instance_mask = NULL;
+        myself->pv_id_gen_set = FALSE;
+        myself->pv_id_gen_only = FALSE;
         myself->peer_adv = NULL;
         myself->peer_adv_gen_set = FALSE;
         myself->peer_adv_exp = -1;
@@ -475,6 +480,41 @@ JXTA_DECLARE(void) jxta_peerview_pong_msg_set_peer_adv(Jxta_peerview_pong_msg * 
     }
 }
 
+JXTA_DECLARE(apr_uuid_t *) jxta_peerview_pong_msg_get_pv_id_gen(Jxta_peerview_pong_msg * myself)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    if (myself->pv_id_gen_set) {
+        apr_uuid_t *result = (apr_uuid_t *) calloc(1, sizeof(apr_uuid_t));
+
+        if (NULL != result) {
+            *result = myself->pv_id_gen;
+        }
+
+        return result;
+    } else {
+        return NULL;
+    }
+}
+
+JXTA_DECLARE(void) jxta_peerview_pong_msg_set_pv_id_gen(Jxta_peerview_pong_msg * myself, apr_uuid_t const * pv_id_gen)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    myself->pv_id_gen_set = (NULL != pv_id_gen);
+
+    if (myself->pv_id_gen_set) {
+        memcpy( &myself->pv_id_gen, pv_id_gen, sizeof(apr_uuid_t) );
+    }
+}
+
+JXTA_DECLARE(Jxta_boolean) jxta_peerview_pong_msg_is_compact(Jxta_peerview_pong_msg * myself)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    return myself->pv_id_gen_only;
+}
+
 JXTA_DECLARE(apr_uuid_t *) jxta_peerview_pong_msg_get_peer_adv_gen(Jxta_peerview_pong_msg * myself)
 {
     JXTA_OBJECT_CHECK_VALID(myself);
@@ -580,6 +620,15 @@ static Jxta_status validate_message(Jxta_peerview_pong_msg * myself) {
         return JXTA_INVALID_ARGUMENT;
     }
 
+    if (myself->pv_id_gen_only) {
+        if (myself->pv_id_gen_set) {
+            return JXTA_SUCCESS;
+        } else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "must have a pv_id_gen if pv_id_gen_only is indicated [%pp]\n", myself);
+            return JXTA_INVALID_ARGUMENT;
+        }
+    }
+
     if ( NULL == myself->instance_mask ) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Instance mask must not be NULL [%pp]\n", myself);
         return JXTA_INVALID_ARGUMENT;
@@ -605,6 +654,50 @@ static Jxta_status validate_message(Jxta_peerview_pong_msg * myself) {
             return JXTA_INVALID_ARGUMENT;
         }
     }
+
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml_1(Jxta_peerview_pong_msg * myself, JString ** xml)
+{
+    Jxta_status res=JXTA_SUCCESS;
+    JString *string;
+    char tmpbuf[256];
+    JString *temp;
+
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    if (xml == NULL) {
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    if( JXTA_SUCCESS != res ) {
+        return res;
+    }
+
+    string = jstring_new_0();
+
+    jstring_append_2(string, "<jxta:PeerviewPong");
+    jstring_append_2(string, " pv_id_only=\"true\"");
+    if (myself->pv_id_gen_set) {
+        apr_uuid_t *apv_id_gen = jxta_peerview_pong_msg_get_pv_id_gen(myself);
+
+        apr_uuid_format(tmpbuf, apv_id_gen);
+        free(apv_id_gen);
+        jstring_append_2(string, " pv_id_gen=\"");
+        jstring_append_2(string, tmpbuf);
+        jstring_append_2(string, "\"");
+    }
+    jstring_append_2(string, " peer_id=\"");
+    jxta_id_to_jstring(myself->peer->peer_id, &temp);
+    jstring_append_1(string, temp);
+    JXTA_OBJECT_RELEASE(temp);
+    jstring_append_2(string, "\"");
+
+    jstring_append_2(string, ">");
+    jstring_append_2(string, "</jxta:PeerviewPong>\n");
+
+    *xml = string;
 
     return JXTA_SUCCESS;
 }
@@ -637,6 +730,15 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml(Jxta_peerview_pong_msg 
     jstring_append_1(string, temp);
     JXTA_OBJECT_RELEASE(temp);
     jstring_append_2(string, "\"");
+    if (myself->pv_id_gen_set) {
+        apr_uuid_t *apv_id_gen = jxta_peerview_pong_msg_get_pv_id_gen(myself);
+
+        apr_uuid_format(tmpbuf, apv_id_gen);
+        free(apv_id_gen);
+        jstring_append_2(string, " pv_id_gen=\"");
+        jstring_append_2(string, tmpbuf);
+        jstring_append_2(string, "\"");
+    }
     jstring_append_2(string, " rdv_state=\"");
     myself->rdv_state = myself->is_rendezvous ? RDV_STATE_RENDEZVOUS:RDV_STATE_EDGE;
     if (myself->is_demoting) {
@@ -932,6 +1034,25 @@ static void handle_peerview_pong_msg(void *me, const XML_Char * cd, int len)
                     myself->peer->peer_id = NULL;
                 }
                 JXTA_OBJECT_RELEASE(idstr);
+            } else if (0 == strcmp(*atts, "pv_id_gen")) {
+                JString *id_gen_j = jstring_new_0();
+                char tmpbuf[64];
+                apr_status_t ret;
+                apr_uuid_t pv_id_gen;
+
+                jstring_append_0( id_gen_j, atts[1], strlen(atts[1]));
+                jstring_trim(id_gen_j);
+                ret = apr_uuid_parse( &pv_id_gen, jstring_get_string(id_gen_j));
+                if (APR_SUCCESS == ret) {
+                    jxta_peerview_pong_msg_set_pv_id_gen(myself, &pv_id_gen);
+
+                    apr_uuid_format(tmpbuf, &pv_id_gen);
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "parsed :%s\n", tmpbuf);
+                } else {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Error parsing UUID:%s\n", jstring_get_string(id_gen_j));
+                }
+            } else if (0== strcmp(*atts, "pv_id_only")) {
+                myself->pv_id_gen_only = (0 == strcmp(atts[1], "true"));
             } else if (0 == strcmp(*atts, "rdv_state")) {
                 Jxta_pong_msg_rdv_state state;
                 myself->is_demoting = FALSE;

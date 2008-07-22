@@ -98,6 +98,9 @@ JXTA_DECLARE_DATA const char JXTA_PEERVIEW_PONG_ELEMENT_NAME[];
 
 JXTA_DECLARE(Jxta_peerview_pong_msg *) jxta_peerview_pong_msg_new(void);
 JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml(Jxta_peerview_pong_msg *, JString ** xml);
+JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml_1(Jxta_peerview_pong_msg * myself, JString ** xml);
+JXTA_DECLARE(Jxta_boolean) jxta_peerview_pong_msg_is_compact(Jxta_peerview_pong_msg * myself);
+
 JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_parse_charbuffer(Jxta_peerview_pong_msg *, const char *, int len);
 JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_parse_file(Jxta_peerview_pong_msg *, FILE * stream);
 
@@ -127,6 +130,9 @@ JXTA_DECLARE(void) jxta_peerview_pong_msg_set_rendezvous(Jxta_peerview_pong_msg 
 
 JXTA_DECLARE(Jxta_boolean) jxta_peerview_pong_msg_is_demoting(Jxta_peerview_pong_msg * myself);
 JXTA_DECLARE(void) jxta_peerview_pong_msg_set_is_demoting(Jxta_peerview_pong_msg * myself, Jxta_boolean demote);
+
+JXTA_DECLARE(apr_uuid_t *) jxta_peerview_pong_msg_get_pv_id_gen(Jxta_peerview_pong_msg * myself);
+JXTA_DECLARE(void) jxta_peerview_pong_msg_set_pv_id_gen(Jxta_peerview_pong_msg * myself, apr_uuid_t const * pv_id_gen);
 
 JXTA_DECLARE(Jxta_PA *) jxta_peerview_pong_msg_get_peer_adv(Jxta_peerview_pong_msg * me);
 JXTA_DECLARE(void) jxta_peerview_pong_msg_set_peer_adv(Jxta_peerview_pong_msg * me, Jxta_PA *peer_adv);
