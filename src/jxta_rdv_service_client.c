@@ -93,7 +93,7 @@ static const char *__log_cat = "RdvEdge";
 /**
  * Time the client waits when there is a candidate list call back before attempting a rendezvous connection
 **/
-static const Jxta_time_diff CONNECT_TIME_INTERVAL = ((Jxta_time_diff) 60) * 1000;  /* 1 Minute */
+static const Jxta_time_diff CONNECT_TIME_INTERVAL = ((Jxta_time_diff) 15) * 1000;  /* 15 seconds */
 
 /**
  * "Normal" time the background thread sleeps between runs. "Normal" usually
@@ -561,7 +561,7 @@ static Jxta_status start(Jxta_rdv_service_provider * provider)
 
     jxta_rdv_service_provider_unlock_priv(provider);
 
-    myself->connect_time = jxta_RdvConfig_get_connect_time_interval(myself->rdvConfig) + jpr_time_now();
+    myself->connect_time = jpr_time_now();
 
     rdv_service_generate_event(provider->service, JXTA_RDV_BECAME_EDGE, provider->local_peer_id);
 
@@ -1464,7 +1464,7 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
 
         /* Final lap -- try to connect to a candidate rdv */
         if (NULL != myself->candidate) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Try connecting to candidate.\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Try connecting to candidate.\n");
 
             if ((myself->candidate->lastConnectTry + myself->candidate->connectInterval) > jpr_time_now()) {
                 /* Time for the next candidate. */
