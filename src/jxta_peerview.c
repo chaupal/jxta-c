@@ -934,7 +934,7 @@ static void peerview_update_id(Jxta_peerview * myself)
 
     }
     apr_uuid_format(tmp, &myself->pv_id_gen);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Created a new pv_id_gen %s \n", tmp);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Created a new pv_id_gen %s \n", tmp);
 }
 
 /* 
@@ -3221,7 +3221,7 @@ UNLOCK_EXIT:
             res = peerview_send_pong(me, newPeer, action, send_candidates, FALSE);
         }
         if (send_ping) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "------------- Sending ping for updated pv_id_gen\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "------------- Sending ping for updated pv_id_gen\n");
             res = peerview_send_ping(me, newPeer, NULL, FALSE);
         }
         JXTA_OBJECT_RELEASE(newPeer);
