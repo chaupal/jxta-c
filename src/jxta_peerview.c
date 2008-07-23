@@ -2599,8 +2599,6 @@ static Jxta_status create_pve_from_pong(Jxta_peerview * me, Jxta_peerview_pong_m
     pve = peerview_entry_new(pid, NULL, pa, pv_id_gen);
     /* free(pv_id_gen); */
 
-    /* Ping the new entry in maintenance task. */
-    jxta_peer_set_expires((Jxta_peer *) pve, jpr_time_now() + jxta_RdvConfig_pv_ping_due(me->rdvConfig));
 
     BN_hex2bn(&pve->target_hash, jxta_peerview_pong_msg_get_target_hash(pong));
     BN_hex2bn(&pve->target_hash_radius, jxta_peerview_pong_msg_get_target_hash_radius(pong));
@@ -2615,6 +2613,8 @@ static Jxta_status create_pve_from_pong(Jxta_peerview * me, Jxta_peerview_pong_m
     if (-1L == pve->adv_exp) {
         pve->adv_exp = jxta_RdvConfig_pv_entry_expires(me->rdvConfig);
     }
+
+    jxta_peer_set_expires((Jxta_peer *) pve, jpr_time_now() + pve->adv_exp);
     pve->adv_gen_set = TRUE;
     memmove(&pve->adv_gen, adv_gen, sizeof(apr_uuid_t));
     free(adv_gen);
@@ -4397,7 +4397,7 @@ static Jxta_status check_pves(Jxta_peerview * me, Jxta_vector *pves)
                 pv_id_gen = &a_pve->pv_id_gen;
             }
             peer_version = jxta_PA_get_version(((_jxta_peer_entry *) a_pve)->adv);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "------------- Sending ping for maintenance\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Sending ping for maintenance\n");
             res = peerview_send_ping(me, (Jxta_peer *) a_pve, &a_pve->adv_gen, jxta_version_compatible_1(PEERVIEW_UUID_IMPLEMENTATION, peer_version) ? TRUE:FALSE);
         }
 
