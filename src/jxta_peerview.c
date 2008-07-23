@@ -1650,7 +1650,7 @@ static Jxta_status peerview_send_address_request(Jxta_peerview * myself, Jxta_pe
     }
     JXTA_OBJECT_RELEASE(pa);
 
-    jxta_peerview_address_request_msg_set_peer_adv_exp(addr_req, 20 * 60 * JPR_INTERVAL_ONE_SECOND);
+    jxta_peerview_address_request_msg_set_peer_adv_exp(addr_req, jxta_RdvConfig_pv_entry_expires(myself->rdvConfig));
 
     res = jxta_peerview_address_request_msg_get_xml(addr_req, &addr_req_xml);
     JXTA_OBJECT_RELEASE(addr_req);
@@ -3093,6 +3093,8 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
         if (NULL != pve) {
             apr_uuid_t * pv_id_gen;
 
+           jxta_id_to_jstring(pid, &pid_j);
+
             pv_id_gen = jxta_peerview_pong_msg_get_pv_id_gen(pong);
             if (NULL == pv_id_gen) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Received invalid PONG msg with no peerview adv_gen\n");
@@ -3102,10 +3104,11 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
                 send_ping= TRUE;
                 apr_uuid_format(tmp, pv_id_gen);
                 apr_uuid_format(tmp1, &pve->pv_id_gen);
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Received pv_id_gen:%s ---- previous pv_id_gen:%s\n", tmp, tmp1);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Received pv_id_gen:%s ---- previous pv_id_gen:%s %s\n", tmp, tmp1, jstring_get_string(pid_j));
             } else {
                 jxta_peer_set_expires((Jxta_peer *) pve, jpr_time_now() + pve->adv_exp);
             }
+            JXTA_OBJECT_RELEASE(pid_j);
         }
         goto UNLOCK_EXIT;
     }
@@ -5044,6 +5047,8 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
                 apr_thread_pool_push(me->thread_pool, call_event_listeners_thread, (void*) me, 
                                      APR_THREAD_TASK_PRIORITY_HIGH, me);
             }
+            peerview_update_id(me);
+
             apr_thread_mutex_unlock(me->mutex);
         }
         else {
