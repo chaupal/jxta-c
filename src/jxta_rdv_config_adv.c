@@ -760,9 +760,9 @@ static void handlePeerView(void *me, const XML_Char * cd, int len)
             } else if (0 == strcmp(*atts, "pv_loneliness")) {
                 myself->pv_loneliness = atoi(atts[1]);
             } else if (0 == strcmp(*atts, "pv_add_interval")) {
-                myself->pv_add_interval = (atol(atts[1]) * JPR_INTERVAL_ONE_SECOND);
+                myself->pv_add_interval = (atol(atts[1]));
             } else if (0 == strcmp(*atts, "pv_maintenance_interval")) {
-                myself->pv_maintenance_interval = (atol(atts[1]) * JPR_INTERVAL_ONE_SECOND);
+                myself->pv_maintenance_interval = (atol(atts[1]));
             } else if (0 == strcmp(*atts, "pv_max_locate_probes")) {
                 myself->pv_max_locate_probes = atoi(atts[1]);
             } else if (0 == strcmp(*atts, "pv_max_address_requests")) {
@@ -770,15 +770,15 @@ static void handlePeerView(void *me, const XML_Char * cd, int len)
             } else if (0 == strcmp(*atts, "pv_max_ping_probes")) {
                 myself->pv_max_ping_probes = atoi(atts[1]);
             } else if (0 == strcmp(*atts, "pv_entry_expires")) {
-                myself->pv_entry_expires = (atol(atts[1]) * JPR_INTERVAL_ONE_SECOND);
+                myself->pv_entry_expires = (atol(atts[1]));
             } else if (0 == strcmp(*atts, "pv_ping_due")) {
-                myself->pv_ping_due = (atol(atts[1]) * JPR_INTERVAL_ONE_SECOND);
+                myself->pv_ping_due = (atol(atts[1]));
             } else if (0 == strcmp(*atts, "pv_pong_due")) {
-                myself->pv_pong_due = (atol(atts[1]) * JPR_INTERVAL_ONE_SECOND);
+                myself->pv_pong_due = (atol(atts[1]));
             } else if (0 == strcmp(*atts, "pv_voting_expiration")) {
-                myself->pv_voting_expiration = (atol(atts[1]) * JPR_INTERVAL_ONE_SECOND);
+                myself->pv_voting_expiration = (atol(atts[1]));
             } else if (0 == strcmp(*atts, "pv_voting_wait")) {
-                myself->pv_voting_wait = (atol(atts[1]) * JPR_INTERVAL_ONE_SECOND);
+                myself->pv_voting_wait = (atol(atts[1]));
             } else {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized PeerView attribute : \"%s\" = \"%s\"\n", *atts,
                                 atts[1]);
@@ -860,7 +860,7 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
     unsigned int eachSeed;
 
 
-    jstring_append_2(string, "<!-- JXTA Rdv Configuration Advertisement times in microseconds -->\n");
+    jstring_append_2(string, "<!-- JXTA Rdv Configuration Advertisement times in milliseconds -->\n");
     jstring_append_2(string, "<jxta:RdvConfig xmlns:jxta=\"http://jxta.org\"");
     jstring_append_2(string, " config=\"");
     switch (ad->config) {
@@ -998,7 +998,7 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
     if (-1 != ad->pv_add_interval) {
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, "pv_add_interval=\"");
-        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->pv_add_interval / JPR_INTERVAL_ONE_SECOND);
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->pv_add_interval);
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
@@ -1006,7 +1006,7 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
     if (-1 != ad->pv_maintenance_interval) {
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, "pv_maintenance_interval=\"");
-        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->pv_maintenance_interval / JPR_INTERVAL_ONE_SECOND);
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->pv_maintenance_interval);
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
@@ -1038,7 +1038,7 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
     if (-1 != ad->pv_entry_expires) {
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, "pv_entry_expires=\"");
-        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->pv_entry_expires / JPR_INTERVAL_ONE_SECOND);
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->pv_entry_expires);
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
@@ -1046,7 +1046,7 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
     if (-1 != ad->pv_ping_due) {
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, "pv_ping_due=\"");
-        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->pv_ping_due / JPR_INTERVAL_ONE_SECOND);
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->pv_ping_due);
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
@@ -1054,7 +1054,7 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
     if (-1 != ad->pv_pong_due) {
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, "pv_pong_due=\"");
-        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->pv_pong_due / JPR_INTERVAL_ONE_SECOND);
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->pv_pong_due);
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
@@ -1062,7 +1062,7 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
     if (-1 != ad->pv_voting_expiration) {
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, "pv_voting_expiration=\"");
-        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->pv_voting_expiration / JPR_INTERVAL_ONE_SECOND);
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->pv_voting_expiration);
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
@@ -1070,7 +1070,7 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
     if (-1 != ad->pv_voting_wait) {
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, "pv_voting_wait=\"");
-        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->pv_voting_wait / JPR_INTERVAL_ONE_SECOND);
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->pv_voting_wait);
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
