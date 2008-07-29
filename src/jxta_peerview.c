@@ -920,7 +920,6 @@ static void peerview_update_id(Jxta_peerview * myself)
         if (uuid_ptr) {
             memmove(&myself->pv_id_gen, uuid_ptr, sizeof(apr_uuid_t));
             myself->pv_id_gen_set = TRUE;
-            free(uuid_ptr);
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to obtain a new uuid\n");
         }
@@ -931,10 +930,12 @@ static void peerview_update_id(Jxta_peerview * myself)
         memmove(&myself->pv_id_gen, uuid_ptr, sizeof(apr_uuid_t));
         apr_uuid_format(tmp, &myself->pv_id_gen);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Incremented uuid %s \n", tmp);
-
     }
     apr_uuid_format(tmp, &myself->pv_id_gen);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Created a new pv_id_gen %s \n", tmp);
+    if (uuid_ptr) {
+        free(uuid_ptr);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Created a new pv_id_gen %s \n", tmp);
+    }
 }
 
 /* 
@@ -2597,7 +2598,7 @@ static Jxta_status create_pve_from_pong(Jxta_peerview * me, Jxta_peerview_pong_m
     }
 
     pve = peerview_entry_new(pid, NULL, pa, pv_id_gen);
-    /* free(pv_id_gen); */
+    free(pv_id_gen);
 
 
     BN_hex2bn(&pve->target_hash, jxta_peerview_pong_msg_get_target_hash(pong));
@@ -3091,7 +3092,7 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
         pve = peerview_get_pve(me, pid);
 
         if (NULL != pve) {
-            apr_uuid_t * pv_id_gen;
+            apr_uuid_t * pv_id_gen=NULL;
 
            jxta_id_to_jstring(pid, &pid_j);
 
@@ -3108,6 +3109,8 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
             } else {
                 jxta_peer_set_expires((Jxta_peer *) pve, jpr_time_now() + pve->adv_exp);
             }
+            if (pv_id_gen)
+                free(pv_id_gen);
             JXTA_OBJECT_RELEASE(pid_j);
         }
         goto UNLOCK_EXIT;

@@ -1051,6 +1051,7 @@ static void handle_peerview_pong_msg(void *me, const XML_Char * cd, int len)
                 } else {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Error parsing UUID:%s\n", jstring_get_string(id_gen_j));
                 }
+                JXTA_OBJECT_RELEASE(id_gen_j);
             } else if (0== strcmp(*atts, "pv_id_only")) {
                 myself->pv_id_gen_only = (0 == strcmp(atts[1], "true"));
             } else if (0 == strcmp(*atts, "rdv_state")) {
