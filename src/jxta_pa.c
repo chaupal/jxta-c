@@ -140,6 +140,12 @@ static void handleJxta_PA(void *me, const XML_Char * cd, int len)
                     jxta_version_set_minor_version(myself->protocol_version, 0);
                 }
 
+            } else if (0 == strcmp(*atts, "type")) {
+                /* just silently skip it */
+            } else if (0 == strcmp(*atts, "expiration")) {
+                /* just silently skip it */
+            } else if (0 == strcmp(*atts, "adv_gen")) {
+                /* just silently skip it */
             } else {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
             }

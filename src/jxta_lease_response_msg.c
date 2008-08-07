@@ -205,6 +205,8 @@ static void handle_server_adv(void *me, const XML_Char * cd, int len)
                 /* just silently skip it. */
             } else if (0 == strcmp(*atts, "xmlns:jxta")) {
                 /* just silently skip it. */
+            } else if (0 == strcmp(*atts, "pVer")) {
+                /* just silently skip it. */
             } else if (0 == strcmp(*atts, "adv_gen")) {
                 if (APR_SUCCESS != apr_uuid_parse(&server_adv_gen, atts[1])) {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,
@@ -259,6 +261,8 @@ static void handle_referral_adv(void *me, const XML_Char * cd, int len)
             if (0 == strcmp(*atts, "type")) {
                 /* just silently skip it. */
             } else if (0 == strcmp(*atts, "xmlns:jxta")) {
+                /* just silently skip it. */
+            } else if (0 == strcmp(*atts, "pVer")) {
                 /* just silently skip it. */
             } else if (0 == strcmp(*atts, "adv_gen")) {
                 if (APR_SUCCESS != apr_uuid_parse(&referral_adv_gen, atts[1])) {
