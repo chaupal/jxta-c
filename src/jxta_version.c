@@ -9,9 +9,6 @@ static const char *const __log_cat = "VERSION";
 #include <ctype.h>
 #include <stdio.h>
 
-#define CURRENT_MAJOR_VERSION 3
-#define CURRENT_MINOR_VERSION 1
-
 struct _jxta_version {
     JXTA_OBJECT_HANDLE;
 	unsigned int protocol_major_version;

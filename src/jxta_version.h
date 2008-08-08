@@ -11,8 +11,12 @@ extern "C" {
 };
 #endif
 
+#define CURRENT_MAJOR_VERSION 3
+#define CURRENT_MINOR_VERSION 2 
+
 #define SRDI_DELTA_OPTIMIZATIONS  "3.1"
-#define PEERVIEW_UUID_IMPLEMENTATION "3.1"
+#define PEERVIEW_UUID_IMPLEMENTATION "3.2"
+
 
 typedef struct _jxta_version Jxta_version;
 
