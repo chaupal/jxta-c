@@ -1521,7 +1521,7 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
 
     jxta_id_to_jstring(peer_id, &pid);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Trying to find PA for peerid:%s\n", jstring_get_string(pid) );
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Trying to find PA for peerid:%s\n", jstring_get_string(pid) );
 
     rv = jxta_rdv_service_get_peers(rdv, &peers);
     if (NULL != peers) {
