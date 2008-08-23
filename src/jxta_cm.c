@@ -1957,6 +1957,7 @@ static Jxta_status cm_srdi_seq_number_update(Jxta_cm * me, JString * jPeerid, Jx
     }
     jUpdate_sql = jstring_new_0();
     jUpdate_final = jstring_new_0();
+    jColumns = jstring_new_0();
 
     /* update the index table */
 
@@ -1971,6 +1972,7 @@ static Jxta_status cm_srdi_seq_number_update(Jxta_cm * me, JString * jPeerid, Jx
         } else {
             goto FINAL_EXIT;
         }
+
         jstring_append_1(jUpdate_final, jUpdate_sql);
         jstring_append_1(jUpdate_final, jColumns);
     } else {
@@ -2001,7 +2003,10 @@ static Jxta_status cm_srdi_seq_number_update(Jxta_cm * me, JString * jPeerid, Jx
     dbSpace = NULL;
 
     if (NULL != entry->value) {
-        jstring_append_2(jColumns, SQL_COMMA CM_COL_Value SQL_EQUAL);
+        if (jstring_length(jColumns) > 0) {
+            jstring_append_2(jColumns, SQL_COMMA);
+        }
+        jstring_append_2(jColumns, CM_COL_Value SQL_EQUAL);
         SQL_VALUE(jColumns, entry->value);
     }
 
@@ -2020,7 +2025,10 @@ static Jxta_status cm_srdi_seq_number_update(Jxta_cm * me, JString * jPeerid, Jx
     jstring_reset(jUpdate_final, NULL);
 
     if (entry->expiration > 0) {
-        jstring_append_2(jColumns, SQL_COMMA CM_COL_TimeOutForOthers SQL_EQUAL);
+        if (jstring_length(jColumns) > 0) {
+            jstring_append_2(jColumns, SQL_COMMA);
+        }
+        jstring_append_2(jColumns, CM_COL_TimeOutForOthers SQL_EQUAL);
         memset(aTmp, 0, sizeof(aTmp));
         if (apr_snprintf(aTmp, sizeof(aTmp), "%" APR_INT64_T_FMT, entry->expiration) != 0) {
             jstring_append_2(jColumns, aTmp);
