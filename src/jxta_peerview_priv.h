@@ -115,8 +115,10 @@ extern Jxta_status  jxta_peerview_get_self_peer(Jxta_peerview * pv, Jxta_peer **
 extern char * peerview_get_assigned_id_str(Jxta_peerview * pv);
 
 extern Jxta_status jxta_peerview_set_pa_refresh(Jxta_peerview * pv, Jxta_time_diff interval);
+
 extern Jxta_time_diff jxta_peerview_get_pa_refresh(Jxta_peerview * pv);
 
+extern Jxta_status peerview_get_peer(Jxta_peerview * pv, Jxta_id * peer_id, Jxta_peer **peer);
 
 #ifdef __cplusplus
 #if 0

@@ -72,9 +72,11 @@ static const char *__log_cat = "PG";
 #include "jxta_id.h"
 #include "jxta_peergroup.h"
 #include "jxta_peergroup_private.h"
+#include "jxta_peerview_priv.h"
 #include "jxta_objecthashtable.h"
 #include "jxta_endpoint_service_priv.h"
 #include "jxta_discovery_service.h"
+#include "jxta_rdv_service.h"
 #include "jxta_util_priv.h"
 #include "jxta_log.h"
 #include "jxta_dr.h"
@@ -1509,24 +1511,56 @@ static Jxta_status find_peer_PA_remotely(Jxta_discovery_service *ds, JString *pi
 Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_diff timeout, Jxta_PA ** pa)
 {
     Jxta_discovery_service *ds = NULL;
-    JString *pid;
+    Jxta_rdv_service *rdv = NULL;
+    JString *pid=NULL;
     Jxta_vector *res = NULL;
     Jxta_status rv = JXTA_ITEM_NOTFOUND;
+    Jxta_vector *peers=NULL;
 
-    jxta_PG_get_discovery_service(me, &ds);
+    jxta_PG_get_rendezvous_service(me, &rdv);
+
     jxta_id_to_jstring(peer_id, &pid);
-    discovery_service_get_local_advertisements(ds, DISC_PEER, "PID", jstring_get_string(pid), &res);
-    if (res != NULL) {
-        Jxta_PA *padv = NULL;
 
-        assert(jxta_vector_size(res) > 0);
-        jxta_vector_get_object_at(res, JXTA_OBJECT_PPTR(&padv), 0);
-        assert(NULL != padv);
-        JXTA_OBJECT_RELEASE(res);
-        *pa = padv;
-        rv = JXTA_SUCCESS;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Trying to find PA for peerid:%s\n", jstring_get_string(pid) );
+
+    rv = jxta_rdv_service_get_peers(rdv, &peers);
+    if (NULL != peers) {
+        int i;
+
+        for (i=0; i<jxta_vector_size(peers); i++) {
+            Jxta_peer *peer;
+            jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer), i);
+            if (jxta_id_equals(peer_id, jxta_peer_peerid(peer))) {
+                jxta_peer_get_adv(peer, pa);
+                rv = JXTA_SUCCESS;
+            }
+            JXTA_OBJECT_RELEASE(peer);
+            if (JXTA_SUCCESS == rv) break;
+        }
+        JXTA_OBJECT_RELEASE(peers);
     }
+    /* if this peer is a rendezvous the peerview may have the adv */
+    if ( JXTA_ITEM_NOTFOUND == rv && jxta_rdv_service_is_rendezvous(rdv)) {
+        Jxta_peer *peer = NULL;
+        Jxta_peerview *pv = jxta_rdv_service_get_peerview(rdv);
+        if (NULL != pv) {
+            rv = peerview_get_peer(pv, peer_id, &peer);
+        }
+    }
+    if (JXTA_ITEM_NOTFOUND == rv) {
+        jxta_PG_get_discovery_service(me, &ds);
+        discovery_service_get_local_advertisements(ds, DISC_PEER, "PID", jstring_get_string(pid), &res);
+        if (res != NULL) {
+            Jxta_PA *padv = NULL;
 
+            assert(jxta_vector_size(res) > 0);
+            jxta_vector_get_object_at(res, JXTA_OBJECT_PPTR(&padv), 0);
+            assert(NULL != padv);
+            JXTA_OBJECT_RELEASE(res);
+            *pa = padv;
+            rv = JXTA_SUCCESS;
+        }
+    }
     if (JXTA_ITEM_NOTFOUND == rv) {
         if (0 == timeout) {
             /* do a remote query without listener, the result will be published locally. */
@@ -1537,9 +1571,12 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
         }
     }
 
-    JXTA_OBJECT_RELEASE(pid);
-    JXTA_OBJECT_RELEASE(ds);
-
+    if (pid)
+        JXTA_OBJECT_RELEASE(pid);
+    if (ds)
+        JXTA_OBJECT_RELEASE(ds);
+    if (rdv)
+        JXTA_OBJECT_RELEASE(rdv);
     return rv;
 }
 

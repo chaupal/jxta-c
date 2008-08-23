@@ -910,6 +910,20 @@ Jxta_status peerview_start(Jxta_peerview * pv)
     return res;
 }
 
+Jxta_status peerview_get_peer(Jxta_peerview * pv, Jxta_id * peer_id, Jxta_peer **peer)
+{
+    Jxta_status ret = JXTA_ITEM_NOTFOUND;
+    Peerview_entry *pve;
+
+    pve = peerview_get_pve(pv, peer_id);
+    if (NULL != pve) {
+        ret = JXTA_SUCCESS;
+    }
+    *peer = (Jxta_peer *) pve;
+
+    return ret;
+}
+
 static void peerview_update_id(Jxta_peerview * myself)
 {
     apr_uuid_t * uuid_ptr = NULL;
