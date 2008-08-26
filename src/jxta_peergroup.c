@@ -1532,7 +1532,7 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
             jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer), i);
             if (jxta_id_equals(peer_id, jxta_peer_peerid(peer))) {
                 jxta_peer_get_adv(peer, pa);
-                rv = JXTA_SUCCESS;
+                rv = (NULL != *pa) ? JXTA_SUCCESS:JXTA_ITEM_NOTFOUND;
             }
             JXTA_OBJECT_RELEASE(peer);
             if (JXTA_SUCCESS == rv) break;
@@ -1545,6 +1545,10 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
         Jxta_peerview *pv = jxta_rdv_service_get_peerview(rdv);
         if (NULL != pv) {
             rv = peerview_get_peer(pv, peer_id, &peer);
+            if (JXTA_SUCCESS == rv) {
+                jxta_peer_get_adv(peer, pa);
+                rv = (NULL != *pa) ? JXTA_SUCCESS:JXTA_ITEM_NOTFOUND;
+            }
         }
     }
     if (JXTA_ITEM_NOTFOUND == rv) {
@@ -1552,7 +1556,6 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
         discovery_service_get_local_advertisements(ds, DISC_PEER, "PID", jstring_get_string(pid), &res);
         if (res != NULL) {
             Jxta_PA *padv = NULL;
-
             assert(jxta_vector_size(res) > 0);
             jxta_vector_get_object_at(res, JXTA_OBJECT_PPTR(&padv), 0);
             assert(NULL != padv);
