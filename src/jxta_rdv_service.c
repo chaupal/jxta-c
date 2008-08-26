@@ -1526,6 +1526,8 @@ static void JXTA_STDCALL peerview_event_listener(Jxta_object * obj, void *arg)
                 jxta_peer_set_expires(peer, 0L);
                 JXTA_OBJECT_RELEASE(peer);
             }
+        } else if (JXTA_PEERVIEW_REMOVE == event->event) {
+            rdv_service_generate_event(myself, JXTA_RDV_FAILED, event->pid);
         }
         goto FINAL_EXIT;
     }

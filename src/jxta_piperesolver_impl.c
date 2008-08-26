@@ -1306,7 +1306,7 @@ static void JXTA_STDCALL srdi_listener(Jxta_object * obj, void *arg)
                     (bReplica ? "replica" : ""), jstring_get_string(jPeerid), jxta_vector_size(entries));
 
     if (!bReplica) {
-        cm_save_srdi_elements(self->cm, self->name, jPeerid, jPrimaryKey, entries, NULL);
+        cm_save_srdi_elements(self->cm, self->name, jPeerid, jPeerid, jPrimaryKey, entries, NULL);
     } else {
         cm_save_replica_elements(self->cm, self->name, jPeerid, jPrimaryKey, entries, NULL);
     }

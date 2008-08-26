@@ -88,6 +88,7 @@ typedef struct _jxta_EntryElement Jxta_SRDIEntryElement;
 struct _jxta_EntryElement {
     JXTA_OBJECT_HANDLE;
     Jxta_expiration_time expiration;
+    char *db_alias;
     JString *key;
     JString *value;
     JString *nameSpace;
@@ -101,6 +102,8 @@ struct _jxta_EntryElement {
     Jxta_expiration_time next_update_time;
     int delta_window;
     Jxta_boolean replicate;
+    Jxta_boolean duplicate;
+    JString *dup_peerid;
 };
 
 /**
@@ -113,6 +116,8 @@ struct _jxta_EntryElement {
 JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new(void);
 
 JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_1(int TTL, Jxta_id * peerid, char *primarykey, Jxta_vector * entries);
+
+JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_2(int ttl, Jxta_id * peerid, Jxta_id * src_peerid, char *primarykey, Jxta_vector * entries);
 
 /**
  * Constructs a representation of a srdi message in
@@ -214,7 +219,6 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_set_primaryKey(Jxta_SRDIMessage *, J
  */
 JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_peerID(Jxta_SRDIMessage *, Jxta_id **);
 
-
 /**
  * Sets the peerid of the srdi message.
  *
@@ -224,6 +228,26 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_peerID(Jxta_SRDIMessage *, Jxta_
  * @return void Doesn't return anything.
  */
 JXTA_DECLARE(Jxta_status) jxta_srdi_message_set_peerID(Jxta_SRDIMessage *, Jxta_id *);
+
+/**
+ * Gets the source peerid of the srdi message.
+ *
+ * @param Jxta_SRDIMessage * a pointer to the srdi message
+ * @param Jxta_id ** a location to store the peerid
+ *
+ * @return Jxta_status 
+ */
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_SrcPID(Jxta_SRDIMessage * ad, Jxta_id ** peerid);
+
+/**
+ * Sets the source peerid of the srdi message.
+ *
+ * @param Jxta_SRDIMessage * a pointer to the srdi message
+ * @param Jxta_id * the peer id.
+ *
+ * @return void Doesn't return anything.
+ */
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_set_SrcPID(Jxta_SRDIMessage * ad, Jxta_id * peerid);
 
 JXTA_DECLARE(Jxta_boolean) jxta_srdi_message_delta_supported(Jxta_SRDIMessage * ad);
 

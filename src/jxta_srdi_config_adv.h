@@ -82,6 +82,7 @@ JXTA_DECLARE(void) jxta_srdi_config_set_replication_threshold(Jxta_SrdiConfigAdv
 JXTA_DECLARE(int) jxta_srdi_cfg_get_replication_threshold(Jxta_SrdiConfigAdvertisement * adv);
 JXTA_DECLARE(Jxta_boolean) jxta_srdi_cfg_is_delta_cache_supported(Jxta_SrdiConfigAdvertisement * adv);
 JXTA_DECLARE(int) jxta_srdi_cfg_get_delta_window(Jxta_SrdiConfigAdvertisement * adv);
+JXTA_DECLARE(Jxta_boolean) jxta_srdi_cfg_are_srdi_entries_duplicated(Jxta_SrdiConfigAdvertisement * adv);
 /**
 *   For other advertisement types which want to parse SrdiConfig as a sub-section.    
 **/

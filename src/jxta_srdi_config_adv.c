@@ -84,6 +84,7 @@ enum tokentype {
 struct _jxta_SrdiConfigAdvertisement {
     Jxta_advertisement jxta_advertisement;
     int replicationThreshold;
+    Jxta_boolean dup_srdi_entries;
     Jxta_boolean noRangeWithValue;
     Jxta_boolean SRDIDeltaSupport;
     int SRDIDeltaWindow;
@@ -117,6 +118,10 @@ void handleJxta_SrdiConfigAdvertisement(void *userdata, const XML_Char * cd, int
             }
         } else if (0 == strcmp(*atts, "delta_window")) {
                 ad->SRDIDeltaWindow = atoi(atts[1]);
+        } else if (0 == strcmp(*atts, "dup_srdi_entries")) {
+            if (0 == strcmp(atts[1], "yes")) {
+                ad->dup_srdi_entries = TRUE;
+            }
         }
         atts += 2;
     }
@@ -176,6 +181,11 @@ JXTA_DECLARE(int) jxta_srdi_cfg_get_delta_window(Jxta_SrdiConfigAdvertisement * 
     return adv->SRDIDeltaWindow;
 }
 
+JXTA_DECLARE(Jxta_boolean) jxta_srdi_cfg_are_srdi_entries_duplicated(Jxta_SrdiConfigAdvertisement * adv)
+{
+    return adv->dup_srdi_entries;
+}
+
 /** Now, build an array of the keyword structs.  Since 
  * a top-level, or null state may be of interest, 
  * let that lead off.  Then, walk through the enums,
@@ -207,6 +217,9 @@ JXTA_DECLARE(Jxta_status) jxta_SrdiConfigAdvertisement_get_xml(Jxta_SrdiConfigAd
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
+    if (ad->dup_srdi_entries) {
+        jstring_append_2(string, " dup_srdi_entries = \"yes\"");
+    }
     jstring_append_2(string, ">\n");
     jstring_append_2(string, "<NoRangeReplication withValue=\"");
     jstring_append_2(string, jxta_srdi_cfg_get_no_range(ad) ? "true":"false");
@@ -236,6 +249,7 @@ Jxta_SrdiConfigAdvertisement *jxta_SrdiConfigAdvertisement_construct(Jxta_SrdiCo
     if (NULL != self) {
         self->noRangeWithValue=FALSE;
         self->replicationThreshold = DEFAULT_REPLICATION_THRESHOLD;
+        self->dup_srdi_entries = FALSE;
         self->SRDIDeltaSupport = TRUE;
         self->SRDIDeltaWindow = DEFAULT_SRDI_DELTA_WINDOW;
     }
