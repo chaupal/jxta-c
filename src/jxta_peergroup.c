@@ -1529,13 +1529,15 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
 
         for (i=0; i<jxta_vector_size(peers); i++) {
             Jxta_peer *peer;
+            rv = JXTA_ITEM_NOTFOUND;
             jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer), i);
             if (jxta_id_equals(peer_id, jxta_peer_peerid(peer))) {
                 jxta_peer_get_adv(peer, pa);
                 rv = (NULL != *pa) ? JXTA_SUCCESS:JXTA_ITEM_NOTFOUND;
             }
             JXTA_OBJECT_RELEASE(peer);
-            if (JXTA_SUCCESS == rv) break;
+            if (JXTA_SUCCESS == rv)
+                break;
         }
         JXTA_OBJECT_RELEASE(peers);
     }
