@@ -4444,6 +4444,7 @@ static Jxta_status check_pves(Jxta_peerview * me, Jxta_vector *pves)
             peer_version = jxta_PA_get_version(((_jxta_peer_entry *) a_pve)->adv);
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Sending ping for maintenance\n");
             res = peerview_send_ping(me, (Jxta_peer *) a_pve, &a_pve->adv_gen, jxta_version_compatible_1(PEERVIEW_UUID_IMPLEMENTATION, peer_version) ? TRUE:FALSE);
+            JXTA_OBJECT_RELEASE(peer_version);
         }
 
         JXTA_OBJECT_RELEASE(a_pve);

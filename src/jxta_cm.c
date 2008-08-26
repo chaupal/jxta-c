@@ -1964,7 +1964,7 @@ static Jxta_status cm_srdi_seq_number_update(Jxta_cm * me, JString * jPeerid, Jx
     if (entry->expiration > 0) {
         jstring_append_2(jUpdate_sql, SQL_UPDATE CM_TBL_SRDI_INDEX SQL_SET);
 
-        jColumns = jstring_new_2(CM_COL_TimeOut SQL_EQUAL);
+        jstring_append_2(jColumns, CM_COL_TimeOut SQL_EQUAL);
 
         memset(aTmp, 0, sizeof(aTmp));
         if (apr_snprintf(aTmp, sizeof(aTmp), "%" APR_INT64_T_FMT, lifetime_get(jpr_time_now(), entry->expiration)) != 0) {
