@@ -103,6 +103,9 @@ struct _Jxta_lease_response_msg {
     Jxta_advertisement jxta_advertisement;
 
     Jxta_id *server_id;
+    apr_uuid_t pv_id_gen;
+    Jxta_boolean pv_id_gen_set;
+
     Jxta_time_diff offered_lease;
 
     Jxta_credential * credential;
@@ -144,7 +147,6 @@ void handle_lease_response_msg(void *me, const XML_Char * cd, int len)
             } else if (0 == strcmp(*atts, "server_id")) {
                 JString *idstr = jstring_new_2(atts[1]);
                 jstring_trim(idstr);
-                
                 JXTA_OBJECT_RELEASE(myself->server_id);
 
                 if (JXTA_SUCCESS != jxta_id_from_jstring(&myself->server_id, idstr)) {
@@ -153,6 +155,15 @@ void handle_lease_response_msg(void *me, const XML_Char * cd, int len)
                     myself->server_id = JXTA_OBJECT_SHARE(jxta_id_nullID);
                 }
                 JXTA_OBJECT_RELEASE(idstr);
+            } else if (0 == strcmp(*atts, "pv_id_gen")) {
+                if (APR_SUCCESS != apr_uuid_parse(&myself->pv_id_gen, atts[1])) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,
+                                    FILEANDLINE "UUID parse failure for pv_id_gen [%pp] : %s\n", myself, atts[1]);
+                    myself->pv_id_gen_set = FALSE;
+                } else {
+                    myself->pv_id_gen_set = TRUE;
+                }
+
             } else if (0 == strcmp(*atts, "offered_lease")) {
                 myself->offered_lease = atol(atts[1]);
             } else {
@@ -369,7 +380,12 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_get_xml(Jxta_lease_response_ms
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
-
+    if (myself->pv_id_gen_set) {
+        jstring_append_2(string, " pv_id_gen=\"");
+        apr_uuid_format(tmpbuf, &myself->pv_id_gen);
+        jstring_append_2(string, tmpbuf);
+        jstring_append_2(string, "\"");
+    }
     jstring_append_2(string, ">\n ");
 
     if (NULL != myself->server) {
@@ -480,6 +496,31 @@ JXTA_DECLARE(void) jxta_lease_response_msg_set_server_id(Jxta_lease_response_msg
 
     /* Server ID may not be NULL.*/
     myself->server_id = JXTA_OBJECT_SHARE(server_id);
+}
+
+JXTA_DECLARE(apr_uuid_t *) jxta_lease_response_msg_get_pv_id_gen(Jxta_lease_response_msg * myself)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    if (myself->pv_id_gen_set) {
+        apr_uuid_t *result = (apr_uuid_t *) calloc(1, sizeof(apr_uuid_t));
+
+        if (NULL != result) {
+            memmove(result, &myself->pv_id_gen, sizeof(apr_uuid_t));
+        }
+        return result;
+    } else {
+        return NULL;
+    }
+}
+
+JXTA_DECLARE(void) jxta_lease_response_msg_set_pv_id_gen(Jxta_lease_response_msg * myself, apr_uuid_t * pv_id_gen)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    memmove(&myself->pv_id_gen, pv_id_gen, sizeof(apr_uuid_t));
+    myself->pv_id_gen_set = TRUE;
+
 }
 
 JXTA_DECLARE(Jxta_time_diff) jxta_lease_response_msg_get_offered_lease(Jxta_lease_response_msg * myself)

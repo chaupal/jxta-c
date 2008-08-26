@@ -84,6 +84,9 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_parse_file(Jxta_lease_response
 JXTA_DECLARE(Jxta_id *) jxta_lease_response_msg_get_server_id(Jxta_lease_response_msg * myself);
 JXTA_DECLARE(void) jxta_lease_response_msg_set_server_id(Jxta_lease_response_msg * myself, Jxta_id *);
 
+JXTA_DECLARE(apr_uuid_t *) jxta_lease_response_msg_get_pv_id_gen(Jxta_lease_response_msg * myself);
+JXTA_DECLARE(void) jxta_lease_response_msg_set_pv_id_gen(Jxta_lease_response_msg * myself, apr_uuid_t *);
+
 JXTA_DECLARE(Jxta_time_diff) jxta_lease_response_msg_get_offered_lease(Jxta_lease_response_msg * myself);
 JXTA_DECLARE(void) jxta_lease_response_msg_set_offered_lease(Jxta_lease_response_msg * myself, Jxta_time_diff);
 

@@ -952,6 +952,17 @@ static void peerview_update_id(Jxta_peerview * myself)
     }
 }
 
+JXTA_DECLARE(apr_uuid_t *) jxta_peerview_get_pv_id_gen(Jxta_peerview *pv)
+{
+    apr_uuid_t *result = NULL;
+
+    if (pv->pv_id_gen_set) {
+        result = calloc(1, sizeof(apr_uuid_t));
+        memmove(result, &pv->pv_id_gen, sizeof(apr_uuid_t));
+    }
+    return result;
+}
+
 /* 
  * Create our PVE
  */
@@ -2477,8 +2488,9 @@ static Jxta_status peerview_handle_ping(Jxta_peerview * myself, Jxta_peerview_pi
 {
     Jxta_status res = JXTA_SUCCESS;
     Jxta_id *pid=NULL;
-    Jxta_peer *dest;
+    Jxta_peer *dest=NULL;
     Jxta_endpoint_address *dst_ea;
+    Peerview_entry *pve=NULL;
 
     /* FIXME 20060926 bondolo Valdiate credential on ping message */
     dst_ea = jxta_peerview_ping_msg_get_dst_peer_ea(ping);
@@ -2504,11 +2516,26 @@ static Jxta_status peerview_handle_ping(Jxta_peerview * myself, Jxta_peerview_pi
         goto FINAL_EXIT;
     }
 
+    pve = peerview_get_pve(myself, pid);
+
+    JString* pid_j;
+
+    jxta_id_to_jstring(pid, &pid_j);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Receive ping message from %s %s\n", jstring_get_string(pid_j), NULL == pve ? " no pve": " with pve");
+
+    JXTA_OBJECT_RELEASE(pid_j);
+
     dest = jxta_peer_new();
     jxta_peer_set_peerid(dest, pid);
 
     res = peerview_send_pong(myself, dest, PONG_STATUS, FALSE, jxta_peerview_ping_msg_is_pv_id_only(ping));
     JXTA_OBJECT_RELEASE(dest);
+
+    if (pve)
+        JXTA_OBJECT_RELEASE(pve);
+    if (dest)
+        JXTA_OBJECT_RELEASE(dest);
 
   FINAL_EXIT:
     if (NULL != pid) {
@@ -3218,7 +3245,7 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
             }
         }
     } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "PONG [%pp] is being handled as existing pong\n", pong);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "PONG [%pp] is being handled as existing pong\n", pong);
         res = handle_existing_pve_pong(me, pve, pong);
         if (PONG_PROMOTE == action && JXTA_SUCCESS == res) {
             apr_thread_mutex_unlock(me->mutex);
@@ -3237,11 +3264,12 @@ UNLOCK_EXIT:
     if (send_pong || send_ping) {
         Jxta_peer * newPeer = jxta_peer_new();
         jxta_peer_set_peerid(newPeer, pid);
+
         if (send_pong) {
             res = peerview_send_pong(me, newPeer, action, send_candidates, FALSE);
         }
         if (send_ping) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "------------- Sending ping for updated pv_id_gen\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "------------- Sending ping for updated pv_id_gen\n");
             res = peerview_send_ping(me, newPeer, NULL, FALSE);
         }
         JXTA_OBJECT_RELEASE(newPeer);
@@ -3442,7 +3470,7 @@ static Jxta_status peerview_add_pve(Jxta_peerview * myself, Peerview_entry * pve
 
     jxta_id_to_jstring(jxta_peer_peerid((Jxta_peer *) pve), &pid_str);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Adding new PVE [%pp] for %s\n", pve, jstring_get_string(pid_str));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Adding new PVE [%pp] for %s\n", pve, jstring_get_string(pid_str));
 
     apr_thread_mutex_lock(myself->mutex);
 
@@ -3507,7 +3535,7 @@ static Jxta_status peerview_add_pve(Jxta_peerview * myself, Peerview_entry * pve
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Added PVE for %s [%pp] to cluster %d\n", jstring_get_string(pid_str),
                         pve, pve_cluster);
-        if ((PV_STOPPED != myself->state) && jxta_id_equals(myself->pid, jxta_peer_peerid((Jxta_peer *) pve))) {
+        if (PV_STOPPED != myself->state) {
             Jxta_peerview_event *event = peerview_event_new(JXTA_PEERVIEW_ADD, jxta_peer_peerid((Jxta_peer *) pve));
             res = jxta_vector_add_object_last(myself->event_list, (Jxta_object *)event);
             JXTA_OBJECT_RELEASE(event);
@@ -3635,7 +3663,7 @@ static Jxta_status peerview_remove_pve_1(Jxta_peerview * myself, Jxta_PID * pid,
         peerview_update_id(myself);
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Removed PVE for %s\n", jstring_get_string(pid_str));
-        if (generate_event && (PV_STOPPED != myself->state) && jxta_id_equals(myself->pid, pid)) {
+        if (generate_event && (PV_STOPPED != myself->state)) {
             Jxta_peerview_event *event = peerview_event_new(JXTA_PEERVIEW_REMOVE, pid);
             res = jxta_vector_add_object_last(myself->event_list, (Jxta_object *) event);
             JXTA_OBJECT_RELEASE(event);

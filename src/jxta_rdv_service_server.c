@@ -84,6 +84,7 @@ static const char *__log_cat = "RdvServer";
 #include "jxta_rdv_diffusion_msg.h"
 #include "jxta_peer_private.h"
 #include "jxta_peerview_priv.h"
+#include "jxta_peergroup_private.h"
 #include "jxta_rdv_service_private.h"
 #include "jxta_rdv_service_provider_private.h"
 #include "jxta_util_priv.h"
@@ -1024,6 +1025,8 @@ static Jxta_status handle_lease_request(_jxta_rdv_service_server * myself, Jxta_
             /* Referral or bogus disconnect */
         }
     } else {
+        Jxta_boolean referral = FALSE;
+
         jxta_peer_lock((Jxta_peer *) peer);
 
         if (NULL != pa) {
@@ -1045,11 +1048,19 @@ static Jxta_status handle_lease_request(_jxta_rdv_service_server * myself, Jxta_
             }
         } else {
             /* Disconnect */
-            jxta_peer_set_expires((Jxta_peer *) peer, 0);
-            lease_event = JXTA_RDV_CLIENT_DISCONNECTED;
+            if (0 != jxta_peer_get_expires((Jxta_peer *) peer)) {
+                jxta_peer_set_expires((Jxta_peer *) peer, 0);
+                lease_event = JXTA_RDV_CLIENT_DISCONNECTED;
+            } else {
+                /* referral request */
+                referral = TRUE;
+            }
         }
-
         jxta_peer_unlock((Jxta_peer *) peer);
+        if (referral) {
+            JXTA_OBJECT_RELEASE(peer);
+            peer = NULL;
+        }
     }
 
     /* publish PA */
@@ -1305,10 +1316,13 @@ static Jxta_status send_connect_reply(_jxta_rdv_service_server * myself, Jxta_id
     Jxta_message *msg = NULL;
     Jxta_message_element *msgElem;
     apr_uuid_t adv_gen;
+    apr_uuid_t * pv_id_gen = NULL;
     Jxta_vector * referrals;
     Jxta_vector * globals;
     int i;
     Jxta_boolean this_peer_added = FALSE;
+    Jxta_version * peerVersion = NULL;
+    Jxta_PA *peer_adv = NULL;
 
     lease_response = jxta_lease_response_msg_new();
 
@@ -1320,6 +1334,22 @@ static Jxta_status send_connect_reply(_jxta_rdv_service_server * myself, Jxta_id
 
     jxta_lease_response_msg_set_server_id(lease_response, provider->local_peer_id);
     jxta_lease_response_msg_set_offered_lease(lease_response, lease_offered);
+    peergroup_find_peer_PA(jxta_service_get_peergroup_priv((Jxta_service*) provider->service), pid, 0, &peer_adv);
+    if(peer_adv == NULL){
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Man oh man - WHere's the PA?\n");
+        peerVersion = jxta_version_new();
+    } else {
+        peerVersion = jxta_PA_get_version(peer_adv);
+        JXTA_OBJECT_RELEASE(peer_adv);
+    }
+    if (jxta_version_compatible_1(LEASE_RESPONSE_WITH_PVID, peerVersion)) {
+        pv_id_gen = jxta_peerview_get_pv_id_gen(provider->peerview);
+        if (NULL != pv_id_gen) {
+            jxta_lease_response_msg_set_pv_id_gen(lease_response, pv_id_gen);
+            free(pv_id_gen);
+        }
+    }
+    JXTA_OBJECT_RELEASE(peerVersion);
 
     jxta_PA_get_SN(provider->local_pa, &adv_gen);
 
@@ -1403,6 +1433,7 @@ static Jxta_status send_connect_reply(_jxta_rdv_service_server * myself, Jxta_id
     JXTA_OBJECT_RELEASE(msg);
 
   FINAL_EXIT:
+
     return res;
 }
 

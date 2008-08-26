@@ -268,6 +268,7 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_set_candidate_list_cb(Jxta_peerview * pv
 */
 JXTA_DECLARE(Jxta_status) jxta_peerview_set_address_cb(Jxta_peerview * pv,  Jxta_peerview_address_req_func cb);
 
+JXTA_DECLARE(apr_uuid_t *) jxta_peerview_get_pv_id_gen(Jxta_peerview *pv);
 
 #ifdef __cplusplus
 #if 0

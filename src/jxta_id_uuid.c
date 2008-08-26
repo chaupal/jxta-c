@@ -183,7 +183,7 @@ static Jxta_id *translateTbl[][2] = {
     /******************************************************************************/
     /*                                                                            */
     /******************************************************************************/
-static int jxta_id_uuid_compare_priv(apr_uuid_t * a, apr_uuid_t * b, Jpr_absolute_time ttime);
+static int jxta_id_uuid_compare_priv(apr_uuid_t * a, apr_uuid_t * b, Jpr_absolute_time ttime, Jxta_boolean seq_compare);
 static Jxta_id *translateToWellKnown(Jxta_id * jid);
 static Jxta_id *translateFromWellKnown(Jxta_id * jid);
 static Jxta_status newPeergroupid1(Jxta_id ** pg);
@@ -266,7 +266,22 @@ int jxta_id_uuid_seq_no_compare(apr_uuid_t * a, apr_uuid_t * b) {
          if (a < b)     UUID_LESS_THAN
 **/
 int jxta_id_uuid_time_stamp_compare(apr_uuid_t * a, apr_uuid_t * b) {
-    return jxta_id_uuid_compare_priv(a, b, 0);
+    return jxta_id_uuid_compare_priv(a, b, 0, TRUE);
+}
+
+
+/**
+ Compare the time stamp of UUID a with UUID b
+
+    @param a pointer UUID
+    @param b pointer UUID
+
+    @return if (a.time == b.time)    UUID_EQUALS
+         if (a.time > b.time)     UUID_GREATER_THAN
+         if (a.time < b.time)     UUID_LESS_THAN
+**/
+int jxta_id_uuid_time_stamp_only_compare(apr_uuid_t * a, apr_uuid_t * b) {
+    return jxta_id_uuid_compare_priv(a, b, 0, FALSE);
 }
 
 /**
@@ -280,10 +295,10 @@ int jxta_id_uuid_time_stamp_compare(apr_uuid_t * a, apr_uuid_t * b) {
             if (a.time < absolute time) UUID_LESS_THAN
 **/
 int jxta_id_uuid_time_compare(apr_uuid_t * a, Jpr_absolute_time ttime) {
-    return jxta_id_uuid_compare_priv(a, NULL, ttime);
+    return jxta_id_uuid_compare_priv(a, NULL, ttime, TRUE);
 }
 
-static int jxta_id_uuid_compare_priv(apr_uuid_t * a, apr_uuid_t * b, Jpr_absolute_time ttime) {
+static int jxta_id_uuid_compare_priv(apr_uuid_t * a, apr_uuid_t * b, Jpr_absolute_time ttime, Jxta_boolean seq_compare) {
 
     apr_uint64_t atime = 0;
     apr_uint32_t timela;
@@ -334,7 +349,7 @@ static int jxta_id_uuid_compare_priv(apr_uuid_t * a, apr_uuid_t * b, Jpr_absolut
     }
 
     /* fall through means time is equal */
-    if (b != NULL) {
+    if (b != NULL && seq_compare) {
         timesa = ntohs(((_uuid_fmt *)a)->clock_seq & 0x3fff);
         timesb = ntohs(((_uuid_fmt *)b)->clock_seq & 0x3fff);
         if (timesa != timesb) {

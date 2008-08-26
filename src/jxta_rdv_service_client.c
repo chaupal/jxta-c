@@ -83,6 +83,7 @@ static const char *__log_cat = "RdvEdge";
 #include "jxta_rdv_diffusion_msg.h"
 #include "jxta_peergroup.h"
 #include "jxta_id.h"
+#include "jxta_id_uuid_priv.h"
 #include "jxta_lease_request_msg.h"
 #include "jxta_lease_response_msg.h"
 #include "jxta_peer_private.h"
@@ -166,6 +167,8 @@ struct _jxta_peer_rdv_entry {
     Extends(_jxta_peer_entry);
 
     apr_uuid_t *adv_gen;
+    apr_uuid_t pv_id_gen;
+    Jxta_boolean pv_id_gen_set;
 
 /**
     * Time of the last reconnection attempt.
@@ -246,7 +249,7 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
 static Jxta_status JXTA_STDCALL lease_client_cb(Jxta_object * obj, void *arg);
 static Jxta_status handle_leasing_reply(_jxta_rdv_service_client * myself, Jxta_message * msg);
 
-static _jxta_peer_rdv_entry *get_peer_entry(_jxta_rdv_service_client * myself, Jxta_id * peerid, Jxta_boolean create);
+static _jxta_peer_rdv_entry *get_peer_entry(_jxta_rdv_service_client * myself, Jxta_id * peerid, apr_uuid_t *pv_id_gen, Jxta_boolean create);
 
 static _jxta_peer_rdv_entry *rdv_entry_new(void);
 static _jxta_peer_rdv_entry *rdv_entry_new_1(Jxta_peer * peer);
@@ -1074,6 +1077,7 @@ static Jxta_status handle_leasing_reply(_jxta_rdv_service_client * myself, Jxta_
     Jxta_time_diff server_adv_exp = -1L;
     _jxta_peer_rdv_entry *peer = NULL;
     Jxta_Rendezvous_event_type lease_event;
+    apr_uuid_t *pv_id_gen = NULL;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Processing lease response message [%pp]\n", msg);
 
@@ -1124,11 +1128,13 @@ static Jxta_status handle_leasing_reply(_jxta_rdv_service_client * myself, Jxta_
         goto FINAL_EXIT;
     }
 
+    pv_id_gen = jxta_lease_response_msg_get_pv_id_gen(lease_response);
+
     jxta_id_to_jstring(server_peerid, &server_peerid_str);
 
     lease = jxta_lease_response_msg_get_offered_lease(lease_response);
 
-    peer = get_peer_entry(myself, server_peerid, (lease > 0));
+    peer = get_peer_entry(myself, server_peerid, pv_id_gen, (lease > 0));
 
     if (NULL == peer) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Ignoring lease offer from [%s] with lease of %d\n",
@@ -1155,6 +1161,7 @@ static Jxta_status handle_leasing_reply(_jxta_rdv_service_client * myself, Jxta_
     jxta_peer_lock((Jxta_peer *) peer);
 
     if (lease > 0) {
+
         Jxta_time currentTime = jpr_time_now();
 
         if ((NULL != server_adv) && (NULL != server_adv_gen)) {
@@ -1175,8 +1182,14 @@ static Jxta_status handle_leasing_reply(_jxta_rdv_service_client * myself, Jxta_
             server_adv_exp = lease;
         }
 
-        lease_event =
-            jxta_peer_get_expires((Jxta_peer *) peer) != JPR_ABSOLUTE_TIME_MAX ? JXTA_RDV_RECONNECTED : JXTA_RDV_CONNECTED;
+        if (NULL != pv_id_gen && TRUE == peer->pv_id_gen_set && UUID_GREATER_THAN == jxta_id_uuid_time_stamp_only_compare(pv_id_gen, &peer->pv_id_gen)) {
+            lease_event = JXTA_RDV_CONNECTED;
+            memmove(&peer->pv_id_gen,pv_id_gen, sizeof(apr_uuid_t));
+            peer->pv_id_gen_set = TRUE;
+        } else {
+            lease_event =
+                jxta_peer_get_expires((Jxta_peer *) peer) != JPR_ABSOLUTE_TIME_MAX ? JXTA_RDV_RECONNECTED : JXTA_RDV_CONNECTED;
+        }
 
         jxta_peer_set_expires((Jxta_peer *) peer, currentTime + lease);
 
@@ -1239,6 +1252,9 @@ static Jxta_status handle_leasing_reply(_jxta_rdv_service_client * myself, Jxta_
 
     if (NULL != server_adv_gen) {
         free(server_adv_gen);
+    }
+    if (pv_id_gen) {
+        free(pv_id_gen);
     }
 
     if (NULL != peer) {
@@ -1583,7 +1599,7 @@ static Jxta_status get_peer(Jxta_rdv_service_provider * provider, Jxta_id * peer
         return JXTA_INVALID_ARGUMENT;
     }
 
-    *peer = (Jxta_peer *) get_peer_entry(myself, peerid, FALSE);
+    *peer = (Jxta_peer *) get_peer_entry(myself, peerid, NULL, FALSE);
 
     if (NULL == *peer) {
         return JXTA_ITEM_NOTFOUND;
@@ -1599,7 +1615,7 @@ static Jxta_status get_peer(Jxta_rdv_service_provider * provider, Jxta_id * peer
  *  @param addr The address of the desired peer.
  *  @param create If TRUE then create a new entry if there is no existing entry 
  **/
-static _jxta_peer_rdv_entry *get_peer_entry(_jxta_rdv_service_client * myself, Jxta_id * peerid, Jxta_boolean create)
+static _jxta_peer_rdv_entry *get_peer_entry(_jxta_rdv_service_client * myself, Jxta_id * peerid, apr_uuid_t *pv_id_gen, Jxta_boolean create)
 {
     _jxta_peer_rdv_entry *peer = NULL;
     Jxta_status res = 0;
@@ -1629,6 +1645,10 @@ static _jxta_peer_rdv_entry *get_peer_entry(_jxta_rdv_service_client * myself, J
             JXTA_OBJECT_RELEASE(clientAddr);
             jxta_peer_set_peerid((Jxta_peer *) peer, peerid);
             jxta_peer_set_expires((Jxta_peer *) peer, JPR_ABSOLUTE_TIME_MAX);
+            if (NULL != pv_id_gen) {
+                memmove(&peer->pv_id_gen, pv_id_gen, sizeof(apr_uuid_t));
+                peer->pv_id_gen_set = TRUE;
+            }
             jxta_hashtable_put(myself->rdvs, jstring_get_string(uniq), jstring_length(uniq) + 1, (Jxta_object *) peer);
         }
     }
