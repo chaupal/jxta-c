@@ -1868,6 +1868,8 @@ static Jxta_status discovery_filter_advid_duplicates(Jxta_discovery_service_ref 
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "got a replica peer for duplicate in SRDI entry element  %s\n", jstring_get_string(entry->dup_peerid));
             }
         }
+        if (replicaPeer)
+            JXTA_OBJECT_RELEASE(replicaPeer);
         JXTA_OBJECT_RELEASE(entry);
     }
 
