@@ -248,7 +248,8 @@ static void add_replica_to_peers(Jxta_srdi_service_ref *me, Jxta_hashtable *peer
         JXTA_OBJECT_RELEASE(peerEntries);
         JXTA_OBJECT_RELEASE(jRepId);
     }
-
+    if (repId)
+        JXTA_OBJECT_RELEASE(repId);
 }
 
 /**
