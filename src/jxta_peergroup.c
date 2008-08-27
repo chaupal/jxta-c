@@ -1516,6 +1516,7 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
     Jxta_vector *res = NULL;
     Jxta_status rv = JXTA_ITEM_NOTFOUND;
     Jxta_vector *peers=NULL;
+    Jxta_peer *peer = NULL;
 
     jxta_PG_get_rendezvous_service(me, &rdv);
 
@@ -1528,7 +1529,6 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
         int i;
 
         for (i=0; i<jxta_vector_size(peers); i++) {
-            Jxta_peer *peer;
             rv = JXTA_ITEM_NOTFOUND;
             jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer), i);
             if (jxta_id_equals(peer_id, jxta_peer_peerid(peer))) {
@@ -1536,6 +1536,7 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
                 rv = (NULL != *pa) ? JXTA_SUCCESS:JXTA_ITEM_NOTFOUND;
             }
             JXTA_OBJECT_RELEASE(peer);
+            peer = NULL;
             if (JXTA_SUCCESS == rv)
                 break;
         }
@@ -1543,13 +1544,14 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
     }
     /* if this peer is a rendezvous the peerview may have the adv */
     if ( JXTA_ITEM_NOTFOUND == rv && jxta_rdv_service_is_rendezvous(rdv)) {
-        Jxta_peer *peer = NULL;
         Jxta_peerview *pv = jxta_rdv_service_get_peerview(rdv);
         if (NULL != pv) {
             rv = peerview_get_peer(pv, peer_id, &peer);
             if (JXTA_SUCCESS == rv) {
                 jxta_peer_get_adv(peer, pa);
                 rv = (NULL != *pa) ? JXTA_SUCCESS:JXTA_ITEM_NOTFOUND;
+                JXTA_OBJECT_RELEASE(peer);
+                peer = NULL;
             }
         }
     }
@@ -1582,6 +1584,8 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
         JXTA_OBJECT_RELEASE(ds);
     if (rdv)
         JXTA_OBJECT_RELEASE(rdv);
+    if (peer)
+        JXTA_OBJECT_RELEASE(peer);
     return rv;
 }
 
