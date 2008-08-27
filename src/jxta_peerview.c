@@ -2530,7 +2530,6 @@ static Jxta_status peerview_handle_ping(Jxta_peerview * myself, Jxta_peerview_pi
     jxta_peer_set_peerid(dest, pid);
 
     res = peerview_send_pong(myself, dest, PONG_STATUS, FALSE, jxta_peerview_ping_msg_is_pv_id_only(ping));
-    JXTA_OBJECT_RELEASE(dest);
 
     if (pve)
         JXTA_OBJECT_RELEASE(pve);
