@@ -1967,6 +1967,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
             }
             free(source_peers_save);
             JXTA_OBJECT_RELEASE(resendDelta);
+            JXTA_OBJECT_RELEASE(resend_hash);
         }
         JXTA_OBJECT_RELEASE(entries);
         entries = NULL;
