@@ -1553,6 +1553,7 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
                 JXTA_OBJECT_RELEASE(peer);
                 peer = NULL;
             }
+            JXTA_OBJECT_RELEASE(pv);
         }
     }
     if (JXTA_ITEM_NOTFOUND == rv) {
