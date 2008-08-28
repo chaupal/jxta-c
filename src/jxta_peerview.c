@@ -2797,7 +2797,7 @@ static Jxta_boolean peerview_handle_promotion(Jxta_peerview * me, Jxta_peerview_
         /* process the list */
         unsigned int referral_size = 0;
         unsigned int local_view_size = 0;
-        for (i=0; jxta_vector_size(myself->activity_add_candidate_voting_peers) > 0; i++) {
+        for (i=0; i < jxta_vector_size(myself->activity_add_candidate_voting_peers); i++) {
             Jxta_peer * peer;
             /* only allow one response per peer */
             res = jxta_vector_get_object_at(myself->activity_add_candidate_voting_peers, JXTA_OBJECT_PPTR(&peer), i);
