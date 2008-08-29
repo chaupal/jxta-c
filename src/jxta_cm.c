@@ -3755,7 +3755,8 @@ Jxta_cache_entry **cm_query_ctx(Jxta_cm * me, Jxta_credential ** scope, int thre
     jstring_append_2(jJoin, SQL_COMMA CM_COL_Advert);
     jstring_append_2(jJoin, SQL_FROM CM_TBL_ELEM_ATTRIBUTES_SRC SQL_JOIN);
     jstring_append_2(jJoin, CM_TBL_ADVERTISEMENTS_JOIN SQL_ON);
-    jstring_append_2(jJoin, CM_COL_SRC SQL_DOT CM_COL_AdvId SQL_EQUAL CM_COL_JOIN SQL_DOT CM_COL_AdvId);
+    jstring_append_2(jJoin, CM_COL_SRC SQL_DOT CM_COL_NameSpace SQL_EQUAL CM_COL_JOIN SQL_DOT CM_COL_NameSpace);
+    jstring_append_2(jJoin, SQL_AND CM_COL_SRC SQL_DOT CM_COL_AdvId SQL_EQUAL CM_COL_JOIN SQL_DOT CM_COL_AdvId);
 
     /* concatenate groupIDs within the scope of the query */
     if (me->sharedDB) {
@@ -7006,7 +7007,8 @@ static Jxta_status cm_sql_select_join(DBSpace * dbSpace, apr_pool_t * pool, apr_
     jstring_append_2(jJoin, CM_COL_SRC SQL_DOT CM_COL_AdvId SQL_COMMA CM_COL_Advert);
     jstring_append_2(jJoin, SQL_FROM CM_TBL_ELEM_ATTRIBUTES_SRC SQL_JOIN);
     jstring_append_2(jJoin, CM_TBL_ADVERTISEMENTS_JOIN SQL_ON);
-    jstring_append_2(jJoin, CM_COL_SRC SQL_DOT CM_COL_AdvId SQL_EQUAL CM_COL_JOIN SQL_DOT CM_COL_AdvId);
+    jstring_append_2(jJoin, CM_COL_SRC SQL_DOT CM_COL_NameSpace SQL_EQUAL CM_COL_JOIN SQL_DOT CM_COL_NameSpace);
+    jstring_append_2(jJoin, SQL_AND CM_COL_SRC SQL_DOT CM_COL_AdvId SQL_EQUAL CM_COL_JOIN SQL_DOT CM_COL_AdvId);
     jstring_append_2(jJoin, SQL_AND CM_COL_SRC SQL_DOT CM_COL_GroupID SQL_EQUAL CM_COL_JOIN SQL_DOT CM_COL_GroupID);
 
     jGroup = jstring_new_2(SQL_GROUP CM_COL_Advert);
