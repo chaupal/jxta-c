@@ -411,7 +411,7 @@ static Jxta_status cm_item_delete(DBSpace * dbSpace, const char *table, const ch
 static Jxta_status cm_item_found(DBSpace * dbSpace, const char *table, const char *nameSpace, const char *advId,
                                  const char *elemAttr, Jxta_expiration_time * timeout, Jxta_expiration_time * exp);
 
-static Jxta_status cm_expired_records_remove(DBSpace * dbSpace, const char *folder_name);
+static Jxta_status cm_expired_records_remove(DBSpace * dbSpace, const char *folder_name, Jxta_boolean all);
 
 static Jxta_status cm_get_time(Jxta_cm * self, const char *folder_name, const char *primary_key, Jxta_expiration_time * time,
                                const char *time_name);
@@ -1360,7 +1360,7 @@ static Jxta_status folder_remove_expired_records(Jxta_cm * self, Folder * folder
                             dbSpace->conn->log_id, status);
             continue;
         }
-        status = cm_expired_records_remove(dbSpace, folder->name);
+        status = cm_expired_records_remove(dbSpace, folder->name, dbSpace->conn->log_id == self->bestChoiceDB->conn->log_id ? TRUE:FALSE);
         JXTA_OBJECT_RELEASE(dbSpace);
     }
     return status;
@@ -2204,9 +2204,9 @@ Jxta_status cm_update_srdi_times(Jxta_cm * me, JString * jPeerid, Jxta_time ttim
                 goto FINAL_EXIT;
             }
         }
-        if (JXTA_SUCCESS != jxta_hashtable_get(dbsHash, alias, strlen(alias) + 1, JXTA_OBJECT_PPTR(&advsHash))) {
+        if (JXTA_SUCCESS != jxta_hashtable_get(dbsHash, alias, strlen(alias) , JXTA_OBJECT_PPTR(&advsHash))) {
             advsHash = jxta_hashtable_new(0);
-            jxta_hashtable_put(dbsHash, alias, strlen(alias) + 1, (Jxta_object *) advsHash);
+            jxta_hashtable_put(dbsHash, alias, strlen(alias) , (Jxta_object *) advsHash);
         }
         if (JXTA_SUCCESS != jxta_hashtable_get(advsHash, advid, strlen(advid) + 1, JXTA_OBJECT_PPTR(&entry))) {
             entry = calloc(1, sizeof(adv_entry));
@@ -2392,13 +2392,19 @@ Jxta_status cm_get_replica_entries(Jxta_cm * cm, JString *peer_id_j, Jxta_vector
         alias = apr_dbd_get_entry(dbSpace->conn->driver, row, 0);
         advid = apr_dbd_get_entry(dbSpace->conn->driver, row, 1);
         name = apr_dbd_get_entry(dbSpace->conn->driver, row, 2);
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Removing entry advid:%s name:%s dbReplica:%s\n",advid, name, alias != NULL? alias:"(null)");
+
+        dbReplica = cm_dbSpace_by_alias_get(cm, alias);
+        if (NULL == dbReplica) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to retrieve dbSpace with alias %s\n",alias != NULL? alias:"(null)");
+            continue;
+        }
         entry = calloc(1, sizeof(Jxta_replica_entry));
         JXTA_OBJECT_INIT(entry, replica_entry_free, NULL);
         entry->db_alias = jstring_new_2(alias);
         entry->adv_id = jstring_new_2(advid);
         entry->name = jstring_new_2(name);
-
-        dbReplica = cm_dbSpace_by_alias_get(cm, alias);
 
         jstring_reset(jColumns, NULL);
         jstring_append_2(jColumns, CM_COL_DupPeerid);
@@ -6591,7 +6597,7 @@ static Jxta_status cm_item_delete(DBSpace * dbSpace, const char *table, const ch
 
     status = (Jxta_status) rv;
     if (status != JXTA_SUCCESS) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- Couldn't delete %s  rc=%i\n", dbSpace->conn->log_id,
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "db_id: %d %s -- Couldn't delete %s  rc=%i\n", dbSpace->conn->log_id,
                         dbSpace->id, jstring_get_string(statement), rv);
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d %s -- Deleted %i  %s\n", dbSpace->conn->log_id, dbSpace->id,
@@ -6625,7 +6631,7 @@ static Jxta_status cm_sql_delete_with_where(DBSpace * dbSpace, const char *table
 
     status = (Jxta_status) rv;
     if (status != JXTA_SUCCESS) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- Couldn't delete rc=%i\n %s \n", dbSpace->conn->log_id,
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "db_id: %d %s -- Couldn't delete rc=%i\n %s \n", dbSpace->conn->log_id,
                         dbSpace->id, rv, jstring_get_string(statement));
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d %s -- Deleted %i rows  %s\n", dbSpace->conn->log_id,
@@ -6669,7 +6675,7 @@ static Jxta_status cm_sql_update_with_where(DBSpace * dbSpace, const char *table
 
 }
 
-static Jxta_status cm_expired_records_remove(DBSpace * dbSpace, const char *folder_name)
+static Jxta_status cm_expired_records_remove(DBSpace * dbSpace, const char *folder_name, Jxta_boolean all)
 {
     Jxta_status status = JXTA_SUCCESS;
     JString *jTime = jstring_new_0();
@@ -6684,13 +6690,7 @@ static Jxta_status cm_expired_records_remove(DBSpace * dbSpace, const char *fold
     status = cm_sql_delete_with_where(dbSpace, CM_TBL_ELEM_ATTRIBUTES, where);
     if (status != JXTA_SUCCESS)
         goto finish;
-    status = cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_INDEX, where);
-    if (status != JXTA_SUCCESS)
-        goto finish;
     status = cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI, where);
-    if (status != JXTA_SUCCESS)
-        goto finish;
-    status = cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_DELTA, where);
     if (status != JXTA_SUCCESS)
         goto finish;
     status = cm_sql_delete_with_where(dbSpace, CM_TBL_REPLICA, where);
@@ -6700,9 +6700,19 @@ static Jxta_status cm_expired_records_remove(DBSpace * dbSpace, const char *fold
     if (status != JXTA_SUCCESS)
         goto finish;
 
+    if (all) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "db_id: %d Removing from bestChoice tables\n", dbSpace->conn->log_id);
+        status = cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_INDEX, where);
+        if (status != JXTA_SUCCESS)
+            goto finish;
+        status = cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_DELTA, where);
+        if (status != JXTA_SUCCESS)
+            goto finish;
+    }
+
   finish:
     if (status != JXTA_SUCCESS) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- Couldn't delete rc=%i\n %s \n", dbSpace->conn->log_id,
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "db_id: %d %s -- Couldn't delete rc=%i\n %s \n", dbSpace->conn->log_id,
                         dbSpace->id, status, jstring_get_string(where));
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "db_id: %d %s -- Deleted ALL -- %s\n", dbSpace->conn->log_id,
