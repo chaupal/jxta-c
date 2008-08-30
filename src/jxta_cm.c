@@ -869,9 +869,9 @@ static Jxta_status cm_address_spaces_process(Jxta_cm * self)
             dbsHash = jxta_hashtable_new(2);
         }
         /* use the alias since multiple in-memory db's can be created by SQLite */
-        status = jxta_hashtable_get(dbsHash, dbSpace->alias, strlen(dbSpace->alias), JXTA_OBJECT_PPTR(&dbCheck));
+        status = jxta_hashtable_get(dbsHash, dbSpace->alias, strlen(dbSpace->alias) + 1, JXTA_OBJECT_PPTR(&dbCheck));
         if (JXTA_SUCCESS != status) {
-            jxta_hashtable_put(dbsHash, dbSpace->alias, strlen(dbSpace->alias), (Jxta_object *) dbSpace);
+            jxta_hashtable_put(dbsHash, dbSpace->alias, strlen(dbSpace->alias) + 1, (Jxta_object *) dbSpace);
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Duplicate database -- %s -- for address space --- %s\n",
                             dbSpace->alias, jstring_get_string(jName));
@@ -1756,6 +1756,7 @@ static DBSpace *cm_dbSpace_by_alias_get(Jxta_cm * me, const char *dbAlias)
     DBSpace *dbSpace = NULL;
     int i;
     for (i = 0; i < jxta_vector_size(me->dbSpaces); i++) {
+
         jxta_vector_get_object_at(me->dbSpaces, JXTA_OBJECT_PPTR(&dbSpace), i);
         if (!strcmp(dbAlias, dbSpace->alias)) {
             return dbSpace;
@@ -2361,10 +2362,13 @@ Jxta_status cm_get_replica_entries(Jxta_cm * cm, JString *peer_id_j, Jxta_vector
 
     jstring_append_2(jWhere, SQL_AND CM_COL_Replica SQL_EQUAL "\"1\"");
 
+    jstring_append_2(jWhere, SQL_AND CM_COL_GroupID SQL_EQUAL);
+    SQL_VALUE(jWhere, cm->jGroupID_string);
+
     dbSpace = JXTA_OBJECT_SHARE(cm->bestChoiceDB);
 
 
-    status = cm_sql_select(dbSpace, pool, CM_TBL_SRDI_INDEX, &res, jColumns, jWhere, NULL, TRUE);
+    status = cm_sql_select(dbSpace, pool, CM_TBL_SRDI_INDEX, &res, jColumns, jWhere, NULL, FALSE);
     if (JXTA_SUCCESS != status) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Error in select from SRDI_INDEX table %d\n", status);
         goto FINAL_EXIT;
@@ -2393,11 +2397,11 @@ Jxta_status cm_get_replica_entries(Jxta_cm * cm, JString *peer_id_j, Jxta_vector
         advid = apr_dbd_get_entry(dbSpace->conn->driver, row, 1);
         name = apr_dbd_get_entry(dbSpace->conn->driver, row, 2);
 
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Removing entry advid:%s name:%s dbReplica:%s\n",advid, name, alias != NULL? alias:"(null)");
-
         dbReplica = cm_dbSpace_by_alias_get(cm, alias);
         if (NULL == dbReplica) {
+            /* The alias should always be in this group */
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to retrieve dbSpace with alias %s\n",alias != NULL? alias:"(null)");
+            assert(NULL != dbReplica);
             continue;
         }
         entry = calloc(1, sizeof(Jxta_replica_entry));
@@ -2429,7 +2433,9 @@ Jxta_status cm_get_replica_entries(Jxta_cm * cm, JString *peer_id_j, Jxta_vector
             }
             dup_id = apr_dbd_get_entry(dbReplica->conn->driver, rep_row, 0);
             entry->dup_id = jstring_new_2(dup_id);
-            jxta_vector_add_object_last(*replicas_v, (Jxta_object *) entry);
+            if (!strcmp(dup_id, "''")) {
+                jxta_vector_add_object_last(*replicas_v, (Jxta_object *) entry);
+            }
         }
         JXTA_OBJECT_RELEASE(entry);
         JXTA_OBJECT_RELEASE(dbReplica);
