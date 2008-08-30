@@ -1212,8 +1212,8 @@ static void JXTA_STDCALL srdi_rdv_listener(Jxta_object * obj, void *arg)
             break;
         case JXTA_RDV_FAILED:
         case JXTA_RDV_DISCONNECTED:
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Rendezvous %s %s in SRDI\n",
-                            peerid, JXTA_RDV_FAILED == type ? "FAILED" : "DISCONNECTED");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Rendezvous %s %s SRDI in group %s\n",
+                            peerid, JXTA_RDV_FAILED == type ? "FAILED" : "DISCONNECTED", jstring_get_string(me->groupUniqueID));
 
             if (NULL != me->cm) {
                 res = cm_get_replica_entries(me->cm, jPeerid, &replica_entries);
