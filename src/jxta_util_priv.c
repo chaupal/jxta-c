@@ -85,24 +85,32 @@ Jxta_vector *getPeerids(Jxta_vector * peers)
         return NULL;
     }
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "----- check %d peerids: \n", jxta_vector_size(peers));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "----- get %d peerids: \n", jxta_vector_size(peers));
     peersHash = jxta_hashtable_new(jxta_vector_size(peers));
     for (i = 0; i < jxta_vector_size(peers); i++) {
         const char *pid;
-        JString *temp;
+        JString *temp=NULL;
+        Jxta_status status;
 
-        jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&jPeerId), i);
+        if (jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&jPeerId), i) != JXTA_SUCCESS) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "unable to retrieve vector object at %d\n", i);
+            continue;
+        }
         pid = jstring_get_string(jPeerId);
         if (jxta_hashtable_get(peersHash, pid, strlen(pid), JXTA_OBJECT_PPTR(&temp)) != JXTA_SUCCESS) {
-            Jxta_id *jid;
+            Jxta_id *jid=NULL;
 
             jxta_hashtable_put(peersHash, pid, strlen(pid), (Jxta_object *) jPeerId);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "----- add peerid to result set: %s\n", pid);
-            jxta_id_from_jstring(&jid, jPeerId);
-            jxta_vector_add_object_last(peerIds, (Jxta_object *) jid);
-            JXTA_OBJECT_RELEASE(jid);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "----- add peerid to result set: %s\n", pid);
+            status = jxta_id_from_jstring(&jid, jPeerId);
+            if (JXTA_SUCCESS == status) {
+                jxta_vector_add_object_last(peerIds, (Jxta_object *) jid);
+            } else {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "%s ---- Not a valid peerid\n", jstring_get_string(jPeerId));
+            }
+            if (jid)
+                JXTA_OBJECT_RELEASE(jid);
         } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "----- peerid is in result set already: %s\n", pid);
             if (temp != NULL) {
                 JXTA_OBJECT_RELEASE(temp);
             }
