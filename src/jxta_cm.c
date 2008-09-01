@@ -1824,7 +1824,7 @@ static Jxta_status cm_srdi_index_get(Jxta_cm * me, JString * jPeerid, Jxta_seque
 
     /* ------------  get the index entry for this seq. no. */
 
-    status = cm_sql_select(dbSpace, pool, CM_TBL_SRDI_INDEX, &res, jColumns, jWhere_index, NULL, TRUE);
+    status = cm_sql_select(dbSpace, pool, CM_TBL_SRDI_INDEX, &res, jColumns, jWhere_index, NULL, FALSE);
 
     nb_keys = apr_dbd_num_tuples((apr_dbd_driver_t *) dbSpace->conn->driver, res);
     if (nb_keys > 0) {
@@ -2486,6 +2486,8 @@ void cm_update_replica_forward_peers(Jxta_cm * cm, Jxta_vector * replica_entries
     jstring_append_2(prepare_j, CM_TBL_SRDI_INDEX);
     set_prepare_j = jstring_new_2(SQL_SET CM_COL_Peerid SQL_EQUAL SQL_VARIABLE SQL_WHERE CM_COL_AdvId SQL_EQUAL SQL_VARIABLE SQL_AND CM_COL_Peerid SQL_EQUAL);
     SQL_VALUE(set_prepare_j, peer_id_j);
+    jstring_append_2(set_prepare_j, SQL_AND CM_COL_GroupID SQL_EQUAL);
+    SQL_VALUE(set_prepare_j, cm->jGroupID_string);
     jstring_append_2(set_prepare_j, SQL_AND CM_COL_Name SQL_EQUAL SQL_VARIABLE);
     jstring_append_1(prepare_j, set_prepare_j);
 
@@ -3438,10 +3440,10 @@ Jxta_status cm_get_resend_delta_entries(Jxta_cm * me, JString * peerid_j, Jxta_v
         }
         jstring_reset(where, NULL);
         if (entry->seqNumber > 0) {
-        jstring_append_2(where, CM_COL_SeqNumber SQL_EQUAL);
-        memset(aTmp, 0, sizeof(aTmp));
-        apr_snprintf(aTmp, sizeof(aTmp), JXTA_SEQUENCE_NUMBER_FMT, entry->seqNumber);
-        jstring_append_2(where, aTmp);
+            jstring_append_2(where, CM_COL_SeqNumber SQL_EQUAL);
+            memset(aTmp, 0, sizeof(aTmp));
+            apr_snprintf(aTmp, sizeof(aTmp), JXTA_SEQUENCE_NUMBER_FMT, entry->seqNumber);
+            jstring_append_2(where, aTmp);
         } else if (entry->advId) {
             jstring_append_2(where, CM_COL_AdvId SQL_EQUAL);
             SQL_VALUE(where, entry->advId);
@@ -3476,7 +3478,10 @@ Jxta_status cm_get_resend_delta_entries(Jxta_cm * me, JString * peerid_j, Jxta_v
             JXTA_OBJECT_RELEASE(entry);
             continue;
         }
-        rv = cm_sql_select(dbSpace, pool, CM_TBL_SRDI_DELTA, &res, columns, where, NULL, TRUE);
+        jstring_append_2(where, SQL_AND CM_COL_GroupID SQL_EQUAL);
+        SQL_VALUE(where, me->jGroupID_string);
+
+        rv = cm_sql_select(dbSpace, pool, CM_TBL_SRDI_DELTA, &res, columns, where, NULL, FALSE);
         if (rv) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- cm_save_delta_entry Select failed: %s %i\n",
                             dbSpace->conn->log_id, dbSpace->id, apr_dbd_error(dbSpace->conn->driver, dbSpace->conn->sql, rv), rv);
@@ -4874,7 +4879,10 @@ Jxta_status cm_get_delta_entries_for_update(Jxta_cm * self, const char *name, JS
     jstring_append_2(where, SQL_AND);
     cm_sql_correct_space(name, where);
 
-    status = cm_sql_select(dbSpace, pool, CM_TBL_SRDI_DELTA, &res, columns, where, NULL, TRUE);
+    jstring_append_2(where, SQL_AND CM_COL_GroupID SQL_EQUAL);
+    SQL_VALUE(where, self->jGroupID_string);
+
+    status = cm_sql_select(dbSpace, pool, CM_TBL_SRDI_DELTA, &res, columns, where, NULL, FALSE);
     if (status) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "%s Select failed: %s %i\n",
                             dbSpace->id, apr_dbd_error(dbSpace->conn->driver, dbSpace->conn->sql, status), status);
@@ -5418,6 +5426,11 @@ void cm_remove_srdi_delta_entries(Jxta_cm * me, JString * jPeerid, Jxta_vector *
         }
         dbSpace = JXTA_OBJECT_SHARE(me->bestChoiceDB);
         apr_thread_mutex_lock(dbSpace->conn->lock);
+        if (jstring_length(jWhere) > 0) {
+            jstring_append_2(jWhere, SQL_AND);
+        }
+        jstring_append_2(jWhere, SQL_AND CM_COL_GroupID SQL_EQUAL);
+        SQL_VALUE(jWhere, me->jGroupID_string);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "db_id: %d %s Removing from delta table %s \n", dbSpace->conn->log_id,
                         dbSpace->id, jstring_get_string(jWhere));
         cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_DELTA, jWhere);
