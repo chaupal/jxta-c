@@ -839,6 +839,7 @@ static Jxta_status cm_address_spaces_process(Jxta_cm * self)
         if (JXTA_SUCCESS != status) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Error obtaining address space -- %i\n", status);
             JXTA_OBJECT_RELEASE(dbSpace);
+            dbSpace = NULL;
             continue;
         }
         jName = jxta_cache_config_addr_get_name(jas);
@@ -876,7 +877,11 @@ static Jxta_status cm_address_spaces_process(Jxta_cm * self)
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Duplicate database -- %s -- for address space --- %s\n",
                             dbSpace->alias, jstring_get_string(jName));
             JXTA_OBJECT_RELEASE(dbSpace);
+            dbSpace = NULL;
             JXTA_OBJECT_RELEASE(dbCheck);
+            JXTA_OBJECT_RELEASE(jas);
+            jas = NULL;
+            JXTA_OBJECT_RELEASE(jName);
             continue;
         }
         if (jxta_cache_config_addr_is_single_db(self->cacheConfig) && NULL != self->parent) {
