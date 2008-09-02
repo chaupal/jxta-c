@@ -1511,6 +1511,7 @@ static Jxta_status find_peer_PA_remotely(Jxta_discovery_service *ds, JString *pi
 Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_diff timeout, Jxta_PA ** pa)
 {
     Jxta_discovery_service *ds = NULL;
+    Jxta_status status = JXTA_SUCCESS;
     Jxta_rdv_service *rdv = NULL;
     JString *pid=NULL;
     Jxta_vector *res = NULL;
@@ -1522,10 +1523,10 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
 
     jxta_id_to_jstring(peer_id, &pid);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Trying to find PA for peerid:%s\n", jstring_get_string(pid) );
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Trying to find PA for peerid:%s\n", jstring_get_string(pid) );
 
-    rv = jxta_rdv_service_get_peers(rdv, &peers);
-    if (NULL != peers) {
+    status = jxta_rdv_service_get_peers(rdv, &peers);
+    if (JXTA_SUCCESS == status && NULL != peers) {
         int i;
 
         for (i=0; i<jxta_vector_size(peers); i++) {
@@ -1537,8 +1538,9 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
             }
             JXTA_OBJECT_RELEASE(peer);
             peer = NULL;
-            if (JXTA_SUCCESS == rv)
+            if (JXTA_SUCCESS == rv) {
                 break;
+            }
         }
         JXTA_OBJECT_RELEASE(peers);
     }
@@ -1546,8 +1548,8 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
     if ( JXTA_ITEM_NOTFOUND == rv && jxta_rdv_service_is_rendezvous(rdv)) {
         Jxta_peerview *pv = jxta_rdv_service_get_peerview(rdv);
         if (NULL != pv) {
-            rv = peerview_get_peer(pv, peer_id, &peer);
-            if (JXTA_SUCCESS == rv) {
+            status = peerview_get_peer(pv, peer_id, &peer);
+            if (JXTA_SUCCESS == status) {
                 jxta_peer_get_adv(peer, pa);
                 rv = (NULL != *pa) ? JXTA_SUCCESS:JXTA_ITEM_NOTFOUND;
                 JXTA_OBJECT_RELEASE(peer);
@@ -1570,6 +1572,7 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
         }
     }
     if (JXTA_ITEM_NOTFOUND == rv) {
+
         if (0 == timeout) {
             /* do a remote query without listener, the result will be published locally. */
             discovery_service_get_remote_advertisements(ds, NULL, DISC_PEER, "PID", jstring_get_string(pid), 1, NULL);
@@ -1587,6 +1590,7 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
         JXTA_OBJECT_RELEASE(rdv);
     if (peer)
         JXTA_OBJECT_RELEASE(peer);
+
     return rv;
 }
 
