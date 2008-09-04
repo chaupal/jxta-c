@@ -1954,19 +1954,25 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
             source_peers = jxta_hashtable_keys_get(resend_hash);
             source_peers_save = source_peers;
 
+            /* Need to add source id to message since the same advertisement may have come from multiple sources */
             while (*source_peers) {
                 Jxta_id * source_peerid=NULL;
 
-                jxta_hashtable_get(resend_hash, *source_peers, strlen(*source_peers) + 1, JXTA_OBJECT_PPTR(&resendDelta));
-
+                status = jxta_hashtable_get(resend_hash, *source_peers, strlen(*source_peers) + 1, JXTA_OBJECT_PPTR(&resendDelta));
+                if (JXTA_SUCCESS != status) {
+                    free(*(source_peers++));
+                    continue;
+                }
+                
                 jxta_id_from_cstr(&source_peerid, *source_peers);
 
                 discovery_send_srdi_msg(discovery, peerid, source_peerid, jPrimaryKey, resendDelta);
-
+                JXTA_OBJECT_RELEASE(source_peerid);
+                JXTA_OBJECT_RELEASE(resendDelta);
+                resendDelta = NULL;
                 free(*(source_peers++));
             }
             free(source_peers_save);
-            JXTA_OBJECT_RELEASE(resendDelta);
             JXTA_OBJECT_RELEASE(resend_hash);
         }
         JXTA_OBJECT_RELEASE(entries);
@@ -1978,7 +1984,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
     status = jxta_srdi_message_get_entries(smsg, &msg_entries);
 
 
-    if ((status != JXTA_SUCCESS || NULL == msg_entries) && NULL == resendDelta) {
+    if (status != JXTA_SUCCESS || NULL == msg_entries) {
         goto FINAL_EXIT;
     }
 
@@ -2002,7 +2008,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
         JXTA_OBJECT_RELEASE(entry);
     }
     if (NULL != resendDelta) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Resend %d entries \n", jxta_vector_size(resendDelta));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Request %d resend entries \n", jxta_vector_size(resendDelta));
 
         discovery_send_srdi_msg(discovery, peerid, src_peerid , jPrimaryKey, resendDelta);
 
@@ -2022,7 +2028,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
         bReplica = FALSE;
         JXTA_OBJECT_RELEASE(peer);
     }
-    /* process entries */
+    /* process normal srdi entries */
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "got srdi with peerid -- %s and vector_size %i\n",
                     jstring_get_string(jPeerid)
                     , jxta_vector_size(entries));
