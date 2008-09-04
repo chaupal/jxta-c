@@ -6497,9 +6497,6 @@ static Jxta_status cm_sql_delta_entry_update(DBSpace * dbSpace, JString * jPeeri
 
     status = cm_sql_update_with_where(dbSpace, CM_TBL_SRDI_DELTA, columns, where);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d %s -- Updated columns: %s where - %s \n", dbSpace->conn->log_id,
-                        dbSpace->id, jstring_get_string(columns), jstring_get_string(where));
-
     JXTA_OBJECT_RELEASE(columns);
     return status;
 }
@@ -6677,10 +6674,8 @@ static Jxta_status cm_sql_update_with_where(DBSpace * dbSpace, const char *table
     jstring_append_2(statement, table);
     jstring_append_2(statement, SQL_SET);
     jstring_append_1(statement, columns);
-    jstring_append_2(statement, SQL_WHERE CM_COL_GroupID SQL_EQUAL);
-    SQL_VALUE(statement, dbSpace->jId);
     if (where != NULL) {
-        jstring_append_2(statement, SQL_AND);
+        jstring_append_2(statement, SQL_WHERE);
         jstring_append_1(statement, where);
     }
 
