@@ -381,6 +381,7 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_query_get_xml(ResolverQuery * adv, JStri
     return JXTA_SUCCESS;
 }
 
+
 JXTA_DECLARE(JString *) jxta_resolver_query_get_credential(ResolverQuery * ad)
 {
     JXTA_OBJECT_CHECK_VALID(ad);
@@ -634,6 +635,72 @@ JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new_1(JString * handlername, J
     return msg;
 }
 
+JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_clone(ResolverQuery * rq)
+{
+    ResolverQuery * rclone = NULL;
+    JString * container_j = NULL;
+    Jxta_id * container_i = NULL;
+    Jxta_RouteAdvertisement *route;
+
+    rclone = jxta_resolver_query_new();
+    if (NULL == rclone) {
+        goto FINAL_EXIT;
+    }
+
+    container_j = jxta_resolver_query_get_credential(rq);
+    if (NULL != container_j) {
+        jstring_append_1(rclone->Credential, container_j);
+        JXTA_OBJECT_RELEASE(container_j);
+    }
+
+    container_i = jxta_resolver_query_get_src_peer_id(rq);
+    if (NULL != container_i) {
+        if (NULL != rclone->SrcPeerID) {
+            JXTA_OBJECT_RELEASE(rclone->SrcPeerID);
+        }
+        rclone->SrcPeerID = container_i;
+    }
+
+    jxta_resolver_query_get_handlername(rq, &container_j);
+    if (container_j) {
+        jstring_append_1(rclone->HandlerName, container_j);
+        JXTA_OBJECT_RELEASE(container_j);
+    }
+
+    rclone->HopCount = rq->HopCount;
+    rclone->QueryID = rq->QueryID;
+
+    jxta_resolver_query_get_query(rq, &container_j);
+
+    if (NULL != container_j) {
+        rclone->Query = jstring_clone(container_j);
+        JXTA_OBJECT_RELEASE(container_j);
+    }
+
+    route = jxta_resolver_query_src_peer_route(rq);
+    if (NULL != route) {
+
+        jxta_advertisement_get_xml((Jxta_advertisement *) route, &container_j);
+
+        if (NULL != container_j) {
+            JXTA_OBJECT_RELEASE(route);
+            route = jxta_RouteAdvertisement_new();
+
+            jxta_advertisement_parse_charbuffer((Jxta_advertisement *) route, jstring_get_string(container_j), jstring_length(container_j));
+
+            rclone->route = JXTA_OBJECT_SHARE(route);
+        }
+        JXTA_OBJECT_RELEASE(route);
+    }
+    /* just put the pointer in for now */
+    /* a clone may be required in the future */
+    rclone->qos = rq->qos;
+
+
+FINAL_EXIT:
+
+    return rclone;
+}
  /** 
   * Shred the memory going out.  Again,
   * if there ever was a segfault (unlikely,

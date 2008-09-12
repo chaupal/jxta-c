@@ -93,6 +93,8 @@ JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new(void);
 JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new_1(JString * handlername, JString * query, Jxta_id * src_peerid,
                                                         Jxta_RouteAdvertisement * route);
 
+JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_clone(ResolverQuery * rq);
+
 /**
  * @param ResolverQuery the resolver query object
  * return a JString representation of the advertisement

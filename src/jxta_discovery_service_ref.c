@@ -1401,7 +1401,7 @@ static Jxta_status discovery_service_send_to_replica(Jxta_discovery_service_ref 
                 repIdChar = jstring_get_string(jRepId);
                 if (strcmp(repIdChar, thisIdChar)) {
                     if (NULL == peerHash)
-                        peerHash = jxta_hashtable_new(1);
+                        peerHash = jxta_hashtable_new(0);
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Adding replica to search list - %s \n", repIdChar);
                     if (jxta_hashtable_get(peerHash, repIdChar, strlen(repIdChar), JXTA_OBJECT_PPTR(&idTemp)) != JXTA_SUCCESS) {
                         jxta_hashtable_put(peerHash, repIdChar, strlen(repIdChar), (Jxta_object *) repId);
@@ -1421,12 +1421,35 @@ static Jxta_status discovery_service_send_to_replica(Jxta_discovery_service_ref 
                 Jxta_id *id = NULL;
                 JString *sTemp = NULL;
 
-                jxta_vector_get_object_at(peerReplicas, JXTA_OBJECT_PPTR(&id), i);
-                jxta_id_to_jstring(id, &sTemp);
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Forward to replica %s\n", jstring_get_string(sTemp));
-                jxta_srdi_forwardQuery_peer(discovery->srdi, discovery->resolver, id, rq);
-                JXTA_OBJECT_RELEASE(id);
-                JXTA_OBJECT_RELEASE(sTemp);
+                status = jxta_vector_get_object_at(peerReplicas, JXTA_OBJECT_PPTR(&id), i);
+                if (JXTA_SUCCESS != status) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to remove id from peerReplicas er:%d\n", status);
+                    continue;
+                }
+                status = jxta_id_to_jstring(id, &sTemp);
+
+                if (JXTA_SUCCESS != status) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Invalid Id - Could not create a string er:%d\n", status);
+                } else {
+                    ResolverQuery * rq_clone = NULL;
+
+                    rq_clone = jxta_resolver_query_clone(rq);
+
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Forward query id: %d to replica %s \n", jxta_resolver_query_get_queryid(rq), jstring_get_string(sTemp));
+
+                    if (NULL != rq_clone) {
+
+                        jxta_srdi_forwardQuery_peer(discovery->srdi, discovery->resolver, id, rq_clone);
+
+                        JXTA_OBJECT_RELEASE(rq_clone);
+                    } else {
+                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create a resolver query clone - Query id: %d is not sent\n", jxta_resolver_query_get_queryid(rq));
+                    }
+                }
+                if (id)
+                    JXTA_OBJECT_RELEASE(id);
+                if (sTemp)
+                    JXTA_OBJECT_RELEASE(sTemp);
             }
             JXTA_OBJECT_RELEASE(peerReplicas);
         } else {
@@ -1649,7 +1672,7 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
                                          jstring_get_string(attr), jstring_get_string(val));
         }
         if (NULL != peers && jxta_vector_size(peers) > 0) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "forward the query \n");
+           jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "forward the query to %d peers\n", jxta_vector_size(peers));
             res = jxta_srdi_forwardQuery_peers(discovery->srdi, discovery->resolver, peers, rq);
         } else {
             res = discovery_service_send_to_replica(discovery, rq, replicaExpression, jContext);
