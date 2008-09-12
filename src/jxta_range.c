@@ -372,7 +372,7 @@ JXTA_DECLARE(int)
     ret = (int) i;
 
 CommonExit:
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Get Pos: %d  dV: %10.5f segs: %d  val: %s  rge: %s el:%s att:%s\n",
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Get Pos: %d  dV: %10.5f segs: %d  val: %s  rge: %s el:%s att:%s\n",
                                  ret, dValue, segments, value, rge->range, rge->element, rge->attribute); 
     return ret;
 }
