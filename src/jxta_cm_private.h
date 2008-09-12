@@ -309,6 +309,8 @@ Jxta_status cm_update_delta_entry(Jxta_cm * self, JString * jPeerid, JString * j
 
 Jxta_status cm_expand_delta_entries(Jxta_cm * self, Jxta_vector * msg_entries, JString * peerid, JString * source_peerid, Jxta_vector ** ret_entries);
 
+Jxta_status cm_remove_delta_entries(Jxta_cm * me, JString *seq_entries);
+
 /**
  * Save the SRDI entry in the SRDI Delta table for the peer.
  *
@@ -324,8 +326,9 @@ Jxta_status cm_expand_delta_entries(Jxta_cm * self, Jxta_vector * msg_entries, J
  *
  * @return Jxta_status 
  */
-Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSourcePeerid, JString * jHandler, Jxta_SRDIEntryElement * entry,
-                                JString ** jNewValue, Jxta_sequence_number * newSeqNumber, Jxta_boolean * update_srdi, int window);
+Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSourcePeerid, JString *jAdvPeer, JString * jHandler, Jxta_SRDIEntryElement * entry,
+                                JString ** jNewValue, Jxta_sequence_number * newSeqNumber, JString **jRemovePeerid, JString ** jRemoveSeqNumber,
+                                Jxta_boolean * update_srdi, int window);
 
 /**
  * Get the entries with the sequence number in resendEntries

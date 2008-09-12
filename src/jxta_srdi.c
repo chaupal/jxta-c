@@ -371,9 +371,10 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_set_peerID(Jxta_SRDIMessage * ad, Jx
 JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_SrcPID(Jxta_SRDIMessage * ad, Jxta_id ** peerid)
 {
     if (ad->SrcPID) {
-        JXTA_OBJECT_SHARE(ad->SrcPID);
+        *peerid = JXTA_OBJECT_SHARE(ad->SrcPID);
+    } else if (ad->PeerID) {
+        *peerid = JXTA_OBJECT_SHARE(ad->PeerID);
     }
-    *peerid = ad->SrcPID;
     return JXTA_SUCCESS;
 }
 
@@ -585,7 +586,7 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_xml(Jxta_SRDIMessage * ad, JStri
     JXTA_OBJECT_RELEASE(tmps);
     jstring_append_2(doc, "</PID>\n");
 
-    if (NULL != ad->SrcPID) {
+    if (NULL != ad->SrcPID && !jxta_id_equals(ad->SrcPID, ad->PeerID)) {
         jstring_append_2(doc, "<SrcPID>");
         jxta_id_to_jstring(ad->SrcPID, &tmps);
         jstring_append_1(doc, tmps);
@@ -760,16 +761,18 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_element_clone(Jxta_SRDIEntryElem
     newEntry->expiration = entry->expiration;
     newEntry->next_update_time = entry->next_update_time;
 
-    if (newEntry->seqNumber > 0) {
-        return newEntry;
+    if (entry->nameSpace) {
+        newEntry->nameSpace = jstring_clone(entry->nameSpace);
     }
-
-    /* those element should have appropriate value given it is not an update*/
-    newEntry->nameSpace = jstring_clone(entry->nameSpace);
-    newEntry->advId = jstring_clone(entry->advId);
-    newEntry->key = jstring_clone(entry->key);
-    newEntry->value = jstring_clone(entry->value);
-
+    if (entry->advId) {
+        newEntry->advId = jstring_clone(entry->advId);
+    }
+    if (entry->key) {
+        newEntry->key = jstring_clone(entry->key);
+    }
+    if (entry->value) {
+        newEntry->value = jstring_clone(entry->value);
+    }
     if (entry->range) {
         newEntry->range = jstring_clone(entry->range);
     }

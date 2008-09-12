@@ -230,26 +230,30 @@ static void add_replica_to_peers(Jxta_srdi_service_ref *me, Jxta_hashtable *peer
     Jxta_vector *peerEntries = NULL;
 
     jxta_peer_get_peerid(repPeer, &repId);
+    jxta_id_to_jstring(repId, &jRepId);
+
     if( !jxta_id_equals( repId, me->peerID) ) {
+
         /* Send replicas to peers other than ourself. */
-        jxta_id_to_jstring(repId, &jRepId);
         repIdChar = jstring_get_string(jRepId);
         if (jxta_hashtable_get(peersHash, repIdChar, strlen(repIdChar) + 1, JXTA_OBJECT_PPTR(&peerEntries)) != JXTA_SUCCESS) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Adding replica to peer HASH - %s \n", repIdChar);
             peerEntries = jxta_vector_new(0);
             jxta_vector_add_object_first(peerEntries, (Jxta_object *) repPeer);
             jxta_hashtable_put(peersHash, repIdChar, strlen(repIdChar) + 1, (Jxta_object *) peerEntries);
         }
-        newEntry->seqNumber = 0;
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "%sAdding entry to peer %s vector %s \n", header
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "%sAdding entry to peer %s vector %s \n", header
                  , repIdChar, jstring_get_string(newEntry->key));
         jxta_vector_add_object_last(peerEntries, (Jxta_object *) newEntry);
 
         JXTA_OBJECT_RELEASE(peerEntries);
-        JXTA_OBJECT_RELEASE(jRepId);
+    } else {
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Don't send to ourself %s\n", jstring_get_string(jRepId));
     }
     if (repId)
         JXTA_OBJECT_RELEASE(repId);
+    if (jRepId)
+        JXTA_OBJECT_RELEASE(jRepId);
 }
 
 /**
@@ -279,12 +283,14 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
     JString *jPkey = NULL;
     JString *jPeerId = NULL;
     Jxta_id *from_peerid = NULL;
+    Jxta_id *source_peerid = NULL;
     Jxta_id * peerLoc;
     Jxta_hashtable * loopHash;
     Jxta_boolean end = FALSE;
 
     jxta_srdi_message_get_peerID(srdiMsg, &from_peerid);
     jxta_id_to_jstring(from_peerid, &jPeerId);
+    jxta_srdi_message_get_SrcPID(srdiMsg, &source_peerid);
     ttl = jxta_srdi_message_get_ttl(srdiMsg);
     jxta_srdi_message_get_primaryKey(srdiMsg, &jPkey);
 
@@ -311,7 +317,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
 
         entry = NULL;
         jxta_vector_get_object_at(allEntries, JXTA_OBJECT_PPTR(&entry), i);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Getting entry %d %s\n", i, entry->replicate == TRUE ? "TRUE":"FALSE");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Getting entry seq:" JXTA_SEQUENCE_NUMBER_FMT " %d %s\n", entry->seqNumber, i, entry->replicate == TRUE ? "TRUE":"FALSE");
         if (entry == NULL || !(entry->replicate) || entry->duplicate) {
             if (NULL != entry)
                 JXTA_OBJECT_RELEASE(entry);
@@ -351,7 +357,9 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
 
         if (NULL != repPeer) {
             Jxta_peer *advPeer=NULL;
+
             advPeer = getReplicaPeer((Jxta_srdi_service *) me, jstring_get_string(entry->advId));
+
             if (NULL != advPeer /* && me->dup_srdi_entries */) {
                 Jxta_boolean same_peer = FALSE;
                 Jxta_SRDIEntryElement * clone_entry = NULL;
@@ -361,13 +369,13 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
                 assert(NULL != peerVersion);
 
                 if (jxta_version_compatible_1(SRDI_DUPLICATE_ENTRIES, peerVersion)) {
+
                     same_peer = jxta_id_equals(jxta_peer_peerid(advPeer),jxta_peer_peerid(repPeer));
                 }
                 if (!same_peer) {
                     add_replica_to_peers(me, peersHash, repPeer, newEntry, "");
                 }
-                if (jxta_version_compatible_1(SRDI_DUPLICATE_ENTRIES, peerVersion) && newEntry->expiration > 0) {
-                    newEntry->seqNumber = 0;
+                if (jxta_version_compatible_1(SRDI_DUPLICATE_ENTRIES, peerVersion)) {
                     clone_entry = jxta_srdi_element_clone(newEntry);
                     clone_entry->duplicate = TRUE;
                     add_replica_to_peers(me, dupsHash, advPeer, clone_entry, "dup ---->");
@@ -387,7 +395,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
 
     /* send to the peers - source is this peer */
     loopHash = peersHash;
-    peerLoc = me->peerID;
+    peerLoc = source_peerid;
     while (TRUE) {
         replicaLocs = jxta_hashtable_keys_get(loopHash);
         replicaLocsSave = (char **) replicaLocs;
@@ -429,7 +437,8 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
   FINAL_EXIT:
     if (from_peerid)
         JXTA_OBJECT_RELEASE(from_peerid); 
-
+    if (source_peerid)
+        JXTA_OBJECT_RELEASE(source_peerid);
     if (jPeerId)
         JXTA_OBJECT_RELEASE(jPeerId);
     if (jPkey)
@@ -449,7 +458,51 @@ static Jxta_status pushSrdi_priv(Jxta_srdi_service * self, Jxta_resolver_service
     return res;
 }
 
-static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer, Jxta_id * src_pid, JString * instance, Jxta_SRDIMessage * msg)
+static Jxta_boolean create_zero_exp_msgs(JString *remove_peer, Jxta_SRDIEntryElement *entry, Jxta_hashtable *remove_entries, const char *seq_no)
+{
+
+    Jxta_vector *entry_v = NULL;
+    int j;
+    Jxta_SRDIEntryElement *zero_entry = NULL;
+    Jxta_boolean found = FALSE;
+
+    zero_entry = jxta_srdi_new_element();
+    zero_entry->expiration = 0;
+    zero_entry->replicate = entry->replicate;
+    zero_entry->duplicate = entry->duplicate;
+    zero_entry->advId = JXTA_OBJECT_SHARE(entry->advId);
+
+    if (jxta_hashtable_get(remove_entries, jstring_get_string(remove_peer), jstring_length(remove_peer) + 1, JXTA_OBJECT_PPTR(&entry_v)) != JXTA_SUCCESS) {
+        entry_v = jxta_vector_new(0);
+        jxta_vector_add_object_last(entry_v, (Jxta_object *) zero_entry);
+        jxta_hashtable_put(remove_entries, jstring_get_string(remove_peer), jstring_length(remove_peer) + 1, (Jxta_object *) entry_v);
+    }
+    for (j=0; j<jxta_vector_size(entry_v); j++) {
+        Jxta_SRDIEntryElement *save_entry = NULL;
+        jxta_vector_get_object_at(entry_v, JXTA_OBJECT_PPTR(&save_entry), j);
+        if (!strcmp(jstring_get_string(save_entry->advId), jstring_get_string(entry->advId))) {
+            if (NULL == save_entry->sn_cs_values) {
+                save_entry->sn_cs_values = jstring_new_0();
+            } else {
+                jstring_append_2(save_entry->sn_cs_values, ",");
+            }
+            jstring_append_2(save_entry->sn_cs_values, seq_no);
+            found = TRUE;
+        }
+        JXTA_OBJECT_RELEASE(save_entry);
+        if (found) break;
+    }
+    if (!found) {
+        zero_entry->sn_cs_values = jstring_new_2(seq_no);
+        jxta_vector_add_object_last(entry_v, (Jxta_object *) zero_entry);
+    }
+    if (zero_entry)
+        JXTA_OBJECT_RELEASE(zero_entry);
+    JXTA_OBJECT_RELEASE(entry_v);
+    JXTA_OBJECT_RELEASE(remove_peer);
+    return found;
+}
+static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer, Jxta_id * src_pid, JString * instance, Jxta_SRDIMessage * msg, Jxta_hashtable **remove_entries)
 {
     Jxta_status res = JXTA_SUCCESS;
     int i;
@@ -493,83 +546,139 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
         JString *jNewValue = NULL;
         Jxta_boolean update_srdi = TRUE;
         char aTmp[64];
+        Jxta_peer *advPeer=NULL;
+        JString * advPeer_j = NULL;
+        JString * remove_peer_j=NULL;
+        JString * remove_sequence_j = NULL;
 
         nnow = jpr_time_now();
         jxta_vector_get_object_at(entries, JXTA_OBJECT_PPTR(&entry), i);
-        res = cm_save_delta_entry(me->cm, jPeer, jSourcePeer, instance, entry, &jNewValue, &newSeqNumber, &update_srdi, jxta_srdi_cfg_get_delta_window(me->config));
-        memset(aTmp, 0, sizeof(aTmp));
-        /* if the seq number changed, use it */
-        if (newSeqNumber > 0) {
-            entry->seqNumber = newSeqNumber;
-        }
-        apr_snprintf(aTmp, sizeof(aTmp), JXTA_SEQUENCE_NUMBER_FMT, entry->seqNumber);
 
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "checking for seq no %s in the hash -- update?- %s\n", aTmp, update_srdi == TRUE ? "yes":"no");
-
-        status = jxta_hashtable_get(seq_hash, aTmp, strlen(aTmp), JXTA_OBJECT_PPTR(&saveEntry));
-        if (JXTA_SUCCESS != status && update_srdi && jxta_version_compatible_1(SRDI_DELTA_OPTIMIZATIONS, peerVersion) ) {
-            jxta_hashtable_put(seq_hash, aTmp, strlen(aTmp), (Jxta_object *) entry);
-            /* if there was entry in the delta it needs to be updated*/
-            if (JXTA_SUCCESS == res) {
-                Jxta_boolean ad = FALSE;
-
-                /* if the value changed send the new value */
-                if (NULL != jNewValue) {
-                    jstring_reset(entry->value, NULL);
-                    jstring_append_1(entry->value, jNewValue);
-                    JXTA_OBJECT_RELEASE(jNewValue);
-                } else {
-
-                    /* don't leak it */
-                    JXTA_OBJECT_RELEASE(entry->value);
-                    entry->value = NULL;
-                    cm_update_delta_entry(me->cm, jPeer, jSourcePeer, instance, entry, 0 == entry->next_update_time ? entry->expiration : 0);
-                    /* if this advertisement is being updated remove it from the vector */
-                    /* The comma separated value of seq. numbers has been built in another entry by cm_update_delta_entry */
-                    status = jxta_hashtable_contains(ads_hash, jstring_get_string(entry->advId), jstring_length(entry->advId));
-                    if (JXTA_SUCCESS == status) {
-                        jxta_vector_remove_object_at(entries, NULL, i--);
-                    } else {
-                        if (entry->expiration > 0) {
-                            entry->expiration = entry->timeout - nnow;
-                        }
-                        entry->seqNumber = 0;
-                        jxta_hashtable_put(ads_hash, jstring_get_string(entry->advId), jstring_length(entry->advId), (Jxta_object *) entry);
-                        ad = TRUE;
-                    }
+        if (jxta_rdv_service_is_rendezvous(me->rendezvous)) {
+            advPeer = getReplicaPeer((Jxta_srdi_service *) me, jstring_get_string(entry->advId));
+            if (NULL != advPeer) {
+                if (jxta_id_to_jstring(jxta_peer_peerid(advPeer), &advPeer_j) != JXTA_SUCCESS) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Received an invalid replica peer id [%pp]\n",advPeer);
                 }
-                JXTA_OBJECT_RELEASE(entry->key);
-                entry->key = NULL;
-                if (!ad) {
+            }
+        }
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Starting with entry->seqNumber:" JXTA_SEQUENCE_NUMBER_FMT "\n", entry->seqNumber);
+
+        res = cm_save_delta_entry(me->cm, jPeer, jSourcePeer, advPeer_j, instance, entry
+                        , &jNewValue, &newSeqNumber, &remove_peer_j, &remove_sequence_j
+                        , &update_srdi, jxta_srdi_cfg_get_delta_window(me->config));
+
+        if (NULL != remove_peer_j) {
+            Jxta_SRDIEntryElement * clone_entry = NULL;
+ 
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Received a remove peer: %s newSeqNumber :" JXTA_SEQUENCE_NUMBER_FMT " entry->seqNumber:"JXTA_SEQUENCE_NUMBER_FMT "\n",jstring_get_string(remove_peer_j), newSeqNumber, entry->seqNumber);
+
+            if (NULL == *remove_entries) {
+                *remove_entries = jxta_hashtable_new(0);
+            }
+
+            clone_entry = jxta_srdi_element_clone(entry);
+
+            create_zero_exp_msgs(remove_peer_j, clone_entry, *remove_entries, jstring_get_string(remove_sequence_j));
+            if (0 == entry->expiration) {
+                jxta_vector_remove_object_at(entries, NULL, i--);
+            } else {
+                entry->seqNumber = newSeqNumber > 0 ? newSeqNumber:entry->seqNumber;
+            }
+            JXTA_OBJECT_RELEASE(clone_entry);
+
+        } else {
+            memset(aTmp, 0, sizeof(aTmp));
+            /* if the seq number changed, use it */
+            if (newSeqNumber > 0) {
+                entry->seqNumber = newSeqNumber;
+            }
+            apr_snprintf(aTmp, sizeof(aTmp), JXTA_SEQUENCE_NUMBER_FMT, entry->seqNumber);
+
+
+            status = jxta_hashtable_get(seq_hash, aTmp, strlen(aTmp), JXTA_OBJECT_PPTR(&saveEntry));
+
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "checking seq %s -- found: %s update?- %s compatible: %s\n"
+                    , aTmp
+                    , JXTA_ITEM_NOTFOUND == status ? "no":"yes"
+                    , update_srdi == TRUE ? "yes":"no"
+                    , TRUE == jxta_version_compatible_1(SRDI_DELTA_OPTIMIZATIONS, peerVersion) ? "true":"false");
+
+            if (JXTA_SUCCESS != status && update_srdi && jxta_version_compatible_1(SRDI_DELTA_OPTIMIZATIONS, peerVersion) ) {
+                jxta_hashtable_put(seq_hash, aTmp, strlen(aTmp), (Jxta_object *) entry);
+                /* if there was entry in the delta it needs to be updated*/
+                if (JXTA_SUCCESS == res) {
+                    Jxta_boolean ad = FALSE;
+
+                    /* if the value changed send the new value */
+                    if (NULL != jNewValue) {
+                        jstring_reset(entry->value, NULL);
+                        jstring_append_1(entry->value, jNewValue);
+                        JXTA_OBJECT_RELEASE(jNewValue);
+                    } else {
+                        Jxta_SRDIEntryElement *ads_entry = NULL;
+                        /* don't leak it */
+                        JXTA_OBJECT_RELEASE(entry->value);
+                        entry->value = NULL;
+                        entry->seqNumber = 0;
+                        cm_update_delta_entry(me->cm, jPeer, jSourcePeer, instance, entry, 0 == entry->next_update_time ? entry->expiration : 0);
+                        /* if this advertisement is being updated remove it from the vector and add cs values*/
+                        status = jxta_hashtable_get(ads_hash, jstring_get_string(entry->advId), jstring_length(entry->advId) + 1, JXTA_OBJECT_PPTR(&ads_entry));
+
+                        if (JXTA_SUCCESS == status) {
+                            jxta_vector_remove_object_at(entries, NULL, i--);
+                            jstring_append_2(ads_entry->sn_cs_values, ",");
+                            jstring_append_2(ads_entry->sn_cs_values, aTmp);
+                            JXTA_OBJECT_RELEASE(ads_entry);
+                        } else {
+                            if (entry->expiration > 0) {
+                                entry->expiration = entry->timeout - nnow;
+                            }
+                            entry->seqNumber = 0;
+                            entry->sn_cs_values = jstring_new_2(aTmp);
+                            JXTA_OBJECT_RELEASE(entry->range);
+                            entry->range = NULL;
+                            jxta_hashtable_put(ads_hash, jstring_get_string(entry->advId), jstring_length(entry->advId) + 1, (Jxta_object *) entry);
+                            ad = TRUE;
+                        }
+                    }
+                    JXTA_OBJECT_RELEASE(entry->key);
+                    entry->key = NULL;
+                    if (!ad) {
+                        JXTA_OBJECT_RELEASE(entry->advId);
+                        entry->advId = NULL;
+                    }
+                    JXTA_OBJECT_RELEASE(entry->nameSpace);
+                    entry->nameSpace = NULL;
+                }
+            } else if (JXTA_SUCCESS != status && !jxta_version_compatible_1(SRDI_DELTA_OPTIMIZATIONS, peerVersion)) {
+                jxta_hashtable_put(seq_hash, aTmp, strlen(aTmp), (Jxta_object *) entry);
+                if (JXTA_SUCCESS == res) {
+                    if (NULL != jNewValue) {
+                        jstring_reset(entry->value, NULL);
+                        jstring_append_1(entry->value, jNewValue);
+                        JXTA_OBJECT_RELEASE(jNewValue);
+                    } else {
+                        JXTA_OBJECT_RELEASE(entry->value);
+                        entry->value = NULL;
+                    }
+                    JXTA_OBJECT_RELEASE(entry->key);
+                    entry->key = NULL;
                     JXTA_OBJECT_RELEASE(entry->advId);
                     entry->advId = NULL;
+                    JXTA_OBJECT_RELEASE(entry->nameSpace);
+                    entry->nameSpace = NULL;
                 }
-                JXTA_OBJECT_RELEASE(entry->nameSpace);
-                entry->nameSpace = NULL;
+            } else {
+                cm_update_delta_entry(me->cm, jPeer, jSourcePeer, instance, entry, 0 == entry->next_update_time ? entry->timeout - nnow : entry->next_update_time - nnow);
+                jxta_vector_remove_object_at(entries, NULL, i--);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Don't send sequence %s - Removing from entries\n", aTmp);
             }
-        } else if (JXTA_SUCCESS != status && !jxta_version_compatible_1(SRDI_DELTA_OPTIMIZATIONS, peerVersion)) {
-            jxta_hashtable_put(seq_hash, aTmp, strlen(aTmp), (Jxta_object *) entry);
-            if (JXTA_SUCCESS == res) {
-                if (NULL != jNewValue) {
-                    jstring_reset(entry->value, NULL);
-                    jstring_append_1(entry->value, jNewValue);
-                    JXTA_OBJECT_RELEASE(jNewValue);
-                } else {
-                    JXTA_OBJECT_RELEASE(entry->value);
-                    entry->value = NULL;
-                }
-                JXTA_OBJECT_RELEASE(entry->key);
-                entry->key = NULL;
-                JXTA_OBJECT_RELEASE(entry->advId);
-                entry->advId = NULL;
-                JXTA_OBJECT_RELEASE(entry->nameSpace);
-                entry->nameSpace = NULL;
-            }
-        } else {
-            cm_update_delta_entry(me->cm, jPeer, jSourcePeer, instance, entry, 0 == entry->next_update_time ? entry->timeout - nnow : entry->next_update_time - nnow);
-            jxta_vector_remove_object_at(entries, NULL, i--);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Don't send sequence %s - Removing from entries\n", aTmp);
         }
+        if (advPeer_j)
+            JXTA_OBJECT_RELEASE(advPeer_j);
+        if (remove_sequence_j)
+            JXTA_OBJECT_RELEASE(remove_sequence_j);
         if (saveEntry)
             JXTA_OBJECT_RELEASE(saveEntry);
         if (jNewValue)
@@ -590,48 +699,109 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
 }
 
 static Jxta_status prep_srdi_updates(Jxta_srdi_service *self, JString *instance, Jxta_SRDIMessage * msg, Jxta_id *peer,
-ResolverSrdi **srdi)
+Jxta_hashtable **messages)
 {
 
     Jxta_status res = JXTA_SUCCESS;
     Jxta_srdi_service_ref *me = (Jxta_srdi_service_ref *) self;
     JString *messageString = NULL;
     Jxta_vector *mod_entries = NULL;
-    
+    ResolverSrdi *srdi = NULL;
+    Jxta_hashtable *remove_entries=NULL;
+    Jxta_vector *srdi_messages = NULL;
+    JString * peer_j = NULL;
+    Jxta_id * src_pid;
+    char **remove_peers = NULL;
+    char **remove_peers_save = NULL;
+
+    jxta_srdi_message_get_SrcPID(msg, &src_pid);
+
     if (jxta_srdi_cfg_is_delta_cache_supported(me->config)) {
-        record_delta_entry(me, peer, me->peerID, instance, msg);
+        record_delta_entry(me, peer, src_pid, instance, msg, &remove_entries);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Got remove entries: %s \n", NULL == remove_entries? "false":"true");
         res = jxta_srdi_message_get_entries(msg, &mod_entries);
         if (JXTA_SUCCESS != res) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Cannot get entries vector from srdi message\n");
             goto FINAL_EXIT;
         }
         /* if no updates now */
-        if (0 == jxta_vector_size(mod_entries) ) {
+        if (0 == jxta_vector_size(mod_entries) && NULL == remove_entries ) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "No mod_entries or remove entries\n");
             goto FINAL_EXIT;
         }
-    }
-    res = jxta_srdi_message_get_xml(msg, &messageString);
-    if (res != JXTA_SUCCESS) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "cannot serialize srdi message\n");
-        res = JXTA_NOMEM;
-        goto FINAL_EXIT;
+        if (remove_entries) {
+            remove_peers = jxta_hashtable_keys_get(remove_entries);
+            remove_peers_save = remove_peers;
+        }
     }
 
-    *srdi = jxta_resolver_srdi_new_1(instance, messageString, NULL);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "%s\n", jstring_get_string(messageString));
-
-    JXTA_OBJECT_RELEASE(messageString);
-    if (*srdi == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "cannot allocate a resolver srdi message\n");
-        res = JXTA_NOMEM;
+    /* the first message to send is to the original destination */
+    if (jxta_id_to_jstring(peer, &peer_j) != JXTA_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Couldn't get a jstring from the peer [%pp]\n", peer);
         goto FINAL_EXIT;
+    }
+    while (TRUE) {
+
+        if (NULL == *messages) {
+            *messages = jxta_hashtable_new(0);
+        }
+        if (NULL != peer_j) {
+            if (jxta_hashtable_get(*messages, jstring_get_string(peer_j), jstring_length(peer_j) + 1, JXTA_OBJECT_PPTR(&srdi_messages)) != JXTA_SUCCESS) {
+                srdi_messages = jxta_vector_new(0);
+                jxta_hashtable_put(*messages, jstring_get_string(peer_j), jstring_length(peer_j) + 1, (Jxta_object *) srdi_messages);
+            }
+            JXTA_OBJECT_RELEASE(peer_j);
+            peer_j = NULL;
+        }
+        if (NULL != mod_entries && jxta_vector_size(mod_entries) > 0) {
+            jxta_srdi_message_set_entries(msg, mod_entries);
+            res = jxta_srdi_message_get_xml(msg, &messageString);
+            if (res != JXTA_SUCCESS) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "cannot serialize srdi message\n");
+                res = JXTA_NOMEM;
+                goto FINAL_EXIT;
+            }
+
+            srdi = jxta_resolver_srdi_new_1(instance, messageString, NULL);
+            if (srdi == NULL) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "cannot allocate a resolver srdi message\n");
+                res = JXTA_NOMEM;
+                goto FINAL_EXIT;
+            }
+            jxta_vector_add_object_last(srdi_messages, (Jxta_object *) srdi);
+            JXTA_OBJECT_RELEASE(messageString);
+            JXTA_OBJECT_RELEASE(srdi);
+        }
+        if (srdi_messages)
+            JXTA_OBJECT_RELEASE(srdi_messages);
+        if (mod_entries) {
+            JXTA_OBJECT_RELEASE(mod_entries);
+            mod_entries = NULL;
+        }
+        if (peer_j) {
+            JXTA_OBJECT_RELEASE(peer_j);
+            peer_j = NULL;
+        }
+        if (remove_peers && *remove_peers) {
+            jxta_hashtable_get(remove_entries, *remove_peers, strlen(*remove_peers) + 1, JXTA_OBJECT_PPTR(&mod_entries));
+            peer_j = jstring_new_2(*remove_peers);
+            free(*remove_peers++);
+        } else {
+            break;
+        }
     }
 
 FINAL_EXIT:
-
+    if (remove_peers_save) {
+        while (*remove_peers) free(*remove_peers++);
+        free(remove_peers_save);
+    }
+    if (src_pid)
+        JXTA_OBJECT_RELEASE(src_pid);
+    if (remove_entries)
+        JXTA_OBJECT_RELEASE(remove_entries);
     if (mod_entries)
         JXTA_OBJECT_RELEASE(mod_entries);
-
     return res;
 
 }
@@ -640,10 +810,23 @@ static Jxta_status pushSrdi_msg(Jxta_srdi_service * self, Jxta_resolver_service 
                             Jxta_SRDIMessage * msg, Jxta_id * peer)
 {
     Jxta_status res = JXTA_SUCCESS;
+    Jxta_status status=JXTA_SUCCESS;
     Jxta_srdi_service_ref *me = (Jxta_srdi_service_ref *) self;
     ResolverSrdi *srdi = NULL;
     Jxta_vector *peers = NULL;
+    Jxta_hashtable *messages = NULL;
     unsigned int i = 0;
+    char **srdi_peers = NULL;
+    char **srdi_peers_save = NULL;
+    JString * peer_j=NULL;
+
+    if (NULL != peer) {
+        if (jxta_id_to_jstring(peer, &peer_j) != JXTA_SUCCESS) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Received an invalid peer id [%pp]\n", peer);
+            goto FINAL_EXIT;
+        }
+    }
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Push SRDI message to %s\n", peer == NULL ? "NULL": jstring_get_string(peer_j));
 
     if(peer == NULL) {
         jxta_rdv_service_get_peers((Jxta_rdv_service*) me->rendezvous, &peers);
@@ -652,34 +835,75 @@ static Jxta_status pushSrdi_msg(Jxta_srdi_service * self, Jxta_resolver_service 
             res = jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer_obj), i);
             if(res == JXTA_SUCCESS) {
                 Jxta_id * peerid = NULL;
+
                 jxta_peer_get_peerid(peer_obj, &peerid);
                 if(peerid != NULL) {
                     JString * idString = NULL;
                     jxta_id_to_jstring(peerid, &idString);
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Sending srdi message to [%s]\n", jstring_get_string(idString));
                     JXTA_OBJECT_RELEASE(idString);
 
-                    res = prep_srdi_updates(self, instance, msg, peerid, &srdi);
-                    res = pushSrdi_priv(self, resolver, instance, srdi, peerid);
+                    res = prep_srdi_updates(self, instance, msg, peerid, &messages);
 
                     if(peerid != NULL){
                         JXTA_OBJECT_RELEASE(peerid);
                         peerid = NULL;
-                   } 
+                    }
                 }
             }
             if(peer_obj != NULL)
                 JXTA_OBJECT_RELEASE(peer_obj);
         }
     } else {
-        res = prep_srdi_updates(self, instance, msg, peer, &srdi);
-        res = pushSrdi_priv(self, resolver, instance, srdi, peer);
+        res = prep_srdi_updates(self, instance, msg, peer, &messages);
+    }
+    if (NULL != messages) {
+        srdi_peers = jxta_hashtable_keys_get(messages);
+        srdi_peers_save = srdi_peers;
+        while (*srdi_peers) {
+            Jxta_id *to_peer=NULL;
+            Jxta_vector *srdi_v=NULL;
+
+            jxta_hashtable_get(messages, *srdi_peers, strlen(*srdi_peers) + 1, JXTA_OBJECT_PPTR(&srdi_v));
+            status = jxta_id_from_cstr(&to_peer, *srdi_peers);
+            if (JXTA_SUCCESS == status) {
+                int j;
+
+                for (j=0; j<jxta_vector_size(srdi_v); j++) {
+                    jxta_vector_remove_object_at(srdi_v, JXTA_OBJECT_PPTR(&srdi), j--);
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Sending SRDI message to %s\n", *srdi_peers);
+                    status = pushSrdi_priv(self, resolver, instance, srdi, to_peer);
+                    if (JXTA_SUCCESS != status) {
+                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Couldn't send message to %s\n", *srdi_peers);
+                    }
+                    JXTA_OBJECT_RELEASE(srdi);
+                    srdi = NULL;
+                }
+                JXTA_OBJECT_RELEASE(to_peer);
+            } else {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create peerid using %s\n", *srdi_peers);
+            }
+            res = status;
+            JXTA_OBJECT_RELEASE(srdi);
+            srdi = NULL;
+            if (srdi_v)
+                JXTA_OBJECT_RELEASE(srdi_v);
+            free(*srdi_peers++);
+        }
+        if (srdi_peers_save) {
+            while(*srdi_peers) free(*srdi_peers++);
+            free(srdi_peers_save);
+        }
     }
 
-    if(srdi != NULL)
+FINAL_EXIT:
+    if (messages)
+        JXTA_OBJECT_RELEASE(messages);
+    if(srdi)
         JXTA_OBJECT_RELEASE(srdi);
-    if (peers != NULL)
+    if (peers)
         JXTA_OBJECT_RELEASE(peers);
+    if (peer_j)
+        JXTA_OBJECT_RELEASE(peer_j);
     return res;
 }
 
@@ -752,7 +976,7 @@ static Jxta_status forwardQuery_peers(Jxta_srdi_service * self, Jxta_resolver_se
             JString * peerid_j;
 
             jxta_id_to_jstring(peerId, &peerid_j);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Forwarding query to %s\n", jstring_get_string(peerid_j));
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Forwarding query id: %ld to %s\n", jxta_resolver_query_get_queryid(query), jstring_get_string(peerid_j));
             JXTA_OBJECT_RELEASE(peerid_j);
             status = jxta_resolver_service_sendQuery(resolver, query, peerId);
         }
@@ -988,7 +1212,7 @@ static Jxta_status forwardSrdiEntries(Jxta_srdi_service * service, Jxta_resolver
         goto FINAL_EXIT;
     }
 
-    msg = jxta_srdi_message_new_2(1, me->peerID , jxta_id_equals(me->peerID, srcPid) ? NULL:srcPid , (char *) jstring_get_string(jKey), entries);
+    msg = jxta_srdi_message_new_2(1, me->peerID , srcPid , (char *) jstring_get_string(jKey), entries);
 
     if (msg == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Cannot allocate jxta_srdi_message_new\n");
@@ -996,39 +1220,7 @@ static Jxta_status forwardSrdiEntries(Jxta_srdi_service * service, Jxta_resolver
         goto FINAL_EXIT;
     }
 
-    if (jxta_srdi_cfg_is_delta_cache_supported(me->config)) {
-        record_delta_entry(me, pid, srcPid, queueName, msg);
-        res = jxta_srdi_message_get_entries(msg, &mod_entries);
-        if (JXTA_SUCCESS != res) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Cannot get entries vector from srdi message\n");
-            goto FINAL_EXIT;
-        }
-        /* if no updates now */
-        if (0 == jxta_vector_size(mod_entries) ) {
-            goto FINAL_EXIT;
-        }
-    }
-    res = jxta_srdi_message_get_xml(msg, &messageString);
-    if (res != JXTA_SUCCESS) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Cannot serialize srdi message\n");
-        res = JXTA_NOMEM;
-        goto FINAL_EXIT;
-    }
-
-    srdi = jxta_resolver_srdi_new_1(queueName, messageString, srcPid);
-    if (srdi == NULL) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Cannot allocate a resolver srdi message\n");
-        res = JXTA_NOMEM;
-        goto FINAL_EXIT;
-    }
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Sending to peer %s\n%s\n", jstring_get_string(jPid), jstring_get_string(messageString));
-
-    res = jxta_resolver_service_sendSrdi(resolver, srdi, pid);
-
-    if (res != JXTA_SUCCESS) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Cannot send srdi message\n");
-    }
+    pushSrdi_msg(service, resolver, queueName, msg, pid);
 
   FINAL_EXIT:
     if (mod_entries)
@@ -1248,7 +1440,7 @@ static void JXTA_STDCALL srdi_rdv_listener(Jxta_object * obj, void *arg)
                             entry->peer_id = jstring_new_2("''");
                         }
 
-                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Changing replica:%s to %s\n", jstring_get_string(jPeerid), jstring_get_string(entry->peer_id));
+                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Changing replica:%s to %s\n", jstring_get_string(jPeerid), jstring_get_string(entry->peer_id));
 
                         if (rep_id)
                             JXTA_OBJECT_RELEASE(rep_id);
