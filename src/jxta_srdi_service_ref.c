@@ -650,6 +650,9 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
                     }
                     JXTA_OBJECT_RELEASE(entry->nameSpace);
                     entry->nameSpace = NULL;
+                } else if (0 == entry->expiration) {
+                    /* don't remove an entry that doesn't exist */
+                    jxta_vector_remove_object_at(entries, NULL, i--);
                 }
             } else if (JXTA_SUCCESS != status && !jxta_version_compatible_1(SRDI_DELTA_OPTIMIZATIONS, peerVersion)) {
                 jxta_hashtable_put(seq_hash, aTmp, strlen(aTmp), (Jxta_object *) entry);
@@ -672,7 +675,7 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
             } else {
                 cm_update_delta_entry(me->cm, jPeer, jSourcePeer, instance, entry, 0 == entry->next_update_time ? entry->timeout - nnow : entry->next_update_time - nnow);
                 jxta_vector_remove_object_at(entries, NULL, i--);
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Don't send sequence %s - Removing from entries\n", aTmp);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Don't send sequence %s - Removing from entries\n", aTmp);
             }
         }
         if (advPeer_j)

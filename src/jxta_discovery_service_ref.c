@@ -1964,7 +1964,6 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
         goto FINAL_EXIT;
     }
 
-
     /* process resend entries */
     if (NULL != entries) {
         JString *peerid_j = NULL;
@@ -1992,6 +1991,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
                     free(*(source_peers++));
                     continue;
                 }
+
                 jxta_id_from_cstr(&source_peerid, *source_peers);
                 discovery_send_srdi_msg(discovery, peerid, source_peerid, jPrimaryKey, resendDelta);
                 JXTA_OBJECT_RELEASE(source_peerid);
@@ -2400,20 +2400,7 @@ Jxta_status jxta_discovery_push_srdi(Jxta_discovery_service_ref * discovery, Jxt
 
     if (delta && ppublish) {
         JString *name = NULL;
-        
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "push SRDI delta %s\n", jstring_get_string(discovery->gid_str));
-
-        for (i = 0; i < 3; i++) {
-            Jxta_hashtable *peer_entries = NULL;
-
-            cm_get_delta_entries_for_update(discovery->cm, dirname[i], NULL, &peer_entries);
-
-            if (NULL != peer_entries) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Send delta updates \n");
-                discovery_service_send_delta_updates(discovery, dirname[i], peer_entries);
-                JXTA_OBJECT_RELEASE(peer_entries);
-            }
-        }
         for (i = 0; i < 3; i++) {
             name = jstring_new_2((char *) dirname[i]);
             entries = cm_get_srdi_delta_entries(discovery->cm, name);
@@ -2429,8 +2416,21 @@ Jxta_status jxta_discovery_push_srdi(Jxta_discovery_service_ref * discovery, Jxt
             JXTA_OBJECT_RELEASE(name);
             name = NULL;
         }
+        for (i = 0; i < 3; i++) {
+            Jxta_hashtable *peer_entries = NULL;
+
+            cm_get_delta_entries_for_update(discovery->cm, dirname[i], NULL, &peer_entries);
+
+            if (NULL != peer_entries) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Send delta updates \n");
+                discovery_service_send_delta_updates(discovery, dirname[i], peer_entries);
+                JXTA_OBJECT_RELEASE(peer_entries);
+            }
+        }
+
         if (NULL != name)
             JXTA_OBJECT_RELEASE(name);
+
     } else if (ppublish) {
         JString *name = NULL;
 

@@ -2785,7 +2785,7 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
             jRemoveSource = jstring_new_2(source_peerid);
             *jRemovePeerid = jstring_new_2(peerid);
             *jRemoveSeqNumber = jstring_new_2(seqNumber);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Remove seq_no: %s Peer Changed: %s adv_peer: %s\n"
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Remove seq_no: %s Peer Changed: %s adv_peer: %s\n"
                                 ,jstring_get_string(*jRemoveSeqNumber), jstring_get_string(*jRemovePeerid), jstring_get_string(jAdvPeer));
 
             jstring_append_2(where, SQL_AND CM_COL_Peerid SQL_EQUAL);
@@ -2802,7 +2802,6 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
                 status = JXTA_ITEM_NOTFOUND;
             }
         }
-
         /* expired entries should flow immediately */
         if (0 == entry->expiration) {
             *update_srdi = TRUE;
@@ -2849,24 +2848,26 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
         jAlias = jstring_new_2(dbSpace->alias);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,"Didn't find sequence %d \n", entry->seqNumber);
         if (0 == entry->seqNumber ) {
-                apr_thread_mutex_lock(me->mutex);
-                entry->seqNumber = ++me->delta_seq_number;
-                apr_thread_mutex_unlock(me->mutex);
+            apr_thread_mutex_lock(me->mutex);
+            entry->seqNumber = ++me->delta_seq_number;
+            apr_thread_mutex_unlock(me->mutex);
         }
         cm_delta_entry_create(me->jGroupID_string, jAlias, jPeerid, jSourcePeerid, jHandler, sqlval, entry, window);
         jstring_append_1(insert_sql, sqlval);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Save srdi delta seq no: " APR_INT64_T_FMT "\n", entry->seqNumber);
-
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d %s -- Save srdi delta: %s \n", dbSpace->conn->log_id, dbSpace->id,
+                    jstring_get_string(insert_sql));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Save srdi delta seq no: %" APR_INT64_T_FMT "\n", entry->seqNumber);
         rv = apr_dbd_query(dbSpace->conn->driver, dbSpace->conn->sql, &nrows, jstring_get_string(insert_sql));
         if (rv != APR_SUCCESS) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- Couldn't insert srdi delta\n %s  rc=%i\n",
-                   dbSpace->conn->log_id, dbSpace->id, apr_dbd_error(dbSpace->conn->driver, dbSpace->conn->sql, rv), rv);
+                        dbSpace->conn->log_id, dbSpace->id, apr_dbd_error(dbSpace->conn->driver, dbSpace->conn->sql, rv), rv);
         }
-
         JXTA_OBJECT_RELEASE(jAlias);
         jAlias = NULL;
+    } else if (status == JXTA_ITEM_NOTFOUND) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "No entry found for an expiration of 0 entry\n");
     } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "db_id: %d %s -- No entry found %i\n",
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- Error during save delta rc=%i\n",
                         dbSpace->conn->log_id, dbSpace->id, status);
         status = JXTA_FAILED;
     }
@@ -3005,7 +3006,9 @@ static Jxta_status secondary_indexing(Jxta_cm * me, DBSpace * dbSpace, Folder * 
 static void cm_srdi_delta_add(Jxta_hashtable * srdi_delta, Folder * folder, Jxta_SRDIEntryElement * entry)
 {
     Jxta_status status;
-    Jxta_vector *delta_entries;
+    Jxta_hashtable *delta_entries;
+    JString *entry_key = NULL;
+
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "add SRDI delta entry: SKey:%s Val:%s\n",
                     jstring_get_string(entry->key), jstring_get_string(entry->value));
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, jstring_get_string(fmtTime), entry->expiration);
@@ -3013,14 +3016,17 @@ static void cm_srdi_delta_add(Jxta_hashtable * srdi_delta, Folder * folder, Jxta
     status = jxta_hashtable_get(srdi_delta, folder->name, (size_t) strlen(folder->name), JXTA_OBJECT_PPTR(&delta_entries));
     if (status != JXTA_SUCCESS) {
         /* first time we see that value, add a list for it */
-        delta_entries = jxta_vector_new(0);
+        delta_entries = jxta_hashtable_new(0);
         jxta_hashtable_put(srdi_delta, folder->name, strlen(folder->name), (Jxta_object *) delta_entries);
     }
-    status = jxta_vector_add_object_last(delta_entries, (Jxta_object *) entry);
-    if (JXTA_SUCCESS != status) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Error Adding delta entry %i\n", status);
-    }
+    entry_key = jstring_new_0();
+    jstring_append_1(entry_key, entry->advId);
+    jstring_append_1(entry_key, entry->key);
+
+    jxta_hashtable_put(delta_entries, jstring_get_string(entry_key), jstring_length(entry_key) + 1, (Jxta_object *) entry);
+
     JXTA_OBJECT_RELEASE(delta_entries);
+    JXTA_OBJECT_RELEASE(entry_key);
 }
 
 /* save advertisement */
@@ -3070,15 +3076,18 @@ Jxta_status cm_save(Jxta_cm * self, const char *folder_name, char *primary_key,
         status = cm_advertisement_save(dbSpace, primary_key, adv, timeOutForMe, timeOutForOthers, update);
 
         if (JXTA_SUCCESS != status) {
-            Jxta_vector *delta_entries;
+            Jxta_vector *delta_entries = NULL;
+            Jxta_hashtable *delta_hash = NULL;
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "db_id: %d Couldn't save advertisement %i\n",
                             dbSpace->conn->log_id, status);
             apr_dbd_transaction_end(dbSpace->conn->driver, pool, dbSpace->conn->transaction);
             if (JXTA_SUCCESS ==
                 jxta_hashtable_get(self->srdi_delta, folder_name, (size_t) strlen(folder_name),
-                                   JXTA_OBJECT_PPTR(&delta_entries))) {
+                                   JXTA_OBJECT_PPTR(&delta_hash))) {
+                delta_entries = jxta_hashtable_values_get(delta_hash);
                 jxta_vector_clear(delta_entries);
                 JXTA_OBJECT_RELEASE(delta_entries);
+                JXTA_OBJECT_RELEASE(delta_hash);
             }
         } else {
             /*
@@ -4990,7 +4999,7 @@ Jxta_status cm_get_delta_entries_for_update(Jxta_cm * self, const char *name, JS
         goto FINAL_EXIT;
     }
     num_tuples = apr_dbd_num_tuples((apr_dbd_driver_t *) dbSpace->conn->driver, res);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "SRDI Deltas tuples:%d %s\n", num_tuples, jstring_get_string(where));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "SRDI Deltas tuples:%d for update\n", num_tuples);
     for (i = 0; i < num_tuples; i++) {
         const char *seq_no;
         const char *timeout_others;
@@ -5269,13 +5278,15 @@ void cm_close(Jxta_cm * self)
 Jxta_vector *cm_get_srdi_delta_entries(Jxta_cm * self, JString * folder_name)
 {
     Jxta_vector *delta_entries = NULL;
+    Jxta_hashtable *delta_hash = NULL;
 
     if (jxta_hashtable_del(self->srdi_delta, jstring_get_string(folder_name), (size_t) strlen(jstring_get_string(folder_name))
-                           , JXTA_OBJECT_PPTR(&delta_entries)) != JXTA_SUCCESS) {
-        if (NULL != delta_entries)
-            JXTA_OBJECT_RELEASE(delta_entries);
+                           , JXTA_OBJECT_PPTR(&delta_hash)) != JXTA_SUCCESS) {
+        if (NULL != delta_hash)
+            JXTA_OBJECT_RELEASE(delta_hash);
         return NULL;
     }
+    delta_entries = jxta_hashtable_values_get(delta_hash);
     return delta_entries;
 }
 
@@ -6261,7 +6272,7 @@ static Jxta_status cm_srdi_index_save(Jxta_cm * me, const char *alias, JString *
     jstring_append_2(insert_sql, SQL_RIGHT_PAREN);
 
     rv = apr_dbd_query(dbSpace->conn->driver, dbSpace->conn->sql, &nrows, jstring_get_string(insert_sql));
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "db_id: %d %s -- Save srdi Index: %s \n", dbSpace->conn->log_id, dbSpace->id,
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d %s -- Save srdi Index: %s \n", dbSpace->conn->log_id, dbSpace->id,
                     jstring_get_string(insert_sql));
 
     JXTA_OBJECT_RELEASE(insert_sql);
