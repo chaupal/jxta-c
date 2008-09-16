@@ -442,8 +442,9 @@ static Jxta_status discovery_service_forward_from_local(Jxta_discovery_service_r
             status = JXTA_INVALID_ARGUMENT;
             goto FINAL_EXIT;
         }
-        /* compile the XPath statement */
-        status = jxta_query_XPath(jContext, xmlString, FALSE);
+        /* create a compound SQL statement to search the SRDI */
+        jxta_query_set_compound_table(jContext, CM_TBL_SRDI_SRC);
+        jxta_query_compound_XPath(jContext, xmlString, FALSE);
     }
 
     replicaExpression = jstring_new_0();
