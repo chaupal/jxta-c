@@ -233,13 +233,15 @@ static void create_adv(const char *userName, Jxta_boolean remote, Jxta_boolean u
     JXTA_OBJECT_RELEASE(pipeid);
     JXTA_OBJECT_CHECK_VALID(tmpString);
 
-    adv = jxta_test_adv_new(); 
+    adv = jxta_test_adv_new();
     jxta_test_adv_set_Id (adv, (char*) jstring_get_string (tmpString));
     jxta_test_adv_set_IdAttr(adv, "#200.35", "(-100 :: 400)");
     jxta_test_adv_set_IdAttr1(adv, "this is the second attribute");
     jxta_test_adv_set_Type (adv, (char*) JXTA_UNICAST_PIPE);
     jxta_test_adv_set_Name (adv, publishUserName);
     jxta_test_adv_set_NameAttr1(adv, "this is from publish and is the attribute");
+    jxta_test_adv_add_Replicate(adv, "this should be replicated", TRUE);
+    jxta_test_adv_add_Replicate(adv, "this should not be replicated unless it is a duplicate", FALSE);
     jxta_test_adv_set_GenericNumeric(adv, "#600", "(300 :: 900)");
     jxta_test_adv_set_GenericNumeric(adv, "#600", NULL);
 

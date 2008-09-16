@@ -85,7 +85,7 @@ typedef struct _jxta_test_adv Jxta_test_adv;
    ** system is out of memory.
    **/
 
-JXTA_DECLARE(Jxta_test_adv *) jxta_test_adv_new(void);
+JXTA_DECLARE(Jxta_test_adv *) jxta_test_adv_new();
 
   /**
    ** Builds and returns the XML (wire format) of the test advertisement.
@@ -267,7 +267,7 @@ JXTA_DECLARE(Jxta_status) jxta_test_adv_set_Name(Jxta_test_adv * adv, const char
    **/
 
 JXTA_DECLARE(Jxta_status) jxta_test_adv_set_NameAttr1(Jxta_test_adv * ad, const char *val);
-
+JXTA_DECLARE(Jxta_status) jxta_test_adv_add_Replicate(Jxta_test_adv * ad, const char *val, Jxta_boolean replicate);
 JXTA_DECLARE(Jxta_status) jxta_test_adv_set_GenericNumeric(Jxta_test_adv * ad, const char *val, const char *range);
 
   /**
@@ -293,6 +293,8 @@ JXTA_DECLARE(Jxta_vector *) jxta_test_adv_get_indexes(Jxta_advertisement *);
  * @return Jxta_status 
  */
 JXTA_DECLARE(Jxta_status) jxta_test_adv_add_range(Jxta_test_adv *adv, const char *ename, const char *attr, const char *range) ;
+
+JXTA_DECLARE(void) jxta_test_adv_add_no_replicate_entry(Jxta_test_adv *adv, Jxta_boolean add);
 
 /**
  * Return a vector of Jxta_range elements

@@ -79,6 +79,11 @@ enum tokentype {
     NameAttr1_
 };
 
+typedef struct _replicate_entry {
+    JXTA_OBJECT_HANDLE;
+    JString *rep_string;
+    Jxta_boolean replicate;
+} replicate_entry;
 
 /** This is the representation of the
 * actual ad in the code.  It should
@@ -95,6 +100,7 @@ struct _jxta_test_adv {
     char *Name;
     char *NameAttr1;
     char *NameAttr2;
+    Jxta_vector *replicate_entries;
     char *GenericNumeric;
     char *GenericNumericRange;
     Jxta_hashtable *rangeList;
@@ -107,6 +113,13 @@ static Jxta_test_adv *jxta_test_adv_construct(Jxta_test_adv * self);
 static void test_adv_process_range(Jxta_test_adv * ad);
 static char *test_adv_get_range(Jxta_test_adv * adv, const char *elem_attr);
 
+static void rep_entry_free(Jxta_object *me)
+{
+    replicate_entry *entry = (replicate_entry *) me;
+    if (entry->rep_string)
+        JXTA_OBJECT_RELEASE(entry->rep_string);
+    free(entry);
+}
 /** Handler functions.  Each of these is responsible for
  * dealing with all of the character data associated with the 
  * tag name.
@@ -289,6 +302,34 @@ static void handleNameAttr2(void *userdata, const XML_Char * cd, int len)
         ad->NameAttr2 = NULL;
     }
     JXTA_OBJECT_RELEASE(tmp);
+}
+
+static void createReplicate_priv(void *userdata, const XML_Char * cd, int len, Jxta_boolean replicate)
+{
+    Jxta_test_adv *ad = (Jxta_test_adv *) userdata;
+    replicate_entry *rep_entry;
+    char *tmp = NULL;
+
+    if (0 != len) {
+        rep_entry = calloc(1, sizeof(replicate_entry));
+        JXTA_OBJECT_INIT(rep_entry, rep_entry_free, NULL);
+        tmp = calloc(1, len +1);
+        memmove(tmp, cd, len);
+        rep_entry->replicate = replicate;
+        rep_entry->rep_string = jstring_new_2(tmp);
+        jxta_vector_add_object_last(ad->replicate_entries, (Jxta_object *) rep_entry);
+        free(tmp);
+    }
+}
+
+static void handleReplicate(void *userdata, const XML_Char * cd, int len)
+{
+    createReplicate_priv(userdata, cd, len, TRUE);
+}
+
+static void handleReplicateNo(void *userdata, const XML_Char * cd, int len)
+{
+    createReplicate_priv(userdata, cd, len, FALSE);
 }
 
 static void handleGenericNumeric(void *userdata, const XML_Char * cd, int len)
@@ -609,6 +650,72 @@ JXTA_DECLARE(Jxta_status) jxta_test_adv_set_Name(Jxta_test_adv * ad, const char 
     return JXTA_SUCCESS;
 }
 
+JXTA_DECLARE(Jxta_status) jxta_test_adv_add_Replicate(Jxta_test_adv * ad, const char *val, Jxta_boolean replicate)
+{
+
+    if (val != NULL) {
+        replicate_entry *rep_entry;
+
+        rep_entry = calloc(1, sizeof(replicate_entry));
+        JXTA_OBJECT_INIT(rep_entry, rep_entry_free, NULL);
+        rep_entry->rep_string = jstring_new_2(val);
+        rep_entry->replicate = replicate;
+        jxta_vector_add_object_last(ad->replicate_entries, (Jxta_object *) rep_entry);
+        JXTA_OBJECT_RELEASE(rep_entry);
+
+    } else {
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    return JXTA_SUCCESS;
+}
+
+
+JXTA_DECLARE(const char *) jxta_test_adv_get_Replicate(Jxta_test_adv * ad)
+{
+    return NULL;
+}
+
+char *JXTA_STDCALL jxta_test_adv_get_replicate_string(Jxta_advertisement * ad)
+{
+    Jxta_test_adv *me = (Jxta_test_adv *) ad;
+    int i;
+    char *string_rep = NULL;
+
+    for (i=0; i< jxta_vector_size(me->replicate_entries); i++) {
+        replicate_entry *entry;
+
+        jxta_vector_get_object_at(me->replicate_entries, JXTA_OBJECT_PPTR(&entry), i);
+        if (entry->replicate) {
+            string_rep = strdup(jstring_get_string(entry->rep_string));
+            jxta_vector_remove_object_at(me->replicate_entries, NULL, i--);
+            break;
+        }
+        JXTA_OBJECT_RELEASE(entry);
+    }
+    return string_rep;
+}
+
+char *JXTA_STDCALL jxta_test_adv_get_replicate_no_string(Jxta_advertisement * ad)
+{
+    Jxta_test_adv *me = (Jxta_test_adv *) ad;
+    int i;
+    char *string_rep = NULL;
+
+    for (i=0; i< jxta_vector_size(me->replicate_entries); i++) {
+        replicate_entry *entry;
+
+        jxta_vector_get_object_at(me->replicate_entries, JXTA_OBJECT_PPTR(&entry), i);
+        if (!entry->replicate) {
+            string_rep = strdup(jstring_get_string(entry->rep_string));
+            jxta_vector_remove_object_at(me->replicate_entries, NULL, i--);
+            break;
+        }
+        JXTA_OBJECT_RELEASE(entry);
+    }
+    return string_rep;
+}
+
 JXTA_DECLARE(Jxta_status) jxta_test_adv_set_GenericNumeric(Jxta_test_adv * ad, const char *val, const char *range)
 {
 
@@ -656,8 +763,6 @@ char *JXTA_STDCALL jxta_test_adv_handle_parm(Jxta_advertisement * adv, const cha
     return strdup(test);
 }
 
-
-
 /** Now, build an array of the keyword structs.  Since
  * a top-level, or null state may be of interest, 
  * let that lead off.  Then, walk through the enums,
@@ -666,7 +771,7 @@ char *JXTA_STDCALL jxta_test_adv_handle_parm(Jxta_advertisement * adv, const cha
  * on the value in the char * kwd.
  */
 
-static const Kwdtab TestAdvertisement_tags[] = {
+static Kwdtab TestAdvertisement_tags[] = {
     {"Null", Null_, NULL, NULL, NULL},
     {"demo:TestAdvertisement", TestAdvertisement_, *handleTestAdvertisement, NULL, NULL},
     {"testId", Id_, *handleId, jxta_test_adv_get_Id_string, NULL},
@@ -678,6 +783,8 @@ static const Kwdtab TestAdvertisement_tags[] = {
     {"Name NameAttr2", NameAttr1_, *handleNameAttr2, NULL, jxta_test_adv_handle_parm},
     {"Name NameAttr3", NameAttr1_, *handleNameAttr1, NULL, jxta_test_adv_handle_parm},
     {"Name NameAttr4", NameAttr1_, *handleNameAttr1, NULL, jxta_test_adv_handle_parm},
+    {"Replicate", Null_, *handleReplicate, jxta_test_adv_get_replicate_string, NULL},
+    {"ReplicateNo", NO_REPLICATION, *handleReplicateNo, jxta_test_adv_get_replicate_no_string, NULL},
     {"GenericNumeric", Null_, *handleGenericNumeric, jxta_test_adv_get_GenericNumeric_string, NULL},
     {"*", NameAttr1_, *handleDefault, NULL, NULL},
     {NULL, 0, 0, NULL, NULL}
@@ -687,6 +794,7 @@ static const Kwdtab TestAdvertisement_tags[] = {
 JXTA_DECLARE(Jxta_status) jxta_test_adv_get_xml(Jxta_test_adv * ad, JString ** xml)
 {
     JString *string;
+    int i;
 
     if (xml == NULL) {
         return JXTA_INVALID_ARGUMENT;
@@ -734,6 +842,23 @@ JXTA_DECLARE(Jxta_status) jxta_test_adv_get_xml(Jxta_test_adv * ad, JString ** x
     jstring_append_2(string, "\">");
     jstring_append_2(string, jxta_test_adv_get_Name((Jxta_test_adv *) ad));
     jstring_append_2(string, "</Name>\n");
+    for (i=0; i<jxta_vector_size(ad->replicate_entries); i++) {
+        replicate_entry *entry;
+        JString *tag = NULL;
+
+        jxta_vector_get_object_at(ad->replicate_entries, JXTA_OBJECT_PPTR(&entry), i);
+        jstring_append_2(string, "<");
+        if (entry->replicate) {
+            tag = jstring_new_2("Replicate>");
+        } else {
+            tag = jstring_new_2("ReplicateNo>");
+        }
+        jstring_append_1(string, tag);
+        jstring_append_1(string, entry->rep_string);
+        jstring_append_2(string, "</");
+        jstring_append_1(string, tag);
+        JXTA_OBJECT_RELEASE(entry);
+    }
     jstring_append_2(string, "<Empty1 range=\"(100 :: 200)\" Empty1Attribute=\"empty\">#300</Empty1>\n");
     jstring_append_2(string, "<Empty2/>\n");
     jstring_append_2(string, "<GenericNumeric");
@@ -760,6 +885,9 @@ static void jxta_test_adv_delete(Jxta_test_adv * ad)
         free(ad->Id);
         ad->Id = NULL;
     }
+
+    if (ad->replicate_entries)
+        JXTA_OBJECT_RELEASE(ad->replicate_entries);
 
     if (ad->Type) {
         free(ad->Type);
@@ -804,7 +932,7 @@ static void jxta_test_adv_delete(Jxta_test_adv * ad)
  * just in case there is a segfault (not that 
  * that would ever happen, but in case it ever did.)
  */
-JXTA_DECLARE(Jxta_test_adv *) jxta_test_adv_new(void)
+JXTA_DECLARE(Jxta_test_adv *) jxta_test_adv_new()
 {
 
     Jxta_test_adv *ad;
@@ -826,6 +954,7 @@ static Jxta_test_adv *jxta_test_adv_construct(Jxta_test_adv * ad)
                                  (JxtaAdvertisementGetIDFunc) jxta_test_adv_get_testid,
                                  (JxtaAdvertisementGetIndexFunc) jxta_test_adv_get_indexes);
 
+    ad->replicate_entries = jxta_vector_new(0);
     ad->Id = NULL;
     ad->Type = NULL;
     ad->Name = NULL;
@@ -998,6 +1127,8 @@ JXTA_DECLARE(Jxta_vector *) jxta_test_adv_get_indexes(Jxta_advertisement * dummy
         {"testId", NULL, "3"},
         {"testId", "IdAttribute", "4"},
         {"testId", "IdAttr1", "5"},
+        {"Replicate", NULL, NULL},
+        {"ReplicateNo", NULL, NULL},
         {"GenericNumeric", NULL, NULL},
         {NULL, NULL, NULL}
     };
