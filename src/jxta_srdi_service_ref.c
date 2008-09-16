@@ -318,7 +318,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
         entry = NULL;
         jxta_vector_get_object_at(allEntries, JXTA_OBJECT_PPTR(&entry), i);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Getting entry seq:" JXTA_SEQUENCE_NUMBER_FMT " %d %s\n", entry->seqNumber, i, entry->replicate == TRUE ? "TRUE":"FALSE");
-        if (entry == NULL || !(entry->replicate) || entry->duplicate) {
+        if (entry == NULL || entry->duplicate) {
             if (NULL != entry)
                 JXTA_OBJECT_RELEASE(entry);
             continue;
@@ -369,10 +369,9 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
                 assert(NULL != peerVersion);
 
                 if (jxta_version_compatible_1(SRDI_DUPLICATE_ENTRIES, peerVersion)) {
-
                     same_peer = jxta_id_equals(jxta_peer_peerid(advPeer),jxta_peer_peerid(repPeer));
                 }
-                if (!same_peer) {
+                if (!same_peer && entry->replicate) {
                     add_replica_to_peers(me, peersHash, repPeer, newEntry, "");
                 }
                 if (jxta_version_compatible_1(SRDI_DUPLICATE_ENTRIES, peerVersion)) {
@@ -384,7 +383,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
                 if (peerVersion)
                     JXTA_OBJECT_RELEASE(peerVersion);
                 JXTA_OBJECT_RELEASE(advPeer);
-            } else {
+            } else if (entry->replicate) {
                 add_replica_to_peers(me, peersHash, repPeer, newEntry, "");
             }
             JXTA_OBJECT_RELEASE(repPeer);
