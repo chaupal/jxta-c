@@ -678,6 +678,8 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Don't send sequence %s - Removing from entries\n", aTmp);
             }
         }
+        if (advPeer)
+            JXTA_OBJECT_RELEASE(advPeer);
         if (advPeer_j)
             JXTA_OBJECT_RELEASE(advPeer_j);
         if (remove_sequence_j)

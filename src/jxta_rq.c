@@ -651,6 +651,7 @@ JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_clone(ResolverQuery * rq)
     if (NULL != container_j) {
         jstring_append_1(rclone->Credential, container_j);
         JXTA_OBJECT_RELEASE(container_j);
+        container_j = NULL;
     }
 
     container_i = jxta_resolver_query_get_src_peer_id(rq);
@@ -665,6 +666,7 @@ JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_clone(ResolverQuery * rq)
     if (container_j) {
         jstring_append_1(rclone->HandlerName, container_j);
         JXTA_OBJECT_RELEASE(container_j);
+        container_j = NULL;
     }
 
     rclone->HopCount = rq->HopCount;
@@ -675,6 +677,7 @@ JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_clone(ResolverQuery * rq)
     if (NULL != container_j) {
         rclone->Query = jstring_clone(container_j);
         JXTA_OBJECT_RELEASE(container_j);
+        container_j = NULL;
     }
 
     route = jxta_resolver_query_src_peer_route(rq);
@@ -689,6 +692,9 @@ JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_clone(ResolverQuery * rq)
             jxta_advertisement_parse_charbuffer((Jxta_advertisement *) route, jstring_get_string(container_j), jstring_length(container_j));
 
             rclone->route = JXTA_OBJECT_SHARE(route);
+
+            JXTA_OBJECT_RELEASE(container_j);
+            container_j = NULL;
         }
         JXTA_OBJECT_RELEASE(route);
     }
