@@ -463,7 +463,7 @@ JXTA_DECLARE(void) jxta_advertisement_register_global_handler(const char *key, c
  *
  * @return TRUE-advertisement wants this element replicated FALSE- do not replicate
 */
-JXTA_DECLARE(Jxta_boolean) jxta_advertisement_is_element_replicated(const char *ns_elem_attr);
+JXTA_DECLARE(Jxta_boolean) jxta_advertisement_is_element_replicated(const char *ns, const char *elem_attr);
 
 /**
 *

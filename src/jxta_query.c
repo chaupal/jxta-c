@@ -215,7 +215,6 @@ JXTA_DECLARE(Jxta_query_context *) jxta_query_new(const char *q)
 static Jxta_query_element *query_entry_new(JString * jSQL, JString * jBoolean, JString * jOper, JString * jNameSpace, JString * jName, JString * jValue)
 {
     const char *val;
-    JString *ns_elem;
 
     Jxta_query_element *qel = (Jxta_query_element *) calloc(1, sizeof(Jxta_query_element));
     JXTA_OBJECT_INIT(qel, (JXTA_OBJECT_FREE_FUNC) jxta_query_entry_delete, 0);
@@ -226,12 +225,9 @@ static Jxta_query_element *query_entry_new(JString * jSQL, JString * jBoolean, J
     qel->jValue = jstring_clone(jValue);
     val = jstring_get_string(qel->jValue);
     qel->isNumeric = FALSE;
-    ns_elem = jstring_clone(jNameSpace);
-    jstring_append_1(ns_elem, jName);
-    qel->isReplicated = jxta_advertisement_is_element_replicated(jstring_get_string(ns_elem));
-    jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_PARANOID, "This element: %s  replicated:%s\n"
-            , jstring_get_string(ns_elem) , qel->isReplicated == TRUE ? "true":"false" );
-    JXTA_OBJECT_RELEASE(ns_elem);
+    qel->isReplicated = jxta_advertisement_is_element_replicated(jstring_get_string(jNameSpace), jstring_get_string(jName));
+    jxta_log_append(ENHANCED_QUERY_LOG, JXTA_LOG_LEVEL_PARANOID, "This element: %s in namespace: %s replicated:%s\n"
+            , jstring_get_string(jName), jstring_get_string(jNameSpace), qel->isReplicated == TRUE ? "true":"false" );
     if ('#' == *val) {
         qel->isNumeric = TRUE;
     } else {

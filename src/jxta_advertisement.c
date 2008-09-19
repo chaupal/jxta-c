@@ -122,6 +122,8 @@ static void advertisement_end_element(void *me, const char *name);
 
 static void advertisement_free(Jxta_object * me);
 
+static JString * advertisement_get_namespace_prefix(const char *namespace);
+
 
 JXTA_DECLARE(Jxta_advertisement *) jxta_advertisement_initialize(Jxta_advertisement * ad,
                               const char *document_name,
@@ -506,6 +508,8 @@ JXTA_DECLARE(void) jxta_advertisement_register_global_handler(const char *doc_ty
     Jxta_advertisement *new_ad = NULL;
     const char **tags;
     const char **tags_save;
+    JString *jPrefix = NULL;
+    Jxta_hashtable *non_replicated_entries = NULL;
     jxta_hashtable_put(global_ad_table, doc_type, strlen(doc_type) + 1, (Jxta_object *) new_func);
 
     JXTA_OBJECT_RELEASE(new_func);
@@ -517,14 +521,31 @@ JXTA_DECLARE(void) jxta_advertisement_register_global_handler(const char *doc_ty
     }
 
     tags = advertisement_get_tagnames_1(new_ad, TRUE);
+    if (*tags) {
+        jPrefix = advertisement_get_namespace_prefix(doc_type);
+        if (NULL != jPrefix && jstring_length(jPrefix) > 0) {
+            if (JXTA_SUCCESS != jxta_hashtable_get(global_ad_non_replication_table, jstring_get_string(jPrefix),
+                                                   jstring_length(jPrefix), JXTA_OBJECT_PPTR(&non_replicated_entries))) {
+                non_replicated_entries = jxta_hashtable_new(32);
+                jxta_hashtable_put(global_ad_non_replication_table, jstring_get_string(jPrefix)
+                                   , jstring_length(jPrefix), (Jxta_object *) non_replicated_entries);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Created new non-replicated entries table for namespace prefix%s\n", 
+                                jstring_get_string(jPrefix));
+            }
+        }
+    }
+    
     tags_save = tags;
     while (*tags) {
         JString *non_replicated_tag;
-
-        non_replicated_tag = jstring_new_2(doc_type);
+        Jxta_boolean putStatus = FALSE;
+        non_replicated_tag = jstring_new_0();
         jstring_append_2(non_replicated_tag, *tags);
-        jxta_hashtable_put(global_ad_non_replication_table, jstring_get_string(non_replicated_tag)
+        putStatus = jxta_hashtable_putnoreplace(non_replicated_entries, jstring_get_string(non_replicated_tag)
                             , jstring_length(non_replicated_tag), (Jxta_object *) non_replicated_tag);
+        if (TRUE == putStatus)
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Added tag: %s to non-replicated namespace: %s\n", 
+                            *tags, jstring_get_string(jPrefix));
         tags++;
 
         JXTA_OBJECT_RELEASE(non_replicated_tag);
@@ -532,19 +553,39 @@ JXTA_DECLARE(void) jxta_advertisement_register_global_handler(const char *doc_ty
     free((void *) tags_save);
 
     JXTA_OBJECT_RELEASE(new_ad);
+    if (jPrefix)
+        JXTA_OBJECT_RELEASE(jPrefix);
+    if (non_replicated_entries)
+        JXTA_OBJECT_RELEASE(non_replicated_entries);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "jxta_advertisement_global_register : registered : %s\n", doc_type);
 }
 
-JXTA_DECLARE(Jxta_boolean) jxta_advertisement_is_element_replicated(const char *ns_elem_attr)
+JXTA_DECLARE(Jxta_boolean) jxta_advertisement_is_element_replicated(const char *ns, const char *elem_attr)
 {
-    Jxta_object *obj = NULL;
-    Jxta_boolean res;
-    jxta_hashtable_get(global_ad_non_replication_table, ns_elem_attr, strlen(ns_elem_attr), &obj);
-    res = NULL != obj ? FALSE: TRUE;
-    if (obj)
-        JXTA_OBJECT_RELEASE(obj);
+    Jxta_hashtable *non_replicated_entries = NULL;
+    Jxta_boolean res = TRUE;
+    JString *jPrefix = advertisement_get_namespace_prefix(ns);
+    jxta_hashtable_get(global_ad_non_replication_table, jstring_get_string(jPrefix), jstring_length(jPrefix),
+                       JXTA_OBJECT_PPTR(&non_replicated_entries));
+    if (NULL != non_replicated_entries) {                   
+        res = (JXTA_SUCCESS == jxta_hashtable_contains(non_replicated_entries, elem_attr, strlen(elem_attr))) ? FALSE: TRUE;
+        JXTA_OBJECT_RELEASE(non_replicated_entries);
+    }
     return res;
+}
+
+static JString * advertisement_get_namespace_prefix(const char *namespace)
+{
+    int i = 0;
+    JString *jPrefix = NULL;
+    for (i = 0; namespace[i] != '\0' && namespace[i] != ':'; i++);
+    if (':' == namespace[i]) {
+        jPrefix = jstring_new_0();
+        jstring_append_0(jPrefix, namespace, i);
+    }
+
+    return jPrefix;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_advertisement_global_handler(Jxta_advertisement * ad, const char *doc_type, Jxta_advertisement** new_ad)
