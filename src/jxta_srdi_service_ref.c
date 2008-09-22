@@ -323,7 +323,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
                 JXTA_OBJECT_RELEASE(entry);
             continue;
         }
-        newEntry = jxta_srdi_new_element_3(entry->key, entry->value, entry->nameSpace, entry->advId, entry->range, entry->expiration, entry->seqNumber);
+        newEntry = jxta_srdi_new_element_4(entry->key, entry->value, entry->nameSpace, entry->advId, entry->range, entry->expiration, entry->seqNumber, entry->replicate);
         if (newEntry->value == NULL) {
             Jxta_boolean ignore_entry = FALSE;
             if (newEntry->seqNumber > 0) {
