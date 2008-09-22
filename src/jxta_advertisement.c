@@ -572,6 +572,8 @@ JXTA_DECLARE(Jxta_boolean) jxta_advertisement_is_element_replicated(const char *
         res = (JXTA_SUCCESS == jxta_hashtable_contains(non_replicated_entries, elem_attr, strlen(elem_attr))) ? FALSE: TRUE;
         JXTA_OBJECT_RELEASE(non_replicated_entries);
     }
+    if (jPrefix)
+        JXTA_OBJECT_RELEASE(jPrefix);
     return res;
 }
 
