@@ -2968,8 +2968,7 @@ static Jxta_status secondary_indexing(Jxta_cm * me, DBSpace * dbSpace, Folder * 
         jskey = jstring_new_2(full_index_name);
         JXTA_OBJECT_RELEASE(ji);
         statusRet =
-            cm_item_insert(dbSpace, CM_TBL_ELEM_ATTRIBUTES, documentName, key, full_index_name, val, range, exp,
-                            flags & NO_REPLICATION ? 0:exp_others);
+            cm_item_insert(dbSpace, CM_TBL_ELEM_ATTRIBUTES, documentName, key, full_index_name, val, range, exp, exp_others);
         if (JXTA_SUCCESS != statusRet) {
             send_this_srdi = FALSE;
         }
