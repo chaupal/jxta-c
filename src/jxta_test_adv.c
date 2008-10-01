@@ -318,6 +318,7 @@ static void createReplicate_priv(void *userdata, const XML_Char * cd, int len, J
         rep_entry->replicate = replicate;
         rep_entry->rep_string = jstring_new_2(tmp);
         jxta_vector_add_object_last(ad->replicate_entries, (Jxta_object *) rep_entry);
+        JXTA_OBJECT_RELEASE(rep_entry);
         free(tmp);
     }
 }
@@ -689,6 +690,7 @@ char *JXTA_STDCALL jxta_test_adv_get_replicate_string(Jxta_advertisement * ad)
         if (entry->replicate) {
             string_rep = strdup(jstring_get_string(entry->rep_string));
             jxta_vector_remove_object_at(me->replicate_entries, NULL, i--);
+            JXTA_OBJECT_RELEASE(entry);
             break;
         }
         JXTA_OBJECT_RELEASE(entry);
@@ -709,6 +711,7 @@ char *JXTA_STDCALL jxta_test_adv_get_replicate_no_string(Jxta_advertisement * ad
         if (!entry->replicate) {
             string_rep = strdup(jstring_get_string(entry->rep_string));
             jxta_vector_remove_object_at(me->replicate_entries, NULL, i--);
+            JXTA_OBJECT_RELEASE(entry);
             break;
         }
         JXTA_OBJECT_RELEASE(entry);
@@ -857,6 +860,7 @@ JXTA_DECLARE(Jxta_status) jxta_test_adv_get_xml(Jxta_test_adv * ad, JString ** x
         jstring_append_1(string, entry->rep_string);
         jstring_append_2(string, "</");
         jstring_append_1(string, tag);
+        JXTA_OBJECT_RELEASE(tag);
         JXTA_OBJECT_RELEASE(entry);
     }
     jstring_append_2(string, "<Empty1 range=\"(100 :: 200)\" Empty1Attribute=\"empty\">#300</Empty1>\n");
