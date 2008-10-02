@@ -3063,6 +3063,7 @@ Jxta_status cm_save(Jxta_cm * self, const char *folder_name, char *primary_key,
     }
     apr_thread_mutex_lock(dbSpace->conn->lock);
     while (retries--) {
+        delta_hash = NULL;
         rv = apr_dbd_transaction_start(dbSpace->conn->driver, pool, dbSpace->conn->sql,
                                        &dbSpace->conn->transaction);
 
@@ -3076,17 +3077,17 @@ Jxta_status cm_save(Jxta_cm * self, const char *folder_name, char *primary_key,
 
         if (JXTA_SUCCESS != status) {
             Jxta_vector *delta_entries = NULL;
-            Jxta_hashtable *delta_hash = NULL;
+            Jxta_hashtable *srdi_delta_hash = NULL;
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "db_id: %d Couldn't save advertisement %i\n",
                             dbSpace->conn->log_id, status);
             apr_dbd_transaction_end(dbSpace->conn->driver, pool, dbSpace->conn->transaction);
             if (JXTA_SUCCESS ==
                 jxta_hashtable_get(self->srdi_delta, folder_name, (size_t) strlen(folder_name),
-                                   JXTA_OBJECT_PPTR(&delta_hash))) {
-                delta_entries = jxta_hashtable_values_get(delta_hash);
+                                   JXTA_OBJECT_PPTR(&srdi_delta_hash))) {
+                delta_entries = jxta_hashtable_values_get(srdi_delta_hash);
                 jxta_vector_clear(delta_entries);
                 JXTA_OBJECT_RELEASE(delta_entries);
-                JXTA_OBJECT_RELEASE(delta_hash);
+                JXTA_OBJECT_RELEASE(srdi_delta_hash);
             }
         } else {
             /*
