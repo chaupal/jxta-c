@@ -69,6 +69,7 @@ static const char *__log_cat = "ADV";
 #include "jxta_tta.h"
 #include "jxta_hta.h"
 #include "jxta_rq.h"
+#include "jxta_dq.h"
 #include "jxta_rr.h"
 #include "jxta_discovery_config_adv.h"
 #include "jxta_endpoint_config_adv.h"
@@ -1028,7 +1029,8 @@ void jxta_advertisement_register_global_handlers(void)
     /* Core message types */
     jxta_advertisement_register_global_handler("jxta:ResolverQuery", (JxtaAdvertisementNewFunc) jxta_resolver_query_new);
     jxta_advertisement_register_global_handler("jxta:ResolverResponse", (JxtaAdvertisementNewFunc) jxta_resolver_response_new);
-    
+    jxta_advertisement_register_global_handler("jxta:DiscoveryQuery", (JxtaAdvertisementNewFunc) jxta_discovery_query_new);
+
     /* Config advertisement types */
     jxta_advertisement_register_global_handler("jxta:CacheConfig", (JxtaAdvertisementNewFunc) jxta_CacheConfigAdvertisement_new );
     jxta_advertisement_register_global_handler("jxta:DiscoveryConfig", (JxtaAdvertisementNewFunc) jxta_DiscoveryConfigAdvertisement_new );

@@ -93,7 +93,7 @@ JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new(void);
 JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new_1(JString * handlername, JString * query, Jxta_id * src_peerid,
                                                         Jxta_RouteAdvertisement * route);
 
-JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_clone(ResolverQuery * rq);
+JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_clone(ResolverQuery * rq, Jxta_advertisement *adv);
 
 /**
  * @param ResolverQuery the resolver query object
@@ -208,6 +208,11 @@ JXTA_DECLARE(void) jxta_resolver_query_get_query(ResolverQuery * ad, JString ** 
  * @param Jstring the Query
  */
 JXTA_DECLARE(void) jxta_resolver_query_set_query(ResolverQuery * ad, JString * query);
+
+JXTA_DECLARE(void) jxta_resolver_query_get_query_adv(ResolverQuery * ad, Jxta_advertisement ** query_adv);
+
+
+JXTA_DECLARE(void) jxta_resolver_query_set_query_adv(ResolverQuery * ad, Jxta_advertisement * query_adv);
 
  /**
  *

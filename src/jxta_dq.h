@@ -70,6 +70,17 @@ extern "C" {
 typedef struct jxta_DiscoveryQuery Jxta_DiscoveryQuery;
 typedef struct jxta_DiscoveryQuery Jxta_discovery_query;
 
+typedef enum extended_query_states {
+    DEQ_SUPRESS=0,            /* used to supress attribute for backward compatiblity */
+    DEQ_INIT,               /* query initiated */
+    DEQ_FWD_SRDI,           /* Query to SRDI */
+    DEQ_FWD_REPLICA_FWD,    /* Query to Replica (Walk if needed) */
+    DEQ_FWD_REPLICA_STOP,   /* Query to Replica (Don't walk) */
+    DEQ_FWD_WALK,           /* Query being walked (Rdv Diffusion defines scope) */
+    DEQ_REV_REPLICATING,    /* Query to Replicating */
+    DEQ_REV_PUBLISHER       /* Query to Publisher */
+ } Jxta_discovery_ext_query_state;
+
 /**
  * Allocate a new discovery query advertisement.
  *
@@ -241,6 +252,9 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_extended_query(Jxta_Discovery
 JXTA_DECLARE(Jxta_status) jxta_discovery_query_attach_qos(Jxta_discovery_query * me, const Jxta_qos * qos);
 JXTA_DECLARE(const Jxta_qos *) jxta_discovery_query_qos(Jxta_discovery_query * me);
 
+JXTA_DECLARE(Jxta_discovery_ext_query_state) jxta_discovery_query_ext_get_state(Jxta_discovery_query * me);
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_ext_set_state(Jxta_discovery_query *me, Jxta_discovery_ext_query_state state);
+JXTA_DECLARE(void) jxta_discovery_query_ext_print_state(Jxta_discovery_query *me, JString *print);
 #ifdef __cplusplus
 #if 0
 {

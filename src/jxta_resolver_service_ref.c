@@ -491,7 +491,7 @@ static Jxta_status do_send(Jxta_resolver_service_ref * me, Jxta_id * peerid, JSt
     Jxta_message_element *msgElem;
     Jxta_endpoint_address *address;
     char *tmp;
-    Jxta_status status;
+    Jxta_status status = JXTA_SUCCESS;
     JString *el_name;
 
     tmp = malloc(jstring_length(doc) + 1);
@@ -533,12 +533,14 @@ static Jxta_status do_send(Jxta_resolver_service_ref * me, Jxta_id * peerid, JSt
 
     if (NULL == peerid) {
         jxta_rdv_service_walk(me->rendezvous, msg, me->instanceName, queue);
+
         status = jxta_endpoint_service_propagate(me->endpoint, msg, me->instanceName, queue);
         if (JXTA_SUCCESS != status) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Endpoint service propagation status= %d\n", status);
             goto FINAL_EXIT;
         }
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Resolver message sent by propagation\n");
+
     } else {
         address = jxta_endpoint_address_new_3(peerid, me->instanceName, queue);
         if (address == NULL) {
@@ -1194,14 +1196,14 @@ static Jxta_status JXTA_STDCALL resolver_service_query_cb(Jxta_object * obj, voi
     }
     bytes = NULL;
     jxta_resolver_query_parse_charbuffer(rq, jstring_get_string(string), jstring_length(string));
-    JXTA_OBJECT_RELEASE(string);
-    string = NULL;
     JXTA_OBJECT_RELEASE(element);
     jxta_resolver_query_attach_qos(rq, jxta_message_qos(msg));
 
     src_pid = jxta_resolver_query_get_src_peer_id(rq);
     jxta_id_to_jstring(src_pid, &pid);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Resolver query from peer %s\n", jstring_get_string(pid));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Resolver query from peer %s hc:%ld\n", jstring_get_string(pid), jxta_resolver_query_get_hopcount(rq));
+    JXTA_OBJECT_RELEASE(string);
+    string = NULL;
     JXTA_OBJECT_RELEASE(pid);
     if (jxta_id_equals(src_pid, _self->localPeerId)) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Ignore query that originated at this peer\n");
@@ -1238,7 +1240,12 @@ static Jxta_status JXTA_STDCALL resolver_service_query_cb(Jxta_object * obj, voi
             status = JXTA_SUCCESS;
         } else {
             /* update message with resolver query has route adv if needed */
-            status = (rq_missing_ra) ? replace_rq_element(_self, msg, rq) : JXTA_SUCCESS;
+            /* status = (rq_missing_ra) ? replace_rq_element(_self, msg, rq) : JXTA_SUCCESS; */
+
+            /* this will unconditionally replace the resolver query. */
+            /* This was added for the discovery state changes because the discovery query changes. */
+            status = JXTA_SUCCESS;
+            replace_rq_element(_self, msg, rq);
             if (JXTA_SUCCESS == status) {
                 status = jxta_rdv_service_walk(_self->rendezvous, msg, _self->instanceName, _self->outque);
             } else {

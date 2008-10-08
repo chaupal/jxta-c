@@ -722,6 +722,7 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
         res = JXTA_NOMEM;
         goto FINAL_EXIT;
     }
+
     if (!jxta_peerview_is_member(provider->peerview)) {
         /* We are not in the peerview. There is no place for us to send the message. */
         res = JXTA_SUCCESS;
@@ -774,6 +775,14 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
         jxta_rdv_diffusion_set_src_peer_id(header, provider->local_peer_id);
         new_walk = FALSE;
     }
+    JString *sourceId_j=NULL;
+
+    if (NULL == sourceId) {
+        sourceId_j = jstring_new_2("(NULL)");
+    } else {
+        jxta_id_to_jstring(sourceId, &sourceId_j);
+    }
+
 
     /* Set the target hash for this walk. The target hash *may* change for resend walks. */
     jxta_rdv_diffusion_set_target_hash(header, target_hash);
@@ -781,6 +790,8 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
     policy = jxta_rdv_diffusion_get_policy(header);
 
     scope = jxta_rdv_diffusion_get_scope(header);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Received walk message from peer %s policy:%d scope:%d\n", jstring_get_string(sourceId_j), policy, scope);
 
     if (NULL != target_hash
         && JXTA_RDV_DIFFUSION_POLICY_TRAVERSAL == policy
@@ -804,7 +815,7 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
             JString * pid;
             pg = jxta_service_get_peergroup_priv((Jxta_service*) provider->service);
             jxta_id_to_jstring(peer->peerid, &pid);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Send walk message to peer %s\n", jstring_get_string(pid));
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Send walk message to peer %s\n", jstring_get_string(pid));
             JXTA_OBJECT_RELEASE(pid);
             jxta_PG_async_send(pg, msg, peer->peerid, RDV_V3_MSID, JXTA_RDV_WALKER_SERVICE_NAME);
         } else {
@@ -862,6 +873,8 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
     res = JXTA_SUCCESS;
 
   FINAL_EXIT:
+    if (sourceId_j)
+        JXTA_OBJECT_RELEASE(sourceId_j);
     if (sourceId)
         JXTA_OBJECT_RELEASE(sourceId);
     if (localView)
@@ -894,7 +907,7 @@ static Jxta_status walk_to_view (Jxta_rdv_service_provider * provider, Jxta_vect
                 JString * pid;
                 pg = jxta_service_get_peergroup_priv((Jxta_service*) provider->service);
                 jxta_id_to_jstring(peer->peerid, &pid);
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Walk the message to peer %s\n", jstring_get_string(pid));
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Walk the message to peer %s\n", jstring_get_string(pid));
                 JXTA_OBJECT_RELEASE(pid);
                 jxta_PG_async_send(pg, msg, peer->peerid, RDV_V3_MSID, JXTA_RDV_WALKER_SERVICE_NAME);
             }

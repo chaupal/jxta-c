@@ -60,6 +60,7 @@ static const char *__log_cat = "RSLVQuery";
 #include "jxta_errno.h"
 #include "jxta_debug.h"
 #include "jxta_rq.h"
+#include "jxta_dq.h"
 #include "jxta_xml_util.h"
 #include "jxta_routea.h"
 #include "jxta_apa.h"
@@ -98,6 +99,7 @@ struct _ResolverQuery {
     JString *HandlerName;
     long QueryID;
     JString *Query;
+    Jxta_advertisement *Query_adv;
     long HopCount;
     const Jxta_qos *qos;
 };
@@ -277,7 +279,8 @@ static void trim_elements(ResolverQuery * adv)
 {
     jstring_trim(adv->Credential);
     jstring_trim(adv->HandlerName);
-    jstring_trim(adv->Query);
+    if (adv->Query)
+        jstring_trim(adv->Query);
 }
 
 /**
@@ -313,9 +316,11 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_query_get_xml(ResolverQuery * adv, JStri
 {
     JString *doc;
     JString *tmps = NULL;
-    char *buf;
+    JString *tmps_adv = NULL;
+    char *buf = NULL;
     int buflen;
-    Jxta_status status;
+    Jxta_status status = JXTA_SUCCESS;
+    Jxta_advertisement *query_adv = NULL;
 
     buflen = 128;
     buf = (char *) calloc(1, buflen);
@@ -360,25 +365,43 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_query_get_xml(ResolverQuery * adv, JStri
     jstring_append_2(doc, buf);
     jstring_append_2(doc, "</HC>\n");
 
-    /* done with buf, free it */
-    free(buf);
 
     jstring_append_2(doc, "<Query>");
-    status = jxta_xml_util_encode_jstring(adv->Query, &tmps);
+
+    jxta_resolver_query_get_query_adv(adv, &query_adv);
+
+    if (NULL != query_adv) {
+        status = jxta_discovery_query_get_xml((Jxta_discovery_query *) query_adv, &tmps_adv);
+        JXTA_OBJECT_RELEASE(query_adv);
+        if (JXTA_SUCCESS != status) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR , "error creating query xml, return status :%d\n", status);
+            goto ERROR_EXIT;
+        }
+    }
+    status = jxta_xml_util_encode_jstring(tmps_adv, &tmps);
+
     if (status != JXTA_SUCCESS) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR , "error encoding the query, return status :%d\n", status);
-        JXTA_OBJECT_RELEASE(doc);
-        return status;
+        goto ERROR_EXIT;
     }
     jstring_append_1(doc, tmps);
-    JXTA_OBJECT_RELEASE(tmps);
-    jstring_append_2(doc, "</Query>\n");
 
+    jstring_append_2(doc, "</Query>\n");
     jstring_append_2(doc, "</jxta:ResolverQuery>\n");
 
-    *document = doc;
 
-    return JXTA_SUCCESS;
+    *document = JXTA_OBJECT_SHARE(doc);
+
+ERROR_EXIT:
+    if (doc)
+        JXTA_OBJECT_RELEASE(doc);
+    if (tmps)
+        JXTA_OBJECT_RELEASE(tmps);
+    if (tmps_adv)
+        JXTA_OBJECT_RELEASE(tmps_adv);
+    if (buf)
+        free(buf);
+    return status;
 }
 
 
@@ -515,6 +538,48 @@ JXTA_DECLARE(void) jxta_resolver_query_set_query(ResolverQuery * ad, JString * q
     }
 
     ad->Query = JXTA_OBJECT_SHARE(query);
+
+    if (ad->Query_adv) {
+        JXTA_OBJECT_RELEASE(ad->Query_adv);
+        ad->Query_adv = NULL;
+    }
+}
+
+
+JXTA_DECLARE(void) jxta_resolver_query_get_query_adv(ResolverQuery * ad, Jxta_advertisement ** query_adv)
+{
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    if (NULL == ad->Query_adv && NULL != ad->Query) {
+        Jxta_advertisement * adv = NULL;
+        Jxta_vector *adv_vec = NULL;
+
+        adv = jxta_advertisement_new();
+
+        jxta_advertisement_parse_charbuffer(adv, jstring_get_string(ad->Query), jstring_length(ad->Query));
+        jxta_advertisement_get_advs(adv, &adv_vec);
+        if (jxta_vector_size(adv_vec) > 0) {
+            jxta_vector_get_object_at(adv_vec, JXTA_OBJECT_PPTR(&ad->Query_adv), 0);
+        }
+        JXTA_OBJECT_RELEASE(adv_vec);
+        JXTA_OBJECT_RELEASE(adv);
+    }
+    if (ad->Query_adv) {
+        JXTA_OBJECT_SHARE(ad->Query_adv);
+    }
+    *query_adv = ad->Query_adv;
+}
+
+JXTA_DECLARE(void) jxta_resolver_query_set_query_adv(ResolverQuery * ad, Jxta_advertisement * query_adv)
+{
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    if (ad->Query_adv != NULL) {
+        JXTA_OBJECT_RELEASE(ad->Query_adv);
+        ad->Query_adv = NULL;
+    }
+
+    ad->Query_adv = JXTA_OBJECT_SHARE(query_adv);
 }
 
  /**
@@ -589,6 +654,7 @@ ResolverQuery * resolver_query_construct(ResolverQuery * myself)
         myself->HandlerName = jstring_new_0();
         myself->QueryID = JXTA_INVALID_QUERY_ID;
         myself->Query = NULL;
+        myself->Query_adv = NULL;
         myself->route = NULL;
         myself->HopCount = 0;
         myself->qos = NULL;
@@ -607,8 +673,21 @@ Jxta_status resolver_query_create(JString * handlername, JString * qdoc, Jxta_id
 
     jxta_resolver_query_set_src_peer_id(msg, src_peerid);
     jstring_append_1(msg->HandlerName, handlername);
-    jxta_resolver_query_set_query( msg, qdoc );
+    if (NULL != qdoc) {
+        Jxta_advertisement * adv = NULL;
+        Jxta_vector * adv_vec = NULL;
 
+        jxta_resolver_query_set_query( msg, qdoc );
+
+        adv = jxta_advertisement_new();
+        jxta_advertisement_parse_charbuffer(adv, jstring_get_string(qdoc), jstring_length(qdoc));
+        jxta_advertisement_get_advs(adv, &adv_vec);
+        if (jxta_vector_size(adv_vec) > 0) {
+            jxta_vector_get_object_at(adv_vec, JXTA_OBJECT_PPTR(&msg->Query_adv), 0);
+        }
+        JXTA_OBJECT_RELEASE(adv_vec);
+        JXTA_OBJECT_RELEASE(adv);
+    }
     *rq = msg;
 
     return JXTA_SUCCESS;
@@ -635,7 +714,7 @@ JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_new_1(JString * handlername, J
     return msg;
 }
 
-JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_clone(ResolverQuery * rq)
+JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_clone(ResolverQuery * rq, Jxta_advertisement *adv)
 {
     ResolverQuery * rclone = NULL;
     JString * container_j = NULL;
@@ -680,7 +759,18 @@ JXTA_DECLARE(ResolverQuery *) jxta_resolver_query_clone(ResolverQuery * rq)
         container_j = NULL;
     }
 
-    route = jxta_resolver_query_src_peer_route(rq);
+    if (adv) {
+        rclone->Query_adv = JXTA_OBJECT_SHARE(adv);
+    } else {
+        rclone->Query_adv = (Jxta_advertisement *) jxta_advertisement_new();
+        if (NULL == rclone->Query) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Missing query string trying to clone\n");
+        } else {
+            jxta_advertisement_parse_charbuffer(rclone->Query_adv, jstring_get_string(rclone->Query), jstring_length(rclone->Query));
+        }
+    }
+
+    route = jxta_resolver_query_get_src_peer_route(rq);
     if (NULL != route) {
 
         jxta_advertisement_get_xml((Jxta_advertisement *) route, &container_j);
@@ -733,6 +823,10 @@ static void resolver_query_delete(Jxta_object * me)
     if (myself->Query) {
         JXTA_OBJECT_RELEASE(myself->Query);
     }
+
+    if (myself->Query_adv)
+        JXTA_OBJECT_RELEASE(myself->Query_adv);
+
     if (myself->route != NULL) {
         JXTA_OBJECT_RELEASE(myself->route);
     }

@@ -95,6 +95,7 @@ struct jxta_DiscoveryQuery {
     JString *PeerAdv;
     JString *Attr;
     JString *Value;
+    Jxta_discovery_ext_query_state ext_query_state;
     JString *ExtendedQuery;
     const Jxta_qos * qos;
 };
@@ -134,7 +135,7 @@ static void handleType(void *userdata, const XML_Char * cd, int len)
         extract_char_data(cd, len, tok);
         if (*tok != '\0') {
             ad->Type = (short) strtol(cd, NULL, 0);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Type is :%d\n", ad->Type);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Type is :%d\n", ad->Type);
         }
         free(tok);
     }
@@ -155,7 +156,7 @@ static void handleThreshold(void *userdata, const XML_Char * cd, int len)
         extract_char_data(cd, len, tok);
         if (*tok != '\0') {
             ad->Threshold = (int) strtol(cd, NULL, 0);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Threshold is :%d\n", ad->Threshold);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Threshold is :%d\n", ad->Threshold);
         }
         free(tok);
     }
@@ -212,11 +213,22 @@ static void handleExtendedQuery(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_DiscoveryQuery *ad = (Jxta_DiscoveryQuery *) userdata;
 
-    /* skip begin tag */
-    if (0 == len) {
-        return;
-    }
 
+    /* process */
+    if (0 == len) {
+        ad->ext_query_state = DEQ_SUPRESS;
+        const char **atts = ((Jxta_advertisement *) ad)->atts;
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "START <ExtendedQuery> : [%pp]\n", ad);
+        while (atts && *atts) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "handling attribute : %s:%s\n", *atts, atts[1] );
+
+            if (0 == strcmp(*atts, "state")) {
+                ad->ext_query_state = atoi(atts[1]);
+            }
+            atts+=2;
+        }
+    }
     if (!ad->ExtendedQuery) {
        ad->ExtendedQuery = jstring_new_1(len);
     } 
@@ -340,6 +352,41 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_extended_query(Jxta_Discovery
     return JXTA_SUCCESS;
 }
 
+JXTA_DECLARE(Jxta_discovery_ext_query_state) jxta_discovery_query_ext_get_state(Jxta_discovery_query * me)
+{
+    return me->ext_query_state;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_ext_set_state(Jxta_discovery_query *me, Jxta_discovery_ext_query_state state)
+{
+    Jxta_status res = JXTA_SUCCESS;
+
+    if (state >= DEQ_SUPRESS && state <= DEQ_REV_PUBLISHER) {
+        me->ext_query_state = state;
+    } else {
+        res = JXTA_INVALID_ARGUMENT;
+    }
+    return res;
+}
+
+JXTA_DECLARE(void) jxta_discovery_query_ext_print_state(Jxta_discovery_query *me, JString *print)
+{
+    char * states[] = {
+        "DEQ_SUPRESS",           /* used to supress attribute for backward compatiblity */
+        "DEQ_INIT",               /* query initiated */
+        "DEQ_FWD_SRDI",           /* Query to SRDI */
+        "DEQ_FWD_REPLICA_FWD",    /* Query to Replica (Walk if needed) */
+        "DEQ_FWD_REPLICA_STOP",   /* Query to Replica (Don't walk) */
+        "DEQ_FWD_WALK",           /* Query being walked (Rdv Diffusion defines scope) */
+        "DEQ_REV_REPLICATING",    /* Query to Replicating */
+        "DEQ_REV_PUBLISHER"       /* Query to Publisher */
+    };
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "state for formatting: %d\n", me->ext_query_state );
+
+    jstring_append_2(print, states[me->ext_query_state]);
+}
+
+
 /** Now, build an array of the keyword structs.  Since
  * a top-level, or null state may be of interest, 
  * let that lead off.  Then, walk through the enums,
@@ -417,7 +464,15 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_xml(Jxta_DiscoveryQuery * adv
     }
 
     if (NULL != adv->ExtendedQuery && jstring_length(adv->ExtendedQuery) > 0) {
-        jstring_append_2(doc, "<ExtendedQuery>");
+        char tmpbuf[32];
+        jstring_append_2(doc, "<ExtendedQuery");
+        if (DEQ_SUPRESS != adv->ext_query_state) {
+            jstring_append_2(doc, " state=\"");
+            apr_snprintf(tmpbuf, sizeof(tmpbuf), "%d", adv->ext_query_state);
+            jstring_append_2(doc, tmpbuf);
+            jstring_append_2(doc, "\"");
+        }
+        jstring_append_2(doc, ">");
         status = jxta_xml_util_encode_jstring(adv->ExtendedQuery, &tmps);
         if (status != JXTA_SUCCESS) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "error encoding the Extended query, return status :%d\n", status);
@@ -592,4 +647,5 @@ JXTA_DECLARE(const Jxta_qos *) jxta_discovery_query_qos(Jxta_discovery_query * m
 {
     return me->qos;
 }
+
 /* vi: set ts=4 sw=4 tw=130 et: */
