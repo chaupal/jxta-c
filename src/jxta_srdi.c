@@ -229,6 +229,9 @@ static void DRE_Free(Jxta_object * o)
     if (dre->dup_peerid) {
         JXTA_OBJECT_RELEASE(dre->dup_peerid);
     }
+    if (dre->radius_peers) {
+        JXTA_OBJECT_RELEASE(dre->radius_peers);
+    }
     if (dre->db_alias) {
         free((void*) dre->db_alias);
     }
@@ -737,6 +740,9 @@ static void entry_element_free(Jxta_object * o)
     if (dse->dup_peerid != NULL) {
         JXTA_OBJECT_RELEASE(dse->dup_peerid);
     }
+    if (dse->radius_peers != NULL) {
+        JXTA_OBJECT_RELEASE(dse->radius_peers);
+    }
     free((void *) o);
 }
 
@@ -776,6 +782,9 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_element_clone(Jxta_SRDIEntryElem
     if (entry->range) {
         newEntry->range = jstring_clone(entry->range);
     }
+    if (entry->radius_peers) {
+        jxta_vector_clone( entry->radius_peers, &newEntry->radius_peers, 0, INT_MAX );
+    }
     return newEntry;
 }
 
@@ -794,6 +803,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_1(JString * key, JSt
     dse->next_update_time = 0;
     dse->replicate = TRUE;
     dse->duplicate = FALSE;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Return [%pp] number 1 %s \n", dse, jstring_get_string(dse->key));
     return dse;
 }
 
@@ -819,7 +829,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_2(JString * key, JSt
     dse->next_update_time = 0;
     dse->replicate = TRUE;
     dse->duplicate = FALSE;
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "This is the spot in number 2 %s \n", jstring_get_string(dse->key));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Return [%pp] number 2 %s \n", dse, jstring_get_string(dse->key));
     return dse;
 }
 
@@ -846,7 +856,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_3(JString * key, JSt
     dse->next_update_time = 0 ;
     dse->replicate = TRUE;
     dse->duplicate = FALSE;
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "This is the spot in number 3 %s \n", jstring_get_string(dse->key));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Return [%pp] number 3 %s \n", dse, jstring_get_string(dse->key));
     return dse;
 }
 
@@ -874,6 +884,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_4(JString * key, JSt
     dse->next_update_time = 0;
     dse->replicate = replicate;
     dse->duplicate = FALSE;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Return [%pp] number 4 %s \n", dse, jstring_get_string(dse->key));
     return dse;
 }
 
@@ -889,7 +900,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_resend(Jxta_sequence
     dse->resend = TRUE;
     dse->replicate = TRUE;
     dse->next_update_time = 0;
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "This is the spot in number 4\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Return [%pp] resend\n", dse);
     return dse;
 }
 

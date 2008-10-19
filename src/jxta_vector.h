@@ -234,6 +234,16 @@ JXTA_DECLARE(int) jxta_vector_remove_object(Jxta_vector * me, Jxta_object * obje
  *************************************************************************/
 JXTA_DECLARE(Jxta_status) jxta_vector_remove_object_at(Jxta_vector * vector, Jxta_object ** objectPt, unsigned int at_index);
 
+/************************************************************************
+ ** Replace the object which is at the given index.
+ **
+ ** @param vector a pointer to the vector to use.
+ ** @param object Object that replaces the object in the vector
+ ** @param at_index index of the object.
+ ** @return JXTA_INVALID_ARGUMENT if arguments are invalid, JXTA_SUCCESS
+ ** otherwise.
+ *************************************************************************/
+JXTA_DECLARE(Jxta_status) jxta_vector_replace_object_at(Jxta_vector * me, Jxta_object * object, unsigned int at_index);
 
 /************************************************************************
  ** Returns the number of objects in the vector.

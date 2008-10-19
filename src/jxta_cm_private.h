@@ -125,6 +125,7 @@ extern "C" {
 #define CM_COL_Replica "Replica"
 #define CM_COL_Replicate "Replicate"
 #define CM_COL_Duplicate "Duplicate"
+#define CM_COL_Radius "Radius"
 #define CM_COL_DupPeerid "DupPeerid"
 #define CM_COL_SourcePeerid "Sourceid"
 
@@ -319,6 +320,7 @@ Jxta_status cm_remove_delta_entries(Jxta_cm * me, JString *seq_entries);
  * @param jSourcePeerid Peer ID that is the source for the SRDI message
  * @param jHandler Handler for the entry
  * @param entry Jxta_SRDIEntryElement to save
+ * @param within_radius This entry is within the hash radius
  * @param jNewValue New value if there is an entry in the table for the sequence number
  * @param newSequenceNumber New seqeuence number if an entry exists for this entry
  * @param update_srdi If set to true the threshold has been met for updating the srdi entry at the rendezvous
@@ -327,8 +329,9 @@ Jxta_status cm_remove_delta_entries(Jxta_cm * me, JString *seq_entries);
  * @return Jxta_status 
  */
 Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSourcePeerid, JString *jAdvPeer, JString * jHandler, Jxta_SRDIEntryElement * entry,
-                                JString ** jNewValue, Jxta_sequence_number * newSeqNumber, JString **jRemovePeerid, JString ** jRemoveSeqNumber,
-                                Jxta_boolean * update_srdi, int window);
+                                        Jxta_boolean within_radius, JString ** jNewValue, Jxta_sequence_number * newSeqNumber,
+                                        JString **jRemovePeerid, JString ** jRemoveSeqNumber,
+                                        Jxta_boolean * update_srdi, int window);
 
 /**
  * Get the entries with the sequence number in resendEntries

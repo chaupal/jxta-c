@@ -118,8 +118,9 @@ static Jxta_status JXTA_STDCALL srdi_service_srdi_cb(Jxta_object * obj, void *ar
 static Jxta_boolean hopcount_ok(ResolverQuery * query, long count);
 static void increment_hop_count(ResolverQuery * query);
 static Jxta_vector *randomResult(Jxta_vector * result, int threshold);
-static Jxta_peer *getReplicaPeer(Jxta_srdi_service * this, const char *expression);
-static Jxta_peer *getNumericReplica(Jxta_srdi_service * this, Jxta_range * rge, const char *val);
+static Jxta_peer *getReplicaPeer(Jxta_srdi_service * me, const char *expression);
+static Jxta_status getReplicaPeers(Jxta_srdi_service * me, const char *expression, Jxta_peer ** peer, Jxta_vector **peers);
+static Jxta_peer *getNumericReplica(Jxta_srdi_service * me, Jxta_range * rge, const char *val);
 static Jxta_status forwardSrdiMessage(Jxta_srdi_service * service, Jxta_resolver_service * resolver, Jxta_peer * peer,
                                       Jxta_id * srcPid, const char *primaryKey, const char *secondarykey, const char *value,
                                       Jxta_expiration_time expiration);
@@ -157,7 +158,7 @@ typedef struct {
 } Jxta_srdi_service_ref;
 
 static Jxta_status srdi_service_remove_replicas(Jxta_srdi_service_ref * srdi, Jxta_vector * entries);
-static Jxta_peer *get_replica_peer_priv(Jxta_srdi_service_ref * me, Jxta_SRDIEntryElement * entry);
+static void get_replica_peers_priv(Jxta_srdi_service_ref * me, Jxta_SRDIEntryElement * entry, Jxta_peer **peer, Jxta_vector **peers);
 
 Jxta_status jxta_srdi_service_ref_init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
 {
@@ -241,8 +242,8 @@ static void add_replica_to_peers(Jxta_srdi_service_ref *me, Jxta_hashtable *peer
             jxta_vector_add_object_first(peerEntries, (Jxta_object *) repPeer);
             jxta_hashtable_put(peersHash, repIdChar, strlen(repIdChar) + 1, (Jxta_object *) peerEntries);
         }
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "%sAdding entry to peer %s vector %s \n", header
-                 , repIdChar, jstring_get_string(newEntry->key));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "%sAdding entry %" APR_INT64_T_FMT " to peer %s vector %s \n", header
+                 , newEntry->seqNumber, repIdChar, jstring_get_string(newEntry->key));
         jxta_vector_add_object_last(peerEntries, (Jxta_object *) newEntry);
 
         JXTA_OBJECT_RELEASE(peerEntries);
@@ -313,6 +314,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
 
     for (i = 0; i < jxta_vector_size(allEntries); i++) {
         Jxta_peer *repPeer = NULL;
+        Jxta_vector *repPeers = NULL;
         Jxta_SRDIEntryElement *newEntry = NULL;
 
         entry = NULL;
@@ -353,41 +355,74 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "New entry value --- %s\n", jstring_get_string(newEntry->value));
         }
 
-        repPeer = get_replica_peer_priv(me, newEntry);
+        get_replica_peers_priv(me, newEntry, &repPeer, &repPeers);
+        if (repPeers) {
+            jxta_vector_clone(repPeers, &newEntry->radius_peers, 0, INT_MAX);
+        }
 
-        if (NULL != repPeer) {
+        if (JXTA_SUCCESS == status) {
             Jxta_peer *advPeer=NULL;
+            Jxta_boolean first_pass = TRUE;
+            Jxta_version *peerVersion=NULL;
 
             advPeer = getReplicaPeer((Jxta_srdi_service *) me, jstring_get_string(entry->advId));
-
-            if (NULL != advPeer /* && me->dup_srdi_entries */) {
-                Jxta_boolean same_peer = FALSE;
-                Jxta_SRDIEntryElement * clone_entry = NULL;
-                Jxta_version *peerVersion=NULL;
-
+            if (NULL != advPeer) {
                 peerVersion = jxta_PA_get_version(jxta_peer_adv(advPeer));
                 assert(NULL != peerVersion);
-
-                if (jxta_version_compatible_1(SRDI_DUPLICATE_ENTRIES, peerVersion)) {
-                    same_peer = jxta_id_equals(jxta_peer_peerid(advPeer),jxta_peer_peerid(repPeer));
+            }
+            while ((repPeer && first_pass) || (NULL != repPeers && jxta_vector_size(repPeers) > 0)) {
+                if (!first_pass) {
+                    jxta_vector_remove_object_at(repPeers, JXTA_OBJECT_PPTR(&repPeer), 0);
+                    /* if this entry is the dup don't add it */
+                    if (NULL != advPeer && (jxta_version_compatible_1(SRDI_DUPLICATE_ENTRIES, peerVersion))) {
+                        if (jxta_id_equals(jxta_peer_peerid(advPeer),jxta_peer_peerid(repPeer))) {
+                            JXTA_OBJECT_RELEASE(repPeer);
+                            continue;
+                        }
+                    }
                 }
-                if (!same_peer && entry->replicate) {
+                if (NULL != advPeer && first_pass) {
+                    Jxta_boolean same_peer = FALSE;
+                    Jxta_SRDIEntryElement * clone_entry = NULL;
+
+                    if (jxta_version_compatible_1(SRDI_DUPLICATE_ENTRIES, peerVersion)) {
+                        same_peer = jxta_id_equals(jxta_peer_peerid(advPeer),jxta_peer_peerid(repPeer));
+                    }
+                    if (!same_peer && entry->replicate) {
+                        add_replica_to_peers(me, peersHash, repPeer, newEntry, "");
+                    }
+                    if (jxta_version_compatible_1(SRDI_DUPLICATE_ENTRIES, peerVersion)) {
+                        int j;
+ 
+                        clone_entry = jxta_srdi_element_clone(newEntry);
+                        clone_entry->duplicate = TRUE;
+                        add_replica_to_peers(me, dupsHash, advPeer, clone_entry, "dup ---->");
+                        /* remove the entry from additional replicas */
+                        for (j=0; NULL != newEntry->radius_peers && j<jxta_vector_size(newEntry->radius_peers); j++) {
+                            Jxta_peer *cmp_peer;
+                            jxta_vector_get_object_at(newEntry->radius_peers, JXTA_OBJECT_PPTR(&cmp_peer), j);
+                            if (jxta_id_equals(jxta_peer_peerid(advPeer),jxta_peer_peerid(cmp_peer))) {
+                                jxta_vector_remove_object_at(newEntry->radius_peers, NULL, j);
+                                JXTA_OBJECT_RELEASE(cmp_peer);
+                                break;
+                            }
+                            JXTA_OBJECT_RELEASE(cmp_peer);
+                        }
+                        JXTA_OBJECT_RELEASE(clone_entry);
+                    }
+                } else if (entry->replicate) {
                     add_replica_to_peers(me, peersHash, repPeer, newEntry, "");
                 }
-                if (jxta_version_compatible_1(SRDI_DUPLICATE_ENTRIES, peerVersion)) {
-                    clone_entry = jxta_srdi_element_clone(newEntry);
-                    clone_entry->duplicate = TRUE;
-                    add_replica_to_peers(me, dupsHash, advPeer, clone_entry, "dup ---->");
-                    JXTA_OBJECT_RELEASE(clone_entry);
-                }
-                if (peerVersion)
-                    JXTA_OBJECT_RELEASE(peerVersion);
-                JXTA_OBJECT_RELEASE(advPeer);
-            } else if (entry->replicate) {
-                add_replica_to_peers(me, peersHash, repPeer, newEntry, "");
+                first_pass = FALSE;
+                JXTA_OBJECT_RELEASE(repPeer);
             }
-            JXTA_OBJECT_RELEASE(repPeer);
+            if (advPeer)
+                JXTA_OBJECT_RELEASE(advPeer);
+            if (peerVersion)
+                JXTA_OBJECT_RELEASE(peerVersion);
         }
+        if (repPeers)
+            JXTA_OBJECT_RELEASE(repPeers);
         JXTA_OBJECT_RELEASE(entry);
         JXTA_OBJECT_RELEASE(newEntry);
     }
@@ -501,6 +536,7 @@ static Jxta_boolean create_zero_exp_msgs(JString *remove_peer, Jxta_SRDIEntryEle
     JXTA_OBJECT_RELEASE(remove_peer);
     return found;
 }
+
 static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer, Jxta_id * src_pid, JString * instance, Jxta_SRDIMessage * msg, Jxta_hashtable **remove_entries)
 {
     Jxta_status res = JXTA_SUCCESS;
@@ -539,9 +575,11 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
     for (i = 0; i < jxta_vector_size(entries); i++) {
         Jxta_status status;
         Jxta_time nnow;
+        int j;
         Jxta_sequence_number newSeqNumber = 0;
         Jxta_SRDIEntryElement *entry;
         Jxta_SRDIEntryElement *saveEntry = NULL;
+        Jxta_SRDIEntryElement *replace_entry = NULL;
         JString *jNewValue = NULL;
         Jxta_boolean update_srdi = TRUE;
         char aTmp[64];
@@ -549,21 +587,52 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
         JString * advPeer_j = NULL;
         JString * remove_peer_j=NULL;
         JString * remove_sequence_j = NULL;
+        Jxta_boolean within_radius = FALSE;
 
         nnow = jpr_time_now();
+
+        /* replace the object with a clone in the vector since it will be modified when */
         jxta_vector_get_object_at(entries, JXTA_OBJECT_PPTR(&entry), i);
+        replace_entry = jxta_srdi_element_clone(entry);
+        jxta_vector_replace_object_at(entries, (Jxta_object *) replace_entry, i);
+        JXTA_OBJECT_RELEASE(entry);
+        entry = replace_entry;
 
         if (jxta_rdv_service_is_rendezvous(me->rendezvous)) {
             advPeer = getReplicaPeer((Jxta_srdi_service *) me, jstring_get_string(entry->advId));
             if (NULL != advPeer) {
                 if (jxta_id_to_jstring(jxta_peer_peerid(advPeer), &advPeer_j) != JXTA_SUCCESS) {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Received an invalid replica peer id [%pp]\n",advPeer);
+                    JXTA_OBJECT_RELEASE(advPeer);
+                    advPeer = NULL;
                 }
             }
         }
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Starting with entry->seqNumber:" JXTA_SEQUENCE_NUMBER_FMT "\n", entry->seqNumber);
+        for (j = 0; NULL != entry->radius_peers && j < jxta_vector_size(entry->radius_peers); j++) {
+            Jxta_peer * radius_peer=NULL;
+            JString * radius_peer_j=NULL;
 
-        res = cm_save_delta_entry(me->cm, jPeer, jSourcePeer, advPeer_j, instance, entry
+            status = jxta_vector_get_object_at(entry->radius_peers, JXTA_OBJECT_PPTR(&radius_peer), j);
+            if (JXTA_SUCCESS != status) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to retrieve radius peer from vector status:%d\n", status);
+                continue;
+            }
+            status = jxta_id_to_jstring(jxta_peer_peerid(radius_peer), &radius_peer_j);
+            if (JXTA_SUCCESS != status) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid peer id returned from radius peer entry status:%d\n", status);
+                JXTA_OBJECT_RELEASE(radius_peer);
+                continue;
+            }
+            if (!strcmp(jstring_get_string(radius_peer_j), jstring_get_string(jPeer))) {
+                within_radius = TRUE;
+            }
+            JXTA_OBJECT_RELEASE(radius_peer);
+            JXTA_OBJECT_RELEASE(radius_peer_j);
+            if (within_radius)
+                break;
+        }
+        res = cm_save_delta_entry(me->cm, jPeer, jSourcePeer, advPeer_j, instance, entry, within_radius
                         , &jNewValue, &newSeqNumber, &remove_peer_j, &remove_sequence_j
                         , &update_srdi, jxta_srdi_cfg_get_delta_window(me->config));
 
@@ -1032,11 +1101,10 @@ static Jxta_vector *randomResult(Jxta_vector * result, int threshold)
     return res;
 }
 
-static Jxta_peer *get_replica_peer_priv(Jxta_srdi_service_ref * me, Jxta_SRDIEntryElement * entry)
+static void get_replica_peers_priv(Jxta_srdi_service_ref * me, Jxta_SRDIEntryElement * entry, Jxta_peer **peer, Jxta_vector **peers)
 {
     JString * replica_expression=NULL;
     const char *numeric_value=NULL;
-    Jxta_peer *replica_peer=NULL;
 
     replica_expression = jstring_new_0();
 
@@ -1050,7 +1118,7 @@ static Jxta_peer *get_replica_peer_priv(Jxta_srdi_service_ref * me, Jxta_SRDIEnt
         jstring_append_1(replica_expression, entry->value);
     }
     if (NULL == entry->range || (0 == jstring_length(entry->range))) {
-        replica_peer = getReplicaPeer((Jxta_srdi_service *) me, jstring_get_string(replica_expression));
+        getReplicaPeers((Jxta_srdi_service *) me, jstring_get_string(replica_expression), peer, peers);
     } else {
         Jxta_range *rge;
 
@@ -1059,7 +1127,7 @@ static Jxta_peer *get_replica_peer_priv(Jxta_srdi_service_ref * me, Jxta_SRDIEnt
                                  jstring_get_string(entry->range));
         if ('#' == *numeric_value) {
             numeric_value++;
-            replica_peer = getNumericReplica((Jxta_srdi_service *) me, rge, numeric_value);
+            *peer = getNumericReplica((Jxta_srdi_service *) me, rge, numeric_value);
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Invalid value in SRDI Numeric Entry: %s  Did not replicate\n",
                                 numeric_value);
@@ -1068,7 +1136,7 @@ static Jxta_peer *get_replica_peer_priv(Jxta_srdi_service_ref * me, Jxta_SRDIEnt
     }
     if (replica_expression)
         JXTA_OBJECT_RELEASE(replica_expression);
-    return replica_peer;
+    return;
 }
 
 /**
@@ -1154,6 +1222,30 @@ static Jxta_peer *getNumericReplica(Jxta_srdi_service * me, Jxta_range * rge, co
     }
 
     return peer;
+}
+
+static Jxta_status getReplicaPeers(Jxta_srdi_service * me, const char *expression, Jxta_peer ** peer, Jxta_vector **peers)
+{
+    Jxta_status res;
+    Jxta_srdi_service_ref *myself = PTValid(me, Jxta_srdi_service_ref);
+    Jxta_peerview *rpv;
+    BIGNUM *bn_hash = NULL;
+
+    rpv = rdv_service_get_peerview_priv(myself->rendezvous);
+
+    res = jxta_peerview_gen_hash( rpv, (unsigned char const *) expression, strlen(expression), &bn_hash );
+
+    res = jxta_peerview_get_peers_for_target_hash( rpv, bn_hash, peer, peers );
+
+    BN_free( bn_hash );
+
+    if (JXTA_SUCCESS == res ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "%d Replica peers found for expression:%s\n"
+                        , jxta_vector_size(*peers)
+                        , expression);
+    }
+
+    return res;
 }
 
     /**

@@ -518,6 +518,26 @@ JXTA_DECLARE(Jxta_status) jxta_vector_remove_object_at(Jxta_vector * vector, Jxt
     return JXTA_SUCCESS;
 }
 
+JXTA_DECLARE(Jxta_status) jxta_vector_replace_object_at(Jxta_vector * vector, Jxta_object * object, unsigned int at_index)
+{
+
+    JXTA_OBJECT_CHECK_VALID(vector);
+
+    apr_thread_mutex_lock(vector->mutex);
+
+    if (at_index >= vector->size || (vector->size == 0)) {
+        apr_thread_mutex_unlock(vector->mutex);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Invalid argument [%pp]\n", vector);
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    JXTA_OBJECT_RELEASE(vector->elements[at_index]);
+    vector->elements[at_index] = JXTA_OBJECT_SHARE(object);
+
+    apr_thread_mutex_unlock(vector->mutex);
+    return JXTA_SUCCESS;
+}
+
 JXTA_DECLARE(unsigned int) jxta_vector_size(Jxta_vector * vector)
 {
     unsigned int size;

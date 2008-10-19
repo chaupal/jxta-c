@@ -221,7 +221,15 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_get_associate_peer(Jxta_peerview * pv, u
 */
 JXTA_DECLARE(Jxta_status) jxta_peerview_get_peer_for_target_hash(Jxta_peerview * pv, BIGNUM *target_hash, Jxta_peer ** peer);
 
-
+/**
+*   Return a Jxta_peer object for the specified target hash value and other peers within the radius.
+*   @param pv The peerview.
+*   @param target_hash The target hash value.
+*   @param peer Address to store the closest peer to the hash value.
+*   @param peers Location to store a vector of peers where the hash value is within the peer's radius.
+*   @return JXTA_SUCCESS If a peer(s) could be returned otherwise errors per the fault.
+*/
+JXTA_DECLARE(Jxta_status) jxta_peerview_get_peers_for_target_hash(Jxta_peerview * me, BIGNUM * target_hash, Jxta_peer **peer, Jxta_vector ** peers);
 
 JXTA_DECLARE(Jxta_status) jxta_peerview_add_event_listener(Jxta_peerview * pv, const char *serviceName,
                                                            const char *serviceParam, Jxta_listener *listener);

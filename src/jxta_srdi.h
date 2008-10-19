@@ -104,6 +104,7 @@ struct _jxta_EntryElement {
     Jxta_boolean replicate;
     Jxta_boolean duplicate;
     JString *dup_peerid;
+    Jxta_vector *radius_peers;
 };
 
 /**

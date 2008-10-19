@@ -150,6 +150,7 @@ struct Cluster_entry {
     BIGNUM *min;
     BIGNUM *mid;
     BIGNUM *max;
+
     Jxta_vector *members;
     Jxta_vector *histogram;
 };
@@ -165,6 +166,13 @@ struct _jxta_peer_peerview_entry {
     BIGNUM *target_hash;
 
     BIGNUM *target_hash_radius;
+
+    int cluster;
+
+    BIGNUM *radius_range_1_start;
+    BIGNUM *radius_range_1_end;
+    BIGNUM *radius_range_2_start;
+    BIGNUM *radius_range_2_end;
 
     Jxta_time created_at;
 
@@ -325,6 +333,7 @@ struct Peerview_histogram_entry {
 
 Jxta_object_compare_func client_entry_creation_time_compare(Jxta_peer * me, Jxta_peer * target);
 
+
 static Peerview_histogram_entry *peerview_histogram_entry_new(BIGNUM * start, BIGNUM * end);
 static Peerview_histogram_entry *peerview_histogram_entry_construct(Peerview_histogram_entry * myself, BIGNUM * start,
                                                                     BIGNUM * end);
@@ -369,6 +378,7 @@ static Jxta_status peerview_remove_pve(Jxta_peerview * myself, Jxta_PID * pid);
 static Jxta_status peerview_remove_pve_1(Jxta_peerview * myself, Jxta_PID * pid, Jxta_boolean generate_event);
 static Jxta_vector *peerview_get_all_pves(Jxta_peerview * myself);
 static Jxta_status peerview_clear_pves(Jxta_peerview * myself, Jxta_boolean notify);
+static Jxta_status peerview_get_for_target_hash(Jxta_peerview * me, BIGNUM * target_hash, Jxta_peer ** peer, Jxta_vector **peers);
 
 static Jxta_peerview_event *peerview_event_new(Jxta_Peerview_event_type event, Jxta_id * id);
 static void peerview_event_delete(Jxta_object * ptr);
@@ -404,6 +414,7 @@ static Jxta_boolean is_for_alternative(Jxta_peerview * me, const char *pv_mask);
 static Jxta_status process_referrals(Jxta_peerview * me, Jxta_peerview_pong_msg * pong);
 static void trim_only_candidates(Jxta_vector * possible_v);
 static Jxta_status get_best_rdv_candidates(Jxta_peerview *myself, Jxta_vector **candidates, int nums);
+static void calculate_radius_bounds(Jxta_peerview * pv, Peerview_entry * pve);
 
 static Jxta_status build_histogram(Jxta_vector ** histo, Jxta_vector * peers, BIGNUM * minimum, BIGNUM * maximum);
 
@@ -465,6 +476,10 @@ static Peerview_entry *peerview_entry_construct(Peerview_entry * myself, Jxta_id
         myself->target_hash = BN_new();
 
         myself->target_hash_radius = BN_new();
+        myself->radius_range_1_start = NULL;
+        myself->radius_range_1_end = NULL;
+        myself->radius_range_2_start = NULL;
+        myself->radius_range_2_end = NULL;
 
         myself->created_at = jpr_time_now();
 
@@ -496,6 +511,22 @@ static void peerview_entry_destruct(Peerview_entry * myself)
     if (NULL != myself->target_hash_radius) {
         BN_free(myself->target_hash_radius);
         myself->target_hash_radius = NULL;
+    }
+    if (NULL != myself->radius_range_1_start) {
+        BN_free(myself->radius_range_1_start);
+        myself->radius_range_1_start = NULL;
+    }
+    if (NULL != myself->radius_range_1_end) {
+        BN_free(myself->radius_range_1_end);
+        myself->radius_range_1_end = NULL;
+    }
+    if (NULL != myself->radius_range_2_start) {
+        BN_free(myself->radius_range_2_start);
+        myself->radius_range_2_start = NULL;
+    }
+    if (NULL != myself->radius_range_2_end) {
+        BN_free(myself->radius_range_2_end);
+        myself->radius_range_2_end = NULL;
     }
 
     peer_entry_destruct((_jxta_peer_entry *) myself);
@@ -861,6 +892,17 @@ static Jxta_status peerview_init_cluster(Jxta_peerview * myself)
 
         myself->clusters[each_cluster].members = jxta_vector_new(myself->cluster_members);
         myself->clusters[each_cluster].histogram = NULL;
+
+        tmp = BN_bn2hex(myself->clusters[each_cluster].min);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Cluster %d min:%s\n", each_cluster, tmp);
+        free(tmp);
+        tmp = BN_bn2hex(myself->clusters[each_cluster].mid);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Cluster %d mid:%s\n", each_cluster, tmp);
+        free(tmp);
+        tmp = BN_bn2hex(myself->clusters[each_cluster].max);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Cluster %d max:%s\n", each_cluster, tmp);
+        free(tmp);
+
     }
 
     BN_CTX_free(ctx);
@@ -1015,6 +1057,8 @@ static Jxta_status create_self_pve(Jxta_peerview * myself, BIGNUM * address)
 
     BN_copy(myself->self_pve->target_hash_radius, myself->peer_address_space);
     BN_rshift1(myself->self_pve->target_hash_radius, myself->self_pve->target_hash_radius);
+
+    calculate_radius_bounds(myself, myself->self_pve);
 
     res = peerview_add_pve(myself, myself->self_pve);
 
@@ -1305,6 +1349,16 @@ static unsigned int cluster_for_hash(Jxta_peerview * myself, BIGNUM * target_has
 
 JXTA_DECLARE(Jxta_status) jxta_peerview_get_peer_for_target_hash(Jxta_peerview * me, BIGNUM * target_hash, Jxta_peer ** peer)
 {
+    return peerview_get_for_target_hash(me,target_hash, peer, NULL);
+}
+
+JXTA_DECLARE(Jxta_status) jxta_peerview_get_peers_for_target_hash(Jxta_peerview * me, BIGNUM * target_hash, Jxta_peer **peer, Jxta_vector ** peers)
+{
+    return peerview_get_for_target_hash(me,target_hash, peer, peers);
+}
+
+static Jxta_status peerview_get_for_target_hash(Jxta_peerview * me, BIGNUM * target_hash, Jxta_peer ** peer, Jxta_vector **peers)
+{
     Jxta_status res = JXTA_SUCCESS;
     Jxta_peerview *myself = PTValid(me, Jxta_peerview);
     BIGNUM *bn_target_hash = (BIGNUM *) target_hash;
@@ -1313,9 +1367,23 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_get_peer_for_target_hash(Jxta_peerview *
 
     apr_thread_mutex_lock(myself->mutex);
 
+    if (NULL != peers) {
+        *peers = jxta_vector_new(0);
+    }
     if (NULL != myself->self_pve) {
+        int i;
         if (myself->my_cluster != target_cluster) {
-            res = jxta_peerview_get_associate_peer(myself, target_cluster, peer);
+            Jxta_peer *associate = NULL;
+
+            res = jxta_peerview_get_associate_peer(myself, target_cluster, &associate);
+            if (NULL != peer) {
+                *peer = NULL != associate ? JXTA_OBJECT_SHARE(associate):NULL;
+            }
+            if (NULL != peers && NULL != associate) {
+                jxta_vector_add_object_last(*peers, (Jxta_object *) associate);
+            }
+            if (associate)
+                JXTA_OBJECT_RELEASE(associate);
         } else {
             /* The target is in our cluster. We refer them to the peer whose target hash most closely matches. */
             unsigned int all_peers;
@@ -1324,8 +1392,9 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_get_peer_for_target_hash(Jxta_peerview *
             BIGNUM *distance = BN_new();
             BIGNUM *best_distance = BN_new();
 
-
-            *peer = JXTA_OBJECT_SHARE(myself->self_pve);
+            if (NULL != peer) {
+                *peer = JXTA_OBJECT_SHARE(myself->self_pve);
+            }
             BN_sub(best_distance, bn_target_hash, myself->self_pve->target_hash);
 
             all_peers = jxta_vector_size(myself->clusters[myself->my_cluster].members);
@@ -1339,8 +1408,10 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_get_peer_for_target_hash(Jxta_peerview *
 
                 if (JXTA_SUCCESS != res) {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not retrieve peer entry.\n");
-                    JXTA_OBJECT_RELEASE(*peer);
-                    *peer = NULL;
+                    if (NULL != peer) {
+                        JXTA_OBJECT_RELEASE(*peer);
+                        *peer = NULL;
+                    }
                     return JXTA_FAILED;
                 }
 
@@ -1363,10 +1434,22 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_get_peer_for_target_hash(Jxta_peerview *
 
                     if (BN_ucmp(distance, best_distance) < 0) {
                         /* The absolute distance is lower, make this peer the destination peer. */
-                        JXTA_OBJECT_RELEASE(*peer);
-                        *peer = JXTA_OBJECT_SHARE(candidate);
-
+                        if (NULL != peer) {
+                            JXTA_OBJECT_RELEASE(*peer);
+                            *peer = JXTA_OBJECT_SHARE(candidate);
+                        }
                         BN_copy(best_distance, distance);
+                    }
+                }
+                if (NULL != peers) {
+                    /* return this peer if the target hash is within its radius */
+                    if (BN_cmp(bn_target_hash, candidate->radius_range_1_start) >= 0
+                        && BN_cmp(candidate->radius_range_1_end, bn_target_hash) <= 0) {
+                        jxta_vector_add_object_last(*peers, (Jxta_object *) candidate);
+                    }
+                    if (candidate->radius_range_2_start && (BN_cmp(bn_target_hash, candidate->radius_range_2_start) >= 0
+                        && BN_cmp(candidate->radius_range_2_end, bn_target_hash) <= 0)) {
+                        jxta_vector_add_object_last(*peers, (Jxta_object *) candidate);
                     }
                 }
                 JXTA_OBJECT_RELEASE(candidate);
@@ -1377,6 +1460,35 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_get_peer_for_target_hash(Jxta_peerview *
             BN_free(effective_target_hash);
 
             res = JXTA_SUCCESS;
+        }
+        for (i=0; NULL != peers && i < jxta_vector_size(*peers); i++) {
+            Jxta_peer *ret_peer = NULL;
+            JString * peerid_closest_j = NULL;
+
+            jxta_id_to_jstring(jxta_peer_peerid(*peer), &peerid_closest_j);
+            res = jxta_vector_get_object_at(*peers, JXTA_OBJECT_PPTR(&ret_peer), i);
+            if (JXTA_SUCCESS != res) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Error retrieving peer from return vector res:%d\n", res );
+                break;
+            }
+            /* don't return the closest peer in the vector also */
+            if (jxta_id_equals(jxta_peer_peerid(ret_peer), jxta_peer_peerid(*peer))) {
+                jxta_vector_remove_object_at(*peers, NULL, i);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Remove target peer %s\n", jstring_get_string(peerid_closest_j));
+                JXTA_OBJECT_RELEASE(ret_peer);
+                JXTA_OBJECT_RELEASE(peerid_closest_j);
+                break;
+            } else {
+                JString * peerid_j = NULL;
+
+                jxta_id_to_jstring(jxta_peer_peerid(ret_peer), &peerid_j);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Adding peer %s that is within radius -- target %s\n"
+                        , jstring_get_string(peerid_j), jstring_get_string(peerid_closest_j));
+
+                JXTA_OBJECT_RELEASE(peerid_j);
+            }
+            JXTA_OBJECT_RELEASE(peerid_closest_j);
+            JXTA_OBJECT_RELEASE(ret_peer);
         }
     } else {
         /* likely only during shutdown */
@@ -2643,6 +2755,8 @@ static Jxta_status create_pve_from_pong(Jxta_peerview * me, Jxta_peerview_pong_m
     BN_hex2bn(&pve->target_hash, jxta_peerview_pong_msg_get_target_hash(pong));
     BN_hex2bn(&pve->target_hash_radius, jxta_peerview_pong_msg_get_target_hash_radius(pong));
 
+    calculate_radius_bounds(me, pve);
+
     options = jxta_peerview_pong_msg_get_options(pong);
     if (NULL != options) {
         jxta_peer_set_options((Jxta_peer *) pve, options);
@@ -2664,6 +2778,156 @@ static Jxta_status create_pve_from_pong(Jxta_peerview * me, Jxta_peerview_pong_m
 
     *ppve = pve;
     return JXTA_SUCCESS;
+}
+
+static void calculate_radius_bounds(Jxta_peerview * pv, Peerview_entry * pve)
+{
+    int cluster;
+    BIGNUM *peer_start = NULL;
+    BIGNUM *peer_end = NULL;
+    int each_segment;
+    char *tmp;
+
+    cluster = cluster_for_hash(pv, pve->target_hash);
+
+    if (cluster != pv->my_cluster) return;
+
+    pve->cluster = cluster;
+
+    if (NULL != pve->radius_range_1_start) {
+        BN_free(pve->radius_range_1_start);
+        pve->radius_range_1_start = NULL;
+    }
+    if (NULL != pve->radius_range_1_end) {
+        BN_free(pve->radius_range_1_end);
+        pve->radius_range_1_end = NULL;
+    }
+    if (NULL != pve->radius_range_2_start) {
+        BN_free(pve->radius_range_2_start);
+        pve->radius_range_2_start = NULL;
+    }
+    if (NULL != pve->radius_range_2_end) {
+        BN_free(pve->radius_range_2_end);
+        pve->radius_range_2_end = NULL;
+    }
+
+    peer_start = BN_new();
+    tmp = BN_bn2hex(pve->target_hash);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "cluster: %d pve->target_hash:%s\n", cluster, tmp);
+    free(tmp);
+    tmp = BN_bn2hex(pve->target_hash_radius);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "cluster: %d pve->target_hash_radius:%s\n", cluster, tmp);
+    free(tmp);
+
+    BN_sub(peer_start, pve->target_hash, pve->target_hash_radius);
+
+    peer_end = BN_new();
+    BN_add(peer_end, pve->target_hash, pve->target_hash_radius);
+
+    tmp = BN_bn2hex(peer_start);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "cluster: %d peer_start %s\n", cluster, tmp);
+    free(tmp);
+    tmp = BN_bn2hex(peer_end);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "cluster: %d peer_end %s\n", cluster, tmp);
+    free(tmp);
+
+    for (each_segment = 0; each_segment < 3; each_segment++) {
+        BIGNUM *segment_start = NULL;
+        BIGNUM *segment_end = NULL;
+
+        if (0 == each_segment) {
+            /* #0 - The area below minimum wrapped around to maximum */
+            if (BN_cmp(peer_start, pv->clusters[cluster].min) >= 0) {
+                /* nothing to do in this segment. */
+                continue;
+            }
+
+            segment_start = BN_new();
+            BN_sub(segment_start, pv->clusters[cluster].min, peer_start);
+            BN_sub(segment_start, pv->clusters[cluster].max, segment_start);
+
+            if (BN_cmp(segment_start, pv->clusters[cluster].min) <= 0) {
+                /* The range is *really* big, keep it within bounds. */
+                /* This is handled as part of segment #1 */
+                BN_free(segment_start);
+                continue;
+            }
+
+            segment_end = BN_dup(pv->clusters[cluster].max);
+        } else if (1 == each_segment) {
+            /* #1 - The area between minimum and maximum */
+            if (BN_cmp(peer_start, pv->clusters[cluster].min) <= 0) {
+                segment_start = BN_dup(pv->clusters[cluster].min);
+            } else {
+                segment_start = BN_dup(peer_start);
+            }
+
+            if (BN_cmp(peer_end, pv->clusters[cluster].max) >= 0) {
+                segment_end = BN_dup(pv->clusters[cluster].max);
+            } else {
+                segment_end = BN_dup(peer_end);
+            }
+        } else if (2 == each_segment) {
+            /* #2 - The area above maximum wrapped around to minimum */
+            if (BN_cmp(peer_end, pv->clusters[cluster].max) <= 0) {
+                /* Nothing to do for this segment. */
+                continue;
+            }
+
+            segment_start = BN_dup(pv->clusters[cluster].min);
+
+            segment_end = BN_new();
+            BN_sub(segment_end, peer_end, pv->clusters[cluster].max);
+            BN_add(segment_end, segment_end, pv->clusters[cluster].min);
+
+            if (BN_cmp(segment_end, pv->clusters[cluster].max) >= 0) {
+                /* The range is *really* big, keep it within bounds. */
+                /* This is handled as part of segment #1 */
+                BN_free(segment_end);
+                continue;
+            }
+        }
+        if (NULL != segment_start) {
+            if (NULL == pve->radius_range_1_start) {
+                pve->radius_range_1_start = BN_dup(segment_start);
+            } else if (NULL == pve->radius_range_2_start) {
+                pve->radius_range_2_start = BN_dup(segment_start);
+            }
+            BN_free(segment_start);
+        }
+        if (NULL != segment_end) {
+            if (NULL == pve->radius_range_1_end) {
+                pve->radius_range_1_end = BN_dup(segment_end);
+            } else if (NULL == pve->radius_range_2_end) {
+                pve->radius_range_2_end = BN_dup(segment_end);
+            }
+            BN_free(segment_end);
+        }
+    }
+    if (pve->radius_range_1_start) {
+        tmp = BN_bn2hex(pve->radius_range_1_start);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "pve->radius_range_1_start:%s \n", tmp);
+        free(tmp);
+    }
+    if (pve->radius_range_1_end) {
+        tmp = BN_bn2hex(pve->radius_range_1_end);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "pve->radius_range_1_end:%s \n", tmp);
+        free(tmp);
+    }
+    if (pve->radius_range_2_start) {
+        tmp = BN_bn2hex(pve->radius_range_2_start);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "pve->radius_range_2_start:%s \n", tmp);
+        free(tmp);
+    }
+    if (pve->radius_range_2_end) {
+        tmp = BN_bn2hex(pve->radius_range_2_end);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "pve->radius_range_2_end:%s \n", tmp);
+        free(tmp);
+    }
+
+    BN_free(peer_start);
+    BN_free(peer_end);
+
 }
 
 /* Process the associates and partners looking for unknown peers. */
@@ -3509,6 +3773,7 @@ static Jxta_status peerview_add_pve(Jxta_peerview * myself, Peerview_entry * pve
 
 
         jxta_vector_add_object_last(myself->clusters[pve_cluster].members, (Jxta_object *) pve);
+        pve->cluster = pve_cluster;
 
         if (NULL != myself->clusters[pve_cluster].histogram) {
             JXTA_OBJECT_RELEASE(myself->clusters[pve_cluster].histogram);
