@@ -334,6 +334,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING
                         , "Could not get the entry for seqNumber " JXTA_SEQUENCE_NUMBER_FMT " from peerid:%s in replicateEntries\n", newEntry->seqNumber, jstring_get_string(jPeerId));
                     ignore_entry = TRUE;
+                    status = JXTA_SUCCESS;  /*reset the status so it is not retained*/
                 } else {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID
                         , "Got the name/value from the srdi cache %s/%s\n"
