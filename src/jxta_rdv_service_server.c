@@ -725,7 +725,7 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
 
     if (!jxta_peerview_is_member(provider->peerview)) {
         /* We are not in the peerview. There is no place for us to send the message. */
-        res = JXTA_SUCCESS;
+        res = JXTA_FAILED;
         goto FINAL_EXIT;
     }
 
@@ -820,7 +820,10 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
             jxta_PG_async_send(pg, msg, peer->peerid, RDV_V3_MSID, JXTA_RDV_WALKER_SERVICE_NAME);
         } else {
             /* It is a message for us! */
-            walk_handler(myself, msg, header);
+            res = walk_handler(myself, msg, header);
+            if (JXTA_SUCCESS != res) {
+                goto FINAL_EXIT;
+            }
         }
         JXTA_OBJECT_RELEASE(peer);
     }
@@ -838,6 +841,7 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
             res = jxta_peerview_get_localview(provider->peerview, &localView);
         } else if (JXTA_RDV_DIFFUSION_SCOPE_TERMINAL == scope) {
             /* Don't continue if walk is in the terminal state */
+            res = JXTA_SUCCESS;
             goto FINAL_EXIT;
         }
 
@@ -855,6 +859,10 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
                 goto FINAL_EXIT;
             }
         }
+        else if (JXTA_RDV_DIFFUSION_SCOPE_GLOBAL == scope) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Failed to walk message to associate peers\n");
+            res = JXTA_UNREACHABLE_DEST;
+        }
         if (NULL != localView && jxta_vector_size(localView) > 0) {
             if (new_walk) {
                 jxta_rdv_diffusion_set_scope(header, JXTA_RDV_DIFFUSION_SCOPE_LOCAL);
@@ -864,6 +872,16 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
             if (JXTA_SUCCESS != res) {
                 goto FINAL_EXIT;
             }
+        }
+        else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Failed to walk message to partner peers\n");
+            if (NULL == globalView || jxta_vector_size(globalView) == 0) {
+                res = JXTA_UNREACHABLE_DEST;
+            }
+        }
+
+        if (JXTA_SUCCESS != res) {
+            goto FINAL_EXIT;
         }
     } else {
         res = JXTA_INVALID_ARGUMENT;

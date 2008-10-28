@@ -208,4 +208,30 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_create_query(Jxta_resolver_servi
     return VTBL->create_query(resolver_service, handlername, query, rq);
 }
 
+/**
+ * Peergroups that would like the resolver to both walk and propagate a query can use this
+ * interface to override the Resolver Service Config provided in the PlatformConfig
+ *
+ * @param pointer to the Jxta_resolver_service
+ * @param propagate flag indicating whether to propagate or not.  TRUE will send both a walk and propagate message.
+ */
+JXTA_DECLARE(void) jxta_resolver_service_set_always_propagate(Jxta_resolver_service * service,
+                                                              Jxta_boolean propagate)
+{
+    Jxta_resolver_service* resolver_service = PTValid(service, Jxta_resolver_service);
+    VTBL->setAlwaysPropagate(resolver_service, propagate);
+}
+
+/**
+ * Returns the always propagate setting for the current group
+ *
+ * @param service a pointer to the instance of the resolver service
+ * @return the boolean indicating the propagation behavior
+ */
+JXTA_DECLARE(Jxta_boolean) jxta_resolver_service_always_propagate(Jxta_resolver_service * service)
+{
+    Jxta_resolver_service* resolver_service = PTValid(service, Jxta_resolver_service);
+    return VTBL->alwaysPropagate(resolver_service);
+}
+
 /* vim: set ts=4 sw=4 et tw=130: */

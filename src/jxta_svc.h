@@ -68,6 +68,7 @@
 #include "jxta_relaya.h"
 #include "jxta_routea.h"
 #include "jxta_cache_config_adv.h"
+#include "jxta_resolver_config_adv.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -135,6 +136,18 @@ JXTA_DECLARE(Jxta_TCPTransportAdvertisement *) jxta_svc_get_TCPTransportAdvertis
  * to remove the element.
  */
 JXTA_DECLARE(void) jxta_svc_set_TCPTransportAdvertisement(Jxta_svc *, Jxta_TCPTransportAdvertisement *);
+
+/*
+ * Unlike similar accessors in other advs, this one may return NULL if
+ * there is no such element.
+ */
+JXTA_DECLARE(Jxta_ResolverConfigAdvertisement *) jxta_svc_get_ResolverConfig(Jxta_svc *);
+
+/*
+ * Unlike similar mutators in other advs, it is valid to pass NULL as a means
+ * to remove the element.
+ */
+JXTA_DECLARE(void) jxta_svc_set_ResolverConfig(Jxta_svc *, Jxta_ResolverConfigAdvertisement *);
 
 /*
  * Unlike similar accessors in other advs, this one may return NULL if

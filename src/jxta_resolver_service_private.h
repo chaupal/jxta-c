@@ -106,6 +106,10 @@ struct _jxta_resolver_service_methods {
     Jxta_status(*sendSrdi) (Jxta_resolver_service * resolver, ResolverSrdi * message, Jxta_id * peerid);
 
     Jxta_status(*create_query) (Jxta_resolver_service * me, JString * handlername, JString * query, Jxta_resolver_query ** rq);
+
+    Jxta_status(*setAlwaysPropagate) (Jxta_resolver_service * service, Jxta_boolean propagate);
+
+    Jxta_status(*alwaysPropagate) (Jxta_resolver_service * service);
 };
 
 /**

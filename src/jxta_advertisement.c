@@ -1034,6 +1034,7 @@ void jxta_advertisement_register_global_handlers(void)
     /* Config advertisement types */
     jxta_advertisement_register_global_handler("jxta:CacheConfig", (JxtaAdvertisementNewFunc) jxta_CacheConfigAdvertisement_new );
     jxta_advertisement_register_global_handler("jxta:DiscoveryConfig", (JxtaAdvertisementNewFunc) jxta_DiscoveryConfigAdvertisement_new );
+    jxta_advertisement_register_global_handler("jxta:ResolverConfig", (JxtaAdvertisementNewFunc) jxta_ResolverConfigAdvertisement_new );
     jxta_advertisement_register_global_handler("jxta:EndPointConfig", (JxtaAdvertisementNewFunc) jxta_EndPointConfigAdvertisement_new );
     jxta_advertisement_register_global_handler("jxta:RdvConfig", (JxtaAdvertisementNewFunc) jxta_RdvConfigAdvertisement_new );
     jxta_advertisement_register_global_handler("jxta:SrdiConfig", (JxtaAdvertisementNewFunc) jxta_SrdiConfigAdvertisement_new );

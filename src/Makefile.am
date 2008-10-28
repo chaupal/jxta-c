@@ -66,6 +66,7 @@ include_HEADERS = EndpointRouter.h          \
                   jxta_rdv_service.h        \
                   jxta_rdv_service_provider.h \
                   jxta_resolver_service.h   \
+				  jxta_resolver_config_adv.h \
                   jxta_rq.h                 \
                   jxta_rr.h                 \
                   jxta_rsrdi.h              \
@@ -142,6 +143,7 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_svc.c                     \
                      jxta_message.c                 \
                      queue.c                        \
+					 jxta_resolver_config_adv.c		\
                      jxta_resolver_service.c        \
                      jxta_discovery_config_adv.c    \
                      jxta_discovery_service.c       \

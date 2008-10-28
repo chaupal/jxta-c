@@ -414,7 +414,7 @@ Jxta_status jxta_rdv_service_provider_prop_to_peers(Jxta_rdv_service_provider * 
     res = PROVIDER_VTBL(myself)->get_peers((Jxta_rdv_service_provider *) myself, &vector);
 
     JXTA_OBJECT_CHECK_VALID(vector);
-    if ((res == JXTA_SUCCESS) && (vector != NULL)) {
+    if ((res == JXTA_SUCCESS) && (vector != NULL) && jxta_vector_size(vector) > 0) {
         unsigned int sz = jxta_vector_size(vector);
         unsigned int eachPeer;
         unsigned int peerCount = 0;
@@ -458,17 +458,26 @@ Jxta_status jxta_rdv_service_provider_prop_to_peers(Jxta_rdv_service_provider * 
 
                 JXTA_OBJECT_RELEASE(destAddr);
             }
+            else {
+                res = JXTA_FAILED;
+            }
 
             JXTA_OBJECT_RELEASE(peer);
         }
-        JXTA_OBJECT_RELEASE(vector);
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Propagated message [%pp] to %d peers.\n", msg, peerCount);
     }
+    else if (JXTA_SUCCESS == res) {
+        /* set the status to failed since the vector was empty and the message was not propagated */
+        res = JXTA_FAILED;
+    }
+
+    if (vector)
+        JXTA_OBJECT_RELEASE(vector);
 
     JXTA_OBJECT_RELEASE(msg);
 
-    return JXTA_SUCCESS;
+    return res;
 }
 
 #ifdef UNUSED_VWF

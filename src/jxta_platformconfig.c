@@ -82,6 +82,7 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
   Jxta_SrdiConfigAdvertisement *srdi = NULL;
   Jxta_EndPointConfigAdvertisement *ep = NULL;
   Jxta_CacheConfigAdvertisement *cache = NULL;
+  Jxta_ResolverConfigAdvertisement *rslvr = NULL;
   
   Jxta_svc *tcpsvc;   /* append */
   Jxta_svc *htsvc;
@@ -91,6 +92,7 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
   Jxta_svc *rlsvc;
   Jxta_svc *epsvc;
   Jxta_svc *cachesvc;
+  Jxta_svc *rslvrsvc;
 
   JString *tcp_proto; /* append */
   JString *http_proto;
@@ -149,6 +151,12 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
   jxta_svc_set_CacheConfig(cachesvc, cache);
   jxta_svc_set_MCID(cachesvc, jxta_cache_classid);
 
+  /* Resolver */
+  rslvr = jxta_ResolverConfigAdvertisement_new();
+  rslvrsvc = jxta_svc_new();
+  jxta_svc_set_ResolverConfig(rslvrsvc, rslvr);
+  jxta_svc_set_MCID(rslvrsvc, jxta_resolver_classid);
+
   /* Discovery */
   disc = jxta_DiscoveryConfigAdvertisement_new();
   discsvc = jxta_svc_new();
@@ -190,6 +198,7 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
   jxta_vector_add_object_last(services, (Jxta_object *) rlsvc);
   jxta_vector_add_object_last(services, (Jxta_object *) srdisvc);
   jxta_vector_add_object_last(services, (Jxta_object *) epsvc);
+  jxta_vector_add_object_last(services, (Jxta_object *) rslvrsvc);
   jxta_vector_add_object_last(services, (Jxta_object *) discsvc);
   jxta_vector_add_object_last(services, (Jxta_object *) cachesvc);
   JXTA_OBJECT_RELEASE(services);

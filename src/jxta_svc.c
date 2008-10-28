@@ -84,6 +84,7 @@ enum tokentype {
     TCPTransportAdvertisement_,
     HTTPTransportAdvertisement_,
     RouteAdvertisement_,
+    ResolverConfigAdvertisement_,
     CacheConfigAdvertisement_,
     DiscoveryConfigAdvertisement_,
     RdvConfigAdvertisement_,
@@ -117,6 +118,7 @@ struct _jxta_svc {
 static void svc_delete(Jxta_object *);
 static void handleCacheConfigAdv(void *me, const XML_Char *cd, int len);
 static void handleDiscoveryConfigAdv(void *me, const XML_Char * cd, int len);
+static void handleResolverConfigAdv(void *me, const XML_Char * cd, int len);
 static void handleRdvConfigAdv(void *me, const XML_Char * cd, int len);
 static void handleSrdiConfigAdv(void *me, const XML_Char * cd, int len);
 static void handleEndPointConfigAdv(void *me, const XML_Char * cd, int len);
@@ -270,6 +272,26 @@ static void handleCacheConfigAdv(void *me, const XML_Char * cd, int len)
         JXTA_OBJECT_RELEASE(cacheConfig);
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <jxta:CacheConfig> Element [%pp]\n", ad );
+    }
+}
+
+static void handleResolverConfigAdv(void *me, const XML_Char * cd, int len)
+{
+    Jxta_svc *ad = (Jxta_svc *) me;
+
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    if (len == 0) {
+        Jxta_ResolverConfigAdvertisement *resolverConfig = jxta_ResolverConfigAdvertisement_new();
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <jxta:ResolverConfig> Element [%pp]\n", ad );
+
+        jxta_svc_set_ResolverConfig(ad, resolverConfig);
+
+        jxta_advertisement_set_handlers((Jxta_advertisement *) resolverConfig, ((Jxta_advertisement *) ad)->parser, (void *) ad);
+        JXTA_OBJECT_RELEASE(resolverConfig);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <jxta:ResolverConfig> Element [%pp]\n", ad );
     }
 }
 
@@ -605,6 +627,16 @@ JXTA_DECLARE(void) jxta_svc_set_TCPTransportAdvertisement(Jxta_svc * ad, Jxta_TC
     jxta_svc_set_Parm( ad, (Jxta_advertisement *) tta );
 }
 
+JXTA_DECLARE(Jxta_ResolverConfigAdvertisement *) jxta_svc_get_ResolverConfig(Jxta_svc * ad)
+{
+    return (Jxta_ResolverConfigAdvertisement*) jxta_svc_get_Parm_type( ad, "jxta:ResolverConfig" );
+}
+
+JXTA_DECLARE(void) jxta_svc_set_ResolverConfig(Jxta_svc * ad, Jxta_ResolverConfigAdvertisement * resolverConfig)
+{
+    jxta_svc_set_Parm( ad, (Jxta_advertisement *) resolverConfig );
+}
+ 
 JXTA_DECLARE(Jxta_DiscoveryConfigAdvertisement *) jxta_svc_get_DiscoveryConfig(Jxta_svc * ad)
 {
     return (Jxta_DiscoveryConfigAdvertisement*) jxta_svc_get_Parm_type( ad, "jxta:DiscoveryConfig" );
@@ -681,6 +713,7 @@ static const Kwdtab Svc_tags[] = {
     
     {"jxta:CacheConfig", CacheConfigAdvertisement_, *handleCacheConfigAdv, NULL, NULL},
     {"jxta:DiscoveryConfig", DiscoveryConfigAdvertisement_, *handleDiscoveryConfigAdv, NULL, NULL},
+    {"jxta:ResolverConfig", ResolverConfigAdvertisement_, *handleResolverConfigAdv, NULL, NULL},
     {"jxta:EndPointConfig", EndPointConfigAdvertisement_, *handleEndPointConfigAdv, NULL, NULL},
     {"jxta:RdvConfig", RdvConfigAdvertisement_, *handleRdvConfigAdv, NULL, NULL},
     {"jxta:SrdiConfig", SrdiConfigAdvertisement_, *handleSrdiConfigAdv, NULL, NULL},

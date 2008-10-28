@@ -80,6 +80,7 @@ static const char *__log_cat = "RSLVR";
 #include "jxta_callback.h"
 #include "jxta_endpoint_service_priv.h"
 #include "jxta_peergroup_private.h"
+#include "jxta_resolver_config_adv.h"
 
 typedef struct {
     Extends(Jxta_resolver_service);
@@ -104,6 +105,7 @@ typedef struct {
     size_t mru_size;
     size_t mru_pos;
     Jxta_PID **mru;
+    Jxta_boolean alwaysPropagate;
 } Jxta_resolver_service_ref;
 
 #ifdef GZIP_ENABLED
@@ -174,6 +176,9 @@ jxta_resolver_service_ref_init(Jxta_module * resolver, Jxta_PG * group, Jxta_id 
     Jxta_status status = JXTA_SUCCESS;
     Jxta_resolver_service_ref *self = (Jxta_resolver_service_ref *) resolver;
     apr_pool_t *pool;
+    Jxta_PA *conf_adv = NULL;
+    Jxta_svc *svc = NULL;
+    Jxta_ResolverConfigAdvertisement *resolver_config = NULL;
 
     /* Test arguments first */
     if ((resolver == NULL) || (group == NULL)) {
@@ -232,6 +237,32 @@ jxta_resolver_service_ref_init(Jxta_module * resolver, Jxta_PG * group, Jxta_id 
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
             return JXTA_NOMEM;
         }
+    }
+    
+    self->alwaysPropagate = FALSE;
+    jxta_PG_get_configadv(self->group, &conf_adv);
+    if (!conf_adv) {
+        Jxta_PG *parentgroup=NULL;
+
+        jxta_PG_get_parentgroup(self->group, &parentgroup);
+        if (parentgroup) {
+            jxta_PG_get_configadv(parentgroup, &conf_adv);
+            JXTA_OBJECT_RELEASE(parentgroup);
+        }
+    }
+    if (conf_adv != NULL) {
+        jxta_PA_get_Svc_with_id(conf_adv, jxta_resolver_classid, &svc);
+        if (NULL != svc) {
+            resolver_config = jxta_svc_get_ResolverConfig(svc);
+            if (NULL != resolver_config) {
+                self->alwaysPropagate = jxta_ResolverConfigAdvertisement_get_always_propagate(resolver_config);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Resolver Service will propagate in addition to "
+                    "walk: %s\n", self->alwaysPropagate ? "true" : "false");
+                JXTA_OBJECT_RELEASE(resolver_config);
+            }
+            JXTA_OBJECT_RELEASE(svc);
+        }
+        JXTA_OBJECT_RELEASE(conf_adv);
     }
 
     self->mru_capacity = 20;
@@ -532,14 +563,18 @@ static Jxta_status do_send(Jxta_resolver_service_ref * me, Jxta_id * peerid, JSt
     jxta_message_add_element(msg, msgElem);
 
     if (NULL == peerid) {
-        jxta_rdv_service_walk(me->rendezvous, msg, me->instanceName, queue);
-
-        status = jxta_endpoint_service_propagate(me->endpoint, msg, me->instanceName, queue);
-        if (JXTA_SUCCESS != status) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Endpoint service propagation status= %d\n", status);
-            goto FINAL_EXIT;
+        status = jxta_rdv_service_walk(me->rendezvous, msg, me->instanceName, queue);
+        if (me->alwaysPropagate || JXTA_SUCCESS != status) {
+            status = jxta_endpoint_service_propagate(me->endpoint, msg, me->instanceName, queue);
+            if (JXTA_SUCCESS != status) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Endpoint service propagation status= %d\n", status);
+                goto FINAL_EXIT;
+            }
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Resolver message sent by propagation\n");
         }
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Resolver message sent by propagation\n");
+        else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Resolver message sent by rendezvous walk\n");
+        }
 
     } else {
         address = jxta_endpoint_address_new_3(peerid, me->instanceName, queue);
@@ -903,6 +938,33 @@ Jxta_status create_query(Jxta_resolver_service * me, JString * handlername, JStr
     return JXTA_SUCCESS;
 }
 
+/**
+ * Peergroups that would like the resolver to both walk and propagate a query can use this
+ * interface to override the Resolver Service Config provided in the PlatformConfig
+ *
+ * @param pointer to the Jxta_resolver_service
+ * @param propagate flag indicating whether to propagate or not.  TRUE will send both a walk and propagate message.
+ */
+void setAlwaysPropagate(Jxta_resolver_service * service, Jxta_boolean propagate)
+{
+    Jxta_resolver_service_ref *myself = (Jxta_resolver_service_ref *) service;
+    myself->alwaysPropagate = propagate;
+}
+
+/**
+ * Returns the always propagate setting for the current group
+ *
+ * @param service a pointer to the instance of the resolver service
+ * @return the boolean indicating the propagation behavior
+ */
+Jxta_boolean alwaysPropagate(Jxta_resolver_service * service)
+{
+    Jxta_resolver_service_ref *myself = (Jxta_resolver_service_ref *) service;
+    return myself->alwaysPropagate;
+}
+
+
+
 /* BEGINING OF STANDARD SERVICE IMPLEMENTATION CODE */
 
 /**
@@ -937,7 +999,9 @@ Jxta_resolver_service_ref_methods jxta_resolver_service_ref_methods = {
     sendQuery,
     sendResponse,
     sendSrdi,
-    create_query
+    create_query,
+    setAlwaysPropagate,
+    alwaysPropagate
 };
 
 void jxta_resolver_service_ref_construct(Jxta_resolver_service_ref * self, Jxta_resolver_service_ref_methods * methods)
