@@ -2558,16 +2558,23 @@ static Jxta_status peerview_handle_address_assign(Jxta_peerview * myself, Jxta_p
         goto FINAL_EXIT;
     }
 
-    BN_hex2bn(&response_instance_mask, jxta_peerview_address_assign_msg_get_instance_mask(addr_assign));
+    if (NULL != myself->self_pve) {
 
-    same = 0 == BN_cmp(myself->instance_mask, response_instance_mask);
-    BN_free(response_instance_mask);
+        BN_hex2bn(&response_instance_mask, jxta_peerview_address_assign_msg_get_instance_mask(addr_assign));
 
-    if (!same) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Address assignement from unexpected peerview instance. [%pp]\n",
-                        myself);
-        res = JXTA_FAILED;
-        goto FINAL_EXIT;
+        same = 0 == BN_cmp(myself->instance_mask, response_instance_mask);
+        BN_free(response_instance_mask);
+
+        if (!same) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Address assignement from unexpected peerview instance. [%pp]\n",
+                            myself);
+            res = JXTA_FAILED;
+            goto FINAL_EXIT;
+        }
+    }
+    else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Address has not been assigned yet, accepting new assignment in "
+            "peerview [%pp]\n", myself);
     }
 
     BN_hex2bn(&target_hash, jxta_peerview_address_assign_msg_get_target_hash(addr_assign));
@@ -2702,7 +2709,9 @@ static Jxta_boolean is_for_alternative(Jxta_peerview * me, const char *pv_mask)
 
             BN_copy(me->instance_mask, instance_mask);
             peerview_clear_pves(me, FALSE);
-            jxta_peer_set_expires((Jxta_peer *) me->self_pve, 0L);
+            if (NULL != me->self_pve) {
+                jxta_peer_set_expires((Jxta_peer *) me->self_pve, 0L);
+            }
             me->state = PV_LOCATING;
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "PV[%pp] Nonmatching instance mask found : %s\n", me, pv_mask);
