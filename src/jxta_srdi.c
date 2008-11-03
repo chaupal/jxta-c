@@ -229,6 +229,12 @@ static void DRE_Free(Jxta_object * o)
     if (dre->dup_peerid) {
         JXTA_OBJECT_RELEASE(dre->dup_peerid);
     }
+    if (dre->rep_peerid) {
+        JXTA_OBJECT_RELEASE(dre->rep_peerid);
+    }
+    if (dre->fwd_peerid) {
+        JXTA_OBJECT_RELEASE(dre->fwd_peerid);
+    }
     if (dre->radius_peers) {
         JXTA_OBJECT_RELEASE(dre->radius_peers);
     }
@@ -272,7 +278,8 @@ static void handleEntry(void *userdata, const XML_Char * cd, int len)
      * option. We depend on it. There must be exactly one non-empty call
      * per address.
      */
-     entry->replicate = TRUE;
+    entry->replicate = TRUE;
+    entry->cache_this = TRUE;
     if (atts != NULL) {
         while (*atts) {
             if (0 == strcmp("SKey", *atts)) {
@@ -308,8 +315,17 @@ static void handleEntry(void *userdata, const XML_Char * cd, int len)
                 entry->replicate = FALSE;
             } else if (0 == strcmp("dup", *atts)) {
                 entry->duplicate = TRUE;
+                if (0 == strcmp("target", atts[1])) {
+                    entry->dup_target = TRUE;
+                } else if (0 == strcmp("fwd", atts[1])) {
+                    entry->dup_fwd = TRUE;
+                    entry->fwd = TRUE;
+                    entry->fwd_this = FALSE;
+                }
+            } else if (0 == strcmp("fwd", *atts)) {
+                entry->fwd = TRUE;
+                entry->fwd_this = FALSE;
             }
-            
             atts += 2;
         }
     }
@@ -336,6 +352,11 @@ static void handleEntry(void *userdata, const XML_Char * cd, int len)
 JXTA_DECLARE(int) jxta_srdi_message_get_ttl(Jxta_SRDIMessage * ad)
 {
     return ad->TTL;
+}
+
+JXTA_DECLARE(void) jxta_srdi_message_set_ttl(Jxta_SRDIMessage * ad, int ttl)
+{
+    ad->TTL = ttl;
 }
 
 
@@ -388,7 +409,7 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_set_SrcPID(Jxta_SRDIMessage * ad, Jx
     }
     if (ad->SrcPID != NULL) {
         JXTA_OBJECT_RELEASE(ad->SrcPID);
-        ad->PeerID = NULL;
+        ad->SrcPID = NULL;
     }
     ad->SrcPID = JXTA_OBJECT_SHARE(peerid);
     return JXTA_SUCCESS;
@@ -535,7 +556,7 @@ Jxta_status srdi_message_print(Jxta_SRDIMessage * ad, JString * js)
             jstring_append_1(js, anElement->sn_cs_values);
             jstring_append_2(js, "\"");
         }
-        if (NULL != anElement->range) {
+        if (NULL != anElement->range && jstring_length(anElement->range) > 0) {
             jstring_append_2(js, " Range=\"");
             jstring_append_1(js, anElement->range);
             jstring_append_2(js, "\"");
@@ -551,7 +572,18 @@ Jxta_status srdi_message_print(Jxta_SRDIMessage * ad, JString * js)
             jstring_append_2(js, " replicate=\"FALSE\"");
         }
         if (anElement->duplicate == TRUE) {
-            jstring_append_2(js, " dup=\"TRUE\"");
+            jstring_append_2(js, " dup=\"");
+            if (anElement->dup_fwd) {
+                jstring_append_2(js, "fwd");
+            } else if (anElement->dup_target) {
+                jstring_append_2(js, "target");
+            } else {
+                jstring_append_2(js, "TRUE");
+            }
+            jstring_append_2(js, "\"");
+        }
+        if (anElement->fwd == TRUE && !anElement->dup_fwd) {
+            jstring_append_2(js, " fwd=\"true\"");
         }
         jstring_append_2(js, ">\n");
         if (NULL != anElement->value) {
@@ -679,6 +711,31 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_2(int ttl, Jxta_id * peer
     return ad;
 }
 
+JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_3(int ttl, Jxta_id * peerid, Jxta_id * src_peerid, char *primarykey, Jxta_vector * entries)
+{
+
+    Jxta_SRDIMessage *ad;
+    ad = (Jxta_SRDIMessage *) malloc(sizeof(Jxta_SRDIMessage));
+    memset(ad, 0x0, sizeof(Jxta_SRDIMessage));
+
+    jxta_advertisement_initialize((Jxta_advertisement *) ad,
+                                  "jxta:GenSRDI",
+                                  Jxta_SRDIMessage_tags,
+                                  (JxtaAdvertisementGetXMLFunc) jxta_srdi_message_get_xml,
+                                  NULL, NULL, (FreeFunc) jxta_srdi_message_free);
+
+    ad->PeerID = JXTA_OBJECT_SHARE(peerid);
+    if (src_peerid) {
+        ad->SrcPID = JXTA_OBJECT_SHARE(src_peerid);
+    }
+
+    ad->Entries = JXTA_OBJECT_SHARE(entries);
+    ad->TTL = ttl;
+    ad->PrimaryKey = jstring_new_2(primarykey);
+    jstring_trim(ad->PrimaryKey);
+    return ad;
+}
+
 static void jxta_srdi_message_free(Jxta_SRDIMessage * ad)
 {
     if (ad->PeerID) {
@@ -713,43 +770,11 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_parse_file(Jxta_SRDIMessage * ad, FI
     return jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
 }
 
-static void entry_element_free(Jxta_object * o)
-{
-    Jxta_SRDIEntryElement *dse = (Jxta_SRDIEntryElement *) o;
-    if (dse->key != NULL) {
-        JXTA_OBJECT_RELEASE(dse->key);
-    }
-    if (dse->value != NULL) {
-        JXTA_OBJECT_RELEASE(dse->value);
-    }
-    if (dse->nameSpace != NULL) {
-        JXTA_OBJECT_RELEASE(dse->nameSpace);
-    }
-    if (dse->range != NULL) {
-        JXTA_OBJECT_RELEASE(dse->range);
-    }
-    if (dse->advId != NULL) {
-        JXTA_OBJECT_RELEASE(dse->advId);
-    }
-    if (dse->sn_cs_values != NULL) {
-        JXTA_OBJECT_RELEASE(dse->sn_cs_values);
-    }
-    if (dse->db_alias != NULL) {
-        free((void *) dse->db_alias);
-    }
-    if (dse->dup_peerid != NULL) {
-        JXTA_OBJECT_RELEASE(dse->dup_peerid);
-    }
-    if (dse->radius_peers != NULL) {
-        JXTA_OBJECT_RELEASE(dse->radius_peers);
-    }
-    free((void *) o);
-}
-
 JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element(void)
 {
     Jxta_SRDIEntryElement *dse = (Jxta_SRDIEntryElement *) calloc(1, sizeof(Jxta_SRDIEntryElement));
-    JXTA_OBJECT_INIT(dse, entry_element_free, 0);
+    JXTA_OBJECT_INIT(dse, DRE_Free, 0);
+    dse->cache_this = TRUE;
     return dse;
 }
 
@@ -763,9 +788,15 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_element_clone(Jxta_SRDIEntryElem
     newEntry->resend = FALSE;
     newEntry->replicate = entry->replicate;
     newEntry->duplicate = entry->duplicate;
+    newEntry->dup_target = entry->dup_target;
+    newEntry->fwd = entry->fwd;
+    newEntry->fwd_this = entry->fwd_this;
+    newEntry->dup_fwd = entry->dup_fwd;
+    newEntry->cache_this = entry->cache_this;
     newEntry->seqNumber = entry->seqNumber;
     newEntry->expiration = entry->expiration;
     newEntry->next_update_time = entry->next_update_time;
+    newEntry->timeout = entry->timeout;
 
     if (entry->nameSpace) {
         newEntry->nameSpace = jstring_clone(entry->nameSpace);
@@ -781,6 +812,15 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_element_clone(Jxta_SRDIEntryElem
     }
     if (entry->range) {
         newEntry->range = jstring_clone(entry->range);
+    }
+    if (entry->dup_peerid) {
+        newEntry->dup_peerid = jstring_clone(entry->dup_peerid);
+    }
+    if (entry->fwd_peerid) {
+        newEntry->fwd_peerid = jstring_clone(entry->fwd_peerid);
+    }
+    if (entry->rep_peerid) {
+        newEntry->rep_peerid = jstring_clone(entry->rep_peerid);
     }
     if (entry->radius_peers) {
         jxta_vector_clone( entry->radius_peers, &newEntry->radius_peers, 0, INT_MAX );
@@ -798,11 +838,14 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_1(JString * key, JSt
     dse->nameSpace = JXTA_OBJECT_SHARE(nameSpace);
     dse->advId = JXTA_OBJECT_SHARE(value);
     dse->expiration = expiration;
+    dse->timeout = jpr_time_now() + expiration;
     dse->seqNumber = 0;
     dse->resend = FALSE;
     dse->next_update_time = 0;
+    dse->cache_this = TRUE;
     dse->replicate = TRUE;
     dse->duplicate = FALSE;
+    dse->dup_target = FALSE;
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Return [%pp] number 1 %s \n", dse, jstring_get_string(dse->key));
     return dse;
 }
@@ -825,10 +868,13 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_2(JString * key, JSt
     }
     dse->seqNumber = 0;
     dse->expiration = expiration;
+    dse->timeout = jpr_time_now() + expiration;
     dse->resend = FALSE;
     dse->next_update_time = 0;
     dse->replicate = TRUE;
+    dse->cache_this = TRUE;
     dse->duplicate = FALSE;
+    dse->dup_target = FALSE;
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Return [%pp] number 2 %s \n", dse, jstring_get_string(dse->key));
     return dse;
 }
@@ -852,10 +898,13 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_3(JString * key, JSt
     }
     dse->seqNumber = seqNumber;
     dse->expiration = expiration;
+    dse->timeout = jpr_time_now() + expiration;
     dse->resend = FALSE;
     dse->next_update_time = 0 ;
     dse->replicate = TRUE;
     dse->duplicate = FALSE;
+    dse->cache_this = TRUE;
+    dse->dup_target = FALSE;
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Return [%pp] number 3 %s \n", dse, jstring_get_string(dse->key));
     return dse;
 }
@@ -880,10 +929,13 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_4(JString * key, JSt
     }
     dse->seqNumber = seqNumber;
     dse->expiration = expiration;
+    dse->timeout = jpr_time_now() + expiration;
     dse->resend = FALSE;
     dse->next_update_time = 0;
     dse->replicate = replicate;
     dse->duplicate = FALSE;
+    dse->dup_target = FALSE;
+    dse->cache_this = TRUE;
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Return [%pp] number 4 %s \n", dse, jstring_get_string(dse->key));
     return dse;
 }

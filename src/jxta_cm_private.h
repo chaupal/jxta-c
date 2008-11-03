@@ -123,11 +123,15 @@ extern "C" {
 #define CM_COL_SeqNumber "SeqNumber"
 #define CM_COL_DBAlias "DBAlias"
 #define CM_COL_Replica "Replica"
+#define CM_COL_CachedLocal "CachedLocal"
 #define CM_COL_Replicate "Replicate"
 #define CM_COL_Duplicate "Duplicate"
 #define CM_COL_Radius "Radius"
 #define CM_COL_DupPeerid "DupPeerid"
 #define CM_COL_SourcePeerid "Sourceid"
+#define CM_COL_Fwd "Fwd"
+#define CM_COL_FwdPeerid "FwdPeerid"
+#define CM_COL_RepPeerid "RepPeerid"
 
 typedef struct jxta_cache_entry Jxta_cache_entry;
 
@@ -288,10 +292,10 @@ Jxta_status cm_save_srdi_elements(Jxta_cm * self, JString * handler, JString * p
  * @param Jxta_cm (A ptr to) the cm object to apply the operation to
  * @param jPeerid Peerid of srdi entry
  * @param seqNumber Sequence number assigned from the source peerid.
- * @param entry Entry to modify with the SRDI data.
+ * @param entry Location to store a new SRDI Entry element.
  *
  */
-Jxta_status cm_get_srdi_with_seq_number (Jxta_cm * me, JString * jPeerid, Jxta_sequence_number seqNumber, Jxta_SRDIEntryElement * entry);
+Jxta_status cm_get_srdi_with_seq_number(Jxta_cm * me, JString * jPeerid, Jxta_sequence_number seq, Jxta_SRDIEntryElement ** entry);
 
 /**
  * Remove the SRDI entries in the SRDI Delta table for the peer.
@@ -317,6 +321,7 @@ Jxta_status cm_remove_delta_entries(Jxta_cm * me, JString *seq_entries);
  *
  * @param Jxta_cm (A ptr to) the cm object to apply the operation to
  * @param jPeerid Peer ID for the entry
+ * @param jOrigPeerid Origin Peer Id of the message
  * @param jSourcePeerid Peer ID that is the source for the SRDI message
  * @param jHandler Handler for the entry
  * @param entry Jxta_SRDIEntryElement to save
@@ -328,21 +333,23 @@ Jxta_status cm_remove_delta_entries(Jxta_cm * me, JString *seq_entries);
  *
  * @return Jxta_status 
  */
-Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSourcePeerid, JString *jAdvPeer, JString * jHandler, Jxta_SRDIEntryElement * entry,
-                                        Jxta_boolean within_radius, JString ** jNewValue, Jxta_sequence_number * newSeqNumber,
-                                        JString **jRemovePeerid, JString ** jRemoveSeqNumber,
-                                        Jxta_boolean * update_srdi, int window);
+Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSourcePeerid, JString *jOrigPeerid, JString *jAdvPeer, JString * jHandler,
+                            Jxta_SRDIEntryElement * entry, Jxta_boolean within_radius, JString ** jNewValue, Jxta_sequence_number * newSeqNumber,
+                            JString **jRemovePeerid, JString ** jRemoveSeqNumber, Jxta_boolean * update_srdi, int window);
+
 
 /**
- * Get the entries with the sequence number in resendEntries
+ * Get the entries with the sequence number in resendEntries. A hashtable is returned keyed by the peerid where entries have been sent.
+ * When an entry has been forwarded the keyed peers will contain the peer of the replicating peer.
  *
  * @param Jxta_cm (A ptr to) the cm object to apply the operation to
  * @param peerid_j JString pointer of the peerid string
  * @param resendEntries Jxta_vector of Jxta_SRDIEntryElement
- * @param entries Location to store Jxta_hashtable of Jxta_SRDIEntryElement keyed by the source id with matching sequence numbers
+ * @param resend_entries Location to store Jxta_hashtable of Jxta_SRDIEntryElement keyed by the source id with matching sequence numbers 
+ * @param reverse_entries Location to store Jxta_hashtable of Jxta_SRDIEntryElement keyed by the replicating peer (Forwarded entries)
  * @return Jxta_status
  */
-Jxta_status cm_get_resend_delta_entries(Jxta_cm * me, JString * peerid_j, Jxta_vector * resendEntries, Jxta_hashtable ** entries);
+Jxta_status cm_get_resend_delta_entries(Jxta_cm * me, JString * peerid_j, Jxta_vector * resendEntries, Jxta_hashtable ** resend_entries, Jxta_hashtable ** reverse_entries);
 
 /**
  * Save the Replica entry in the given folder 
@@ -364,6 +371,9 @@ Jxta_status cm_save_replica(Jxta_cm * self, JString * handler, JString * peerid,
  */
 
 Jxta_status cm_save_replica_elements(Jxta_cm * self, JString * handler, JString * peerid, JString * primaryKey, Jxta_vector * entries, Jxta_vector ** resendEntries);
+
+Jxta_status cm_save_replica_fwd_elements(Jxta_cm * me, JString * handler, JString * peerid, JString *src_peerid, JString * primaryKey,
+                                     Jxta_vector * entries, Jxta_vector ** resendEntries);
 
 /**
  * Search for advertisements with specific (attribute,value) pairs

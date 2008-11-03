@@ -101,8 +101,15 @@ struct _jxta_EntryElement {
     Jxta_expiration_time timeout;
     Jxta_expiration_time next_update_time;
     int delta_window;
+    Jxta_boolean cache_this;
     Jxta_boolean replicate;
     Jxta_boolean duplicate;
+    Jxta_boolean dup_target;
+    Jxta_boolean dup_fwd;
+    Jxta_boolean fwd;
+    Jxta_boolean fwd_this;
+    JString *fwd_peerid;
+    JString *rep_peerid;
     JString *dup_peerid;
     Jxta_vector *radius_peers;
 };
@@ -119,6 +126,8 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new(void);
 JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_1(int TTL, Jxta_id * peerid, char *primarykey, Jxta_vector * entries);
 
 JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_2(int ttl, Jxta_id * peerid, Jxta_id * src_peerid, char *primarykey, Jxta_vector * entries);
+
+JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_3(int ttl, Jxta_id * peerid, Jxta_id * src_peerid, char *primarykey, Jxta_vector * entries);
 
 /**
  * Constructs a representation of a srdi message in
@@ -173,6 +182,13 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_parse_file(Jxta_SRDIMessage *, FILE 
  */
 JXTA_DECLARE(int) jxta_srdi_message_get_ttl(Jxta_SRDIMessage *);
 
+/**
+ *
+ *
+ * @param Jxta_SRDIMessage * a pointer to the srdi message
+ * @param int ttl of the message
+ */
+JXTA_DECLARE(void) jxta_srdi_message_set_ttl(Jxta_SRDIMessage *, int);
 
 /**
  * Decrements the ttl of the srdi message.
