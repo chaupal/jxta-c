@@ -119,7 +119,7 @@ JXTA_DECLARE(Jxta_lease_request_msg *) jxta_lease_request_msg_new(void)
 
     JXTA_OBJECT_INIT(myself, lease_request_msg_delete, NULL);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "LeaseRequest NEW [%pp]\n", myself );
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "LeaseRequest NEW [%pp]\n", myself );
 
     return lease_request_msg_construct(myself);
 }
@@ -151,7 +151,7 @@ static void lease_request_msg_delete(Jxta_object * me)
     
     memset(myself, 0xdd, sizeof(Jxta_lease_request_msg));
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "LeaseRequest FREE [%pp]\n", myself );
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "LeaseRequest FREE [%pp]\n", myself );
 
     free(myself);
 }
