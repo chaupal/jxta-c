@@ -646,6 +646,8 @@ static void handle_client_adv(void *me, const XML_Char * cd, int len)
                 /* just silently skip it. */
             } else if (0 == strcmp(*atts, "expiration")) {
                 myself->client_adv_exp = atol(atts[1]);
+            } else if (0 == strcmp(*atts, "pVer")) {
+                /* just silently skip it. */
             } else {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
             }

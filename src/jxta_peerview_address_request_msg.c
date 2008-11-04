@@ -639,6 +639,8 @@ static void handle_adv(void *me, const XML_Char * cd, int len)
                 /* just silently skip it. */
             } else if (0 == strcmp(*atts, "xmlns:jxta")) {
                 /* just silently skip it. */
+            } else if (0 == strcmp(*atts, "pVer")) {
+                /* just silently skip it. */
             } else if (0 == strcmp(*atts, "adv_gen")) {
                 myself->peer_adv_gen_set = (APR_SUCCESS == apr_uuid_parse( &myself->peer_adv_gen, atts[1]));
                 
