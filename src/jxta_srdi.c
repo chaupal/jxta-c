@@ -846,7 +846,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_1(JString * key, JSt
     dse->replicate = TRUE;
     dse->duplicate = FALSE;
     dse->dup_target = FALSE;
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Return [%pp] number 1 %s \n", dse, jstring_get_string(dse->key));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Return [%pp] number 1 %s \n", dse, jstring_get_string(dse->key));
     return dse;
 }
 
@@ -875,7 +875,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_2(JString * key, JSt
     dse->cache_this = TRUE;
     dse->duplicate = FALSE;
     dse->dup_target = FALSE;
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Return [%pp] number 2 %s \n", dse, jstring_get_string(dse->key));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Return [%pp] number 2 %s \n", dse, jstring_get_string(dse->key));
     return dse;
 }
 
@@ -905,7 +905,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_3(JString * key, JSt
     dse->duplicate = FALSE;
     dse->cache_this = TRUE;
     dse->dup_target = FALSE;
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Return [%pp] number 3 %s \n", dse, jstring_get_string(dse->key));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Return [%pp] number 3 %s \n", dse, jstring_get_string(dse->key));
     return dse;
 }
 
@@ -936,7 +936,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_4(JString * key, JSt
     dse->duplicate = FALSE;
     dse->dup_target = FALSE;
     dse->cache_this = TRUE;
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Return [%pp] number 4 %s \n", dse, jstring_get_string(dse->key));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Return [%pp] number 4 %s \n", dse, jstring_get_string(dse->key));
     return dse;
 }
 
@@ -952,7 +952,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_resend(Jxta_sequence
     dse->resend = TRUE;
     dse->replicate = TRUE;
     dse->next_update_time = 0;
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Return [%pp] resend\n", dse);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Return [%pp] resend\n", dse);
     return dse;
 }
 
