@@ -179,6 +179,7 @@ struct _jxta_rdv_service {
 
     Jxta_boolean is_demoting;
     Jxta_time service_start;
+    unsigned int processing_callbacks;
 };
 
 /**

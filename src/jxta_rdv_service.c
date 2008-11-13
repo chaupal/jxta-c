@@ -268,6 +268,7 @@ static _jxta_rdv_service *jxta_rdv_service_construct(_jxta_rdv_service * myself,
 
         myself->running = FALSE;
         myself->service_start = 0L;
+        myself->processing_callbacks = 0;
     }
 
     return myself;
@@ -486,6 +487,7 @@ static Jxta_status start(Jxta_module * module, char const *argv[])
         return JXTA_SUCCESS;
     }
 
+    myself->processing_callbacks = 0;
     myself->running = TRUE;
     myself->switch_config = FALSE;
     myself->lease_key_j = jstring_new_2(RDV_V3_MSID);
@@ -531,6 +533,13 @@ static void stop(Jxta_module * module)
     }
 
     myself->running = FALSE;
+    while (myself->processing_callbacks > 0) {
+        apr_thread_mutex_unlock(myself->mutex);
+        /* sleep for 100 ms */
+        apr_sleep(100 * 1000);
+        apr_thread_mutex_lock(myself->mutex);
+    }
+    
     apr_thread_mutex_unlock(myself->mutex);
 
     provider = (Jxta_rdv_service_provider *) myself->provider;
@@ -1681,7 +1690,7 @@ static Jxta_status JXTA_STDCALL call_entry(Jxta_object * obj, void *arg, JString
 
     apr_thread_mutex_lock(myself->mutex);
     locked = TRUE;
-    if (NULL == myself->callback_table) goto FINAL_EXIT;
+    if (NULL == myself->callback_table || !myself->running) goto FINAL_EXIT;
 
     res = jxta_hashtable_get(myself->callback_table, jstring_get_string(key_j), jstring_length(key_j), JXTA_OBJECT_PPTR(&entry));
     if (JXTA_ITEM_NOTFOUND == res) {
@@ -1694,6 +1703,7 @@ static Jxta_status JXTA_STDCALL call_entry(Jxta_object * obj, void *arg, JString
         goto FINAL_EXIT;
     }
     Jxta_message *msg = (Jxta_message *) obj;
+    myself->processing_callbacks++;
 
     JXTA_OBJECT_CHECK_VALID(msg);
     apr_thread_mutex_unlock(myself->mutex);
@@ -1702,7 +1712,13 @@ static Jxta_status JXTA_STDCALL call_entry(Jxta_object * obj, void *arg, JString
     res = entry->func((Jxta_object *) msg, entry->arg);
     JXTA_OBJECT_RELEASE(entry);
 
+    apr_thread_mutex_lock(myself->mutex);
+    locked = TRUE;
+    myself->processing_callbacks--;
+
     if (myself->switch_config) {
+        apr_thread_mutex_unlock(myself->mutex);
+        locked = FALSE;
         apr_thread_mutex_lock(myself->cb_mutex);
         rdv_service_switch_config((Jxta_rdv_service *) myself, myself->new_config);
         myself->switch_config = FALSE;

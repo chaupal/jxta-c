@@ -244,6 +244,7 @@ struct _jxta_peerview {
     unsigned int replicas_count;
 
     Jxta_boolean active;
+    unsigned int processing_callbacks;
 
     /**
     *   The instance mask of the peerview instance we are participating in or 
@@ -824,6 +825,7 @@ JXTA_DECLARE(Jxta_status) peerview_init(Jxta_peerview * pv, Jxta_PG * group, Jxt
     myself->cluster_members = jxta_RdvConfig_pv_members(myself->rdvConfig);
     myself->replicas_count = jxta_RdvConfig_pv_replication(myself->rdvConfig);
     myself->pves = jxta_hashtable_new(myself->clusters_count * myself->cluster_members * 2);
+    myself->processing_callbacks = 0;
     myself->event_list = jxta_vector_new(2);
 
     return res;
@@ -916,6 +918,8 @@ Jxta_status peerview_start(Jxta_peerview * pv)
     Jxta_peerview *myself = PTValid(pv, Jxta_peerview);
 
     apr_thread_mutex_lock(myself->mutex);
+
+    myself->processing_callbacks = 0;
 
     res = peerview_init_cluster(myself);
 
@@ -1069,6 +1073,8 @@ Jxta_status peerview_stop(Jxta_peerview * pv)
 {
     Jxta_peerview *myself = PTValid(pv, Jxta_peerview);
 
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Stopping peerview : %pp\n", pv);
+
     apr_thread_mutex_lock(myself->mutex);
     
     if (myself->running == FALSE) {
@@ -1077,15 +1083,21 @@ Jxta_status peerview_stop(Jxta_peerview * pv)
         return JXTA_FAILED;
     }
 
-    /* FIXME bondolo Announce that we are shutting down */
+    myself->state = PV_STOPPED;
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Stopping peerview : %pp\n", pv);
+    while (myself->processing_callbacks > 0) {
+        apr_thread_mutex_unlock(myself->mutex);
+        /* sleep for 100 ms */
+        apr_sleep(100 * 1000);
+        apr_thread_mutex_lock(myself->mutex);
+    }
+
+    /* FIXME bondolo Announce that we are shutting down */
 
     peerview_clear_pves(myself, TRUE);
 
     myself->running = FALSE;
 
-    myself->state = PV_STOPPED;
     apr_thread_mutex_unlock(myself->mutex);
     if (myself->auto_cycle > 0) {
         apr_thread_pool_tasks_cancel(myself->thread_pool, &myself->auto_cycle);
@@ -2267,6 +2279,16 @@ static Jxta_status JXTA_STDCALL peerview_protocol_cb(Jxta_object * obj, void *ar
     Jxta_bytevector *value;
     JString *string;
 
+    if(myself->state == PV_STOPPED)
+    {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Recieved a callback after PV has stopped\n");
+        return JXTA_FAILED;
+    }
+
+   apr_thread_mutex_lock(myself->mutex);
+   myself->processing_callbacks++;
+   apr_thread_mutex_unlock(myself->mutex);
+
     JXTA_OBJECT_CHECK_VALID(msg);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Peerview received a message[%pp]\n", msg);
@@ -2401,6 +2423,10 @@ static Jxta_status JXTA_STDCALL peerview_protocol_cb(Jxta_object * obj, void *ar
     if (res != JXTA_SUCCESS) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Failed processing peerview message [%pp] %d\n", msg, res);
     }
+
+   apr_thread_mutex_lock(myself->mutex);
+   myself->processing_callbacks--;
+   apr_thread_mutex_unlock(myself->mutex);
 
     return res;
 }
