@@ -181,6 +181,12 @@ Jxta_status jxta_stdpg_start_modules(Jxta_module * self);
  */
 void jxta_stdpg_set_configadv(Jxta_module * self, Jxta_PA * config_adv);
 
+/**
+ * Sends messages through the rdv service to each connected peer.
+ * This will help the network repair itself as peers shutdown.
+ */
+void jxta_stdpg_disconnect_peers(Jxta_stdpg * self);
+
 #ifdef __cplusplus
 #if 0
 {

@@ -138,6 +138,7 @@ static Jxta_status propagate(Jxta_rdv_service_provider * provider, Jxta_message 
                              const char *serviceParam, int ttl);
 static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
                         const char *serviceParam, const char *target_hash);
+static Jxta_status disconnect_peers(Jxta_rdv_service_provider * provider);
 
 static const _jxta_rdv_service_provider_methods JXTA_RDV_SERVICE_ADHOC_METHODS = {
     "_jxta_rdv_service_provider_methods",
@@ -147,7 +148,8 @@ static const _jxta_rdv_service_provider_methods JXTA_RDV_SERVICE_ADHOC_METHODS =
     get_peer,
     get_peers,
     propagate,
-    walk
+    walk,
+    disconnect_peers 
 };
 
 /**
@@ -540,5 +542,15 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
 
     return res;
 }
+
+static Jxta_status disconnect_peers(Jxta_rdv_service_provider * provider)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    _jxta_rdv_service_adhoc *myself = (_jxta_rdv_service_adhoc *) PTValid(provider, _jxta_rdv_service_adhoc);
+
+
+    return res;
+}
+
 
 /* vim: set ts=4 sw=4 tw=130 et: */

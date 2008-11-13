@@ -103,6 +103,9 @@ static void netpg_stop(Jxta_module * self)
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before stop :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(myself));
 
+    /* Think of this as "Super.stop()" */
+    ((Jxta_module_methods *) & jxta_stdpg_methods)->stop((Jxta_module*)myself);
+
     /* We stop http and router ourselves (as well as endpoint) */
     if (it->http != NULL) {
         jxta_module_stop((Jxta_module *) (it->http));
@@ -119,9 +122,6 @@ static void netpg_stop(Jxta_module * self)
     if (((Jxta_stdpg *) it)->endpoint != NULL) {
         jxta_module_stop((Jxta_module *) (((Jxta_stdpg *) it)->endpoint));
     }
-
-    /* Think of this as "Super.stop()" */
-    ((Jxta_module_methods *) & jxta_stdpg_methods)->stop((Jxta_module*)myself);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count after stop :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(self));

@@ -240,6 +240,8 @@ static void stdpg_stop(Jxta_module * self)
     char **keys_of_services = NULL;
     Jxta_stdpg *it = PTValid(self, Jxta_stdpg);
 
+    jxta_stdpg_disconnect_peers(it);
+
     /*
      * Unregister from the group registry if we're in-there.
      */
@@ -1600,6 +1602,12 @@ Jxta_stdpg *jxta_stdpg_new_instance(void)
     JXTA_OBJECT_INIT(self, myFree, 0);
     jxta_stdpg_construct(self, &jxta_stdpg_methods);
     return self;
+}
+
+void jxta_stdpg_disconnect_peers(Jxta_stdpg * self)
+{
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Disconnect peers\n");
+    jxta_rdv_service_disconnect_peers(self->rendezvous);
 }
 
 /* vim: set ts=4 sw=4 tw=130 et: */

@@ -182,6 +182,7 @@ static Jxta_status propagate(Jxta_rdv_service_provider * provider, Jxta_message 
                              const char *serviceParam, int ttl);
 static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
                         const char *serviceParam, const char *target_hash);
+static Jxta_status disconnect_peers(Jxta_rdv_service_provider *provider);
 static Jxta_status walk_to_view (Jxta_rdv_service_provider * provider, Jxta_vector * view, Jxta_id * sourceId, Jxta_message * msg);
 
 static void *APR_THREAD_FUNC periodic_task(apr_thread_t * thread, void *myself);
@@ -219,7 +220,8 @@ static const _jxta_rdv_service_provider_methods JXTA_RDV_SERVICE_SERVER_METHODS 
     get_peer,
     get_peers,
     propagate,
-    walk
+    walk,
+    disconnect_peers 
 };
 
 static _jxta_peer_client_entry *client_entry_new(void)
@@ -1714,5 +1716,91 @@ static void JXTA_STDCALL seeding_listener(Jxta_object * obj, void *arg)
     }
 }
 #endif
+
+/*
+ *  Sends a disconnect message to a vector of peers
+ *
+ *  @param provider - pointer to this object
+ *  @param view - a list of peers
+ *
+ */
+static void send_disconnect_to_view(Jxta_rdv_service_provider *provider, Jxta_vector * view)
+{
+    unsigned int i=0;
+    for (i=0; i < jxta_vector_size(view); i++) {
+        Jxta_status ret;
+        Jxta_peer *peer;
+        Jxta_id * peerid = NULL;
+        ret = jxta_vector_get_object_at(view, JXTA_OBJECT_PPTR(&peer), i);
+        if (JXTA_SUCCESS != ret) {
+            continue;
+        }
+        ret = jxta_peer_get_peerid(peer, &peerid);
+        if (JXTA_SUCCESS != ret) {
+            JXTA_OBJECT_RELEASE(peer);
+            continue;
+        }
+        
+        if (jxta_id_equals(peerid, provider->local_peer_id))
+        {
+            JXTA_OBJECT_RELEASE(peerid);
+            JXTA_OBJECT_RELEASE(peer);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Don't send the message to ourselves\n");
+            continue;
+        }
+        peerview_send_disconnect(provider->peerview, peer);
+        
+        JXTA_OBJECT_RELEASE(peerid);
+        JXTA_OBJECT_RELEASE(peer);
+    }
+}
+
+static Jxta_status disconnect_peers(Jxta_rdv_service_provider *provider)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    Jxta_vector *clients;
+    unsigned int sz, i;
+
+    _jxta_rdv_service_server *myself = PTValid(provider, _jxta_rdv_service_server);
+
+    /* Send a connect reply with a zero lease to all connected clients */
+    clients = jxta_hashtable_values_get(myself->clients);
+    sz = jxta_vector_size(clients);
+    for (i = 0; i < sz; i++) {
+        _jxta_peer_client_entry *peer;
+
+        res = jxta_vector_get_object_at(clients, JXTA_OBJECT_PPTR(&peer), i);
+        if (res != JXTA_SUCCESS) {
+            continue;
+        }
+
+        if (check_peer_lease(peer)) {
+            res = send_connect_reply(myself, jxta_peer_peerid((Jxta_peer *) peer), 0);
+        }
+
+        JXTA_OBJECT_RELEASE(peer);
+    }
+
+    JXTA_OBJECT_RELEASE(clients);
+
+    /* Send a disconnect pong message to all local rdvs */
+    Jxta_vector *localView = NULL;
+    res = jxta_peerview_get_localview(provider->peerview, &localView);
+    if(res == JXTA_SUCCESS)
+    {
+        send_disconnect_to_view(provider, localView);
+        JXTA_OBJECT_RELEASE(localView);
+    }
+    /* Send a disconnect pong message to all associate rdvs */
+    Jxta_vector *globalView = NULL;
+    res = jxta_peerview_get_globalview(provider->peerview, &globalView);
+    if(res == JXTA_SUCCESS)
+    {
+        send_disconnect_to_view(provider, globalView);    
+        JXTA_OBJECT_RELEASE(globalView);
+    }
+
+   return res; 
+}
 
 /* vim: set ts=4 sw=4  tw=130 et: */

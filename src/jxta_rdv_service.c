@@ -1038,6 +1038,12 @@ JXTA_DECLARE(Jxta_status) rdv_service_switch_config(Jxta_rdv_service * rdv, RdvC
 
     /* Do the switch */
 
+    /* disconnect from existing rendezvous if necessary */
+    if ((new_status == status_auto_rendezvous || new_status == status_rendezvous) &&
+        (myself->status == status_edge || myself->status == status_auto_edge)) {
+        jxta_rdv_service_disconnect_peers(rdv);
+    }
+
     /* Create a new peerview if necessary */
     switch (new_status) {
     case status_adhoc:
@@ -1527,15 +1533,18 @@ static void JXTA_STDCALL peerview_event_listener(Jxta_object * obj, void *arg)
 
     if (!jxta_id_equals(event->pid, myself->pid)) {
 
-        if (JXTA_PEERVIEW_ADD == event->event) {
+        if (JXTA_PEERVIEW_ADD == event->event ||
+            JXTA_PEERVIEW_REMOVE == event->event) {
             Jxta_peer *peer = NULL;
-            /* if this peer has a lease revoke it */
+            /* if this peer has a reference, remove it. */
             res = jxta_rdv_service_get_peer((Jxta_rdv_service *) myself, event->pid, &peer);
             if (JXTA_SUCCESS == res) {
                 jxta_peer_set_expires(peer, 0L);
                 JXTA_OBJECT_RELEASE(peer);
             }
-        } else if (JXTA_PEERVIEW_REMOVE == event->event) {
+        }
+        
+        if (JXTA_PEERVIEW_REMOVE == event->event) {
             rdv_service_generate_event(myself, JXTA_RDV_FAILED, event->pid);
         }
         goto FINAL_EXIT;
@@ -1728,6 +1737,15 @@ FINAL_EXIT:
     if (locked)
         apr_thread_mutex_unlock(myself->mutex);
     return res;
+}
+
+JXTA_DECLARE(void) jxta_rdv_service_disconnect_peers(Jxta_rdv_service * rdv)
+{
+    _jxta_rdv_service *myself = PTValid(rdv, _jxta_rdv_service);
+
+    if (NULL != myself->provider) {
+        PROVIDER_VTBL(myself->provider)->disconnect_peers(myself->provider);
+    }
 }
 
 /* vim: set ts=4 sw=4 tw=130 et: */

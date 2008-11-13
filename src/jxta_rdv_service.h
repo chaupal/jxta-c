@@ -404,6 +404,15 @@ JXTA_DECLARE(Jxta_peerview *) jxta_rdv_service_get_peerview(Jxta_rdv_service * r
 
 JXTA_DECLARE(Jxta_time_diff) jxta_rdv_service_get_running_time(Jxta_rdv_service * rdv);
 
+
+/**
+*   Sends out messages to each connected peer to trigger a disconnect
+*   
+*   &param rdv a pointer to the instance of the Rendezvous Service
+*   &return void no return is needed we're shutting down
+*/
+JXTA_DECLARE(void) jxta_rdv_service_disconnect_peers(Jxta_rdv_service *rdv);
+
 #ifdef __cplusplus
 #if 0
 {

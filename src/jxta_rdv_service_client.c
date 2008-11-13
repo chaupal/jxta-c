@@ -244,6 +244,7 @@ static Jxta_status propagate(Jxta_rdv_service_provider * provider, Jxta_message 
                              const char *serviceParam, int ttl);
 static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
                         const char *serviceParam, const char *target_hash);
+static Jxta_status disconnect_peers(Jxta_rdv_service_provider * provider);
 
 static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, void *cookie);
 static Jxta_status JXTA_STDCALL lease_client_cb(Jxta_object * obj, void *arg);
@@ -265,7 +266,8 @@ static const _jxta_rdv_service_provider_methods JXTA_RDV_SERVICE_CLIENT_METHODS 
     get_peer,
     get_peers,
     propagate,
-    walk
+    walk,
+    disconnect_peers
 };
 
 static _jxta_peer_rdv_entry *rdv_entry_construct(_jxta_peer_rdv_entry * myself)
@@ -816,8 +818,11 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
  *
 *   @param myself Our "this" pointer.
 *   @param peer The peer from which we will request a lease.
+ *   @param disconnect used to send a lease request of zero to
+ *                  a connected rdv to notify the rdv that the 
+ *                  client is disconnecting
  **/
-static Jxta_status send_lease_request(_jxta_rdv_service_client * myself, _jxta_peer_rdv_entry * peer)
+static Jxta_status send_lease_request(_jxta_rdv_service_client * myself, _jxta_peer_rdv_entry * peer, Jxta_boolean disconnect)
 {
     Jxta_status res = JXTA_SUCCESS;
     _jxta_rdv_service_provider *provider = PTSuper(myself);
@@ -863,7 +868,14 @@ static Jxta_status send_lease_request(_jxta_rdv_service_client * myself, _jxta_p
     }
 
     jxta_lease_request_msg_set_client_id(lease_request, provider->local_peer_id);
-    jxta_lease_request_msg_set_requested_lease(lease_request, jxta_RdvConfig_get_lease_duration(myself->rdvConfig));
+
+    if (disconnect) {
+        jxta_lease_request_msg_set_requested_lease(lease_request, 0);
+    }
+    else {
+        jxta_lease_request_msg_set_requested_lease(lease_request, jxta_RdvConfig_get_lease_duration(myself->rdvConfig));
+    }
+
     if (peer->adv_gen) {
         jxta_lease_request_msg_set_server_adv_gen(lease_request, peer->adv_gen);
     }
@@ -1044,7 +1056,7 @@ static Jxta_boolean check_peer_connect(_jxta_rdv_service_client * myself, _jxta_
         if (connect && connect_peer) {
 
             /* Time to try a connection */
-            send_lease_request(myself, connect_peer);
+            send_lease_request(myself, connect_peer, FALSE);
 
         } else if (!connect) {
             /* start the referral and seeding again */
@@ -1521,7 +1533,7 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
         }
         if (NULL != myself->candidate) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Send lease request to candidate\n");
-            if(send_lease_request(myself, myself->candidate) != JXTA_SUCCESS)
+            if(send_lease_request(myself, myself->candidate, FALSE) != JXTA_SUCCESS)
             {
                 rdv_service_send_seed_request((Jxta_rdv_service *) (PTSuper(myself))->service);
             }
@@ -1660,4 +1672,31 @@ static _jxta_peer_rdv_entry *get_peer_entry(_jxta_rdv_service_client * myself, J
     return peer;
 }
 
+static Jxta_status disconnect_peers(Jxta_rdv_service_provider * provider)
+{
+    _jxta_rdv_service_client *myself = PTValid(provider, _jxta_rdv_service_client);
+    Jxta_status res = JXTA_SUCCESS;
+    unsigned int each_rdv;
+    Jxta_vector *rdvs = jxta_hashtable_values_get(myself->rdvs);
+
+    for (each_rdv = 0; each_rdv < jxta_vector_size(rdvs); each_rdv++) {
+        _jxta_peer_rdv_entry *peer;
+
+        res = jxta_vector_get_object_at(rdvs, JXTA_OBJECT_PPTR(&peer), each_rdv);
+        if (JXTA_SUCCESS != res) {
+            continue;
+        }
+
+        if (check_peer_lease(peer)) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "sending a lease request with time of zero to disconnect\n");
+            send_lease_request(myself, peer, TRUE);
+        }
+        JXTA_OBJECT_RELEASE(peer);
+    }
+
+    JXTA_OBJECT_RELEASE(rdvs);
+
+    return res;
+}
+        
 /* vim: set ts=4 sw=4 tw=130 et: */

@@ -398,7 +398,10 @@ static Jxta_status peerview_send_address_request(Jxta_peerview * myself, Jxta_pe
 static Jxta_status peerview_send_ping(Jxta_peerview * myself, Jxta_peer * dest, apr_uuid_t * adv_gen, Jxta_boolean id_only);
 static Jxta_status peerview_send_address_assign(Jxta_peerview * myself, Jxta_peer * dest, BIGNUM * target_hash);
 static Jxta_status peerview_send_pvm(Jxta_peerview * me, Jxta_peer * dest, Jxta_message * msg);
+static Jxta_status peerview_send_pvm_1(Jxta_peerview * me, Jxta_peer * dest, Jxta_message * msg, Jxta_boolean sync);
 static Jxta_status peerview_send_adv_request(Jxta_peerview * myself, Jxta_id * dest_id, Jxta_vector *need_pids);
+static Jxta_status peerview_send_pong(Jxta_peerview *myself, Jxta_peer *dest, Jxta_pong_msg_action action, Jxta_boolean candidates_only, Jxta_boolean compact, Jxta_boolean disconnect);
+static Jxta_status peerview_send_pong_1(Jxta_peerview *myself, Jxta_peer *dest, Jxta_pong_msg_action action, Jxta_boolean candidates_only, Jxta_boolean compact, Jxta_boolean disconnect, Jxta_boolean sync);
 
 static void *APR_THREAD_FUNC call_event_listeners_thread(apr_thread_t * thread, void *arg);
 
@@ -1872,7 +1875,23 @@ static Jxta_status peerview_send_ping(Jxta_peerview * myself, Jxta_peer * dest, 
     return res;
 }
 
-static Jxta_status peerview_send_pong(Jxta_peerview * myself, Jxta_peer * dest, Jxta_pong_msg_action action, Jxta_boolean candidates_only, Jxta_boolean compact)
+JXTA_DECLARE(Jxta_status) peerview_send_disconnect(Jxta_peerview * pv, Jxta_peer * dest)
+{
+    Jxta_peerview *myself = PTValid(pv, Jxta_peerview);
+    /*
+    *   Sends a pong message with an action of demote,
+    *   doesn't send any candidates, sends the message as
+    *   a client to signal a disconnect
+    */
+    return peerview_send_pong_1(myself, dest, PONG_DEMOTE, FALSE, FALSE, TRUE, TRUE);
+}
+
+static Jxta_status peerview_send_pong(Jxta_peerview * myself, Jxta_peer * dest, Jxta_pong_msg_action action, Jxta_boolean candidates_only, Jxta_boolean compact, Jxta_boolean disconnect)
+{
+    return peerview_send_pong_1(myself, dest, action, candidates_only, compact, disconnect, FALSE);
+}
+
+static Jxta_status peerview_send_pong_1(Jxta_peerview * myself, Jxta_peer * dest, Jxta_pong_msg_action action, Jxta_boolean candidates_only, Jxta_boolean compact, Jxta_boolean disconnect, Jxta_boolean sync)
 {
     Jxta_status res;
     Jxta_peerview_pong_msg *pong = NULL;
@@ -1917,7 +1936,13 @@ static Jxta_status peerview_send_pong(Jxta_peerview * myself, Jxta_peer * dest, 
     jxta_peerview_pong_msg_set_target_hash_radius(pong, tmp);
     free(tmp);
 
-    jxta_peerview_pong_msg_set_rendezvous(pong, jxta_rdv_service_is_rendezvous(myself->rdv));
+    if(disconnect) {
+        jxta_peerview_pong_msg_set_rendezvous(pong, FALSE);
+    }
+    else {
+        jxta_peerview_pong_msg_set_rendezvous(pong, jxta_rdv_service_is_rendezvous(myself->rdv));
+    }
+
     jxta_peerview_pong_msg_set_is_demoting(pong, jxta_rdv_service_is_demoting(myself->rdv));
 
     pa = jxta_peer_adv((Jxta_peer *) myself->self_pve);
@@ -2056,7 +2081,7 @@ static Jxta_status peerview_send_pong(Jxta_peerview * myself, Jxta_peer * dest, 
 
     JXTA_OBJECT_CHECK_VALID(msg);
 
-    res = peerview_send_pvm(myself, dest, msg);
+    res = peerview_send_pvm_1(myself, dest, msg, sync);
 
     JXTA_OBJECT_RELEASE(msg);
 
@@ -2219,6 +2244,11 @@ static Jxta_status peerview_send_adv_response(Jxta_peerview * myself, Jxta_peer 
 
 static Jxta_status peerview_send_pvm(Jxta_peerview * me, Jxta_peer * dest, Jxta_message * msg)
 {
+    return peerview_send_pvm_1(me, dest, msg, FALSE);
+}
+
+static Jxta_status peerview_send_pvm_1(Jxta_peerview * me, Jxta_peer * dest, Jxta_message * msg, Jxta_boolean sync)
+{
     Jxta_status res=JXTA_SUCCESS;
     Jxta_id *peerid;
     Jxta_endpoint_address *dest_addr;
@@ -2228,20 +2258,18 @@ static Jxta_status peerview_send_pvm(Jxta_peerview * me, Jxta_peer * dest, Jxta_
     Jxta_PA *peer_adv=NULL;
     jxta_peer_get_adv(dest, &peer_adv);
 
-    /* XXX 20060925 bondolo Publish the peer advertisement? */
-    if (NULL != peer_adv) {
-        res = discovery_service_publish(me->discovery, (Jxta_advertisement *) peer_adv , DISC_PEER, 5L * 60L * 1000L, LOCAL_ONLY_EXPIRATION);
-    }
-    if (JXTA_SUCCESS != res) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed to publish peer advertisement\n");
-    }
     peerid = jxta_peer_peerid(dest);
     if (peerid) {
         jxta_id_to_jstring(peerid, &pid_jstr);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Sending peerview message[%pp] by peerid to : %s\n", msg,
                         jstring_get_string(pid_jstr));
         JXTA_OBJECT_RELEASE(pid_jstr);
-        res = jxta_PG_async_send(me->group, msg, peerid, RDV_V3_MSID, JXTA_PEERVIEW_NAME);
+        if (sync) {
+            res = jxta_PG_sync_send(me->group, msg, peerid, RDV_V3_MSID, JXTA_PEERVIEW_NAME);
+        }
+        else {
+            res = jxta_PG_async_send(me->group, msg, peerid, RDV_V3_MSID, JXTA_PEERVIEW_NAME);
+        }
     } else {
         peer_addr = jxta_peer_address(dest);
         res = jxta_PG_get_recipient_addr(me->group, jxta_endpoint_address_get_protocol_name(peer_addr),
@@ -2251,7 +2279,7 @@ static Jxta_status peerview_send_pvm(Jxta_peerview * me, Jxta_peer * dest, Jxta_
             addr_str = jxta_endpoint_address_to_string(dest_addr);
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Sending peerview message [%pp] to : %s\n", msg, addr_str);
             free(addr_str);
-            res = jxta_endpoint_service_send_ex(me->endpoint, msg, dest_addr, JXTA_FALSE);
+            res = jxta_endpoint_service_send_ex(me->endpoint, msg, dest_addr, sync);
             JXTA_OBJECT_RELEASE(dest_addr);
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Could not build dest address for [%pp]\n", dest);
@@ -2673,7 +2701,7 @@ static Jxta_status peerview_handle_ping(Jxta_peerview * myself, Jxta_peerview_pi
     dest = jxta_peer_new();
     jxta_peer_set_peerid(dest, pid);
 
-    res = peerview_send_pong(myself, dest, PONG_STATUS, FALSE, jxta_peerview_ping_msg_is_pv_id_only(ping));
+    res = peerview_send_pong(myself, dest, PONG_STATUS, FALSE, jxta_peerview_ping_msg_is_pv_id_only(ping), FALSE);
 
     if (pve)
         JXTA_OBJECT_RELEASE(pve);
@@ -3563,7 +3591,7 @@ UNLOCK_EXIT:
         jxta_peer_set_peerid(newPeer, pid);
 
         if (send_pong) {
-            res = peerview_send_pong(me, newPeer, action, send_candidates, FALSE);
+            res = peerview_send_pong(me, newPeer, action, send_candidates, FALSE, FALSE);
         }
         if (send_ping) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "------------- Sending ping for updated pv_id_gen\n");
@@ -4622,7 +4650,7 @@ static void *APR_THREAD_FUNC activity_peerview_announce(apr_thread_t * thread, v
             continue;
         }
 
-        res = peerview_send_pong(myself, (Jxta_peer *) a_pve, PONG_STATUS, FALSE, FALSE);
+        res = peerview_send_pong(myself, (Jxta_peer *) a_pve, PONG_STATUS, FALSE, FALSE, FALSE);
         JXTA_OBJECT_RELEASE(a_pve);
     }
 
@@ -4989,7 +5017,7 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
                     continue;
                 }
                 myself->activity_add_voting = TRUE;
-                res = peerview_send_pong(myself, peer, PONG_PROMOTE, TRUE, FALSE);
+                res = peerview_send_pong(myself, peer, PONG_PROMOTE, TRUE, FALSE, FALSE);
                 if (JXTA_SUCCESS == res) {
                     jxta_vector_add_object_last(myself->activity_add_candidate_voting_peers, (Jxta_object *) peer);
                 }
@@ -5025,7 +5053,7 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
         if (JXTA_SUCCESS != res) {
             continue;
         }
-        res = peerview_send_pong(myself, invitee, PONG_INVITE, FALSE, FALSE);
+        res = peerview_send_pong(myself, invitee, PONG_INVITE, FALSE, FALSE, FALSE);
 
         if (JXTA_SUCCESS != res) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "ACT[add] [%pp]: Pong invite failed.\n", myself);

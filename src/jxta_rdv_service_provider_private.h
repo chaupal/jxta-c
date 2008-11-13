@@ -129,6 +129,14 @@ struct _jxta_rdv_service_provider_methods {
      **/
     Jxta_status(*walk) (Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
                         const char *serviceParam, const char *target_hash);
+
+    /**
+    * Sends messages to each connected peer causing a disconnect.
+    *
+    * &param provider a pointer ot the instance of the Rendezvous Service
+    * &return error code.
+    */
+    Jxta_status(*disconnect_peers) (Jxta_rdv_service_provider * provider);
 };
 
 typedef struct _jxta_rdv_service_provider_methods _jxta_rdv_service_provider_methods;
