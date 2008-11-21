@@ -130,6 +130,28 @@ JXTA_DECLARE(Jxta_boolean) jxta_peerview_is_member(Jxta_peerview * pv );
 JXTA_DECLARE(Jxta_boolean) jxta_peerview_is_active(Jxta_peerview * pv );
 
 /**
+*   Returns TRUE if the specified peer is an associate peer within the peerview
+*
+*   @param pv The peerview
+*   @param id Id of the peer requested
+*
+*   @return TRUE if the the peer is within the peerivew and associate
+*
+**/
+JXTA_DECLARE(Jxta_boolean) jxta_peerview_is_associate(Jxta_peerview * me, Jxta_id * id);
+
+/**
+*   Returns TRUE if the specified peer is a partner peer within the peerview
+*
+*   @param pv The peerview
+*   @param id Id of the peer requested
+*
+*   @return TRUE if the the peer is within the peerivew and partner
+*
+**/
+JXTA_DECLARE(Jxta_boolean) jxta_peerview_is_partner(Jxta_peerview * me, Jxta_id * id);
+
+/**
 *   Sets the peerview to the active state.
 *
 *   @param pv The peerview.
@@ -277,6 +299,8 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_set_candidate_list_cb(Jxta_peerview * pv
 JXTA_DECLARE(Jxta_status) jxta_peerview_set_address_cb(Jxta_peerview * pv,  Jxta_peerview_address_req_func cb);
 
 JXTA_DECLARE(apr_uuid_t *) jxta_peerview_get_pv_id_gen(Jxta_peerview *pv);
+
+JXTA_DECLARE(unsigned int) jxta_peerview_get_cluster_number(Jxta_peerview * me);
 
 #ifdef __cplusplus
 #if 0

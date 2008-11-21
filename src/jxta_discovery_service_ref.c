@@ -82,6 +82,7 @@
 #include "jxta_discovery_service_private.h"
 #include "jxta_rdv_service_private.h"
 #include "jxta_rdv_service.h"
+#include "jxta_peerview.h"
 #include "jxta_sql.h"
 #include "jxta_srdi.h"
 #include "jxta_stdpg_private.h"
@@ -2028,7 +2029,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
         goto FINAL_EXIT;
     }
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Received from %s : %s \n", jstring_get_string(jPeerid), jstring_get_string((JString *) obj));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Received from %s : %s \n", jstring_get_string(jPeerid), jstring_get_string((JString *) obj));
 
     jxta_srdi_message_get_SrcPID(smsg, &src_peerid);
     if (NULL != src_peerid) {
@@ -2188,16 +2189,13 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
         Jxta_hashtable * fwdEntries = NULL;
         const char *err_msg = NULL;
         char err_msg_tmp[256];
+        Jxta_peerview *pv = NULL;
 
-        if (!bReplica) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "---------> calling cm save srdi with %d elements\n",jxta_vector_size(entries));
-            status = cm_save_srdi_elements(discovery->cm, discovery->instanceName, jPeerid, jSrcPeerid, jPrimaryKey, entries, (Jxta_vector **) &resendEntries);
-            if (JXTA_SUCCESS != status) {
-                apr_snprintf(err_msg_tmp, sizeof(err_msg_tmp), "Unable to save %s in discovery_service_srdi_listener %ld\n",
-                                        bReplica == FALSE ? "srdi":"replica", status);
-                err_msg = (const char *) &err_msg_tmp;
-            }
-        } else {
+
+        pv = jxta_rdv_service_get_peerview(discovery->rdv);
+
+        if (bReplica && jxta_peerview_is_associate(pv, peerid)) {
+
             /* check for a more specialized node */
             status = discovery_filter_replicas_forward(discovery, entries, jstring_get_string(jPeerid), jPeerid, &fwdEntries);
 
@@ -2252,7 +2250,13 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
                     free(*(peers++));
                 }
                 free(peers_save);
+                JXTA_OBJECT_RELEASE(fwdEntries);
             }
+            if (JXTA_SUCCESS != status && NULL != err_msg) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, " %s status: %d\n", err_msg, status);
+            }
+        }
+        if (bReplica) {
             /* isolate advid duplicates */
             status = discovery_filter_advid_duplicates(discovery, entries, &dupEntries);
             if (JXTA_SUCCESS == status) {
@@ -2294,9 +2298,18 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
             if (dupEntries) {
                 JXTA_OBJECT_RELEASE(dupEntries);
             }
-            if (fwdEntries) {
-                JXTA_OBJECT_RELEASE(fwdEntries);
+
+        } else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "---------> calling cm save srdi with %d elements\n",jxta_vector_size(entries));
+            status = cm_save_srdi_elements(discovery->cm, discovery->instanceName, jPeerid, jSrcPeerid, jPrimaryKey, entries, (Jxta_vector **) &resendEntries);
+            if (JXTA_SUCCESS != status) {
+                apr_snprintf(err_msg_tmp, sizeof(err_msg_tmp), "Unable to save %s in discovery_service_srdi_listener %ld\n",
+                                        bReplica == FALSE ? "srdi":"replica", status);
+                err_msg = (const char *) &err_msg_tmp;
             }
+        }
+        if (pv) {
+            JXTA_OBJECT_RELEASE(pv);
         }
     }
   FINAL_EXIT:

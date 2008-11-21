@@ -1150,6 +1150,64 @@ JXTA_DECLARE(Jxta_boolean) jxta_peerview_is_active(Jxta_peerview * me)
     return result;
 }
 
+static Jxta_boolean is_in_view(Jxta_vector *view, Jxta_id *id)
+{
+    Jxta_boolean result=FALSE;
+    int i;
+
+    for (i = 0; i < jxta_vector_size(view); i++) {
+        Jxta_peer *peer;
+
+        jxta_vector_get_object_at(view, JXTA_OBJECT_PPTR(&peer), i);
+        if (jxta_id_equals(id, jxta_peer_peerid(peer))) {
+            result = TRUE;
+        }
+        JXTA_OBJECT_RELEASE(peer);
+        if (result) break;
+    }
+
+    return result;
+
+}
+JXTA_DECLARE(Jxta_boolean) jxta_peerview_is_associate(Jxta_peerview * me, Jxta_id * id)
+{
+    Jxta_peerview *myself = PTValid(me, Jxta_peerview);
+    Jxta_boolean result=FALSE;
+    Jxta_vector *view=NULL;
+
+    apr_thread_mutex_lock(myself->mutex);
+
+    jxta_peerview_get_globalview(myself, &view);
+    result = is_in_view(view, id);
+
+    apr_thread_mutex_unlock(myself->mutex);
+
+    if (view)
+        JXTA_OBJECT_RELEASE(view);
+    return result;
+
+}
+
+JXTA_DECLARE(Jxta_boolean) jxta_peerview_is_partner(Jxta_peerview * me, Jxta_id * id)
+{
+    Jxta_peerview *myself = PTValid(me, Jxta_peerview);
+    Jxta_boolean result;
+    Jxta_vector *view=NULL;
+
+    apr_thread_mutex_lock(myself->mutex);
+
+    jxta_peerview_get_localview(myself, &view);
+
+    result = is_in_view(view, id);
+
+    apr_thread_mutex_unlock(myself->mutex);
+
+    if (view)
+        JXTA_OBJECT_RELEASE(view);
+
+    return result;
+}
+
 JXTA_DECLARE(void) jxta_peerview_set_auto_cycle(Jxta_peerview * pv, Jxta_time_diff ttime )
 {
     Jxta_peerview *myself = PTValid(pv, Jxta_peerview);
