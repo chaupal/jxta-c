@@ -107,9 +107,9 @@ struct _jxta_resolver_service_methods {
 
     Jxta_status(*create_query) (Jxta_resolver_service * me, JString * handlername, JString * query, Jxta_resolver_query ** rq);
 
-    Jxta_status(*setAlwaysPropagate) (Jxta_resolver_service * service, Jxta_boolean propagate);
+    void(*setAlwaysPropagate) (Jxta_resolver_service * service, Jxta_boolean propagate);
 
-    Jxta_status(*alwaysPropagate) (Jxta_resolver_service * service);
+    Jxta_boolean(*alwaysPropagate) (Jxta_resolver_service * service);
 };
 
 /**
