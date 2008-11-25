@@ -2753,7 +2753,6 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
     Jxta_boolean delta_changed = FALSE;
     Jxta_boolean peer_changed = FALSE;
     Jxta_boolean this_is_radius = FALSE;
-    char aTmp[64];
     Jpr_interval_time next_update_time;
     Jpr_interval_time expiration_time;
 
@@ -2933,7 +2932,6 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
             Jpr_interval_time window_update;
             Jpr_interval_time timeout_time;
 
-            memset(aTmp, 0, 64);
             next_update_time = apr_atoi64(next_update);
             expiration_time = apr_atoi64(expiration);
             timeout_time = apr_atoi64(timeout);
@@ -2956,8 +2954,6 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
     }
     /* if there was an entry flag a new sequence number */
     if (JXTA_SUCCESS == status && found) {
-        char aTmp[64];
-        memset(aTmp, 0, sizeof(aTmp));
         *newSeqNumber = apr_atoi64(seqNumber);
     } else if (status == JXTA_ITEM_NOTFOUND && entry->expiration > 0) {
         /* if no entry was found insert the entry */
