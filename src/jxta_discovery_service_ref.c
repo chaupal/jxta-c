@@ -1397,7 +1397,7 @@ static Jxta_status discovery_service_send_to_replica(Jxta_discovery_service_ref 
                     jstring_append_1(replicaExpression, elem->jValue);
                     expression = jstring_get_string(replicaExpression);
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "get a replica peer: %s\n", expression);
-                    replicaPeer = jxta_srdi_getReplicaPeer(discovery->srdi, expression);
+                    replicaPeer = jxta_srdi_getReplicaPeer(discovery->srdi, expression, NULL);
                 } else {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Wildcard query\n");
                 }
@@ -1938,7 +1938,7 @@ FINAL_EXIT:
     return res;
 }
 
-static Jxta_status discovery_filter_advid_duplicates(Jxta_discovery_service_ref *discovery, Jxta_vector * entries, Jxta_vector ** dupEntries)
+static Jxta_status discovery_filter_advid_duplicates(Jxta_discovery_service_ref *discovery, Jxta_PID * from_peer_id, Jxta_vector * entries, Jxta_vector ** dupEntries)
 {
     Jxta_status res = JXTA_SUCCESS;
     int i;
@@ -1950,16 +1950,29 @@ static Jxta_status discovery_filter_advid_duplicates(Jxta_discovery_service_ref 
     for (i=0; i<jxta_vector_size(entries); i++) {
         Jxta_SRDIEntryElement * entry;
         Jxta_peer *advPeer = NULL;
+        Jxta_peer *alt_advPeer = NULL;
 
         res = jxta_vector_get_object_at(entries, JXTA_OBJECT_PPTR(&entry), i);
         if (JXTA_SUCCESS != res) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Cannot retrieve srdi element res: %d\n", res);
             goto FINAL_EXIT;
         }
-        advPeer = jxta_srdi_getReplicaPeer(discovery->srdi, jstring_get_string(entry->advId));
+        advPeer = jxta_srdi_getReplicaPeer(discovery->srdi, jstring_get_string(entry->advId), &alt_advPeer);
         if (NULL != advPeer) {
             if (entry->dup_peerid) {
                 JXTA_OBJECT_RELEASE(entry->dup_peerid);
+            }
+            if (jxta_id_equals(jxta_peer_peerid(advPeer), from_peer_id) && NULL != alt_advPeer) {
+
+                JXTA_OBJECT_RELEASE(advPeer);
+                advPeer = alt_advPeer;
+                alt_advPeer = NULL;
+                if (entry->duplicate) {
+                    JString *alt_peer_j=NULL;
+                    jxta_id_to_jstring(from_peer_id, &alt_peer_j);
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Received an alternate %" APR_INT64_T_FMT " duplicate from %s\n",entry->seqNumber , jstring_get_string(alt_peer_j));
+                    JXTA_OBJECT_RELEASE(alt_peer_j);
+                }
             }
             jxta_id_to_jstring(jxta_peer_peerid(advPeer), &entry->dup_peerid);
         }
@@ -1978,6 +1991,8 @@ static Jxta_status discovery_filter_advid_duplicates(Jxta_discovery_service_ref 
         JXTA_OBJECT_RELEASE(entry);
         if (advPeer)
             JXTA_OBJECT_RELEASE(advPeer);
+        if (alt_advPeer)
+            JXTA_OBJECT_RELEASE(alt_advPeer);
     }
 
 FINAL_EXIT:
@@ -2029,7 +2044,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
         goto FINAL_EXIT;
     }
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Received from %s : %s \n", jstring_get_string(jPeerid), jstring_get_string((JString *) obj));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Received from %s : %s \n", jstring_get_string(jPeerid), jstring_get_string((JString *) obj));
 
     jxta_srdi_message_get_SrcPID(smsg, &src_peerid);
     if (NULL != src_peerid) {
@@ -2258,7 +2273,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
         }
         if (bReplica) {
             /* isolate advid duplicates */
-            status = discovery_filter_advid_duplicates(discovery, entries, &dupEntries);
+            status = discovery_filter_advid_duplicates(discovery, peerid, entries, &dupEntries);
             if (JXTA_SUCCESS == status) {
 
                 if (dupEntries && jxta_vector_size(dupEntries) > 0) {
@@ -2833,6 +2848,7 @@ static Jxta_status discovery_filter_replicas_forward(Jxta_discovery_service_ref 
     for (i=0; i < jxta_vector_size(entries); i++) {
         Jxta_peer *replicaPeer = NULL;
         Jxta_peer *advPeer = NULL;
+        Jxta_peer *alt_advPeer = NULL;
         const char *expression = NULL;
         Jxta_SRDIEntryElement *entry=NULL;
 
@@ -2851,12 +2867,21 @@ static Jxta_status discovery_filter_replicas_forward(Jxta_discovery_service_ref 
             JXTA_OBJECT_RELEASE(entry);
             continue;
         }
-        advPeer = jxta_srdi_getReplicaPeer(discovery->srdi, jstring_get_string(entry->advId));
+        advPeer = jxta_srdi_getReplicaPeer(discovery->srdi, jstring_get_string(entry->advId), &alt_advPeer);
         if (NULL != advPeer) {
+            JString *adv_peer_j = NULL;
+
+            jxta_id_to_jstring(jxta_peer_peerid(advPeer), &adv_peer_j);
+
             if (NULL != entry->dup_peerid) {
                 JXTA_OBJECT_RELEASE(entry->dup_peerid);
             }
-            jxta_id_to_jstring(jxta_peer_peerid(advPeer), &entry->dup_peerid);
+
+            if (!strcmp(jstring_get_string(adv_peer_j), source_peer) && NULL != alt_advPeer) {
+                JXTA_OBJECT_RELEASE(adv_peer_j);
+                jxta_id_to_jstring(jxta_peer_peerid(alt_advPeer), &adv_peer_j);
+            }
+            entry->dup_peerid = adv_peer_j;
         }
 
         /* if this isn't a forward already find a replica peer */
@@ -2867,7 +2892,7 @@ static Jxta_status discovery_filter_replicas_forward(Jxta_discovery_service_ref 
                 jstring_append_1(replicaExpression, entry->value);
             }
             expression = jstring_get_string(replicaExpression);
-            replicaPeer = jxta_srdi_getReplicaPeer(discovery->srdi, expression);
+            replicaPeer = jxta_srdi_getReplicaPeer(discovery->srdi, expression, NULL);
         }
         /* if we have a replica peer or this is a duplicate or it needs to be forwarded */
         if (NULL != replicaPeer || entry->duplicate || entry->fwd_this) {

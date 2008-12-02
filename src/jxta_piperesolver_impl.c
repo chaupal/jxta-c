@@ -876,7 +876,7 @@ static Jxta_status jxta_pipe_resolver_get_replica_peer(Pipe_resolver * me, Resol
     rpv= rdv_service_get_peerview_priv(me->rdv_service);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Getting a replica peer for %s\n", expression);
-    replicaPeer = jxta_srdi_getReplicaPeer(me->srdi_service, expression);
+    replicaPeer = jxta_srdi_getReplicaPeer(me->srdi_service, expression, NULL);
 
   /** We have found a replica peer */
     if (NULL != replicaPeer) {

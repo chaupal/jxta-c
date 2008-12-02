@@ -106,7 +106,7 @@ struct _jxta_srdi_service_methods {
                                           Jxta_resolver_service * resolver,
                                           Jxta_vector * peers, ResolverQuery * query, int threshold);
 
-    Jxta_peer *(*getReplicaPeer) (Jxta_srdi_service * self, const char *expression);
+    Jxta_peer *(*getReplicaPeer) (Jxta_srdi_service * self, const char *expression, Jxta_peer **alt_peer);
 
     Jxta_peer *(*getNumericReplica) (Jxta_srdi_service * self, Jxta_range *rge, const char * value);
     

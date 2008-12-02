@@ -244,6 +244,16 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_get_associate_peer(Jxta_peerview * pv, u
 JXTA_DECLARE(Jxta_status) jxta_peerview_get_peer_for_target_hash(Jxta_peerview * pv, BIGNUM *target_hash, Jxta_peer ** peer);
 
 /**
+*   Returns a Jxta_peer object for the specified target hash value.
+*
+*   @param pv The peerview.
+*   @param target_hash The target hash value. The peer returned will be the peer which mostly closely matches the hash.
+*   @param peer The peer which will be returned.
+*   @return JXTA_SUCCESS If a peer could be returned otherwise errors per the fault.
+*/
+JXTA_DECLARE(Jxta_status) jxta_peerview_get_peer_for_target_hash_1(Jxta_peerview * pv, BIGNUM *target_hash, Jxta_peer ** peer, Jxta_peer ** alt_peer);
+
+/**
 *   Return a Jxta_peer object for the specified target hash value and other peers within the radius.
 *   @param pv The peerview.
 *   @param target_hash The target hash value.

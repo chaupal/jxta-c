@@ -384,7 +384,7 @@ static Jxta_status peerview_remove_pve(Jxta_peerview * myself, Jxta_PID * pid);
 static Jxta_status peerview_remove_pve_1(Jxta_peerview * myself, Jxta_PID * pid, Jxta_boolean generate_event);
 static Jxta_vector *peerview_get_all_pves(Jxta_peerview * myself);
 static Jxta_status peerview_clear_pves(Jxta_peerview * myself, Jxta_boolean notify);
-static Jxta_status peerview_get_for_target_hash(Jxta_peerview * me, BIGNUM * target_hash, Jxta_peer ** peer, Jxta_vector **peers);
+static Jxta_status peerview_get_for_target_hash(Jxta_peerview * me, BIGNUM * target_hash, Jxta_peer ** peer, Jxta_peer **alt_peer, Jxta_vector **peers);
 
 static Jxta_peerview_event *peerview_event_new(Jxta_Peerview_event_type event, Jxta_id * id);
 static void peerview_event_delete(Jxta_object * ptr);
@@ -1432,15 +1432,20 @@ static unsigned int cluster_for_hash(Jxta_peerview * myself, BIGNUM * target_has
 
 JXTA_DECLARE(Jxta_status) jxta_peerview_get_peer_for_target_hash(Jxta_peerview * me, BIGNUM * target_hash, Jxta_peer ** peer)
 {
-    return peerview_get_for_target_hash(me,target_hash, peer, NULL);
+    return peerview_get_for_target_hash(me,target_hash, peer, NULL, NULL);
+}
+
+JXTA_DECLARE(Jxta_status) jxta_peerview_get_peer_for_target_hash_1(Jxta_peerview * me, BIGNUM * target_hash, Jxta_peer ** peer, Jxta_peer ** alt_peer)
+{
+    return peerview_get_for_target_hash(me, target_hash, peer, alt_peer, NULL);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_peerview_get_peers_for_target_hash(Jxta_peerview * me, BIGNUM * target_hash, Jxta_peer **peer, Jxta_vector ** peers)
 {
-    return peerview_get_for_target_hash(me,target_hash, peer, peers);
+    return peerview_get_for_target_hash(me,target_hash, peer, NULL, peers);
 }
 
-static Jxta_status peerview_get_for_target_hash(Jxta_peerview * me, BIGNUM * target_hash, Jxta_peer ** peer, Jxta_vector **peers)
+static Jxta_status peerview_get_for_target_hash(Jxta_peerview * me, BIGNUM * target_hash, Jxta_peer ** peer, Jxta_peer **alt_peer, Jxta_vector **peers)
 {
     Jxta_status res = JXTA_SUCCESS;
     Jxta_peerview *myself = PTValid(me, Jxta_peerview);
@@ -1474,11 +1479,13 @@ static Jxta_status peerview_get_for_target_hash(Jxta_peerview * me, BIGNUM * tar
             BIGNUM *effective_target_hash = BN_new();
             BIGNUM *distance = BN_new();
             BIGNUM *best_distance = BN_new();
+            BIGNUM *worst_distance = BN_new();
 
             if (NULL != peer) {
                 *peer = JXTA_OBJECT_SHARE(myself->self_pve);
             }
             BN_sub(best_distance, bn_target_hash, myself->self_pve->target_hash);
+            BN_add(worst_distance, bn_target_hash, myself->self_pve->target_hash);
 
             all_peers = jxta_vector_size(myself->clusters[myself->my_cluster].members);
             for (each_peer = 0; each_peer < all_peers; each_peer++) {
@@ -1523,6 +1530,14 @@ static Jxta_status peerview_get_for_target_hash(Jxta_peerview * me, BIGNUM * tar
                         }
                         BN_copy(best_distance, distance);
                     }
+                    if (BN_ucmp(distance, worst_distance) > 0) {
+                        if (NULL != alt_peer) {
+                            if (*alt_peer)
+                                JXTA_OBJECT_RELEASE(*alt_peer);
+                            *alt_peer = JXTA_OBJECT_SHARE(candidate);
+                        }
+                        BN_copy(worst_distance, distance);
+                    }
                 }
                 if (NULL != peers) {
                     /* return this peer if the target hash is within its radius */
@@ -1540,6 +1555,7 @@ static Jxta_status peerview_get_for_target_hash(Jxta_peerview * me, BIGNUM * tar
 
             BN_free(distance);
             BN_free(best_distance);
+            BN_free(worst_distance);
             BN_free(effective_target_hash);
 
             res = JXTA_SUCCESS;

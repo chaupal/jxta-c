@@ -118,7 +118,7 @@ static Jxta_status JXTA_STDCALL srdi_service_srdi_cb(Jxta_object * obj, void *ar
 static Jxta_boolean hopcount_ok(ResolverQuery * query, long count);
 static void increment_hop_count(ResolverQuery * query);
 static Jxta_vector *randomResult(Jxta_vector * result, int threshold);
-static Jxta_peer *getReplicaPeer(Jxta_srdi_service * me, const char *expression);
+static Jxta_peer *getReplicaPeer(Jxta_srdi_service * me, const char *expression, Jxta_peer **alt_peer);
 static Jxta_status getReplicaPeers(Jxta_srdi_service * me, const char *expression, Jxta_peer ** peer, Jxta_vector **peers);
 static Jxta_peer *getNumericReplica(Jxta_srdi_service * me, Jxta_range * rge, const char *val);
 static Jxta_status forwardSrdiMessage(Jxta_srdi_service * service, Jxta_resolver_service * resolver, Jxta_peer * peer,
@@ -371,15 +371,30 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
             Jxta_version *peerVersion=NULL;
             Jxta_peer *repPeer = NULL;
             Jxta_vector *repPeers = NULL;
+            Jxta_peer *alt_repPeer = NULL;
 
             get_replica_peers_priv(me, newEntry, &repPeer, &repPeers);
             if (repPeers) {
                 jxta_vector_clone(repPeers, &newEntry->radius_peers, 0, INT_MAX);
             }
 
-            advPeer = getReplicaPeer((Jxta_srdi_service *) me, jstring_get_string(entry->advId));
+            advPeer = getReplicaPeer((Jxta_srdi_service *) me, jstring_get_string(entry->advId), &alt_repPeer);
 
             if (NULL != advPeer) {
+
+                /* if target is this peer use the alternate peer */
+                if (jxta_id_equals(jxta_peer_peerid(advPeer), (Jxta_id *) me->peerID) && NULL != alt_repPeer) {
+                    JString *alt_peer_j = NULL;
+
+                    JXTA_OBJECT_RELEASE(advPeer);
+                    advPeer = alt_repPeer;
+                    alt_repPeer = NULL;
+                    jxta_id_to_jstring(jxta_peer_peerid(alt_repPeer), &alt_peer_j);
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Changed the dup %" APR_INT64_T_FMT " to alt_peer:%s\n"
+                                    , newEntry->seqNumber
+                                    ,jstring_get_string(alt_peer_j));
+                    JXTA_OBJECT_RELEASE(alt_peer_j);
+                }
                 peerVersion = jxta_PA_get_version(jxta_peer_adv(advPeer));
                 assert(NULL != peerVersion);
             }
@@ -431,6 +446,8 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
                 JXTA_OBJECT_RELEASE(repPeer);
                 repPeer = NULL;
             }
+            if (alt_repPeer)
+                JXTA_OBJECT_RELEASE(alt_repPeer);
             if (advPeer)
                 JXTA_OBJECT_RELEASE(advPeer);
             if (peerVersion)
@@ -642,14 +659,31 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
 
 
         if (jxta_rdv_service_is_rendezvous(me->rendezvous)) {
-            advPeer = getReplicaPeer((Jxta_srdi_service *) me, jstring_get_string(entry->advId));
+            Jxta_peer * alt_dupPeer=NULL;
+
+            advPeer = getReplicaPeer((Jxta_srdi_service *) me, jstring_get_string(entry->advId), &alt_dupPeer);
             if (NULL != advPeer) {
+                /* if target is this peer use the alternate peer */
+                if (jxta_id_equals(jxta_peer_peerid(advPeer), (Jxta_id *) me->peerID) && NULL != alt_dupPeer) {
+                    JString *alt_peer_j = NULL;
+
+                    JXTA_OBJECT_RELEASE(advPeer);
+                    advPeer = alt_dupPeer;
+                    alt_dupPeer = NULL;
+                    jxta_id_to_jstring(jxta_peer_peerid(advPeer), &alt_peer_j);
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "RepPeer changed the dup %" APR_INT64_T_FMT " to alt_peer:%s\n"
+                                    , entry->seqNumber
+                                    ,jstring_get_string(alt_peer_j));
+                    JXTA_OBJECT_RELEASE(alt_peer_j);
+                }
                 if (jxta_id_to_jstring(jxta_peer_peerid(advPeer), &advPeer_j) != JXTA_SUCCESS) {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Received an invalid replica peer id [%pp]\n",advPeer);
                     JXTA_OBJECT_RELEASE(advPeer);
                     advPeer = NULL;
                 }
             }
+            if (alt_dupPeer)
+                JXTA_OBJECT_RELEASE(alt_dupPeer);
         }
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Starting with entry->seqNumber:" JXTA_SEQUENCE_NUMBER_FMT "\n", entry->seqNumber);
         for (j = 0; NULL != entry->radius_peers && j < jxta_vector_size(entry->radius_peers); j++) {
@@ -1215,7 +1249,7 @@ static void get_replica_peers_priv(Jxta_srdi_service_ref * me, Jxta_SRDIEntryEle
  * @param  expression  expression to derive the mapping from
  * @return             The replicaPeer value
  */
-static Jxta_peer *getReplicaPeer(Jxta_srdi_service * me, const char *expression)
+static Jxta_peer *getReplicaPeer(Jxta_srdi_service * me, const char *expression, Jxta_peer **alt_peer)
 {
     Jxta_status res;
     Jxta_srdi_service_ref *myself = PTValid(me, Jxta_srdi_service_ref);
@@ -1226,12 +1260,15 @@ static Jxta_peer *getReplicaPeer(Jxta_srdi_service * me, const char *expression)
     rpv = rdv_service_get_peerview_priv(myself->rendezvous);
 
     res = jxta_peerview_gen_hash( rpv, (unsigned char const *) expression, strlen(expression), &bn_hash );
-
-    res = jxta_peerview_get_peer_for_target_hash( rpv, bn_hash, &peer );
+    if (NULL == alt_peer) {
+        res = jxta_peerview_get_peer_for_target_hash( rpv, bn_hash, &peer );
+    } else {
+        res = jxta_peerview_get_peer_for_target_hash_1(rpv, bn_hash, &peer, alt_peer);
+    }
 
     BN_free( bn_hash );
 
-    if (JXTA_SUCCESS == res ) {
+    if (JXTA_SUCCESS == res && peer) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Replica address in getReplicaPeer expression: %s : %s://%s\n",
                         expression,
                         jxta_endpoint_address_get_protocol_name(jxta_peer_address(peer)),
@@ -1273,7 +1310,7 @@ static Jxta_peer *getNumericReplica(Jxta_srdi_service * me, Jxta_range * rge, co
                 if (jxta_srdi_cfg_get_no_range(myself->config)) {
                     jstring_append_2(replicaExpression, val);
                 }
-                peer = getReplicaPeer( (Jxta_srdi_service*) myself, jstring_get_string(replicaExpression));
+                peer = getReplicaPeer( (Jxta_srdi_service*) myself, jstring_get_string(replicaExpression), NULL);
                 JXTA_OBJECT_RELEASE(replicaExpression);
             }
         }

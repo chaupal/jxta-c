@@ -126,10 +126,10 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_forwardQuery_threshold(Jxta_srdi_service * s
     return VTBL->forwardQuery_threshold(srdi_service, resolver, peers, query, threshold);
 }
 
-JXTA_DECLARE(Jxta_peer *) jxta_srdi_getReplicaPeer(Jxta_srdi_service * service, const char *expression)
+JXTA_DECLARE(Jxta_peer *) jxta_srdi_getReplicaPeer(Jxta_srdi_service * service, const char *expression, Jxta_peer **alt_peer)
 {
     Jxta_srdi_service* srdi_service = PTValid(service, Jxta_srdi_service);
-    return VTBL->getReplicaPeer(srdi_service, expression);
+    return VTBL->getReplicaPeer(srdi_service, expression, alt_peer);
 }
 
 JXTA_DECLARE(Jxta_peer *) jxta_srdi_getNumericReplica(Jxta_srdi_service * service, Jxta_range * rge, const char *value)

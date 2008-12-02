@@ -148,9 +148,10 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_forwardQuery_threshold(Jxta_srdi_service * s
  * to query on a pipe
  *
  * @param  expression  expression to derive the mapping from
+ * @param  alt_peer an alternate peer
  * @return             The replicaPeer value
  */
-JXTA_DECLARE(Jxta_peer *) jxta_srdi_getReplicaPeer(Jxta_srdi_service * service, const char *expression);
+JXTA_DECLARE(Jxta_peer *) jxta_srdi_getReplicaPeer(Jxta_srdi_service * service, const char *expression, Jxta_peer **alt_peer);
 
 /**
  * Given an expression return a peer from the list peers in the peerview
