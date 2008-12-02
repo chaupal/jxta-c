@@ -114,6 +114,7 @@ struct _jxta_RdvConfigAdvertisement {
     Jxta_time_diff pv_pong_due;
     Jxta_time_diff pv_voting_expiration;
     Jxta_time_diff pv_voting_wait;
+    Peerview_address_assign_mode pv_address_assign_mode;
 };
 
     /* Forward decl. of un-exported function */
@@ -151,6 +152,7 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfig_clone(Jxta_RdvConfigAdvertisement * ad,
     if (JXTA_SUCCESS != ret) goto ERROR_EXIT;
 
     /* Peerview attributes */
+    cclone->pv_address_assign_mode = ad->pv_address_assign_mode;
     cclone->pv_clusters = ad->pv_clusters;
     cclone->pv_members = ad->pv_members;
     cclone->pv_replication = ad->pv_replication;
@@ -378,6 +380,26 @@ JXTA_DECLARE(void) jxta_RdvConfig_set_connect_time_interval(Jxta_RdvConfigAdvert
 }
 
 /*-----------------------------------  Peerview --------------------------  */
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_address_assign_mode(Jxta_RdvConfigAdvertisement * ad, Peerview_address_assign_mode mode)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    if (mode < config_addr_assign_random || mode > config_addr_assign_random) {
+        res = JXTA_INVALID_ARGUMENT;
+    } else {
+        ad->pv_address_assign_mode = mode;
+    }
+    return res;
+}
+
+JXTA_DECLARE(Peerview_address_assign_mode) jxta_RdvConfig_pv_get_address_assign_mode(Jxta_RdvConfigAdvertisement * ad)
+{
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    return ad->pv_address_assign_mode;
+}
 
 JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_clusters(Jxta_RdvConfigAdvertisement * ad, unsigned int clusters)
 {
@@ -753,10 +775,20 @@ static void handlePeerView(void *me, const XML_Char * cd, int len)
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "START <peerview> : [%pp]\n", myself);
 
         while (atts && *atts) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "handling attribute : %s:%s\n", *atts, atts[1] );
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "handling attribute : %s:%s\n", *atts, atts[1] );
 
             if (0 == strcmp(*atts, "pv_replication")) {
                 myself->pv_replication = atoi(atts[1]);
+            } else if (0 == strcmp(*atts, "pv_address_assign_mode")) {
+                if (0  == strcmp(atts[1], "random")) {
+                    myself->pv_address_assign_mode = config_addr_assign_random;
+                } else if (0  == strcmp(atts[1], "predictable")) {
+                    myself->pv_address_assign_mode = config_addr_assign_predictable;
+                } else if (0  == strcmp(atts[1], "hybrid")) {
+                    myself->pv_address_assign_mode = config_addr_assign_hybrid;
+                } else if (0  == strcmp(atts[1], "managed")) {
+                    myself->pv_address_assign_mode = config_addr_assign_predictable;
+                }
             } else if (0 == strcmp(*atts, "pv_loneliness")) {
                 myself->pv_loneliness = atoi(atts[1]);
             } else if (0 == strcmp(*atts, "pv_add_interval")) {
@@ -979,6 +1011,26 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
 
     jstring_append_2(string, "<peerview ");
 
+    if (-1 != ad->pv_address_assign_mode) {
+        jstring_append_2(string, "pv_address_assign_mode=\"");
+        switch (ad->pv_address_assign_mode) {
+        case config_addr_assign_random:
+            jstring_append_2(string, "random\"");
+            break;
+        case config_addr_assign_predictable:
+            jstring_append_2(string, "predictable\"");
+            break;
+        case config_addr_assign_hybrid:
+            jstring_append_2(string, "hybrid\"");
+            break;
+        case config_addr_assign_managed:
+            jstring_append_2(string, "managed");
+            break;
+        default:
+            jstring_append_2(string, "predictable\"");
+            break;
+        }
+    }
     if (-1 != ad->pv_replication) {
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, "pv_replication=\"");

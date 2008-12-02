@@ -78,7 +78,15 @@ enum RdvConfig_configurations {
     config_rendezvous
 };
 
+enum Peerview_address_assign_modes {
+    config_addr_assign_random,
+    config_addr_assign_predictable,
+    config_addr_assign_managed,
+    config_addr_assign_hybrid
+};
+
 typedef enum RdvConfig_configurations RdvConfig_configuration;
+typedef enum Peerview_address_assign_modes Peerview_address_assign_mode;
 
 JXTA_DECLARE(Jxta_RdvConfigAdvertisement *) jxta_RdvConfigAdvertisement_new(void);
 JXTA_DECLARE(Jxta_status) jxta_RdvConfig_clone(Jxta_RdvConfigAdvertisement * ad, Jxta_RdvConfigAdvertisement ** ret_clone);
@@ -146,6 +154,9 @@ JXTA_DECLARE(void) jxta_RdvConfigAdvertisement_set_Jxta_RdvConfigAdvertisement(J
 
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_connect_time_interval(Jxta_RdvConfigAdvertisement *);
 JXTA_DECLARE(void) jxta_RdvConfig_set_connect_time_interval(Jxta_RdvConfigAdvertisement *, Jxta_time_diff);
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_address_assign_mode(Jxta_RdvConfigAdvertisement *, Peerview_address_assign_mode mode);
+JXTA_DECLARE(Peerview_address_assign_mode) jxta_RdvConfig_pv_get_address_assign_mode(Jxta_RdvConfigAdvertisement *);
 
 JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_clusters(Jxta_RdvConfigAdvertisement *, unsigned int);
 JXTA_DECLARE(unsigned int) jxta_RdvConfig_pv_clusters(Jxta_RdvConfigAdvertisement *);
