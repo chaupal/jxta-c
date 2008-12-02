@@ -389,7 +389,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
                     JXTA_OBJECT_RELEASE(advPeer);
                     advPeer = alt_repPeer;
                     alt_repPeer = NULL;
-                    jxta_id_to_jstring(jxta_peer_peerid(alt_repPeer), &alt_peer_j);
+                    jxta_id_to_jstring(jxta_peer_peerid(advPeer), &alt_peer_j);
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Changed the dup %" APR_INT64_T_FMT " to alt_peer:%s\n"
                                     , newEntry->seqNumber
                                     ,jstring_get_string(alt_peer_j));
