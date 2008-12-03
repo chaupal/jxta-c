@@ -547,7 +547,7 @@ static Jxta_status disconnect_peers(Jxta_rdv_service_provider * provider)
 {
     Jxta_status res = JXTA_SUCCESS;
     _jxta_rdv_service_adhoc *myself = (_jxta_rdv_service_adhoc *) PTValid(provider, _jxta_rdv_service_adhoc);
-
+    myself = NULL;
 
     return res;
 }
