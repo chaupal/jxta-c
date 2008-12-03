@@ -136,7 +136,6 @@ static const Kwdtab Jxta_ResolverConfigAdvertisement_tags[] = {
 
 JXTA_DECLARE(Jxta_status) jxta_ResolverConfigAdvertisement_get_xml(Jxta_ResolverConfigAdvertisement * ad, JString ** result)
 {
-    char tmpbuf[256];
     JString *string = jstring_new_0();
     jstring_append_2(string, "<!-- JXTA Resolver Configuration Advertisement -->\n");
     jstring_append_2(string, "<jxta:ResolverConfig xmlns:jxta=\"http://jxta.org\" type=\"jxta:ResolverConfig\"\n");
