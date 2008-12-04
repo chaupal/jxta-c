@@ -3008,6 +3008,8 @@ static Jxta_status discovery_filter_replicas_forward(Jxta_discovery_service_ref 
             JXTA_OBJECT_RELEASE(replicaPeer);
         if (advPeer)
             JXTA_OBJECT_RELEASE(advPeer);
+        if (alt_advPeer)
+            JXTA_OBJECT_RELEASE(alt_advPeer);
     }
     if (replicaExpression)
         JXTA_OBJECT_RELEASE(replicaExpression);
