@@ -983,6 +983,20 @@ Jxta_status peerview_get_peer(Jxta_peerview * pv, Jxta_id * peer_id, Jxta_peer *
     return ret;
 }
 
+Jxta_status peerview_get_peer_address(Jxta_peer *peer, BIGNUM **address)
+{
+    Peerview_entry *pve;
+
+    pve = (Peerview_entry *) peer;
+
+    if (pve->target_hash) {
+        *address = BN_dup(pve->target_hash);
+    } else {
+        *address = BN_new();
+    }
+    return JXTA_SUCCESS;
+}
+
 static void peerview_update_id(Jxta_peerview * myself)
 {
     apr_uuid_t * uuid_ptr = NULL;

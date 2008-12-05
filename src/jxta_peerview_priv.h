@@ -120,6 +120,8 @@ extern Jxta_time_diff jxta_peerview_get_pa_refresh(Jxta_peerview * pv);
 
 extern Jxta_status peerview_get_peer(Jxta_peerview * pv, Jxta_id * peer_id, Jxta_peer **peer);
 
+extern Jxta_status peerview_get_peer_address(Jxta_peer *peer, BIGNUM **address);
+
 extern Jxta_status peerview_send_disconnect(Jxta_peerview * pv, Jxta_peer * dest);
 
 #ifdef __cplusplus

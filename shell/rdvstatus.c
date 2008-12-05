@@ -114,6 +114,8 @@ void print_peerview_peer( JString *outputLine, Jxta_peer *peer )
    Jxta_time expires = 0;
    Jxta_boolean connected = FALSE;
    Jxta_time currentTime = jpr_time_now();
+   char *tmp;
+   BIGNUM *address_bn;
 
    err = jxta_peer_get_peerid(peer, &pid);
 
@@ -137,6 +139,13 @@ void print_peerview_peer( JString *outputLine, Jxta_peer *peer )
    jstring_append_2(outputLine, "/");
    jstring_append_1(outputLine, string);
    JXTA_OBJECT_RELEASE(string);
+
+   peerview_get_peer_address(peer, &address_bn);
+   tmp = BN_bn2hex(address_bn);
+   jstring_append_2(outputLine, " ");
+   jstring_append_2(outputLine, tmp);
+   free(tmp);
+   BN_free(address_bn);
 
    expires = jxta_peer_get_expires(peer);
 
@@ -388,7 +397,9 @@ void print_options(Jxta_peer * peer, JString *out_string)
        for (i=0; i < jxta_vector_size(options); i++) {
             Jxta_status res;
             char tmp[256];
+            char *tmp1;
             Jxta_rdv_lease_options * lease_option;
+
             res = jxta_vector_get_object_at(options, JXTA_OBJECT_PPTR(&lease_option), i);
 
             if (JXTA_SUCCESS != res) {
@@ -407,6 +418,10 @@ void print_options(Jxta_peer * peer, JString *out_string)
             apr_snprintf(tmp, sizeof(tmp), "%d", jxta_rdv_lease_options_get_willingness(lease_option));
             jstring_append_2(out_string, " will:");
             jstring_append_2(out_string, tmp);
+            /* tmp1 = BN_bn2hex(pve->target_hash_radius);
+            jstring_append_2(out_string, tmp1);
+            free(tmp1); */
+
             JXTA_OBJECT_RELEASE(lease_option);
         }
         JXTA_OBJECT_RELEASE(options);
