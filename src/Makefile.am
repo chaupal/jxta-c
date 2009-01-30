@@ -22,6 +22,7 @@ include_HEADERS = EndpointRouter.h          \
                   jxta_bytevector.h         \
                   jxta_cache_config_adv.h   \
                   jxta_cm.h                 \
+                  jxta_cm_prepared_priv.h   \
                   jxta_cred.h               \
                   jxta_debug.h              \
                   jxta_discovery_service.h  \
@@ -266,4 +267,3 @@ libjxta_la_SOURCES = jstring.c                      \
 		     jxta_constants.c			\
 			 jxta_version.c				\
 		     jxta_qos.c
-

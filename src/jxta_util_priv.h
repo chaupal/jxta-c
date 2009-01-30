@@ -64,6 +64,46 @@ extern "C" {
 };
 #endif
 
+#ifdef JXTA_PERFORMANCE_TRACKING_ENABLED
+/**
+* Create a performance tracking log entry
+* A start time will be saved when the tracking starts
+* When the tracking ends a log message will be output
+* with the elapsed time from start to end.
+*/
+    #define PERF_ENTRY \
+        Jxta_time perf_start_time; \
+        Jxta_time perf_end_time; \
+        const char *perf_desc=NULL; \
+        const char *perf_func=NULL; \
+        Jxta_time_diff perf_diff_time;
+
+/**
+* Start the performance entry
+* a - description
+* b - function name
+*/
+    #define PERF_START(a, b) \
+        perf_start_time = jpr_time_now(); \
+        perf_desc = a; \
+        perf_func = b;
+
+/**
+* end the performance entry
+* a - number of items
+* b - log level of the log entry
+*/
+    #define PERF_END(a, b) \
+        perf_end_time = jpr_time_now(); \
+        perf_diff_time = perf_end_time - perf_start_time; \
+        assert(NULL != perf_desc && NULL != perf_func); \
+        if (perf_diff_time > 0) { \
+            jxta_log_append(__log_cat, b, "desc:%s func:%s i:%d t:" JPR_DIFF_TIME_FMT "\n" \
+                        , perf_desc, perf_func, a, perf_diff_time); \
+        }
+
+#endif /* JXTA_PERFORMANCE_TRACKING_ENABLED */
+
 /**
  * Utility function.
  * From a vector of JString returns a vector of Jxta_id.

@@ -145,6 +145,14 @@ if test "x$ac_enable_object_checking" != "xno" ; then
   CPPFLAGS="-DJXTA_OBJECT_CHECKING_ENABLE=1 $CPPFLAGS"
 fi
 
+AC_ARG_ENABLE([performance-tracking],
+  AC_HELP_STRING([--enable-performance-tracking], [enable performance tracking valid macro]),
+  [ac_enable_performance_tracking=$enableval], [ac_enable_performance_tracking=no])
+
+if test "x$ac_enable_performance_tracking" != "xno" ; then
+  CPPFLAGS="-DJXTA_PERFORMANCE_TRACKING_ENABLED $CPPFLAGS"
+fi
+
 AC_ARG_WITH(apr, 
   AC_HELP_STRING([--with-apr],
     [Specify the location of APR/APU to use.]),

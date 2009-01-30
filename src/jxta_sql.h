@@ -109,8 +109,13 @@ extern "C" {
 
 #define SQL_VALUE(st, v) cm_sql_escape_and_wc_value(v, FALSE); \
                          cm_sql_numeric_quote(st, v, FALSE);
-                         
+
 #define SQL_NUMERIC_VALUE(st, v) cm_sql_numeric_quote(st, v, TRUE);
+
+#define SQL_CHAR_VALUE(st, v) cm_sql_escape_and_wc_value(v, FALSE); \
+                            cm_sql_numeric_no_quote(st, v, FALSE);
+
+#define SQL_CHAR_NUMERIC_VALUE(st, v) cm_sql_numeric_no_quote(st, v, TRUE);
 
 /* SQL column identifiers */
  
