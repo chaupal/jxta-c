@@ -106,6 +106,8 @@ extern "C" {
 #define SQL_CREATE_INDEX "CREATE INDEX "
 #define SQL_INDEX_ON " ON "
 #define SQL_END_SEMI ";"
+#define SQL_VALUE_0 "\"0\""
+#define SQL_VALUE_1 "\"1\""
 
 #define SQL_VALUE(st, v) cm_sql_escape_and_wc_value(v, FALSE); \
                          cm_sql_numeric_quote(st, v, FALSE);

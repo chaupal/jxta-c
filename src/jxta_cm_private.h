@@ -141,18 +141,25 @@ struct jxta_cache_entry {
     Jxta_expiration_time expiration;
     Jxta_ProfferAdvertisement *profadv;
     JString *profid;
-    Jxta_advertisement  * adv;
+    JString *sourceid;
+    JString *advid;
+    Jxta_advertisement *adv;
 } ;
 
-typedef struct jxta_replica_entry Jxta_replica_entry;
+typedef struct jxta_srdi_idx_entry Jxta_srdi_idx_entry;
 
-struct jxta_replica_entry {
+struct jxta_srdi_idx_entry {
     JXTA_OBJECT_HANDLE;
     JString *peer_id;
     JString *adv_id;
+    JString *source_id;
     JString *db_alias;
+    JString *name_space;
     JString *name;
     JString *dup_id;
+    Jxta_sequence_number seq_number;
+    Jxta_expiration_time expiration;
+    Jxta_boolean replicate;
 };
 
 /**
@@ -312,7 +319,7 @@ Jxta_status cm_update_delta_entries(Jxta_cm * self, JString *jPeerid, JString *j
 
 Jxta_status cm_update_delta_entry(Jxta_cm * self, JString * jPeerid, JString * jSourceid, JString * jHandler, Jxta_SRDIEntryElement * entry, Jxta_expiration_time next_update);
 
-Jxta_status cm_expand_delta_entries(Jxta_cm * self, Jxta_vector * msg_entries, JString * peerid, JString * source_peerid, Jxta_vector ** ret_entries);
+Jxta_status cm_expand_delta_entries(Jxta_cm * self, Jxta_vector * msg_entries, JString * peerid, JString * source_peerid, Jxta_vector ** ret_entries, Jxta_boolean re_replicate);
 
 Jxta_status cm_remove_delta_entries(Jxta_cm * me, JString *seq_entries);
 
@@ -433,9 +440,10 @@ struct jxta_cache_entry ** cm_query_ctx(Jxta_cm * self, Jxta_credential **scope,
  * @param Jxta_cm (A ptr to) the cm object to apply the operation to
  * @param ns name space for the query
  * @param where - A WHERE clause SQL string.
+ * @param group_peerids - TRUE-group query results by peerid FALSE-return all entries from the query
  * @return A null terminated list of Jxta_cache_entry with advid as meta data.
  */
-Jxta_cache_entry ** cm_sql_query_srdi_ns(Jxta_cm * self, const char *ns, JString * where);
+Jxta_cache_entry ** cm_sql_query_srdi(Jxta_cm * self, const char *ns, JString * where, Jxta_boolean group_peerids);
 
 /**
  * Search for entries in the Replica name space given a vector of Jxta_query_element entries .
@@ -593,7 +601,9 @@ char **cm_sql_get_primary_keys(Jxta_cm * self, char *folder_name, const char *ta
 Jxta_status cm_create_adv_indexes(Jxta_cm * self, char *folder_name, Jxta_vector * jv);
 
 void cm_update_replica_forward_peers(Jxta_cm * cm, Jxta_vector * replica_entries, JString *peer_id_j);
-Jxta_status cm_get_replica_entries(Jxta_cm * cm, JString *peer_id_j, Jxta_vector **replicas_v);
+
+Jxta_status cm_get_replica_index_entries(Jxta_cm * cm, JString *peer_id_j, Jxta_vector **replicas_v);
+Jxta_status cm_get_srdi_index_entries(Jxta_cm *cm, JString *peer_id_j, JString *adv_id_j, Jxta_hashtable **srdi_h);
 
 #ifdef __cplusplus
 #if 0

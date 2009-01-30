@@ -103,6 +103,7 @@ struct _jxta_EntryElement {
     int delta_window;
     Jxta_boolean cache_this;
     Jxta_boolean replicate;
+    Jxta_boolean re_replicate;
     Jxta_boolean duplicate;
     Jxta_boolean dup_target;
     Jxta_boolean dup_fwd;
@@ -343,7 +344,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_3(JString * key, JSt
 
 JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_4(JString * key, JString * value, JString * nameSpace,
                                                               JString * advId, JString * jrange, Jxta_expiration_time expiration,
-                                                              Jxta_sequence_number seqNumber, Jxta_boolean replication);
+                                                              Jxta_sequence_number seqNumber, Jxta_boolean replicate, Jxta_boolean re_replicate);
 
 JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_resend(Jxta_sequence_number seqNumber);
 

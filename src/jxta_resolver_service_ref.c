@@ -577,6 +577,7 @@ static Jxta_status do_send(Jxta_resolver_service_ref * me, Jxta_id * peerid, JSt
         }
 
     } else {
+
         address = jxta_endpoint_address_new_3(peerid, me->instanceName, queue);
         if (address == NULL) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
@@ -585,7 +586,12 @@ static Jxta_status do_send(Jxta_resolver_service_ref * me, Jxta_id * peerid, JSt
         }
         status = jxta_endpoint_service_send(me->group, me->endpoint, msg, address);
         if (status != JXTA_SUCCESS) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to send resolver message\n");
+            JString *peerid_j = NULL;
+
+            jxta_id_to_jstring(peerid, &peerid_j);
+
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to send resolver message to %s status:%d\n", jstring_get_string(peerid_j), status);
+            JXTA_OBJECT_RELEASE(peerid_j);
         }
         tmp = jxta_endpoint_address_to_string(address);
         if (tmp) {

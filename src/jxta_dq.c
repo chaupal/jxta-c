@@ -97,6 +97,7 @@ struct jxta_DiscoveryQuery {
     JString *Value;
     Jxta_discovery_ext_query_state ext_query_state;
     JString *ExtendedQuery;
+    JString *ext_query_peerid;
     const Jxta_qos * qos;
 };
 
@@ -225,6 +226,8 @@ static void handleExtendedQuery(void *userdata, const XML_Char * cd, int len)
 
             if (0 == strcmp(*atts, "state")) {
                 ad->ext_query_state = atoi(atts[1]);
+            } else if (0 == strcmp(*atts, "peerid")) {
+                ad->ext_query_peerid = jstring_new_2(atts[1]);
             }
             atts+=2;
         }
@@ -369,6 +372,26 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_query_ext_set_state(Jxta_discovery_quer
     return res;
 }
 
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_ext_set_peerid(Jxta_discovery_query *me, JString *peerid)
+{
+
+    if (NULL != me->ext_query_peerid)
+        JXTA_OBJECT_RELEASE(me->ext_query_peerid);
+
+    me->ext_query_peerid = JXTA_OBJECT_SHARE(peerid);
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_ext_get_peerid(Jxta_discovery_query *me, JString **peerid)
+{
+    if (me->ext_query_peerid) {
+        *peerid = JXTA_OBJECT_SHARE(me->ext_query_peerid);
+        return JXTA_SUCCESS;
+    } else {
+        return JXTA_ITEM_NOTFOUND;
+    }
+}
+
 JXTA_DECLARE(void) jxta_discovery_query_ext_print_state(Jxta_discovery_query *me, JString *print)
 {
     char * states[] = {
@@ -379,7 +402,8 @@ JXTA_DECLARE(void) jxta_discovery_query_ext_print_state(Jxta_discovery_query *me
         "DEQ_FWD_REPLICA_STOP",   /* Query to Replica (Don't walk) */
         "DEQ_FWD_WALK",           /* Query being walked (Rdv Diffusion defines scope) */
         "DEQ_REV_REPLICATING",    /* Query to Replicating */
-        "DEQ_REV_PUBLISHER"       /* Query to Publisher */
+        "DEQ_REV_PUBLISHER",       /* Query to Publisher */
+        "DEQ_REV_REPLICATING_WALK" /* Query to Replicating, result of a walk */
     };
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "state for formatting: %d\n", me->ext_query_state );
 
@@ -470,6 +494,11 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_xml(Jxta_DiscoveryQuery * adv
             jstring_append_2(doc, " state=\"");
             apr_snprintf(tmpbuf, sizeof(tmpbuf), "%d", adv->ext_query_state);
             jstring_append_2(doc, tmpbuf);
+            jstring_append_2(doc, "\"");
+        }
+        if (NULL != adv->ext_query_peerid) {
+            jstring_append_2(doc, " peerid=\"");
+            jstring_append_1(doc, adv->ext_query_peerid);
             jstring_append_2(doc, "\"");
         }
         jstring_append_2(doc, ">");
@@ -617,6 +646,8 @@ static void discovery_query_free(void * me)
         JXTA_OBJECT_RELEASE(ad->Value);
     if (ad->ExtendedQuery != NULL)
         JXTA_OBJECT_RELEASE(ad->ExtendedQuery);
+    if (ad->ext_query_peerid)
+        JXTA_OBJECT_RELEASE(ad->ext_query_peerid);
     JXTA_OBJECT_RELEASE(ad->PeerAdv);
     jxta_advertisement_delete((Jxta_advertisement *) ad);
     memset(ad, 0xdd, sizeof(Jxta_DiscoveryQuery));

@@ -787,6 +787,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_element_clone(Jxta_SRDIEntryElem
 
     newEntry->resend = FALSE;
     newEntry->replicate = entry->replicate;
+    newEntry->re_replicate = entry->re_replicate;
     newEntry->duplicate = entry->duplicate;
     newEntry->dup_target = entry->dup_target;
     newEntry->fwd = entry->fwd;
@@ -912,7 +913,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_3(JString * key, JSt
 
 JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_4(JString * key, JString * value, JString * nameSpace,
                                                               JString * advId, JString * jrange, Jxta_expiration_time expiration,
-                                                              Jxta_sequence_number seqNumber, Jxta_boolean replicate)
+                                                              Jxta_sequence_number seqNumber, Jxta_boolean replicate, Jxta_boolean re_replicate)
 {
     Jxta_SRDIEntryElement *dse = jxta_srdi_new_element();
 
@@ -933,6 +934,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_4(JString * key, JSt
     dse->resend = FALSE;
     dse->next_update_time = 0;
     dse->replicate = replicate;
+    dse->re_replicate = re_replicate;
     dse->duplicate = FALSE;
     dse->dup_target = FALSE;
     dse->cache_this = TRUE;

@@ -134,11 +134,12 @@ static void *APR_THREAD_FUNC advertisement_handling_func(apr_thread_t * thread, 
 static Jxta_status discovery_service_send_delta_updates(Jxta_discovery_service_ref * discovery, const char * key, Jxta_hashtable * entries_update);
 static Jxta_status discovery_service_send_delta_update_msg(Jxta_discovery_service_ref * discovery, Jxta_PID *source_id, const char * key, Jxta_hashtable * entries_update);
 static Jxta_status discovery_filter_replicas_forward(Jxta_discovery_service_ref * discovery, Jxta_vector * entries, const char * source_peer, JString *jRepPeerid, Jxta_hashtable ** fwd_entries);
+static Jxta_status discovery_get_responses(Jxta_discovery_service_ref *discovery, int threshold, short type, char **keys_parm, Jxta_vector **responses);
 
 Jxta_status jxta_discovery_push_srdi(Jxta_discovery_service_ref * discovery, Jxta_boolean ppublish, Jxta_boolean delta);
 
-static Jxta_status query_replica(Jxta_discovery_service_ref * self, Jxta_query_context * jContext, Jxta_vector ** peerids);
-static Jxta_status query_srdi(Jxta_discovery_service_ref * self, Jxta_query_context * jContext, Jxta_id * dropId, Jxta_vector ** peerids);
+static Jxta_status query_replica(Jxta_discovery_service_ref * self, Jxta_query_context * jContext, JString *jDrop, Jxta_vector ** peerids);
+static Jxta_status query_srdi(Jxta_discovery_service_ref * self, Jxta_query_context * jContext, JString * jDrop, Jxta_hashtable ** peerids);
 Jxta_status publish(Jxta_discovery_service * service, Jxta_advertisement * adv, short type,
                     Jxta_expiration_time lifetime, Jxta_expiration_time lifetimeForOthers);
 static JString* build_extended_query(Jxta_discovery_query * dq);
@@ -458,12 +459,31 @@ static Jxta_status discovery_service_forward_from_local(Jxta_discovery_service_r
     replicaExpression = jstring_new_0();
     if (JXTA_SUCCESS == status) {
         Jxta_vector *srdi_results;
+        Jxta_hashtable *peer_results=NULL;
 
         if (NULL != query) {
-            status = query_srdi(discovery, jContext, NULL, &srdi_results);
+            status = query_srdi(discovery, jContext, NULL, &peer_results);
             if (JXTA_ITEM_NOTFOUND == status) {
-                status = query_replica(discovery, jContext, &srdi_results);
+                status = query_replica(discovery, jContext, NULL, &srdi_results);
             } else {
+                char **peerids=NULL;
+                char **peerids_save=NULL;
+
+                srdi_results = jxta_vector_new(0);
+                peerids = jxta_hashtable_keys_get(peer_results);
+                peerids_save = peerids;
+                while (NULL != peerids && *peerids) {
+                    Jxta_id *peer_id_tmp=NULL;
+
+                    jxta_id_from_cstr(&peer_id_tmp, *peerids);
+                    jxta_vector_add_object_last(srdi_results, (Jxta_object *) peer_id_tmp);
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Adding peer %s \n", *peerids);
+                    free(*(peerids++));
+                    JXTA_OBJECT_RELEASE(peer_id_tmp);
+                }
+                if (peerids_save)
+                    free(peerids_save);
+
                 /* decrease hopcount before forward, so that the hop count remains unchanged.
                    because we know the peer published this index should able to answer the query.
                    This is a hack to fix the hop count could be 4 for complex query as an additional stop at the replacating rdv
@@ -480,6 +500,8 @@ static Jxta_status discovery_service_forward_from_local(Jxta_discovery_service_r
         } else {
             status = discovery_service_send_to_replica(discovery, res_query, replicaExpression, jContext);
         }
+        if (peer_results)
+            JXTA_OBJECT_RELEASE(peer_results);
     }
   FINAL_EXIT:
     if (jContext)
@@ -532,6 +554,8 @@ long remoteQuery(Jxta_discovery_service * service, Jxta_id * peerid, Jxta_discov
     char buf[128];              /* More than enough */
     const Jxta_qos * qos;
     Jxta_discovery_service_ref *discovery = (Jxta_discovery_service_ref *) service;
+
+    memset(buf, 0, sizeof(buf));
 
     status = jxta_discovery_query_get_xml(query, &qdoc);
     if (status != JXTA_SUCCESS) {
@@ -905,7 +929,7 @@ static Jxta_status getLocalQuery(Jxta_discovery_service * self, const char *quer
 /**
  * Query the replica table with specified query, return a vector of Jxta_id of peer ID
  */
-static Jxta_status query_replica(Jxta_discovery_service_ref * self, Jxta_query_context * jContext, Jxta_vector ** peerids)
+static Jxta_status query_replica(Jxta_discovery_service_ref * self, Jxta_query_context * jContext, JString *jDrop, Jxta_vector ** peerids)
 {
     Jxta_vector *peers; /* a vector of JString, each is a string of peer ID */
 
@@ -921,54 +945,64 @@ static Jxta_status query_replica(Jxta_discovery_service_ref * self, Jxta_query_c
     return (*peerids) ? JXTA_SUCCESS : JXTA_FAILED;
 }
 
-static Jxta_status query_srdi(Jxta_discovery_service_ref * self, Jxta_query_context * jContext, Jxta_id * dropId, Jxta_vector ** peerids)
+static Jxta_status query_srdi(Jxta_discovery_service_ref * self, Jxta_query_context * jContext, JString * jDrop, Jxta_hashtable ** peerids)
 {
     Jxta_discovery_service_ref *discovery = (Jxta_discovery_service_ref *) self;
     Jxta_status status = JXTA_SUCCESS;
     Jxta_cache_entry **cache_entries;
     Jxta_cache_entry **scan;
-    Jxta_vector *responses = NULL;
-    JString * jDrop = NULL;
+    JString * jDrop_local = NULL;
     JString * sql_cmd = NULL;
     sql_cmd = jstring_new_0();
     jstring_append_1(sql_cmd, jContext->sqlcmd);
-    if (NULL != dropId) {
-        jxta_id_to_jstring(dropId, &jDrop);
-        jstring_append_2(sql_cmd, SQL_AND CM_COL_Peerid SQL_NOT_EQUAL);
-        SQL_VALUE(sql_cmd, jDrop);
-        JXTA_OBJECT_RELEASE(jDrop);
-    }
-    cache_entries = cm_sql_query_srdi_ns(discovery->cm, jstring_get_string(jContext->queryNameSpace), sql_cmd);
+    *peerids = NULL;
+
+    cache_entries = cm_sql_query_srdi(discovery->cm, jstring_get_string(jContext->queryNameSpace), sql_cmd, FALSE);
     if (NULL == cache_entries || NULL == *cache_entries) {
         JXTA_OBJECT_RELEASE(sql_cmd);
-        *peerids = NULL;
         return JXTA_ITEM_NOTFOUND;
     }
+    if (NULL == jDrop) {
+        jDrop_local = jstring_new_0();
+    } else {
+        jDrop_local = JXTA_OBJECT_SHARE(jDrop);
+    }
 
-    /* build proffers to see if match the query */
-    responses = jxta_vector_new(1);
     scan = cache_entries;
     while (scan != NULL && *scan) {
-        Jxta_cache_entry *cache_entry;
+        Jxta_cache_entry *cache_entry=NULL;
+        Jxta_hashtable *peer_entries=NULL;
+        JString *dummy=NULL;
 
         cache_entry = *scan;
-
-        jxta_vector_add_object_last(responses, (Jxta_object *) cache_entry->profid);
-
+        if (!strcmp(jstring_get_string(jDrop_local), jstring_get_string(cache_entry->profid))
+            || !strcmp(jstring_get_string(jDrop_local), jstring_get_string(cache_entry->sourceid))) {
+                status = JXTA_ITEM_EXISTS;
+        } else {
+            if (NULL == *peerids) {
+                *peerids = jxta_hashtable_new(0);
+            }
+            if (JXTA_SUCCESS != jxta_hashtable_get(*peerids, jstring_get_string(cache_entry->profid), jstring_length(cache_entry->profid) + 1
+                        ,JXTA_OBJECT_PPTR(&peer_entries))) {
+                peer_entries = jxta_hashtable_new(0);
+                jxta_hashtable_put(*peerids,  jstring_get_string(cache_entry->profid), jstring_length(cache_entry->profid) + 1, (Jxta_object *) peer_entries);
+            }
+            if (JXTA_SUCCESS != jxta_hashtable_get(peer_entries, jstring_get_string(cache_entry->advid), jstring_length(cache_entry->advid) + 1
+                        ,JXTA_OBJECT_PPTR(&dummy))) {
+                jxta_hashtable_put(peer_entries, jstring_get_string(cache_entry->advid), jstring_length(cache_entry->advid) + 1, (Jxta_object *) cache_entry->advid);
+            }
+        }
         JXTA_OBJECT_RELEASE(cache_entry);
+        if (dummy)
+            JXTA_OBJECT_RELEASE(dummy);
+        if (peer_entries)
+            JXTA_OBJECT_RELEASE(peer_entries);
         scan++;
     }
+
     free(cache_entries);
-    if (JXTA_SUCCESS == status) {
-        *peerids = getPeerids(responses);
-        if (!*peerids) {
-            status = JXTA_ITEM_NOTFOUND;
-        }
-    } else {
-        *peerids = NULL;
-    }
+    JXTA_OBJECT_RELEASE(jDrop_local);
     JXTA_OBJECT_RELEASE(sql_cmd);
-    JXTA_OBJECT_RELEASE(responses);
     return status;
 }
 
@@ -1487,8 +1521,157 @@ static Jxta_status discovery_service_send_to_replica(Jxta_discovery_service_ref 
     return status;
 }
 
+static Jxta_status discovery_re_replicate_srdi_entries(Jxta_discovery_service_ref * discovery, char **peerids_parm, Jxta_hashtable *peer_results)
+{
+    Jxta_status res=JXTA_SUCCESS;
+    char **peerids;
+    char **idx_keys=NULL;
+    peerids = peerids_parm;
+
+    /* get the entries for each peer */
+    while (NULL != peerids && *peerids) {
+        int i,x = 0;
+        Jxta_hashtable *peer_advids_h=NULL;
+        Jxta_vector *peer_advids=NULL;
+        Jxta_hashtable *srdi_entries=NULL;
+        JString *peer_j=NULL;
+
+        if (JXTA_SUCCESS != jxta_hashtable_get(peer_results, *peerids, strlen(*peerids) + 1 , JXTA_OBJECT_PPTR(&peer_advids_h))) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Didn't get %s from the peer results\n", *peerids);
+            peerids++;
+            continue;
+        }
+        peer_advids = jxta_hashtable_values_get(peer_advids_h);
+        JXTA_OBJECT_RELEASE(peer_advids_h);
+        peer_j = jstring_new_2(*peerids);
+        /* get the advids for this peer */
+        for (i=0; i < jxta_vector_size(peer_advids); i++) {
+            Jxta_hashtable *idx_entries_h=NULL;
+            JString *peer_advid_j=NULL;
+            Jxta_SRDIEntryElement *adv_element=NULL;
+
+            jxta_vector_get_object_at(peer_advids, JXTA_OBJECT_PPTR(&peer_advid_j), i);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Get entry a:%s p:%s\n"
+                    , jstring_get_string(peer_advid_j)
+                    , jstring_get_string(peer_j));
+
+            /* get the index entries for this advid */
+            res = cm_get_srdi_index_entries(discovery->cm, peer_j, peer_advid_j, &idx_entries_h);
+            /* get the srdi message types */
+            idx_keys = jxta_hashtable_keys_get(idx_entries_h);
+            x = 0;
+            /* for each srdi message type create SRDI message entries */
+            while (NULL != idx_keys && idx_keys[x]) {
+                int j=0;
+                Jxta_vector *entries=NULL;
+
+                if (JXTA_SUCCESS != jxta_hashtable_get(idx_entries_h, idx_keys[x], strlen(idx_keys[x]) + 1, JXTA_OBJECT_PPTR(&entries))) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Didn't get %s from the srdi idx entries\n", idx_keys[x]);
+                    free(idx_keys[x++]);
+                    continue;
+                }
+                /* create an SRDI entry with the sequence number update */
+                for (j = 0; j < jxta_vector_size(entries); j++) {
+                    Jxta_srdi_idx_entry *entry=NULL;
+                    char tmp[64];
+
+                    jxta_vector_get_object_at(entries, JXTA_OBJECT_PPTR(&entry), j);
+
+                    if (NULL == adv_element) {
+                        adv_element = jxta_srdi_new_element();
+                        adv_element->advId = JXTA_OBJECT_SHARE(peer_advid_j);
+                        adv_element->sn_cs_values = jstring_new_0();
+                        adv_element->expiration = entry->expiration;
+                        adv_element->replicate = entry->replicate;
+                        adv_element->re_replicate = TRUE;
+                    }
+                    if (jstring_length(adv_element->sn_cs_values) > 0) {
+                        jstring_append_2(adv_element->sn_cs_values,",");
+                    }
+                    memset(tmp, 0, sizeof(tmp));
+                    apr_snprintf(tmp, sizeof(tmp), JXTA_SEQUENCE_NUMBER_FMT , entry->seq_number);
+                    jstring_append_2(adv_element->sn_cs_values, tmp);
+
+                    JXTA_OBJECT_RELEASE(entry);
+                }
+                if (adv_element) {
+                    Jxta_vector *idx_entries=NULL;
+
+                    if (NULL == srdi_entries) {
+                        srdi_entries = jxta_hashtable_new(0);
+                    }
+
+                    if (JXTA_SUCCESS != jxta_hashtable_get(srdi_entries, idx_keys[x], strlen(idx_keys[x]) + 1, JXTA_OBJECT_PPTR(&idx_entries))) {
+                        idx_entries = jxta_vector_new(0);
+                        jxta_hashtable_put(srdi_entries, idx_keys[x], strlen(idx_keys[x]) + 1, (Jxta_object *) idx_entries);
+                    }
+                    jxta_vector_add_object_last(idx_entries, (Jxta_object *) adv_element);
+                    JXTA_OBJECT_RELEASE(idx_entries);
+                    JXTA_OBJECT_RELEASE(adv_element);
+                    adv_element = NULL;
+                }
+                JXTA_OBJECT_RELEASE(entries);
+                free(idx_keys[x++]);
+            }
+            if (adv_element)
+                JXTA_OBJECT_RELEASE(adv_element);
+            JXTA_OBJECT_RELEASE(peer_advid_j);
+            if (idx_entries_h)
+                JXTA_OBJECT_RELEASE(idx_entries_h);
+            free(idx_keys);
+        }
+        if (srdi_entries) {
+            x = 0;
+            char **types=NULL;
+
+            types = jxta_hashtable_keys_get(srdi_entries);
+
+            /* replicate the entries for this type */
+            while (NULL != types && types[x]) {
+                Jxta_SRDIMessage *srdi_msg=NULL;
+                Jxta_id *peer_id=NULL;
+                JString *messageString=NULL;
+                Jxta_vector *entries_v = NULL;
+                Jxta_vector *entries_new_v = NULL;
+
+                if (JXTA_SUCCESS != jxta_hashtable_get(srdi_entries, types[x], strlen(types[x]) + 1, JXTA_OBJECT_PPTR(&entries_v))) {
+                    free(types[x++]);
+                    continue;
+                }
+                jxta_id_from_cstr(&peer_id, *peerids);
+                res = cm_expand_delta_entries(discovery->cm, entries_v, peer_j, peer_j, &entries_new_v, TRUE);
+
+                srdi_msg = jxta_srdi_message_new_1(1, peer_id, types[x], entries_new_v);
+                jxta_srdi_message_get_xml(srdi_msg, &messageString);
+
+                jxta_srdi_replicateEntries(discovery->srdi, discovery->resolver, srdi_msg, discovery->instanceName);
+
+                JXTA_OBJECT_RELEASE(messageString);
+                JXTA_OBJECT_RELEASE(srdi_msg);
+                JXTA_OBJECT_RELEASE(peer_id);
+                JXTA_OBJECT_RELEASE(entries_v);
+                JXTA_OBJECT_RELEASE(entries_new_v);
+                free(types[x++]);
+            }
+            if (types)
+                free(types);
+            JXTA_OBJECT_RELEASE(srdi_entries);
+        }
+        JXTA_OBJECT_RELEASE(peer_advids);
+        JXTA_OBJECT_RELEASE(peer_j);
+
+        peerids++;
+    }
+
+    return res;
+}
+
+
 static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * obj, void *arg)
 {
+    Jxta_status status = JXTA_FAILED;
+    Jxta_discovery_service_ref *discovery =  PTValid(arg, Jxta_discovery_service_ref);
+    Jxta_status res = JXTA_ITEM_NOTFOUND;
     JString *peeradv = NULL;
     JString *query = NULL;
     Jxta_DiscoveryQuery *dq = NULL;
@@ -1496,24 +1679,16 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
     JString *val = NULL;
     JString *extendedQuery = NULL;
     JString *replicaExpression = NULL;
-    Jxta_DiscoveryResponse *dr = NULL;
-    ResolverResponse *res_response = NULL;
-    JString *rdoc = NULL;
     char **keys = NULL;
     Jxta_vector *peers = NULL;
+    JString *id_str_j = NULL;
     JString *id_str = NULL;
     Jxta_id *id = NULL;
-    Jxta_advertisement *foundAdv;
     Jxta_query_context *jContext = NULL;
-
-    Jxta_PA *padv = NULL;
     Jxta_vector *responses = NULL;
-    Jxta_status status = JXTA_FAILED;
-    Jxta_status res = JXTA_ITEM_NOTFOUND;
     Jxta_id *rqId = NULL;
     long qid = -1;
-    unsigned int i;
-    int num_of_res = 0;
+    unsigned int i=0;
     int threshold = 0;
     ResolverQuery *rq = (ResolverQuery *) obj;
     Jxta_id *src_pid = NULL;
@@ -1523,22 +1698,29 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
     JString *print_ext=NULL;
     Jxta_discovery_ext_query_state rcvd_state;
 
-    Jxta_discovery_service_ref *discovery =  PTValid(arg, Jxta_discovery_service_ref);
 
     qid = jxta_resolver_query_get_queryid(rq);
     jxta_resolver_query_get_query(rq, &query);
-    rqId = jxta_resolver_query_get_src_peer_id(rq);
-    jxta_id_to_jstring(rqId, &id_str);
-    
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Discovery rcvd resolver query id: %ld from: %s\n", qid, jstring_get_string(id_str));
-
-    JXTA_OBJECT_RELEASE(id_str);
     if (query == NULL) {
         /*we're done, nothing to proccess */
-        return JXTA_SUCCESS;
+        res = JXTA_SUCCESS;
+        goto FINAL_EXIT;
     }
+
+    rqId = jxta_resolver_query_get_src_peer_id(rq);
+    jxta_id_to_jstring(rqId, &id_str_j);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Discovery rcvd resolver query id: %ld from: %s\n", qid, jstring_get_string(id_str_j));
+
     dq = jxta_discovery_query_new();
     status = jxta_discovery_query_parse_charbuffer(dq, jstring_get_string(query), jstring_length(query));
+
+    if (status != JXTA_SUCCESS) {
+        res = JXTA_SUCCESS;
+        goto FINAL_EXIT;
+    }
+
+    threshold = jxta_discovery_query_get_threshold(dq);
 
     print_ext = jstring_new_0();
     jxta_discovery_query_ext_print_state(dq, print_ext);
@@ -1548,14 +1730,11 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
     JXTA_OBJECT_RELEASE(print_ext);
     JXTA_OBJECT_RELEASE(query);
 
-    if (status != JXTA_SUCCESS) {
-        /* we're done go no further */
-        JXTA_OBJECT_RELEASE(dq);
-        return JXTA_SUCCESS;
-    }
     jxta_discovery_query_get_peeradv(dq, &peeradv);
 
     if (peeradv && jstring_length(peeradv) > 0) {
+        Jxta_PA *padv = NULL;
+
         padv = jxta_PA_new();
         jxta_PA_parse_charbuffer(padv, jstring_get_string(peeradv), jstring_length(peeradv));
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Publishing querying Peer Adv.\n");
@@ -1573,11 +1752,14 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
             JXTA_OBJECT_RELEASE(sourceID);
             JXTA_OBJECT_RELEASE(src_pid);
             src_pid = NULL;
-            if (TRUE == match)
-                goto finishTop;
+            if (TRUE == match) {
+                JXTA_OBJECT_RELEASE(padv);
+                goto FINAL_EXIT;
+            }
         }
         publish((Jxta_discovery_service *) discovery,
                 (Jxta_advertisement *) padv, DISC_PEER, DEFAULT_EXPIRATION, DEFAULT_EXPIRATION);
+        JXTA_OBJECT_RELEASE(padv);
     }
     jxta_discovery_query_get_attr(dq, &attr);
     jxta_discovery_query_get_value(dq, &val);
@@ -1610,7 +1792,7 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
         JXTA_OBJECT_RELEASE(jSearch);
         status = jxta_query_XPath(jContext, xmlString, FALSE);
         if (status != JXTA_SUCCESS) {
-            goto finishTop;
+            goto FINAL_EXIT;
         }
 
     } else if (!extendedQuery || jstring_length(extendedQuery) == 0) {
@@ -1622,19 +1804,22 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
         jContext = jxta_query_new(jstring_get_string(extendedQuery));
 
         if (jContext == NULL) {
-            goto finishTop;
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create context from %s\n", jstring_get_string(extendedQuery));
+            goto FINAL_EXIT;
         }
 
         /* compile the XPath statement */
         status = jxta_query_compound_XPath(jContext, xmlString, FALSE);
 
         if (status != JXTA_SUCCESS) {
-            goto finishTop;
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to compile %s\n", jstring_get_string(extendedQuery));
+            goto FINAL_EXIT;
         }
 
         status = queryLocal(discovery, NULL, jContext, &qAdvs, threshold, FALSE);
         if (status != JXTA_SUCCESS) {
-            goto finishTop;
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Error retrieving local ads res:%d %s\n", status, jstring_get_string(extendedQuery));
+            goto FINAL_EXIT;
         }
 
         keys = (char **) calloc(1, sizeof(char *) * (jxta_vector_size(qAdvs) + 1));
@@ -1642,6 +1827,8 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
         unsigned int found_count = 0;
         for (i = 0; i < jxta_vector_size(qAdvs); i++) {
             Jxta_query_result * qres = NULL;
+            Jxta_advertisement *foundAdv=NULL;
+
             jxta_vector_get_object_at(qAdvs, JXTA_OBJECT_PPTR(&qres), i);
             if (qres->expiration == 0) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Found a local advertisement but it is local only\n");
@@ -1656,7 +1843,7 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
                 JXTA_OBJECT_RELEASE(id);
                 if (status != JXTA_SUCCESS) {
                     /* something went wrong with getting the ID */
-                    goto finishTop;
+                    goto FINAL_EXIT;
                 }
             } else {
                 id_str = jstring_new_2(jxta_advertisement_get_local_id_string(foundAdv));
@@ -1678,52 +1865,107 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
         }
     }
     if (NULL == keys || NULL == keys[0]) {
-        JString *new_query_j = NULL;
         Jxta_discovery_ext_query_state state = DEQ_SUPRESS;
+/*         JString *peerid_j = NULL; */
+        Jxta_boolean walk_it=TRUE;
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No keys locally \n");
         if (jxta_rdv_service_is_rendezvous(discovery->rdv) != TRUE) {
-            goto finishTop;
+            goto FINAL_EXIT;
         }
         if (NULL != jContext && DEQ_REV_PUBLISHER != rcvd_state) {
-            int found_count = 0;
+            size_t found_count = 0;
+            Jxta_hashtable *peer_results=NULL;
+
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "query the SRDI\n");
 
-            status = query_srdi(discovery, jContext, rqId, &peers);
-            found_count = NULL == peers ? 0: jxta_vector_size(peers);
-            if (JXTA_ITEM_NOTFOUND == status) {
-                if (DEQ_REV_REPLICATING == rcvd_state) {
+            status = query_srdi(discovery, jContext, id_str_j, &peer_results);
+
+            if (NULL != peer_results) {
+                jxta_hashtable_stats(peer_results, NULL, &found_count, NULL, NULL, NULL);
+            }
+            if (JXTA_ITEM_EXISTS == status) {
+                walk_it = FALSE;
+            }
+            /* if no entry is found */
+            if (JXTA_ITEM_NOTFOUND == status || (JXTA_ITEM_EXISTS == status && 0 == found_count)) {
+                if (DEQ_REV_REPLICATING == rcvd_state || DEQ_REV_REPLICATING_WALK == rcvd_state) {
+                    /* TODO ExocetRick Remove the replica from peer that routed this */
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Received query expecting results in the SRDI and none found - Query dropped\n");
-                    goto finishTop;
+                    res = JXTA_SUCCESS;
+                    if (peer_results)
+                        JXTA_OBJECT_RELEASE(peer_results);
+                    goto FINAL_EXIT;
                 }
-                status = query_replica(discovery, jContext, &peers);
+                status = query_replica(discovery, jContext, id_str_j, &peers);
                 if (JXTA_SUCCESS == status) {
-                    state = DEQ_REV_REPLICATING;
+                    state = (DEQ_FWD_WALK == rcvd_state) ? DEQ_REV_REPLICATING_WALK:DEQ_REV_REPLICATING;
                 } else if (DEQ_FWD_REPLICA_FWD == rcvd_state) {
                     state = DEQ_FWD_WALK;
                 }
                 found_count = NULL == peers ? 0: jxta_vector_size(peers);
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Found %d replicas\n", found_count);
-            } else {
+            } else if (NULL != peer_results) {
+                char **peerids=NULL;
+                char **peerids_save=NULL;
 
+                if (JXTA_ITEM_EXISTS == status) {
+                    walk_it = FALSE;
+                }
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Found %d srdi entries\n", found_count);
+
+                peers = jxta_vector_new(0);
+                peerids = jxta_hashtable_keys_get(peer_results);
+                peerids_save = peerids;
+                while (NULL != peerids && *peerids) {
+                    Jxta_id *peer_id_tmp=NULL;
+
+                    jxta_id_from_cstr(&peer_id_tmp, *peerids);
+                    jxta_vector_add_object_last(peers, (Jxta_object *) peer_id_tmp);
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Adding entry %s \n", *peerids);
+                    JXTA_OBJECT_RELEASE(peer_id_tmp);
+                    peerids++;
+                }
+
                 /* decrease hopcount before forward, so that the hop count remains unchanged.
                     because we know the peer published this index should able to answer the query.
                     This is a hack to fix the hop count could be 4 for complex query as an additional stop at the replacating rdv
                 */
                 jxta_resolver_query_set_hopcount(rq, jxta_resolver_query_get_hopcount(rq) - 1);
 
-                if (DEQ_REV_REPLICATING == rcvd_state) {
+                if (DEQ_REV_REPLICATING == rcvd_state || DEQ_REV_REPLICATING_WALK == rcvd_state) {
                     state = DEQ_REV_PUBLISHER;
-                } else if (DEQ_FWD_SRDI == rcvd_state || DEQ_FWD_WALK) {
+                    if (DEQ_REV_REPLICATING_WALK == rcvd_state) {
+                        JString *tmp_peerid_j=NULL;
+
+                        jxta_discovery_query_ext_get_peerid(dq, &tmp_peerid_j);
+                        if (tmp_peerid_j) {
+                            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Received a replicating walk discovery query from %s\n", jstring_get_string(tmp_peerid_j));
+                            JXTA_OBJECT_RELEASE(tmp_peerid_j);
+                        }
+                        discovery_re_replicate_srdi_entries(discovery, peerids_save, peer_results);
+                    }
+                    res = JXTA_SUCCESS;
+                } else if (DEQ_FWD_SRDI == rcvd_state) {
                     state = DEQ_REV_REPLICATING;
                 }
+                if (peerids_save) {
+                    peerids = peerids_save;
+                    while (*peerids) {
+                        free(*(peerids++));
+                    }
+                    free(peerids_save);
+                }
+            } else if (JXTA_ITEM_EXISTS == status) {
+                walk_it = FALSE;
+                res = JXTA_SUCCESS;
             }
-
+            if (peer_results)
+                JXTA_OBJECT_RELEASE(peer_results);
         } else if (NULL != jContext) {
-
+            /* TODO ExocetRick ************* remove the entries from the source that forwarded the query */
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "NO local advertisement when this peer is the publisher\n");
-            goto finishTop;
+            goto FINAL_EXIT;
 
         } else {
             peers = jxta_srdi_searchSrdi(discovery->srdi, jstring_get_string(discovery->instanceName), NULL,
@@ -1731,14 +1973,70 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
         }
 
         jxta_discovery_query_ext_set_state(dq, state);
+
+        if (DEQ_REV_REPLICATING_WALK == state) {
+            JString *peerid_j;
+
+            peerid_j = jstring_new_2(discovery->pid_str);
+            jxta_discovery_query_ext_set_peerid(dq, peerid_j);
+            JXTA_OBJECT_RELEASE(peerid_j);
+        }
+
         jxta_resolver_query_set_query_adv(rq, (Jxta_advertisement *) dq);
 
         if (NULL != peers && jxta_vector_size(peers) > 0) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "forward the query to %d peers\n", jxta_vector_size(peers));
-            res = jxta_srdi_forwardQuery_peers(discovery->srdi, discovery->resolver, peers, rq);
-        } else {
+            int j = 0;
+            /* if we're using the replicating walk state */
+            if (DEQ_REV_REPLICATING_WALK == state) {
+                /* only send it to up-level peers */
+                for (j=0; j < jxta_vector_size(peers); j++) {
+                    Jxta_id *peer_id=NULL;
+                    Jxta_PA * padv = NULL;
+                    Jxta_version *peerVersion=NULL;
+                    JString *tmp_j=NULL;
+                    ResolverQuery * rq_clone = NULL;
+                    Jxta_advertisement *query_adv = NULL;
 
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "forward the query from replicaExpression %s\n"
+                    status = jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer_id), j);
+                    if (JXTA_SUCCESS != status) {
+                        continue;
+                    }
+                    jxta_id_to_jstring(peer_id, &tmp_j);
+                    peergroup_find_peer_PA(discovery->group, peer_id, 30000, &padv);
+                    if(padv == NULL){
+                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "No peer adv found for %s\n", jstring_get_string(tmp_j));
+                        peerVersion = jxta_version_new();
+                    } else {
+                        peerVersion = jxta_PA_get_version(padv);
+                        JXTA_OBJECT_RELEASE(padv);
+                    }
+
+                    jxta_resolver_query_get_query_adv(rq, &query_adv);
+
+                    if (!jxta_version_compatible_1(DISCOVERY_EXT_QUERY_WALK_STATE, peerVersion)) {
+                        jxta_discovery_query_ext_set_state((Jxta_discovery_query *) query_adv, DEQ_REV_REPLICATING);
+                    }
+                    rq_clone = jxta_resolver_query_clone(rq, query_adv);
+
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Forward query id: %ld to replica %s \n"
+                                            , jxta_resolver_query_get_queryid(rq_clone), jstring_get_string(tmp_j));
+                    if (NULL != rq_clone) {
+                        jxta_srdi_forwardQuery_peer(discovery->srdi, discovery->resolver, id, rq_clone);
+
+                        JXTA_OBJECT_RELEASE(rq_clone);
+                    } else {
+                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create a resolver query clone - query id: %ld is not sent\n", jxta_resolver_query_get_queryid(rq));
+                    }
+                    if (query_adv)
+                        JXTA_OBJECT_RELEASE(query_adv);
+                    JXTA_OBJECT_RELEASE(tmp_j);
+                    JXTA_OBJECT_RELEASE(peer_id);
+                }
+            } else {
+                res = jxta_srdi_forwardQuery_peers(discovery->srdi, discovery->resolver, peers, rq);
+            }
+        } else if (JXTA_ITEM_EXISTS != status && walk_it) {
+           jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "forward the query from replicaExpression %s\n"
                                 , jstring_length(replicaExpression) > 0 ? jstring_get_string(replicaExpression):"(none)");
 
             if (DEQ_FWD_SRDI == rcvd_state || DEQ_SUPRESS == rcvd_state) {
@@ -1750,13 +2048,59 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
             } else if (DEQ_FWD_WALK == rcvd_state) {
                 res = JXTA_ITEM_NOTFOUND;
             }
+        } else if (!walk_it) {
+            res = JXTA_SUCCESS;
         }
-        if (new_query_j)
-            JXTA_OBJECT_RELEASE(new_query_j);
+    } else {
+        Jxta_DiscoveryResponse *dr = NULL;
+        JString *rdoc = NULL;
+        int num_responses=0;
+
+        res = JXTA_SUCCESS;
+        status = discovery_get_responses(discovery, threshold, type, keys, &responses);
+        if (JXTA_SUCCESS != status) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to retrieve response err:%d\n", status);
+            goto FINAL_EXIT;
+        }
+
+        if (NULL == responses || 0 == jxta_vector_size(responses)) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No responses being sent\n");
+            goto FINAL_EXIT;
+        }
+        num_responses = jxta_vector_size(responses);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Number of responses being sent: %i\n", num_responses);
+        dr = jxta_discovery_response_new_1(jxta_discovery_query_get_type(dq), attr ? jstring_get_string(attr) : NULL,
+                                       val ? jstring_get_string(val) : NULL, num_responses, NULL, responses);
+
+        status = jxta_discovery_response_get_xml(dr, &rdoc);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Response - %s \n", jstring_get_string(rdoc));
+        JXTA_OBJECT_RELEASE(dr);
+
+        if (status == JXTA_SUCCESS) {
+            ResolverResponse *res_response = NULL;
+
+            res_response =
+                jxta_resolver_response_new_2(discovery->instanceName, rdoc, jxta_resolver_query_get_queryid(rq),
+                                         discovery->localPeerId);
+            JXTA_OBJECT_RELEASE(rdoc);
+
+            src_pid = jxta_resolver_query_get_src_peer_id(rq);
+            jxta_resolver_response_attach_qos(res_response, jxta_resolver_query_qos(rq));
+
+            status = jxta_resolver_service_sendResponse(discovery->resolver, res_response, src_pid);
+            JXTA_OBJECT_RELEASE(res_response);
+        } else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "discovery::remotePublish failed to construct response: %ld\n",
+                        status);
+        }
     }
 
-  finishTop:
+  FINAL_EXIT:
 
+    if (id_str_j)
+        JXTA_OBJECT_RELEASE(id_str_j);
+    if (src_pid)
+        JXTA_OBJECT_RELEASE(src_pid);
     if (NULL != rqId)
         JXTA_OBJECT_RELEASE(rqId);
     if (NULL != replicaExpression)
@@ -1767,29 +2111,38 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
         JXTA_OBJECT_RELEASE(jContext);
     if (NULL != peers)
         JXTA_OBJECT_RELEASE(peers);
-    if (NULL != padv)
-        JXTA_OBJECT_RELEASE(padv);
     if (NULL != peeradv)
         JXTA_OBJECT_RELEASE(peeradv);
     if (NULL != qAdvs)
         JXTA_OBJECT_RELEASE(qAdvs);
-    if ((NULL == keys) || (NULL == keys[0])) {
-        /* we're done go no further */
+    if (dq)
         JXTA_OBJECT_RELEASE(dq);
-        if (NULL != attr)
-            JXTA_OBJECT_RELEASE(attr);
-        if (NULL != val)
-            JXTA_OBJECT_RELEASE(val);
-        if (NULL != keys)
-            free(keys);
-        return res;
+    if (NULL != attr)
+        JXTA_OBJECT_RELEASE(attr);
+    if (NULL != val)
+        JXTA_OBJECT_RELEASE(val);
+    if (responses)
+        JXTA_OBJECT_RELEASE(responses);
+    if (NULL != keys) {
+        i = 0;
+        while (keys[i]) {
+            free(keys[i++]);
+        }
+        free(keys);
     }
-
+    return res;
+}
     /* construct response and send it back */
-    i = 0;
-    responses = jxta_vector_new(1);
-    threshold = jxta_discovery_query_get_threshold(dq);
-    while (keys[i]) {
+
+static Jxta_status discovery_get_responses(Jxta_discovery_service_ref *discovery, int threshold, short type, char **keys_parm, Jxta_vector **responses)
+{
+    Jxta_status status=JXTA_SUCCESS;
+    char **keys;
+    int i = 0;
+
+    keys = keys_parm;
+    *responses = jxta_vector_new(1);
+    while (NULL != keys[i]) {
         JString *responseString = NULL;
         Jxta_expiration_time lifetime = 0;
         Jxta_expiration_time expiration = 0;
@@ -1804,13 +2157,13 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
             || (lifetime < (Jxta_expiration_time) jpr_time_now())) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Expired Document :%s :%" APR_INT64_T_FMT " time now: %"
                             APR_INT64_T_FMT "\n", keys[i], lifetime, jpr_time_now());
-            free(keys[i++]);
+            i++;
             continue;
         }
         status = cm_restore_bytes(discovery->cm, (char *) dirname[type], keys[i], &responseString);
         if (status != JXTA_SUCCESS) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Error restoring bytes of advid %s\n", keys[i]);
-            free(keys[i++]);
+            i++;
             continue;
         }
         /*
@@ -1829,7 +2182,7 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
             } else {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Expiration of 0 found and no response sent\n");
             }
-            free(keys[i++]);
+            i++;
             JXTA_OBJECT_RELEASE(responseString);
             continue;
         }
@@ -1840,66 +2193,19 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
             responseTime = expiration;
 
         dre = jxta_discovery_response_new_element_1(responseString, responseTime);
-        jxta_vector_add_object_last(responses, (Jxta_object *) dre);
-        /* The vector counts his reference. Release ours */
-        JXTA_OBJECT_RELEASE(dre);
+        jxta_vector_add_object_last(*responses, (Jxta_object *) dre);
 
-        /* The element counts his reference. Release ours */
+        JXTA_OBJECT_RELEASE(dre);
         JXTA_OBJECT_RELEASE(responseString);
 
-        free(keys[i]);
+
         i++;
         if ((i + 1) > (unsigned int) threshold) {
-            while (keys[i]) {
-                free(keys[i++]);
-            }
             break;
         }
     }
-    free(keys);
 
-    num_of_res = jxta_vector_size(responses);
-    if (0 == num_of_res) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "No responses being sent\n");
-        goto FINAL_EXIT;
-    }
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Number of responses being sent: %i\n", num_of_res);
-    dr = jxta_discovery_response_new_1(jxta_discovery_query_get_type(dq), attr ? jstring_get_string(attr) : NULL,
-                                       val ? jstring_get_string(val) : NULL, num_of_res, NULL, responses);
-
-    status = jxta_discovery_response_get_xml(dr, &rdoc);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Response - %s \n", jstring_get_string(rdoc));
-    JXTA_OBJECT_RELEASE(dr);
-
-    if (status == JXTA_SUCCESS) {
-        res_response =
-            jxta_resolver_response_new_2(discovery->instanceName, rdoc, jxta_resolver_query_get_queryid(rq),
-                                         discovery->localPeerId);
-        JXTA_OBJECT_RELEASE(rdoc);
-
-        src_pid = jxta_resolver_query_get_src_peer_id(rq);
-        jxta_resolver_response_attach_qos(res_response, jxta_resolver_query_qos(rq));
-
-        status = jxta_resolver_service_sendResponse(discovery->resolver, res_response, src_pid);
-        JXTA_OBJECT_RELEASE(res_response);
-
-    } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "discovery::remotePublish failed to construct response: %ld\n",
-                        status);
-    }
-
-  FINAL_EXIT:
-    if (dq != NULL)
-        JXTA_OBJECT_RELEASE(dq);
-    if (attr != NULL)
-        JXTA_OBJECT_RELEASE(attr);
-    if (val != NULL)
-        JXTA_OBJECT_RELEASE(val);
-    if (responses)
-        JXTA_OBJECT_RELEASE(responses);
-    if (src_pid)
-        JXTA_OBJECT_RELEASE(src_pid);
-    return JXTA_SUCCESS;
+    return status;
 }
 
 Jxta_status discovery_send_srdi_msg(Jxta_discovery_service_ref *discovery, Jxta_id * to_peerid, Jxta_id * peerid, Jxta_id *source_peerid, JString *jPrimaryKey, Jxta_vector * entries)
@@ -2140,7 +2446,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
 
     /* take all delta entries received and store the values in the entries */
 
-    status = cm_expand_delta_entries(discovery->cm, msg_entries, jPeerid, jSrcPeerid, &entries);
+    status = cm_expand_delta_entries(discovery->cm, msg_entries, jPeerid, jSrcPeerid, &entries, FALSE);
 
     resendDelta = NULL;
 

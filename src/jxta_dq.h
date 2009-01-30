@@ -78,7 +78,8 @@ typedef enum extended_query_states {
     DEQ_FWD_REPLICA_STOP,   /* Query to Replica (Don't walk) */
     DEQ_FWD_WALK,           /* Query being walked (Rdv Diffusion defines scope) */
     DEQ_REV_REPLICATING,    /* Query to Replicating */
-    DEQ_REV_PUBLISHER       /* Query to Publisher */
+    DEQ_REV_PUBLISHER,       /* Query to Publisher */
+    DEQ_REV_REPLICATING_WALK /* Query to Replicating (result of walk) */
  } Jxta_discovery_ext_query_state;
 
 /**
@@ -254,6 +255,9 @@ JXTA_DECLARE(const Jxta_qos *) jxta_discovery_query_qos(Jxta_discovery_query * m
 
 JXTA_DECLARE(Jxta_discovery_ext_query_state) jxta_discovery_query_ext_get_state(Jxta_discovery_query * me);
 JXTA_DECLARE(Jxta_status) jxta_discovery_query_ext_set_state(Jxta_discovery_query *me, Jxta_discovery_ext_query_state state);
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_ext_set_peerid(Jxta_discovery_query *me, JString *peerid);
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_ext_get_peerid(Jxta_discovery_query *me, JString **peerid);
+
 JXTA_DECLARE(void) jxta_discovery_query_ext_print_state(Jxta_discovery_query *me, JString *print);
 #ifdef __cplusplus
 #if 0
