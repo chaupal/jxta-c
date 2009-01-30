@@ -1921,9 +1921,8 @@ static DBSpace *cm_dbSpace_by_alias_get(Jxta_cm * me, const char *dbAlias)
 
 static Jxta_status cm_srdi_index_get(Jxta_cm * me, JString * jPeerid
                         , Jxta_SRDIEntryElement *entry, DBSpace ** dbRet
-                        , Jxta_boolean *bReplica, Jxta_boolean *bCachedLocal
-                        , JString ** jSrcPeerid, JString ** jAdvId, JString ** jName
-                        , JString ** jNameSpace)
+                        , JString ** jSrcPeerid
+                        , Jxta_boolean *bReplica, Jxta_boolean *bCachedLocal)
 {
     Jxta_status status = JXTA_SUCCESS;
     char aTmp[64];
@@ -2005,10 +2004,18 @@ static Jxta_status cm_srdi_index_get(Jxta_cm * me, JString * jPeerid
         status = JXTA_ITEM_NOTFOUND;
         goto FINAL_EXIT;
     }
-    *jAdvId = jstring_new_2(advId);
-    *jName = jstring_new_2(name);
-    *jSrcPeerid = jstring_new_2(source_id);
-    *dbRet = cm_dbSpace_by_alias_get(me, dbAlias);
+
+
+
+    if (NULL != entry->key)
+        JXTA_OBJECT_RELEASE(entry->key);
+    entry->key = jstring_new_2(name);
+    if (NULL != entry->advId)
+        JXTA_OBJECT_RELEASE(entry->advId);
+    entry->advId = jstring_new_2(advId);
+    if (NULL != entry->nameSpace)
+        JXTA_OBJECT_RELEASE(entry->nameSpace);
+    entry->nameSpace = jstring_new_2(name_space);
 
     entry->replicate = !strcmp(replicate, "1") ? TRUE:FALSE;
     entry->fwd = !strcmp(forward, "1") ? TRUE:FALSE;
@@ -2016,16 +2023,16 @@ static Jxta_status cm_srdi_index_get(Jxta_cm * me, JString * jPeerid
     entry->duplicate = !strcmp(duplicate, "1") ? TRUE:FALSE;
     entry->fwd_peerid = jstring_new_2(fwd_peerid);
 
+    *jSrcPeerid = jstring_new_2(source_id);
+    *dbRet = cm_dbSpace_by_alias_get(me, dbAlias);
     *bReplica = !strcmp(replica, "1") ? TRUE:FALSE;
     *bCachedLocal = !strcmp(cached_local, "1") ? TRUE:FALSE;
-    *jNameSpace = jstring_new_2(name_space);
 
   FINAL_EXIT:
 
     if (NULL != pool) {
         apr_pool_destroy(pool);
     }
-
     if (dbSpace) {
         JXTA_OBJECT_RELEASE(dbSpace);
     }
@@ -2051,37 +2058,25 @@ Jxta_status cm_get_srdi_with_seq_number(Jxta_cm * me, JString * jPeerid, Jxta_se
     JString *jWhere = NULL;
     JString *jColumns = NULL;
     JString *jSrcPeerid = NULL;
-    JString *jName = NULL;
-    JString *jAdvId = NULL;
-    JString *jNameSpace = NULL;
     Jxta_SRDIEntryElement *entry=NULL;
 
     entry = jxta_srdi_new_element();
-    *entry_loc = entry;
     entry->seqNumber = seq;
 
-    status = cm_srdi_index_get(me, jPeerid, entry, &dbSRDI, &bReplica, &bCachedLocal, &jSrcPeerid, &jAdvId, &jName, &jNameSpace);
+    status = cm_srdi_index_get(me, jPeerid, entry,  &dbSRDI, &jSrcPeerid, &bReplica, &bCachedLocal);
     if (JXTA_SUCCESS != status || NULL == dbSRDI ) {
+        JXTA_OBJECT_RELEASE(entry);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "%s dbSRDI Couldn't get index for %s %d \n", NULL == dbSRDI ? "no":"there is", jstring_get_string(jPeerid), status );
         goto FINAL_EXIT;
     }
+    *entry_loc = entry;
+
     aprs = apr_pool_create(&pool, NULL);
     if (aprs != APR_SUCCESS) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "%s -- Unable to create apr_pool: %d\n", dbSRDI->id, aprs);
         status = JXTA_NOMEM;
         goto FINAL_EXIT;
     }
-    entry->seqNumber = seq;
-
-    if (NULL != entry->key)
-        JXTA_OBJECT_RELEASE(entry->key);
-    if (NULL != entry->advId)
-        JXTA_OBJECT_RELEASE(entry->advId);
-    if (NULL != entry->nameSpace)
-        JXTA_OBJECT_RELEASE(entry->nameSpace);
-    entry->key = jstring_clone(jName);
-    entry->advId = jstring_clone(jAdvId);
-    entry->nameSpace = jstring_clone(jNameSpace);
 
     /* if this has been forwarded there are no SRDI/Replica entries */
     if (entry->fwd_this) {
@@ -2096,9 +2091,9 @@ Jxta_status cm_get_srdi_with_seq_number(Jxta_cm * me, JString * jPeerid, Jxta_se
     SQL_VALUE(jWhere, me->jGroupID_string);
 
     jstring_append_2(jWhere, SQL_AND CM_COL_AdvId SQL_EQUAL);
-    SQL_VALUE(jWhere, jAdvId);
+    SQL_VALUE(jWhere, entry->advId);
     jstring_append_2(jWhere, SQL_AND CM_COL_Name SQL_EQUAL);
-    SQL_VALUE(jWhere, jName);
+    SQL_VALUE(jWhere, entry->key);
 
     jColumns = jstring_new_2(CM_COL_Value SQL_COMMA CM_COL_NumRange SQL_COMMA CM_COL_NameSpace);
 
@@ -2136,16 +2131,11 @@ Jxta_status cm_get_srdi_with_seq_number(Jxta_cm * me, JString * jPeerid, Jxta_se
     }
 
 FINAL_EXIT:
-    if (jAdvId)
-        JXTA_OBJECT_RELEASE(jAdvId);
+
     if (jSrcPeerid)
         JXTA_OBJECT_RELEASE(jSrcPeerid);
-    if (jName)
-        JXTA_OBJECT_RELEASE(jName);
     if (jWhere)
         JXTA_OBJECT_RELEASE(jWhere);
-    if (jNameSpace)
-        JXTA_OBJECT_RELEASE(jNameSpace);
     if (NULL != pool)
         apr_pool_destroy(pool);
 
@@ -2168,12 +2158,8 @@ static Jxta_status cm_srdi_seq_number_update(Jxta_cm * me, JString *jHandler, JS
     DBSpace *dbSpace = NULL;
     DBSpace *dbSRDI = NULL;
     JString *jSourcePeerid = NULL;
-    JString *jName = NULL;
-    JString *jAdvId = NULL;
-    JString *jNameSpace = NULL;
 
-    status = cm_srdi_index_get(me, jPeerid, entry, &dbSRDI, &bReplica, &bCachedLocal, &jSourcePeerid
-                        , &jAdvId, &jName, &jNameSpace);
+    status = cm_srdi_index_get(me, jPeerid, entry, &dbSRDI,&jSourcePeerid, &bReplica, &bCachedLocal);
     if (JXTA_SUCCESS != status) {
         goto FINAL_EXIT;
     }
@@ -2248,23 +2234,17 @@ static Jxta_status cm_srdi_seq_number_update(Jxta_cm * me, JString *jHandler, JS
         table_name = CM_TBL_SRDI;
     }
 
-    status = cm_srdi_item_update(dbSRDI, table_name, NULL, jSourcePeerid, jAdvId, jName, entry->value, entry->range, entry->expiration);
+    status = cm_srdi_item_update(dbSRDI, table_name, NULL, jSourcePeerid, entry->advId, entry->key, entry->value, entry->range, entry->expiration);
 
 
   FINAL_EXIT:
 
-    if (jAdvId)
-        JXTA_OBJECT_RELEASE(jAdvId);
     if (jSourcePeerid)
         JXTA_OBJECT_RELEASE(jSourcePeerid);
-    if (jName)
-        JXTA_OBJECT_RELEASE(jName);
     if (dbSpace)
         JXTA_OBJECT_RELEASE(dbSpace);
     if (dbSRDI)
         JXTA_OBJECT_RELEASE(dbSRDI);
-    if (jNameSpace)
-        JXTA_OBJECT_RELEASE(jNameSpace);
     return status;
 }
 
