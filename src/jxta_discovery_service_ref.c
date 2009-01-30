@@ -1890,7 +1890,10 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
             /* if no entry is found */
             if (JXTA_ITEM_NOTFOUND == status || (JXTA_ITEM_EXISTS == status && 0 == found_count)) {
                 if (DEQ_REV_REPLICATING == rcvd_state || DEQ_REV_REPLICATING_WALK == rcvd_state) {
-                    /* TODO ExocetRick Remove the replica from peer that routed this */
+                    /* TODO ExocetRick Remove the replica from the peer that routed this query. It is a stale
+                        replica that will not be removed until it expires. In order to implement this the discovery
+                        query needs to be modified to include the peer that is routing the query back to this peer
+                    */
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Received query expecting results in the SRDI and none found - Query dropped\n");
                     res = JXTA_SUCCESS;
                     if (peer_results)
@@ -1963,7 +1966,10 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
             if (peer_results)
                 JXTA_OBJECT_RELEASE(peer_results);
         } else if (NULL != jContext) {
-            /* TODO ExocetRick ************* remove the entries from the source that forwarded the query */
+            /* TODO ExocetRick ************* remove the entries from the source that forwarded the query. In
+                order to implement this the discovery query needs to be modified to include the peer that routed
+                the query to this peer. It could be assumed that its the rendezvous but that may not be safe.
+             */
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "NO local advertisement when this peer is the publisher\n");
             goto FINAL_EXIT;
 
