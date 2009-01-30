@@ -5697,7 +5697,7 @@ static Jxta_status histogram_predictable_entry(Jxta_vector * histogram, BIGNUM *
         if (-1 == gap_idx) {
             BN_pseudo_rand_range(*target_address , range);
         } else {
-            BIGNUM *peer_hash;
+            BIGNUM *peer_hash=NULL;
             BIGNUM *how_far=NULL;
 
             peer_hash = BN_new();
@@ -5719,6 +5719,7 @@ static Jxta_status histogram_predictable_entry(Jxta_vector * histogram, BIGNUM *
             BN_rshift1(*target_address, *target_address);
 
             BN_free(peer_hash);
+            BN_free(how_far);
             JXTA_OBJECT_RELEASE(entry);
         }
         BN_add(*target_address, *target_address, min_bn);
