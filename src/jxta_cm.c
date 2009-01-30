@@ -2187,9 +2187,7 @@ static Jxta_status cm_srdi_seq_number_update(Jxta_cm * me, JString *jHandler, JS
         const char *items[UPDATE_SRDI_INDEX_ITEMS];
 
         memset(aTime, 0, sizeof(aTime));
-        if (apr_snprintf(aTime, sizeof(aTime), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), entry->expiration)) != 0) {
-            /* jstring_append_2(jColumns, aTmp); */
-        } else {
+        if (apr_snprintf(aTime, sizeof(aTime), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), entry->expiration)) == 0) {
             goto FINAL_EXIT;
         }
 
@@ -3085,7 +3083,7 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
         /* timeout */
         memset(aTime1, 0, sizeof(aTime1));
         actual_timeout = lifetime_get(nnow, entry->expiration);
-        if (!apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, actual_timeout) != 0) {
+        if (apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, actual_timeout) == 0) {
             actual_timeout = lifetime_get(nnow, DEFAULT_EXPIRATION);
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unable to format time - set to default timeout\n");
             apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, actual_timeout);
@@ -3094,7 +3092,7 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
 
         /* time out for others */
         memset(aTime2, 0, sizeof(aTime2));
-        if (!apr_snprintf(aTime2, sizeof(aTime2), JPR_DIFF_TIME_FMT, entry->expiration) != 0) {
+        if (apr_snprintf(aTime2, sizeof(aTime2), JPR_DIFF_TIME_FMT, entry->expiration) == 0) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unable to format time - set to default timeout\n");
             apr_snprintf(aTime2, sizeof(aTime2), JPR_DIFF_TIME_FMT, DEFAULT_EXPIRATION);
         }
@@ -6232,13 +6230,13 @@ static Jxta_status cm_advertisement_update(DBSpace * dbSpace, JString * jNameSpa
     const char *items[UPDATE_ADVERTISEMENTS_ITEMS];
 
     memset(aTime1, 0, sizeof(aTime1));
-    if (!apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), timeOutForMe)) != 0) {
+    if (apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), timeOutForMe)) == 0) {
         status = JXTA_INVALID_ARGUMENT;
         goto FINAL_EXIT;
     }
 
     memset(aTime2, 0, sizeof(aTime2));
-    if (!apr_snprintf(aTime2, sizeof(aTime2), JPR_DIFF_TIME_FMT, timeOutForOthers) != 0) {
+    if (apr_snprintf(aTime2, sizeof(aTime2), JPR_DIFF_TIME_FMT, timeOutForOthers) == 0) {
         status = JXTA_INVALID_ARGUMENT;
         goto FINAL_EXIT;
     }
@@ -6330,14 +6328,14 @@ static Jxta_status cm_advertisement_save(DBSpace * dbSpace, const char *key, Jxt
 
         memset(aTime1, 0, sizeof(aTime1));
 
-        if (!apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), timeOutForMe)) != 0) {
+        if (apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), timeOutForMe)) == 0) {
             status = JXTA_FAILED;
             goto FINAL_EXIT;
         }
         items[i++] = aTime1;
 
         memset(aTime2, 0, sizeof(aTime2));
-        if (!apr_snprintf(aTime2, sizeof(aTime2), JPR_DIFF_TIME_FMT, timeOutForOthers) != 0) {
+        if (apr_snprintf(aTime2, sizeof(aTime2), JPR_DIFF_TIME_FMT, timeOutForOthers) == 0) {
             status = JXTA_FAILED;
             goto FINAL_EXIT;
         }
@@ -6479,7 +6477,7 @@ static Jxta_status cm_srdi_element_save(DBSpace * dbSpace, JString * Handler, JS
         memset(aTime1, 0, sizeof(aTime1));
 
         /* Timeout */
-        if (!apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), entry->expiration)) != 0) {
+        if (apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), entry->expiration)) == 0) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,
                         "Unable to format time for me and current time - set to default timeout \n");
             apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), DEFAULT_EXPIRATION));
@@ -6491,7 +6489,7 @@ static Jxta_status cm_srdi_element_save(DBSpace * dbSpace, JString * Handler, JS
 
         /* expiration */
         memset(aTime2, 0, sizeof(aTime2));
-        if (!apr_snprintf(aTime2, sizeof(aTime2), JPR_DIFF_TIME_FMT, entry->expiration) != 0) {
+        if (apr_snprintf(aTime2, sizeof(aTime2), JPR_DIFF_TIME_FMT, entry->expiration) == 0) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to format time for me - set to default timeout \n");
             apr_snprintf(aTime2, sizeof(aTime2), JPR_DIFF_TIME_FMT, DEFAULT_EXPIRATION);
         }
@@ -6667,7 +6665,7 @@ static Jxta_status cm_srdi_index_save(Jxta_cm * me, const char *alias, JString *
 
     /* timeout */
     memset(aTime1, 0, sizeof(aTime1));
-    if (!apr_snprintf(aTime1, 64, JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), entry->expiration)) != 0) {
+    if (apr_snprintf(aTime1, 64, JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), entry->expiration)) == 0) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,
                         "Unable to format time for me and current time - set to default timeout \n");
         apr_snprintf(aTime1, 64, JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), DEFAULT_EXPIRATION));
@@ -6759,13 +6757,13 @@ static Jxta_status cm_item_update(DBSpace * dbSpace, const char *table, const ch
     SQL_CHAR_NUMERIC_VALUE(adjNumValue, jVal);
 
     memset(aTime1, 0, sizeof(aTime1));
-    if (!apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), timeOutForMe)) != 0) {
+    if (apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), timeOutForMe)) == 0) {
         status = JXTA_INVALID_ARGUMENT;
         goto FINAL_EXIT;
     }
 
     memset(aTime2, 0, sizeof(aTime2));
-    if (!apr_snprintf(aTime2, sizeof(aTime2), JPR_DIFF_TIME_FMT, timeOutForOthers) != 0) {
+    if (apr_snprintf(aTime2, sizeof(aTime2), JPR_DIFF_TIME_FMT, timeOutForOthers) == 0) {
         status = JXTA_INVALID_ARGUMENT;
         goto FINAL_EXIT;
     }
@@ -6838,14 +6836,14 @@ static Jxta_status cm_srdi_item_update(DBSpace * dbSpace, const char *table, JSt
         }
 
         memset(aTime1, 0, sizeof(aTime1));
-        if (!apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), timeOutForMe)) != 0) {
+        if (apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), timeOutForMe)) == 0) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to format time - set to default timeout \n");
             apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), DEFAULT_EXPIRATION));
         }
         items[i++] = aTime1;
 
         memset(aTime2, 0, sizeof(aTime2));
-        if (!apr_snprintf(aTime2, sizeof(aTime2), JPR_DIFF_TIME_FMT, timeOutForMe) != 0) {
+        if (apr_snprintf(aTime2, sizeof(aTime2), JPR_DIFF_TIME_FMT, timeOutForMe) == 0) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to format time for me - set to default timeout \n");
             apr_snprintf(aTime2, sizeof(aTime2), JPR_DIFF_TIME_FMT,DEFAULT_EXPIRATION);
         }
@@ -7138,13 +7136,13 @@ static Jxta_status cm_item_insert(DBSpace * dbSpace, const char *nameSpace, cons
         SQL_CHAR_NUMERIC_VALUE(jAdjNumValue, jVal);
 
         memset(aTime1, 0, sizeof(aTime1));
-        if (!apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), timeOutForMe)) != 0) {
+        if (apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), timeOutForMe)) == 0) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to format time for me - set to default timeout \n");
             apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), DEFAULT_EXPIRATION));
         }
 
         memset(aTime2, 0, sizeof(aTime2));
-        if (!apr_snprintf(aTime2, sizeof(aTime2), JPR_DIFF_TIME_FMT, timeOutForOthers) != 0) {
+        if (apr_snprintf(aTime2, sizeof(aTime2), JPR_DIFF_TIME_FMT, timeOutForOthers) == 0) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to format time for others - set to default timeout \n");
             apr_snprintf(aTime2, sizeof(aTime2), JPR_DIFF_TIME_FMT, DEFAULT_EXPIRATION);
         }
