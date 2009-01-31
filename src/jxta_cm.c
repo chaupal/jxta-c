@@ -2062,14 +2062,13 @@ Jxta_status cm_get_srdi_with_seq_number(Jxta_cm * me, JString * jPeerid, Jxta_se
 
     entry = jxta_srdi_new_element();
     entry->seqNumber = seq;
+    *entry_loc = entry;
 
     status = cm_srdi_index_get(me, jPeerid, entry,  &dbSRDI, &jSrcPeerid, &bReplica, &bCachedLocal);
     if (JXTA_SUCCESS != status || NULL == dbSRDI ) {
-        JXTA_OBJECT_RELEASE(entry);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "%s dbSRDI Couldn't get index for %s %d \n", NULL == dbSRDI ? "no":"there is", jstring_get_string(jPeerid), status );
         goto FINAL_EXIT;
     }
-    *entry_loc = entry;
 
     aprs = apr_pool_create(&pool, NULL);
     if (aprs != APR_SUCCESS) {
