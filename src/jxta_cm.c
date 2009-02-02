@@ -4571,6 +4571,8 @@ static Jxta_cache_entry **cm_proffer_advertisements_build(DBSpace * dbSpace, apr
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d Unable to parse Adv: %s\n", dbSpace->conn->log_id,
                                     adv ? adv : "NULL");
                     ret = NULL;
+                    JXTA_OBJECT_RELEASE(cache_entry);
+                    JXTA_OBJECT_RELEASE(profferAdv);
                     goto FINAL_EXIT;
                 }
                 cache_entry->adv = jAdv;
@@ -6795,6 +6797,8 @@ static Jxta_status cm_srdi_item_update(DBSpace * dbSpace, const char *table, JSt
         int i=0;
         const char *items[UPDATE_SRDI_REPLICA_VALUE_ITEMS];
         Jxta_boolean has_value;
+        JString *adjValue = NULL;
+        JString *adjNumValue = NULL;
         char aTime1[24];
         char aTime2[24];
         int num_items;
@@ -6831,9 +6835,6 @@ static Jxta_status cm_srdi_item_update(DBSpace * dbSpace, const char *table, JSt
         items[i++] = NULL != jRange ? jstring_get_string(jRange):"";
 
         if (has_value) {
-            JString *adjValue;
-            JString *adjNumValue;
-
             adjValue = jstring_new_0();
             adjNumValue = jstring_new_0();
             SQL_CHAR_VALUE(adjValue, jValue);
@@ -6861,6 +6862,10 @@ static Jxta_status cm_srdi_item_update(DBSpace * dbSpace, const char *table, JSt
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Updated %d srdi_entries\n", nrows);
         }
 
+        if (NULL != adjValue)
+            JXTA_OBJECT_RELEASE(adjValue);
+        if (NULL != adjNumValue)
+            JXTA_OBJECT_RELEASE(adjNumValue);
     } else {
         int i=0;
         const char *items[DELETE_SRDI_REPLICA_ITEMS];
