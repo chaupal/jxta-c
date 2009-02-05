@@ -317,12 +317,11 @@ JXTA_DECLARE(Jxta_status) jxta_monitor_msg_get_entries(Jxta_monitor_msg * myself
                     t_keys = jxta_hashtable_keys_get(type_hashtable);
                     t_keys_save = t_keys;
                     while(*t_keys) {
-                    
+                        unsigned int i;
                         Jxta_vector *entries = NULL;
 
                         ret = jxta_hashtable_get(type_hashtable, *t_keys, strlen(*t_keys) +1, JXTA_OBJECT_PPTR(&entries));
-                        
-                        unsigned int i;
+
                         for (i = 0; i < jxta_vector_size(entries); i++) {
                             Jxta_monitor_entry * entry;
 
@@ -343,6 +342,8 @@ JXTA_DECLARE(Jxta_status) jxta_monitor_msg_get_entries(Jxta_monitor_msg * myself
                 } else {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "unable to retrieve service with key:%s\n", *s_keys);
                 }
+                if (type_hashtable)
+                    JXTA_OBJECT_RELEASE(type_hashtable);
                 free(*s_keys);
                 s_keys++;
             }
@@ -350,7 +351,8 @@ JXTA_DECLARE(Jxta_status) jxta_monitor_msg_get_entries(Jxta_monitor_msg * myself
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "unable to retrieve context with key:%s\n", *c_keys);
         }
-        JXTA_OBJECT_RELEASE(sub_contexts);
+        if (sub_contexts)
+            JXTA_OBJECT_RELEASE(sub_contexts);
         free(*c_keys);
         c_keys++;
     }
@@ -698,7 +700,7 @@ static void handle_entry(void *me, const XML_Char * cd, int len)
             }
 
             /** check if and entries vector has already been created for this type **/
-            if (JXTA_SUCCESS != jxta_hashtable_get(type_hashtable, type, strlen(type)+1, JXTA_OBJECT_PPTR(entries_v))) {
+            if (JXTA_SUCCESS != jxta_hashtable_get(type_hashtable, type, strlen(type)+1, JXTA_OBJECT_PPTR(&entries_v))) {
                 entries_v = jxta_vector_new(0);
                 jxta_hashtable_put(type_hashtable, type, strlen(type)+1, (Jxta_object*) entries_v);
             }
@@ -714,6 +716,7 @@ static void handle_entry(void *me, const XML_Char * cd, int len)
             if (type_hashtable)
                 JXTA_OBJECT_RELEASE(type_hashtable);
             JXTA_OBJECT_RELEASE(entry);
+            JXTA_OBJECT_RELEASE(entries_v);
         }
         if (newAdv)
             JXTA_OBJECT_RELEASE(newAdv);
@@ -785,6 +788,7 @@ static void handle_sub_context(void *me, const XML_Char * cd, int len)
         while (atts && *atts) {
             if (0 == strcmp(*atts, "id")) {
                 int sub_context_size = 0;
+                Jxta_hashtable * type_hashtable = NULL;
 
                 if (myself->current_sub_context) {
                     free(myself->current_sub_context);
@@ -798,7 +802,6 @@ static void handle_sub_context(void *me, const XML_Char * cd, int len)
                 }
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Received SubContext : %s\n", myself->current_sub_context);
 
-                Jxta_hashtable * type_hashtable = NULL;
 
                 /* atts[1] should be the service name */
                 if (JXTA_SUCCESS != jxta_hashtable_get(myself->current_sub_context_hash, atts[1], sub_context_size, JXTA_OBJECT_PPTR(&type_hashtable))) {
