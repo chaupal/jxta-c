@@ -63,6 +63,7 @@
 #include "jxta_cache_config_adv.h"
 #include "jxta_discovery_config_adv.h"
 #include "jxta_endpoint_config_adv.h"
+#include "jxta_monitor_config_adv.h"
 #include "jxta_rdv_config_adv.h"
 #include "jxta_srdi_config_adv.h"
 #include "jxta_relaya.h"
@@ -196,6 +197,18 @@ JXTA_DECLARE(Jxta_EndPointConfigAdvertisement *) jxta_svc_get_EndPointConfig(Jxt
  * to remove the element.
  */
 JXTA_DECLARE(void) jxta_svc_set_EndPointConfig(Jxta_svc *, Jxta_EndPointConfigAdvertisement *);
+
+/*
+ * Unlike similar accessors in other advs, this one may return NULL if
+ * there is no such element.
+ */
+JXTA_DECLARE(Jxta_MonitorConfigAdvertisement *) jxta_svc_get_MonitorConfig(Jxta_svc *);
+
+/*
+ * Unlike similar mutators in other advs, it is valid to pass NULL as a means
+ * to remove the element.
+ */
+JXTA_DECLARE(void) jxta_svc_set_MonitorConfig(Jxta_svc *, Jxta_MonitorConfigAdvertisement *);
 
 /*
  * Unlike similar accessors in other advs, this one may return NULL if

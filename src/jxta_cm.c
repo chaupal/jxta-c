@@ -173,6 +173,7 @@ struct _jxta_cm {
     volatile Jxta_boolean available;
     volatile Jxta_sequence_number delta_seq_number;
     int log_id;
+    Jxta_boolean global_cm;
 };
 
 typedef struct resolved_adv_type {
@@ -396,7 +397,7 @@ static Jxta_status cm_sql_delta_entry_update(DBSpace * dbSpace, JString * jPeeri
 /*==================== CM entry functions ===========================*/
 
 static Jxta_cm *cm_new_priv(Jxta_cm * cm, const char *home_directory, Jxta_id * group_id,
-                            Jxta_CacheConfigAdvertisement * conf_adv, Jxta_PID * localPeerId, apr_thread_pool_t * thread_pool);
+                            Jxta_CacheConfigAdvertisement * conf_adv, Jxta_PID * localPeerId, apr_thread_pool_t * thread_pool, Jxta_boolean global_cm);
 
 static Jxta_status cm_advertisement_save(DBSpace * dbSpace, const char *key, Jxta_advertisement * adv,
                                          Jxta_expiration_time timeOutForMe, Jxta_expiration_time timeOutForOthers,
@@ -524,7 +525,7 @@ void cm_stop(Jxta_cm * me)
     if (me->thread_pool) {
         apr_thread_pool_tasks_cancel(me->thread_pool, me);
     }
-    for (i = 0; i < jxta_vector_size(global_cm_registry); i++) {
+    for (i = 0; me->global_cm && i < jxta_vector_size(global_cm_registry); i++) {
         Jxta_cm *tmp_cm;
         jxta_vector_get_object_at(global_cm_registry, JXTA_OBJECT_PPTR(&tmp_cm), i);
         if (tmp_cm == me) {
@@ -684,7 +685,7 @@ Jxta_cm *cm_shared_DB_new(Jxta_cm * cm, Jxta_id * group_id)
     Jxta_cm *cm_res;
     assert(NULL != cm);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Shared DB with %s\n", jstring_get_string(cm->jGroupID_string));
-    cm_res = cm_new_priv(cm, NULL, group_id, cm->cacheConfig, cm->localPeerId, cm->thread_pool);
+    cm_res = cm_new_priv(cm, NULL, group_id, cm->cacheConfig, cm->localPeerId, cm->thread_pool, TRUE);
     cm_res->sharedDB = TRUE;
     /* the parent CM should be modified */
     cm->sharedDB = TRUE;
@@ -717,10 +718,11 @@ void idx_entry_free(Jxta_object * obj)
 
 /* Create a new Cm Structure */
 Jxta_cm *cm_new(const char *home_directory, Jxta_id * group_id,
-                Jxta_CacheConfigAdvertisement * conf_adv, Jxta_PID * localPeerId, apr_thread_pool_t * thread_pool)
+                Jxta_CacheConfigAdvertisement * conf_adv, Jxta_PID * localPeerId, apr_thread_pool_t * thread_pool, Jxta_boolean
+                global_cm)
 {
     Jxta_cm *cm_res;
-    cm_res = cm_new_priv(NULL, home_directory, group_id, conf_adv, localPeerId, thread_pool);
+    cm_res = cm_new_priv(NULL, home_directory, group_id, conf_adv, localPeerId, thread_pool, global_cm);
     if (NULL == cm_res) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Couldn't create a CM home:%s, group_id:%s - cannot continue\n", home_directory, group_id);
     } else {
@@ -731,7 +733,8 @@ Jxta_cm *cm_new(const char *home_directory, Jxta_id * group_id,
 }
 
 Jxta_cm *cm_new_priv(Jxta_cm * cm, const char *home_directory, Jxta_id * group_id,
-                     Jxta_CacheConfigAdvertisement * conf_adv, Jxta_PID * localPeerId, apr_thread_pool_t * thread_pool)
+                     Jxta_CacheConfigAdvertisement * conf_adv, Jxta_PID * localPeerId, apr_thread_pool_t * thread_pool,
+                     Jxta_boolean global_cm)
 {
     apr_status_t res;
     Jxta_status status;
@@ -847,10 +850,11 @@ Jxta_cm *cm_new_priv(Jxta_cm * cm, const char *home_directory, Jxta_id * group_i
             self->available = FALSE;
         }
     }
+    self->global_cm = global_cm;
+    if (global_cm) {
     if (NULL == global_cm_registry) {
         global_cm_registry = jxta_vector_new(0);
     }
-    if (NULL != self) {
         jxta_vector_add_object_last(global_cm_registry, (Jxta_object *) self);
     }
     return self;
@@ -7888,7 +7892,7 @@ static DBSpace **cm_dbSpaces_get(Jxta_cm * self, const char *pAdvType, Jxta_cred
     if (NULL == scope) {
         dbSpaces = cm_dbSpaces_get_priv(self, pAdvType, bestChoice);
     } else {
-        for (i = 0; i < jxta_vector_size(global_cm_registry); i++) {
+        for (i = 0; self->global_cm && i < jxta_vector_size(global_cm_registry); i++) {
             Jxta_cm *tmp_cm;
             DBSpace **tmp;
             JString *jGid;
@@ -8086,7 +8090,7 @@ void cm_sql_numeric_quote_parse(JString *jDest, JString * jStr, Jxta_boolean isN
 JXTA_DECLARE(Jxta_cm *) jxta_cm_new(const char *home_directory, Jxta_id * group_id, Jxta_PID * localPeerId)
 {
     JXTA_DEPRECATED_API();
-    return cm_new(home_directory, group_id, NULL, localPeerId, NULL);
+    return cm_new(home_directory, group_id, NULL, localPeerId, NULL, TRUE);
 }
 
 /* remove an advertisement given the group_id, type and advertisement name */

@@ -1,5 +1,6 @@
-/* 
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights reserved.
+/*
+ * Copyright (c) 2002 Sun Microsystems, Inc.  All rights
+ * reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,7 +30,7 @@
  *    nor may "JXTA" appear in their name, without prior written
  *    permission of Sun.
  *
- * THIS SOFTWARE IS PROVIDED AS IS'' AND ANY EXPRESSED OR IMPLIED
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
  * DISCLAIMED.  IN NO EVENT SHALL SUN MICROSYSTEMS OR
@@ -50,82 +51,73 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id$
+ * $Id: jxta_monpg_private.h 118 2007-08-16 00:18:01Z slowhog $
  */
 
-#include "jxta_apr.h"
-#include "jpr/jpr_core.h"
-#include "jxta_log.h"
-#include "jxta_private.h"
-#include "jxta_advertisement_priv.h"
-#include "jxta_netpg_private.h"
-#include "jxta_monpg_private.h"
-#include "jxta_range.h"
+#ifndef JXTA_MONPG_PRIVATE_H
+#define JXTA_MONPG_PRIVATE_H
 
-/**
- * Briefly, touching jxta jxta touches apr, which requires a call
- * to apr_initialize() and apr_terminate().  
- */
+#include "jxta_stdpg_private.h"
 
-static unsigned int _jxta_initialized = 0;
-int _jxta_return = 1;
-#ifdef WIN32
-static int _targc = 0;
-static char **_targv = NULL;
+
+#ifdef __cplusplus
+extern "C" {
+#if 0
+};
+#endif
 #endif
 
-/**
- * @todo Add initialization code.
+/*
+ * Note: Jxta_monpg does not normaly need to be public, unless the
+ * group has some extra features available to applications. That's why
+ * there is no separate incomplete type declaration in a public
+ * header file. Here we only export this type to subclassers.
  */
-JXTA_DECLARE(void) jxta_initialize(void)
+typedef struct _jxta_monpg Jxta_monpg;
+
+struct _jxta_monpg {
+    Extends(Jxta_stdpg);
+    Jxta_boolean started;
+    Jxta_transport *tcp;
+    Jxta_transport *router;
+    Jxta_transport *relay;
+};
+
+
+/*
+ * We do not need to subtype the base methods table, we're not adding to it.
+ * However, typedef it to be nice to subclassers that expect the naming
+ * to follow the regular scheme. Hopefully we should be able to get away
+ * with just that and not be forced to always subclass the vtbl.
+ *
+ */
+typedef Jxta_stdpg_methods Jxta_monpg_methods;
+
+/*
+ * export our methods table to subclassers so that they can copy it
+ * at run-time if usefull.
+ */
+extern Jxta_monpg_methods jxta_monpg_methods;
+
+/*
+ * export the constructor to subclassers.
+ */
+extern void jxta_monpg_construct(Jxta_monpg * self, Jxta_monpg_methods const * methods);
+
+/*
+ * export the destructor to subclassers.
+ */
+extern void jxta_monpg_destruct(Jxta_monpg * self);
+
+void monpg_init_methods(void);
+
+#ifdef __cplusplus
+#if 0
 {
-    if (_jxta_initialized++) {
-        return;
-    }
-#ifdef WIN32
-    if (_targc != __argc)
-        _targc = __argc;
-
-    if (_targv != __argv)
-        _targv = __argv;
-
-    apr_app_initialize(&_targc, &_targv, NULL);
-#else
-    apr_initialize();
+#endif
+}
 #endif
 
-    jpr_initialize();
-    jxta_object_initialize();
-    jxta_log_initialize();
-    jxta_advertisement_register_global_handlers();
-    jxta_PG_module_initialize();
-    netpg_init_methods();
-    monpg_init_methods();
-    jxta_range_init();
-}
+#endif /* JXTA_MONPG_PRIVATE_H */
 
-
-/**
- * @todo Add termination code.
- */
-JXTA_DECLARE(void) jxta_terminate(void)
-{
-    if (!_jxta_initialized) {
-        return;
-    }
-
-    _jxta_initialized--;
-    if (_jxta_initialized) {
-        return;
-    }
-
-    jxta_range_destroy();
-    jxta_PG_module_terminate();
-    jxta_advertisement_cleanup();
-    jxta_log_terminate();
-    jxta_object_terminate();
-    jpr_terminate();
-    apr_terminate();
-}
-
-/* vim: set ts=4 sw=4 tw=130 et: */
+/* vi: set ts=4 sw=4 tw=130 et: */

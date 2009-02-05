@@ -104,6 +104,7 @@ JXTA_DECLARE(Jxta_log_level) jxta_get_JXTA_LOG_LEVEL_MAX(void) { return JXTA_LOG
 
 JXTA_DECLARE(Jxta_id *) jxta_get_id_worldNetPeerGroupID(void) { return jxta_id_worldNetPeerGroupID; } 
 JXTA_DECLARE(Jxta_id *) jxta_get_id_defaultNetPeerGroupID(void) { return jxta_id_defaultNetPeerGroupID; }
+JXTA_DECLARE(Jxta_id *) jxta_get_id_defaultMonPeerGroupID(void) { return jxta_id_defaultMonPeerGroupID; }
 
 JXTA_DECLARE(Jxta_write_func) jxta_get_addr_writefunc_appender()
 {

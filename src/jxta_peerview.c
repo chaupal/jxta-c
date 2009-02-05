@@ -83,6 +83,7 @@ static const char *__log_cat = "PV";
 #include "jxta_peer_private.h"
 #include "jxta_rdv_service_private.h"
 #include "jxta_rdv_lease_options.h"
+#include "jxta_peerview_monitor_entry.h"
 
 /**
 *   Names of the Peerview Events
@@ -435,6 +436,8 @@ static void *APR_THREAD_FUNC activity_peerview_announce(apr_thread_t * thread, v
 static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, void *cookie);
 static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *cookie);
 static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread, void *arg);
+
+static Jxta_status JXTA_STDCALL peerview_monitor_cb(Jxta_object * obj, Jxta_monitor_entry **arg);
 
 static Peerview_entry *peerview_entry_new(Jxta_id * pid, Jxta_endpoint_address * ea, Jxta_PA * adv, apr_uuid_t * pv_id_gen)
 {
@@ -929,6 +932,7 @@ Jxta_status peerview_start(Jxta_peerview * pv)
 {
     Jxta_status res = JXTA_SUCCESS;
     Jxta_peerview *myself = PTValid(pv, Jxta_peerview);
+    Jxta_monitor_service * monitor;
 
     apr_thread_mutex_lock(myself->mutex);
 
@@ -959,6 +963,11 @@ Jxta_status peerview_start(Jxta_peerview * pv)
 
     }
 
+    monitor = jxta_monitor_service_get_instance();
+
+    if (NULL != monitor) {
+        jxta_monitor_service_register_callback(monitor, peerview_monitor_cb, "jxta:PV3MonEntry" , (Jxta_object *) pv);
+    }
     apr_thread_mutex_unlock(myself->mutex);
 
     if (JXTA_SUCCESS == res) {
@@ -1973,45 +1982,16 @@ static Jxta_status peerview_send_ping(Jxta_peerview * myself, Jxta_peer * dest, 
     return res;
 }
 
-JXTA_DECLARE(Jxta_status) peerview_send_disconnect(Jxta_peerview * pv, Jxta_peer * dest)
+static Jxta_status peerview_create_pong_msg(Jxta_peerview * myself, Jxta_pong_msg_action action, Jxta_boolean candidates_only, Jxta_peerview_pong_msg **pong_msg, Jxta_boolean disconnect)
 {
-    Jxta_peerview *myself = PTValid(pv, Jxta_peerview);
-    /*
-    *   Sends a pong message with an action of demote,
-    *   doesn't send any candidates, sends the message as
-    *   a client to signal a disconnect
-    */
-    return peerview_send_pong_1(myself, dest, PONG_DEMOTE, FALSE, FALSE, TRUE, TRUE);
-}
-
-static Jxta_status peerview_send_pong(Jxta_peerview * myself, Jxta_peer * dest, Jxta_pong_msg_action action, Jxta_boolean candidates_only, Jxta_boolean compact, Jxta_boolean disconnect)
-{
-    return peerview_send_pong_1(myself, dest, action, candidates_only, compact, disconnect, FALSE);
-}
-
-static Jxta_status peerview_send_pong_1(Jxta_peerview * myself, Jxta_peer * dest, Jxta_pong_msg_action action, Jxta_boolean candidates_only, Jxta_boolean compact, Jxta_boolean disconnect, Jxta_boolean sync)
-{
-    Jxta_status res;
+    Jxta_status res = JXTA_SUCCESS;
     Jxta_peerview_pong_msg *pong = NULL;
-    JString *pong_msg_xml;
-    Jxta_message *msg;
-    Jxta_message_element *el = NULL;
     Jxta_PA * pa;
     char *tmp;
     unsigned int i;
     Jxta_vector *peers=NULL;
     apr_uuid_t adv_gen;
     Jxta_rdv_lease_options *rdv_options=NULL;
-
-    apr_thread_mutex_lock(myself->mutex);
-
-    if ((NULL == myself->instance_mask) || (NULL == myself->self_pve)
-        || (0 == jxta_peer_get_expires((Jxta_peer *) myself->self_pve))) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Can't send pong message now! [%pp]\n", myself);
-        res = JXTA_FAILED;
-        apr_thread_mutex_unlock(myself->mutex);
-        return res;
-    }
 
     pong = jxta_peerview_pong_msg_new();
 
@@ -2155,13 +2135,60 @@ static Jxta_status peerview_send_pong_1(Jxta_peerview * myself, Jxta_peer * dest
     }
     JXTA_OBJECT_RELEASE(peers);
 
+    *pong_msg = pong;
+
+    return res;
+}
+
+JXTA_DECLARE(Jxta_status) peerview_send_disconnect(Jxta_peerview * pv, Jxta_peer * dest)
+{
+    Jxta_peerview *myself = PTValid(pv, Jxta_peerview);
+    /*
+    *   Sends a pong message with an action of demote,
+    *   doesn't send any candidates, sends the message as
+    *   a client to signal a disconnect
+    */
+    return peerview_send_pong_1(myself, dest, PONG_DEMOTE, FALSE, FALSE, TRUE, TRUE);
+}
+
+static Jxta_status peerview_send_pong(Jxta_peerview * myself, Jxta_peer * dest, Jxta_pong_msg_action action, Jxta_boolean candidates_only, Jxta_boolean compact, Jxta_boolean disconnect)
+{
+    return peerview_send_pong_1(myself, dest, action, candidates_only, compact, disconnect, FALSE);
+}
+
+
+static Jxta_status peerview_send_pong_1(Jxta_peerview * myself, Jxta_peer * dest, Jxta_pong_msg_action action, Jxta_boolean candidates_only, Jxta_boolean compact, Jxta_boolean disconnect, Jxta_boolean sync)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    Jxta_peerview_pong_msg *pong;
+    JString *pong_msg_xml;
+    Jxta_message *msg;
+    Jxta_message_element *el = NULL;
+
+    apr_thread_mutex_lock(myself->mutex);
+
+    if ((NULL == myself->instance_mask) || (NULL == myself->self_pve)
+        || (0 == jxta_peer_get_expires((Jxta_peer *) myself->self_pve))) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Can't send pong message now! [%pp]\n", myself);
+        res = JXTA_FAILED;
     apr_thread_mutex_unlock(myself->mutex);
+        return res;
+    }
+
+    res = peerview_create_pong_msg(myself, action, candidates_only, &pong, disconnect);
+
+    apr_thread_mutex_unlock(myself->mutex);
+
+    if (JXTA_SUCCESS != res) {
+        goto FINAL_EXIT;
+    }
 
     if (!compact) {
         res = jxta_peerview_pong_msg_get_xml(pong, &pong_msg_xml);
     } else {
         res = jxta_peerview_pong_msg_get_xml_1(pong, &pong_msg_xml);
     }
+
     JXTA_OBJECT_RELEASE(pong);
 
     if (JXTA_SUCCESS != res) {
@@ -5042,11 +5069,59 @@ static Jxta_status check_pves(Jxta_peerview * me, Jxta_vector *pves)
     return JXTA_SUCCESS;
 }
 
+static void peerview_add_monitor_entry(Jxta_peerview * pv)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    Jxta_monitor_entry *entry;
+    Jxta_monitor_service *monitor;
+    Jxta_peerview_monitor_entry * pv_entry;
+    Jxta_peerview_pong_msg * pong;
+    JString * rdv_id_j;
+
+    monitor = jxta_monitor_service_get_instance();
+
+    if (NULL == monitor) return;
+
+    pv_entry = jxta_peerview_monitor_entry_new();
+
+    jxta_peerview_monitor_entry_set_rdv_time(pv_entry, 3000);
+    jxta_peerview_monitor_entry_set_src_peer_id(pv_entry, pv->pid); 
+
+    apr_thread_mutex_lock(pv->mutex);
+
+    res = peerview_create_pong_msg(pv, PONG_STATUS, FALSE, &pong, FALSE);
+
+    apr_thread_mutex_unlock(pv->mutex);
+
+    if (JXTA_SUCCESS == res) {
+        jxta_peerview_monitor_entry_set_pong_msg(pv_entry, pong);
+        JXTA_OBJECT_RELEASE(pong);
+    }
+
+    entry = jxta_monitor_entry_new();
+
+    jxta_monitor_entry_set_entry(entry, (Jxta_advertisement *) pv_entry);
+
+    jxta_id_to_jstring(jxta_rendezvous_classid, &rdv_id_j);
+
+    jxta_monitor_entry_set_context(entry, pv->groupUniqueID);
+    jxta_monitor_entry_set_sub_context(entry, jstring_get_string(rdv_id_j));
+    jxta_monitor_entry_set_type(entry, "jxta:PV3MonEntry");
+
+    jxta_monitor_service_add_monitor_entry(monitor, pv->groupUniqueID , jstring_get_string(rdv_id_j), entry, TRUE);
+
+    JXTA_OBJECT_RELEASE(rdv_id_j);
+    JXTA_OBJECT_RELEASE(entry);
+    JXTA_OBJECT_RELEASE(pv_entry);
+}
+
+
 /**
 *   The maintain task is responsible for :
 *       - expiring dead PVEs
 *       - pinging near-dead PVEs
 *       - pinging new potential PVEs
+*       - adding monitor entries to the monitor service
 *       - sending address request messages. (optional)
 **/
 static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, void *cookie)
@@ -5974,5 +6049,74 @@ RERUN_EXIT:
 
     return NULL;
 }
+
+static Jxta_status JXTA_STDCALL peerview_monitor_cb(Jxta_object * obj, Jxta_monitor_entry **arg)
+{
+    Jxta_peerview * pv;
+
+    Jxta_status res = JXTA_SUCCESS;
+    Jxta_monitor_entry *entry;
+    Jxta_monitor_service *monitor;
+    Jxta_peerview_monitor_entry * pv_entry;
+    Jxta_peerview_pong_msg * pong;
+    JString * rdv_id_j;
+
+    pv = (Jxta_peerview *) obj;
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Great !!!!!!!!!!! Working.\n");
+
+    monitor = jxta_monitor_service_get_instance();
+
+    if (NULL == monitor) return JXTA_ITEM_NOTFOUND;
+
+    pv_entry = jxta_peerview_monitor_entry_new();
+
+    jxta_peerview_monitor_entry_set_rdv_time(pv_entry, 3000);
+    jxta_peerview_monitor_entry_set_cluster_number(pv_entry, jxta_peerview_get_cluster_number(pv));
+
+    apr_thread_mutex_lock(pv->mutex);
+
+    if ((NULL != pv->instance_mask) && (NULL != pv->self_pve)) {
+        res = peerview_create_pong_msg(pv, PONG_STATUS, FALSE, &pong, FALSE);
+        jxta_peerview_monitor_entry_set_pong_msg(pv_entry, pong);
+        JXTA_OBJECT_RELEASE(pong);
+    }
+    apr_thread_mutex_unlock(pv->mutex);
+
+    entry = jxta_monitor_entry_new();
+
+    jxta_monitor_entry_set_entry(entry, (Jxta_advertisement *) pv_entry);
+
+    jxta_id_to_jstring(jxta_rendezvous_classid, &rdv_id_j);
+
+    jxta_monitor_entry_set_context(entry, pv->groupUniqueID);
+    jxta_monitor_entry_set_sub_context(entry, jstring_get_string(rdv_id_j));
+    jxta_monitor_entry_set_type(entry, "jxta:PV3MonEntry");
+
+    *arg = JXTA_OBJECT_SHARE(entry);
+
+    JXTA_OBJECT_RELEASE(rdv_id_j);
+    JXTA_OBJECT_RELEASE(entry);
+    JXTA_OBJECT_RELEASE(pv_entry);
+
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_peerview_get_client_pong_msg(Jxta_object * obj, Jxta_peerview_pong_msg ** pong_msg)
+{
+    Jxta_peerview * pv = (Jxta_peerview*) obj;
+    Jxta_status res = JXTA_SUCCESS;
+
+    Jxta_peerview_pong_msg * pong;
+    res = peerview_create_pong_msg(pv, PONG_STATUS, TRUE, &pong, FALSE);
+    if(res != JXTA_SUCCESS)
+        return res;
+    else
+        *pong_msg = JXTA_OBJECT_SHARE(pong);
+
+    return JXTA_SUCCESS;
+}
+
+
 
 /* vim: set ts=4 sw=4 et tw=130: */

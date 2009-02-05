@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright (c) 2008 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,82 +50,53 @@
  *
  * This license is based on the BSD license adopted by the Apache Foundation.
  *
- * $Id$
+ * $Id: jxta_platformconfig.h 118 2007-08-16 00:18:01Z slowhog $
  */
 
-#include "jxta_apr.h"
-#include "jpr/jpr_core.h"
+#ifndef JXTA_MONITORCONFIG_H
+#define JXTA_MONITORCONFIG_H
+
+#include "jxta_types.h"
+#include "jxta_pa.h"
 #include "jxta_log.h"
-#include "jxta_private.h"
-#include "jxta_advertisement_priv.h"
-#include "jxta_netpg_private.h"
-#include "jxta_monpg_private.h"
-#include "jxta_range.h"
 
-/**
- * Briefly, touching jxta jxta touches apr, which requires a call
- * to apr_initialize() and apr_terminate().  
- */
-
-static unsigned int _jxta_initialized = 0;
-int _jxta_return = 1;
-#ifdef WIN32
-static int _targc = 0;
-static char **_targv = NULL;
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+};
 #endif
 
 /**
- * @todo Add initialization code.
+ * Create the default MonitorConfig file
+ * 
+ * @return The peer advertisement 
  */
-JXTA_DECLARE(void) jxta_initialize(void)
-{
-    if (_jxta_initialized++) {
-        return;
-    }
-#ifdef WIN32
-    if (_targc != __argc)
-        _targc = __argc;
-
-    if (_targv != __argv)
-        _targv = __argv;
-
-    apr_app_initialize(&_targc, &_targv, NULL);
-#else
-    apr_initialize();
-#endif
-
-    jpr_initialize();
-    jxta_object_initialize();
-    jxta_log_initialize();
-    jxta_advertisement_register_global_handlers();
-    jxta_PG_module_initialize();
-    netpg_init_methods();
-    monpg_init_methods();
-    jxta_range_init();
-}
-
+JXTA_DECLARE(Jxta_PA *) jxta_MonitorConfig_create_default(void);
 
 /**
- * @todo Add termination code.
+ * Read the monitorConfig file and returns it as a peer advertisement. 
+ * 
+ * @param fname Path of the platformConfig file
+ * @return The peer advertisement 
  */
-JXTA_DECLARE(void) jxta_terminate(void)
+JXTA_DECLARE(Jxta_PA *) jxta_MonitorConfig_read(const char *fname);
+
+/**
+ * Write the monitorConfig file
+ *
+ * @param ad Config to be saved
+ * @param fname Path path where to save
+ */
+JXTA_DECLARE(Jxta_status) jxta_MonitorConfig_write(Jxta_PA * ad, const char *fname);
+
+#ifdef __cplusplus
+#if 0
 {
-    if (!_jxta_initialized) {
-        return;
-    }
-
-    _jxta_initialized--;
-    if (_jxta_initialized) {
-        return;
-    }
-
-    jxta_range_destroy();
-    jxta_PG_module_terminate();
-    jxta_advertisement_cleanup();
-    jxta_log_terminate();
-    jxta_object_terminate();
-    jpr_terminate();
-    apr_terminate();
+#endif
 }
+#endif
 
-/* vim: set ts=4 sw=4 tw=130 et: */
+#endif /* JXTA_CONFIG_H */
+
+/* vi: set ts=4 sw=4 tw=130 et: */

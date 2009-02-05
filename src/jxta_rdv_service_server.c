@@ -88,6 +88,8 @@ static const char *__log_cat = "RdvServer";
 #include "jxta_rdv_service_private.h"
 #include "jxta_rdv_service_provider_private.h"
 #include "jxta_util_priv.h"
+#include "jxta_rdv_monitor_entry.h"
+#include "jxta_monitor_service.h"
 
 /**
  * Interval between background thread check iterations. Measured in relative microseconds.
@@ -1492,6 +1494,9 @@ static void *APR_THREAD_FUNC periodic_task(apr_thread_t * thread, void *arg)
     clients = jxta_hashtable_values_get(myself->clients);
     sz = jxta_vector_size(clients);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Rendezvous Server periodic task %d clients.\n", sz);
+    Jxta_rdv_monitor_entry * rdvEntry = NULL;
+    unsigned int clientsFound = 0;
+
     for (i = 0; i < sz; i++) {
         _jxta_peer_client_entry *peer;
 
@@ -1510,11 +1515,47 @@ static void *APR_THREAD_FUNC periodic_task(apr_thread_t * thread, void *arg)
             JXTA_OBJECT_RELEASE(uniq);
             rdv_service_generate_event(provider->service, JXTA_RDV_CLIENT_DISCONNECTED,
                                        jxta_peer_peerid((Jxta_peer *) peer));
+        } else {
+            if(rdvEntry == NULL) {
+                rdvEntry = jxta_rdv_monitor_entry_new();
+                jxta_rdv_monitor_entry_set_src_peer_id(rdvEntry, provider->local_peer_id);
+            }
+            clientsFound++;
+            JString *uniq;
+            jxta_id_get_uniqueportion(jxta_peer_peerid((Jxta_peer *) peer), &uniq);
+            
+            jxta_rdv_monitor_entry_add_client_2(rdvEntry, uniq, NULL, NULL);
+            JXTA_OBJECT_RELEASE(uniq);
+
         }
 
         JXTA_OBJECT_RELEASE(peer);
     }
 
+    if(clientsFound > 0 ) {
+        //add the rdv entry to the monitor
+        JString * rdv_id_j;
+        Jxta_monitor_service *monitor = jxta_monitor_service_get_instance();
+        if(monitor != NULL) {
+            Jxta_monitor_entry * entry = jxta_monitor_entry_new();
+
+            jxta_id_to_jstring(jxta_rendezvous_classid, &rdv_id_j);
+
+            jxta_monitor_entry_set_entry(entry, (Jxta_advertisement*) rdvEntry);
+            jxta_monitor_entry_set_context(entry, provider->gid_uniq_str);
+            jxta_monitor_entry_set_sub_context(entry, jstring_get_string(rdv_id_j));
+            jxta_monitor_entry_set_type(entry, "jxta:RdvMonEntry");
+
+            jxta_monitor_service_add_monitor_entry(monitor, provider->gid_uniq_str, jstring_get_string(rdv_id_j), entry, TRUE);
+            
+            JXTA_OBJECT_RELEASE(rdv_id_j);
+            JXTA_OBJECT_RELEASE(entry);
+        }
+    } 
+
+    if(rdvEntry != NULL ) {
+        JXTA_OBJECT_RELEASE(rdvEntry);
+    }
     JXTA_OBJECT_RELEASE(clients);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Rendezvous Server[%pp] periodic task DONE.\n", myself);
 

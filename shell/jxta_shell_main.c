@@ -85,12 +85,14 @@
 #include "groups.h"
 #include "whoami.h"
 #include "join.h"
+#include "monitor.h"
 #include "rdvcontrol.h"
 #include "rdvstatus.h"
 #include "leave.h"
 #include "kdb.h"
 #include "search.h"
 #include "publish.h"
+static const char *__log_cat = "SHELL_MAIN";
 
 struct _shell_startup_application {
     JXTA_OBJECT_HANDLE;
@@ -144,6 +146,7 @@ static const struct commands allCommands[] = {
     {"rdvstatus", jxta_rdvstatus_new},
     {"rdvcontrol", jxta_rdvcontrol_new},
     {"publish", publish_new},
+    {"monitor", monitor_new},
     {NULL, NULL}
 };
 
@@ -516,8 +519,8 @@ int main(int argc, char **argv)
     Jxta_log_file *log_f;
     Jxta_log_selector *log_s;
     char logselector[256];
-    const char *lfname = NULL;
-    const char *fname = NULL;
+    char *lfname = NULL;
+    char *fname = NULL;
     JxtaShellGetopt *opts = JxtaShellGetopt_new(argc - 1, argv + 1, "f:l:v");
     int opt = -1;
     int verbosity = 0;
@@ -638,6 +641,7 @@ int main(int argc, char **argv)
 
     ShellStartupApplication_start((Jxta_object *) startup, 0, NULL);
     jxta_module_stop((Jxta_module *) pg);
+
     JXTA_OBJECT_RELEASE(pg);
 
     JXTA_OBJECT_RELEASE(startup);

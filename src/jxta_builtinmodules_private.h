@@ -79,11 +79,13 @@ typedef struct {
 extern Jxta_builtinmodule_record jxta_builtinmodules_tbl[];
 
 extern Jxta_module *jxta_endpoint_service_new_instance(void);
+extern Jxta_module *jxta_monitor_service_new_instance(void);
 extern Jxta_module *jxta_rdv_service_new_instance(void);
 extern Jxta_module *jxta_resolver_service_ref_new_instance(void);
 extern Jxta_module *jxta_discovery_service_ref_new_instance(void);
 extern Jxta_module *jxta_transport_http_new_instance(void);
 extern Jxta_module *jxta_transport_tcp_new_instance(void);
+extern Jxta_module *jxta_monpg_new_instance(void);
 extern Jxta_module *jxta_netpg_new_instance(void);
 extern Jxta_module *jxta_stdpg_new_instance(void);
 extern Jxta_module *jxta_router_client_new_instance(void);

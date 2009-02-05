@@ -78,6 +78,7 @@ typedef struct _jxta_netpg Jxta_netpg;
 struct _jxta_netpg {
     Extends(Jxta_stdpg);
 
+    Jxta_monitor_service *monitor;
     /*
      * Netpg provides at least these transports.
      */

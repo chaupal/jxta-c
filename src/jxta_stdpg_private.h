@@ -89,6 +89,7 @@ struct _jxta_stdpg {
     Jxta_PGA *group_adv;
     JString *name;
     JString *desc;
+    Jxta_boolean home_group_shared;
 
     Jxta_vector *resource_groups;
 
@@ -151,6 +152,8 @@ extern void jxta_stdpg_destruct(Jxta_stdpg * self);
  */
 void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv);
 
+void jxta_stdpg_init_group_1(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv);
+
 /*
  */
 Jxta_status stdpg_ld_mod(Jxta_PG * self, Jxta_id * class_id, const char *name, Jxta_MIA * impl_adv, Jxta_module **);
@@ -163,7 +166,7 @@ Jxta_status stdpg_ld_mod(Jxta_PG * self, Jxta_id * class_id, const char *name, J
  *
  * Error-returning variant.
  */
-Jxta_status jxta_stdpg_init_modules(Jxta_module * self);
+Jxta_status jxta_stdpg_init_modules(Jxta_module * self, Jxta_boolean is_global_group);
 
 /*
  * start the modules. This is not part of the public API, this is

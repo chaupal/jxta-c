@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright (c) 2008 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -64,7 +64,7 @@
  * by overloading some methods. (such as the init method)...can wait.
  */
 
-static const char *__log_cat = "NETPG";
+static const char *__log_cat = "MONPG";
 
 #ifdef __APPLE__
 #include <sys/types.h>
@@ -76,16 +76,17 @@ static const char *__log_cat = "NETPG";
 #include "jxta_errno.h"
 #include "jxta_log.h"
 #include "jxta_defloader_private.h"
+#include "jxta_monpg_private.h"
 #include "jxta_netpg_private.h"
+#include "jxta_netpg.h"
 #include "jxta_id.h"
 #include "jxta_pa.h"
 #include "jxta_pga.h"
 #include "jxta_svc.h"
 #include "jxta_hta.h"
 #include "jxta_mia.h"
-#include "jxta_platformconfig.h"
+#include "jxta_monitorconfig.h"
 #include "jxta_id_uuid_priv.h"
-#include "jxta_version.h"
 
 #ifndef UNUSED
 #ifdef __GNUC__
@@ -95,21 +96,18 @@ static const char *__log_cat = "NETPG";
 #endif
 #endif
 
-static void netpg_stop(Jxta_module * self)
+static void monpg_stop(Jxta_module * self)
 {
-    Jxta_netpg *it = (Jxta_netpg *) self;
-    Jxta_netpg* myself = PTValid(self, Jxta_netpg);
+    Jxta_monpg *it = (Jxta_monpg *) self;
+    Jxta_monpg* myself = PTValid(self, Jxta_monpg);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before stop :%d.\n",
+    if (!it->started) return;
+
+    it->started = FALSE;
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, FILEANDLINE "MonPeerGroup Ref Count before stop :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(myself));
 
-    /* Think of this as "Super.stop()" */
-    ((Jxta_module_methods *) & jxta_stdpg_methods)->stop((Jxta_module*)myself);
-
-    /* We stop http and router ourselves (as well as endpoint) */
-    if (it->http != NULL) {
-        jxta_module_stop((Jxta_module *) (it->http));
-    }
     if (it->tcp != NULL) {
         jxta_module_stop((Jxta_module *) (it->tcp));
     }
@@ -119,23 +117,24 @@ static void netpg_stop(Jxta_module * self)
     if (it->relay != NULL) {
         jxta_module_stop((Jxta_module *) (it->relay));
     }
-    if (it->monitor != NULL) {
-        jxta_module_stop((Jxta_module *) (it->monitor));
-    }
     if (((Jxta_stdpg *) it)->endpoint != NULL) {
         jxta_module_stop((Jxta_module *) (((Jxta_stdpg *) it)->endpoint));
     }
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count after stop :%d.\n",
+    /* Think of this as "Super.stop()" */
+    ((Jxta_module_methods *) & jxta_stdpg_methods)->stop((Jxta_module*)myself);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "MonPeerGroup Ref Count after stop :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(self));
+
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Stopped.\n");
 }
 
-static Jxta_status netpg_start(Jxta_module * me, const char *args[])
+static Jxta_status monpg_start(Jxta_module * me, const char *args[])
 {
     Jxta_status rv;
     const char *noargs[] = { NULL };
-    Jxta_netpg* myself = PTValid(me, Jxta_netpg);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before start :%d.\n",
+    Jxta_monpg* myself = PTValid(me, Jxta_monpg);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "MonPeerGroup Ref Count before start :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(me));
 
     rv = peergroup_start((Jxta_PG *) myself);
@@ -147,7 +146,7 @@ static Jxta_status netpg_start(Jxta_module * me, const char *args[])
     rv = jxta_module_start((Jxta_module *) (((Jxta_stdpg *) myself)->endpoint), noargs);
     if (JXTA_SUCCESS != rv) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failure starting endpoint: %d.\n", rv);
-        netpg_stop(me);
+        monpg_stop(me);
         return rv;
     }
 
@@ -155,16 +154,7 @@ static Jxta_status netpg_start(Jxta_module * me, const char *args[])
         rv = jxta_module_start((Jxta_module *) (myself->tcp), noargs);
         if (JXTA_SUCCESS != rv) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failure starting tcp: %d.\n", rv);
-            netpg_stop(me);
-            return rv;
-        }
-    }
-
-    if (myself->http) {
-        rv = jxta_module_start((Jxta_module *) (myself->http), noargs);
-        if (JXTA_SUCCESS != rv) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failure starting http: %d.\n", rv);
-            netpg_stop(me);
+            monpg_stop(me);
             return rv;
         }
     }
@@ -172,7 +162,7 @@ static Jxta_status netpg_start(Jxta_module * me, const char *args[])
     rv = jxta_module_start((Jxta_module *) (myself->router), noargs);
     if (JXTA_SUCCESS != rv) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failure starting router: %d.\n", rv);
-        netpg_stop(me);
+        monpg_stop(me);
         return rv;
     }
 
@@ -180,16 +170,7 @@ static Jxta_status netpg_start(Jxta_module * me, const char *args[])
         rv = jxta_module_start((Jxta_module *) (myself->relay), noargs);
         if (JXTA_SUCCESS != rv) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failure starting relay: %d.\n", rv);
-            netpg_stop(me);
-            return rv;
-        }
-    }
-
-    if (myself->monitor) {
-        rv = jxta_module_start((Jxta_module *) (myself->monitor), noargs);
-        if (JXTA_SUCCESS != rv) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failure starting monitor: %d.\n", rv);
-            netpg_stop(me);
+            monpg_stop(me);
             return rv;
         }
     }
@@ -197,19 +178,21 @@ static Jxta_status netpg_start(Jxta_module * me, const char *args[])
     /* Now, start all services */
     rv = jxta_stdpg_start_modules(me);
     if (JXTA_SUCCESS != rv) {
-        netpg_stop(me);
+        monpg_stop(me);
         return rv;
     }
 
     /* we dont do anything */
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count after start :%d.\n",
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "MonPeerGroup Ref Count after start :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(me));
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "started.\n");
+
+    myself->started = TRUE;
 
     return JXTA_SUCCESS;
 }
 
-JXTA_DECLARE(Jxta_MIA *) jxta_get_netpeergroupMIA(void)
+JXTA_DECLARE(Jxta_MIA *) jxta_get_monpeergroupMIA(void)
 {
     JString *code;
     JString *desc;
@@ -217,8 +200,8 @@ JXTA_DECLARE(Jxta_MIA *) jxta_get_netpeergroupMIA(void)
 
     jxta_stdpg_methods.get_genericpeergroupMIA(NULL, &mia);
 
-    code = jstring_new_2("builtin:netpg");
-    desc = jstring_new_2("Net Peer Group native implementation");
+    code = jstring_new_2("builtin:monpg");
+    desc = jstring_new_2("Monitor Group native implementation");
 
     jxta_MIA_set_Code(mia, code);
     jxta_MIA_set_Desc(mia, desc);
@@ -237,22 +220,23 @@ JXTA_DECLARE(Jxta_MIA *) jxta_get_netpeergroupMIA(void)
  * derive other kind of groups from it, I will not assume it serves as the
  * root group in all cases.
  */
-static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
+static Jxta_status monpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
 {
     Jxta_status res;
     Jxta_boolean release_mia = FALSE;
-    Jxta_netpg *it = PTValid(self, Jxta_netpg);
+    Jxta_monpg *it = PTValid(self, Jxta_monpg);
     Jxta_PA *config_adv = NULL;
     Jxta_id *pg_id = NULL;
     apr_uuid_t uuid;
 
-    /* Must read the PlatformConfig file to start the proper net peergroup */
-    config_adv = jxta_PlatformConfig_read("PlatformConfig");
+    /* Must read the MonitorConfig file to start the proper net peergroup */
+    config_adv = jxta_MonitorConfig_read("MonitorConfig");
+    it->started = FALSE;
 
-    /* If we have no PlatformConfig file, create one */
+    /* If we have no MonitorConfig file, create one */
     if (config_adv == NULL) {
-        config_adv = jxta_PlatformConfig_create_default();
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "A new \"PlatformConfig\" file will be generated.\n");
+        config_adv = jxta_MonitorConfig_create_default();
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "A new \"MonitorConfig\" file will be generated.\n");
     }
 
     if (!jxta_PA_get_SN(config_adv, &uuid)) {
@@ -272,12 +256,8 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
     }
     jxta_PA_set_SN(config_adv, &uuid);
 
-    Jxta_version * currentVersion =jxta_version_get_current_version();
-    jxta_PA_set_version(config_adv, currentVersion);
-    JXTA_OBJECT_RELEASE(currentVersion);
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before init : %d.\n",
-                    JXTA_OBJECT_GET_REFCOUNT(self));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "MonitorPeerGroup Ref Count before init : %d [%pp].\n",
+                    JXTA_OBJECT_GET_REFCOUNT(self), self);
 
     res = peergroup_init((Jxta_PG *) self, NULL);
 
@@ -287,10 +267,10 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
 
     /*
      * If we're used as the root group (normally always) and if
-     * we aren't assigned an ID, then we are the default netpg.
+     * we aren't assigned an ID, then we are the default monpg.
      * Otherwise let things happen as they normaly do (stdpg will
      * pick a new ID) - as for the impl_adv and labels, if we're the
-     * netpg, then we set it up ourselves and drop whatever we've been
+     * monpg, then we set it up ourselves and drop whatever we've been
      * given, else let the base class sort it out.
      */
     if (group == NULL && assigned_id == NULL) {
@@ -306,8 +286,8 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
          * well then set the default NetPeerGroupId 
          */
         if (jxta_id_equals(assigned_id, jxta_id_nullID)) {
-            /* no share needed as jxta_id_defaultNetPeerGroupID is static object */
-            assigned_id = jxta_id_defaultNetPeerGroupID;
+            /* no share needed as jxta_id_defaultMonPeerGroupID is static object */
+            assigned_id = jxta_id_defaultMonPeerGroupID;
             jxta_PA_set_GID(config_adv, assigned_id);
         }
 
@@ -325,8 +305,8 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
 
         release_mia = TRUE;
 
-        name = jstring_new_2("NetPeerGroup");
-        desc = jstring_new_2("NetPeerGroup by default");
+        name = jstring_new_2("MonPeerGroup");
+        desc = jstring_new_2("MonPeerGroup by default");
 
         jxta_stdpg_methods.set_labels((Jxta_PG *) it, name, desc);
 
@@ -338,17 +318,17 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
      * use the superclass's split init routines, so that
      * we can init the transports before anything gets started.
      */
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before super group init :%d.\n",
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "MonPeerGroup Ref Count before super group init :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(self));
 
     jxta_stdpg_set_configadv(self, config_adv);
-    jxta_stdpg_init_group(self, group, assigned_id, impl_adv);
+    jxta_stdpg_init_group_1(self, group, assigned_id, impl_adv);
 
     /* can only release pg_id after we done with assigned_id */
     JXTA_OBJECT_RELEASE(pg_id);
 
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count after super group init :%d.\n",
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "MonPeerGroup Ref Count after super group init :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(self));
 
     if (release_mia) {
@@ -370,39 +350,9 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
      * stdpg cooperates with that by never setting the endpoint
      * when it is the root group.
      */
-
-    Jxta_boolean monitorEnabled = FALSE;
-    if(config_adv) {
-        Jxta_svc *svc = NULL;
-        jxta_PA_get_Svc_with_id(config_adv, jxta_monitor_classid, &svc);
-        if(svc) {
-            Jxta_MonitorConfigAdvertisement * monConfig = jxta_svc_get_MonitorConfig(svc);
-            monitorEnabled = jxta_MonitorConfig_is_service_enabled(monConfig);
-            JXTA_OBJECT_RELEASE(monConfig);
-        }
-        JXTA_OBJECT_RELEASE(svc);
-    }
-     
     res =
         stdpg_ld_mod((Jxta_PG *) it, jxta_endpoint_classid, "builtin:endpoint_service", NULL,
                      (Jxta_module **) & ((Jxta_stdpg *) it)->endpoint);
-    if (JXTA_SUCCESS != res) {
-        goto ERROR_EXIT;
-    }
-
-
-    if(monitorEnabled){
-        res =
-            stdpg_ld_mod((Jxta_PG *) it, jxta_monitor_classid, "builtin:monitor_service", NULL,
-                        (Jxta_module **) & it->monitor);
-        if (JXTA_SUCCESS != res) {
-            goto ERROR_EXIT;
-        }
-    }
-
-
-
-    res = stdpg_ld_mod((Jxta_PG *) it, jxta_httpproto_classid, "builtin:transport_http", NULL, (Jxta_module **) & it->http);
     if (JXTA_SUCCESS != res) {
         goto ERROR_EXIT;
     }
@@ -422,22 +372,22 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
         goto ERROR_EXIT;
     }
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count before super modules init :%d.\n",
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "MonPeerGroup Ref Count before super modules init :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(self));
 
-    res = jxta_stdpg_init_modules(self, TRUE);
+    res = jxta_stdpg_init_modules(self, FALSE);
     if (JXTA_SUCCESS != res) {
         goto ERROR_EXIT;
     }
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count after super modules init :%d.\n",
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "MonPeerGroup Ref Count after super modules init :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(self));
 
-    /* Write out any updates to the PlatformConfig which were made during service init. */
-    jxta_PlatformConfig_write(config_adv, "PlatformConfig");
+    /* Write out any updates to the MonitorConfig which were made during service init. */
+    jxta_MonitorConfig_write(config_adv, "MonitorConfig");
     JXTA_OBJECT_RELEASE(config_adv);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "NetPeerGroup Ref Count after init :%d.\n",
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "MonPeerGroup Ref Count after init :%d.\n",
                     JXTA_OBJECT_GET_REFCOUNT(self));
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Initialized\n");
 
@@ -454,7 +404,7 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
      *
      * So, call our own stop routine behind the scenes, just to be safe.
      */
-    netpg_stop(self);
+    monpg_stop(self);
 
     /*
      * The rest can be done all right by the dtor when/if released.
@@ -473,20 +423,20 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
  * table is exported.
  */
 
-Jxta_netpg_methods jxta_netpg_methods;
+Jxta_monpg_methods jxta_monpg_methods;
 
-void netpg_init_methods(void)
+void monpg_init_methods(void)
 {
-    memcpy(&jxta_netpg_methods, &jxta_stdpg_methods, sizeof(jxta_stdpg_methods));
-    ((Jxta_module_methods *) & jxta_netpg_methods)->init = netpg_init;
-    ((Jxta_module_methods *) & jxta_netpg_methods)->start = netpg_start;
-    ((Jxta_module_methods *) & jxta_netpg_methods)->stop = netpg_stop;
+    memcpy(&jxta_monpg_methods, &jxta_stdpg_methods, sizeof(jxta_stdpg_methods));
+    ((Jxta_module_methods *) & jxta_monpg_methods)->init = monpg_init;
+    ((Jxta_module_methods *) & jxta_monpg_methods)->start = monpg_start;
+    ((Jxta_module_methods *) & jxta_monpg_methods)->stop = monpg_stop;
 }
 
 /*
  * Make sure we have a ctor that subclassers can call.
  */
-void jxta_netpg_construct(Jxta_netpg * self, Jxta_netpg_methods const *methods)
+void jxta_monpg_construct(Jxta_monpg * self, Jxta_monpg_methods const *methods)
 {
     /*
      * Our methods table type is just a typedefed, it is identical to
@@ -496,10 +446,8 @@ void jxta_netpg_construct(Jxta_netpg * self, Jxta_netpg_methods const *methods)
     Jxta_PG_methods* pgmethods = PTValid(methods, Jxta_PG_methods);
     jxta_stdpg_construct((Jxta_stdpg *) self, (Jxta_stdpg_methods const *) pgmethods);
 
-    self->thisType = "Jxta_netpg";
-    self->monitor = NULL;
+    self->thisType = "Jxta_monpg";
     self->tcp = NULL;
-    self->http = NULL;
     self->router = NULL;
     self->relay = NULL;
 }
@@ -511,9 +459,9 @@ void jxta_netpg_construct(Jxta_netpg * self, Jxta_netpg_methods const *methods)
  * Therefore, we not do need the destructor to be virtual.
  * The free function plays that role.
  */
-void jxta_netpg_destruct(Jxta_netpg * self)
+void jxta_monpg_destruct(Jxta_monpg * self)
 {
-    Jxta_netpg* myself = PTValid(self, Jxta_netpg);
+    Jxta_monpg* myself = PTValid(self, Jxta_monpg);
 
     /*
      * FIXME: jice@jxta.org - 20020222
@@ -527,13 +475,9 @@ void jxta_netpg_destruct(Jxta_netpg * self)
      * group and other services since the group holds a master reference to
      * them all at all times. (that's one case where ref-counting is a bit
      * superfluous).
-     * We'll revisit that later; it's not that stopping the netpg is all that
+     * We'll revisit that later; it's not that stopping the monpg is all that
      * critical at this stage. 
      */
-
-    if (myself->monitor != NULL) {
-        JXTA_OBJECT_RELEASE(myself->monitor);
-    }
 
     /* We are handling http and router directly for now. */
     if (myself->relay != NULL) {
@@ -541,9 +485,6 @@ void jxta_netpg_destruct(Jxta_netpg * self)
     }
     if (myself->tcp != NULL) {
         JXTA_OBJECT_RELEASE(myself->tcp);
-    }
-    if (myself->http != NULL) {
-        JXTA_OBJECT_RELEASE(myself->http);
     }
     if (myself->router != NULL) {
         JXTA_OBJECT_RELEASE(myself->router);
@@ -567,9 +508,9 @@ void jxta_netpg_destruct(Jxta_netpg * self)
  * for all the jxta_*_new_instance symbols that we can find. The name
  * it is associated with is simply whatever the "*" is. Or even, at phase 0
  * we just write the table by hand :-)
- * So, an impl adv that designates a builtin class "netpg" will name the
- * package "builtin:" and the code "netpg".
- * When asked to instantiate a "builtin:netpg" the loader will lookup "netpg"
+ * So, an impl adv that designates a builtin class "monpg" will name the
+ * package "builtin:" and the code "monpg".
+ * When asked to instantiate a "builtin:monpg" the loader will lookup "monpg"
  * in its built-in table and call the new_instance method that's there.
  */
 
@@ -581,17 +522,17 @@ void jxta_netpg_destruct(Jxta_netpg * self)
 
 static void myFree(Jxta_object * obj)
 {
-    jxta_netpg_destruct((Jxta_netpg *) obj);
+    jxta_monpg_destruct((Jxta_monpg *) obj);
     free((void *) obj);
 }
 
-Jxta_netpg *jxta_netpg_new_instance(void)
+Jxta_monpg *jxta_monpg_new_instance(void)
 {
-    Jxta_netpg *self = (Jxta_netpg *) calloc(1, sizeof(Jxta_netpg));
+    Jxta_monpg *self = (Jxta_monpg *) calloc(1, sizeof(Jxta_monpg));
 
     JXTA_OBJECT_INIT(self, myFree, 0);
 
-    jxta_netpg_construct(self, &jxta_netpg_methods);
+    jxta_monpg_construct(self, &jxta_monpg_methods);
 
     return self;
 }

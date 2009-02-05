@@ -68,6 +68,7 @@
 #include "jxta_pga.h"
 
 #include "jxta_endpoint_service.h"
+#include "jxta_monitor_service.h"
 #include "jxta_membership_service.h"
 #include "jxta_rdv_service.h"
 #include "jxta_resolver_service.h"
@@ -122,6 +123,7 @@ JXTA_DECLARE(Jxta_MCID *) jxta_resolver_classid_get(void);
 JXTA_DECLARE(Jxta_MCID *) jxta_discovery_classid_get(void);
 JXTA_DECLARE(Jxta_MCID *) jxta_srdi_classid_get(void);
 JXTA_DECLARE(Jxta_MCID *) jxta_cache_classid_get(void);
+JXTA_DECLARE(Jxta_MCID *) jxta_monitor_classid_get(void);
 JXTA_DECLARE(Jxta_MCID *) jxta_pipe_classid_get(void);
 JXTA_DECLARE(Jxta_MCID *) jxta_membership_classid_get(void);
 JXTA_DECLARE(Jxta_MCID *) jxta_rendezvous_classid_get(void);
@@ -158,6 +160,7 @@ JXTA_DECLARE(Jxta_MSID *) jxta_genericpeergroup_specid_get(void);
 #define jxta_discovery_classid            jxta_discovery_classid_get           ()
 #define jxta_srdi_classid                 jxta_srdi_classid_get                ()
 #define jxta_cache_classid                jxta_cache_classid_get               ()
+#define jxta_monitor_classid              jxta_monitor_classid_get             ()
 #define jxta_pipe_classid                 jxta_pipe_classid_get                ()
 #define jxta_membership_classid           jxta_membership_classid_get          ()
 #define jxta_rendezvous_classid           jxta_rendezvous_classid_get          ()
@@ -869,6 +872,8 @@ JXTA_DECLARE(Jxta_status) jxta_PG_new_netpg_1(Jxta_PG ** new_netpg);
  * affected.
  */
 JXTA_DECLARE(Jxta_status) jxta_PG_new_custom_netpg(Jxta_PG ** new_custom_netpg, Jxta_MIA * mia);
+
+JXTA_DECLARE(Jxta_status) jxta_PG_new_monpg(Jxta_PG ** new_monpg, Jxta_MIA * mia);
 
 /*
  * To be clean, groups should register before they complete

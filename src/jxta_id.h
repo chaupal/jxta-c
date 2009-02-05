@@ -107,6 +107,11 @@ JXTA_DECLARE_DATA Jxta_id *jxta_id_worldNetPeerGroupID;
 JXTA_DECLARE_DATA Jxta_id *jxta_id_defaultNetPeerGroupID;
 
 /**
+* Id of the default monitor peer group. A well known Jxta ID.
+**/
+JXTA_DECLARE_DATA Jxta_id *jxta_id_defaultMonPeerGroupID;
+
+/**
 * A string containing the URI encoding scheme for Jxta Ids. "urn"
 **/
 JXTA_DECLARE_DATA const char *jxta_id_URIENCODINGNAME;

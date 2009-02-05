@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2006 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright (c) 2008 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -66,38 +66,20 @@
 #include "jxta_peergroup.h"
 #include "jxta_id_uuid_priv.h"
 
-static const char *__log_cat = "PLATFORMCONFIG";
+static const char *__log_cat = "MONITORCONFIG";
 
-JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
+JXTA_DECLARE(Jxta_PA *) jxta_MonitorConfig_create_default()
 {
   Jxta_PA *config_adv = NULL;
   Jxta_id *pid = NULL;
   apr_uuid_t uuid;
   apr_uuid_t * uuid_ptr;
   Jxta_TCPTransportAdvertisement *tta = NULL; /* append */
-  Jxta_HTTPTransportAdvertisement *hta = NULL;
-  Jxta_RelayAdvertisement *rla = NULL;
-  Jxta_DiscoveryConfigAdvertisement *disc = NULL;
   Jxta_RdvConfigAdvertisement *rdv = NULL;
-  Jxta_SrdiConfigAdvertisement *srdi = NULL;
-  Jxta_EndPointConfigAdvertisement *ep = NULL;
-  Jxta_MonitorConfigAdvertisement *mon = NULL;
-  Jxta_CacheConfigAdvertisement *cache = NULL;
-  Jxta_ResolverConfigAdvertisement *rslvr = NULL;
   
   Jxta_svc *tcpsvc;   /* append */
-  Jxta_svc *htsvc;
-  Jxta_svc *discsvc;
   Jxta_svc *rdvsvc;
-  Jxta_svc *srdisvc;
-  Jxta_svc *rlsvc;
-  Jxta_svc *epsvc;
-  Jxta_svc *cachesvc;
-  Jxta_svc *rslvrsvc;
-  Jxta_svc *monitorsvc;
-
   JString *tcp_proto; /* append */
-  JString *http_proto;
   Jxta_endpoint_address *def_rdv;
   JString *auto_confmod;
   JString *def_name;
@@ -105,17 +87,16 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
   
   tcp_proto = jstring_new_2("tcp");   /* append */
   
-  http_proto = jstring_new_2("http");
-  def_rdv = jxta_endpoint_address_new("http://rdv.jxtahosts.net/cgi-bin/rendezvous.cgi?2");
+  def_rdv = jxta_endpoint_address_new("tcp://127.0.0.1:9501");
   auto_confmod = jstring_new_2("auto");
-  def_name = jstring_new_2("JXTA-C Peer");
+  def_name = jstring_new_2("JXTA-C Monitor Peer");
   
   /* TCP */
   tta = jxta_TCPTransportAdvertisement_new(); /* append */
   tcpsvc = jxta_svc_new();
   jxta_TCPTransportAdvertisement_set_Protocol(tta, tcp_proto);
   jxta_TCPTransportAdvertisement_set_InterfaceAddress(tta, htonl(0x00000000));
-  jxta_TCPTransportAdvertisement_set_Port(tta, 9701);
+  jxta_TCPTransportAdvertisement_set_Port(tta, 9601);
   jxta_TCPTransportAdvertisement_set_ConfigMode(tta, auto_confmod);
   jxta_TCPTransportAdvertisement_set_ServerOff(tta, FALSE);
   jxta_TCPTransportAdvertisement_set_ClientOff(tta, FALSE);
@@ -126,73 +107,14 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
   jxta_svc_set_TCPTransportAdvertisement(tcpsvc, tta);
   jxta_svc_set_MCID(tcpsvc, jxta_tcpproto_classid);
   
-  /* HTTP */
-  hta = jxta_HTTPTransportAdvertisement_new();
-  htsvc = jxta_svc_new();
-  jxta_HTTPTransportAdvertisement_set_Protocol(hta, http_proto);
-  jxta_HTTPTransportAdvertisement_set_InterfaceAddress(hta, htonl(0x00000000));
-  jxta_HTTPTransportAdvertisement_set_ConfigMode(hta, auto_confmod);
-  jxta_HTTPTransportAdvertisement_set_Port(hta, 9700);
-  jxta_HTTPTransportAdvertisement_set_ServerOff(hta, TRUE);
-  jxta_HTTPTransportAdvertisement_set_ProxyOff(hta, TRUE);
-  
-  jxta_svc_set_HTTPTransportAdvertisement(htsvc, hta);
-  jxta_svc_set_MCID(htsvc, jxta_httpproto_classid);
-  
-  /* Relay */
-  rla = jxta_RelayAdvertisement_new();
-  rlsvc = jxta_svc_new();
-  jxta_RelayAdvertisement_set_IsClient(rla, jstring_new_2("true"));
-  jxta_RelayAdvertisement_set_IsServer(rla, jstring_new_2("false"));
-  jxta_svc_set_RelayAdvertisement(rlsvc, rla);
-  jxta_svc_set_MCID(rlsvc, jxta_relayproto_classid);
-
-  cache = jxta_CacheConfigAdvertisement_new();
-  cachesvc = jxta_svc_new();
-  jxta_CacheConfigAdvertisement_create_default(cache, FALSE);
-  jxta_svc_set_CacheConfig(cachesvc, cache);
-  jxta_svc_set_MCID(cachesvc, jxta_cache_classid);
-
-  /* monitor service */
-  monitorsvc = jxta_svc_new();
-  mon = jxta_MonitorConfigAdvertisement_new();
-  jxta_MonitorConfigAdvertisement_set_config_name(mon, "MonitorConfig");
-  jxta_svc_set_MCID(monitorsvc, jxta_monitor_classid);
-  jxta_svc_set_MonitorConfig(monitorsvc, mon);
-
-  /* Resolver */
-  rslvr = jxta_ResolverConfigAdvertisement_new();
-  rslvrsvc = jxta_svc_new();
-  jxta_svc_set_ResolverConfig(rslvrsvc, rslvr);
-  jxta_svc_set_MCID(rslvrsvc, jxta_resolver_classid);
-
-  /* Discovery */
-  disc = jxta_DiscoveryConfigAdvertisement_new();
-  discsvc = jxta_svc_new();
-  jxta_svc_set_DiscoveryConfig(discsvc, disc);
-  jxta_svc_set_MCID(discsvc, jxta_discovery_classid);
-  
-  /* EndPoint */
-  ep = jxta_EndPointConfigAdvertisement_new();
-  epsvc = jxta_svc_new();
-  jxta_svc_set_EndPointConfig(epsvc, ep);
-  jxta_svc_set_MCID(epsvc, jxta_endpoint_classid);
-
   /* Rendezvous */
   rdv = jxta_RdvConfigAdvertisement_new();
   jxta_RdvConfig_set_config(rdv, config_edge);
-  jxta_RdvConfig_add_seeding(rdv, def_rdv);
+  jxta_RdvConfig_add_seed(rdv, def_rdv);
   rdvsvc = jxta_svc_new();
   jxta_svc_set_RdvConfig(rdvsvc, rdv);
   jxta_svc_set_MCID(rdvsvc, jxta_rendezvous_classid);
   
-  /* SRDI */
-  srdi = jxta_SrdiConfigAdvertisement_new();
-  srdisvc = jxta_svc_new();
-  jxta_svc_set_SrdiConfig(srdisvc, srdi);
-  jxta_svc_set_MCID(srdisvc, jxta_srdi_classid);          
-          
-          
   config_adv = jxta_PA_new();
 
   uuid_ptr = jxta_id_uuid_new();
@@ -203,14 +125,6 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
   services = jxta_PA_get_Svc(config_adv);
   jxta_vector_add_object_last(services, (Jxta_object *) rdvsvc);
   jxta_vector_add_object_last(services, (Jxta_object *) tcpsvc);      /* append */
-  jxta_vector_add_object_last(services, (Jxta_object *) htsvc);
-  jxta_vector_add_object_last(services, (Jxta_object *) rlsvc);
-  jxta_vector_add_object_last(services, (Jxta_object *) srdisvc);
-  jxta_vector_add_object_last(services, (Jxta_object *) monitorsvc);
-  jxta_vector_add_object_last(services, (Jxta_object *) epsvc);
-  jxta_vector_add_object_last(services, (Jxta_object *) rslvrsvc);
-  jxta_vector_add_object_last(services, (Jxta_object *) discsvc);
-  jxta_vector_add_object_last(services, (Jxta_object *) cachesvc);
   JXTA_OBJECT_RELEASE(services);
   
   jxta_id_peerid_new_1(&pid, jxta_id_defaultNetPeerGroupID);
@@ -220,7 +134,7 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
   return config_adv;
 }
 
-JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_read(const char *fname)
+JXTA_DECLARE(Jxta_PA *) jxta_MonitorConfig_read(const char *fname)
 {
 
     Jxta_PA *ad;
@@ -242,7 +156,7 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_read(const char *fname)
     return ad;
 }
 
-JXTA_DECLARE(Jxta_status) jxta_PlatformConfig_write(Jxta_PA * ad, const char *fname)
+JXTA_DECLARE(Jxta_status) jxta_MonitorConfig_write(Jxta_PA * ad, const char *fname)
 {
     FILE *advfile;
     JString *advs;

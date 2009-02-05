@@ -25,6 +25,7 @@ jxtaShell_SOURCES =  jxta_shell_application.c \
                      jxta_shell_app_env.c  \
                      kdb.c  \
                      leave.c  \
+                     monitor.c \
                      peers.c  \
                      publish.c   \
                      rdvcontrol.c  \
@@ -45,6 +46,7 @@ jxtaShell_SOURCES =  jxta_shell_application.c \
 		     jxta_shell_app_env.h \
 		     kdb.h                \
 		     leave.h              \
+		     monitor.h            \
 		     peers.h              \
                      publish.h            \
 		     rdvcontrol.h          \

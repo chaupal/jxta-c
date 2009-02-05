@@ -76,6 +76,8 @@ static const char *__log_cat = "ADV";
 #include "jxta_rdv_config_adv.h"
 #include "jxta_srdi_config_adv.h"
 #include "jxta_rdv_lease_options.h"
+#include "jxta_peerview_monitor_entry.h"
+#include "jxta_rdv_monitor_entry.h"
 #include "jxta_relaya.h"
 
 #define ENHANCED_QUERY_LOG "QueryLog"
@@ -1036,6 +1038,7 @@ void jxta_advertisement_register_global_handlers(void)
     jxta_advertisement_register_global_handler("jxta:DiscoveryConfig", (JxtaAdvertisementNewFunc) jxta_DiscoveryConfigAdvertisement_new );
     jxta_advertisement_register_global_handler("jxta:ResolverConfig", (JxtaAdvertisementNewFunc) jxta_ResolverConfigAdvertisement_new );
     jxta_advertisement_register_global_handler("jxta:EndPointConfig", (JxtaAdvertisementNewFunc) jxta_EndPointConfigAdvertisement_new );
+    jxta_advertisement_register_global_handler("jxta:MonitorConfig", (JxtaAdvertisementNewFunc) jxta_MonitorConfigAdvertisement_new );
     jxta_advertisement_register_global_handler("jxta:RdvConfig", (JxtaAdvertisementNewFunc) jxta_RdvConfigAdvertisement_new );
     jxta_advertisement_register_global_handler("jxta:SrdiConfig", (JxtaAdvertisementNewFunc) jxta_SrdiConfigAdvertisement_new );
     jxta_advertisement_register_global_handler("jxta:TCPTransportAdvertisement", (JxtaAdvertisementNewFunc) jxta_TCPTransportAdvertisement_new );
@@ -1045,7 +1048,8 @@ void jxta_advertisement_register_global_handlers(void)
     /* Miscellaneous advertisement types */
     jxta_advertisement_register_global_handler("jxta:RdvLeaseOptions", (JxtaAdvertisementNewFunc) jxta_rdv_lease_options_new);
     jxta_advertisement_register_global_handler("demo:TestAdvertisement", (JxtaAdvertisementNewFunc) jxta_test_adv_new);
-
+    jxta_advertisement_register_global_handler("jxta:PV3MonEntry", (JxtaAdvertisementNewFunc) jxta_peerview_monitor_entry_new );
+    jxta_advertisement_register_global_handler("jxta:RdvMonEntry", (JxtaAdvertisementNewFunc) jxta_rdv_monitor_entry_new );
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Global ad hash table initialized\n");
 
 

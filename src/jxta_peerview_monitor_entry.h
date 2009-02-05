@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright (c) 2008 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -53,79 +53,52 @@
  * $Id$
  */
 
-#include "jxta_apr.h"
-#include "jpr/jpr_core.h"
-#include "jxta_log.h"
-#include "jxta_private.h"
-#include "jxta_advertisement_priv.h"
-#include "jxta_netpg_private.h"
-#include "jxta_monpg_private.h"
-#include "jxta_range.h"
 
-/**
- * Briefly, touching jxta jxta touches apr, which requires a call
- * to apr_initialize() and apr_terminate().  
- */
+#ifndef __PV_MONITOR_ENTRY_H__
+#define __PV_MONITOR_ENTRY_H__
 
-static unsigned int _jxta_initialized = 0;
-int _jxta_return = 1;
-#ifdef WIN32
-static int _targc = 0;
-static char **_targv = NULL;
+#include "jxta_advertisement.h"
+#include "jstring.h"
+#include "jxta_vector.h"
+#include "jxta_cred.h"
+#include "jxta_pa.h"
+#include "jxta_peerview_pong_msg.h"
+
+#ifdef __cplusplus
+extern "C" {
+#if 0
+};
+#endif
 #endif
 
-/**
- * @todo Add initialization code.
- */
-JXTA_DECLARE(void) jxta_initialize(void)
+typedef struct _jxta_peerview_monitor_entry Jxta_peerview_monitor_entry;
+
+JXTA_DECLARE(Jxta_peerview_monitor_entry *) jxta_peerview_monitor_entry_new(void);
+JXTA_DECLARE(Jxta_status) jxta_peerview_monitor_entry_get_xml(Jxta_peerview_monitor_entry *, JString ** xml);
+
+JXTA_DECLARE(Jxta_credential*) jxta_peerview_monitor_entry_get_credential(Jxta_peerview_monitor_entry * me);
+JXTA_DECLARE(void) jxta_peerview_monitor_entry_set_credential(Jxta_peerview_monitor_entry * me, Jxta_credential* credential);
+
+JXTA_DECLARE(Jxta_id *) jxta_peerview_monitor_entry_get_src_peer_id(Jxta_peerview_monitor_entry * myself);
+JXTA_DECLARE(void) jxta_peerview_monitor_entry_set_src_peer_id(Jxta_peerview_monitor_entry * myself, Jxta_id * src_peer_id);
+
+JXTA_DECLARE(int) jxta_peerview_monitor_entry_get_cluster_number(Jxta_peerview_monitor_entry * me);
+JXTA_DECLARE(void) jxta_peerview_monitor_entry_set_cluster_number(Jxta_peerview_monitor_entry * me, int cluster_number);
+
+JXTA_DECLARE(Jxta_time) jxta_peerview_monitor_entry_get_rdv_time(Jxta_peerview_monitor_entry * me);
+JXTA_DECLARE(void) jxta_peerview_monitor_entry_set_rdv_time(Jxta_peerview_monitor_entry * me, Jxta_time time);
+
+JXTA_DECLARE(void) jxta_peerview_monitor_entry_set_pong_msg(Jxta_peerview_monitor_entry * me, Jxta_peerview_pong_msg * pong);
+JXTA_DECLARE(void) jxta_peerview_monitor_entry_get_pong_msg(Jxta_peerview_monitor_entry * me, Jxta_peerview_pong_msg ** pong);
+
+
+#ifdef __cplusplus
+#if 0
 {
-    if (_jxta_initialized++) {
-        return;
-    }
-#ifdef WIN32
-    if (_targc != __argc)
-        _targc = __argc;
-
-    if (_targv != __argv)
-        _targv = __argv;
-
-    apr_app_initialize(&_targc, &_targv, NULL);
-#else
-    apr_initialize();
+#endif
+}
 #endif
 
-    jpr_initialize();
-    jxta_object_initialize();
-    jxta_log_initialize();
-    jxta_advertisement_register_global_handlers();
-    jxta_PG_module_initialize();
-    netpg_init_methods();
-    monpg_init_methods();
-    jxta_range_init();
-}
+#endif /* __PV_MONITOR_ENTRY_H__  */
 
-
-/**
- * @todo Add termination code.
- */
-JXTA_DECLARE(void) jxta_terminate(void)
-{
-    if (!_jxta_initialized) {
-        return;
-    }
-
-    _jxta_initialized--;
-    if (_jxta_initialized) {
-        return;
-    }
-
-    jxta_range_destroy();
-    jxta_PG_module_terminate();
-    jxta_advertisement_cleanup();
-    jxta_log_terminate();
-    jxta_object_terminate();
-    jpr_terminate();
-    apr_terminate();
-}
-
-/* vim: set ts=4 sw=4 tw=130 et: */
+/* vim: set ts=4 sw=4 et tw=130: */

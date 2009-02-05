@@ -202,6 +202,11 @@ static Jxta_MCID *_srdi_classid;
  * Well known module class identifier: cache manager
  */
 static Jxta_MCID *_cache_classid;
+
+/**
+ * Well known module class identifier: monitor service
+ */
+static Jxta_MCID *_monitor_classid;
 /*
  * fixme: endpointprotocols should probably all be of the same class
  * and of different specs and roles... but we'll take a shortcut for now.
@@ -508,6 +513,15 @@ static void static_id_init(void)
     }
 
     /**
+     * Well known module class identifier: monitor service
+     */
+    _monitor_classid = (Jxta_MCID *)
+        buildWellKnownID("DeadBeefDeafBabaFeedBabe00000023" "05");
+    if (NULL == _monitor_classid) {
+        goto ERROR_EXIT;
+    }
+
+    /**
      * Well known group specification identifier: the platform
      */
     _ref_platform_specid = (Jxta_MSID *)
@@ -715,6 +729,12 @@ JXTA_DECLARE(Jxta_MCID *) jxta_cache_classid_get(void)
     return _cache_classid;
 }
 
+JXTA_DECLARE(Jxta_MCID *) jxta_monitor_classid_get(void)
+{
+
+    return _monitor_classid;
+}
+
 JXTA_DECLARE(Jxta_MCID *) jxta_endpoint_classid_get(void)
 {
 
@@ -856,6 +876,7 @@ Jxta_status peergroup_init(Jxta_PG * me, Jxta_PG * parent)
         me->thd_pool = NULL;
     } else {
         apr_thread_pool_create(&me->thd_pool, 3, 5, me->pool);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Created Thread pool. [%pp]\n", me->thd_pool);
     }
 
     return JXTA_SUCCESS;
@@ -919,6 +940,7 @@ Jxta_status peergroup_stop(Jxta_PG * me)
     rv = endpoint_service_remove_recipient(ep, me->ep_cookie);
     JXTA_OBJECT_RELEASE(ep);
     if (me->thd_pool) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Destroying Thread pool. [%pp]\n", me->thd_pool);
         apr_thread_pool_destroy(me->thd_pool);
         me->thd_pool = NULL;
     }
@@ -1280,6 +1302,39 @@ JXTA_DECLARE(Jxta_status) jxta_PG_new_custom_netpg(Jxta_PG ** new_netpg, Jxta_MI
     return res;
 }
 
+JXTA_DECLARE(Jxta_status) jxta_PG_new_monpg(Jxta_PG ** new_monpg, Jxta_MIA * mia)
+{
+    Jxta_module *monpg = NULL;
+    Jxta_status res = JXTA_SUCCESS;
+    const char *noargs[] = { NULL };
+
+    res = jxta_defloader_instantiate("builtin:monpg", &monpg);
+
+    if (JXTA_SUCCESS != res) {
+        goto FINAL_EXIT;
+    }
+
+    res = jxta_module_init(monpg, (Jxta_PG *) NULL, NULL, (Jxta_advertisement *) mia);
+
+    if (JXTA_SUCCESS != res) {
+        JXTA_OBJECT_RELEASE(monpg);
+        goto FINAL_EXIT;
+    }
+
+    res = jxta_module_start((Jxta_module *) monpg, noargs);
+
+    if (JXTA_SUCCESS != res) {
+        JXTA_OBJECT_RELEASE(monpg);
+        goto FINAL_EXIT;
+    }
+
+    *new_monpg = (Jxta_PG *) monpg;
+
+  FINAL_EXIT:
+
+    return res;
+}
+
 JXTA_DECLARE(Jxta_status) jxta_PG_add_relay_address(Jxta_PG * self, Jxta_RdvAdvertisement * relay)
 {
    Jxta_PG* myself = PTValid(self, Jxta_PG);
@@ -1327,6 +1382,7 @@ void jxta_PG_module_terminate(void)
     JXTA_OBJECT_RELEASE(_endpoint_classid);
     JXTA_OBJECT_RELEASE(_srdi_classid);
     JXTA_OBJECT_RELEASE(_cache_classid);
+    JXTA_OBJECT_RELEASE(_monitor_classid);
     JXTA_OBJECT_RELEASE(_tcpproto_classid);
     JXTA_OBJECT_RELEASE(_httpproto_classid);
     JXTA_OBJECT_RELEASE(_relayproto_classid);

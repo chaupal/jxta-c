@@ -120,9 +120,17 @@ _jxta_id_jxta jxta_defaultNetPeerGroupID = {
     "NetGroup"
 };
 
+_jxta_id_jxta jxta_defaultMonPeerGroupID = {
+    {JXTA_OBJECT_STATIC_INIT, &jxta_format},
+    "MonGroup"
+};
+
 Jxta_id *jxta_id_defaultNetPeerGroupID = (Jxta_id *) & jxta_defaultNetPeerGroupID;
 
-static _jxta_id_jxta *wellKnownIds[] = { &jxta_nullID, &jxta_worldNetPeerGroupID, &jxta_defaultNetPeerGroupID, NULL };
+Jxta_id *jxta_id_defaultMonPeerGroupID = (Jxta_id *) & jxta_defaultMonPeerGroupID;
+
+static _jxta_id_jxta *wellKnownIds[] = { &jxta_nullID, &jxta_worldNetPeerGroupID, &jxta_defaultNetPeerGroupID,
+&jxta_defaultMonPeerGroupID, NULL };
 
 /******************************************************************************/
 /*                                                                            */

@@ -45,6 +45,13 @@ include_HEADERS = EndpointRouter.h          \
                   jxta_message.h            \
                   jxta_mia.h                \
                   jxta_module.h             \
+                  jxta_monitor_config_adv.h \
+                  jxta_monitor_service.h    \
+                  jxta_monitor_msg.h        \
+                  jxta_monitor_entry.h      \
+                  jxta_monitorconfig.h      \
+                  jxta_monpg.h              \
+                  jxta_monpg_private.h      \
                   jxta_msa.h                \
                   jxta_object.h             \
                   jxta_object_priv.h        \
@@ -57,6 +64,8 @@ include_HEADERS = EndpointRouter.h          \
                   jxta_platformconfig.h     \
                   jxta_peer.h               \
                   jxta_peerview.h           \
+                  jxta_peerview_monitor_entry.h \
+				  jxta_peerview_pong_msg.h  \
                   jxta_peer_private.h       \
                   jxta_peerinfo_service.h   \
                   jxta_pga.h                \
@@ -66,6 +75,7 @@ include_HEADERS = EndpointRouter.h          \
                   jxta_rdv.h                \
                   jxta_rdv_service.h        \
                   jxta_rdv_service_provider.h \
+				  jxta_rdv_monitor_entry.h	\
                   jxta_resolver_service.h   \
 				  jxta_resolver_config_adv.h \
                   jxta_rq.h                 \
@@ -99,6 +109,7 @@ include_HEADERS = EndpointRouter.h          \
                   jxta_transport_http_poller.h         \
                   jxta_transport_tcp_connection.h      \
                   jxta_transport_welcome_message.h      \
+                  jxta_transport_tcp_private.h         \
                   jxta_tcp_multicast.h                 \
                   jxta_wm.h                            \
                   localconf.h                          \
@@ -158,12 +169,19 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_rdv_service_server.c      \
                      jxta_rdv_lease_options.h       \
                      jxta_rdv_lease_options.c       \
+					 jxta_rdv_monitor_entry.c		\
                      jxta_endpoint_config_adv.c     \
                      jxta_endpoint_service.c        \
                      jxta_endpoint_service_priv.h   \
                      jxta_endpoint_address.c        \
                      jxta_membership_service.c      \
                      jxta_membership_service_null.c \
+                     jxta_monitor_config_adv.c      \
+                     jxta_monitorconfig.c           \
+                     jxta_monitor_service.c         \
+                     jxta_monpg.c                   \
+                     jxta_monitor_msg.c             \
+                     jxta_monitor_entry.c           \
                      jxta_test_adv.c                \
                      jxta_transport.c               \
                      jxta_transport_http.c          \
@@ -183,6 +201,7 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_peer.c                    \
                      jxta_peerview.c                \
 		     jxta_peerview_priv.h           \
+                     jxta_peerview_monitor_entry.c \
                      jxta_peerview_ping_msg.c       \
                      jxta_peerview_ping_msg.h       \
                      jxta_peerview_pong_msg.c       \

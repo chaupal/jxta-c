@@ -169,10 +169,11 @@ struct jxta_srdi_idx_entry {
  * @param group_id The ID of the group for which this Jxta_cm works.
  * @param config_adv Config advertisement of the Peer
  * @param localPeerId PeerId of this peer
+ * @param global_cm TRUE - Add to the global cm registry
  * @return Jxta_cm* (A ptr to) the newly created Jxta_cm object.
  */
-Jxta_cm * cm_new(const char *home_directory, Jxta_id * group_id, Jxta_CacheConfigAdvertisement * conf_adv,
-                                      Jxta_PID * localPeerId, apr_thread_pool_t * thread_pool);
+Jxta_cm *cm_new(const char *home_directory, Jxta_id * group_id,
+                     Jxta_CacheConfigAdvertisement * conf_adv, Jxta_PID * localPeerId, apr_thread_pool_t * thread_pool, Jxta_boolean global_cm);
 
 /**
  * Create a Jxta_cm object that shares the DB resources created by another CM

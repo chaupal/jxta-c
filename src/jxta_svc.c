@@ -67,6 +67,7 @@ static const char *__log_cat = "SVCADV";
 #include "jxta_hta.h"
 #include "jxta_discovery_config_adv.h"
 #include "jxta_endpoint_config_adv.h"
+#include "jxta_monitor_config_adv.h"
 #include "jxta_rdv_config_adv.h"
 #include "jxta_srdi_config_adv.h"
 #include "jxta_relaya.h"
@@ -90,6 +91,7 @@ enum tokentype {
     RdvConfigAdvertisement_,
     SrdiConfigAdvertisement_,
     EndPointConfigAdvertisement_,
+    MonitorConfigAdvertisement_,
     RelayConfigAdvertisement_,
     isClient_,
     isServer_,
@@ -122,6 +124,7 @@ static void handleResolverConfigAdv(void *me, const XML_Char * cd, int len);
 static void handleRdvConfigAdv(void *me, const XML_Char * cd, int len);
 static void handleSrdiConfigAdv(void *me, const XML_Char * cd, int len);
 static void handleEndPointConfigAdv(void *me, const XML_Char * cd, int len);
+static void handleMonitorConfigAdv(void *me, const XML_Char * cd, int len);
 static void handleRelayConfig(void *me, const XML_Char * cd, int len);
 
 static Jxta_status validate_advertisement(Jxta_svc *myself);
@@ -372,6 +375,26 @@ static void handleEndPointConfigAdv(void *me, const XML_Char * cd, int len)
     JXTA_OBJECT_RELEASE(endpointConfig);
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <jxta:EndPointConfig> Element [%pp]\n", ad );
+    }
+}
+
+static void handleMonitorConfigAdv(void *me, const XML_Char * cd, int len)
+{
+    Jxta_svc *ad = (Jxta_svc *) me;
+    
+    JXTA_OBJECT_CHECK_VALID(ad);
+    
+    if (len == 0) {
+        Jxta_MonitorConfigAdvertisement *monitorConfig = jxta_MonitorConfigAdvertisement_new();
+        
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <jxta:MonitorConfig> Element [%pp]\n", ad );
+
+        jxta_svc_set_MonitorConfig(ad, monitorConfig);
+
+        jxta_advertisement_set_handlers((Jxta_advertisement *) monitorConfig, ((Jxta_advertisement *) ad)->parser, (void *) ad);
+        JXTA_OBJECT_RELEASE(monitorConfig);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <jxta:MonitorConfig> Element [%pp]\n", ad );
     }
 }
 
@@ -688,6 +711,16 @@ JXTA_DECLARE(void) jxta_svc_set_EndPointConfig(Jxta_svc * ad, Jxta_EndPointConfi
     jxta_svc_set_Parm( ad, (Jxta_advertisement *) endpointConfig );
     }
 
+JXTA_DECLARE(Jxta_MonitorConfigAdvertisement *) jxta_svc_get_MonitorConfig(Jxta_svc * ad)
+{
+    return (Jxta_MonitorConfigAdvertisement*) jxta_svc_get_Parm_type( ad, "jxta:MonitorConfig" );
+}
+
+JXTA_DECLARE(void) jxta_svc_set_MonitorConfig(Jxta_svc * ad, Jxta_MonitorConfigAdvertisement * monitorConfig)
+{
+    jxta_svc_set_Parm( ad, (Jxta_advertisement *) monitorConfig );
+}
+
 JXTA_DECLARE(JString *) jxta_svc_get_RootCert(Jxta_svc * ad)
 {
     return NULL;
@@ -715,6 +748,7 @@ static const Kwdtab Svc_tags[] = {
     {"jxta:DiscoveryConfig", DiscoveryConfigAdvertisement_, *handleDiscoveryConfigAdv, NULL, NULL},
     {"jxta:ResolverConfig", ResolverConfigAdvertisement_, *handleResolverConfigAdv, NULL, NULL},
     {"jxta:EndPointConfig", EndPointConfigAdvertisement_, *handleEndPointConfigAdv, NULL, NULL},
+    {"jxta:MonitorConfig", MonitorConfigAdvertisement_, *handleMonitorConfigAdv, NULL, NULL},
     {"jxta:RdvConfig", RdvConfigAdvertisement_, *handleRdvConfigAdv, NULL, NULL},
     {"jxta:SrdiConfig", SrdiConfigAdvertisement_, *handleSrdiConfigAdv, NULL, NULL},
     {"jxta:TCPTransportAdvertisement", TCPTransportAdvertisement_, *handleTCPTransportAdvertisement, NULL, NULL},
@@ -832,7 +866,7 @@ JXTA_DECLARE(Jxta_svc *) jxta_svc_new(void)
 
     JXTA_OBJECT_INIT(myself, svc_delete, NULL);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Svc NEW [%pp]\n", myself );    
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Svc NEW [%pp]\n", myself );    
 
     return jxta_svc_construct(myself);
 }
@@ -852,7 +886,7 @@ static void svc_delete(Jxta_object * me)
 
     jxta_advertisement_destruct((Jxta_advertisement *) ad);
     
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Svc FREE [%pp]\n", ad );    
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Svc FREE [%pp]\n", ad );    
     
     memset(ad, 0xdd, sizeof(Jxta_svc));
     

@@ -23,7 +23,7 @@ int test_cm_new()
     jxta_CacheConfigAdvertisement_create_default(cache_config, TRUE);
 
     jxta_id_peerid_new_1(&peerid, jxta_id_worldNetPeerGroupID);
-    cm = cm_new("CM", jxta_id_worldNetPeerGroupID, cache_config, peerid, NULL);
+    cm = cm_new("CM", jxta_id_worldNetPeerGroupID, cache_config, peerid, NULL, FALSE);
 
     JXTA_OBJECT_RELEASE(cm);
 
@@ -50,7 +50,7 @@ int test_cm_create_folder()
     cache_config = jxta_CacheConfigAdvertisement_new();
     jxta_CacheConfigAdvertisement_create_default(cache_config, TRUE);
 
-    cm = cm_new("CM", jxta_id_worldNetPeerGroupID, cache_config, peerid, NULL);
+    cm = cm_new("CM", jxta_id_worldNetPeerGroupID, cache_config, peerid, NULL, FALSE);
 
 
     cm_create_folder(cm, (char *) "MyFolder", keys);

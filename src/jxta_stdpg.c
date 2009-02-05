@@ -108,6 +108,8 @@ static const char *__log_cat = "STDPG";
 #endif
 #endif
 
+static void jxta_stdpg_init_group_priv(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv,
+Jxta_boolean global_cm, Jxta_boolean share_group_ref);
 /*
  * Load a service properly; that is make sure it
  * initializes ok before returning it, otherwise, release it.
@@ -141,7 +143,7 @@ Jxta_status stdpg_ld_mod(Jxta_PG * self, Jxta_id * class_id, const char *name, J
         return res;
     }
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "%s loaded and initialized\n", name);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "%s loaded and initialized module [%pp]\n", name, *module);
 
     return res;
 }
@@ -313,6 +315,16 @@ void jxta_stdpg_set_configadv(Jxta_module * self, Jxta_PA * config_adv)
     it->config_adv = config_adv;
 }
 
+void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
+{
+    jxta_stdpg_init_group_priv(self, group, assigned_id, impl_adv, TRUE, TRUE);
+}
+
+void jxta_stdpg_init_group_1(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
+{
+    jxta_stdpg_init_group_priv(self, group, assigned_id, impl_adv, FALSE, FALSE);
+}
+
 /*
  * This routine inits the group but not its modules.
  * This is not part of the public API, this is for subclasses which may
@@ -322,7 +334,8 @@ void jxta_stdpg_set_configadv(Jxta_module * self, Jxta_PA * config_adv)
  * We have a lot of alternatives, because as the base pg class, we also normally
  * serve as the base class for the root group.
  */
-void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
+static void jxta_stdpg_init_group_priv(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv,
+Jxta_boolean global_cm, Jxta_boolean share_group_ref)
 {
     Jxta_status status;
     apr_uuid_t uuid;
@@ -377,8 +390,10 @@ void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assign
 
         peername_to_use = jxta_PA_get_Name(it->config_adv);
     } else {
+        if(share_group_ref)
         JXTA_OBJECT_SHARE(group);
         it->home_group = group;
+        it->home_group_shared = share_group_ref;
 
         /*
          * By default get peerconfig from our home group. Subclasses
@@ -457,7 +472,7 @@ void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assign
     }
     if (!cache_manager) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Didn't find a cache manager --  go new\n");
-        cache_manager = cm_new(home, gid_to_use, cache_config, pid_to_use,  thread_pool);
+        cache_manager = cm_new(home, gid_to_use, cache_config, pid_to_use,  thread_pool, global_cm);
     }
     JXTA_OBJECT_RELEASE(cache_config);
     JXTA_OBJECT_RELEASE(svc);
@@ -564,7 +579,7 @@ void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assign
  *
  * Error-returning variant.
  */
-Jxta_status jxta_stdpg_init_modules(Jxta_module * self)
+Jxta_status jxta_stdpg_init_modules(Jxta_module * self, Jxta_boolean is_global_group)
 {
     Jxta_status res;
     Jxta_stdpg *it = PTValid(self, Jxta_stdpg);
@@ -701,7 +716,10 @@ Jxta_status jxta_stdpg_init_modules(Jxta_module * self)
      * hooked-up.
      */
     gid = jxta_PA_get_GID(it->peer_adv);
-    res = jxta_register_group_instance(gid, (Jxta_PG *) self);
+
+    if (is_global_group) {
+        res = jxta_register_group_instance(gid, (Jxta_PG *) self);
+    }
     JXTA_OBJECT_RELEASE(gid);
 
     if (res != JXTA_SUCCESS) {
@@ -786,7 +804,7 @@ static Jxta_status stdpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
     jxta_stdpg_init_group(self, group, assigned_id, implAdv);
 
     /* load/initing modules */
-    res = jxta_stdpg_init_modules(self);
+    res = jxta_stdpg_init_modules(self, TRUE);
 
     if (JXTA_SUCCESS != res) {
         return res;
@@ -974,6 +992,8 @@ static Jxta_status stdpg_loadfromimpl_module(Jxta_PG * self,
     Jxta_stdpg* myself = PTValid(self, Jxta_stdpg);
 
     code = jxta_MIA_get_Code(impl_adv);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Calling stdpg_ld_mod for the stdpg\n");
 
     res = stdpg_ld_mod((Jxta_PG*) myself, assigned_id, jstring_get_string(code), impl_adv, module);
 
@@ -1432,6 +1452,7 @@ void jxta_stdpg_construct(Jxta_stdpg * self, Jxta_stdpg_methods const *methods)
     self->peerinfo = NULL;
     self->srdi = NULL;
     self->home_group = NULL;
+    self->home_group_shared = TRUE;
     self->impl_adv = NULL;
     self->peer_adv = NULL;
     self->group_adv = NULL;
@@ -1494,7 +1515,7 @@ void jxta_stdpg_destruct(Jxta_stdpg * self)
         JXTA_OBJECT_RELEASE(myself->name);
     if (myself->desc != NULL)
         JXTA_OBJECT_RELEASE(myself->desc);
-    if (myself->home_group != NULL)
+    if (myself->home_group != NULL && myself->home_group_shared)
         JXTA_OBJECT_RELEASE(myself->home_group);
     if (myself->srdi != NULL)
         JXTA_OBJECT_RELEASE(myself->srdi);

@@ -57,6 +57,7 @@ bin_PROGRAMS = jstring_test	    \
 	       peerview_pong_msg_test \
 	       peerview_address_request_msg_test \
 	       peerview_address_assign_msg_test \
+               monitor_msg_test \
                rdv_diffusion_msg_test    
 
 LDADD = \
@@ -257,6 +258,9 @@ cm_test_SOURCES		     = cm_test.c
 cm_test.o:  cm_test.c
 	$(COMPILE) -DSTANDALONE -o cm_test.o -c $(srcdir)/cm_test.c
 
+monitor_msg_test_SOURCES	     = monitor_msg_test.c unittest_jxta_func.c
+monitor_msg_test.o:  monitor_msg_test.c 
+	$(COMPILE) -DSTANDALONE -o monitor_msg_test.o -c $(srcdir)/monitor_msg_test.c
 
 unit_test_runner_SOURCES = unit_test_runner.c		    \
 			   unittest_jxta_func.c

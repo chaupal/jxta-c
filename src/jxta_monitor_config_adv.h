@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright (c) 2008 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -53,79 +53,52 @@
  * $Id$
  */
 
-#include "jxta_apr.h"
-#include "jpr/jpr_core.h"
-#include "jxta_log.h"
-#include "jxta_private.h"
-#include "jxta_advertisement_priv.h"
-#include "jxta_netpg_private.h"
-#include "jxta_monpg_private.h"
-#include "jxta_range.h"
 
+#ifndef JXTA_MONITORCONFIGADVERTISEMENT_H__
+#define JXTA_MONITORCONFIGADVERTISEMENT_H__
+
+#include "jxta_types.h"
+#include "jxta_advertisement.h"
+#include "jxta_vector.h"
+
+#ifdef __cplusplus
+extern "C" {
+#if 0
+};
+#endif
+#endif
+typedef struct _jxta_MonitorConfigAdvertisement Jxta_MonitorConfigAdvertisement;
+
+
+JXTA_DECLARE(Jxta_MonitorConfigAdvertisement *) jxta_MonitorConfigAdvertisement_new(void);
+JXTA_DECLARE(Jxta_status) jxta_MonitorConfigAdvertisement_get_xml(Jxta_MonitorConfigAdvertisement *, JString **);
+JXTA_DECLARE(void) jxta_MonitorConfigAdvertisement_parse_charbuffer(Jxta_MonitorConfigAdvertisement *, const char *, size_t len);
+JXTA_DECLARE(void) jxta_MonitorConfigAdvertisement_parse_file(Jxta_MonitorConfigAdvertisement *, FILE * stream);
+JXTA_DECLARE(Jxta_vector *) jxta_MonitorConfigAdvertisement_get_indexes(void);
+
+JXTA_DECLARE(Jxta_boolean)  jxta_MonitorConfig_is_service_enabled(Jxta_MonitorConfigAdvertisement * me);
+
+JXTA_DECLARE(void) jxta_MonitorConfigAdvertisement_set_config_name(Jxta_MonitorConfigAdvertisement * ad, const char *buf);
+JXTA_DECLARE(void) jxta_MonitorConfigAdvertisement_get_config_name(Jxta_MonitorConfigAdvertisement * ad, char **fn);
+
+JXTA_DECLARE(apr_interval_time_t) jxta_MonitorConfig_broadcast_interval(Jxta_MonitorConfigAdvertisement * me);
+
+JXTA_DECLARE(int) monitor_config_threads_init(Jxta_MonitorConfigAdvertisement * me);
+JXTA_DECLARE(int) monitor_config_threads_maximum(Jxta_MonitorConfigAdvertisement * me);
+
+JXTA_DECLARE(void) jxta_MonitorConfig_get_disabled_types(Jxta_MonitorConfigAdvertisement * me, Jxta_vector ** types);
 /**
- * Briefly, touching jxta jxta touches apr, which requires a call
- * to apr_initialize() and apr_terminate().  
- */
+*   For other advertisement types which want to parse MonitorConfig as a sub-section.    
+**/
+void handleJxta_MonitorConfigAdvertisement(void *userdata, const XML_Char * cd, int len);
 
-static unsigned int _jxta_initialized = 0;
-int _jxta_return = 1;
-#ifdef WIN32
-static int _targc = 0;
-static char **_targv = NULL;
+#ifdef __cplusplus
+#if 0
+{
+#endif
+}
 #endif
 
-/**
- * @todo Add initialization code.
- */
-JXTA_DECLARE(void) jxta_initialize(void)
-{
-    if (_jxta_initialized++) {
-        return;
-    }
-#ifdef WIN32
-    if (_targc != __argc)
-        _targc = __argc;
+#endif /* JXTA_MONITORCONFIGADVERTISEMENT_H__  */
 
-    if (_targv != __argv)
-        _targv = __argv;
-
-    apr_app_initialize(&_targc, &_targv, NULL);
-#else
-    apr_initialize();
-#endif
-
-    jpr_initialize();
-    jxta_object_initialize();
-    jxta_log_initialize();
-    jxta_advertisement_register_global_handlers();
-    jxta_PG_module_initialize();
-    netpg_init_methods();
-    monpg_init_methods();
-    jxta_range_init();
-}
-
-
-/**
- * @todo Add termination code.
- */
-JXTA_DECLARE(void) jxta_terminate(void)
-{
-    if (!_jxta_initialized) {
-        return;
-    }
-
-    _jxta_initialized--;
-    if (_jxta_initialized) {
-        return;
-    }
-
-    jxta_range_destroy();
-    jxta_PG_module_terminate();
-    jxta_advertisement_cleanup();
-    jxta_log_terminate();
-    jxta_object_terminate();
-    jpr_terminate();
-    apr_terminate();
-}
-
-/* vim: set ts=4 sw=4 tw=130 et: */
+/* vim: set ts=4 sw=4 et tw=130: */

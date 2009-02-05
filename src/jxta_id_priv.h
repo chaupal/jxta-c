@@ -138,6 +138,8 @@ JXTA_DECLARE_DATA _jxta_id_jxta jxta_worldNetPeerGroupID;
 JXTA_DECLARE_DATA _jxta_id_jxta jxta_defaultNetPeerGroupID;
 
 
+JXTA_DECLARE_DATA _jxta_id_jxta jxta_defaultMonPeerGroupID;
+
 #ifdef __cplusplus
 #if 0
 {

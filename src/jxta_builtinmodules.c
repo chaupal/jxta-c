@@ -63,8 +63,10 @@
  */
 Jxta_builtinmodule_record jxta_builtinmodules_tbl[] = {
     {"endpoint_service", jxta_endpoint_service_new_instance},
+    {"monitor_service", jxta_monitor_service_new_instance},
     {"rdv_service", jxta_rdv_service_new_instance},
     {"netpg", jxta_netpg_new_instance},
+    {"monpg", jxta_monpg_new_instance},
     {"stdpg", jxta_stdpg_new_instance},
     {"resolver_service_ref", jxta_resolver_service_ref_new_instance},
     {"discovery_service_ref", jxta_discovery_service_ref_new_instance},

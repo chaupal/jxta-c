@@ -65,6 +65,7 @@
 #include "jxta_listener.h"
 #include "jxta_peer.h"
 #include "jxta_vector.h"
+#include "jxta_peerview_pong_msg.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -311,6 +312,8 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_set_address_cb(Jxta_peerview * pv,  Jxta
 JXTA_DECLARE(apr_uuid_t *) jxta_peerview_get_pv_id_gen(Jxta_peerview *pv);
 
 JXTA_DECLARE(unsigned int) jxta_peerview_get_cluster_number(Jxta_peerview * me);
+
+JXTA_DECLARE(Jxta_status) jxta_peerview_get_client_pong_msg(Jxta_object * me, Jxta_peerview_pong_msg ** pong_msg);
 
 #ifdef __cplusplus
 #if 0
