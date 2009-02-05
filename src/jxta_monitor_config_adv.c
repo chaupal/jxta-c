@@ -101,38 +101,40 @@ static void jxta_MonitorConfigAdvertisement_delete(Jxta_object *);
 void handleJxta_MonitorConfigAdvertisement(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_MonitorConfigAdvertisement *ad = (Jxta_MonitorConfigAdvertisement *) userdata;
-    const char **atts = ((Jxta_advertisement *) ad)->atts;
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Begining parse of jxta:MonitorConfig\n");
+    if (0 == len) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "BEGIN Monitor Config advertisement\n");
+    } else {
+        const char **atts = ((Jxta_advertisement *) ad)->atts;
+        while (atts && *atts) {
+            if (0 == strcmp(*atts, "threads_init")) {
+                if (0 == strcmp(atts[1], "default")) {
+                    ad->init_threads = -1;
+                } else {
+                    ad->init_threads = atoi(atts[1]);
+                }
+            } else if (0 == strcmp(*atts, "enabled")) {
+                ad->enabled = (0 == strcmp(atts[1], "true")) ? TRUE:FALSE;
+            } else if (0 == strcmp(*atts, "threads_max")) {
+                if (0 == strcmp(atts[1], "default")) {
+                    ad->max_threads = -1;
+                } else {
+                    ad->max_threads = atoi(atts[1]);
+                }
+            }  else if (0 == strcmp(*atts, "broadcast_interval")) {
+                if (0 == strcmp(atts[1], "default")) {
+                    ad->broadcast_interval = -1;
+                } else {
+                    ad->broadcast_interval = (atoi(atts[1]) * APR_USEC_PER_SEC);
+                }
+            } else if (0 == strcmp(*atts, "config_name")) {
+                ad->config_name = strdup(atts[1]);
+            } else if (0 == strcmp(*atts, "type")) {
+                /* just silently skip it. */
+            }
 
-    while (atts && *atts) {
-        if (0 == strcmp(*atts, "threads_init")) {
-            if (0 == strcmp(atts[1], "default")) {
-                ad->init_threads = -1;
-            } else {
-                ad->init_threads = atoi(atts[1]);
-            }
-        } else if (0 == strcmp(*atts, "enabled")) {
-            ad->enabled = (0 == strcmp(atts[1], "true")) ? TRUE:FALSE;
-        } else if (0 == strcmp(*atts, "threads_max")) {
-            if (0 == strcmp(atts[1], "default")) {
-                ad->max_threads = -1;
-            } else {
-                ad->max_threads = atoi(atts[1]);
-            }
-        }  else if (0 == strcmp(*atts, "broadcast_interval")) {
-            if (0 == strcmp(atts[1], "default")) {
-                ad->broadcast_interval = -1;
-            } else {
-                ad->broadcast_interval = (atoi(atts[1]) * APR_USEC_PER_SEC);
-            }
-        } else if (0 == strcmp(*atts, "config_name")) {
-            ad->config_name = strdup(atts[1]);
-        } else if (0 == strcmp(*atts, "type")) {
-            /* just silently skip it. */
+            atts+=2;
         }
-
-        atts+=2;
     }
 }
 

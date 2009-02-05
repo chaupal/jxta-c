@@ -569,6 +569,7 @@ JXTA_DECLARE(Jxta_status) jxta_monitor_service_add_monitor_entry(Jxta_monitor_se
     Jxta_hashtable * type_hash = NULL;
     Jxta_vector *entries_v = NULL;
     Jxta_boolean do_flush = FALSE;
+    char * type = NULL;
 
     JXTA_OBJECT_CHECK_VALID(entry);
 
@@ -595,7 +596,6 @@ JXTA_DECLARE(Jxta_status) jxta_monitor_service_add_monitor_entry(Jxta_monitor_se
         jxta_hashtable_put(sub_context_hash, sub_context, strlen(sub_context) +1, (Jxta_object *) type_hash);
     }
 
-    char * type = NULL;
     jxta_monitor_entry_get_type(entry, &type);
     if (JXTA_SUCCESS != jxta_hashtable_get(type_hash, type, strlen(type) +1, JXTA_OBJECT_PPTR(&entries_v))){
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Creating vector that needs to be cleaned\n");
@@ -614,7 +614,8 @@ JXTA_DECLARE(Jxta_status) jxta_monitor_service_add_monitor_entry(Jxta_monitor_se
 FINAL_EXIT:
 
     apr_thread_mutex_unlock(myself->mutex);
-    
+    if (type)
+        free(type);
     if(type_hash)
         JXTA_OBJECT_RELEASE(type_hash);
     if (sub_context_hash)

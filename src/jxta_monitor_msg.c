@@ -710,8 +710,10 @@ static void handle_entry(void *me, const XML_Char * cd, int len)
             jxta_monitor_entry_set_sub_context(entry, myself->current_sub_context);
             jxta_monitor_entry_set_type(entry, type);
             jxta_vector_add_object_last(entries_v, (Jxta_object *) entry);
+
+            if (type_hashtable)
+                JXTA_OBJECT_RELEASE(type_hashtable);
             JXTA_OBJECT_RELEASE(entry);
-        
         }
         if (newAdv)
             JXTA_OBJECT_RELEASE(newAdv);
