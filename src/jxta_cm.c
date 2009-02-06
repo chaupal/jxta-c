@@ -2025,6 +2025,8 @@ static Jxta_status cm_srdi_index_get(Jxta_cm * me, JString * jPeerid
     entry->fwd = !strcmp(forward, "1") ? TRUE:FALSE;
     entry->fwd_this = !strcmp(forward, "1") ? TRUE:FALSE;
     entry->duplicate = !strcmp(duplicate, "1") ? TRUE:FALSE;
+    if (NULL != entry->fwd_peerid)
+        JXTA_OBJECT_RELEASE(entry->fwd_peerid);
     entry->fwd_peerid = jstring_new_2(fwd_peerid);
 
     *jSrcPeerid = jstring_new_2(source_id);
