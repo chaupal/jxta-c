@@ -213,7 +213,7 @@ static const char *jxta_elemTable = CM_TBL_ELEM_ATTRIBUTES;
 static const char *jxta_elemTable_fields[][2] = {
     {CM_COL_NameSpace, SQL_VARCHAR_128},
     {CM_COL_AdvId, SQL_VARCHAR_128},
-    {CM_COL_Name, SQL_VARCHAR_64},
+    {CM_COL_Key, SQL_VARCHAR_64},
     {CM_COL_Value, SQL_VARCHAR_4K},
     {CM_COL_NumValue, SQL_REAL},
     {CM_COL_NumRange, SQL_VARCHAR_64},
@@ -232,7 +232,7 @@ static const char *jxta_srdiTable_fields[][2] = {
     {CM_COL_Handler, SQL_VARCHAR_64},
     {CM_COL_Peerid, SQL_VARCHAR_128},
     {CM_COL_AdvId, SQL_VARCHAR_128},
-    {CM_COL_Name, SQL_VARCHAR_64},
+    {CM_COL_Key, SQL_VARCHAR_64},
     {CM_COL_Value, SQL_VARCHAR_4K},
     {CM_COL_NumValue, SQL_REAL},
     {CM_COL_NumRange, SQL_VARCHAR_64},
@@ -254,7 +254,7 @@ static const char *jxta_srdiIndexTable_fields[][2] = {
     {CM_COL_Peerid, SQL_VARCHAR_128},
     {CM_COL_GroupID, SQL_VARCHAR_128},
     {CM_COL_AdvId, SQL_VARCHAR_128},
-    {CM_COL_Name, SQL_VARCHAR_64},
+    {CM_COL_Key, SQL_VARCHAR_64},
     {CM_COL_SeqNumber, SQL_VARCHAR_64},
     {CM_COL_TimeOut, SQL_VARCHAR_64},
     {CM_COL_OriginalTimeout, SQL_VARCHAR_64},
@@ -277,7 +277,7 @@ static const char *jxta_srdiDeltaTable_fields[][2] = {
     {CM_COL_Handler, SQL_VARCHAR_64},
     {CM_COL_Peerid, SQL_VARCHAR_128},
     {CM_COL_AdvId, SQL_VARCHAR_128},
-    {CM_COL_Name, SQL_VARCHAR_64},
+    {CM_COL_Key, SQL_VARCHAR_64},
     {CM_COL_Value, SQL_VARCHAR_4K},
     {CM_COL_NumRange, SQL_VARCHAR_64},
     {CM_COL_TimeOut, SQL_VARCHAR_64},
@@ -303,7 +303,7 @@ static const char *jxta_replicaTable_fields[][2] = {
     {CM_COL_Handler, SQL_VARCHAR_64},
     {CM_COL_Peerid, SQL_VARCHAR_128},
     {CM_COL_AdvId, SQL_VARCHAR_128},
-    {CM_COL_Name, SQL_VARCHAR_64},
+    {CM_COL_Key, SQL_VARCHAR_64},
     {CM_COL_Value, SQL_VARCHAR_4K},
     {CM_COL_NumValue, SQL_REAL},
     {CM_COL_NumRange, SQL_VARCHAR_64},
@@ -711,7 +711,7 @@ void idx_entry_free(Jxta_object * obj)
     JXTA_OBJECT_RELEASE(entry->peer_id);
     JXTA_OBJECT_RELEASE(entry->db_alias);
     JXTA_OBJECT_RELEASE(entry->dup_id);
-    JXTA_OBJECT_RELEASE(entry->name);
+    JXTA_OBJECT_RELEASE(entry->key);
     JXTA_OBJECT_RELEASE(entry->name_space);
     free(obj);
 }
@@ -1251,7 +1251,7 @@ static apr_status_t cm_sql_db_init(DBSpace * dbSpace, Jxta_addressSpace * jas)
     const char *nsIndex[] = { CM_COL_NameSpace, CM_COL_AdvId, NULL };
     const char *timeOutIndex[] = { CM_COL_TimeOut, NULL };
     const char *idxIndex[] = { CM_COL_Peerid, CM_COL_SeqNumber, CM_COL_GroupID, NULL };
-    const char *deltaIndex[] = { CM_COL_Handler, CM_COL_Peerid, CM_COL_AdvId, CM_COL_Name, CM_COL_Value, NULL };
+    const char *deltaIndex[] = { CM_COL_Handler, CM_COL_Peerid, CM_COL_AdvId, CM_COL_Key, CM_COL_Value, NULL };
 
     update_sql_j = jstring_new_0();
     delete_sql_j = jstring_new_0();
@@ -2097,7 +2097,7 @@ Jxta_status cm_get_srdi_with_seq_number(Jxta_cm * me, JString * jPeerid, Jxta_se
 
     jstring_append_2(jWhere, SQL_AND CM_COL_AdvId SQL_EQUAL);
     SQL_VALUE(jWhere, entry->advId);
-    jstring_append_2(jWhere, SQL_AND CM_COL_Name SQL_EQUAL);
+    jstring_append_2(jWhere, SQL_AND CM_COL_Key SQL_EQUAL);
     SQL_VALUE(jWhere, entry->key);
 
     jColumns = jstring_new_2(CM_COL_Value SQL_COMMA CM_COL_NumRange SQL_COMMA CM_COL_NameSpace);
@@ -2522,7 +2522,7 @@ static Jxta_status cm_srdi_index_entries_get(Jxta_cm * cm, JString *peer_id_j, J
         goto FINAL_EXIT;
     }
 
-    jColumns = jstring_new_2(CM_COL_DBAlias SQL_COMMA CM_COL_AdvId SQL_COMMA CM_COL_SourcePeerid SQL_COMMA CM_COL_NameSpace SQL_COMMA CM_COL_Name SQL_COMMA CM_COL_SeqNumber SQL_COMMA CM_COL_TimeOut SQL_COMMA CM_COL_Replicate);
+    jColumns = jstring_new_2(CM_COL_DBAlias SQL_COMMA CM_COL_AdvId SQL_COMMA CM_COL_SourcePeerid SQL_COMMA CM_COL_NameSpace SQL_COMMA CM_COL_Key SQL_COMMA CM_COL_SeqNumber SQL_COMMA CM_COL_TimeOut SQL_COMMA CM_COL_Replicate);
 
     jWhere = jstring_new_2(CM_COL_Replica SQL_EQUAL );
     if (replica) {
@@ -2566,7 +2566,7 @@ static Jxta_status cm_srdi_index_entries_get(Jxta_cm * cm, JString *peer_id_j, J
         const char *sourceid;
         const char *alias;
         const char *namespace;
-        const char *name;
+        const char *key;
         const char *seq_number;
         const char *dup_id;
         const char *timeout;
@@ -2583,7 +2583,7 @@ static Jxta_status cm_srdi_index_entries_get(Jxta_cm * cm, JString *peer_id_j, J
         advid = apr_dbd_get_entry(dbSpace->conn->driver, row, 1);
         sourceid = apr_dbd_get_entry(dbSpace->conn->driver, row, 2);
         namespace = apr_dbd_get_entry(dbSpace->conn->driver, row, 3);
-        name = apr_dbd_get_entry(dbSpace->conn->driver, row, 4);
+        key = apr_dbd_get_entry(dbSpace->conn->driver, row, 4);
         seq_number = apr_dbd_get_entry(dbSpace->conn->driver, row, 5);
         timeout = apr_dbd_get_entry(dbSpace->conn->driver, row, 6);
         replicate = apr_dbd_get_entry(dbSpace->conn->driver, row, 7);
@@ -2600,7 +2600,7 @@ static Jxta_status cm_srdi_index_entries_get(Jxta_cm * cm, JString *peer_id_j, J
         entry->adv_id = jstring_new_2(advid);
         entry->source_id = jstring_new_2(sourceid);
         entry->name_space = jstring_new_2(namespace);
-        entry->name = jstring_new_2(name);
+        entry->key = jstring_new_2(key);
         entry->seq_number = apr_atoi64(seq_number);
         entry->expiration = apr_atoi64(timeout) - jpr_time_now();
         entry->replicate = !strcmp(replicate, SQL_VALUE_1) ? TRUE:FALSE;
@@ -2611,8 +2611,8 @@ static Jxta_status cm_srdi_index_entries_get(Jxta_cm * cm, JString *peer_id_j, J
         SQL_VALUE(jWhere, peer_id_j);
         jstring_append_2(jWhere, SQL_AND CM_COL_AdvId SQL_EQUAL);
         SQL_VALUE(jWhere, entry->adv_id);
-        jstring_append_2(jWhere, SQL_AND CM_COL_Name SQL_EQUAL);
-        SQL_VALUE(jWhere, entry->name);
+        jstring_append_2(jWhere, SQL_AND CM_COL_Key SQL_EQUAL);
+        SQL_VALUE(jWhere, entry->key);
 
         cm_sql_select(dbReplica, pool, TRUE == replica ? CM_TBL_REPLICA:CM_TBL_SRDI , &rep_res, jColumns , jWhere, NULL, TRUE);
 
@@ -2721,7 +2721,7 @@ void cm_update_replica_forward_peers(Jxta_cm * cm, Jxta_vector * replica_entries
                 items[j++] = jstring_get_string(entry->adv_id);
                 items[j++] = jstring_get_string(peer_id_j);
                 items[j++] = jstring_get_string(cm->jGroupID_string);
-                items[j] = jstring_get_string(entry->name);
+                items[j] = jstring_get_string(entry->key);
 
                 assert(j == (UPDATE_SRDI_INDEX_REPLICA_PEERID_ITEMS - 1));
 
@@ -2785,7 +2785,7 @@ static void cm_sql_create_delta_where_clause(JString * where, JString * jGroupId
     SQL_VALUE(where, jHandler);
     jstring_append_2(where, SQL_AND CM_COL_AdvId SQL_EQUAL);
     SQL_VALUE(where, entry->advId);
-    jstring_append_2(where, SQL_AND CM_COL_Name SQL_EQUAL);
+    jstring_append_2(where, SQL_AND CM_COL_Key SQL_EQUAL);
     SQL_VALUE(where, entry->key);
 /*     jstring_append_2(where, SQL_AND CM_COL_Value SQL_EQUAL);
     SQL_VALUE(where, entry->value);
@@ -3812,7 +3812,7 @@ Jxta_status cm_get_resend_delta_entries(Jxta_cm * me, JString * peerid_j, Jxta_v
         goto FINAL_EXIT;
     }
     columns =
-        jstring_new_2(CM_COL_AdvId SQL_COMMA CM_COL_Name SQL_COMMA CM_COL_Value SQL_COMMA CM_COL_NumRange 
+        jstring_new_2(CM_COL_AdvId SQL_COMMA CM_COL_Key SQL_COMMA CM_COL_Value SQL_COMMA CM_COL_NumRange 
                         SQL_COMMA CM_COL_TimeOutForOthers SQL_COMMA CM_COL_NameSpace SQL_COMMA CM_COL_SeqNumber 
                         SQL_COMMA CM_COL_Duplicate SQL_COMMA CM_COL_SourcePeerid SQL_COMMA CM_COL_RepPeerid);
 
@@ -4034,7 +4034,7 @@ char **cm_search(Jxta_cm * self, char *folder_name, const char *aattribute, cons
     JString *jVal = jstring_new_2(value);
     JString *jGroup = jstring_new_0();
 
-    jstring_append_2(where, CM_COL_Name);
+    jstring_append_2(where, CM_COL_Key);
     jstring_append_2(where, SQL_EQUAL);
     SQL_VALUE(where, jAttr);
     if (no_locals) {
@@ -4073,7 +4073,7 @@ char **cm_search_srdi(Jxta_cm * self, char *folder_name, const char *aattribute,
     JString *jVal = jstring_new_2(value);
     JString *jGroup = jstring_new_0();
 
-    jstring_append_2(where, CM_COL_Name);
+    jstring_append_2(where, CM_COL_Key);
     jstring_append_2(where, SQL_EQUAL);
     SQL_VALUE(where, jAttr);
 
@@ -4430,7 +4430,7 @@ static void cm_proffer_advertisements_columns_build(JString * columns)
 {
     /* these are the columns required by cm_proffer_advertisements_build CM_COL_Peerid is used to populate the profid in Jxta_cache_entry  */
     jstring_append_2(columns,
-                     CM_COL_Peerid SQL_COMMA CM_COL_AdvId SQL_COMMA CM_COL_Name SQL_COMMA CM_COL_Value SQL_COMMA
+                     CM_COL_Peerid SQL_COMMA CM_COL_AdvId SQL_COMMA CM_COL_Key SQL_COMMA CM_COL_Value SQL_COMMA
                      CM_COL_NameSpace);
     jstring_append_2(columns, SQL_COMMA CM_COL_TimeOut SQL_COMMA CM_COL_TimeOutForOthers);
 }
@@ -5734,7 +5734,7 @@ static Jxta_vector *cm_srdi_entries_get_priv(Jxta_cm *self, const char *table_na
     }
 
     jstring_append_2(columns, CM_COL_AdvId);
-    jstring_append_2(columns, SQL_COMMA CM_COL_NameSpace SQL_COMMA CM_COL_Name);
+    jstring_append_2(columns, SQL_COMMA CM_COL_NameSpace SQL_COMMA CM_COL_Key);
     jstring_append_2(columns, SQL_COMMA CM_COL_Value SQL_COMMA CM_COL_NumValue);
     jstring_append_2(columns, SQL_COMMA CM_COL_NumRange SQL_COMMA CM_COL_TimeOutForOthers);
 
@@ -6563,7 +6563,7 @@ static Jxta_boolean cm_srdi_index_exists(DBSpace * dbSpace, JString *groupid_j, 
         SQL_VALUE(where, entry->advId);
     }
     if (NULL != entry->key) {
-        jstring_append_2(where,  SQL_AND CM_COL_Name SQL_EQUAL);
+        jstring_append_2(where,  SQL_AND CM_COL_Key SQL_EQUAL);
         SQL_VALUE(where, entry->key);
     }
 
@@ -7346,7 +7346,7 @@ static Jxta_status cm_item_found(DBSpace * dbSpace, const char *table, const cha
     if (elemAttr != NULL) {
         jElemAttr = jstring_new_2(elemAttr);
         jstring_append_2(where, SQL_AND);
-        jstring_append_2(where, CM_COL_Name);
+        jstring_append_2(where, CM_COL_Key);
         jstring_append_2(where, SQL_EQUAL);
         SQL_VALUE(where, jElemAttr);
     }
@@ -7439,7 +7439,7 @@ static Jxta_status cm_srdi_item_found(DBSpace * dbSpace, const char *table, JStr
     jstring_append_2(where, SQL_EQUAL);
     SQL_VALUE(where, jAdvId);
     jstring_append_2(where, SQL_AND);
-    jstring_append_2(where, CM_COL_Name);
+    jstring_append_2(where, CM_COL_Key);
     jstring_append_2(where, SQL_EQUAL);
     SQL_VALUE(where, jElemAttr);
 

@@ -110,7 +110,7 @@ extern "C" {
 #define CM_COL_Handler "Handler"
 #define CM_COL_Peerid "PeerID"
 #define CM_COL_AdvId "AdvId"
-#define CM_COL_Name "Name"
+#define CM_COL_Key "Key"
 #define CM_COL_Value "Value"
 #define CM_COL_NumValue "NumValue"
 #define CM_COL_NumRange "RangeValue"
@@ -155,7 +155,7 @@ struct jxta_srdi_idx_entry {
     JString *source_id;
     JString *db_alias;
     JString *name_space;
-    JString *name;
+    JString *key;
     JString *dup_id;
     Jxta_sequence_number seq_number;
     Jxta_expiration_time expiration;

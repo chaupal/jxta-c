@@ -248,7 +248,7 @@ static void normalize_entry(Jxta_SRDIEntryElement *entry)
 {
     if (!entry->seqNumber) {
         if (!entry->value) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Received a SRDI entry without value\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Received a SRDI entry without value\n");
             entry->value = jstring_new_2("");
         }
         if (!entry->advId) {

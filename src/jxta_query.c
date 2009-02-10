@@ -532,7 +532,7 @@ JXTA_DECLARE(void) jxta_query_build_SQL_operator(JString * elem, JString * sqlop
     jstring_append_2(result, SQL_LEFT_PAREN);
     jstring_append_2(result, CM_COL_SRC);
     jstring_append_2(result, SQL_DOT);
-    jstring_append_2(result, CM_COL_Name);
+    jstring_append_2(result, CM_COL_Key);
     jstring_append_2(result, SQL_EQUAL);
     SQL_VALUE(result, elem);
     jstring_append_2(result, SQL_AND);
