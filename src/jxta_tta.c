@@ -491,24 +491,29 @@ JXTA_DECLARE(Jxta_status)
 
 
     if (ad->MulticastOff) {
-        jstring_append_2(string, "<MulticastOff/>");
+        jstring_append_2(string, "<MulticastOff/>\n");
     }
 
-    jstring_append_2(string, "<MulticastAddr>");
-    jpr_inet_ntop(AF_INET, &(ad->MulticastAddr), addr_buf, INET_ADDRSTRLEN);
-    jstring_append_2(string, addr_buf);
-    jstring_append_2(string, "</MulticastAddr>\n");
+    if(ad->MulticastAddr != 0) {
+        jstring_append_2(string, "<MulticastAddr>");
+        jpr_inet_ntop(AF_INET, &(ad->MulticastAddr), addr_buf, INET_ADDRSTRLEN);
+        jstring_append_2(string, addr_buf);
+        jstring_append_2(string, "</MulticastAddr>\n");
+    }
 
-    jstring_append_2(string, "<MulticastPort>");
-    apr_snprintf(port, sizeof(port), "%d", ad->MulticastPort);
-    jstring_append_2(string, port);
-    jstring_append_2(string, "</MulticastPort>\n");
+    if (ad->MulticastPort !=0) {
+        jstring_append_2(string, "<MulticastPort>");
+        apr_snprintf(port, sizeof(port), "%d", ad->MulticastPort);
+        jstring_append_2(string, port);
+        jstring_append_2(string, "</MulticastPort>\n");
+    }
 
-
-    jstring_append_2(string, "<MulticastSize>");
-    apr_snprintf(port, sizeof(port), "%d", ad->MulticastSize);
-    jstring_append_2(string, port);
-    jstring_append_2(string, "</MulticastSize>\n");
+    if (ad->MulticastSize != -1) {
+        jstring_append_2(string, "<MulticastSize>");
+        apr_snprintf(port, sizeof(port), "%d", ad->MulticastSize);
+        jstring_append_2(string, port);
+        jstring_append_2(string, "</MulticastSize>\n");
+    }
 
     jstring_append_2(string, "<InterfaceAddress>");
     jstring_append_2(string, ad->InterfaceAddress ? ad->InterfaceAddress : APR_ANYADDR);
@@ -558,6 +563,9 @@ static Jxta_TCPTransportAdvertisement *jxta_TCPTransportAdvertisement_construct(
         self->ServerOff = FALSE;
         self->PublicAddressOnly = FALSE;
         self->InterfaceAddress = NULL;
+        self->MulticastAddr = 0; 
+        self->MulticastPort = 0;
+        self->MulticastSize = -1;
     }
 
     return self;
