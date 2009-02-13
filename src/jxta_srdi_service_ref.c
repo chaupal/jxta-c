@@ -1631,6 +1631,7 @@ static void JXTA_STDCALL srdi_rdv_listener(Jxta_object * obj, void *arg)
                             continue;
                         }
                         if (!strcmp(jstring_get_string(entry->dup_id), "''")) {
+                            jxta_vector_remove_object_at(replica_entries, NULL, i--);
                             JXTA_OBJECT_RELEASE(entry);
                             continue;
                         }
@@ -1658,7 +1659,9 @@ static void JXTA_STDCALL srdi_rdv_listener(Jxta_object * obj, void *arg)
                         if (entry)
                             JXTA_OBJECT_RELEASE(entry);
                     }
-                    cm_update_replica_forward_peers(me->cm, replica_entries, jPeerid);
+                    if (jxta_vector_size(replica_entries) > 0) {
+                        cm_update_replica_forward_peers(me->cm, replica_entries, jPeerid);
+                    }
                 }
                 cm_remove_srdi_entries(me->cm, jPeerid, &srdi_entries);
                 if (srdi_entries) {
