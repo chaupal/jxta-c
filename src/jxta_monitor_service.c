@@ -218,7 +218,7 @@ FINAL_EXIT:
     if (JXTA_SUCCESS == res) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Initialized\n");
     } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Unable to Initialize res:%d\n", res);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to Initialize res:%d\n", res);
     }
     return res;
 }
@@ -308,10 +308,9 @@ static void monitor_service_stop(Jxta_module * self)
     }
 
     if (myself->monitor_group && myself->mon_group_loaded) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, FILEANDLINE "Stopped.\n");
         myself->mon_group_loaded = FALSE;
         jxta_module_stop((Jxta_module *) myself->monitor_group);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, FILEANDLINE "Stopped.\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, FILEANDLINE "Monitor Group Stopped.\n");
         JXTA_OBJECT_RELEASE(myself->monitor_group);
         myself->monitor_group = NULL;
     }
@@ -416,9 +415,7 @@ static void monitor_service_destruct(_jxta_monitor_service * service)
 
         entries = jxta_hashtable_values_get(me->type_callbacks);
 
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "type_callbacks size: %d\n", jxta_vector_size(entries));
         JXTA_OBJECT_RELEASE(entries);
-
         JXTA_OBJECT_RELEASE(me->type_callbacks);
         me->type_callbacks = NULL;
     }
@@ -429,8 +426,6 @@ static void monitor_service_destruct(_jxta_monitor_service * service)
     }
 
     if (me->listeners) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Listener size: %d\n", jxta_vector_size(me->listeners));
-
         JXTA_OBJECT_RELEASE(me->listeners);
         me->listeners = NULL;
     }
@@ -887,10 +882,10 @@ JXTA_DECLARE(Jxta_status) jxta_monitor_service_remove_listener(Jxta_monitor_serv
 
     JXTA_OBJECT_CHECK_VALID(listener);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Removing listener\n");
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Removing listener\n");
 
     if (jxta_vector_remove_object(myself->listeners, (Jxta_object *) listener) < 0) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Unable to remove listener\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to remove listener\n");
         return JXTA_FAILED;
     }
 
@@ -898,7 +893,7 @@ JXTA_DECLARE(Jxta_status) jxta_monitor_service_remove_listener(Jxta_monitor_serv
         jxta_listener_stop(myself->broadcast_listener);
         res = jxta_inputpipe_remove_listener(myself->broadcast_input_pipe, myself->broadcast_listener);
         if (JXTA_SUCCESS != res) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Unable to remove broadcast listener from the pipe\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to remove broadcast listener from the pipe\n");
         }
         JXTA_OBJECT_RELEASE(myself->broadcast_listener);
         myself->broadcast_listener = NULL;
@@ -1003,7 +998,7 @@ static Jxta_status monitor_build_broadcast_message(Jxta_monitor_service * monito
     jxta_monitor_msg_set_peer_id(*msg, monitor->pid);
 
     if (NULL == context && NULL == sub_context && NULL == type) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Setting broadcast entries \n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Setting broadcast entries \n");
         res = jxta_monitor_msg_set_entries(*msg, monitor->context_ids);
     } else {
         /* TODO: filter the entries by parms */
@@ -1173,7 +1168,7 @@ RESCHEDULE_EXIT:
         if (APR_SUCCESS != apr_res) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "MONITOR [%pp]: Could not reschedule activity.\n", myself);
         } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "MONITOR [%pp]: Rescheduled.\n", myself);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "MONITOR [%pp]: Rescheduled.\n", myself);
         }
     }
 
