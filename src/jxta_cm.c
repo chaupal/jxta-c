@@ -6652,10 +6652,10 @@ static Jxta_status cm_srdi_index_save(Jxta_cm * me, const char *alias, JString *
 
     /* timeout */
     memset(aTime1, 0, sizeof(aTime1));
-    if (apr_snprintf(aTime1, 64, JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), entry->expiration)) == 0) {
+    if (apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), entry->expiration)) == 0) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,
                         "Unable to format time for me and current time - set to default timeout \n");
-        apr_snprintf(aTime1, 64, JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), DEFAULT_EXPIRATION));
+        apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), DEFAULT_EXPIRATION));
     }
     items[i++] = aTime1;
 
