@@ -197,6 +197,7 @@ typedef struct cm_srdi_transaction_task {
 
 typedef struct cm_pps_transaction_entry {
     JXTA_OBJECT_HANDLE;
+    DBSpace *dbSpace;
     apr_dbd_prepared_t *pps;
     int items_size;
     const char **items;
@@ -473,6 +474,8 @@ static apr_status_t cm_best_choice_tables_clean(Jxta_cm * me);
 
 /*=============== Miscellaneous functions ================================*/
 
+static Jxta_status cm_exec_prepared_transaction_query_priv(DBSpace * dbSpace, Jxta_vector *items);
+
 static Jxta_object **cm_arrays_concatenate(Jxta_object ** destination, Jxta_object ** source);
 
 static Jpr_interval_time lifetime_get(Jpr_interval_time base, Jpr_interval_time span);
@@ -693,12 +696,15 @@ static void pps_transaction_entry_free(Jxta_object *obj)
     Jxta_cm_pps_transaction_entry *entry = (Jxta_cm_pps_transaction_entry *) obj;
     int i;
 
+    if (entry->dbSpace)
+        JXTA_OBJECT_RELEASE(entry->dbSpace);
     if (entry->items) {
         for (i=0; i < entry->items_size; i++) {
             free((void *) entry->items[i]);
         }
         free((void *) entry->items);
     }
+
     free(entry);
 }
 
@@ -3135,6 +3141,7 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
 
         pps_entry = calloc(1, sizeof(Jxta_cm_pps_transaction_entry));
         JXTA_OBJECT_INIT(pps_entry, pps_transaction_entry_free, NULL);
+        pps_entry->dbSpace = JXTA_OBJECT_SHARE(dbSpace);
         pps_entry->pps = dbSpace->conn->pp_statements->insert_srdi_delta;
         pps_entry->items = items;
         pps_entry->items_size = INSERT_SRDI_DELTA_ITEMS;
@@ -3165,6 +3172,83 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
 
 Jxta_status cm_exec_prepared_transaction_query(Jxta_cm *self, Jxta_vector *items)
 {
+    Jxta_status status=JXTA_SUCCESS;
+    Jxta_cm_pps_transaction_entry * pps_entry=NULL;
+    Jxta_hashtable *dbs=NULL;
+    int i;
+    Jxta_vector *entries=NULL;
+
+    dbs = jxta_hashtable_new(0);
+
+    for (i=0; i < jxta_vector_size(items); i++) {
+        const char *key=NULL;
+        int key_len=0;
+
+        status = jxta_vector_get_object_at(items, JXTA_OBJECT_PPTR(&pps_entry), i);
+        if (JXTA_SUCCESS != status) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Unable to get pps entry res:%d\n", status);
+            goto FINAL_EXIT;
+        }
+        key = pps_entry->dbSpace->alias;
+        key_len = strlen(key) + 1;
+
+        if (JXTA_SUCCESS != jxta_hashtable_get(dbs, key, key_len, JXTA_OBJECT_PPTR(&entries))) {
+            entries = jxta_vector_new(0);
+            jxta_hashtable_put(dbs, key, key_len, (Jxta_object *) entries);
+        }
+        jxta_vector_add_object_last(entries, (Jxta_object *) pps_entry);
+
+        JXTA_OBJECT_RELEASE(pps_entry);
+        pps_entry=NULL;
+        JXTA_OBJECT_RELEASE(entries);
+        entries = NULL;
+    }
+
+    entries = jxta_hashtable_values_get(dbs);
+
+    for (i=0; i<jxta_vector_size(entries); i++) {
+        Jxta_vector *x_entries=NULL;
+
+        status = jxta_vector_get_object_at(entries, JXTA_OBJECT_PPTR(&x_entries), i);
+
+        if (JXTA_SUCCESS != status) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unable to get pps entries res:%d\n", status);
+            continue;
+        }
+
+        /* get the entry for the dbSpace */
+        status = jxta_vector_get_object_at(x_entries, JXTA_OBJECT_PPTR(&pps_entry), 0);
+
+        if (JXTA_SUCCESS != status) {
+            JXTA_OBJECT_RELEASE(x_entries);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unable to get pps entry res:%d\n", status);
+            continue;
+        }
+
+        status = cm_exec_prepared_transaction_query_priv(pps_entry->dbSpace, x_entries);
+
+        JXTA_OBJECT_RELEASE(pps_entry);
+        pps_entry=NULL;
+        JXTA_OBJECT_RELEASE(x_entries);
+
+        if (JXTA_SUCCESS != status) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Unable to execute transaction res:%d\n", status);
+            goto FINAL_EXIT;
+        }
+    }
+
+FINAL_EXIT:
+    if (entries)
+        JXTA_OBJECT_RELEASE(entries);
+    if (dbs)
+        JXTA_OBJECT_RELEASE(dbs);
+    if (pps_entry)
+        JXTA_OBJECT_RELEASE(pps_entry);
+    return status;
+}
+
+static Jxta_status cm_exec_prepared_transaction_query_priv(DBSpace * dbSpace, Jxta_vector *items)
+{
     Jxta_status status = JXTA_SUCCESS;
     int i;
     int retry_count=3;
@@ -3172,7 +3256,6 @@ Jxta_status cm_exec_prepared_transaction_query(Jxta_cm *self, Jxta_vector *items
     apr_pool_t *pool;
     Jxta_boolean locked=FALSE;
     Jxta_boolean xaction_started=FALSE;
-    DBSpace *dbSpace = NULL;
     Jxta_cm_pps_transaction_entry * entry=NULL;
 
 #ifdef JXTA_PERFORMANCE_TRACKING_ENABLED
@@ -3184,8 +3267,6 @@ Jxta_status cm_exec_prepared_transaction_query(Jxta_cm *self, Jxta_vector *items
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create apr_pool: %d\n", rv);
         goto FINAL_EXIT;
     }
-
-    dbSpace = JXTA_OBJECT_SHARE(self->bestChoiceDB);
 
     apr_thread_mutex_lock(dbSpace->conn->lock);
     locked = TRUE;
@@ -3263,8 +3344,6 @@ Jxta_status cm_exec_prepared_transaction_query(Jxta_cm *self, Jxta_vector *items
         dbSpace->conn->transaction = NULL;
     if (locked)
         apr_thread_mutex_unlock(dbSpace->conn->lock);
-    if (dbSpace)
-        JXTA_OBJECT_RELEASE(dbSpace);
     if (NULL != pool)
         apr_pool_destroy(pool);
 
