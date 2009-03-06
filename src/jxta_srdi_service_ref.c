@@ -588,7 +588,7 @@ static Jxta_boolean create_zero_exp_msgs(JString *remove_peer, Jxta_SRDIEntryEle
     return found;
 }
 
-static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer, Jxta_id * orig_pid, Jxta_id * src_pid, JString * instance, Jxta_SRDIMessage * msg, Jxta_hashtable **remove_entries)
+static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer, Jxta_id * orig_pid, Jxta_id * src_pid, JString * instance, Jxta_SRDIMessage * msg, Jxta_hashtable **remove_entries, Jxta_vector *xaction_entries)
 {
     Jxta_status res = JXTA_SUCCESS;
     int i;
@@ -710,7 +710,7 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
         }
          res = cm_save_delta_entry(me->cm, jPeer, jSourcePeer, entry->rep_peerid, advPeer_j, instance, entry, within_radius
                         , &jNewValue, &newSeqNumber, &remove_peer_j, &remove_sequence_j
-                        , &update_srdi, jxta_srdi_cfg_get_delta_window(me->config));
+                        , &update_srdi, jxta_srdi_cfg_get_delta_window(me->config), xaction_entries);
 
         if (NULL != remove_peer_j) {
             Jxta_SRDIEntryElement * clone_entry = NULL;
@@ -851,7 +851,7 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
 }
 
 static Jxta_status prep_srdi_updates(Jxta_srdi_service *self, JString *instance, Jxta_SRDIMessage * msg, Jxta_id *peer,
-Jxta_hashtable **messages)
+Jxta_hashtable **messages, Jxta_vector *xaction_entries)
 {
 
     Jxta_status res = JXTA_SUCCESS;
@@ -871,7 +871,7 @@ Jxta_hashtable **messages)
     jxta_srdi_message_get_SrcPID(msg, &src_pid);
 
     if (jxta_srdi_cfg_is_delta_cache_supported(me->config)) {
-        record_delta_entry(me, peer, orig_pid, src_pid, instance, msg, &remove_entries);
+        record_delta_entry(me, peer, orig_pid, src_pid, instance, msg, &remove_entries, xaction_entries);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Got remove entries: %s \n", NULL == remove_entries? "false":"true");
         res = jxta_srdi_message_get_entries(msg, &mod_entries);
         if (JXTA_SUCCESS != res) {
@@ -978,6 +978,9 @@ static Jxta_status pushSrdi_msg(Jxta_srdi_service * self, Jxta_resolver_service 
     char **srdi_peers = NULL;
     char **srdi_peers_save = NULL;
     JString * peer_j=NULL;
+    Jxta_vector *xaction_entries;
+
+    xaction_entries = jxta_vector_new(0);
 
     if (NULL != peer) {
         if (jxta_id_to_jstring(peer, &peer_j) != JXTA_SUCCESS) {
@@ -1001,7 +1004,7 @@ static Jxta_status pushSrdi_msg(Jxta_srdi_service * self, Jxta_resolver_service 
                     jxta_id_to_jstring(peerid, &idString);
                     JXTA_OBJECT_RELEASE(idString);
 
-                    res = prep_srdi_updates(self, instance, msg, peerid, &messages);
+                    res = prep_srdi_updates(self, instance, msg, peerid, &messages, xaction_entries);
 
                     if(peerid != NULL){
                         JXTA_OBJECT_RELEASE(peerid);
@@ -1013,7 +1016,7 @@ static Jxta_status pushSrdi_msg(Jxta_srdi_service * self, Jxta_resolver_service 
                 JXTA_OBJECT_RELEASE(peer_obj);
         }
     } else {
-        res = prep_srdi_updates(self, instance, msg, peer, &messages);
+        res = prep_srdi_updates(self, instance, msg, peer, &messages, xaction_entries);
     }
     if (NULL != messages) {
         srdi_peers = jxta_hashtable_keys_get(messages);
@@ -1053,6 +1056,9 @@ static Jxta_status pushSrdi_msg(Jxta_srdi_service * self, Jxta_resolver_service 
             free(srdi_peers_save);
         }
     }
+    if (jxta_vector_size(xaction_entries) > 0) {
+        cm_exec_prepared_transaction_query(me->cm, xaction_entries);
+    }
 
 FINAL_EXIT:
     if (messages)
@@ -1063,6 +1069,8 @@ FINAL_EXIT:
         JXTA_OBJECT_RELEASE(peers);
     if (peer_j)
         JXTA_OBJECT_RELEASE(peer_j);
+    if (xaction_entries)
+        JXTA_OBJECT_RELEASE(xaction_entries);
     return res;
 }
 

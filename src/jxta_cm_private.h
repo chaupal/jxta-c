@@ -338,12 +338,13 @@ Jxta_status cm_remove_delta_entries(Jxta_cm * me, JString *seq_entries);
  * @param newSequenceNumber New seqeuence number if an entry exists for this entry
  * @param update_srdi If set to true the threshold has been met for updating the srdi entry at the rendezvous
  * @param window The percentage of the expiration used to send SRDI delta updates for duplicates
+ * @param xactions A vector of Jxta_cm_pps_transaction_entry entries passed to the cm for a pps transaction
  *
  * @return Jxta_status 
  */
 Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSourcePeerid, JString *jOrigPeerid, JString *jAdvPeer, JString * jHandler,
                             Jxta_SRDIEntryElement * entry, Jxta_boolean within_radius, JString ** jNewValue, Jxta_sequence_number * newSeqNumber,
-                            JString **jRemovePeerid, JString ** jRemoveSeqNumber, Jxta_boolean * update_srdi, int window);
+                            JString **jRemovePeerid, JString ** jRemoveSeqNumber, Jxta_boolean * update_srdi, int window, Jxta_vector *xactions);
 
 
 /**
@@ -471,6 +472,17 @@ Jxta_vector * cm_query_replica(Jxta_cm * self, JString * nameSpace, Jxta_vector 
  * otherwise.
  */
 Jxta_status cm_restore_bytes(Jxta_cm * cm, char *folder_name, char *primary_key, JString ** bytes);
+
+/**
+ * Execute a transaction using prepared statement parameters from items in the items vector. This
+ * function will retry the transaction 3 times upon failure.
+ *
+ * @param Jxta_cm pointer to the cm object
+ * @param items Vector of Jxta_cm_pps_transaction_entry entries that contain the pps parameters
+ *
+ * @return JXTA_SUCCESS when transaction is completed successfully
+ */
+Jxta_status cm_exec_prepared_transaction_query(Jxta_cm *self, Jxta_vector *items);
 
 /**
  * Get the expiration time of an advertisement.

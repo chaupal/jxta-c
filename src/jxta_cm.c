@@ -195,6 +195,14 @@ typedef struct cm_srdi_transaction_task {
     Jxta_boolean bReplica;
 } Jxta_cm_srdi_task;
 
+typedef struct cm_pps_transaction_entry {
+    JXTA_OBJECT_HANDLE;
+    apr_dbd_prepared_t *pps;
+    int items_size;
+    const char **items;
+} Jxta_cm_pps_transaction_entry;
+
+
 static JString *jPeerNs;
 static JString *jGroupNs;
 static JString *jInt64_for_format;
@@ -678,6 +686,20 @@ static void pps_free(Jxta_object * obj)
         JXTA_OBJECT_RELEASE(pps->insert_replica_j);
 
     free(pps);
+}
+
+static void pps_transaction_entry_free(Jxta_object *obj)
+{
+    Jxta_cm_pps_transaction_entry *entry = (Jxta_cm_pps_transaction_entry *) obj;
+    int i;
+
+    if (entry->items) {
+        for (i=0; i < entry->items_size; i++) {
+            free((void *) entry->items[i]);
+        }
+        free((void *) entry->items);
+    }
+    free(entry);
 }
 
 Jxta_cm *cm_shared_DB_new(Jxta_cm * cm, Jxta_id * group_id)
@@ -2800,7 +2822,7 @@ static void cm_sql_create_delta_where_clause(JString * where, JString * jGroupId
 
 Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSourcePeerid, JString *jOrigPeerid, JString *jAdvPeer, JString * jHandler,
                             Jxta_SRDIEntryElement * entry, Jxta_boolean within_radius, JString ** jNewValue, Jxta_sequence_number * newSeqNumber,
-                            JString **jRemovePeerid, JString ** jRemoveSeqNumber, Jxta_boolean * update_srdi, int window)
+                            JString **jRemovePeerid, JString ** jRemoveSeqNumber, Jxta_boolean * update_srdi, int window, Jxta_vector *xactions)
 {
     Jxta_status status = JXTA_SUCCESS;
     apr_status_t rv = 0;
@@ -2827,7 +2849,6 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
     Jxta_boolean found = FALSE;
     apr_dbd_row_t *row = NULL;
     apr_pool_t *pool;
-    int nrows = 0;
     Jxta_boolean duplicate_moved = FALSE;
     Jxta_boolean delta_changed = FALSE;
     Jxta_boolean peer_changed = FALSE;
@@ -3043,9 +3064,10 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
         char aTime2[24];
         char aSeqNumber[32];
         char aDeltaWindow[32];
-        const char *items[INSERT_SRDI_DELTA_ITEMS];
+        const char **items;
 
-        memset(items, 0, sizeof(items));
+        Jxta_cm_pps_transaction_entry *pps_entry;
+        items = calloc(INSERT_SRDI_DELTA_ITEMS, sizeof(char *));
 
         /* if no entry was found insert the entry */
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,"Didn't find sequence %d \n", entry->seqNumber);
@@ -3055,13 +3077,13 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
             apr_thread_mutex_unlock(me->mutex);
         }
 
-        items[i++] = NULL != entry->nameSpace ? jstring_get_string(entry->nameSpace):"help";
-        items[i++] = NULL != jHandler ? jstring_get_string(jHandler):"";
-        items[i++] = NULL != jPeerid ? jstring_get_string(jPeerid):"";
-        items[i++] = jstring_get_string(entry->advId);
-        items[i++] = jstring_get_string(entry->key);
-        items[i++] = NULL != entry->value ? jstring_get_string(entry->value):"";
-        items[i++] = NULL != entry->range ? jstring_get_string(entry->range):"";
+        items[i++] = strdup(NULL != entry->nameSpace ? jstring_get_string(entry->nameSpace):"help");
+        items[i++] = strdup(NULL != jHandler ? jstring_get_string(jHandler):"");
+        items[i++] = strdup(NULL != jPeerid ? jstring_get_string(jPeerid):"");
+        items[i++] = strdup(jstring_get_string(entry->advId));
+        items[i++] = strdup(jstring_get_string(entry->key));
+        items[i++] = strdup(NULL != entry->value ? jstring_get_string(entry->value):"");
+        items[i++] = strdup(NULL != entry->range ? jstring_get_string(entry->range):"");
 
         nnow = jpr_time_now();
 
@@ -3073,7 +3095,7 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unable to format time - set to default timeout\n");
             apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, actual_timeout);
         }
-        items[i++] = aTime1;
+        items[i++] = strdup(aTime1);
 
         /* time out for others */
         memset(aTime2, 0, sizeof(aTime2));
@@ -3081,44 +3103,44 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unable to format time - set to default timeout\n");
             apr_snprintf(aTime2, sizeof(aTime2), JPR_DIFF_TIME_FMT, DEFAULT_EXPIRATION);
         }
-        items[i++] = aTime2;
+        items[i++] = strdup(aTime2);
 
         /* groupid */
-        items[i++] = jstring_get_string(me->jGroupID_string);
+        items[i++] = strdup(jstring_get_string(me->jGroupID_string));
 
         /* sequence number */
         memset(aSeqNumber, 0, sizeof(aSeqNumber));
         apr_snprintf(aSeqNumber, sizeof(aSeqNumber), JXTA_SEQUENCE_NUMBER_FMT, entry->seqNumber);
-        items[i++] = aSeqNumber;
+        items[i++] = strdup(aSeqNumber);
 
         /* initialize next update to 0 */
-        items[i++] = "0";
+        items[i++] = strdup("0");
 
         /* delta window */
         memset(aDeltaWindow, 0, sizeof(aDeltaWindow));
         apr_snprintf(aDeltaWindow, sizeof(aDeltaWindow), "%d", window);
-        items[i++] = aDeltaWindow;
+        items[i++] = strdup(aDeltaWindow);
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Create an entry --- time: " JPR_ABS_TIME_FMT " next_update: 0 Timeout: " JPR_ABS_TIME_FMT "\n", nnow, actual_timeout);
 
-        items[i++] = NULL != jOrigPeerid ? jstring_get_string(jOrigPeerid):"";
-        items[i++] = NULL != jSourcePeerid ? jstring_get_string(jSourcePeerid):"";
-        items[i++] = TRUE == entry->duplicate ? "1":"0";
-        items[i++] = TRUE == within_radius ? "1":"0";
-        items[i] = TRUE == entry->fwd_this ? "1":"0";
+        items[i++] = strdup(NULL != jOrigPeerid ? jstring_get_string(jOrigPeerid):"");
+        items[i++] = strdup(NULL != jSourcePeerid ? jstring_get_string(jSourcePeerid):"");
+        items[i++] = strdup(TRUE == entry->duplicate ? "1":"0");
+        items[i++] = strdup(TRUE == within_radius ? "1":"0");
+        items[i] = strdup(TRUE == entry->fwd_this ? "1":"0");
 
         assert(i == (INSERT_SRDI_DELTA_ITEMS - 1));
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Save srdi delta seq no: " JXTA_SEQUENCE_NUMBER_FMT "\n", entry->seqNumber);
 
-        LOG_PARM_LIST("insert srdi delta ", items, INSERT_SRDI_DELTA_ITEMS)
+        pps_entry = calloc(1, sizeof(Jxta_cm_pps_transaction_entry));
+        JXTA_OBJECT_INIT(pps_entry, pps_transaction_entry_free, NULL);
+        pps_entry->pps = dbSpace->conn->pp_statements->insert_srdi_delta;
+        pps_entry->items = items;
+        pps_entry->items_size = INSERT_SRDI_DELTA_ITEMS;
+        jxta_vector_add_object_last(xactions, (Jxta_object *) pps_entry);
 
-        rv = apr_dbd_pquery(dbSpace->conn->driver, NULL, dbSpace->conn->sql, &nrows, dbSpace->conn->pp_statements->insert_srdi_delta
-                    , INSERT_SRDI_DELTA_ITEMS, (const char **) &items);
-        if (rv != APR_SUCCESS) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- Couldn't insert srdi delta\n %s  rc=%i\n",
-                        dbSpace->conn->log_id, dbSpace->id, apr_dbd_error(dbSpace->conn->driver, dbSpace->conn->sql, rv), rv);
-        }
+        JXTA_OBJECT_RELEASE(pps_entry);
     } else if (status == JXTA_ITEM_NOTFOUND) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "No entry found for an expiration of 0 entry\n");
     } else {
@@ -3138,6 +3160,114 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
     JXTA_OBJECT_RELEASE(entry);
     JXTA_OBJECT_RELEASE(columns);
     JXTA_OBJECT_RELEASE(where);
+    return status;
+}
+
+Jxta_status cm_exec_prepared_transaction_query(Jxta_cm *self, Jxta_vector *items)
+{
+    Jxta_status status = JXTA_SUCCESS;
+    int i;
+    int retry_count=3;
+    apr_status_t rv;
+    apr_pool_t *pool;
+    Jxta_boolean locked=FALSE;
+    Jxta_boolean xaction_started=FALSE;
+    DBSpace *dbSpace = NULL;
+    Jxta_cm_pps_transaction_entry * entry=NULL;
+
+#ifdef JXTA_PERFORMANCE_TRACKING_ENABLED
+    PERF_ENTRY
+#endif
+
+    rv = apr_pool_create(&pool, NULL);
+    if (rv != APR_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create apr_pool: %d\n", rv);
+        goto FINAL_EXIT;
+    }
+
+    dbSpace = JXTA_OBJECT_SHARE(self->bestChoiceDB);
+
+    apr_thread_mutex_lock(dbSpace->conn->lock);
+    locked = TRUE;
+
+
+    while (retry_count > 0) {
+        Jxta_boolean retry_transaction=FALSE;
+
+#ifdef JXTA_PERFORMANCE_TRACKING_ENABLED
+        int x_items;
+
+        x_items = jxta_vector_size(items);
+        PERF_START("Save pps transaction", "cm_exec_prepared_transaction_query")
+#endif
+
+        rv = apr_dbd_transaction_start(dbSpace->conn->driver, pool, dbSpace->conn->sql,
+                            &dbSpace->conn->transaction);
+
+        if (APR_SUCCESS != rv) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s Start transaction failed!\n%s\n",
+                            dbSpace->conn->log_id, dbSpace->id, apr_dbd_error(dbSpace->conn->driver, dbSpace->conn->sql, rv));
+            status = JXTA_FAILED;
+            goto FINAL_EXIT;
+        }
+        xaction_started = TRUE;
+        for (i=0; i < jxta_vector_size(items); i++) {
+            int nrows;
+
+            jxta_vector_get_object_at(items, JXTA_OBJECT_PPTR(&entry), i);
+            if (JXTA_SUCCESS != status) {
+                continue;
+            }
+
+            LOG_PARM_LIST("execute pps query - xaction entry ", entry->items, entry->items_size)
+
+            rv = apr_dbd_pquery(dbSpace->conn->driver, NULL, dbSpace->conn->sql, &nrows, entry->pps
+                    , entry->items_size, (const char **) entry->items);
+
+            JXTA_OBJECT_RELEASE(entry);
+            entry = NULL;
+            if (rv != APR_SUCCESS) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- Couldn't insert srdi delta %s  rc=%i\n",
+                        dbSpace->conn->log_id, dbSpace->id, apr_dbd_error(dbSpace->conn->driver, dbSpace->conn->sql, rv), rv);
+                retry_transaction = TRUE;
+                break;
+            }
+        }
+
+        rv = apr_dbd_transaction_end(dbSpace->conn->driver, pool, dbSpace->conn->transaction);
+
+        if (rv) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d End transaction failed! %d\n%s\n",
+            dbSpace->conn->log_id, rv, apr_dbd_error(dbSpace->conn->driver, dbSpace->conn->sql, rv));
+            status = JXTA_FAILED;
+            goto FINAL_EXIT;
+        }
+        if (retry_transaction) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "db_id: %d Retry Transaction count:%d\n",dbSpace->conn->log_id, retry_count);
+            retry_count--;
+            i = 0;
+        } else  {
+#ifdef JXTA_PERFORMANCE_TRACKING_ENABLED
+        PERF_END(x_items, JXTA_LOG_LEVEL_INFO);
+#endif
+            break;
+        }
+        dbSpace->conn->transaction = NULL;
+        xaction_started = FALSE;
+    }
+
+  FINAL_EXIT:
+    if (entry)
+        JXTA_OBJECT_RELEASE(entry);
+    if (TRUE == xaction_started)
+        dbSpace->conn->transaction = NULL;
+    if (locked)
+        apr_thread_mutex_unlock(dbSpace->conn->lock);
+    if (dbSpace)
+        JXTA_OBJECT_RELEASE(dbSpace);
+    if (NULL != pool)
+        apr_pool_destroy(pool);
+
     return status;
 }
 
