@@ -229,6 +229,7 @@ static const char *jxta_elemTable_fields[][2] = {
     {CM_COL_TimeOut, SQL_VARCHAR_64},
     {CM_COL_TimeOutForOthers, SQL_VARCHAR_64},
     {CM_COL_GroupID, SQL_VARCHAR_128},
+    {CM_COL_Replicate, SQL_INTEGER},
     {NULL, NULL}
 };
 
@@ -426,7 +427,7 @@ static void cm_proffer_advertisements_columns_build(JString * columns);
 
 static Jxta_status cm_item_insert(DBSpace * dbSpace, const char *nameSpace, const char *key,
                                   const char *elemAttr, const char *val, const char *range, Jxta_expiration_time timeOutForMe,
-                                  Jxta_expiration_time timeOutForOthers);
+                                  Jxta_expiration_time timeOutForOthers, Jxta_boolean replicate);
 
 static Jxta_status cm_item_update(DBSpace * dbSpace, const char *table, const char * nameSpace, const char * key,
                                   const char * elemAttr, JString * jVal, const char * range, Jxta_expiration_time timeOutForMe,
@@ -462,7 +463,7 @@ static void cm_srdi_delta_add(Jxta_hashtable * srdi_delta, Folder * folder, Jxta
 
 static Jxta_status cm_srdi_seq_number_update(Jxta_cm * me, JString *jHandler, JString * jPeerid, Jxta_SRDIEntryElement * entry);
 
-static Jxta_vector *cm_srdi_entries_get_priv(Jxta_cm *self, const char *table_name, JString *folder_name, JString *pAdvid, JString *pPeerId);
+static Jxta_vector *cm_srdi_entries_get_priv(Jxta_cm *self, const char *table_name, JString *folder_name, JString *pAdvid, JString *pPeerId, Jxta_boolean replicate);
 
 static Jxta_status cm_srdi_index_entries_get(Jxta_cm * cm, JString *peer_id_j, JString *adv_id_j, Jxta_boolean replica, Jxta_vector **replicas_v);
 
@@ -1226,7 +1227,7 @@ static void cm_best_choice_select(Jxta_cm * self)
         j = 10;
         while (j--) {
             cm_item_insert(dbSpace, "performance:Test", "performanceID", "NameSpace",
-                           "performance:test", "", 1000, 1000);
+                           "performance:test", "", 1000, 1000, TRUE);
             cm_item_delete(dbSpace, CM_TBL_ELEM_ATTRIBUTES, "performanceID");
         }
         end = jpr_time_now();
@@ -3430,7 +3431,7 @@ static Jxta_status secondary_indexing(Jxta_cm * me, DBSpace * dbSpace, Folder * 
         jskey = jstring_new_2(full_index_name);
         JXTA_OBJECT_RELEASE(ji);
         statusRet =
-            cm_item_insert(dbSpace, documentName, key, full_index_name, val, range, exp, exp_others);
+            cm_item_insert(dbSpace, documentName, key, full_index_name, val, range, exp, exp_others, !(flags & NO_REPLICATION));
         if (JXTA_SUCCESS != statusRet) {
             send_this_srdi = FALSE;
         }
@@ -5887,7 +5888,7 @@ void cm_set_delta(Jxta_cm * self, Jxta_boolean recordDelta)
  */
 Jxta_vector *cm_create_srdi_entries(Jxta_cm * self, JString * folder_name, JString * pAdvId, JString *pPeerId)
 {
-    return cm_srdi_entries_get_priv(self, CM_TBL_ELEM_ATTRIBUTES, folder_name, pAdvId, pPeerId);
+    return cm_srdi_entries_get_priv(self, CM_TBL_ELEM_ATTRIBUTES, folder_name, pAdvId, pPeerId, FALSE);
 }
 
 /*
@@ -5895,14 +5896,14 @@ Jxta_vector *cm_create_srdi_entries(Jxta_cm * self, JString * folder_name, JStri
  */
 Jxta_vector *cm_get_srdi_entries_1(Jxta_cm * self, JString * folder_name, JString * pAdvId, JString * pPeerid)
 {
-    return cm_srdi_entries_get_priv(self, CM_TBL_SRDI, folder_name, pAdvId, pPeerid);
+    return cm_srdi_entries_get_priv(self, CM_TBL_SRDI, folder_name, pAdvId, pPeerid, TRUE);
 }
 
 /*
  * return SRDI entries from the SRDI table
  */
 
-static Jxta_vector *cm_srdi_entries_get_priv(Jxta_cm *self, const char *table_name, JString *folder_name, JString *pAdvId, JString *pPeerId)
+static Jxta_vector *cm_srdi_entries_get_priv(Jxta_cm *self, const char *table_name, JString *folder_name, JString *pAdvId, JString *pPeerId, Jxta_boolean srdi)
 {
     size_t nb_keys;
     DBSpace *dbSpace = NULL;
@@ -5946,6 +5947,9 @@ static Jxta_vector *cm_srdi_entries_get_priv(Jxta_cm *self, const char *table_na
     jstring_append_2(columns, SQL_COMMA CM_COL_NameSpace SQL_COMMA CM_COL_Key);
     jstring_append_2(columns, SQL_COMMA CM_COL_Value SQL_COMMA CM_COL_NumValue);
     jstring_append_2(columns, SQL_COMMA CM_COL_NumRange SQL_COMMA CM_COL_TimeOutForOthers);
+    if (FALSE == srdi) {
+        jstring_append_2(columns, SQL_COMMA CM_COL_Replicate);
+    }
 
     cm_sql_append_timeout_check_greater(where);
     if (NULL != pAdvId) {
@@ -5985,6 +5989,7 @@ static Jxta_vector *cm_srdi_entries_get_priv(Jxta_cm *self, const char *table_na
         for (rv = apr_dbd_get_row(dbSpace->conn->driver, pool, res, &row, -1);
              rv == 0; rv = apr_dbd_get_row(dbSpace->conn->driver, pool, res, &row, -1)) {
             int column_count = apr_dbd_num_cols(dbSpace->conn->driver, res);
+            Jxta_boolean replicate_return=TRUE;
 
             jKey = jstring_new_0();
             jVal = jstring_new_0();
@@ -6024,6 +6029,9 @@ static Jxta_vector *cm_srdi_entries_get_priv(Jxta_cm *self, const char *table_na
                 case 6:    /* Time out */
                     sscanf(entry, jstring_get_string(jInt64_for_format), &exp);
                     break;
+                case 7:
+                    replicate_return = !strcmp(entry, "1");
+                    break;
                 }
             }
 
@@ -6032,6 +6040,7 @@ static Jxta_vector *cm_srdi_entries_get_priv(Jxta_cm *self, const char *table_na
                 apr_thread_mutex_lock(self->mutex);
                 ++self->delta_seq_number;
                 element = jxta_srdi_new_element_3(jKey, jVal, jNameSpace, jAdvId, jRange, exp, self->delta_seq_number);
+                element->replicate = replicate_return;
                 if (dbSpace->alias)
                     element->db_alias = strdup(dbSpace->alias);
                 apr_thread_mutex_unlock(self->mutex);
@@ -7302,7 +7311,7 @@ static Jxta_status cm_sql_delta_entry_update(DBSpace * dbSpace, JString * jPeeri
 
 static Jxta_status cm_item_insert(DBSpace * dbSpace, const char *nameSpace, const char *key,
                                   const char *elemAttr, const char *val, const char *range, Jxta_expiration_time timeOutForMe,
-                                  Jxta_expiration_time timeOutForOthers)
+                                  Jxta_expiration_time timeOutForOthers, Jxta_boolean replicate)
 {
     int nrows;
     int rv = 0;
@@ -7354,7 +7363,8 @@ static Jxta_status cm_item_insert(DBSpace * dbSpace, const char *nameSpace, cons
         items[i++] = NULL != range ? range:"";
         items[i++] = aTime1;
         items[i++] = aTime2;
-        items[i] = dbSpace->id;
+        items[i++] = dbSpace->id;
+        items[i] = TRUE == replicate ? "1":"0";
 
         assert(i == (INSERT_ELEM_ATTRIBUTE_ITEMS - 1));
 

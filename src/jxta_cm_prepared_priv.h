@@ -72,7 +72,7 @@ typedef struct _pp_statements Jxta_pp_statements ;
 
 /** number of variables for INSERT statements */
 
-#define INSERT_ELEM_ATTRIBUTE_ITEMS 9
+#define INSERT_ELEM_ATTRIBUTE_ITEMS 10
 #define INSERT_ADVERTISEMENT_ITEMS 7
 #define INSERT_SRDI_REPLICA_ITEMS 13
 #define INSERT_SRDI_DELTA_ITEMS 18
