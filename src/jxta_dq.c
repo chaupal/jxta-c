@@ -91,6 +91,7 @@ struct jxta_DiscoveryQuery {
     Jxta_advertisement jxta_advertisement;
     char *Jxta_DiscoveryQuery;
     short Type;
+    char instance;
     int Threshold;
     JString *PeerAdv;
     JString *Attr;
@@ -117,7 +118,17 @@ static void discovery_query_free(void * me);
  */
 static void handleJxta_DiscoveryQuery(void *userdata, const XML_Char * cd, int len)
 {
-    /*Jxta_DiscoveryQuery * ad = (Jxta_DiscoveryQuery*)userdata; */
+    Jxta_DiscoveryQuery * ad = (Jxta_DiscoveryQuery*)userdata;
+    const char **atts = ((Jxta_advertisement *) ad)->atts;
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "START <jxta:DiscoveryQuery> : [%pp]\n", ad);
+    while (atts && *atts) {
+        if (0 == strcmp(*atts, "ins")) {
+            ad->instance = atoi(atts[1]);
+        }
+        atts+=2;
+    }
+
 }
 
 static void handleType(void *userdata, const XML_Char * cd, int len)
@@ -251,6 +262,23 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_query_set_type(Jxta_DiscoveryQuery * ad
     }
     ad->Type = type;
     return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(char) jxta_discovery_query_get_instance_id(Jxta_DiscoveryQuery * ad)
+{
+    return ad->instance;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_set_instance_id(Jxta_DiscoveryQuery * ad, char instance)
+{
+    Jxta_status ret = JXTA_SUCCESS;
+
+    if (instance > -1 && instance < CHAR_MAX) {
+        ad->instance = instance;
+    } else {
+        ret = JXTA_INVALID_ARGUMENT;
+    }
+    return ret;
 }
 
 JXTA_DECLARE(int) jxta_discovery_query_get_threshold(Jxta_DiscoveryQuery * ad)
@@ -448,8 +476,14 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_xml(Jxta_DiscoveryQuery * adv
         return JXTA_NOMEM;
     }
     jstring_append_2(doc, "<!DOCTYPE jxta:DiscoveryQuery>");
-    jstring_append_2(doc, "<jxta:DiscoveryQuery>\n");
-
+    jstring_append_2(doc, "<jxta:DiscoveryQuery");
+    if (-1 != adv->instance) {
+        jstring_append_2(doc, " ins=\"");
+        apr_snprintf(buf, 128, "%d", adv->instance);
+        jstring_append_2(doc, buf);
+        jstring_append_2(doc, "\"");
+    }
+    jstring_append_2(doc, ">\n");
     apr_snprintf(buf, 128, "%d\n", adv->Type);
     jstring_append_2(doc, "<Type>");
     jstring_append_2(doc, buf);
@@ -544,6 +578,7 @@ JXTA_DECLARE(Jxta_DiscoveryQuery *) jxta_discovery_query_new(void)
 
     ad->Type = 0;
     ad->Threshold = 0;
+    ad->instance = -1;
     ad->PeerAdv = NULL;
     ad->Attr = NULL;
     ad->Value = NULL;

@@ -168,10 +168,10 @@ JXTA_DECLARE(Jxta_PA *) jxta_PlatformConfig_create_default()
 
   /* Discovery */
   disc = jxta_DiscoveryConfigAdvertisement_new();
+  jxta_discovery_config_set_instance(disc, 1);
   discsvc = jxta_svc_new();
   jxta_svc_set_DiscoveryConfig(discsvc, disc);
   jxta_svc_set_MCID(discsvc, jxta_discovery_classid);
-  
   /* EndPoint */
   ep = jxta_EndPointConfigAdvertisement_new();
   epsvc = jxta_svc_new();

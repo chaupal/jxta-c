@@ -142,6 +142,29 @@ JXTA_DECLARE(Jxta_boolean) jxta_peerview_is_active(Jxta_peerview * pv );
 JXTA_DECLARE(Jxta_boolean) jxta_peerview_is_associate(Jxta_peerview * me, Jxta_id * id);
 
 /**
+*   Returns the peers that should initiate a walk if needed.
+*
+*   @param pv The peerview
+*   @param list Vector of possible peers
+*   @param policy Walk policy to apply
+*   @param best_peers Location to store the peers
+*
+*   @return Jxta_status JXTA_SUCCESS if there is a good entry.
+**/
+JXTA_DECLARE(Jxta_status) jxta_peerview_select_walk_peers(Jxta_peerview * me, Jxta_vector * candidates, Jxta_Peerview_walk_policy policy, Jxta_vector **walk_peers);
+
+/**
+*   Tracks the usage of a peer as the forward walk peer. Increments the counter and timestamps the entry
+*
+*   @param pv The peerview
+*   @param id Id of the peer used as a forward walk peer
+*
+*   @return Jxta_status JXTA_SUCCESS - The counter has been incremented
+*
+**/
+JXTA_DECLARE(Jxta_status) jxta_peerview_flag_walk_peer_usage(Jxta_peerview * me, Jxta_id *id);
+
+/**
 *   Returns TRUE if the specified peer is a partner peer within the peerview
 *
 *   @param pv The peerview

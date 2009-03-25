@@ -95,6 +95,7 @@
 #include "jxta_discovery_config_adv.h"
 
 #define HAVE_POOL
+#define QUERY_ID_EXPIRATION 30 /* 30 seconds */
 
 typedef struct {
     Extends(Jxta_discovery_service);
@@ -105,6 +106,8 @@ typedef struct {
     JString *instanceName;
     Jxta_PG *group;
     JString *gid_str;
+    int instance_id;
+    int query_expiration;
     Jxta_resolver_service *resolver;
     Jxta_endpoint_service *endpoint;
     Jxta_rdv_service *rdv;
@@ -191,7 +194,9 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     JString *jPid;
     Jxta_PA *conf_adv = NULL;
     Jxta_svc *svc = NULL;
+    int instance;
     Jxta_discovery_service_ref *discovery = (Jxta_discovery_service_ref *) module;
+    Jxta_PG *parentgroup=NULL;
     const char *p_keywords[][2] = {
         {"Name", NULL},
         {"PID", NULL},
@@ -232,15 +237,10 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     /* keep a reference to our group and impl adv */
     discovery->group = group;   /* not shared because that would create a circular dependence */
     discovery->impl_adv = impl_adv ? JXTA_OBJECT_SHARE(impl_adv) : NULL;
+    jxta_PG_get_parentgroup(discovery->group, &parentgroup);
     jxta_PG_get_configadv(group, &conf_adv);
-    if (!conf_adv) {
-        Jxta_PG *parentgroup=NULL;
-
-        jxta_PG_get_parentgroup(discovery->group, &parentgroup);
-        if (parentgroup) {
-            jxta_PG_get_configadv(parentgroup, &conf_adv);
-            JXTA_OBJECT_RELEASE(parentgroup);
-        }
+    if (!conf_adv && NULL != parentgroup) {
+        jxta_PG_get_configadv(parentgroup, &conf_adv);
     }
     if (conf_adv != NULL) {
         jxta_PA_get_Svc_with_id(conf_adv, jxta_discovery_classid, &svc);
@@ -253,6 +253,17 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
 
     if (NULL == discovery->config) {
         discovery->config = jxta_DiscoveryConfigAdvertisement_new();
+    }
+    instance = jxta_discovery_config_get_instance(discovery->config);
+    if (NULL == parentgroup) {
+        instance = ++instance < CHAR_MAX ? instance:1;
+        jxta_discovery_config_set_instance(discovery->config, instance);
+    }
+    discovery->instance_id = instance;
+    discovery->query_expiration = jxta_discovery_config_get_query_expiration(discovery->config);
+    if (-1 == discovery->query_expiration) {
+        discovery->query_expiration = QUERY_ID_EXPIRATION;
+        jxta_discovery_config_set_query_expiration(discovery->config, discovery->query_expiration);
     }
 
     /**
@@ -324,6 +335,8 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
 
     /* Mark the service as running now. */
     discovery->running = TRUE;
+    if (parentgroup)
+        JXTA_OBJECT_RELEASE(parentgroup);
     return status;
 }
 
@@ -555,8 +568,8 @@ long remoteQuery(Jxta_discovery_service * service, Jxta_id * peerid, Jxta_discov
     const Jxta_qos * qos;
     Jxta_discovery_service_ref *discovery = (Jxta_discovery_service_ref *) service;
 
+    jxta_discovery_query_set_instance_id(query, discovery->instance_id);
     memset(buf, 0, sizeof(buf));
-
     status = jxta_discovery_query_get_xml(query, &qdoc);
     if (status != JXTA_SUCCESS) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "discovery::remoteQuery failed to construct query: %ld\n", status);
@@ -1460,8 +1473,17 @@ static Jxta_status discovery_service_send_to_replica(Jxta_discovery_service_ref 
             }
         }
         if (NULL != peerHash) {
+            Jxta_vector *walk_peers=NULL;
+            Jxta_peerview *pv = NULL;
+
+
+            pv = jxta_rdv_service_get_peerview(discovery->rdv);
+
             peerReplicas = jxta_hashtable_values_get(peerHash);
             JXTA_OBJECT_RELEASE(peerHash);
+
+            jxta_peerview_select_walk_peers(pv, peerReplicas, JXTA_PV_WALK_POLICY_CONFIGURED, &walk_peers);
+
             for (i = 0; i < jxta_vector_size(peerReplicas); i++) {
                 Jxta_id *id = NULL;
                 JString *sTemp = NULL;
@@ -1482,7 +1504,14 @@ static Jxta_status discovery_service_send_to_replica(Jxta_discovery_service_ref 
                     jxta_resolver_query_get_query_adv(rq, &query_adv);
 
                     if (NULL != query_adv) {
-                        jxta_discovery_query_ext_set_state((Jxta_discovery_query *) query_adv, DEQ_FWD_REPLICA_FWD);
+                        Jxta_discovery_ext_query_state send_state;
+
+                        send_state = TRUE == jxta_vector_contains(walk_peers, (Jxta_object *) id, (Jxta_object_equals_func) jxta_id_equals) 
+                                    ? DEQ_FWD_REPLICA_FWD:DEQ_FWD_REPLICA_STOP;
+                        jxta_discovery_query_ext_set_state((Jxta_discovery_query *) query_adv, send_state);
+                        if (DEQ_FWD_REPLICA_FWD == send_state) {
+                            jxta_peerview_flag_walk_peer_usage(pv, id);
+                        }
                     }
                     rq_clone = jxta_resolver_query_clone(rq, query_adv);
 
@@ -1503,6 +1532,10 @@ static Jxta_status discovery_service_send_to_replica(Jxta_discovery_service_ref 
                     JXTA_OBJECT_RELEASE(sTemp);
             }
             JXTA_OBJECT_RELEASE(peerReplicas);
+            if (walk_peers)
+                JXTA_OBJECT_RELEASE(walk_peers);
+            if (pv)
+                JXTA_OBJECT_RELEASE(pv);
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Walk the query - no peers found \n");
             jxta_resolver_query_set_hopcount(rq, 1);
@@ -1682,11 +1715,11 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
     char **keys = NULL;
     Jxta_vector *peers = NULL;
     JString *id_str_j = NULL;
-    JString *id_str = NULL;
     Jxta_id *id = NULL;
     Jxta_query_context *jContext = NULL;
     Jxta_vector *responses = NULL;
     Jxta_id *rqId = NULL;
+    char instance_id=-1;
     long qid = -1;
     unsigned int i=0;
     int threshold = 0;
@@ -1701,21 +1734,20 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
 
     qid = jxta_resolver_query_get_queryid(rq);
     jxta_resolver_query_get_query(rq, &query);
+    rqId = jxta_resolver_query_get_src_peer_id(rq);
+    jxta_id_to_jstring(rqId, &id_str_j);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Discovery rcvd resolver query id: %ld from: %s\n", qid, jstring_get_string(id_str_j));
+
     if (query == NULL) {
         /*we're done, nothing to proccess */
         res = JXTA_SUCCESS;
         goto FINAL_EXIT;
     }
 
-    rqId = jxta_resolver_query_get_src_peer_id(rq);
-    jxta_id_to_jstring(rqId, &id_str_j);
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Discovery rcvd resolver query id: %ld from: %s\n", qid, jstring_get_string(id_str_j));
-
     dq = jxta_discovery_query_new();
     status = jxta_discovery_query_parse_charbuffer(dq, jstring_get_string(query), jstring_length(query));
-
-    if (status != JXTA_SUCCESS) {
+    if (JXTA_SUCCESS != status) {
         res = JXTA_SUCCESS;
         goto FINAL_EXIT;
     }
@@ -1725,10 +1757,25 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
     print_ext = jstring_new_0();
     jxta_discovery_query_ext_print_state(dq, print_ext);
     rcvd_state = jxta_discovery_query_ext_get_state(dq);
+    instance_id = jxta_discovery_query_get_instance_id(dq);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "state: %s qid: %ld\n", jstring_get_string(print_ext), qid);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "state: %s instance:%d qid: %ld\n", jstring_get_string(print_ext), instance_id, qid);
     JXTA_OBJECT_RELEASE(print_ext);
-    JXTA_OBJECT_RELEASE(query);
+
+
+    status = cm_save_query_request(discovery->cm, jstring_get_string(id_str_j), instance_id, qid, discovery->query_expiration * 1000);
+    if (rcvd_state != DEQ_FWD_REPLICA_FWD) {
+        if (JXTA_ITEM_EXISTS == status) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Dropping query id: %ld from: %s\n", qid, jstring_get_string(id_str_j));
+            res = JXTA_SUCCESS;
+            goto FINAL_EXIT;
+        } else if (JXTA_SUCCESS != status) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Error saving query request info query id: %ld from: %s ret:%d\n"
+                            , qid, jstring_get_string(id_str_j), status);
+        }
+    }
+
+/*     JXTA_OBJECT_RELEASE(query); */
 
     jxta_discovery_query_get_peeradv(dq, &peeradv);
 
@@ -1828,6 +1875,7 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
         for (i = 0; i < jxta_vector_size(qAdvs); i++) {
             Jxta_query_result * qres = NULL;
             Jxta_advertisement *foundAdv=NULL;
+            JString *found_id_j=NULL;
 
             jxta_vector_get_object_at(qAdvs, JXTA_OBJECT_PPTR(&qres), i);
             if (qres->expiration == 0) {
@@ -1839,18 +1887,18 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
             JXTA_OBJECT_RELEASE(qres);
             id = jxta_advertisement_get_id(foundAdv);
             if (id != NULL) {
-                status = jxta_id_get_uniqueportion(id, &id_str);
+                status = jxta_id_get_uniqueportion(id, &found_id_j);
                 JXTA_OBJECT_RELEASE(id);
                 if (status != JXTA_SUCCESS) {
                     /* something went wrong with getting the ID */
                     goto FINAL_EXIT;
                 }
             } else {
-                id_str = jstring_new_2(jxta_advertisement_get_local_id_string(foundAdv));
+                found_id_j = jstring_new_2(jxta_advertisement_get_local_id_string(foundAdv));
             }
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Found Id - %s.\n", jstring_get_string(id_str));
-            keys[found_count++] = strdup(jstring_get_string(id_str));
-            JXTA_OBJECT_RELEASE(id_str);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Found Id - %s.\n", jstring_get_string(found_id_j));
+            keys[found_count++] = strdup(jstring_get_string(found_id_j));
+            JXTA_OBJECT_RELEASE(found_id_j);
             JXTA_OBJECT_RELEASE(foundAdv);
         }
         JXTA_OBJECT_RELEASE(qAdvs);
@@ -1905,6 +1953,9 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
                     state = (DEQ_FWD_WALK == rcvd_state) ? DEQ_REV_REPLICATING_WALK:DEQ_REV_REPLICATING;
                 } else if (DEQ_FWD_REPLICA_FWD == rcvd_state) {
                     state = DEQ_FWD_WALK;
+                } else if (DEQ_FWD_REPLICA_STOP == rcvd_state) {
+                    state = DEQ_STOP;
+                    walk_it = FALSE;
                 }
                 found_count = NULL == peers ? 0: jxta_vector_size(peers);
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Found %d replicas\n", found_count);
@@ -2002,7 +2053,6 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
                     JString *tmp_j=NULL;
                     ResolverQuery * rq_clone = NULL;
                     Jxta_advertisement *query_adv = NULL;
-
                     status = jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer_id), j);
                     if (JXTA_SUCCESS != status) {
                         continue;
@@ -2105,6 +2155,8 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
 
     if (id_str_j)
         JXTA_OBJECT_RELEASE(id_str_j);
+    if (query)
+        JXTA_OBJECT_RELEASE(query);
     if (src_pid)
         JXTA_OBJECT_RELEASE(src_pid);
     if (NULL != rqId)
@@ -2210,7 +2262,6 @@ static Jxta_status discovery_get_responses(Jxta_discovery_service_ref *discovery
             break;
         }
     }
-
     return status;
 }
 
@@ -2901,6 +2952,7 @@ static void *APR_THREAD_FUNC advertisement_handling_func(apr_thread_t * thread, 
         if (discovery->expired_loop >= expired_cycle) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Discovery is removing expired records from the CM\n");
             cm_remove_expired_records(discovery->cm);
+            cm_remove_expired_response_entries(discovery->cm);
             discovery->expired_loop = 0;
         }
         /*

@@ -340,6 +340,19 @@ static const char *jxta_advTable_fields[][2] = {
     {NULL, NULL}
 };
 
+/*
+ * table that tracks requests received
+*/
+static const char *jxta_queriesTable = CM_TBL_QUERIES;
+static const char *jxta_queriesTable_fields[][2] = {
+    {CM_COL_Peerid, SQL_VARCHAR_128},
+    {CM_COL_QueryId, SQL_VARCHAR_64},
+    {CM_COL_SeqNumber, SQL_VARCHAR_64},
+    {CM_COL_GroupID, SQL_VARCHAR_128},
+    {CM_COL_TimeOut, SQL_VARCHAR_64},
+    {NULL, NULL}
+};
+
 /*=============== AddressSpace/Namespace functions ==============================*/
 
 static Jxta_status cm_address_spaces_process(Jxta_cm * self);
@@ -688,6 +701,8 @@ static void pps_free(Jxta_object * obj)
         JXTA_OBJECT_RELEASE(pps->insert_srdi_index_j);
     if (NULL != pps->insert_replica_j)
         JXTA_OBJECT_RELEASE(pps->insert_replica_j);
+    if (NULL != pps->insert_queries_j)
+        JXTA_OBJECT_RELEASE(pps->insert_queries_j);
 
     free(pps);
 }
@@ -1382,13 +1397,21 @@ static apr_status_t cm_sql_db_init(DBSpace * dbSpace, Jxta_addressSpace * jas)
 
     cm_sql_delete_with_where(dbSpace, jxta_replicaTable, NULL, TRUE);
 
+    rv = cm_sql_table_create(dbSpace, jxta_queriesTable, jxta_queriesTable_fields[0], &pps->insert_queries_j);
+    if (rv != APR_SUCCESS)
+        goto FINAL_EXIT;
+
+    cm_sql_delete_with_where(dbSpace, jxta_queriesTable, NULL, TRUE);
+
     rv = cm_sql_table_create(dbSpace, jxta_srdiIndexTable, jxta_srdiIndexTable_fields[0], &pps->insert_srdi_index_j);
     if (rv != APR_SUCCESS)
         goto FINAL_EXIT;
- 
+
     rv = cm_sql_table_create(dbSpace, jxta_srdiDeltaTable, jxta_srdiDeltaTable_fields[0], &pps->insert_srdi_delta_j);
     if (rv != APR_SUCCESS)
         goto FINAL_EXIT;
+
+    cm_sql_delete_with_where(dbSpace, jxta_srdiDeltaTable, NULL, FALSE);
 
 
     /** create indexes */
@@ -1454,6 +1477,11 @@ static apr_status_t cm_sql_db_init(DBSpace * dbSpace, Jxta_addressSpace * jas)
     }
     if (NULL != pps->insert_srdi_delta_j) {
         rv = cm_sql_pps_create(dbSpace, "INSERT SRDI Delta", pps->insert_srdi_delta_j, &pps->insert_srdi_delta);
+        if (rv != APR_SUCCESS)
+            goto FINAL_EXIT;
+    }
+    if (NULL != pps->insert_queries_j) {
+        rv = cm_sql_pps_create(dbSpace, "INSERT Queries", pps->insert_queries_j, &pps->insert_queries);
         if (rv != APR_SUCCESS)
             goto FINAL_EXIT;
     }
@@ -1553,6 +1581,14 @@ static apr_status_t cm_sql_db_init(DBSpace * dbSpace, Jxta_addressSpace * jas)
     if (rv != APR_SUCCESS)
         goto FINAL_EXIT;
 
+    jstring_reset(delete_sql_j, NULL);
+
+    jstring_append_2(delete_sql_j, DELETE_QUERIES_STRING);
+
+    rv = cm_sql_pps_create(dbSpace, "DELETE Queries", delete_sql_j, &pps->delete_queries);
+    if (rv != APR_SUCCESS)
+        goto FINAL_EXIT;
+
     jstring_reset(get_sql_j, NULL);
 
     jstring_append_2(get_sql_j, GET_SRDI_STRING);
@@ -1574,6 +1610,14 @@ static apr_status_t cm_sql_db_init(DBSpace * dbSpace, Jxta_addressSpace * jas)
     jstring_append_2(get_sql_j, GET_SRDI_INDEX_STRING);
 
     rv = cm_sql_pps_create(dbSpace, "GET SRDI Index", get_sql_j, &pps->get_srdi_index);
+    if (rv != APR_SUCCESS)
+        goto FINAL_EXIT;
+
+    jstring_reset(get_sql_j, NULL);
+
+    jstring_append_2(get_sql_j, GET_QUERIES_STRING);
+
+    rv = cm_sql_pps_create(dbSpace, "GET Queries", get_sql_j, &pps->get_queries);
     if (rv != APR_SUCCESS)
         goto FINAL_EXIT;
 
@@ -2807,8 +2851,7 @@ FINAL_EXIT:
         apr_pool_destroy(pool);
 }
 
-static void cm_sql_create_delta_where_clause(JString * where, JString * jGroupId, JString * jPeerid, JString *jOrigPeerid, JString * jSourceid, JString * jHandler,
-                                             Jxta_SRDIEntryElement * entry)
+static void cm_sql_create_delta_where_clause(JString * where, JString * jGroupId, JString * jPeerid, JString *jOrigPeerid, JString * jSourceid, JString * jHandler, Jxta_SRDIEntryElement * entry)
 {
     jstring_append_2(where, CM_COL_Handler SQL_EQUAL);
     SQL_VALUE(where, jHandler);
@@ -2825,6 +2868,81 @@ static void cm_sql_create_delta_where_clause(JString * where, JString * jGroupId
     SQL_VALUE(where, jSourceid);
     jstring_append_2(where, SQL_AND CM_COL_RepPeerid SQL_EQUAL);
     SQL_VALUE(where, jOrigPeerid);
+}
+
+Jxta_status cm_save_query_request(Jxta_cm *self, const char * peerid, int discid, long qid, Jxta_expiration_time expiration)
+{
+    Jxta_status ret = JXTA_SUCCESS;
+    int i=0;
+    const char *items[GET_QUERIES_ITEMS];
+    char aQid[32];
+    char aTime1[32];
+    char aSeq[32];
+    apr_status_t aprs;
+    apr_pool_t *pool=NULL;
+    apr_dbd_results_t *results=NULL;
+    Jxta_boolean locked = FALSE;
+
+    aprs = apr_pool_create(&pool, NULL);
+    if (aprs != APR_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Unable to create apr_pool: %d\n", aprs);
+        goto FINAL_EXIT;
+    }
+
+    memset(&aSeq, 0, sizeof(aSeq));
+    memset(&aQid, 0, sizeof(aQid));
+    memset(&aTime1, 0, sizeof(aTime1));
+
+    apr_snprintf(aSeq, sizeof(aSeq), "%d", discid);
+    apr_snprintf(aQid, sizeof(aQid), "%ld", qid);
+    apr_snprintf(aTime1, sizeof(aTime1), JPR_DIFF_TIME_FMT, lifetime_get(jpr_time_now(), expiration));
+
+    items[i++] = peerid;
+    items[i++] = aSeq;
+    items[i++] = aQid;
+    items[i++] = jstring_get_string(self->jGroupID_string);
+    items[i] = aTime1;
+
+    assert((GET_QUERIES_ITEMS - 1) == i);
+
+    LOG_PARM_LIST("get queries ", items, GET_QUERIES_ITEMS)
+
+    apr_thread_mutex_lock(self->bestChoiceDB->conn->lock);
+    locked = TRUE;
+ 
+    aprs = apr_dbd_pselect (self->bestChoiceDB->conn->driver, pool, self->bestChoiceDB->conn->sql, &results, self->bestChoiceDB->conn->pp_statements->get_queries, 1, GET_QUERIES_ITEMS, (const char **) &items);
+
+    if (APR_SUCCESS != aprs) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to execute SQL query: %s\n", apr_dbd_error(self->bestChoiceDB->conn->driver, self->bestChoiceDB->conn->sql, aprs));
+        ret = JXTA_FAILED;
+    } else if (0 == apr_dbd_num_tuples(self->bestChoiceDB->conn->driver,results)) {
+        int nrows=0;
+
+        assert((INSERT_QUERY_ITEMS - 1) == i);
+
+        aprs = apr_dbd_pquery(self->bestChoiceDB->conn->driver, pool, self->bestChoiceDB->conn->sql, &nrows, self->bestChoiceDB->conn->pp_statements->insert_queries, INSERT_QUERY_ITEMS, (const char **) &items);
+        if (APR_SUCCESS != aprs) {
+            ret = JXTA_FAILED;
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to save responses info: %s\n"
+                    , apr_dbd_error(self->bestChoiceDB->conn->driver, self->bestChoiceDB->conn->sql, aprs));
+        } else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Saved %d query info\n", nrows);
+            ret = JXTA_SUCCESS;
+        }
+
+    } else {
+        ret = JXTA_ITEM_EXISTS;
+    }
+
+FINAL_EXIT:
+
+    if (locked) {
+        apr_thread_mutex_unlock(self->bestChoiceDB->conn->lock);
+    }
+    if (NULL != pool)
+        apr_pool_destroy(pool);
+
+    return ret;
 }
 
 Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSourcePeerid, JString *jOrigPeerid, JString *jAdvPeer, JString * jHandler,
@@ -4881,7 +4999,6 @@ Jxta_cache_entry **cm_sql_query_srdi(Jxta_cm * self, const char *ns, JString * w
     dbSpaceSave = dbSpace;
     while (*dbSpace) {
         int nTuples = 0;
-
         rv = cm_sql_select(*dbSpace, pool, CM_TBL_SRDI_SRC, &res, columns, whereClone, group_j, TRUE);
 
         if (rv) {
@@ -5725,6 +5842,45 @@ Jxta_status cm_remove_expired_records(Jxta_cm * self)
     return latched_rt;
 }
 
+Jxta_status cm_remove_expired_response_entries(Jxta_cm * self)
+{
+    Jxta_status ret=JXTA_SUCCESS;
+    int i=0;
+    apr_status_t aprs;
+    apr_pool_t *pool=NULL;
+    int nrows=0;
+    char aTime1[24];
+    char *items[DELETE_QUERIES_ITEMS];
+
+    aprs = apr_pool_create(&pool, NULL);
+    if (aprs != APR_SUCCESS) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Unable to create apr_pool: %d\n", aprs);
+        goto FINAL_EXIT;
+    }
+
+    apr_snprintf(aTime1, sizeof(aTime1), "%" APR_INT64_T_FMT, jpr_time_now());
+    items[i] = aTime1;
+
+    assert((DELETE_QUERIES_ITEMS - 1) == i);
+
+    LOG_PARM_LIST("delete queries  ", items, DELETE_QUERIES_ITEMS)
+
+    aprs = apr_dbd_pquery(self->bestChoiceDB->conn->driver, pool, self->bestChoiceDB->conn->sql, &nrows, self->bestChoiceDB->conn->pp_statements->delete_queries, DELETE_QUERIES_ITEMS, (const char **) &items);
+    if (APR_SUCCESS != aprs) {
+        ret = JXTA_FAILED;
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to delete responses info: %s\n"
+                , apr_dbd_error(self->bestChoiceDB->conn->driver, self->bestChoiceDB->conn->sql, aprs));
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Deleted %d queries info\n", nrows);
+        ret = JXTA_SUCCESS;
+    }
+
+FINAL_EXIT:
+    if (pool)
+        apr_pool_destroy(pool);
+    return ret;
+}
+
 /* create a folder with type <type> and index keywords <keys> */
 Jxta_status cm_create_folder(Jxta_cm * self, char *folder_name, const char *keys[])
 {
@@ -5758,7 +5914,6 @@ Jxta_status cm_create_folder(Jxta_cm * self, char *folder_name, const char *keys
     }
 
     apr_thread_mutex_unlock(self->mutex);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "-- Removing expired %s Advertisements \n", folder_name);
 
     folder_remove_expired_records(self, folder);
 

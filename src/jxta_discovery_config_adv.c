@@ -84,6 +84,8 @@ enum tokentype {
  */
 struct _jxta_DiscoveryConfigAdvertisement {
     Jxta_advertisement jxta_advertisement;
+    int query_expiration;
+    char instance;
     int delta_update_cycle;
     int expired_adv_cycle;
 };
@@ -107,6 +109,10 @@ void handleJxta_DiscoveryConfigAdvertisement(void *userdata, const XML_Char * cd
     while (atts && *atts) {
         if (0 == strcmp(*atts, "type")) {
             /* just silently skip it. */
+        } else if (0 == strcmp(*atts, "instance")) {
+            ad->instance = atoi(atts[1]);
+        } else if (0 == strcmp(*atts, "expire_queries")) {
+            ad->query_expiration = atoi(atts[1]);
         } else if (0 == strcmp(*atts, "deltaCycle")) {
             ad->delta_update_cycle = (atoi(atts[1]) * 1000);
         } else if (0 == strcmp(*atts, "expiredAdvCycle")) {
@@ -116,12 +122,35 @@ void handleJxta_DiscoveryConfigAdvertisement(void *userdata, const XML_Char * cd
     }
 }
 
+JXTA_DECLARE(void) jxta_discovery_config_set_instance(Jxta_DiscoveryConfigAdvertisement * adv, char instance)
+{
+        adv->instance = instance;
+}
+
+JXTA_DECLARE(char) jxta_discovery_config_get_instance(Jxta_DiscoveryConfigAdvertisement * adv)
+{
+    return adv->instance;
+}
+
+JXTA_DECLARE(void) jxta_discovery_config_set_query_expiration(Jxta_DiscoveryConfigAdvertisement * adv, int ttime)
+{
+    if (ttime > 0) {
+        adv->query_expiration = ttime;
+    }
+
+}
+
+JXTA_DECLARE(int) jxta_discovery_config_get_query_expiration(Jxta_DiscoveryConfigAdvertisement * adv)
+{
+    return adv->query_expiration;
+
+}
+
 JXTA_DECLARE(void) jxta_discovery_config_set_delta_update_cycle(Jxta_DiscoveryConfigAdvertisement * adv, int ttime)
 {
     if (ttime > 0) {
         adv->delta_update_cycle = ttime;
     }
-
 }
 
 JXTA_DECLARE(Jxta_time_diff) jxta_discovery_config_get_delta_update_cycle(Jxta_DiscoveryConfigAdvertisement * adv)
@@ -129,6 +158,7 @@ JXTA_DECLARE(Jxta_time_diff) jxta_discovery_config_get_delta_update_cycle(Jxta_D
     return adv->delta_update_cycle;
 
 }
+
 JXTA_DECLARE(void) jxta_discovery_config_set_expired_adv_cycle(Jxta_DiscoveryConfigAdvertisement * adv, int ttime)
 {
     if (ttime > 0) {
@@ -162,6 +192,14 @@ JXTA_DECLARE(Jxta_status) jxta_DiscoveryConfigAdvertisement_get_xml(Jxta_Discove
     JString *string = jstring_new_0();
     jstring_append_2(string, "<!-- JXTA Discovery Configuration Advertisement -->\n");
     jstring_append_2(string, "<jxta:DiscoveryConfig xmlns:jxta=\"http://jxta.org\" type=\"jxta:DiscoveryConfig\"\n");
+    jstring_append_2(string, " instance=\"");
+    apr_snprintf(tmpbuf, sizeof(tmpbuf), "%d", ad->instance);
+    jstring_append_2(string, tmpbuf);
+    jstring_append_2(string, "\"\n");
+    jstring_append_2(string, " query_expiration=\"");
+    apr_snprintf(tmpbuf, sizeof(tmpbuf), "%d" , ad->query_expiration);
+    jstring_append_2(string, tmpbuf);
+    jstring_append_2(string, "\"\n");
     jstring_append_2(string, " deltaCycle=\"");
     apr_snprintf(tmpbuf, sizeof(tmpbuf), "%ld", (long) ad->delta_update_cycle / 1000);
     jstring_append_2(string, tmpbuf);
@@ -189,6 +227,8 @@ Jxta_DiscoveryConfigAdvertisement *jxta_DiscoveryConfigAdvertisement_construct(J
 
     /* Fill in the required initialization code here. */
     if (NULL != self) {
+        self->instance = 1;
+        self->query_expiration = -1;
         self->delta_update_cycle = DELTA_UPDATE_CYCLE;
         self->expired_adv_cycle = EXPIRED_ADV_CYCLE;
     }

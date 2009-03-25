@@ -78,8 +78,9 @@ typedef enum extended_query_states {
     DEQ_FWD_REPLICA_STOP,   /* Query to Replica (Don't walk) */
     DEQ_FWD_WALK,           /* Query being walked (Rdv Diffusion defines scope) */
     DEQ_REV_REPLICATING,    /* Query to Replicating */
-    DEQ_REV_PUBLISHER,       /* Query to Publisher */
-    DEQ_REV_REPLICATING_WALK /* Query to Replicating (result of walk) */
+    DEQ_REV_PUBLISHER,      /* Query to Publisher */
+    DEQ_REV_REPLICATING_WALK, /* Query to Replicating (result of walk) */
+    DEQ_STOP                /* Query is stopped */
  } Jxta_discovery_ext_query_state;
 
 /**
@@ -161,6 +162,28 @@ JXTA_DECLARE(short) jxta_discovery_query_get_type(Jxta_DiscoveryQuery *);
  */
 JXTA_DECLARE(Jxta_status) jxta_discovery_query_set_type(Jxta_DiscoveryQuery *, short);
 
+/**
+ * Gets the id of the discovery service instance.
+ *
+ * @param Jxta_DiscoveryQuery * a pointer to the discovery.
+ *          query advertisment;
+ *
+ * @return char - instance of the discovery service
+ *
+ */
+JXTA_DECLARE(char) jxta_discovery_query_get_instance_id(Jxta_DiscoveryQuery *);
+
+/**
+ * Sets the id of the discovery service instance
+ *
+ * @param Jxta_DiscoveryQuery * a pointer to the discovery
+ *          query advertisement;
+ * @param char - instance of the discovery service
+ * 
+ * @return Jxta_status
+ *
+ */
+JXTA_DECLARE(Jxta_status) jxta_discovery_query_set_instance_id(Jxta_DiscoveryQuery *, char instance);
 
 /**
  * Gets the Threshold of the discovery query advertisement.

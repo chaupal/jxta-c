@@ -85,6 +85,15 @@ enum Peerview_address_assign_modes {
     config_addr_assign_hybrid
 };
 
+enum Jxta_Peerview_walk_policy_types {
+    JXTA_PV_WALK_POLICY_CONFIGURED=0,
+    JXTA_PV_WALK_POLICY_LRU=1,
+    JXTA_PV_WALK_POLICY_LOAD=2,
+    JXTA_PV_WALK_POLICY_QOS=3
+};
+
+typedef enum Jxta_Peerview_walk_policy_types Jxta_Peerview_walk_policy;
+
 typedef enum RdvConfig_configurations RdvConfig_configuration;
 typedef enum Peerview_address_assign_modes Peerview_address_assign_mode;
 
@@ -157,6 +166,12 @@ JXTA_DECLARE(void) jxta_RdvConfig_set_connect_time_interval(Jxta_RdvConfigAdvert
 
 JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_address_assign_mode(Jxta_RdvConfigAdvertisement *, Peerview_address_assign_mode mode);
 JXTA_DECLARE(Peerview_address_assign_mode) jxta_RdvConfig_pv_get_address_assign_mode(Jxta_RdvConfigAdvertisement *);
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_walk_policy(Jxta_RdvConfigAdvertisement * ad, Jxta_Peerview_walk_policy policy);
+JXTA_DECLARE(Jxta_Peerview_walk_policy) jxta_RdvConfig_pv_get_walk_policy(Jxta_RdvConfigAdvertisement * ad);
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_walk_peers(Jxta_RdvConfigAdvertisement * ad, int peers);
+JXTA_DECLARE(int) jxta_RdvConfig_pv_get_walk_peers(Jxta_RdvConfigAdvertisement * ad);
 
 JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_clusters(Jxta_RdvConfigAdvertisement *, unsigned int);
 JXTA_DECLARE(unsigned int) jxta_RdvConfig_pv_clusters(Jxta_RdvConfigAdvertisement *);

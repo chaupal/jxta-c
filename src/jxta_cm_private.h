@@ -99,6 +99,10 @@ extern "C" {
 #define CM_TBL_SRDI_INDEX_SRC "tblSRDIIndex as src "
 #define CM_TBL_SRDI_INDEX_JOIN "tblSRDIIndex as jn "
 
+#define CM_TBL_QUERIES "tblQueries"
+#define CM_TBL_QUERIES_SRC "tblQueries as src "
+#define CM_TBL_QUERIES_JOIN "tblQueries as jn "
+
 #define CM_COL_SRC " src"
 #define CM_COL_JOIN " jn"
 
@@ -132,6 +136,7 @@ extern "C" {
 #define CM_COL_Fwd "Fwd"
 #define CM_COL_FwdPeerid "FwdPeerid"
 #define CM_COL_RepPeerid "RepPeerid"
+#define CM_COL_QueryId "QueryId"
 
 typedef struct jxta_cache_entry Jxta_cache_entry;
 
@@ -236,6 +241,14 @@ Jxta_status cm_remove_advertisement(Jxta_cm * cm, const char *folder_name, char 
  */
 Jxta_status cm_remove_advertisements(Jxta_cm * self, const char *folder_name, char **keys);
 
+/**
+ * Remove all expired entries from the query response table
+ *
+ * @param Jxta_cm (A ptr to) the cm object
+ *
+ * @return Jxta_status JXTA_SUCCESS if removed, an error code otherwise
+ */
+Jxta_status cm_remove_expired_response_entries(Jxta_cm * self);
 
 char **cm_sql_get_primary_keys(Jxta_cm * self, char *folder_name, const char *tableName, JString * jWhere,
                                       JString * jGroup, int row_max);
@@ -323,6 +336,22 @@ Jxta_status cm_update_delta_entry(Jxta_cm * self, JString * jPeerid, JString * j
 Jxta_status cm_expand_delta_entries(Jxta_cm * self, Jxta_vector * msg_entries, JString * peerid, JString * source_peerid, Jxta_vector ** ret_entries, Jxta_boolean re_replicate);
 
 Jxta_status cm_remove_delta_entries(Jxta_cm * me, JString *seq_entries);
+
+/**
+ * Save query request for the peer for the specified time
+
+ * @param Jxta_cm cm object
+ * @param jPeerid JString of the peerid
+ * @param seqNumber Sequence number with the request
+ * @param discid = Id of the discovery
+ * @param qid query id of the request
+ * @param expiration - The length of time the entry will be valid
+ *
+ * @return Jxta_status JXTA_SUCCESS - Entry was saved
+ *                  JXTA_ITEM_EXISTS - There is an entry already - no update is performed
+ *                  JXTA_FAILED - The cm was unable to save the entry
+**/
+Jxta_status cm_save_query_request(Jxta_cm *self, const char * peerid, int discid, long qid, Jxta_expiration_time expiration);
 
 /**
  * Save the SRDI entry in the SRDI Delta table for the peer.

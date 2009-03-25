@@ -115,6 +115,8 @@ struct _jxta_RdvConfigAdvertisement {
     Jxta_time_diff pv_voting_expiration;
     Jxta_time_diff pv_voting_wait;
     Peerview_address_assign_mode pv_address_assign_mode;
+    Jxta_Peerview_walk_policy pv_walk_policy;
+    int pv_walk_peers;
 };
 
     /* Forward decl. of un-exported function */
@@ -153,6 +155,8 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfig_clone(Jxta_RdvConfigAdvertisement * ad,
 
     /* Peerview attributes */
     cclone->pv_address_assign_mode = ad->pv_address_assign_mode;
+    cclone->pv_walk_policy = ad->pv_walk_policy;
+    cclone->pv_walk_peers = ad->pv_walk_peers;
     cclone->pv_clusters = ad->pv_clusters;
     cclone->pv_members = ad->pv_members;
     cclone->pv_replication = ad->pv_replication;
@@ -399,6 +403,43 @@ JXTA_DECLARE(Peerview_address_assign_mode) jxta_RdvConfig_pv_get_address_assign_
     JXTA_OBJECT_CHECK_VALID(ad);
 
     return ad->pv_address_assign_mode;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_walk_policy(Jxta_RdvConfigAdvertisement * ad, Jxta_Peerview_walk_policy policy)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    if (policy <  JXTA_PV_WALK_POLICY_CONFIGURED || policy > JXTA_PV_WALK_POLICY_QOS) {
+        res = JXTA_INVALID_ARGUMENT;
+    } else {
+        ad->pv_walk_policy = policy;
+    }
+    return res;
+}
+
+JXTA_DECLARE(Jxta_Peerview_walk_policy) jxta_RdvConfig_pv_get_walk_policy(Jxta_RdvConfigAdvertisement * ad)
+{
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    return ad->pv_walk_policy;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_walk_peers(Jxta_RdvConfigAdvertisement * ad, int peers)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    ad->pv_walk_peers = peers;
+
+    return res;
+}
+
+JXTA_DECLARE(int) jxta_RdvConfig_pv_get_walk_peers(Jxta_RdvConfigAdvertisement * ad)
+{
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    return ad->pv_walk_peers;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_clusters(Jxta_RdvConfigAdvertisement * ad, unsigned int clusters)
@@ -789,7 +830,25 @@ static void handlePeerView(void *me, const XML_Char * cd, int len)
                 } else if (0  == strcmp(atts[1], "managed")) {
                     myself->pv_address_assign_mode = config_addr_assign_predictable;
                 }
-            } else if (0 == strcmp(*atts, "pv_loneliness")) {
+            } else if (0 == strcmp(*atts, "pv_walk_policy")) {
+                if (0 == strcmp(atts[1], "lru")) {
+                    myself->pv_walk_policy = JXTA_PV_WALK_POLICY_LRU;
+                } else if (0 == strcmp(atts[1], "load")) {
+                    myself->pv_walk_policy = JXTA_PV_WALK_POLICY_LOAD;
+                } else if (0 == strcmp(atts[1], "qos")) {
+                    myself->pv_walk_policy = JXTA_PV_WALK_POLICY_QOS;
+                } else {
+                    myself->pv_walk_policy = JXTA_PV_WALK_POLICY_LOAD;
+                }
+            } else if (0 == strcmp(*atts, "pv_walk_peers")) {
+                if (0 == strcmp(atts[1], "single")) {
+                    myself->pv_walk_peers = 1;
+                } else if (0 == strcmp(atts[1], "all")) {
+                    myself->pv_walk_peers = INT_MAX;
+                } else {
+                    myself->pv_walk_peers = atoi(atts[1]);
+                }
+            }  else if (0 == strcmp(*atts, "pv_loneliness")) {
                 myself->pv_loneliness = atoi(atts[1]);
             } else if (0 == strcmp(*atts, "pv_add_interval")) {
                 myself->pv_add_interval = (atol(atts[1]));
@@ -1012,7 +1071,7 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
     jstring_append_2(string, "<peerview ");
 
     if (-1 != ad->pv_address_assign_mode) {
-        jstring_append_2(string, "pv_address_assign_mode=\"");
+        jstring_append_2(string, " pv_address_assign_mode=\"");
         switch (ad->pv_address_assign_mode) {
         case config_addr_assign_random:
             jstring_append_2(string, "random\"");
@@ -1028,6 +1087,41 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
             break;
         default:
             jstring_append_2(string, "predictable\"");
+            break;
+        }
+    }
+    if (-1 != ad->pv_walk_policy) {
+        jstring_append_2(string, " pv_walk_policy=\"");
+        switch (ad->pv_walk_policy) {
+        case JXTA_PV_WALK_POLICY_LRU:
+            jstring_append_2(string, "lru\"");
+            break;
+        case JXTA_PV_WALK_POLICY_LOAD:
+            jstring_append_2(string, "load\"");
+            break;
+        case JXTA_PV_WALK_POLICY_QOS:
+            jstring_append_2(string, "qos\"");
+            break;
+        default:
+            jstring_append_2(string, "load\"");
+        }
+    }
+    if (-1 != ad->pv_walk_peers) {
+        jstring_append_2(string, " pv_walk_peers=\"");
+        switch (ad->pv_walk_peers) {
+        case 1:
+            jstring_append_2(string, "single\"");
+            break;
+        case INT_MAX:
+            jstring_append_2(string, "all\"");
+            break;
+        default:
+            if (0 == apr_snprintf(tmpbuf, sizeof(tmpbuf), "%d", ad->pv_walk_peers)) {
+                jstring_append_2(string, "all");
+            } else {
+                jstring_append_2(string, tmpbuf);
+            }
+            jstring_append_2(string, "\"");
             break;
         }
     }
@@ -1219,6 +1313,8 @@ Jxta_RdvConfigAdvertisement *jxta_RdvConfigAdvertisement_construct(Jxta_RdvConfi
         self->connect_delay = -1;
 
         /* Peerview attributes */
+        self->pv_walk_policy = -1;
+        self->pv_walk_peers = -1;
         self->pv_clusters = -1;
         self->pv_members = -1;
         self->pv_replication = -1;

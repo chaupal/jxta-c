@@ -77,6 +77,7 @@ typedef struct _pp_statements Jxta_pp_statements ;
 #define INSERT_SRDI_REPLICA_ITEMS 13
 #define INSERT_SRDI_DELTA_ITEMS 18
 #define INSERT_SRDI_INDEX_ITEMS 16
+#define INSERT_QUERY_ITEMS 5
 
 /**
 * Update Advertisements
@@ -247,6 +248,14 @@ typedef struct _pp_statements Jxta_pp_statements ;
                                 SQL_AND CM_COL_GroupID SQL_EQUAL SQL_VARIABLE
 
 /**
+* DELETE Queries entries
+*/
+#define DELETE_QUERIES_ITEMS 1
+#define DELETE_QUERIES_STRING SQL_DELETE CM_TBL_QUERIES \
+                            SQL_WHERE \
+                                CM_COL_TimeOut SQL_LESS_THAN SQL_VARIABLE
+
+/**
 * SELECT SRDI/Replica Entries
 */
 #define GET_SRDI_REPLICA_ITEMS
@@ -287,6 +296,21 @@ typedef struct _pp_statements Jxta_pp_statements ;
                                 SQL_AND CM_COL_Peerid SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_GroupID SQL_EQUAL SQL_VARIABLE
 
+
+/**
+* SELECT QUERY entries
+*/
+#define GET_QUERIES_ITEMS 5
+#define GET_QUERIES_STRING SQL_SELECT CM_COL_QueryId SQL_FROM CM_TBL_QUERIES \
+                            SQL_WHERE \
+                                CM_COL_Peerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_QueryId SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_SeqNumber SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_GroupID SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_TimeOut SQL_LESS_THAN SQL_VARIABLE
+
+
+
 struct _pp_statements {
     JXTA_OBJECT_HANDLE;
 
@@ -313,6 +337,9 @@ struct _pp_statements {
     apr_dbd_prepared_t *insert_srdi_index;
     JString *insert_srdi_index_j;
 
+    apr_dbd_prepared_t *insert_queries;
+    JString *insert_queries_j;
+
 /**
 * The UPDATE prepared statements are created for individual functions. The UPDATE SQL statement
 * includes the SET and WHERE clauses and is unique for each prepared statement.
@@ -338,6 +365,7 @@ struct _pp_statements {
     apr_dbd_prepared_t *delete_srdi;
     apr_dbd_prepared_t *delete_replica;
     apr_dbd_prepared_t *delete_srdi_index;
+    apr_dbd_prepared_t *delete_queries;
 
 /**
 * The SELECT prepared statements are created with parameters for the WHERE clause. The columns returned are
@@ -346,6 +374,7 @@ struct _pp_statements {
     apr_dbd_prepared_t *get_srdi;
     apr_dbd_prepared_t *get_replica;
     apr_dbd_prepared_t *get_srdi_index;
+    apr_dbd_prepared_t *get_queries;
 };
 
 #define LOG_PARM_LIST(lps_desc, lps_list, lps_size) \

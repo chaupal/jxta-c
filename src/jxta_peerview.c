@@ -186,6 +186,8 @@ struct _jxta_peer_peerview_entry {
     Jxta_time_diff adv_exp;
     Jxta_boolean is_rendezvous;
     Jxta_boolean is_demoting;
+    Jxta_time last_walk_select;
+    unsigned int walk_counter;
 };
 
 typedef struct _jxta_peer_peerview_entry Peerview_entry;
@@ -318,6 +320,8 @@ struct _jxta_peerview {
     Jxta_time activity_add_candidate_requests_expiration;
     Jxta_time activity_add_voting_ends;
     Jxta_boolean activity_add_voting;
+    Jxta_Peerview_walk_policy walk_policy;
+    int walk_peers;
 
 };
 
@@ -377,6 +381,7 @@ static void peerview_entry_delete(Jxta_object * addr);
 static void peerview_entry_destruct(Peerview_entry * myself);
 static Jxta_status create_self_pve(Jxta_peerview * myself, BIGNUM * address);
 static void peerview_update_id(Jxta_peerview * myself);
+static void peerview_has_changed(Jxta_peerview * myself);
 
 static Peerview_entry *peerview_get_pve(Jxta_peerview * myself, Jxta_PID * pid);
 static Jxta_boolean peerview_check_pve(Jxta_peerview * myself, Jxta_PID * pid);
@@ -494,7 +499,8 @@ static Peerview_entry *peerview_entry_construct(Peerview_entry * myself, Jxta_id
         myself->radius_range_1_end = NULL;
         myself->radius_range_2_start = NULL;
         myself->radius_range_2_end = NULL;
-
+        myself->walk_counter = 1;
+        myself->last_walk_select = jpr_time_now();
         myself->created_at = jpr_time_now();
 
     }
@@ -781,6 +787,12 @@ JXTA_DECLARE(Jxta_status) peerview_init(Jxta_peerview * pv, Jxta_PG * group, Jxt
     if (-1 == jxta_RdvConfig_pv_get_address_assign_mode(myself->rdvConfig)) {
         jxta_RdvConfig_pv_set_address_assign_mode(myself->rdvConfig, config_addr_assign_random);
     }
+    if (-1 == jxta_RdvConfig_pv_get_walk_policy(myself->rdvConfig)) {
+        jxta_RdvConfig_pv_set_walk_policy(myself->rdvConfig, JXTA_PV_WALK_POLICY_LOAD);
+    }
+    if (-1 == jxta_RdvConfig_pv_get_walk_peers(myself->rdvConfig)) {
+        jxta_RdvConfig_pv_set_walk_peers(myself->rdvConfig, 1);
+    }
     if (-1 == jxta_RdvConfig_pv_clusters(myself->rdvConfig)) {
         jxta_RdvConfig_pv_set_clusters(myself->rdvConfig, DEFAULT_CLUSTERS_COUNT);
     }
@@ -949,8 +961,10 @@ Jxta_status peerview_start(Jxta_peerview * pv)
 
     myself->state = PV_PASSIVE;
     myself->running = TRUE;
+    myself->walk_policy = jxta_RdvConfig_pv_get_walk_policy(myself->rdvConfig);
+    myself->walk_peers = jxta_RdvConfig_pv_get_walk_peers(myself->rdvConfig);
 
-    peerview_update_id(myself);
+    peerview_has_changed(myself);
 
     if (myself->auto_cycle > 0) {
         myself->iterations_since_switch = 0;
@@ -1004,6 +1018,44 @@ Jxta_status peerview_get_peer_address(Jxta_peer *peer, BIGNUM **address)
         *address = BN_new();
     }
     return JXTA_SUCCESS;
+}
+
+static Jxta_status peerview_reset_walk_counters(Jxta_peerview * myself)
+{
+    Jxta_status ret=JXTA_SUCCESS;
+    Peerview_entry *entry=NULL;
+    Jxta_vector *pves=NULL;
+    int i;
+
+    apr_thread_mutex_lock(myself->mutex);
+    pves = jxta_hashtable_values_get(myself->pves);
+    for (i=0; i<jxta_vector_size(pves); i++) {
+
+        ret = jxta_vector_get_object_at(pves, JXTA_OBJECT_PPTR(&entry), i);
+        if (JXTA_SUCCESS != ret) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not retrieve a peerview entry ret:%d\n", ret);
+            continue;
+        }
+        entry->walk_counter = 1;
+        JXTA_OBJECT_RELEASE(entry);
+    }
+    apr_thread_mutex_unlock(myself->mutex);
+
+    JXTA_OBJECT_RELEASE(pves);
+    return ret;
+}
+
+static void peerview_has_changed(Jxta_peerview * myself)
+{
+    Jxta_status ret;
+
+    ret = peerview_reset_walk_counters(myself);
+    if (JXTA_SUCCESS != ret) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Unable to reset the walk counters ret:%d\n", ret);
+    }
+
+    peerview_update_id(myself);
+
 }
 
 static void peerview_update_id(Jxta_peerview * myself)
@@ -1240,6 +1292,157 @@ JXTA_DECLARE(Jxta_boolean) jxta_peerview_is_partner(Jxta_peerview * me, Jxta_id 
 
     return result;
 }
+
+static int peerview_walk_policy_lru_compare(Peerview_entry **peer_a, Peerview_entry **peer_b)
+{
+    if ((*peer_a)->last_walk_select < (*peer_b)->last_walk_select) {
+        return -1;
+    }
+    if ((*peer_a)->last_walk_select > (*peer_b)->last_walk_select) {
+        return 1;
+    }
+    return 0;
+}
+
+static int peerview_walk_policy_load_compare(Peerview_entry **peer_a, Peerview_entry **peer_b)
+{
+    if ((*peer_a)->walk_counter < (*peer_b)->walk_counter) {
+        return -1;
+    }
+    if ((*peer_a)->walk_counter > (*peer_b)->walk_counter) {
+        return 1;
+    }
+    return 0;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_peerview_select_walk_peers(Jxta_peerview * me, Jxta_vector * candidates, Jxta_Peerview_walk_policy policy, Jxta_vector **walk_peers)
+{
+    Jxta_peerview *myself = PTValid(me, Jxta_peerview);
+    Jxta_status ret=JXTA_SUCCESS;
+    int i;
+    Jxta_Peerview_walk_policy walk_policy;
+    Jxta_vector * candidates_clone=NULL;
+    Jxta_vector * candidates_pve=NULL;
+
+    ret = jxta_vector_clone(candidates, &candidates_clone, 0, INT_MAX);
+    if (JXTA_SUCCESS != ret) {
+        goto FINAL_EXIT;
+    }
+    /* if the caller wants to use the configured policy use it */
+    walk_policy = JXTA_PV_WALK_POLICY_CONFIGURED == policy ? myself->walk_policy:policy;
+    *walk_peers = jxta_vector_new(0);
+
+    /* remove the associates from the candidates and add them to the list */
+    for (i = 0; i < jxta_vector_size(candidates_clone); i++) {
+        Jxta_id *candidate=NULL;
+        Peerview_entry *pve=NULL;
+
+        ret = jxta_vector_get_object_at(candidates_clone, JXTA_OBJECT_PPTR(&candidate), i);
+        if (JXTA_SUCCESS != ret) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE " Unable to retrieve candidate for walk\n");
+            continue;
+        }
+        pve = peerview_get_pve(myself, candidate);
+        if (NULL == pve || jxta_peer_get_expires((Jxta_peer *) pve) < jpr_time_now()) {
+            JString *pid_j=NULL;
+
+            jxta_id_to_jstring(candidate, &pid_j);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, " Candidate %s is not in the peerview\n", jstring_get_string(pid_j));
+            jxta_vector_remove_object_at(candidates_clone, NULL, i--);
+            if (pve)
+                JXTA_OBJECT_RELEASE(pve);
+            JXTA_OBJECT_RELEASE(candidate);
+            JXTA_OBJECT_RELEASE(pid_j);
+            continue;
+        }
+        /* always add an associate */
+        if (jxta_peerview_is_associate(myself, candidate)) {
+            jxta_vector_remove_object_at(candidates_clone, NULL, i--);
+            jxta_vector_add_object_last(*walk_peers, (Jxta_object *) candidate);
+        } else {
+            /* need the peer objects */
+            if (NULL == candidates_pve) {
+                candidates_pve = jxta_vector_new(0);
+            }
+            jxta_vector_add_object_last(candidates_pve, (Jxta_object *) pve);
+        }
+        JXTA_OBJECT_RELEASE(pve);
+        JXTA_OBJECT_RELEASE(candidate);
+    }
+
+    if (NULL == candidates_pve)
+    {
+        goto FINAL_EXIT;
+    }
+    
+    /* sort the list by the policy */
+    switch (walk_policy) {
+    case JXTA_PV_WALK_POLICY_LRU:
+        jxta_vector_qsort(candidates_pve, (Jxta_object_compare_func) peerview_walk_policy_lru_compare);
+        break;
+    case JXTA_PV_WALK_POLICY_LOAD:
+    /* use load factor for the QoS until QoS implemented */
+    case JXTA_PV_WALK_POLICY_QOS:
+    default:
+        jxta_vector_qsort(candidates_pve, (Jxta_object_compare_func) peerview_walk_policy_load_compare);
+        break;
+    }
+
+    /* retrieve the number of peers required */
+    for (i=0; i < jxta_vector_size(candidates_pve); i++) {
+        Jxta_peer *walk_peer=NULL;
+        Jxta_id *walk_id=NULL;
+        JString *pid_j=NULL;
+
+        ret = jxta_vector_get_object_at(candidates_pve, JXTA_OBJECT_PPTR(&walk_peer), i);
+        if (JXTA_SUCCESS != ret) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE " Unable to retrieve candidate pve for walk\n");
+            continue;
+        }
+        jxta_peer_get_peerid((Jxta_peer *) walk_peer, &walk_id);
+        jxta_vector_add_object_last(*walk_peers, (Jxta_object *) walk_id);
+
+        jxta_id_to_jstring(walk_id, &pid_j);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Adding %s to the walk_peers\n", jstring_get_string(pid_j));
+
+        JXTA_OBJECT_RELEASE(walk_peer);
+        JXTA_OBJECT_RELEASE(walk_id);
+        JXTA_OBJECT_RELEASE(pid_j);
+
+        if (i == (myself->walk_peers - 1)) break;
+    }
+
+FINAL_EXIT:
+    if (candidates_clone)
+        JXTA_OBJECT_RELEASE(candidates_clone);
+    if (candidates_pve)
+        JXTA_OBJECT_RELEASE(candidates_pve);
+    return ret;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_peerview_flag_walk_peer_usage(Jxta_peerview * me, Jxta_id *id)
+{
+    Jxta_peerview *myself = PTValid(me, Jxta_peerview);
+    Jxta_status ret=JXTA_SUCCESS;
+    Peerview_entry *pve=NULL;
+
+    pve = peerview_get_pve(myself, id);
+    if (NULL == pve) {
+        return JXTA_ITEM_NOTFOUND;
+    }
+    /* handle wrap-around */
+    if (pve->walk_counter >= (INT_MAX - 1) ) {
+        peerview_reset_walk_counters(myself);
+    }
+    pve->walk_counter++;
+
+    pve->last_walk_select = jpr_time_now();
+
+    JXTA_OBJECT_RELEASE(pve);
+
+    return ret;
+}
+
 
 JXTA_DECLARE(void) jxta_peerview_set_auto_cycle(Jxta_peerview * pv, Jxta_time_diff ttime )
 {
@@ -4038,7 +4241,7 @@ static Jxta_status peerview_add_pve(Jxta_peerview * myself, Peerview_entry * pve
      */
     if (!found) {
 
-        peerview_update_id(myself);
+        peerview_has_changed(myself);
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Added PVE for %s [%pp] to cluster %d\n", jstring_get_string(pid_str),
                         pve, pve_cluster);
@@ -4167,7 +4370,7 @@ static Jxta_status peerview_remove_pve_1(Jxta_peerview * myself, Jxta_PID * pid,
      */
     if (found) {
 
-        peerview_update_id(myself);
+        peerview_has_changed(myself);
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Removed PVE for %s\n", jstring_get_string(pid_str));
         if (generate_event && (PV_STOPPED != myself->state)) {
@@ -4247,7 +4450,7 @@ static Jxta_status peerview_clear_pves(Jxta_peerview * myself, Jxta_boolean noti
         }
     }
 
-    peerview_update_id(myself);
+    peerview_has_changed(myself);
 
     apr_thread_mutex_unlock(myself->mutex);
     
@@ -6023,7 +6226,7 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
                 apr_thread_pool_push(me->thread_pool, call_event_listeners_thread, (void*) me, 
                                      APR_THREAD_TASK_PRIORITY_HIGH, me);
             }
-            peerview_update_id(me);
+            peerview_has_changed(me);
 
             apr_thread_mutex_unlock(me->mutex);
         }
