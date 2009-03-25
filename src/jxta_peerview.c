@@ -4401,19 +4401,22 @@ static void print_start_end(const char * description, int each_segment, int each
 *   @return JXTA_SUCCESS if the histogram was built successfully.
 *
 **/
-static Jxta_status build_histogram(Jxta_vector ** histo, Jxta_vector * peers, BIGNUM * minimum, BIGNUM * maximum)
+static Jxta_status build_histogram(Jxta_vector ** histo, Jxta_vector * peers_v, BIGNUM * minimum, BIGNUM * maximum)
 {
     Jxta_status res = JXTA_SUCCESS;
     unsigned int each_peer;
     unsigned int all_peers;
     Jxta_vector *histogram;
+    Jxta_vector *peers=NULL;
 
-    JXTA_OBJECT_CHECK_VALID(peers);
+    JXTA_OBJECT_CHECK_VALID(peers_v);
 
     if ((NULL == minimum) || (NULL == maximum)) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Min/Max not speified.\n");
         return JXTA_FAILED;
     }
+    jxta_vector_clone(peers_v, &peers, 0, INT_MAX);
+
     jxta_vector_qsort(peers, (Jxta_object_compare_func) target_hash_sort);
 
     histogram = jxta_vector_new(jxta_vector_size(peers) * 2);
@@ -4435,7 +4438,7 @@ static Jxta_status build_histogram(Jxta_vector ** histo, Jxta_vector * peers, BI
 
         if (JXTA_SUCCESS != res) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not retrieve peer entry.\n");
-            return res;
+            goto FINAL_EXIT;
         }
 
         JXTA_OBJECT_CHECK_VALID(peer);
@@ -4677,8 +4680,12 @@ static Jxta_status build_histogram(Jxta_vector ** histo, Jxta_vector * peers, BI
         JXTA_OBJECT_RELEASE(peer);
     }
 
+FINAL_EXIT:
+
     *histo = histogram;
     print_histogram_details(histogram);
+    if (peers)
+        JXTA_OBJECT_RELEASE(peers);
     return res;
 }
 
