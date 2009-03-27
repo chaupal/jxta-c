@@ -324,6 +324,7 @@ static void *APR_THREAD_FUNC thread_pool_func(apr_thread_t * t, void *param)
         apr_thread_mutex_unlock(me->lock);
         apr_thread_mutex_lock(me->cond_lock);
         if (wwait >= 0) {
+            
             rv = apr_thread_cond_timedwait(me->cond, me->cond_lock, wwait);
         }
         else {
@@ -493,22 +494,32 @@ static apr_status_t schedule_task(apr_thread_pool_t *me,
         return APR_ENOMEM;
     }
     t_loc = APR_RING_FIRST(me->scheduled_tasks);
-    while (NULL != t_loc) {
-        /* if the time is less than the entry insert ahead of it */
-        if (t->dispatch.time < t_loc->dispatch.time) {
-            ++me->scheduled_task_cnt;
-            APR_RING_INSERT_BEFORE(t_loc, t, link);
-            break;
-        }
-        else {
-            t_loc = APR_RING_NEXT(t_loc, link);
-            if (t_loc ==
-                APR_RING_SENTINEL(me->scheduled_tasks, apr_thread_pool_task,
-                                  link)) {
+    /* Check to see if there are any scheduled tasks in the ring
+       if not, insert the task at the tail */
+    if (NULL != t_loc && t_loc == APR_RING_SENTINEL(me->scheduled_tasks, apr_thread_pool_task,
+                link)) {
+        ++me->scheduled_task_cnt;
+        APR_RING_INSERT_TAIL(me->scheduled_tasks, t,
+                             apr_thread_pool_task, link);
+    }
+    else {
+        while (NULL !=t_loc) {
+            /* if the time is less than the entry insert ahead of it */
+            if (t->dispatch.time < t_loc->dispatch.time) {
                 ++me->scheduled_task_cnt;
-                APR_RING_INSERT_TAIL(me->scheduled_tasks, t,
-                                     apr_thread_pool_task, link);
+                APR_RING_INSERT_BEFORE(t_loc, t, link);
                 break;
+            }
+            else {
+                t_loc = APR_RING_NEXT(t_loc, link);
+                if (t_loc ==
+                    APR_RING_SENTINEL(me->scheduled_tasks, apr_thread_pool_task,
+                                      link)) {
+                    ++me->scheduled_task_cnt;
+                    APR_RING_INSERT_TAIL(me->scheduled_tasks, t,
+                                         apr_thread_pool_task, link);
+                    break;
+                }
             }
         }
     }
