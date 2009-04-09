@@ -1278,6 +1278,8 @@ static Jxta_status handle_lease_response(_jxta_rdv_service_server * myself, Jxta
     /* Handle referrals! */
     referrals = jxta_lease_response_msg_get_referral_advs(lease_response);
     all_referrals = jxta_vector_size(referrals);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Received %d referrals from peer %s\n", 
+                    all_referrals, jstring_get_string(server_peerid_str));
     for (each_referral = 0; each_referral < all_referrals; each_referral++) {
         Jxta_lease_adv_info *referral = NULL;
         Jxta_expiration_time expiration;

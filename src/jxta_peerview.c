@@ -1478,7 +1478,7 @@ JXTA_DECLARE(Jxta_boolean) jxta_peerview_set_active(Jxta_peerview * me, Jxta_boo
         }
         me->activity_locate_seeds = NULL;   /* will reload when activity runs */
         res = apr_thread_pool_schedule(me->thread_pool, activity_peerview_locate, me, 
-                                       apr_time_from_sec(1 << me->activity_locate_probes++), me);
+                                       apr_time_from_sec(1 << me->activity_locate_probes), me);
 
         if (APR_SUCCESS != res) {
             me->state = PV_PASSIVE;
