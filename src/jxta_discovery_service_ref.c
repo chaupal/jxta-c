@@ -2087,6 +2087,7 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
                         JXTA_OBJECT_RELEASE(query_adv);
                     JXTA_OBJECT_RELEASE(tmp_j);
                     JXTA_OBJECT_RELEASE(peer_id);
+                    JXTA_OBJECT_RELEASE(peerVersion);
                 }
             } else {
                 res = jxta_srdi_forwardQuery_peers(discovery->srdi, discovery->resolver, peers, rq);
