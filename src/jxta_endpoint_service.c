@@ -330,7 +330,7 @@ static void nc_destroy(Jxta_endpoint_service * me)
     Nc_entry *ptr = NULL;
 
     for (hi = apr_hash_first(NULL, me->nc); hi; hi = apr_hash_next(hi)) {
-        apr_hash_this(hi, NULL, NULL, (void **) &ptr);
+        apr_hash_this(hi, NULL, NULL, (void **) ((void *)&ptr));
         assert(NULL != ptr);
 
         nc_peer_drop_retransmit_queue(ptr);
@@ -457,7 +457,7 @@ static void nc_review_all(Jxta_endpoint_service * me)
 
     apr_thread_mutex_lock(me->nc_wlock);
     for (hi = apr_hash_first(NULL, me->nc); hi;) {
-        apr_hash_this(hi, NULL, NULL, (void **) &ptr);
+        apr_hash_this(hi, NULL, NULL, (void **) ((void *)&ptr));
         /* move index before calling nc_remove_peer which removes entry from cache table and could screw the index */
         hi = apr_hash_next(hi);
         assert(NULL != ptr);
@@ -566,7 +566,7 @@ static void messengers_destroy(Jxta_endpoint_service * me)
     const char *ta;
 
     for (hi = apr_hash_first(NULL, me->messengers); hi; hi = apr_hash_next(hi)) {
-        apr_hash_this(hi, (const void **) &ta, NULL, (void **) &ptr);
+        apr_hash_this(hi, (const void **) ((void *)&ta), NULL, (void **) ((void *)&ptr));
         assert(NULL != ptr);
         assert(ta == ptr->ta);
         apr_hash_set(me->messengers, ptr->ta, APR_HASH_KEY_STRING, NULL);
