@@ -452,7 +452,7 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_address_request_msg_get_xml(Jxta_peervie
 
     jstring_append_2(string, "<jxta:PeerviewAddressRequest>\n");
 
-    if( NULL != jxta_peerview_address_request_msg_get_current_target_hash(myself) ) {
+    if( NULL != jxta_peerview_address_request_msg_get_instance_mask(myself) ) {
         jstring_append_2(string, "<InstanceMask>");
         jstring_append_2(string, jxta_peerview_address_request_msg_get_instance_mask(myself));
         jstring_append_2(string, "</InstanceMask>\n");
