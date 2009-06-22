@@ -785,6 +785,8 @@ static JxtaEndpointMessenger *messenger_get(Jxta_transport * me, Jxta_endpoint_a
             break;
     }
 
+    JXTA_OBJECT_RELEASE(tc);
+
     return (JxtaEndpointMessenger*) msgr;
 }
 

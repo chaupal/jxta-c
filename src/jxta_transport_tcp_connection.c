@@ -231,6 +231,9 @@ static void msg_ctx_reset(Tcp_msg_ctx * ctx)
     if (ctx->pool) {
         apr_pool_destroy(ctx->pool);
     }
+    if (ctx->msg) {
+        JXTA_OBJECT_RELEASE(ctx->msg);
+    }
     memset(ctx, 0, sizeof(*ctx));
     ctx->state = HDR_NAME_SIZE;
 }
