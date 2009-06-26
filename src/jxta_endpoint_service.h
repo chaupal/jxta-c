@@ -372,6 +372,18 @@ JXTA_DECLARE(void) jxta_endpoint_service_set_local_route(Jxta_endpoint_service *
 
 JXTA_DECLARE(Jxta_status) jxta_endpoint_service_get_thread_pool(Jxta_endpoint_service *me, apr_thread_pool_t **tp);
 
+/**
+ ** Get the endpoint entries for the network connection
+ **
+ ** @param Jxta_endpoint_service * endpoint service
+ ** @param const char * protocol - protocol of the connection
+ ** @param const char * address - address of the connection
+ ** @param Jxta_vector ** endpoints - location to store a vector of peerids for the connection
+ ** 
+ ** @return Jxta_status
+ **/
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_get_connection_peers(Jxta_endpoint_service * service, const char * protocol, const char * address, Jxta_vector **endpoints);
+
 #ifdef __cplusplus
 #if 0
 {

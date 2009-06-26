@@ -538,6 +538,7 @@ static void messenger_add(Jxta_endpoint_service * me, Jxta_endpoint_address *ea,
 
     ptr->ta = ta;
     ptr->msgr = JXTA_OBJECT_SHARE(msgr);
+
     apr_hash_set(me->messengers, ta, APR_HASH_KEY_STRING, ptr);
 }
 
@@ -1298,6 +1299,58 @@ JXTA_DECLARE(Jxta_transport *) jxta_endpoint_service_lookup_transport(Jxta_endpo
     }
 
     return t;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_get_connection_peers(Jxta_endpoint_service * service, const char * protocol, const char * address, Jxta_vector **endpoints)
+{
+    apr_hash_index_t *hi = NULL;
+    Peer_route_elt *ptr;
+    const char *ta;
+    Jxta_status res = JXTA_SUCCESS;
+
+    *endpoints = jxta_vector_new(0);
+
+    apr_thread_mutex_lock(service->mutex);
+    for (hi = apr_hash_first(NULL, service->messengers); hi; hi = apr_hash_next(hi)) {
+        JxtaEndpointMessenger * msgr;
+        Jxta_endpoint_address * addr;
+        const char *p_prot;
+        const char *p_addr;
+
+        apr_hash_this(hi, (const void **)(void *)&ta, NULL,  (void **)(void *)&ptr);
+        assert(NULL != ptr);
+        assert(ta == ptr->ta);
+        msgr = ptr->msgr;
+        addr = msgr->address;
+
+        p_prot = jxta_endpoint_address_get_protocol_name(addr);
+        p_addr = jxta_endpoint_address_get_protocol_address(addr);
+
+        if (!strcmp(p_prot, protocol) && !strcmp(p_addr, address)) {
+            /* this is an alternate messenger when it doesn't match */
+            if (0 != strncasecmp(p_prot, ptr->ta, strlen(p_prot))) {
+                JString *peerid_j=NULL;
+                const char *peerid_c;
+                Jxta_id *peerid=NULL;
+
+                peerid_j = jstring_new_2("urn:jxta:");
+                peerid_c = ((char *)ptr->ta) + 7;
+                jstring_append_2(peerid_j, peerid_c);
+
+                if (JXTA_SUCCESS != jxta_id_from_jstring(&peerid, peerid_j)) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Unable to create peerid from %s\n", jstring_get_string(peerid_j));
+                } else {
+                    jxta_vector_add_object_last(*endpoints, (Jxta_object *) peerid);
+                }
+                if (peerid)
+                    JXTA_OBJECT_RELEASE(peerid);
+                if (peerid_j)
+                    JXTA_OBJECT_RELEASE(peerid_j);
+            }
+        }
+    }
+    apr_thread_mutex_unlock(service->mutex);
+    return res;
 }
 
 JXTA_DECLARE(void) jxta_endpoint_service_add_filter(Jxta_endpoint_service * service, char const *str, JxtaEndpointFilter f,

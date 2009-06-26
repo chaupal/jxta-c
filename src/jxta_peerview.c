@@ -406,10 +406,14 @@ static Jxta_boolean peerview_handle_promotion(Jxta_peerview * me, Jxta_peerview_
 static Jxta_status peerview_handle_adv_request(Jxta_peerview * me, Jxta_adv_request_msg * req);
 static Jxta_status peerview_handle_adv_response(Jxta_peerview * me, Jxta_adv_response_msg * resp);
 static Jxta_status peerview_send_address_request(Jxta_peerview * myself, Jxta_peer * dest);
+static Jxta_status peerview_send_ping_priv(Jxta_peerview *myself, Jxta_peer * dest, apr_uuid_t * adv_gen, Jxta_boolean id_only, Jxta_boolean peerid_only);
 static Jxta_status peerview_send_ping(Jxta_peerview * myself, Jxta_peer * dest, apr_uuid_t * adv_gen, Jxta_boolean id_only);
+static Jxta_status peerview_send_ping_1(Jxta_peerview *myself, Jxta_peer * dest, apr_uuid_t * adv_gen, Jxta_boolean id_only);
 static Jxta_status peerview_send_address_assign(Jxta_peerview * myself, Jxta_peer * dest, BIGNUM * target_hash);
+static Jxta_status peerview_send_pvm_priv(Jxta_peerview * me, Jxta_peer * dest, Jxta_message * msg, Jxta_boolean sync, Jxta_boolean peerid_only);
 static Jxta_status peerview_send_pvm(Jxta_peerview * me, Jxta_peer * dest, Jxta_message * msg);
 static Jxta_status peerview_send_pvm_1(Jxta_peerview * me, Jxta_peer * dest, Jxta_message * msg, Jxta_boolean sync);
+static Jxta_status peerview_send_pvm_2(Jxta_peerview * me, Jxta_peer * dest, Jxta_message * msg);
 static Jxta_status peerview_send_adv_request(Jxta_peerview * myself, Jxta_id * dest_id, Jxta_vector *need_pids);
 static Jxta_status peerview_send_pong(Jxta_peerview *myself, Jxta_peer *dest, Jxta_pong_msg_action action, Jxta_boolean candidates_only, Jxta_boolean compact, Jxta_boolean disconnect);
 static Jxta_status peerview_send_pong_1(Jxta_peerview *myself, Jxta_peer *dest, Jxta_pong_msg_action action, Jxta_boolean candidates_only, Jxta_boolean compact, Jxta_boolean disconnect, Jxta_boolean sync);
@@ -2140,6 +2144,16 @@ static Jxta_status peerview_send_address_request(Jxta_peerview * myself, Jxta_pe
 
 static Jxta_status peerview_send_ping(Jxta_peerview * myself, Jxta_peer * dest, apr_uuid_t * adv_gen, Jxta_boolean pv_id_only)
 {
+    return peerview_send_ping_priv(myself, dest, adv_gen, pv_id_only, FALSE);
+}
+
+static Jxta_status peerview_send_ping_1(Jxta_peerview * myself, Jxta_peer * dest, apr_uuid_t * adv_gen, Jxta_boolean peer_id_only)
+{
+    return peerview_send_ping_priv(myself, dest, adv_gen, FALSE, peer_id_only);
+}
+
+static Jxta_status peerview_send_ping_priv(Jxta_peerview * myself, Jxta_peer * dest, apr_uuid_t * adv_gen, Jxta_boolean pv_id_only, Jxta_boolean peerid_only)
+{
     Jxta_status res;
     Jxta_message *msg = NULL;
     Jxta_message_element *el = NULL;
@@ -2178,7 +2192,11 @@ static Jxta_status peerview_send_ping(Jxta_peerview * myself, Jxta_peer * dest, 
 
     JXTA_OBJECT_CHECK_VALID(msg);
 
-    res = peerview_send_pvm(myself, dest, msg);
+    if (peerid_only) {
+        res = peerview_send_pvm_2(myself, dest, msg);
+    } else {
+        res = peerview_send_pvm(myself, dest, msg);
+    }
 
     JXTA_OBJECT_RELEASE(msg);
 
@@ -2572,10 +2590,20 @@ static Jxta_status peerview_send_adv_response(Jxta_peerview * myself, Jxta_peer 
 
 static Jxta_status peerview_send_pvm(Jxta_peerview * me, Jxta_peer * dest, Jxta_message * msg)
 {
-    return peerview_send_pvm_1(me, dest, msg, FALSE);
+    return peerview_send_pvm_priv(me, dest, msg, FALSE, FALSE);
 }
 
 static Jxta_status peerview_send_pvm_1(Jxta_peerview * me, Jxta_peer * dest, Jxta_message * msg, Jxta_boolean sync)
+{
+    return peerview_send_pvm_priv(me, dest, msg, sync, FALSE);
+}
+
+static Jxta_status peerview_send_pvm_2(Jxta_peerview * me, Jxta_peer * dest, Jxta_message * msg)
+{
+    return peerview_send_pvm_priv(me, dest, msg, FALSE, TRUE);
+}
+
+static Jxta_status peerview_send_pvm_priv(Jxta_peerview * me, Jxta_peer * dest, Jxta_message * msg, Jxta_boolean sync, Jxta_boolean peerid_only)
 {
     Jxta_status res=JXTA_SUCCESS;
     Jxta_id *peerid;
@@ -2589,7 +2617,7 @@ static Jxta_status peerview_send_pvm_1(Jxta_peerview * me, Jxta_peer * dest, Jxt
     peerid = jxta_peer_peerid(dest);
     if (peerid) {
         jxta_id_to_jstring(peerid, &pid_jstr);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Sending peerview message[%pp] by peerid to : %s\n", msg,
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Sending peerview message[%pp] by peerid to : %s\n", msg,
                         jstring_get_string(pid_jstr));
         JXTA_OBJECT_RELEASE(pid_jstr);
         if (sync) {
@@ -2604,10 +2632,47 @@ static Jxta_status peerview_send_pvm_1(Jxta_peerview * me, Jxta_peer * dest, Jxt
                                          jxta_endpoint_address_get_protocol_address(peer_addr),
                                          RDV_V3_MSID, JXTA_PEERVIEW_NAME, &dest_addr);
         if (JXTA_SUCCESS == res) {
+            int i;
+            Jxta_boolean send = TRUE;
+
             addr_str = jxta_endpoint_address_to_string(dest_addr);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Sending peerview message [%pp] to : %s\n", msg, addr_str);
+
+            /* only send if there is no peerid in the peerview */
+            if (peerid_only) {
+                Jxta_vector *peerids=NULL;
+                /* get any peerids for this protocol/address */
+                jxta_endpoint_service_get_connection_peers(me->endpoint, jxta_endpoint_address_get_protocol_name(peer_addr),
+                                         jxta_endpoint_address_get_protocol_address(peer_addr), &peerids);
+
+                for (i=0; peerid_only && i < jxta_vector_size(peerids); i++) {
+                    Jxta_id *peerid = NULL;
+
+                    if (JXTA_SUCCESS != jxta_vector_get_object_at(peerids, JXTA_OBJECT_PPTR(&peerid), i)) {
+                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to retrieve peerid from connections\n");
+                        continue;
+                    }
+
+                    /* if this peer exists in  the peerview there's no reason to send this message */
+                    if (jxta_peerview_is_partner(me, peerid) || jxta_peerview_is_associate(me, peerid)) {
+                        send = FALSE;
+                    }
+                    if (peerid)
+                        JXTA_OBJECT_RELEASE(peerid);
+                    if (!send) {
+                        /* if an entry was found and we shouldn't send this message stop searching */
+                        break;
+                    }
+
+                }
+                if (peerids)
+                    JXTA_OBJECT_RELEASE(peerids);
+            }
+
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "%s Sending peerview message [%pp] to : %s\n", send == TRUE ? "":"Not", msg, addr_str);
             free(addr_str);
-            res = jxta_endpoint_service_send_ex(me->endpoint, msg, dest_addr, sync);
+            if (send) {
+                res = jxta_endpoint_service_send_ex(me->endpoint, msg, dest_addr, sync);
+            }
             JXTA_OBJECT_RELEASE(dest_addr);
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Could not build dest address for [%pp]\n", dest);
@@ -3978,8 +4043,13 @@ UNLOCK_EXIT:
             res = peerview_send_pong(me, newPeer, action, send_candidates, FALSE, FALSE);
         }
         if (send_ping) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "------------- Sending ping for updated pv_id_gen\n");
+            JString *peerid_j=NULL;
+
+            jxta_id_to_jstring(pid, &peerid_j);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "------------- Sending ping for updated pv_id_gen to %s\n", jstring_get_string(peerid_j));
             res = peerview_send_ping(me, newPeer, NULL, FALSE);
+
+            JXTA_OBJECT_RELEASE(peerid_j);
         }
         JXTA_OBJECT_RELEASE(newPeer);
     }
@@ -4318,7 +4388,7 @@ static Jxta_status peerview_remove_pve_1(Jxta_peerview * myself, Jxta_PID * pid,
 
     jxta_id_to_jstring(pid, &pid_str);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Removing PVE for %s\n", jstring_get_string(pid_str));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Removing PVE for %s\n", jstring_get_string(pid_str));
 
     apr_thread_mutex_lock(myself->mutex);
 
@@ -4971,10 +5041,9 @@ static Jxta_status probe_a_seed(Jxta_peerview * me)
 
         if (jxta_peer_get_expires(seed) > jpr_time_now()) {
 
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Ping locate seeds.\n");
-
-            res = peerview_send_ping(me, seed, NULL, FALSE);
+            res = peerview_send_ping_1(me, seed, NULL, TRUE);
             sent_seed = TRUE;
+
         }
 
         JXTA_OBJECT_RELEASE(seed);
@@ -5211,9 +5280,15 @@ static Jxta_status probe_referrals(Jxta_peerview * me)
                                       me->activity_maintain_referral_pings_sent);
 
         if (JXTA_SUCCESS == res) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Ping referral.\n");
+            JString *peerid_j=NULL;
+
+            jxta_id_to_jstring(jxta_peer_peerid(ping_peer), &peerid_j);
+
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Ping referral %s\n", jstring_get_string(peerid_j));
             res = peerview_send_ping(me, ping_peer, NULL, FALSE);
+
             JXTA_OBJECT_RELEASE(ping_peer);
+            JXTA_OBJECT_RELEASE(peerid_j);
         }
 
         /* We increment unconditionally, a bad peer is one we should get rid of. */
@@ -5264,14 +5339,17 @@ static Jxta_status check_pves(Jxta_peerview * me, Jxta_vector *pves)
             /* Ping for refresh */
             apr_uuid_t * pv_id_gen = NULL;
             Jxta_version * peer_version;
+            JString *peerid_j=NULL;
 
             if (a_pve->pv_id_gen_set) {
                 pv_id_gen = &a_pve->pv_id_gen;
             }
             peer_version = jxta_PA_get_version(((_jxta_peer_entry *) a_pve)->adv);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Sending ping for maintenance\n");
+            jxta_id_to_jstring(jxta_peer_peerid((Jxta_peer *) a_pve), &peerid_j);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Sending ping for maintenance to %s\n", jstring_get_string(peerid_j));
             res = peerview_send_ping(me, (Jxta_peer *) a_pve, &a_pve->adv_gen, jxta_version_compatible_1(PEERVIEW_UUID_IMPLEMENTATION, peer_version) ? TRUE:FALSE);
             JXTA_OBJECT_RELEASE(peer_version);
+            JXTA_OBJECT_RELEASE(peerid_j);
         }
 
         JXTA_OBJECT_RELEASE(a_pve);
