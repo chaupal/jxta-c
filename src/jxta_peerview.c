@@ -4166,6 +4166,7 @@ static Jxta_status peerview_add_pve(Jxta_peerview * myself, Peerview_entry * pve
     unsigned int each_member;
     unsigned int all_members;
     Jxta_boolean found = FALSE;
+    Jxta_boolean local_view_changed = TRUE;
 
     JXTA_OBJECT_CHECK_VALID(pve);
 
@@ -4218,7 +4219,6 @@ static Jxta_status peerview_add_pve(Jxta_peerview * myself, Peerview_entry * pve
 
     if (!found) {
 
-
         jxta_vector_add_object_last(myself->clusters[pve_cluster].members, (Jxta_object *) pve);
         pve->cluster = pve_cluster;
 
@@ -4232,14 +4232,15 @@ static Jxta_status peerview_add_pve(Jxta_peerview * myself, Peerview_entry * pve
                               myself->clusters[pve_cluster].min, myself->clusters[pve_cluster].max);
 
         myself->pves_modcount++;
+        /* only one associate is currently used - if an associate existed the view hasn't changed */
+        local_view_changed = (myself->my_cluster != pve_cluster && (jxta_vector_size(myself->clusters[pve_cluster].members) > 1)) ? FALSE:TRUE;
     }
 
   FINAL_EXIT:
-
     /*
      * Notify the peerview listeners that we added a rdv peer from our local rpv 
      */
-    if (!found) {
+    if (!found && local_view_changed) {
 
         peerview_has_changed(myself);
 
