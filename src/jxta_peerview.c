@@ -123,7 +123,6 @@ static const unsigned int DEFAULT_CLUSTER_MEMBERS = 4;
 
 static const unsigned int DEFAULT_REPLICATION_FACTOR = 2;
 
-#define DEFAULT_HASH_ATTEMPTS (2 * DEFAULT_REPLICATION_FACTOR + 1)
 /**
 *   The number of locate probes we will send before giving up
 *   and starting a new peerview instance.
@@ -141,11 +140,6 @@ static const unsigned int DEFAULT_MAX_ADDRESS_REQUESTS = 2;
 *   iteration.
 */
 static const unsigned int DEFAULT_MAX_PING_PROBES = 25;
-
-/**
-* Number of peers we will invite into the peerview with each add run.
-**/
-#define MAXIMUM_CLIENT_INVITATIONS DEFAULT_CLUSTERS_COUNT
 
 
 struct Cluster_entry {
@@ -246,6 +240,8 @@ struct _jxta_peerview {
     unsigned int clusters_count;
     unsigned int cluster_members;
     unsigned int replicas_count;
+    unsigned int hash_attempts;
+    unsigned int max_client_invitations;
 
     Jxta_boolean active;
     unsigned int processing_callbacks;
@@ -346,7 +342,7 @@ static Peerview_histogram_entry *peerview_histogram_entry_construct(Peerview_his
                                                                     BIGNUM * end);
 static void peerview_histogram_entry_delete(Jxta_object * addr);
 static void peerview_histogram_entry_destruct(Peerview_histogram_entry * myself);
-static Jxta_status histogram_random_entry(Jxta_vector * histogram, BIGNUM *range, BIGNUM *min_bn, BIGNUM **target_address);
+static Jxta_status histogram_random_entry(Jxta_vector * histogram, BIGNUM *range, BIGNUM *min_bn, unsigned int attempts, BIGNUM **target_address);
 static Jxta_status histogram_predictable_entry(Jxta_vector * histogram, BIGNUM *range, BIGNUM *min_bn, BIGNUM *max_bn, BIGNUM ** target_address);
 static Jxta_status histogram_get_location( Jxta_vector * histogram, BIGNUM * address, Peerview_histogram_entry **before_entry, Peerview_histogram_entry ** after_entry);
 static void histogram_get_empty_space(Jxta_vector * histogram, BIGNUM *min_bn, BIGNUM *max_bn, Jxta_vector ** empty_locations);
@@ -435,7 +431,8 @@ static void trim_only_candidates(Jxta_vector * possible_v);
 static Jxta_status get_best_rdv_candidates(Jxta_peerview *myself, Jxta_vector **candidates, int nums);
 static void calculate_radius_bounds(Jxta_peerview * pv, Peerview_entry * pve);
 static int target_hash_sort(Peerview_entry **peer_a, Peerview_entry **peer_b);
-static void find_best_target_address(Peerview_address_assign_mode mode, Jxta_vector * histogram, BIGNUM * min, BIGNUM * max, BIGNUM * range, BIGNUM ** target_address);
+static void find_best_target_address(Peerview_address_assign_mode mode, Jxta_vector * histogram, BIGNUM * min, BIGNUM * max,
+unsigned int attempts, BIGNUM * range, BIGNUM ** target_address);
 
 static Jxta_status build_histogram(Jxta_vector ** histo, Jxta_vector * peers, BIGNUM * minimum, BIGNUM * maximum);
 
@@ -856,6 +853,14 @@ JXTA_DECLARE(Jxta_status) peerview_init(Jxta_peerview * pv, Jxta_PG * group, Jxt
     myself->clusters_count = jxta_RdvConfig_pv_clusters(myself->rdvConfig);
     myself->cluster_members = jxta_RdvConfig_pv_members(myself->rdvConfig);
     myself->replicas_count = jxta_RdvConfig_pv_replication(myself->rdvConfig);
+    /**
+     * Number of attempts that will be made to find a suitable random hashspace address
+     */
+    myself->hash_attempts = (myself->replicas_count << 1) + 1;
+    /**
+     * Number of peers we will invite into the peerview with each add run.
+     **/
+    myself->max_client_invitations = myself->clusters_count;
     myself->pves = jxta_hashtable_new(myself->clusters_count * myself->cluster_members * 2);
     myself->processing_callbacks = 0;
     myself->event_list = jxta_vector_new(2);
@@ -3004,6 +3009,7 @@ static Jxta_status peerview_handle_address_request(Jxta_peerview * myself, Jxta_
                         , myself->clusters[myself->my_cluster].histogram
                         , myself->clusters[myself->my_cluster].min
                         , myself->clusters[myself->my_cluster].max
+                        , myself->hash_attempts
                         , myself->peer_address_space
                         , &target_address);
             } else {
@@ -4987,7 +4993,7 @@ static Jxta_status create_new_peerview(Jxta_peerview * me)
     }
 
     /* always create an address in cluster 0 */
-    BN_rshift(address, address, DEFAULT_CLUSTERS_COUNT - 1);
+    BN_rshift(address, address, me->clusters_count - 1);
 
     tmp = BN_bn2hex(address);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "self chosen Target Hash Address: %s\n", tmp);
@@ -5672,7 +5678,7 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
     myself->activity_add_candidate_pongs_sent = 0;
 
 
-    for (each_client = 0; !myself->activity_add_voting &&  (each_client < all_clients) && (each_client < MAXIMUM_CLIENT_INVITATIONS); each_client++) {
+    for (each_client = 0; !myself->activity_add_voting &&  (each_client < all_clients) && (each_client < myself->max_client_invitations); each_client++) {
         Jxta_peer *invitee;
 
         res = jxta_vector_remove_object_at(myself->activity_add_candidate_peers, JXTA_OBJECT_PPTR(&invitee), 0);
@@ -5698,7 +5704,7 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
   RERUN_EXIT:
 
 
-    if (myself->activity_add_candidate_pongs_sent < MAXIMUM_CLIENT_INVITATIONS && !myself->activity_add_voting) {
+    if (myself->activity_add_candidate_pongs_sent < myself->max_client_invitations && !myself->activity_add_voting) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "ACT[add]: Probing seeds \n");
         apr_thread_mutex_unlock(myself->mutex);
         probe_a_seed(myself);
@@ -5936,14 +5942,15 @@ static int target_hash_sort(Peerview_entry **peer_a, Peerview_entry **peer_b)
     return BN_cmp((*peer_a)->target_hash, (*peer_b)->target_hash);
 }
 
-static void find_best_target_address(Peerview_address_assign_mode mode, Jxta_vector * histogram, BIGNUM * min, BIGNUM * max, BIGNUM * range, BIGNUM ** target_address)
+static void find_best_target_address(Peerview_address_assign_mode mode, Jxta_vector * histogram, BIGNUM * min, BIGNUM * max,
+unsigned int attempts, BIGNUM * range, BIGNUM ** target_address)
 {
     Jxta_status status;
 
     switch (mode) {
         case config_addr_assign_random:
         {
-            status = histogram_random_entry(histogram, range, min, target_address);
+            status = histogram_random_entry(histogram, range, min, attempts, target_address);
             break;
         }
         case config_addr_assign_predictable:
@@ -5955,7 +5962,7 @@ static void find_best_target_address(Peerview_address_assign_mode mode, Jxta_vec
         case config_addr_assign_managed:
         default:
         {
-            status = histogram_random_entry(histogram, range, min, target_address);
+            status = histogram_random_entry(histogram, range, min, attempts, target_address);
             break;
         }
     };
@@ -5966,20 +5973,20 @@ static void find_best_target_address(Peerview_address_assign_mode mode, Jxta_vec
 
 }
 
-static Jxta_status histogram_random_entry(Jxta_vector * histogram, BIGNUM * range, BIGNUM *min_bn, BIGNUM **target_address)
+static Jxta_status histogram_random_entry(Jxta_vector * histogram, BIGNUM * range, BIGNUM *min_bn, unsigned int attempts, BIGNUM **target_address)
 {
     int i;
     BIGNUM **addresses;
     int best_loc=0;
 
-    addresses = calloc(DEFAULT_HASH_ATTEMPTS, sizeof(BIGNUM *));
-    for (i = 0; i < DEFAULT_HASH_ATTEMPTS; i++) {
+    addresses = calloc(attempts, sizeof(BIGNUM *));
+    for (i = 0; i < attempts; i++) {
         addresses[i] = BN_new();
         BN_pseudo_rand_range(addresses[i] , range);
     }
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Find best address with a Histogram size of %d\n", jxta_vector_size(histogram));
 
-    for (i = 0; i < DEFAULT_HASH_ATTEMPTS; i++) {
+    for (i = 0; i < attempts; i++) {
         Peerview_histogram_entry *before_entry=NULL;
         Peerview_histogram_entry *after_entry=NULL;
         BIGNUM *best_start = NULL;
@@ -5994,7 +6001,7 @@ static Jxta_status histogram_random_entry(Jxta_vector * histogram, BIGNUM * rang
         }
         free(tmp_target_hash);
     }
-    for (i = 0; i < DEFAULT_HASH_ATTEMPTS; i++) {
+    for (i = 0; i < attempts; i++) {
         if (best_loc == i) {
             *target_address = addresses[i];
         } else {
@@ -6250,7 +6257,7 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
     if (!need_additional_peers(me, me->cluster_members) ) {
         me->loneliness_factor = 0;
         if (!demoted) {
-            if (remain_in_peerview(me, DEFAULT_CLUSTER_MEMBERS) == FALSE) {
+            if (remain_in_peerview(me, me->cluster_members) == FALSE) {
                 check_peers_size = TRUE;
                 tmp_config = config_edge;
             }
