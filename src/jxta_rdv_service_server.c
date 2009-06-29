@@ -1083,18 +1083,45 @@ static Jxta_status handle_lease_request(_jxta_rdv_service_server * myself, Jxta_
             }
         } else {
             /* Disconnect */
-            if (0 != jxta_peer_get_expires((Jxta_peer *) peer)) {
-                jxta_peer_set_expires((Jxta_peer *) peer, 0);
-                lease_event = JXTA_RDV_CLIENT_DISCONNECTED;
+            Jxta_version *peerVersion = NULL;
+            Jxta_PA * clientPA = NULL;
+            clientPA = jxta_peer_adv((Jxta_peer *)peer);
+            if (NULL != clientPA) {
+                peerVersion = jxta_PA_get_version(clientPA);
+            }
+
+            /* newer disconnect code always inserts the PA on a disconnect lease request */
+            if (NULL == peerVersion || 
+                (jxta_version_compatible_1(EXPLICIT_DISCONNECT, peerVersion) && jxta_lease_request_msg_get_disconnect(lease_request))) {
+                if (0 != jxta_peer_get_expires((Jxta_peer *) peer)) {
+                    /* peer has not expired yet, so set the expiration and send the event */
+                    jxta_peer_set_expires((Jxta_peer *) peer, 0);
+                    lease_event = JXTA_RDV_CLIENT_DISCONNECTED;
+                } else if (NULL == peerVersion) {
+                    /* received disconnect from old version and peer has already expired: treat as referral */
+                    referral = TRUE;
+                } else {
+                    /* received disconnect from newer version.  Peer has already expired, so do nothing */
+                    if (NULL != peerVersion) JXTA_OBJECT_RELEASE(peerVersion);
+                    jxta_peer_unlock((Jxta_peer *) peer);
+                    res = JXTA_SUCCESS;
+                    goto FINAL_EXIT;
+                }
             } else {
                 /* referral request */
                 referral = TRUE;
             }
+
+            if (NULL != peerVersion) JXTA_OBJECT_RELEASE(peerVersion);
         }
         jxta_peer_unlock((Jxta_peer *) peer);
         if (referral) {
             JXTA_OBJECT_RELEASE(peer);
             peer = NULL;
+        }
+        else {
+            JXTA_OBJECT_RELEASE(pa);
+            pa = NULL;
         }
     }
 

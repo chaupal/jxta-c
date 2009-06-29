@@ -91,6 +91,9 @@ JXTA_DECLARE(void) jxta_lease_request_msg_set_server_adv_gen(Jxta_lease_request_
 JXTA_DECLARE(unsigned int) jxta_lease_request_msg_get_referral_advs(Jxta_lease_request_msg * myself);
 JXTA_DECLARE(void) jxta_lease_request_msg_set_referral_advs(Jxta_lease_request_msg * myself, unsigned int);
 
+JXTA_DECLARE(Jxta_boolean) jxta_lease_request_msg_get_disconnect(Jxta_lease_request_msg * myself);
+JXTA_DECLARE(void) jxta_lease_request_msg_set_disconnect(Jxta_lease_request_msg * myself, Jxta_boolean);
+
 JXTA_DECLARE(Jxta_credential*) jxta_lease_request_msg_get_credential(Jxta_lease_request_msg * me);
 JXTA_DECLARE(void) jxta_lease_request_msg_set_credential(Jxta_lease_request_msg * me, Jxta_credential* credential);
 

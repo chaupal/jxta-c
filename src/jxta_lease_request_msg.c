@@ -97,6 +97,7 @@ struct _Jxta_lease_request_msg {
     Jxta_time_diff requested_lease;
     apr_uuid_t *server_adv_gen;
     unsigned int referral_advs;
+    Jxta_boolean disconnect;
     
     Jxta_vector *options;
 };
@@ -184,6 +185,7 @@ static Jxta_lease_request_msg *lease_request_msg_construct(Jxta_lease_request_ms
         myself->requested_lease = -1L;
         myself->server_adv_gen = NULL;
         myself->referral_advs = 0;
+        myself->disconnect = FALSE;
         myself->options = jxta_vector_new(0);
     }
 
@@ -315,6 +317,12 @@ JXTA_DECLARE(Jxta_status) jxta_lease_request_msg_get_xml(Jxta_lease_request_msg 
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
+
+    if (0 != myself->disconnect) {
+        jstring_append_2(string, " disconnect=\"");
+        jstring_append_2(string, "true\"");
+    }
+
 
     jstring_append_2(string, ">\n ");
     
@@ -459,6 +467,22 @@ JXTA_DECLARE(void) jxta_lease_request_msg_set_referral_advs(Jxta_lease_request_m
     myself->referral_advs = referral_advs;
 }
 
+
+JXTA_DECLARE(Jxta_boolean) jxta_lease_request_msg_get_disconnect(Jxta_lease_request_msg * myself)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    return myself->disconnect;
+}
+
+JXTA_DECLARE(void) jxta_lease_request_msg_set_disconnect(Jxta_lease_request_msg * myself, Jxta_boolean disconnect)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    myself->disconnect = disconnect;
+}
+
+
 JXTA_DECLARE(Jxta_credential *) jxta_lease_request_msg_get_credential(Jxta_lease_request_msg * myself)
 {
     JXTA_OBJECT_CHECK_VALID(myself);
@@ -598,6 +622,8 @@ static void handle_lease_request_msg(void *me, const XML_Char * cd, int len)
                 }
             } else if (0 == strcmp(*atts, "referral_advs")) {
                 myself->referral_advs = atoi(atts[1]);
+            } else if (0 == strcmp(*atts, "disconnect")) {
+                myself->disconnect = TRUE;
             } else {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
             }

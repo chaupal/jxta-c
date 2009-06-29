@@ -871,6 +871,9 @@ static Jxta_status send_lease_request(_jxta_rdv_service_client * myself, _jxta_p
 
     if (disconnect) {
         jxta_lease_request_msg_set_requested_lease(lease_request, 0);
+        jxta_lease_request_msg_set_disconnect(lease_request, TRUE);
+        jxta_lease_request_msg_set_client_adv(lease_request, provider->local_pa);
+        jxta_lease_request_msg_set_client_adv_exp(lease_request, jxta_RdvConfig_get_lease_duration(myself->rdvConfig) * 2);
     }
     else {
         jxta_lease_request_msg_set_requested_lease(lease_request, jxta_RdvConfig_get_lease_duration(myself->rdvConfig));
