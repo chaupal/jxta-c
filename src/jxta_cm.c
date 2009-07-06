@@ -539,6 +539,11 @@ static void terminate_cm_params()
     JXTA_OBJECT_RELEASE(jGroupNs);
     JXTA_OBJECT_RELEASE(jInt64_for_format);
     JXTA_OBJECT_RELEASE(fmtTime);
+    if (apr_dbd_init_pool)
+        apr_pool_destroy(apr_dbd_init_pool);
+
+    dbd_initialized = FALSE;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "last CM instance terminated\n");
 }
 
 /* make the CM unavailable and cancel any pending tasks */
@@ -560,6 +565,7 @@ void cm_stop(Jxta_cm * me)
     }
     if (jxta_vector_size(global_cm_registry) == 0) {
         JXTA_OBJECT_RELEASE(global_cm_registry);
+        global_cm_registry = NULL;
     }
 }
 
@@ -1311,7 +1317,12 @@ static apr_status_t cm_sql_db_init(DBSpace * dbSpace, Jxta_addressSpace * jas)
                             "Unable to create apr_pool initializing the dbd interface: %d\n", rv);
             goto FINAL_EXIT;
         }
-        apr_dbd_init(apr_dbd_init_pool);
+        rv = apr_dbd_init(apr_dbd_init_pool);
+        if (rv != APR_SUCCESS) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,
+                            "Unable to initialize the apr dbd drivers: %d\n", rv);
+            goto FINAL_EXIT;
+        }
         dbd_initialized = TRUE;
     }
     rv = apr_dbd_get_driver(dbSpace->conn->pool, driver, &dbSpace->conn->driver);
