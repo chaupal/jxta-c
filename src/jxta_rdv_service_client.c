@@ -143,7 +143,7 @@ static const Jxta_time_diff LEASE_RENEWAL_DELAY = ((Jxta_time_diff) 5) * 60 * 10
 static const apr_interval_time_t RDV_RELAY_DELAY_CONNECTION = ((apr_interval_time_t) 100) * 1000;   /* 100 ms */
 
 
-static const Jxta_time_diff DEFAULT_LEASE_INTERVAL = ((Jxta_time_diff) 20 * 60) * 1000; /* 20 minutes */
+static const Jxta_time_diff DEFAULT_LEASE_INTERVAL = ((Jxta_time_diff) 5 * 60) * 1000; /* 20 minutes */
 
 /**
 *   The number of rdv referrals we will request by default.
@@ -1294,6 +1294,7 @@ static void process_referrals(_jxta_rdv_service_client * myself, Jxta_lease_resp
     all_referrals = jxta_vector_size(referrals);
     for (each_referral = 0; each_referral < all_referrals; each_referral++) {
         Jxta_lease_adv_info *referral = NULL;
+        unsigned int each_candidate;
 
         status = jxta_vector_get_object_at(referrals, JXTA_OBJECT_PPTR(&referral), each_referral);
         if (JXTA_SUCCESS != status) {
@@ -1305,6 +1306,9 @@ static void process_referrals(_jxta_rdv_service_client * myself, Jxta_lease_resp
             Jxta_id *pid;
             Jxta_peer *referral_candidate = NULL;
             Jxta_PA *referral_adv = jxta_lease_adv_info_get_adv(referral);
+            unsigned int all_candidates=0;
+            Jxta_boolean added=FALSE;
+
             pid  = jxta_PA_get_PID(referral_adv);
             if (NULL != ignore_pid && jxta_id_equals(pid, ignore_pid) && all_referrals > 1) {
                 JXTA_OBJECT_RELEASE(pid);
@@ -1312,21 +1316,38 @@ static void process_referrals(_jxta_rdv_service_client * myself, Jxta_lease_resp
                 JXTA_OBJECT_RELEASE(referral_adv);
                 continue;
             }
-            referral_candidate = (Jxta_peer *) rdv_entry_new();
-            jxta_peer_set_adv(referral_candidate, referral_adv);
-            JXTA_OBJECT_RELEASE(referral_adv);
 
-            jxta_peer_set_peerid(referral_candidate, pid);
-            jxta_peer_set_expires(referral_candidate, jpr_time_now() + jxta_lease_adv_info_get_adv_exp(referral));
-            if (!jxta_vector_contains (myself->candidates, (Jxta_object *) referral_candidate,
-                                       (Jxta_object_equals_func) jxta_peer_equals)) {
-
-                jxta_id_to_jstring(pid, &jPeerid);
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Adding referral %s \n", jstring_get_string(jPeerid));
-                JXTA_OBJECT_RELEASE(jPeerid);
-                jxta_vector_add_object_first(myself->candidates, (Jxta_object *) referral_candidate);
+            if (myself->candidates) {
+                all_candidates = jxta_vector_size(myself->candidates);
             }
 
+            for (each_candidate=0; each_candidate < all_candidates; each_candidate++) {
+                Jxta_peer *candidate=NULL;
+
+                status = jxta_vector_get_object_at(myself->candidates, JXTA_OBJECT_PPTR(&candidate), each_candidate);
+                if (JXTA_SUCCESS != status) {
+                    continue;
+                }
+                if (jxta_id_equals(jxta_peer_peerid(candidate), pid)) {
+                    /* will be released later */
+                    referral_candidate = candidate;
+                    break;
+                }
+                JXTA_OBJECT_RELEASE(candidate);
+            }
+            if (NULL == referral_candidate) {
+                referral_candidate = (Jxta_peer *) rdv_entry_new();
+                jxta_vector_add_object_first(myself->candidates, (Jxta_object *) referral_candidate);
+                added = TRUE;
+            }
+            jxta_peer_set_adv(referral_candidate, referral_adv);
+            JXTA_OBJECT_RELEASE(referral_adv);
+            jxta_peer_set_peerid(referral_candidate, pid);
+            jxta_peer_set_expires(referral_candidate, jpr_time_now() + jxta_lease_adv_info_get_adv_exp(referral));
+            jxta_id_to_jstring(pid, &jPeerid);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "%s referral %s \n", added == TRUE ? "Added":"Updated", jstring_get_string(jPeerid));
+
+            JXTA_OBJECT_RELEASE(jPeerid);
             JXTA_OBJECT_RELEASE(pid);
             JXTA_OBJECT_RELEASE(referral_candidate);
         }
