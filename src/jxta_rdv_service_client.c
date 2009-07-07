@@ -143,7 +143,7 @@ static const Jxta_time_diff LEASE_RENEWAL_DELAY = ((Jxta_time_diff) 5) * 60 * 10
 static const apr_interval_time_t RDV_RELAY_DELAY_CONNECTION = ((apr_interval_time_t) 100) * 1000;   /* 100 ms */
 
 
-static const Jxta_time_diff DEFAULT_LEASE_INTERVAL = ((Jxta_time_diff) 5 * 60) * 1000; /* 20 minutes */
+static const Jxta_time_diff DEFAULT_LEASE_INTERVAL = ((Jxta_time_diff) 20 * 60) * 1000; /* 20 minutes */
 
 /**
 *   The number of rdv referrals we will request by default.
