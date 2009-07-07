@@ -113,6 +113,7 @@ struct _jxta_EntryElement {
     JString *rep_peerid;
     JString *dup_peerid;
     Jxta_vector *radius_peers;
+    Jxta_boolean update_only;
 };
 
 /**
@@ -257,6 +258,14 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_set_peerID(Jxta_SRDIMessage *, Jxta_
  */
 JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_SrcPID(Jxta_SRDIMessage * ad, Jxta_id ** peerid);
 
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_PrevPID(Jxta_SRDIMessage * ad, Jxta_id ** peerid);
+
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_set_PrevPID(Jxta_SRDIMessage * ad, Jxta_id * peerid);
+
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_LostPIDs(Jxta_SRDIMessage * ad, Jxta_vector ** pids);
+
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_set_LostPIDs(Jxta_SRDIMessage * ad, Jxta_vector * pids);
+
 /**
  * Sets the source peerid of the srdi message.
  *
@@ -270,6 +279,12 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_set_SrcPID(Jxta_SRDIMessage * ad, Jx
 JXTA_DECLARE(Jxta_boolean) jxta_srdi_message_delta_supported(Jxta_SRDIMessage * ad);
 
 JXTA_DECLARE(void) jxta_srdi_message_set_support_delta(Jxta_SRDIMessage * ad, Jxta_boolean support);
+
+JXTA_DECLARE(Jxta_boolean) jxta_srdi_message_update_only(Jxta_SRDIMessage * ad);
+
+JXTA_DECLARE(void) jxta_srdi_message_set_update_only(Jxta_SRDIMessage * ad, Jxta_boolean update);
+
+JXTA_DECLARE(Jxta_vector *) jxta_srdi_message_entries(Jxta_SRDIMessage * ad);
 
 /**
  * Gets the Entries of the srdi message.

@@ -242,6 +242,10 @@ static void stdpg_stop(Jxta_module * self)
     char **keys_of_services = NULL;
     Jxta_stdpg *it = PTValid(self, Jxta_stdpg);
 
+    if (it->discovery) {
+        discovery_service_flush_pending_deltas(it->discovery);
+    }
+
     jxta_stdpg_disconnect_peers(it);
 
     /*

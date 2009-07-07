@@ -136,6 +136,9 @@ extern "C" {
 #define CM_COL_Fwd "Fwd"
 #define CM_COL_FwdPeerid "FwdPeerid"
 #define CM_COL_RepPeerid "RepPeerid"
+#define CM_COL_Available "Available"
+#define CM_COL_TimeStamp "TimeStamp"
+#define CM_COL_LifeTime "LifeTime"
 #define CM_COL_QueryId "QueryId"
 
 typedef struct jxta_cache_entry Jxta_cache_entry;
@@ -165,6 +168,9 @@ struct jxta_srdi_idx_entry {
     Jxta_sequence_number seq_number;
     Jxta_expiration_time expiration;
     Jxta_boolean replicate;
+    Jxta_boolean available;
+    Jxta_boolean replica;
+    Jxta_expiration_time lifetime;
 };
 
 /**
@@ -312,11 +318,12 @@ Jxta_status cm_save_srdi_elements(Jxta_cm * self, JString * handler, JString * p
  *
  * @param Jxta_cm (A ptr to) the cm object to apply the operation to
  * @param jPeerid Peerid of srdi entry
+ * @param jSrcPeerid the publishing peer
  * @param seqNumber Sequence number assigned from the source peerid.
  * @param entry Location to store a new SRDI Entry element.
  *
  */
-Jxta_status cm_get_srdi_with_seq_number(Jxta_cm * me, JString * jPeerid, Jxta_sequence_number seq, Jxta_SRDIEntryElement ** entry);
+Jxta_status cm_get_srdi_with_seq_number(Jxta_cm * me, JString * jPeerid, JString *jSrcPeerid, Jxta_sequence_number seq, Jxta_SRDIEntryElement ** entry_loc);
 
 /**
  * Remove the SRDI entries in the SRDI Delta table for the peer.
@@ -372,7 +379,7 @@ Jxta_status cm_save_query_request(Jxta_cm *self, const char * peerid, int discid
  * @return Jxta_status 
  */
 Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSourcePeerid, JString *jOrigPeerid, JString *jAdvPeer, JString * jHandler,
-                            Jxta_SRDIEntryElement * entry, Jxta_boolean within_radius, JString ** jNewValue, Jxta_sequence_number * newSeqNumber,
+                            Jxta_SRDIEntryElement * entry, Jxta_boolean within_radius, JString ** jNewValue, Jxta_sequence_number *newSeqNumber,
                             JString **jRemovePeerid, JString ** jRemoveSeqNumber, Jxta_boolean * update_srdi, int window, Jxta_vector *xactions);
 
 
@@ -408,7 +415,7 @@ Jxta_status cm_save_replica(Jxta_cm * self, JString * handler, JString * peerid,
  * @param entries vector of Jxta_SRDIEntryElement
  */
 
-Jxta_status cm_save_replica_elements(Jxta_cm * self, JString * handler, JString * peerid, JString * primaryKey, Jxta_vector * entries, Jxta_vector ** resendEntries);
+Jxta_status cm_save_replica_elements(Jxta_cm * self, JString * handler, JString * peerid, JString * src_peerid, JString * primaryKey, Jxta_vector * entries, Jxta_vector ** resendEntries);
 
 Jxta_status cm_save_replica_fwd_elements(Jxta_cm * me, JString * handler, JString * peerid, JString *src_peerid, JString * primaryKey,
                                      Jxta_vector * entries, Jxta_vector ** resendEntries);
@@ -642,10 +649,57 @@ char **cm_sql_get_primary_keys(Jxta_cm * self, char *folder_name, const char *ta
 
 Jxta_status cm_create_adv_indexes(Jxta_cm * self, char *folder_name, Jxta_vector * jv);
 
-void cm_update_replica_forward_peers(Jxta_cm * cm, Jxta_vector * replica_entries, JString *peer_id_j);
+void cm_update_replicating_peers(Jxta_cm * cm, Jxta_vector * replica_entries, JString *peer_id_j);
 
-Jxta_status cm_get_replica_index_entries(Jxta_cm * cm, JString *peer_id_j, Jxta_vector **replicas_v);
-Jxta_status cm_get_srdi_index_entries(Jxta_cm *cm, JString *peer_id_j, JString *adv_id_j, Jxta_hashtable **srdi_h);
+/**
+ * Return a vector of Jxta_idx_entry entries that are replicas from the peerid
+ *
+ * @param Jxta_cm instance
+ * @param peer_id_j JString of the peerid
+ *
+ * @return Jxta_status - JXTA_SUCCESS - operational normal
+**/
+Jxta_status cm_get_replica_index_entries(Jxta_cm * cm, JString *peer_id_j, Jxta_vector **srdis_v);
+
+/**
+ * Flag the entries available/unavailable in the srdi index for the source and peer.
+ *
+ * @param Jxta_cm instance
+ * @param peer_id_j JString of the peerid
+ * @param src_id_j JString of the source id
+ * @param lifetime the ultimate lifetime of the entry
+ * @param available flag available/unavailable
+ *
+ * @return Jxta_status JXTA_SUCCESS - operation normal
+**/
+Jxta_status cm_flag_index_entries(Jxta_cm * cm, JString *peer_id_j, JString *src_id_j, Jxta_expiration_time lifetime, Jxta_boolean available);
+
+/**
+ * Return a vector of Jxta_idx_entry entries that are SRDI from the peerid
+ *
+ * @param Jxta_cm instance
+ * @param peer_id_j JString of the peerid
+ *
+ * @return Jxta_status - JXTA_SUCCESS - operational normal and the srdi vector is returned 
+**/
+Jxta_status cm_get_srdi_index_entries(Jxta_cm * cm, JString *peer_id_j, Jxta_vector **replicas_v);
+
+/**
+ * Return a hashtable, keyed by the primary, of jxta_vector keyed by the primary key - Peers, Groups or Adv
+ *
+ * @param peer_id_j - JString of the peer - optional
+ * @param adv_id_j - JString of an advertisement ID - optional
+ *
+ * @return Jxta_status - JXTA_SUCCESS - operation normal and the hashtable is returned
+**/
+Jxta_status cm_get_srdi_index_entries_1(Jxta_cm *cm, JString *peer_id_j, JString *adv_id_j, Jxta_hashtable **srdi_h);
+
+Jxta_status cm_get_srdi_replica_index_entries(Jxta_cm *cm, JString *peer_id_j, Jxta_vector **srdi_replicas);
+
+Jxta_time cm_get_latest_timestamp(Jxta_cm *cm);
+
+void cm_get_previous_delta_pid(Jxta_cm * self, Jxta_id **prev_pid);
+
 
 #ifdef __cplusplus
 #if 0

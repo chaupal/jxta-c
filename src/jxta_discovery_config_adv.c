@@ -74,6 +74,7 @@ static const char *const __log_cat = "DiscCfgAdv";
 enum tokentype {
     Null_,
     Jxta_DiscoveryConfigAdvertisement_,
+    Replica_,
     addr_
 };
 
@@ -210,7 +211,6 @@ JXTA_DECLARE(Jxta_status) jxta_DiscoveryConfigAdvertisement_get_xml(Jxta_Discove
     jstring_append_2(string, "\"");
     jstring_append_2(string, ">\n");
     jstring_append_2(string, "</jxta:DiscoveryConfig>\n");
-
     *result = string;
     return JXTA_SUCCESS;
 }

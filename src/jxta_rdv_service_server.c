@@ -1542,7 +1542,7 @@ static void *APR_THREAD_FUNC periodic_task(apr_thread_t * thread, void *arg)
             jxta_id_get_uniqueportion(jxta_peer_peerid((Jxta_peer *) peer), &uniq);
             res = jxta_hashtable_del(myself->clients, jstring_get_string(uniq), jstring_length(uniq) + 1, NULL);
             JXTA_OBJECT_RELEASE(uniq);
-            rdv_service_generate_event(provider->service, JXTA_RDV_CLIENT_DISCONNECTED,
+            rdv_service_generate_event(provider->service, JXTA_RDV_CLIENT_EXPIRED,
                                        jxta_peer_peerid((Jxta_peer *) peer));
         } else {
             if(rdvEntry == NULL) {

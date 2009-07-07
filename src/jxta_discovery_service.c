@@ -205,4 +205,12 @@ JXTA_DECLARE(Jxta_status)
     return VTBL->getExpiration(discovery_service, type, advId, expriation);
 }
 
+JXTA_DECLARE(void)
+    discovery_service_flush_pending_deltas(Jxta_discovery_service * service)
+{
+    Jxta_discovery_service * discovery_service = PTValid(service, Jxta_discovery_service);
+
+    return VTBL->shutdown_service(discovery_service);
+}
+
 /* vim: set ts=4 sw=4 tw=130 et: */

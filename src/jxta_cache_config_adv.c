@@ -107,6 +107,7 @@ struct jxta_addressSpace {
     Jxta_boolean highPerformance;
     Jxta_boolean autoVacuum;
     Jxta_boolean isDefault;
+    Jxta_boolean isDelta;
     int xactionThreshold;
 };
 
@@ -201,6 +202,7 @@ static void handleAddressSpace(void *userdata, const XML_Char * cd, int len)
     JXTA_OBJECT_INIT(jads, freeAddressSpace, 0);
     jads->ephemeral = FALSE;
     jads->isDefault = FALSE;
+    jads->isDelta = FALSE;
     jads->DBEngine = jstring_new_2(AS_DBENGINE_DEFAULT);
     jads->DBName = jstring_new_2(AS_DBNAME_DEFAULT);
     while (atts && *atts) {
@@ -212,6 +214,8 @@ static void handleAddressSpace(void *userdata, const XML_Char * cd, int len)
             jads->autoVacuum = 0 == strcmp(atts[1], "yes");
         } else if (0 == strcmp(*atts, "default")) {
             jads->isDefault = 0 == strcmp(atts[1], "yes");
+        } else if (0 == strcmp(*atts, "delta")) {
+            jads->isDelta = 0 == strcmp(atts[1], "yes");
         } else if (0 == strcmp(*atts, "name")) {
             jads->name = jstring_new_2(atts[1]);
         } else if (0 == strcmp(*atts, "DBName")) {
@@ -335,6 +339,11 @@ JXTA_DECLARE(Jxta_boolean) jxta_cache_config_addr_is_auto_vacuum(Jxta_addressSpa
 JXTA_DECLARE(Jxta_boolean) jxta_cache_config_addr_is_default(Jxta_addressSpace * jads)
 {
     return jads->isDefault;
+}
+
+JXTA_DECLARE(Jxta_boolean) jxta_cache_config_addr_is_delta(Jxta_addressSpace * jads)
+{
+    return jads->isDelta;
 }
 
 JXTA_DECLARE(JString *) jxta_cache_config_addr_get_DBName(Jxta_addressSpace * jads)
@@ -519,6 +528,9 @@ static Jxta_status JXTA_STDCALL CacheConfigAdvertisement_get_xml(Jxta_CacheConfi
         jstring_append_2(string, "\n        default=\"");
         jstring_append_2(string, jads->isDefault ? "yes" : "no");
         jstring_append_2(string, "\"");
+        jstring_append_2(string, "\n        delta=\"");
+        jstring_append_2(string, jads->isDelta ? "yes" : "no");
+        jstring_append_2(string, "\"");
         jstring_append_2(string, "\n        DBName=\"");
         jstring_append_1(string, jads->DBName);
         jstring_append_2(string, "\"");
@@ -639,6 +651,7 @@ JXTA_DECLARE(Jxta_status) jxta_CacheConfigAdvertisement_create_default(Jxta_Cach
     ads->highPerformance = FALSE;
     ads->autoVacuum = FALSE;
     ads->isDefault = TRUE;
+    ads->isDelta = TRUE;
     ads->DBName = jstring_new_2("groupID");
     ads->DBEngine = jstring_new_2("sqlite3");
     ads->persistInterval = 0;

@@ -347,6 +347,11 @@ JXTA_DECLARE(Jxta_status) discovery_service_get_lifetime(Jxta_discovery_service 
 JXTA_DECLARE(Jxta_status) discovery_service_get_expiration(Jxta_discovery_service * service, short type, Jxta_id * advId,
                                                            Jxta_expiration_time * expriation);
 
+/**
+ *
+ */
+JXTA_DECLARE(void) discovery_service_flush_pending_deltas(Jxta_discovery_service * service);
+
 #ifdef __cplusplus
 #if 0
 {

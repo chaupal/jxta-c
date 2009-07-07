@@ -94,7 +94,8 @@ typedef enum Jxta_Rendezvous_event_types {
     JXTA_RDV_CLIENT_RECONNECTED = 6,
     JXTA_RDV_CLIENT_DISCONNECTED = 8,
     JXTA_RDV_BECAME_EDGE = 9,
-    JXTA_RDV_BECAME_RDV = 10
+    JXTA_RDV_BECAME_RDV = 10,
+    JXTA_RDV_CLIENT_EXPIRED = 11
 } Jxta_Rendezvous_event_type;
 
 /**

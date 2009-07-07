@@ -95,7 +95,7 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_replicateEntries(Jxta_srdi_service * service
  * @param  srdi  Resolver message to send
  */
 JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi(Jxta_srdi_service * service, Jxta_resolver_service * res, JString * instance, ResolverSrdi * srdi,
-                                             Jxta_id * peer);
+                                             Jxta_id * peer, Jxta_boolean sync);
 
 
 /**
@@ -106,9 +106,14 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi(Jxta_srdi_service * service, Jxta_r
  * @param  peer  peer to push message to, if peer is null it is
  *               the message is propagated
  * @param  srdi  SRDI message to send
+ * @param  res pointer to the resolver
+ * @param  instance Instance string
+ * @param  msg Message to send
+ * @param  peer Id of the destination peer
+ * @param  sync - If TRUE, send synchronously
  */
 JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi_msg(Jxta_srdi_service * service, Jxta_resolver_service * res, JString * instance, Jxta_SRDIMessage * msg,
-                                             Jxta_id * peer);
+                                             Jxta_id * peer, Jxta_boolean sync);
 
 /**
  * Forwards a Query to a specific peer

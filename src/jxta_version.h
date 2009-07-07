@@ -21,6 +21,7 @@ extern "C" {
 #define DISCOVERY_EXT_QUERY_STATES "3.5"
 #define DISCOVERY_EXT_QUERY_WALK_STATE "3.6"
 #define EXPLICIT_DISCONNECT "3.7"
+#define SRDI_UPDATE_ONLY "3.8"
 
 typedef struct _jxta_version Jxta_version;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2009 Sun Microsystems, Inc.  All rights reserved.
+ * Copyright (c) 2009 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -72,10 +72,10 @@ typedef struct _pp_statements Jxta_pp_statements ;
 
 /** number of variables for INSERT statements */
 
-#define INSERT_ELEM_ATTRIBUTE_ITEMS 10
+#define INSERT_ELEM_ATTRIBUTE_ITEMS 11
 #define INSERT_ADVERTISEMENT_ITEMS 7
-#define INSERT_SRDI_REPLICA_ITEMS 13
-#define INSERT_SRDI_DELTA_ITEMS 18
+#define INSERT_SRDI_REPLICA_ITEMS 16
+#define INSERT_SRDI_DELTA_ITEMS 19
 #define INSERT_SRDI_INDEX_ITEMS 16
 #define INSERT_QUERY_ITEMS 5
 
@@ -114,18 +114,20 @@ typedef struct _pp_statements Jxta_pp_statements ;
 /**
 * UPDATE SRDI/Replica timeout/range
 */
-#define UPDATE_SRDI_REPLICA_ITEMS 8
+#define UPDATE_SRDI_REPLICA_ITEMS 9
 
 #define UPDATE_SRDI_STRING \
                         SQL_UPDATE CM_TBL_SRDI SQL_SET \
                                 CM_COL_TimeOut SQL_EQUAL SQL_VARIABLE \
                                 SQL_COMMA CM_COL_TimeOutForOthers SQL_EQUAL SQL_VARIABLE \
                                 SQL_COMMA CM_COL_NumRange SQL_EQUAL SQL_VARIABLE \
+                                SQL_COMMA CM_COL_Available SQL_EQUAL SQL_VALUE_1 \
                         SQL_WHERE \
                                 CM_COL_AdvId SQL_EQUAL SQL_VARIABLE \
-                                SQL_AND CM_COL_Handler SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_Handler SQL_LIKE SQL_VARIABLE \
                                 SQL_AND CM_COL_Key SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_Peerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_SourcePeerid SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_GroupID SQL_EQUAL SQL_VARIABLE
 
 #define UPDATE_REPLICA_STRING \
@@ -133,17 +135,19 @@ typedef struct _pp_statements Jxta_pp_statements ;
                                 CM_COL_TimeOut SQL_EQUAL SQL_VARIABLE \
                                 SQL_COMMA CM_COL_TimeOutForOthers SQL_EQUAL SQL_VARIABLE \
                                 SQL_COMMA CM_COL_NumRange SQL_EQUAL SQL_VARIABLE \
+                                SQL_COMMA CM_COL_Available SQL_EQUAL SQL_VALUE_1 \
                         SQL_WHERE \
                                 CM_COL_AdvId SQL_EQUAL SQL_VARIABLE \
-                                SQL_AND CM_COL_Handler SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_Handler SQL_LIKE SQL_VARIABLE \
                                 SQL_AND CM_COL_Key SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_Peerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_SourcePeerid SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_GroupID SQL_EQUAL SQL_VARIABLE
 
 /**
 * UPDATE SRDI/Replica timeout/range/value/num_value
 */
-#define UPDATE_SRDI_REPLICA_VALUE_ITEMS 10
+#define UPDATE_SRDI_REPLICA_VALUE_ITEMS 11
 
 #define UPDATE_SRDI_VALUE_STRING \
                         SQL_UPDATE CM_TBL_SRDI SQL_SET \
@@ -152,11 +156,13 @@ typedef struct _pp_statements Jxta_pp_statements ;
                                 SQL_COMMA CM_COL_NumRange SQL_EQUAL SQL_VARIABLE \
                                 SQL_COMMA CM_COL_Value SQL_EQUAL SQL_VARIABLE \
                                 SQL_COMMA CM_COL_NumValue SQL_EQUAL SQL_VARIABLE \
+                                SQL_COMMA CM_COL_Available SQL_EQUAL SQL_VALUE_1 \
                         SQL_WHERE \
                                 CM_COL_AdvId SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_Handler SQL_LIKE SQL_VARIABLE \
                                 SQL_AND CM_COL_Key SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_Peerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_SourcePeerid SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_GroupID SQL_EQUAL SQL_VARIABLE
 
 #define UPDATE_REPLICA_VALUE_STRING \
@@ -166,18 +172,20 @@ typedef struct _pp_statements Jxta_pp_statements ;
                                 SQL_COMMA CM_COL_NumRange SQL_EQUAL SQL_VARIABLE \
                                 SQL_COMMA CM_COL_Value SQL_EQUAL SQL_VARIABLE \
                                 SQL_COMMA CM_COL_NumValue SQL_EQUAL SQL_VARIABLE \
+                                SQL_COMMA CM_COL_Available SQL_EQUAL SQL_VALUE_1 \
                         SQL_WHERE \
                                 CM_COL_AdvId SQL_EQUAL SQL_VARIABLE \
-                                SQL_AND CM_COL_Handler SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_Handler SQL_LIKE SQL_VARIABLE \
                                 SQL_AND CM_COL_Key SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_Peerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_SourcePeerid SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_GroupID SQL_EQUAL SQL_VARIABLE
 
 /**
 * UPDATE SRDI Index entries
 */
 
-#define UPDATE_SRDI_INDEX_ITEMS 4
+#define UPDATE_SRDI_INDEX_ITEMS 5
 
 #define UPDATE_SRDI_INDEX_STRING \
                         SQL_UPDATE CM_TBL_SRDI_INDEX SQL_SET \
@@ -185,6 +193,7 @@ typedef struct _pp_statements Jxta_pp_statements ;
                         SQL_WHERE \
                                 CM_COL_SeqNumber SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_Peerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_SourcePeerid SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_GroupID SQL_EQUAL SQL_VARIABLE
 
 
@@ -192,7 +201,7 @@ typedef struct _pp_statements Jxta_pp_statements ;
 * UPDATE SRDI Index/Replica Peerids
 **/
 
-#define UPDATE_SRDI_INDEX_REPLICA_PEERID_ITEMS 5
+#define UPDATE_SRDI_INDEX_REPLICA_PEERID_ITEMS 6
 
 #define UPDATE_SRDI_INDEX_PEERID_STRING \
                         SQL_UPDATE CM_TBL_SRDI_INDEX SQL_SET \
@@ -200,22 +209,64 @@ typedef struct _pp_statements Jxta_pp_statements ;
                         SQL_WHERE \
                                 CM_COL_AdvId SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_Peerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_SourcePeerid SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_GroupID SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_Key SQL_EQUAL SQL_VARIABLE
 
 #define UPDATE_REPLICA_PEERID_STRING \
                         SQL_UPDATE CM_TBL_REPLICA SQL_SET \
                                 CM_COL_Peerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_COMMA CM_COL_Available SQL_EQUAL SQL_VALUE_1 \
                         SQL_WHERE \
                                 CM_COL_AdvId SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_Peerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_SourcePeerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_GroupID SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_Key SQL_EQUAL SQL_VARIABLE
+
+
+#define UPDATE_SRDI_PEERID_STRING \
+                        SQL_UPDATE CM_TBL_SRDI SQL_SET \
+                                CM_COL_Peerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_COMMA CM_COL_Available SQL_EQUAL SQL_VALUE_1 \
+                        SQL_WHERE \
+                                CM_COL_AdvId SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_Peerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_SourcePeerid SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_GroupID SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_Key SQL_EQUAL SQL_VARIABLE
 
 /**
+* UPDATE SRDI Available
+**/
+#define UPDATE_SRDI_REPLICA_AVAILABLE_ITEMS 5
+
+#define UPDATE_SRDI_AVAILABLE_STRING \
+                        SQL_UPDATE CM_TBL_SRDI SQL_SET \
+                                CM_COL_Available SQL_EQUAL SQL_VARIABLE \
+                                SQL_COMMA CM_COL_LifeTime SQL_EQUAL SQL_VARIABLE \
+                        SQL_WHERE \
+                                CM_COL_Peerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_SourcePeerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_GroupID SQL_EQUAL SQL_VARIABLE
+
+/**
+* UPDATE Replica Available
+**/
+
+#define UPDATE_REPLICA_AVAILABLE_STRING \
+                        SQL_UPDATE CM_TBL_REPLICA SQL_SET \
+                                CM_COL_Available SQL_EQUAL SQL_VARIABLE \
+                                SQL_COMMA CM_COL_LifeTime SQL_EQUAL SQL_VARIABLE \
+                        SQL_WHERE \
+                                CM_COL_Peerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_SourcePeerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_GroupID SQL_EQUAL SQL_VARIABLE
+
+/**
 * DELETE SRDI/Replica entries
 */
-#define DELETE_SRDI_REPLICA_ITEMS 5
+#define DELETE_SRDI_REPLICA_ITEMS 6
 
 #define DELETE_SRDI_STRING \
                         SQL_DELETE CM_TBL_SRDI \
@@ -224,6 +275,7 @@ typedef struct _pp_statements Jxta_pp_statements ;
                                 SQL_AND CM_COL_Handler SQL_LIKE SQL_VARIABLE \
                                 SQL_AND CM_COL_Key SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_Peerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_SourcePeerid SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_GroupID SQL_EQUAL SQL_VARIABLE
 
 #define DELETE_REPLICA_STRING \
@@ -233,18 +285,20 @@ typedef struct _pp_statements Jxta_pp_statements ;
                                 SQL_AND CM_COL_Handler SQL_LIKE SQL_VARIABLE \
                                 SQL_AND CM_COL_Key SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_Peerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_SourcePeerid SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_GroupID SQL_EQUAL SQL_VARIABLE
 
 /**
 * DELETE SRDI index entries
 */
-#define DELETE_SRDI_INDEX_ITEMS 3
+#define DELETE_SRDI_INDEX_ITEMS 4
 
 #define DELETE_SRDI_INDEX_STRING \
                         SQL_DELETE CM_TBL_SRDI_INDEX \
                         SQL_WHERE \
                                 CM_COL_SeqNumber SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_Peerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_SourcePeerid SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_GroupID SQL_EQUAL SQL_VARIABLE
 
 /**
@@ -258,7 +312,7 @@ typedef struct _pp_statements Jxta_pp_statements ;
 /**
 * SELECT SRDI/Replica Entries
 */
-#define GET_SRDI_REPLICA_ITEMS
+#define GET_SRDI_REPLICA_ITEMS 4
 
 #define GET_SRDI_STRING \
                         SQL_SELECT \
@@ -282,18 +336,19 @@ typedef struct _pp_statements Jxta_pp_statements ;
 /**
 * SELECT SRDI Index entries
 */
-#define GET_SRDI_INDEX_ITEMS 3
+#define GET_SRDI_INDEX_ITEMS 4
 
 #define GET_SRDI_INDEX_STRING \
                         SQL_SELECT \
                                 CM_COL_DBAlias SQL_COMMA CM_COL_AdvId SQL_COMMA CM_COL_Key \
                                 SQL_COMMA CM_COL_Replica SQL_COMMA CM_COL_CachedLocal \
-                                SQL_COMMA CM_COL_Replicate SQL_COMMA CM_COL_Fwd SQL_COMMA CM_COL_Duplicate SQL_COMMA CM_COL_SourcePeerid \
+                                SQL_COMMA CM_COL_Replicate SQL_COMMA CM_COL_Fwd SQL_COMMA CM_COL_Duplicate \
                                 SQL_COMMA CM_COL_FwdPeerid SQL_COMMA CM_COL_NameSpace \
                                 SQL_FROM CM_TBL_SRDI_INDEX \
                         SQL_WHERE \
                                 CM_COL_SeqNumber SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_Peerid SQL_EQUAL SQL_VARIABLE \
+                                SQL_AND CM_COL_SourcePeerid SQL_EQUAL SQL_VARIABLE \
                                 SQL_AND CM_COL_GroupID SQL_EQUAL SQL_VARIABLE
 
 
@@ -350,13 +405,17 @@ struct _pp_statements {
 
     apr_dbd_prepared_t *update_srdi;
     apr_dbd_prepared_t *update_srdi_value;
+    apr_dbd_prepared_t *update_srdi_peerid;
+    apr_dbd_prepared_t *update_srdi_available;
 
     apr_dbd_prepared_t *update_replica;
     apr_dbd_prepared_t *update_replica_value;
     apr_dbd_prepared_t *update_replica_peerid;
+    apr_dbd_prepared_t *update_replica_available;
 
     apr_dbd_prepared_t *update_srdi_index;
     apr_dbd_prepared_t *update_srdi_index_peerid;
+
 
 /**
 * The DELETE prepared statements are created for various functions. The DELETE SQL statement will also

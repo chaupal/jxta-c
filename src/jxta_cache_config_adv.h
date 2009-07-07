@@ -98,6 +98,8 @@ JXTA_DECLARE(Jxta_boolean) jxta_cache_config_addr_is_auto_vacuum(Jxta_addressSpa
 
 JXTA_DECLARE(Jxta_boolean) jxta_cache_config_addr_is_default(Jxta_addressSpace * jads);
 
+JXTA_DECLARE(Jxta_boolean) jxta_cache_config_addr_is_delta(Jxta_addressSpace * jads);
+
 JXTA_DECLARE(JString *) jxta_cache_config_addr_get_DBName(Jxta_addressSpace * jads);
 
 JXTA_DECLARE(JString *) jxta_cache_config_addr_get_DBEngine(Jxta_addressSpace * jads);

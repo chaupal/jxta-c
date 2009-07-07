@@ -74,6 +74,8 @@ enum tokentype {
     TTL_,
     PeerID_,
     SrcPID_,
+    PrevPID_,
+    LostPID_,
     PrimaryKey_,
     Entry_
 };
@@ -89,10 +91,13 @@ struct _Jxta_SRDIMessage {
     int TTL;
     Jxta_id *PeerID;
     Jxta_id *SrcPID;
+    Jxta_id *PrevPID;
+    Jxta_vector *LostPIDs;
     JString *PrimaryKey;
     Jxta_boolean deltaSupport;
     Jxta_vector *Entries;
     Jxta_vector *resendEntries;
+    Jxta_boolean update_only;
 };
 
 static void jxta_srdi_message_free(Jxta_SRDIMessage *);
@@ -160,8 +165,17 @@ static void handleTTL(void *userdata, const XML_Char * cd, int len)
 static void handlePeerID(void *userdata, const XML_Char * cd, int len)
 {
     Jxta_SRDIMessage *ad = (Jxta_SRDIMessage *) userdata;
+    const char **atts = ((Jxta_advertisement *) ad)->atts;
     char *tok;
+
     if (len > 0) {
+
+        while (atts && *atts) {
+            if (0 == strcmp(*atts, "update_only")) {
+                ad->update_only = !strcmp(atts[1], "yes") ? TRUE:FALSE;
+            }
+            atts+=2;
+        }
         tok = malloc(len + 1);
         memset(tok, 0, len + 1);
         extract_char_data(cd, len, tok);
@@ -187,6 +201,49 @@ static void handleSrcPID(void *userdata, const XML_Char * cd, int len)
             JString *tmps = jstring_new_2(tok);
             ad->SrcPID = NULL;
             jxta_id_from_jstring(&ad->SrcPID, tmps);
+            JXTA_OBJECT_RELEASE(tmps);
+        }
+        free(tok);
+    }
+}
+
+static void handlePrevPID(void *userdata, const XML_Char * cd, int len)
+{
+    Jxta_SRDIMessage *ad = (Jxta_SRDIMessage *) userdata;
+    char *tok;
+    if (len > 0) {
+        tok = malloc(len + 1);
+        memset(tok, 0, len + 1);
+        extract_char_data(cd, len, tok);
+        if (*tok != '\0') {
+            JString *tmps = jstring_new_2(tok);
+            ad->PrevPID = NULL;
+            jxta_id_from_jstring(&ad->PrevPID, tmps);
+            JXTA_OBJECT_RELEASE(tmps);
+        }
+        free(tok);
+    }
+}
+
+static void handleLostPID(void *userdata, const XML_Char * cd, int len)
+{
+    Jxta_SRDIMessage *ad = (Jxta_SRDIMessage *) userdata;
+    char *tok;
+    if (len > 0) {
+        tok = malloc(len + 1);
+        memset(tok, 0, len + 1);
+        extract_char_data(cd, len, tok);
+        if (*tok != '\0') {
+            Jxta_id *lost_pid;
+            JString *tmps = jstring_new_2(tok);
+
+            jxta_id_from_jstring(&lost_pid, tmps);
+            if (NULL == ad->LostPIDs) {
+                ad->LostPIDs = jxta_vector_new(0);
+            }
+            jxta_vector_add_object_last(ad->LostPIDs, (Jxta_object *) lost_pid);
+
+            JXTA_OBJECT_RELEASE(lost_pid);
             JXTA_OBJECT_RELEASE(tmps);
         }
         free(tok);
@@ -415,6 +472,52 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_set_SrcPID(Jxta_SRDIMessage * ad, Jx
     return JXTA_SUCCESS;
 }
 
+
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_PrevPID(Jxta_SRDIMessage * ad, Jxta_id ** peerid)
+{
+    if (ad->PrevPID) {
+        *peerid = JXTA_OBJECT_SHARE(ad->PrevPID);
+    }
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_set_PrevPID(Jxta_SRDIMessage * ad, Jxta_id * peerid)
+{
+    if (ad == NULL || peerid == NULL) {
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if (ad->PrevPID != NULL) {
+        JXTA_OBJECT_RELEASE(ad->PrevPID);
+        ad->PrevPID = NULL;
+    }
+    ad->PrevPID = JXTA_OBJECT_SHARE(peerid);
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_LostPIDs(Jxta_SRDIMessage * ad, Jxta_vector ** pids)
+{
+    if (ad->LostPIDs != NULL) {
+        *pids = JXTA_OBJECT_SHARE(ad->LostPIDs);
+    } else {
+        *pids = NULL;
+    }
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_srdi_message_set_LostPIDs(Jxta_SRDIMessage * ad, Jxta_vector * pids)
+{
+    Jxta_status res = JXTA_SUCCESS;
+
+    if (ad->LostPIDs != NULL) {
+        JXTA_OBJECT_RELEASE(ad->LostPIDs);
+        ad->LostPIDs = NULL;
+    }
+    if (pids != NULL) {
+        ad->LostPIDs = JXTA_OBJECT_SHARE(pids);
+    }
+    return res;
+}
+
 JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_primaryKey(Jxta_SRDIMessage * ad, JString ** primaryKey)
 {
     JXTA_OBJECT_SHARE(ad->PrimaryKey);
@@ -437,6 +540,16 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_set_primaryKey(Jxta_SRDIMessage * ad
     return JXTA_SUCCESS;
 }
 
+JXTA_DECLARE(Jxta_boolean) jxta_srdi_message_update_only(Jxta_SRDIMessage * ad)
+{
+    return ad->update_only;
+}
+
+JXTA_DECLARE(void) jxta_srdi_message_set_update_only(Jxta_SRDIMessage * ad, Jxta_boolean update)
+{
+    ad->update_only = update;
+}
+
 JXTA_DECLARE(Jxta_boolean) jxta_srdi_message_delta_supported(Jxta_SRDIMessage * ad)
 {
     return ad->deltaSupport;
@@ -445,6 +558,11 @@ JXTA_DECLARE(Jxta_boolean) jxta_srdi_message_delta_supported(Jxta_SRDIMessage * 
 JXTA_DECLARE(void) jxta_srdi_message_set_support_delta(Jxta_SRDIMessage * ad, Jxta_boolean support)
 {
     ad->deltaSupport = support;
+}
+
+JXTA_DECLARE(Jxta_vector *) jxta_srdi_message_entries(Jxta_SRDIMessage * ad)
+{
+    return ad->Entries;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_entries(Jxta_SRDIMessage * ad, Jxta_vector ** entries)
@@ -456,6 +574,19 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_entries(Jxta_SRDIMessage * ad, J
         *entries = NULL;
     }
     return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(void) jxta_srdi_message_set_entries(Jxta_SRDIMessage * ad, Jxta_vector * entries)
+{
+    if (ad->Entries != NULL) {
+        JXTA_OBJECT_RELEASE(ad->Entries);
+        ad->Entries = NULL;
+    }
+    if (entries != NULL) {
+        JXTA_OBJECT_SHARE(entries);
+        ad->Entries = entries;
+    }
+    return;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_resend_entries(Jxta_SRDIMessage * ad, Jxta_vector ** entries)
@@ -481,19 +612,6 @@ JXTA_DECLARE(void) jxta_srdi_message_set_resend_entries(Jxta_SRDIMessage * ad, J
     return;
 }
 
-JXTA_DECLARE(void) jxta_srdi_message_set_entries(Jxta_SRDIMessage * ad, Jxta_vector * entries)
-{
-    if (ad->Entries != NULL) {
-        JXTA_OBJECT_RELEASE(ad->Entries);
-        ad->Entries = NULL;
-    }
-    if (entries != NULL) {
-        JXTA_OBJECT_SHARE(entries);
-        ad->Entries = entries;
-    }
-    return;
-}
-
 /** Now, build an array of the keyword structs.  Since
  * a top-level, or null state may be of interest, 
  * let that lead off.  Then, walk through the enums,
@@ -506,6 +624,8 @@ static const Kwdtab Jxta_SRDIMessage_tags[] = {
     {"jxta:GenSRDI", Jxta_SRDIMessage_, *handleJxta_SRDIMessage, NULL, NULL},
     {"PID", PeerID_, *handlePeerID, NULL, NULL},
     {"SrcPID", SrcPID_, *handleSrcPID, NULL, NULL},
+    {"PrevPID", PrevPID_, *handlePrevPID, NULL, NULL},
+    {"LostPID", LostPID_, *handleLostPID, NULL, NULL},
     {"ttl", TTL_, *handleTTL, NULL, NULL},
     {"PKey", PrimaryKey_, *handlePrimaryKey, NULL, NULL},
     {"delta", PrimaryKey_, *handleDelta, NULL, NULL},
@@ -604,6 +724,7 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_xml(Jxta_SRDIMessage * ad, JStri
 {
     JString *doc;
     JString *tmps = NULL;
+    int i;
     char buf[32];
 
     doc = jstring_new_2("<?xml version=\"1.0\"?>\n");
@@ -615,7 +736,11 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_xml(Jxta_SRDIMessage * ad, JStri
     jstring_append_2(doc, buf);
     jstring_append_2(doc, "</ttl>\n");
 
-    jstring_append_2(doc, "<PID>");
+    jstring_append_2(doc, "<PID");
+    if (TRUE == ad->update_only) {
+        jstring_append_2(doc," update_only=\"yes\"");
+    }
+    jstring_append_2(doc, ">");
     jxta_id_to_jstring(ad->PeerID, &tmps);
     jstring_append_1(doc, tmps);
     JXTA_OBJECT_RELEASE(tmps);
@@ -628,7 +753,28 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_xml(Jxta_SRDIMessage * ad, JStri
         JXTA_OBJECT_RELEASE(tmps);
         jstring_append_2(doc, "</SrcPID>\n");
     }
+    if (NULL != ad->PrevPID) {
+        jstring_append_2(doc, "<PrevPID>");
+        jxta_id_to_jstring(ad->PrevPID, &tmps);
+        jstring_append_1(doc, tmps);
+        JXTA_OBJECT_RELEASE(tmps);
+        jstring_append_2(doc, "</PrevPID>\n");
+    }
 
+    for (i=0; NULL != ad->LostPIDs && i<jxta_vector_size(ad->LostPIDs); i++) {
+        Jxta_id *lost_pid=NULL;
+
+        if (JXTA_SUCCESS != jxta_vector_get_object_at(ad->LostPIDs, JXTA_OBJECT_PPTR(&lost_pid), i)) {
+            continue;
+        }
+        jstring_append_2(doc, "<LostPID>");
+        jxta_id_to_jstring(lost_pid, &tmps);
+        jstring_append_1(doc, tmps);
+        jstring_append_2(doc, "</LostPID>\n");
+
+        JXTA_OBJECT_RELEASE(tmps);
+        JXTA_OBJECT_RELEASE(lost_pid);
+    }
     jstring_append_2(doc, "<PKey>");
     jstring_append_2(doc, jstring_get_string(ad->PrimaryKey));
     jstring_append_2(doc, "</PKey>\n");
@@ -655,6 +801,7 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new(void)
     ad->Entries = jxta_vector_new(4);
     ad->resendEntries = jxta_vector_new(0);
     ad->PrimaryKey = jstring_new_0();
+    ad->update_only = FALSE;
     jxta_advertisement_initialize((Jxta_advertisement *) ad,
                                   "jxta:GenSRDI",
                                   Jxta_SRDIMessage_tags,
@@ -680,6 +827,7 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_1(int ttl, Jxta_id * peer
     JXTA_OBJECT_SHARE(entries);
 
     ad->PeerID = peerid;
+    ad->update_only = FALSE;
     ad->Entries = entries;
     ad->TTL = ttl;
     ad->PrimaryKey = jstring_new_2(primarykey);
@@ -701,6 +849,7 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_2(int ttl, Jxta_id * peer
                                   NULL, NULL, (FreeFunc) jxta_srdi_message_free);
 
     ad->PeerID = JXTA_OBJECT_SHARE(peerid);
+    ad->update_only = FALSE;
     if (src_peerid) {
         ad->SrcPID = JXTA_OBJECT_SHARE(src_peerid);
     }
@@ -725,6 +874,7 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_3(int ttl, Jxta_id * peer
                                   NULL, NULL, (FreeFunc) jxta_srdi_message_free);
 
     ad->PeerID = JXTA_OBJECT_SHARE(peerid);
+    ad->update_only = FALSE;
     if (src_peerid) {
         ad->SrcPID = JXTA_OBJECT_SHARE(src_peerid);
     }
@@ -743,6 +893,12 @@ static void jxta_srdi_message_free(Jxta_SRDIMessage * ad)
     }
     if (ad->SrcPID) {
         JXTA_OBJECT_RELEASE(ad->SrcPID);
+    }
+    if (ad->PrevPID) {
+        JXTA_OBJECT_RELEASE(ad->PrevPID);
+    }
+    if (ad->LostPIDs) {
+        JXTA_OBJECT_RELEASE(ad->LostPIDs);
     }
     if (ad->PrimaryKey) {
         JXTA_OBJECT_RELEASE(ad->PrimaryKey);
@@ -798,6 +954,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_element_clone(Jxta_SRDIEntryElem
     newEntry->expiration = entry->expiration;
     newEntry->next_update_time = entry->next_update_time;
     newEntry->timeout = entry->timeout;
+    newEntry->update_only = entry->update_only;
 
     if (entry->nameSpace) {
         newEntry->nameSpace = jstring_clone(entry->nameSpace);

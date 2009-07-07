@@ -800,17 +800,19 @@ static Jxta_status sendResponse(Jxta_resolver_service * resolver, ResolverRespon
     return status;
 }
 
-static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * message, Jxta_id * peerid)
+static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * message, Jxta_id * peerid, Jxta_boolean sync)
 {
     Jxta_message *msg = NULL;
     Jxta_message_element *msgElem = NULL;
     Jxta_endpoint_address *address = NULL;
     unsigned char *tmp = NULL;
-    unsigned char *zipped = NULL;
     unsigned char *bytes = NULL;
+#ifdef GZIP_ENABLED
+    unsigned char *zipped = NULL;
     size_t zipped_len = 0;
     int ret = 0;
     size_t byte_len = 0;
+#endif
     JString *doc = NULL;
     Jxta_bytevector *jSend_buf = NULL;
     Jxta_status status;
@@ -821,7 +823,7 @@ static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * mes
     if (NULL != peerid) {
         jxta_id_to_jstring(peerid, &jpeerid);
     }
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Send SRDI resolver message to %s\n",
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Send SRDI resolver message to %s\n",
                          jpeerid == NULL? "all(through propagate)" : jstring_get_string(jpeerid));
     if (jpeerid) {
         JXTA_OBJECT_RELEASE(jpeerid);
@@ -904,7 +906,11 @@ static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * mes
             status = JXTA_NOMEM;
             goto FINAL_EXIT;
         }
-        status = jxta_endpoint_service_send(self->group, self->endpoint, msg, address);
+        if (!sync) {
+            status = jxta_endpoint_service_send(self->group, self->endpoint, msg, address);
+        } else {
+            status = jxta_endpoint_service_send_async(self->group, self->endpoint, msg, address);
+        }
         if (status != JXTA_SUCCESS) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to send srdi message\n");
         }
@@ -1121,7 +1127,7 @@ static void populate_query_source_route(Jxta_resolver_service_ref * me, Resolver
     src_pid = jxta_resolver_query_get_src_peer_id(rq);
     rv = peergroup_find_peer_RA(me->group, src_pid, 0, &route);
     if (JXTA_SUCCESS != rv) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, 
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, 
                 "Cannot find the route advertisement, forward resolver query without a route advertisement.");
     }
     jxta_resolver_query_set_src_peer_route(rq, route);
@@ -1146,7 +1152,7 @@ static Jxta_status learn_route_from_query(Jxta_resolver_service_ref * me, Resolv
 
     dest = jxta_RouteAdvertisement_get_Dest(route);
     if (NULL == dest) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Cannot extract APA for RA destination from resolver query[%pp]\n", rq);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Cannot extract APA for RA destination from resolver query[%pp]\n", rq);
         return JXTA_INVALID_ARGUMENT;
     }
     JXTA_OBJECT_RELEASE(dest);
@@ -1401,7 +1407,7 @@ static Jxta_status JXTA_STDCALL resolver_service_srdi_cb(Jxta_object * obj, void
     JString *el_name;
     Jxta_resolver_service_ref *resolver = (Jxta_resolver_service_ref *) arg;
 
-    /*jxta_message_print(msg); */
+    /* jxta_message_print(msg); */
     JXTA_OBJECT_CHECK_VALID(msg);
 
     el_name = jstring_new_2(JXTA_NAMESPACE);

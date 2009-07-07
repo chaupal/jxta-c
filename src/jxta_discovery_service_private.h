@@ -124,13 +124,15 @@ struct _jxta_discovery_service_methods {
      Jxta_status(*getLifetime) (Jxta_discovery_service * service, short type, Jxta_id * advId, Jxta_expiration_time * eexp);
 
      Jxta_status(*getExpiration) (Jxta_discovery_service * service, short type, Jxta_id * advId, Jxta_expiration_time * eexp);
+
+     void (*shutdown_service) (Jxta_discovery_service * service);
+
 };
 
 Jxta_status getLocalGroupsQuery (Jxta_discovery_service * self, const char *query,
                                 Jxta_credential *scope[], Jxta_vector ** results, int threshold, Jxta_boolean ads_only);
 
-Jxta_status discovery_send_srdi(Jxta_discovery_service * discovery, JString * pkey, Jxta_vector * entries);
-
+Jxta_status discovery_send_srdi(Jxta_discovery_service * me, JString * pkey, Jxta_vector * entries, Jxta_id *prev_id, Jxta_boolean updates_only, Jxta_boolean sync);
 /**
  * The base discovery service ctor (not public: the only public way to make a
  * new pg is to instantiate one of the derived types).
