@@ -342,8 +342,7 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
                     JXTA_OBJECT_GET_REFCOUNT(self));
 
     jxta_stdpg_set_configadv(self, config_adv);
-    jxta_stdpg_init_group(self, group, assigned_id, impl_adv);
-
+    res = jxta_stdpg_init_group(self, group, assigned_id, impl_adv);
     /* can only release pg_id after we done with assigned_id */
     JXTA_OBJECT_RELEASE(pg_id);
 
@@ -357,6 +356,11 @@ static Jxta_status netpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
          */
         JXTA_OBJECT_RELEASE(impl_adv);
         release_mia = FALSE;
+    }
+
+    /* Check the result of the stdpg init after releasing any held memory */
+    if (JXTA_SUCCESS != res) {
+        goto ERROR_EXIT;
     }
 
     /*

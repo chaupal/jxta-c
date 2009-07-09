@@ -108,7 +108,7 @@ static const char *__log_cat = "STDPG";
 #endif
 #endif
 
-static void jxta_stdpg_init_group_priv(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv,
+static Jxta_status jxta_stdpg_init_group_priv(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv,
 Jxta_boolean global_cm, Jxta_boolean share_group_ref);
 /*
  * Load a service properly; that is make sure it
@@ -319,14 +319,14 @@ void jxta_stdpg_set_configadv(Jxta_module * self, Jxta_PA * config_adv)
     it->config_adv = config_adv;
 }
 
-void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
+Jxta_status jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
 {
-    jxta_stdpg_init_group_priv(self, group, assigned_id, impl_adv, TRUE, TRUE);
+    return jxta_stdpg_init_group_priv(self, group, assigned_id, impl_adv, TRUE, TRUE);
 }
 
-void jxta_stdpg_init_group_1(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
+Jxta_status jxta_stdpg_init_group_1(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv)
 {
-    jxta_stdpg_init_group_priv(self, group, assigned_id, impl_adv, FALSE, FALSE);
+    return jxta_stdpg_init_group_priv(self, group, assigned_id, impl_adv, FALSE, FALSE);
 }
 
 /*
@@ -338,10 +338,10 @@ void jxta_stdpg_init_group_1(Jxta_module * self, Jxta_PG * group, Jxta_id * assi
  * We have a lot of alternatives, because as the base pg class, we also normally
  * serve as the base class for the root group.
  */
-static void jxta_stdpg_init_group_priv(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv,
+static Jxta_status jxta_stdpg_init_group_priv(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv,
 Jxta_boolean global_cm, Jxta_boolean share_group_ref)
 {
-    Jxta_status status;
+    Jxta_status status = JXTA_SUCCESS;
     apr_uuid_t uuid;
     Jxta_boolean uuid_to_use = FALSE;
     JString *mia_parm_jstring = NULL;
@@ -429,6 +429,8 @@ Jxta_boolean global_cm, Jxta_boolean share_group_ref)
             uuid_to_use = TRUE;
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to obtain a new uuid\n");
+            status = JXTA_NOMEM;
+            goto FINAL_EXIT;
         }
     }
     ttime = apr_time_now();
@@ -445,6 +447,7 @@ Jxta_boolean global_cm, Jxta_boolean share_group_ref)
     jxta_PA_get_Svc_with_id(it->config_adv, jxta_cache_classid, &svc);
     if (NULL != svc) {
         cache_config = jxta_svc_get_CacheConfig(svc);
+        JXTA_OBJECT_RELEASE(svc);
     }
     if (NULL == cache_config) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "No cache configuration specified - Using default\n");
@@ -452,6 +455,7 @@ Jxta_boolean global_cm, Jxta_boolean share_group_ref)
         status = jxta_CacheConfigAdvertisement_create_default(cache_config, FALSE);
         if (JXTA_SUCCESS != status) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create default cache Configuration %i\n", status);
+            goto FINAL_EXIT;
         }
     }
     if (home != NULL) {
@@ -479,7 +483,11 @@ Jxta_boolean global_cm, Jxta_boolean share_group_ref)
         cache_manager = cm_new(home, gid_to_use, cache_config, pid_to_use,  thread_pool, global_cm);
     }
     JXTA_OBJECT_RELEASE(cache_config);
-    JXTA_OBJECT_RELEASE(svc);
+
+    if (!cache_manager) {
+        status = JXTA_NOT_CONFIGURED;
+        goto FINAL_EXIT;
+    }
 
     peergroup_set_cache_manager((Jxta_PG *) it, cache_manager);
     JXTA_OBJECT_RELEASE(cache_manager);
@@ -567,12 +575,14 @@ Jxta_boolean global_cm, Jxta_boolean share_group_ref)
     JXTA_OBJECT_SHARE(impl_adv);
     it->impl_adv = impl_adv;
 
+FINAL_EXIT:
     /* Now we can get rid of all the intermediate variables */
-    JXTA_OBJECT_RELEASE(peername_to_use);
-    JXTA_OBJECT_RELEASE(pid_to_use);
-    JXTA_OBJECT_RELEASE(gid_to_use);
-    JXTA_OBJECT_RELEASE(msid_to_use);
+    if (peername_to_use) JXTA_OBJECT_RELEASE(peername_to_use);
+    if (pid_to_use) JXTA_OBJECT_RELEASE(pid_to_use);
+    if (gid_to_use) JXTA_OBJECT_RELEASE(gid_to_use);
+    if (msid_to_use) JXTA_OBJECT_RELEASE(msid_to_use);
 
+    return status;
 }
 
 /*
@@ -805,7 +815,10 @@ static Jxta_status stdpg_init(Jxta_module * self, Jxta_PG * group, Jxta_id * ass
 
     peergroup_init((Jxta_PG *) self, group);
     /* Do our general init */
-    jxta_stdpg_init_group(self, group, assigned_id, implAdv);
+    res = jxta_stdpg_init_group(self, group, assigned_id, implAdv);
+    if (JXTA_SUCCESS != res) {
+        return res;
+    }
 
     /* load/initing modules */
     res = jxta_stdpg_init_modules(self, TRUE);

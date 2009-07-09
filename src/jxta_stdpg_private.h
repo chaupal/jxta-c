@@ -150,9 +150,9 @@ extern void jxta_stdpg_destruct(Jxta_stdpg * self);
  * need a finer grain control on the init sequence: specifically, they may
  * need to init additional services before the lot of them are started.
  */
-void jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv);
+Jxta_status jxta_stdpg_init_group(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv);
 
-void jxta_stdpg_init_group_1(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv);
+Jxta_status jxta_stdpg_init_group_1(Jxta_module * self, Jxta_PG * group, Jxta_id * assigned_id, Jxta_advertisement * impl_adv);
 
 /*
  */
