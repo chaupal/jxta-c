@@ -473,7 +473,7 @@ static Jxta_status discovery_service_forward_from_local(Jxta_discovery_service_r
 
     replicaExpression = jstring_new_0();
     if (JXTA_SUCCESS == status) {
-        Jxta_vector *srdi_results;
+        Jxta_vector *srdi_results=NULL;
         Jxta_hashtable *peer_results=NULL;
 
         if (NULL != query) {
@@ -512,6 +512,7 @@ static Jxta_status discovery_service_forward_from_local(Jxta_discovery_service_r
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "forward the query \n");
             status = jxta_srdi_forwardQuery_peers(discovery->srdi, discovery->resolver, srdi_results, res_query);
             JXTA_OBJECT_RELEASE(srdi_results);
+            srdi_results = NULL;
         } else {
             status = discovery_service_send_to_replica(discovery, res_query, replicaExpression, jContext);
         }

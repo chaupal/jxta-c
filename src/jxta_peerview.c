@@ -6184,6 +6184,7 @@ static void histogram_get_empty_space(Jxta_vector * histogram, BIGNUM *min_bn, B
         if (NULL != free_space) {
             jxta_vector_add_object_last(*empty_locations, (Jxta_object *) free_space);
             JXTA_OBJECT_RELEASE(free_space);
+            free_space = NULL;
         }
         last_entry = entry;
     }
