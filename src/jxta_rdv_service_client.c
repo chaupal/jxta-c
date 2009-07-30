@@ -1048,6 +1048,7 @@ static Jxta_boolean check_peer_connect(_jxta_rdv_service_client * myself, _jxta_
                     jxta_hashtable_del(myself->rdvs, jstring_get_string(uniq), jstring_length(uniq) + 1, NULL);
                     JXTA_OBJECT_RELEASE(uniq);
                 } else {
+                    JXTA_OBJECT_RELEASE(connect_peer);
                     connect_peer = JXTA_OBJECT_SHARE(peer);
                 }
                 JXTA_OBJECT_RELEASE(peerid_j);
