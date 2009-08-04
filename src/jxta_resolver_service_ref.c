@@ -55,9 +55,6 @@
 
 static const char *__log_cat = "RSLVR";
 
-#if defined(GZIP_ENABLED) || defined(GUNZIP_ENABLED)
-#include <zlib.h>
-#endif
 #include <assert.h>
 
 #include "jxta_apr.h"
@@ -65,6 +62,7 @@ static const char *__log_cat = "RSLVR";
 
 #include "jxta_errno.h"
 #include "jxta_log.h"
+#include "jxta_xml_util.h"
 #include "jxta_id.h"
 #include "jxta_rr.h"
 #include "jxta_rq.h"
@@ -121,12 +119,6 @@ static Jxta_status JXTA_STDCALL resolver_service_srdi_cb(Jxta_object * obj, void
 static long getid(Jxta_resolver_service_ref * resolver);
 static Jxta_status learn_route_from_query(Jxta_resolver_service_ref * me, ResolverQuery * rq);
 
-#ifdef GUNZIP_ENABLED
-static int zip_uncompress(Byte * dest, uLong * destLen, Byte * source, uLong sourceLen);
-#ifdef GZIP_ENABLED
-static int zip_compress(unsigned char **out, size_t * out_len, const char *in, size_t in_len);
-#endif /* GZIP_ENABLED */
-#endif /* GUNZIP_ENABLED */
 static const char *INQUENAMESHORT = "IRes";
 static const char *OUTQUENAMESHORT = "ORes";
 static const char *SRDIQUENAMESHORT = "Srdi";
@@ -807,12 +799,7 @@ static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * mes
     Jxta_endpoint_address *address = NULL;
     unsigned char *tmp = NULL;
     unsigned char *bytes = NULL;
-#ifdef GZIP_ENABLED
-    unsigned char *zipped = NULL;
-    size_t zipped_len = 0;
-    int ret = 0;
-    size_t byte_len = 0;
-#endif
+
     JString *doc = NULL;
     Jxta_bytevector *jSend_buf = NULL;
     Jxta_status status;
@@ -865,30 +852,7 @@ static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * mes
 #ifndef GZIP_ENABLED
     msgElem = jxta_message_element_new_1(jstring_get_string(el_name), "text/xml", (char *) tmp, strlen((char *) tmp), NULL);
 #else
-    ret = zip_compress(&zipped, &zipped_len, (const char *) tmp, (size_t) strlen((char *) tmp));
-
-    if (Z_OK == ret) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "length:%d zipped_len:%d \n", strlen((char *) tmp), zipped_len);
-        jSend_buf = jxta_bytevector_new_2(zipped, zipped_len, zipped_len);
-        if (jSend_buf == NULL) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
-            status = JXTA_NOMEM;
-            goto FINAL_EXIT;
-        }
-        byte_len = jxta_bytevector_size(jSend_buf);
-        bytes = calloc(1, byte_len);
-        if (NULL == bytes) {
-            status = JXTA_NOMEM;
-            goto FINAL_EXIT;
-        }
-        jxta_bytevector_get_bytes_at(jSend_buf, bytes, 0, byte_len);
-        msgElem =
-            jxta_message_element_new_1(jstring_get_string(el_name), "application/gzip", (char *) bytes,
-                                       jxta_bytevector_size(jSend_buf), NULL);
-    } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "GZip comression error %d \n", ret);
-        msgElem = jxta_message_element_new_1(jstring_get_string(el_name), "text/xml", (char *) tmp, strlen((char *) tmp), NULL);
-    }
+    status = jxta_xml_util_compress(tmp, el_name, &msgElem);
 #endif
     if (msgElem == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "failed to create message element.\n");
@@ -1425,7 +1389,7 @@ static Jxta_status JXTA_STDCALL resolver_service_srdi_cb(Jxta_object * obj, void
             unsigned char *bytes = NULL;
             unsigned char *uncompr = NULL;
             unsigned long uncomprLen = 0;
-            int size, err;
+            int size;
 
             Jxta_bytevector *jb = jxta_message_element_get_value(element);
             size = jxta_bytevector_size(jb);
@@ -1440,22 +1404,8 @@ static Jxta_status JXTA_STDCALL resolver_service_srdi_cb(Jxta_object * obj, void
             JXTA_OBJECT_RELEASE(jb);
             if (!strcmp(mime_type, "application/gzip")) {
 #ifdef GUNZIP_ENABLED
-                uncomprLen = 40 * size;
-                uncompr = calloc(1, uncomprLen);
-                if (uncompr == NULL) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
-                    free(bytes);
-                    JXTA_OBJECT_RELEASE(element);
-                    return JXTA_NOMEM;
-                }
-                err = zip_uncompress((Byte *)uncompr, &uncomprLen, (Byte *)bytes, size);
+                status = jxta_xml_util_uncompress(bytes, size, &uncompr, &uncomprLen);
                 free(bytes);
-                if (err != Z_OK) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error %d from zlib\n", err);
-                } else {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Received %d bytes, uncompress to %d bytes\n", size,
-                                    uncomprLen);
-                }
 #else
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Received GZip mime type but GZip is disabled \n");
 #endif
@@ -1477,7 +1427,7 @@ static Jxta_status JXTA_STDCALL resolver_service_srdi_cb(Jxta_object * obj, void
                                                 jstring_get_string(handlername), jstring_length(handlername), &handler);
                     JXTA_OBJECT_RELEASE(handlername);
                 }
-                /* call the query handler with the query */
+                /* call the handler with the payload */
                 if (handler != NULL) {
                     JString *payload = NULL;
                     jxta_resolver_srdi_get_payload(srdi_msg, &payload);
@@ -1516,112 +1466,5 @@ static long getid(Jxta_resolver_service_ref * resolver)
     apr_thread_mutex_unlock(res->mutex);
     return qid;
 }
-
-#ifdef GUNZIP_ENABLED
-static int zip_uncompress(Byte * dest, uLong * destLen, Byte * source, uLong sourceLen)
-{
-    z_stream stream;
-    int err;
-    stream.next_in = (Bytef *) source;
-    stream.avail_in = sourceLen;
-    stream.next_out = dest;
-    stream.avail_out = *destLen;
-    stream.zalloc = 0;
-    stream.zfree = 0;
-
-    err = inflateInit2(&stream, MAX_WBITS + 16);
-    if (err != Z_OK)
-        return err;
-
-    err = inflate(&stream, Z_FINISH);
-    if (err != Z_STREAM_END) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "error zlib %s avail_in:%i avail_out:%i\n", stream.msg,
-                        stream.avail_in, stream.avail_out);
-        inflateEnd(&stream);
-        return err;
-    }
-    *destLen = stream.total_out;
-    err = inflateEnd(&stream);
-    return err;
-}
-
-#ifdef GZIP_ENABLED
-static int zip_compress(unsigned char **out, size_t * out_len, const char *in, size_t in_len)
-{
-    struct z_stream_s *stream = NULL;
-    size_t out_size;
-    off_t offset;
-    int err;
-    *out = NULL;
-    stream = calloc(1, sizeof(struct z_stream_s));
-    if (stream == NULL) {
-        return -1;
-    }
-    stream->zalloc = Z_NULL;
-    stream->zfree = Z_NULL;
-    stream->opaque = NULL;
-    stream->next_in = (unsigned char *) in;
-    stream->avail_in = in_len;
-
-    out_size = in_len / 2;
-    if (out_size < 1024)
-        out_size = 1024;
-    *out = calloc(1, out_size);
-    if (out == NULL) {
-        free(stream);
-        return -1;
-    }
-    stream->next_out = *out;
-    stream->avail_out = out_size;
-    err = deflateInit2(stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, MAX_WBITS + 16, 8, Z_DEFAULT_STRATEGY);
-    if (err != Z_OK) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error from deflateInit2: %d  %s version: %s\n", err,
-                        stream->msg ? stream->msg : "<no message>", ZLIB_VERSION);
-        goto errExit;
-    }
-
-    while (1) {
-        switch (deflate(stream, Z_FINISH)) {
-        case Z_STREAM_END:
-            goto done;
-        case Z_OK:
-            if (stream->avail_out >= stream->avail_in + 16) {
-                break;
-            } else {
-            }
-        case Z_BUF_ERROR:
-            offset = stream->next_out - ((unsigned char *) *out);
-            out_size *= 2;
-            *out = realloc(*out, out_size);
-            stream->next_out = *out + offset;
-            stream->avail_out = out_size - offset;
-            break;
-        default:
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Gzip compression didn't finish: %s",
-                            stream->msg ? stream->msg : "<no message>");
-            goto errExit;
-        }
-    }
-  done:
-    *out_len = stream->total_out;
-    if (deflateEnd(stream) != Z_OK) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error freeing gzip structures");
-        goto errExit;
-    }
-    free(stream);
-
-    return 0;
-  errExit:
-    if (stream) {
-        deflateEnd(stream);
-        free(stream);
-    }
-    if (*out) {
-        free(*out);
-    }
-    return -1;
-}
-#endif /* GZIP_ENABLED */
-#endif /* GUNZIP_ENABLED */
 
 /* vim: set ts=4 sw=4 et tw=130: */

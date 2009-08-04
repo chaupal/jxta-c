@@ -60,6 +60,13 @@
 
 #include "jxta_types.h"
 #include "jstring.h"
+#include "jxta_message.h"
+
+#ifdef GZIP_ENABLED
+#ifndef GUNZIP_ENABLED
+#define GUNZIP_ENABLED
+#endif /* ndef GUNZIP_ENABLED */
+#endif /* GZIP_ENABLED */
 
 #ifdef __cplusplus
 extern "C" {
@@ -201,6 +208,15 @@ JXTA_DECLARE(Jxta_status) jxta_xml_util_decode_jstring(JString * src, JString **
 *  (rarely) JXTA_NOMEM
 **/
 JXTA_DECLARE(Jxta_status) jxta_xml_util_encode_jstring(JString * src, JString ** dest);
+
+#ifdef GUNZIP_ENABLED
+JXTA_DECLARE(Jxta_status) jxta_xml_util_uncompress(unsigned char *bytes, int size, unsigned char **uncompr, unsigned long *uncomprLen);
+#endif
+
+#ifdef GZIP_ENABLED
+JXTA_DECLARE(Jxta_status) jxta_xml_util_compress(unsigned char *tmp, JString *el_name, Jxta_message_element **msgElem);
+#endif
+
 
 #ifdef __cplusplus
 #if 0
