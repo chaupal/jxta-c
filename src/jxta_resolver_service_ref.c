@@ -106,12 +106,6 @@ typedef struct {
     Jxta_boolean alwaysPropagate;
 } Jxta_resolver_service_ref;
 
-#ifdef GZIP_ENABLED
-#ifndef GUNZIP_ENABLED
-#define GUNZIP_ENABLED
-#endif /* ndef GUNZIP_ENABLED */
-#endif /* GZIP_ENABLED */
-
 /* used to make an address out of a peerid */
 static Jxta_status JXTA_STDCALL resolver_service_query_cb(Jxta_object * obj, void *arg);
 static Jxta_status JXTA_STDCALL resolver_service_response_cb(Jxta_object * obj, void *arg);

@@ -73,6 +73,24 @@ extern "C" {
 #endif
 
 typedef struct _jxta_srdi_service Jxta_srdi_service;
+/**
+ * Registers a listener for SRDI messages of name type. The handler is called upon receipt of these messages
+ *
+ * @param service - pointer to the srdi service
+ * @param name - name associated with the message
+ * @param listener - listener to call with the string of the message
+**/
+
+JXTA_DECLARE(Jxta_status) jxta_srdi_registerSrdiListener(Jxta_srdi_service * service, JString * name, Jxta_listener * handler);
+
+/**
+ * Unregister a previous listener of name type
+ * 
+ * @param service - pointer to the srdi service
+ * @param name - name type of the listener
+**/
+
+JXTA_DECLARE(Jxta_status) jxta_srdi_unregisterSrdiListener(Jxta_srdi_service * service, JString * name);
 
 /**
  * Replicates a SRDI message to other rendezvous'
@@ -92,11 +110,13 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_replicateEntries(Jxta_srdi_service * service
  *
  * @param  peer  peer to push message to, if peer is null it is
  *               the message is propagated
- * @param  srdi  Resolver message to send
+ * @param  instance - instance value stored in the endpoint address for demux
+ * @param  srdi  Srdi message to send
+ * @param  peer - peer where the message is sent
+ * @param  sync - TRUE - send the message synchronously FALSE - asynchronously
  */
-JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi(Jxta_srdi_service * service, Jxta_resolver_service * res, JString * instance, ResolverSrdi * srdi,
+JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi(Jxta_srdi_service * service, JString * instance, Jxta_SRDIMessage * srdi,
                                              Jxta_id * peer, Jxta_boolean sync);
-
 
 /**
  * Push an SRDI message to a peer using SRDI message
@@ -110,10 +130,11 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi(Jxta_srdi_service * service, Jxta_r
  * @param  instance Instance string
  * @param  msg Message to send
  * @param  peer Id of the destination peer
+ * @param  update_delta - If FALSE, do not update delta entries in the cm
  * @param  sync - If TRUE, send synchronously
  */
-JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi_msg(Jxta_srdi_service * service, Jxta_resolver_service * res, JString * instance, Jxta_SRDIMessage * msg,
-                                             Jxta_id * peer, Jxta_boolean sync);
+JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi_msg(Jxta_srdi_service * service, JString * instance, Jxta_SRDIMessage * msg,
+                                             Jxta_id * peer, Jxta_boolean update_delta, Jxta_boolean sync);
 
 /**
  * Forwards a Query to a specific peer

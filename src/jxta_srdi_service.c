@@ -81,6 +81,17 @@ void jxta_srdi_service_destruct(Jxta_srdi_service * service)
  */
 #define VTBL ((Jxta_srdi_service_methods*) JXTA_MODULE_VTBL(service))
 
+JXTA_DECLARE(Jxta_status) jxta_srdi_registerSrdiListener(Jxta_srdi_service * service, JString * name, Jxta_listener * handler)
+{
+    Jxta_srdi_service* srdi_service = PTValid(service, Jxta_srdi_service);
+    return VTBL->registerSrdiListener(srdi_service, name, handler);
+}
+
+JXTA_DECLARE(Jxta_status) jxta_srdi_unregisterSrdiListener(Jxta_srdi_service * service, JString * name)
+{
+    Jxta_srdi_service* srdi_service = PTValid(service, Jxta_srdi_service);
+    return VTBL->unregisterSrdiListener(srdi_service, name);
+}
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_replicateEntries(Jxta_srdi_service * service, Jxta_resolver_service * resolver,
                                                      Jxta_SRDIMessage * srdiMsg, JString * queueName)
@@ -89,18 +100,18 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_replicateEntries(Jxta_srdi_service * service
     return VTBL->replicateEntries(srdi_service, resolver, srdiMsg, queueName);
 }
 
-JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi(Jxta_srdi_service * service, Jxta_resolver_service * resolver, JString * instance,
-                                             ResolverSrdi * srdi, Jxta_id * peer, Jxta_boolean sync)
+JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi(Jxta_srdi_service * service, JString * instance,
+                                             Jxta_SRDIMessage * srdi, Jxta_id * peer, Jxta_boolean sync)
 {
     Jxta_srdi_service* srdi_service = PTValid(service, Jxta_srdi_service);
-    return VTBL->pushSrdi(srdi_service, resolver, instance, srdi, peer, sync);
+    return VTBL->pushSrdi(srdi_service, instance, srdi, peer, sync);
 }
 
-JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi_msg(Jxta_srdi_service * service, Jxta_resolver_service * resolver, JString * instance,
-                                             Jxta_SRDIMessage * msg, Jxta_id * peer, Jxta_boolean sync)
+JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi_msg(Jxta_srdi_service * service, JString * instance,
+                                             Jxta_SRDIMessage * msg, Jxta_id * peer, Jxta_boolean update_delta, Jxta_boolean sync)
 {
     Jxta_srdi_service* srdi_service = PTValid(service, Jxta_srdi_service);
-    return VTBL->pushSrdi_msg(srdi_service, resolver, instance, msg, peer, sync);
+    return VTBL->pushSrdi_msg(srdi_service, instance, msg, peer, update_delta, sync);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_forwardQuery_peer(Jxta_srdi_service * service, Jxta_resolver_service * resolver,
