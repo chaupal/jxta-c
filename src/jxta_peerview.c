@@ -2486,27 +2486,21 @@ static Jxta_status peerview_send_address_assign(Jxta_peerview * myself, Jxta_pee
     return res;
 }
 
-static Jxta_status peerview_send_adv_request(Jxta_peerview * myself, Jxta_id * dest_id, Jxta_vector *need_pids)
+static JString *build_adv_req_query_string(Jxta_vector *need_pids)
 {
-    Jxta_status res;
-    Jxta_message *msg = NULL;
-    Jxta_message_element *el = NULL;
-    Jxta_PA *pa;
-    JString *adv_req_xml = NULL;
-    Jxta_id *pid;
-    JString *query_string = NULL;
-    Jxta_adv_request_msg *adv_req_msg = NULL;
-    unsigned int i;
-    Jxta_peer * dest;
-    adv_req_msg = jxta_adv_request_msg_new();
+    JString *query_string=NULL;
+    int i;
+
     query_string = jstring_new_0();
     jstring_append_2(query_string, "/jxta:PA[");
     for (i=0; i<jxta_vector_size(need_pids); i++) {
+        Jxta_status status;
         JString *jPeerid;
         Jxta_id *id;
-        res = jxta_vector_get_object_at(need_pids, JXTA_OBJECT_PPTR(&id), i);
-        if (JXTA_SUCCESS != res) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,"Unable to retrieve object from need_pids : %d\n", res);
+
+        status = jxta_vector_get_object_at(need_pids, JXTA_OBJECT_PPTR(&id), i);
+        if (JXTA_SUCCESS != status) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,"Unable to retrieve object from need_pids : %d\n", status);
             continue;
         }
         if (i > 0) {
@@ -2520,6 +2514,26 @@ static Jxta_status peerview_send_adv_request(Jxta_peerview * myself, Jxta_id * d
         JXTA_OBJECT_RELEASE(id);
     }
     jstring_append_2(query_string, "]");
+
+    return query_string;
+}
+
+static Jxta_status peerview_send_adv_request(Jxta_peerview * myself, Jxta_id * dest_id, Jxta_vector *need_pids)
+{
+    Jxta_status res;
+    Jxta_message *msg = NULL;
+    Jxta_message_element *el = NULL;
+    Jxta_PA *pa;
+    JString *adv_req_xml = NULL;
+    Jxta_id *pid;
+    JString *query_string = NULL;
+    Jxta_adv_request_msg *adv_req_msg = NULL;
+    unsigned int i;
+    Jxta_peer * dest;
+    adv_req_msg = jxta_adv_request_msg_new();
+
+    query_string = build_adv_req_query_string(need_pids);
+
     dest = jxta_peer_new();
     jxta_peer_set_peerid(dest, dest_id);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID,"Sending a search request with query - %s\n", jstring_get_string(query_string));
@@ -3735,6 +3749,7 @@ static Jxta_boolean have_matching_PA(Jxta_peerview * me, Jxta_peerview_peer_info
     if (JXTA_SUCCESS == status) {
         ret = jxta_PA_is_recent(pa, &adv_gen);
     }
+
 FINAL_EXIT:
     if (id)
         JXTA_OBJECT_RELEASE(id);
@@ -3779,13 +3794,17 @@ static Jxta_status handle_new_pve_pong(Jxta_peerview * me, Jxta_peerview_pong_ms
         JXTA_OBJECT_RELEASE(pid);
         return JXTA_INVALID_ARGUMENT;
     }
-    JXTA_OBJECT_RELEASE(pa);
+
     /* only add rendezvous peers to the peerview when a rendezvous */
     if (jxta_peerview_pong_msg_is_rendezvous(pong) && jxta_rdv_service_is_rendezvous(me->rdv)) {
         res = create_pve_from_pong(me, pong, &pve);
         if (JXTA_SUCCESS != res) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failed create peerview entry. [%pp]\n", me);
             return JXTA_FAILED;
+        }
+        res = discovery_service_publish(me->discovery, (Jxta_advertisement *) pa , DISC_PEER, pve->adv_exp, LOCAL_ONLY_EXPIRATION);
+        if (JXTA_SUCCESS != res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Error publishing PA from new PONG: %d\n", res);
         }
 
         res = peerview_add_pve(me, pve);
@@ -3795,6 +3814,7 @@ static Jxta_status handle_new_pve_pong(Jxta_peerview * me, Jxta_peerview_pong_ms
             return JXTA_FAILED;
         }
     }
+    JXTA_OBJECT_RELEASE(pa);
     return JXTA_SUCCESS;
 }
 
@@ -4074,24 +4094,91 @@ static Jxta_status peerview_handle_adv_request(Jxta_peerview * me, Jxta_adv_requ
     Jxta_status res = JXTA_SUCCESS;
     Jxta_vector * requested_advs = NULL;
     Jxta_adv_response_msg * adv_rsp_msg = NULL;
+    Jxta_query_context *jContext=NULL;
     unsigned int i;
     char *query = NULL;
+    const char *xmlString = "<jxta:query xmlns:jxta=\"http://jxta.org\"/>";
+    Jxta_vector *remaining_pids=NULL;
+
     res = jxta_adv_request_msg_get_query(req, &query);
     if (JXTA_SUCCESS != res) {
-        return res;
+        goto FINAL_EXIT;
     }
-    discovery_service_local_query(me->discovery, query, &requested_advs);
-    for (i=0; i< jxta_vector_size(requested_advs); i++) {
-        Jxta_advertisement * adv = NULL;
 
-        if (JXTA_SUCCESS != jxta_vector_get_object_at(requested_advs, JXTA_OBJECT_PPTR(&adv), i)) {
-            continue;
+    /* check pves first */
+    jContext = jxta_query_new(query);
+
+    /* compile the XPath statement */
+    res = jxta_query_compound_XPath(jContext, xmlString, FALSE);
+    if (JXTA_SUCCESS != res) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Cannot compile query in peerview_handle_adv_request --- %s\n", query);
+        goto FINAL_EXIT;
+    }
+    for (i = 0; i < jxta_vector_size(jContext->queries); i++) {
+        Jxta_query_element *elem;
+        Jxta_id *pid;
+        Jxta_peer *pve_peer;
+        Jxta_PA *peer_adv;
+
+        jxta_vector_get_object_at(jContext->queries, JXTA_OBJECT_PPTR(&elem), i);
+
+        jxta_id_from_cstr(&pid, jstring_get_string(elem->jValue));
+        peerview_get_peer(me, pid, &pve_peer);
+        if (NULL != pve_peer) {
+            if (NULL == adv_rsp_msg) {
+                adv_rsp_msg = jxta_adv_response_msg_new();
+            }
+            jxta_peer_get_adv(pve_peer, &peer_adv);
+            jxta_adv_response_msg_add_advertisement(adv_rsp_msg, (Jxta_advertisement *) peer_adv, ((Peerview_entry *)pve_peer)->adv_exp);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Found PeerAdv elem - %s %s \n", jstring_get_string(elem->jName), jstring_get_string(elem->jValue));
+            JXTA_OBJECT_RELEASE(peer_adv);
+            JXTA_OBJECT_RELEASE(pve_peer);
+        } else {
+            if (NULL == remaining_pids) {
+                remaining_pids = jxta_vector_new(0);
+            }
+            jxta_vector_add_object_last(remaining_pids, (Jxta_object *) pid);
         }
-        if (NULL == adv_rsp_msg) {
-            adv_rsp_msg = jxta_adv_response_msg_new();
+
+        JXTA_OBJECT_RELEASE(elem);
+        JXTA_OBJECT_RELEASE(pid);
+    }
+    if (NULL != remaining_pids) {
+        JString *query_j=NULL;
+
+        query_j = build_adv_req_query_string(remaining_pids);
+
+        discovery_service_local_query(me->discovery, jstring_get_string(query_j), &requested_advs);
+        for (i=0; i< jxta_vector_size(requested_advs); i++) {
+            Jxta_advertisement * adv = NULL;
+            Jxta_expiration_time expiration;
+            Jxta_id *adv_id=NULL;
+
+            if (JXTA_SUCCESS != jxta_vector_get_object_at(requested_advs, JXTA_OBJECT_PPTR(&adv), i)) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to retrieve adv from vector:[%pp] at %d\n", requested_advs, i);
+                continue;
+            }
+            adv_id = jxta_advertisement_get_id(adv);
+            if (NULL == adv_id) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to retrieve ID from adv:[%pp]\n", adv);
+                JXTA_OBJECT_RELEASE(adv);
+                continue;
+            }
+            if (JXTA_SUCCESS != discovery_service_get_lifetime(me->discovery, DISC_PEER, adv_id, &expiration)) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to retrieve lifetime from adv:[%pp]\n", adv);
+                JXTA_OBJECT_RELEASE(adv);
+                continue;
+            }
+            if (NULL == adv_rsp_msg) {
+                adv_rsp_msg = jxta_adv_response_msg_new();
+            }
+
+            jxta_adv_response_msg_add_advertisement(adv_rsp_msg, adv, expiration - jpr_time_now());
+            JXTA_OBJECT_RELEASE(adv);
         }
-        jxta_adv_response_msg_add_advertisement(adv_rsp_msg, adv, 5 * 60 * 1000);
-        JXTA_OBJECT_RELEASE(adv);
+        JXTA_OBJECT_RELEASE(remaining_pids);
+        if (query_j)
+            JXTA_OBJECT_RELEASE(query_j);
     }
     if (NULL != adv_rsp_msg) {
         Jxta_peer * dest;
@@ -4104,13 +4191,16 @@ static Jxta_status peerview_handle_adv_request(Jxta_peerview * me, Jxta_adv_requ
 
         JXTA_OBJECT_RELEASE(dest);
         JXTA_OBJECT_RELEASE(pid);
+        JXTA_OBJECT_RELEASE(adv_rsp_msg);
     }
+
+FINAL_EXIT:
+    if (jContext)
+        JXTA_OBJECT_RELEASE(jContext);
     if (requested_advs)
         JXTA_OBJECT_RELEASE(requested_advs);
     if (query)
         free(query);
-    if (adv_rsp_msg)
-        JXTA_OBJECT_RELEASE(adv_rsp_msg);
     return res;
 }
 
@@ -4125,6 +4215,7 @@ static Jxta_status peerview_handle_adv_response(Jxta_peerview * me, Jxta_adv_res
     if (JXTA_SUCCESS != res) {
         goto FINAL_EXIT;
     }
+
     for (i=0; i<jxta_vector_size(entries); i++) {
         Jxta_adv_response_entry *entry=NULL;
         Jxta_PA * adv = NULL;
