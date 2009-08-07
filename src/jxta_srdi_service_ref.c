@@ -1977,7 +1977,8 @@ static Jxta_status JXTA_STDCALL srdi_service_srdi_cb(Jxta_object * obj, void *ar
             if (NULL != uncompr) {
                 JString *parm_string;
 
-                parm_string = jstring_new_2((const char *) uncompr);
+                parm_string = jstring_new_0();
+                jstring_append_0(parm_string, (const char *) uncompr, uncomprLen);
                 jxta_listener_process_object(listener, (Jxta_object *) parm_string);
                 JXTA_OBJECT_RELEASE(parm_string);
                 free(uncompr);
