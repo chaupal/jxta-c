@@ -2303,7 +2303,7 @@ Jxta_status discovery_send_srdi_msg(Jxta_discovery_service_ref *discovery, Jxta_
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "cannot allocate jxta_srdi_message_new\n");
         goto FINAL_EXIT;
     }
-    jxta_srdi_pushSrdi_msg(discovery->srdi, discovery->instanceName, msg, peerid, TRUE, FALSE);
+    jxta_srdi_pushSrdi_msg(discovery->srdi, discovery->instanceName, msg, to_peerid, FALSE, FALSE);
 
 FINAL_EXIT:
 
@@ -2870,7 +2870,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
                 }
             }
             if (JXTA_SUCCESS == status && resendEntries) {
-                status = discovery_send_srdi_msg(discovery, discovery->localPeerId, peerid, src_pid, jPrimaryKey, resendEntries);
+                status = discovery_send_srdi_msg(discovery, peerid, discovery->localPeerId, src_pid, jPrimaryKey, resendEntries);
             }
             if (JXTA_SUCCESS != status && NULL != err_msg) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, " %s status: %d\n", err_msg, status);
