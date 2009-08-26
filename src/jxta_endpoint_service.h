@@ -64,6 +64,7 @@
 
 #include "jxta_listener.h"
 #include "jxta_transport.h"
+#include "jxta_em.h"
 #include "jxta_endpoint_address.h"
 #include "jxta_message.h"
 #include "jxta_routea.h"
@@ -223,10 +224,10 @@ JXTA_DECLARE(void) jxta_endpoint_service_remove_filter(Jxta_endpoint_service * s
  * @param dest_addr The destination of the message.
  * @return Jxta_status success or failed
  */
-JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_sync(Jxta_PG * pg, Jxta_endpoint_service * service, Jxta_message * msg,
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ep_msg_sync(Jxta_endpoint_service * service, Jxta_endpoint_message * msg,
                                                           Jxta_endpoint_address * dest_addr);
 
-JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_async(Jxta_PG * pg, Jxta_endpoint_service * service, Jxta_message * msg,
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ep_msg_async(Jxta_endpoint_service * service, Jxta_endpoint_message * msg,
                                                            Jxta_endpoint_address * dest_addr);
 
 #define jxta_endpoint_service_send jxta_endpoint_service_send_async
@@ -265,6 +266,28 @@ JXTA_DECLARE(Jxta_status)
     jxta_endpoint_service_propagate(Jxta_endpoint_service * service,
                                 Jxta_message * msg, const char *service_name, const char *service_parameter);
 
+/**
+ * Send the endpoint message synchronously to the given destination. This call should be used when applications
+ * want to consolidate messages within a single endpoint message.
+ *
+ * @param service Endpoint service object
+ * @param ep_msg Enpoint message to send
+ * @param 
+ *
+ * 
+ */
+JXTA_DECLARE(Jxta_status) 
+jxta_endpoint_service_send_sync(Jxta_PG * pg, Jxta_endpoint_service * service
+                                                         , Jxta_message * ep_msg
+                                                         , Jxta_endpoint_address * dest_addr);
+
+/*
+ *
+ */
+JXTA_DECLARE(Jxta_status) 
+jxta_endpoint_service_send_async(Jxta_PG * pg, Jxta_endpoint_service * service
+                                                         , Jxta_message * ep_msg
+                                                         , Jxta_endpoint_address * dest_addr);
 /**
  ** Adds a listener to a specific service and parameters.
  **

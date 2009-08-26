@@ -62,6 +62,7 @@
 #include "jxta_endpoint_address.h"
 #include "jxta_vector.h"
 #include "jxta_cred.h"
+#include "jxta_peer.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -73,6 +74,7 @@ extern "C" {
 JXTA_DECLARE_DATA const char JXTA_PEERVIEW_PING_ELEMENT_NAME[];
 
 typedef struct _Jxta_peerview_ping_msg Jxta_peerview_ping_msg;
+typedef struct _jxta_pv_ping_msg_group_entry Jxta_pv_ping_msg_group_entry;
 
 JXTA_DECLARE(Jxta_peerview_ping_msg *) jxta_peerview_ping_msg_new(void);
 JXTA_DECLARE(Jxta_status) jxta_peerview_ping_msg_get_xml(Jxta_peerview_ping_msg *, JString ** xml);
@@ -100,6 +102,19 @@ JXTA_DECLARE(void) jxta_peerview_ping_msg_set_credential(Jxta_peerview_ping_msg 
 JXTA_DECLARE(Jxta_vector*) jxta_peerview_ping_msg_get_options(Jxta_peerview_ping_msg * me);
 JXTA_DECLARE(void) jxta_peerview_ping_msg_set_options(Jxta_peerview_ping_msg * me, Jxta_vector*);
 
+JXTA_DECLARE(void) jxta_peerview_ping_msg_set_composite(Jxta_peerview_ping_msg *me, Jxta_boolean comp);
+JXTA_DECLARE(Jxta_boolean) jxta_peerview_ping_msg_is_composite(Jxta_peerview_ping_msg *me);
+
+JXTA_DECLARE(Jxta_status) jxta_peerview_ping_msg_add_group_entry(Jxta_peerview_ping_msg * myself, Jxta_pv_ping_msg_group_entry *entry);
+JXTA_DECLARE(Jxta_status) jxta_peerview_ping_msg_get_group_entries(Jxta_peerview_ping_msg * myself, Jxta_vector **entries);
+
+JXTA_DECLARE(Jxta_pv_ping_msg_group_entry *) jxta_pv_ping_msg_entry_new(Jxta_peer *peer, apr_uuid_t peer_adv_gen, Jxta_boolean peer_adv_gen_set, const char *group, Jxta_boolean pv_id_only);
+
+JXTA_DECLARE(Jxta_peer *) jxta_peerview_ping_msg_entry_get_pve(Jxta_pv_ping_msg_group_entry * myself);
+
+JXTA_DECLARE(void) jxta_peerview_ping_msg_entry_set_pv_id_only(Jxta_pv_ping_msg_group_entry * me, Jxta_boolean pv_id_only);
+JXTA_DECLARE(Jxta_boolean) jxta_peerview_ping_msg_entry_is_pv_id_only(Jxta_pv_ping_msg_group_entry * me);
+JXTA_DECLARE(JString *) jxta_peerview_ping_msg_entry_group_name(Jxta_pv_ping_msg_group_entry *me);
 
 #ifdef __cplusplus
 #if 0

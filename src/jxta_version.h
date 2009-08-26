@@ -12,7 +12,7 @@ extern "C" {
 #endif
 
 #define CURRENT_MAJOR_VERSION 3
-#define CURRENT_MINOR_VERSION 7 
+#define CURRENT_MINOR_VERSION 9
 
 #define SRDI_DELTA_OPTIMIZATIONS  "3.1"
 #define PEERVIEW_UUID_IMPLEMENTATION "3.2"
@@ -22,6 +22,7 @@ extern "C" {
 #define DISCOVERY_EXT_QUERY_WALK_STATE "3.6"
 #define EXPLICIT_DISCONNECT "3.7"
 #define SRDI_UPDATE_ONLY "3.8"
+#define ENDPOINT_CONSOLIDATION "3.9"
 
 typedef struct _jxta_version Jxta_version;
 

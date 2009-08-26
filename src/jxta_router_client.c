@@ -296,9 +296,13 @@ get_peer_forward_gateways(Jxta_router_client * me, Jxta_id * peerid, Jxta_vector
 
     peer = get_peer_entry(me, peerid, JXTA_FALSE);
     if (peer == NULL) {
+        JString * peerid_j;
+
+        jxta_id_to_jstring(peerid, &peerid_j);
         /* No route */
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "No existing route\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "No existing route to %s\n", jstring_get_string(peerid_j));
         res = JXTA_INVALID_ARGUMENT;
+        JXTA_OBJECT_RELEASE(peerid_j);
         goto ERROR_EXIT;
     }
 

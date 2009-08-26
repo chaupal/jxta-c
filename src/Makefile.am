@@ -33,6 +33,7 @@ include_HEADERS = EndpointRouter.h          \
                   jxta_endpoint_config_adv.h   \
                   jxta_endpoint_messenger.h \
                   jxta_endpoint_service.h   \
+                  jxta_em.h                 \
                   jxta_router_service.h     \
                   jxta_errno.h              \
                   jxta.h                    \
@@ -174,6 +175,7 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_endpoint_service.c        \
                      jxta_endpoint_service_priv.h   \
                      jxta_endpoint_address.c        \
+                     jxta_em.c                      \
                      jxta_membership_service.c      \
                      jxta_membership_service_null.c \
                      jxta_monitor_config_adv.c      \

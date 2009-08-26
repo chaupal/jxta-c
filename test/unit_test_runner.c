@@ -174,6 +174,8 @@ Jxta_boolean run_jxta_peerview_address_request_tests(int *tests_run, int *tests_
 
 Jxta_boolean run_jxta_peerview_address_assign_tests(int *tests_run, int *tests_passed, int *tests_failed);
 
+Jxta_boolean run_jxta_endpoint_msg_tests(int *tests_run, int *tests_passed, int *tests_failed);
+
 /** 
 * The list of tests to run, terminated by NULL
 */

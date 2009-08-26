@@ -53,6 +53,7 @@ bin_PROGRAMS = jstring_test	    \
 	       pg_start_stop_test   \
 	       npg_test             \
 	       rdv_lease_options_test \
+               endpoint_msg_test      \
 	       peerview_ping_msg_test \
 	       peerview_pong_msg_test \
 	       peerview_address_request_msg_test \
@@ -238,6 +239,10 @@ rdv_lease_options_test_SOURCES	     = rdv_lease_options_test.c unittest_jxta_fun
 rdv_lease_options_test.o:  rdv_lease_options_test.c 
 	$(COMPILE) -DSTANDALONE -o rdv_lease_options_test.o -c $(srcdir)/rdv_lease_options_test.c
 
+endpoint_msg_test_SOURCES	     = endpoint_msg_test.c unittest_jxta_func.c
+endpoint_msg_test.o:  endpoint_msg_test.c 
+	$(COMPILE) -DSTANDALONE -o endpoint_msg_test.o -c $(srcdir)/endpoint_msg_test.c
+
 peerview_ping_msg_test_SOURCES	     = peerview_ping_msg_test.c unittest_jxta_func.c
 peerview_ping_msg_test.o:  peerview_ping_msg_test.c 
 	$(COMPILE) -DSTANDALONE -o peerview_ping_msg_test.o -c $(srcdir)/peerview_ping_msg_test.c
@@ -331,6 +336,8 @@ dq_adv_test_comp.o:  dq_adv_test.c
 	$(COMPILE) -o dq_adv_test_comp.o -c $(srcdir)/dq_adv_test.c
 rdv_lease_options_test_comp.o:  rdv_lease_options_test.c
 	$(COMPILE) -o rdv_lease_options_test_comp.o -c $(srcdir)/rdv_lease_options_test.c
+endpoint_msg_test_comp.o:  endpoint_msg_test.c
+	$(COMPILE) -o endpoint_msg_test_comp.o -c $(srcdir)/endpoint_msg_test.c
 peerview_ping_msg_test_comp.o:  peerview_ping_msg_test.c
 	$(COMPILE) -o peerview_ping_msg_test_comp.o -c $(srcdir)/peerview_ping_msg_test.c
 peerview_pong_msg_test_comp.o:  peerview_pong_msg_test.c

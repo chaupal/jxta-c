@@ -582,6 +582,13 @@ JXTA_DECLARE(Jxta_status) jxta_PG_sync_send(Jxta_PG * me, Jxta_message * msg, Jx
 JXTA_DECLARE(Jxta_status) jxta_PG_async_send(Jxta_PG * me, Jxta_message * msg, Jxta_id * peer_id, 
                                              const char *svc_name, const char *svc_params);
 
+JXTA_DECLARE(Jxta_status) jxta_PG_sync_send_1(Jxta_PG * me, Jxta_vector * msgs, Jxta_id * peer_id, 
+                                            const char *svc_name, const char *svc_params);
+
+JXTA_DECLARE(Jxta_status) jxta_PG_async_send_1(Jxta_PG * me, Jxta_endpoint_message * msg, Jxta_id * peer_id, 
+                                             const char *ep_variable, const char *svc_name, const char *svc_param);
+;
+
 /*
  * shortcuts to the well-known services, in order to avoid calls to lookup.
  * Everything is pre-checked so these methods never fail.

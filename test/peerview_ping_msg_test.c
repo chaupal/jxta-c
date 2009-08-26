@@ -62,7 +62,6 @@
 #include "unittest_jxta_func.h"
 
 const char *test_jxta_peerview_ping_construction(void) {
-    Jxta_status result = JXTA_SUCCESS;
     Jxta_peerview_ping_msg *msg = jxta_peerview_ping_msg_new();
     
     if( NULL == msg ) {
@@ -78,6 +77,25 @@ const char *test_jxta_peerview_ping_construction(void) {
     return NULL;
 }
 
+const char *test_jxta_peerview_ping_group_entry(void) {
+    Jxta_pv_ping_msg_group_entry *entry = jxta_pv_ping_msg_entry_new(NULL, "group1", TRUE);
+
+    jxta_peerview_ping_msg_entry_set_pv_id_only(entry, TRUE);
+
+    JString *group_name = jxta_peerview_ping_msg_entry_group_name(entry);
+
+
+    if (NULL == group_name || 0 != strcmp(jstring_get_string(group_name), "group1")) {
+        return FILEANDLINE;
+    }
+
+    if (FALSE == jxta_peerview_ping_msg_entry_is_pv_id_only(entry)) {
+        return FILEANDLINE;
+    }
+
+    return NULL;
+}
+
 const char *test_jxta_peerview_ping_serialization(void) {
     Jxta_status result = JXTA_SUCCESS;
     Jxta_peerview_ping_msg *msg;
@@ -86,6 +104,11 @@ const char *test_jxta_peerview_ping_serialization(void) {
     JString *dump1;
     JString *dump2;
     Jxta_vector* child_advs = NULL;
+    Jxta_vector *entries=NULL;
+    int i;
+    Jxta_pv_ping_msg_group_entry *entry;
+    char group_name[128];
+
 
     jxta_advertisement_register_global_handler("jxta:PeerviewPing", (JxtaAdvertisementNewFunc) jxta_peerview_ping_msg_new );
 
@@ -93,6 +116,33 @@ const char *test_jxta_peerview_ping_serialization(void) {
     
     if( NULL == msg ) {
         return FILEANDLINE;
+    }
+
+    for (i=0; i<3; i++) {
+        apr_snprintf(group_name, sizeof(group_name), "group%d", i + 1);
+        entry = jxta_pv_ping_msg_entry_new(NULL, group_name, TRUE);
+        if (JXTA_SUCCESS != jxta_peerview_ping_msg_add_group_entry(msg, entry)) {
+            return FILEANDLINE;
+        }
+        JXTA_OBJECT_RELEASE(entry);
+    }
+    if (JXTA_SUCCESS != jxta_peerview_ping_msg_get_group_entries(msg, &entries)) {
+        return FILEANDLINE;
+    }
+
+    for (i=0; i < jxta_vector_size(entries); i++) {
+        JString *group_j;
+
+        if (JXTA_SUCCESS != jxta_vector_get_object_at(entries, JXTA_OBJECT_PPTR(&entry), i)) {
+            return FILEANDLINE;
+        }
+        group_j = jxta_peerview_ping_msg_entry_group_name(entry);
+        apr_snprintf(group_name, sizeof(group_name), "group%d", i + 1);
+        if (0 != strcmp(jstring_get_string(group_j), group_name)) {
+            return FILEANDLINE;
+        }
+        JXTA_OBJECT_RELEASE(group_j);
+        JXTA_OBJECT_RELEASE(entry);
     }
 
     testfile = fopen( "PeerviewPing.xml", "r");
@@ -114,7 +164,6 @@ const char *test_jxta_peerview_ping_serialization(void) {
     }    
     JXTA_OBJECT_RELEASE(msg);
     msg = NULL;
-
     msg = jxta_peerview_ping_msg_new();
     result = jxta_peerview_ping_msg_parse_charbuffer( msg, jstring_get_string(dump1), jstring_length(dump1) );
     if( JXTA_SUCCESS != result ) {
@@ -177,7 +226,7 @@ const char *test_jxta_peerview_ping_serialization(void) {
 static struct _funcs peerview_ping_test_funcs[] = {
     /* First run simple construction destruction test. */
     {*test_jxta_peerview_ping_construction, "Construction/destruction for Peerview Ping"},
-
+    {*test_jxta_peerview_ping_group_entry, "Test Group entry functions"},
     /* Serialization/Deserialization */
     {*test_jxta_peerview_ping_serialization, "Read/write test for Peerview Ping"},
 

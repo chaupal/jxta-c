@@ -80,10 +80,13 @@ static const char *__log_cat = "PG";
 #include "jxta_util_priv.h"
 #include "jxta_log.h"
 #include "jxta_dr.h"
+#include "jxta_em.h"
 
 #ifndef JXTA_SINGLE_THREAD_POOL
 #define JXTA_SINGLE_THREAD_POOL 1
 #endif
+
+static const char *ep_prefix = "EndpointService:";
 
 /*
  * This implementation supports only one instance of each group; the peer ID
@@ -909,7 +912,6 @@ static Jxta_status JXTA_STDCALL peergroup_ep_callback(Jxta_object * obj, void *a
 
 Jxta_status peergroup_start(Jxta_PG * me)
 {
-    static const char *prefix = "EndpointService:";
     Jxta_id *gid;
     JString *tmp;
     Jxta_endpoint_service *ep;
@@ -921,7 +923,7 @@ Jxta_status peergroup_start(Jxta_PG * me)
     } else {
         jxta_id_get_uniqueportion(gid, &tmp);
     }
-    me->ep_name = apr_pstrcat(me->pool, prefix, jstring_get_string(tmp), NULL);
+    me->ep_name = apr_pstrcat(me->pool, ep_prefix, jstring_get_string(tmp), NULL);
     JXTA_OBJECT_RELEASE(gid);
     JXTA_OBJECT_RELEASE(tmp);
 
@@ -1521,6 +1523,34 @@ JXTA_DECLARE(Jxta_status) jxta_PG_async_send(Jxta_PG * me, Jxta_message * msg, J
     free(new_param);
     JXTA_OBJECT_RELEASE(ep);
     JXTA_OBJECT_RELEASE(dest);
+
+    return rv;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_PG_async_send_1(Jxta_PG * me, Jxta_endpoint_message * msg, Jxta_id * peer_id, 
+                                             const char *ep_variable, const char *svc_name, const char *svc_param)
+{
+    Jxta_endpoint_service *ep;
+    Jxta_status rv;
+    char *new_param;
+    Jxta_endpoint_address * dest;
+    JString *ep_name_j;
+
+    ep_name_j = jstring_new_2(ep_prefix);
+    jstring_append_2(ep_name_j, "%");
+    jstring_append_2(ep_name_j, ep_variable);
+    jstring_append_2(ep_name_j, "%");
+
+    new_param = get_service_key(svc_name, svc_param);
+    dest = jxta_endpoint_address_new_3(peer_id, jstring_get_string(ep_name_j), new_param);
+    jxta_PG_get_endpoint_service(me, &ep);
+
+    rv = jxta_endpoint_service_send_ep_msg_async(ep, msg, dest);
+
+    free(new_param);
+    JXTA_OBJECT_RELEASE(ep);
+    JXTA_OBJECT_RELEASE(dest);
+    JXTA_OBJECT_RELEASE(ep_name_j);
 
     return rv;
 }

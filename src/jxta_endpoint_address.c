@@ -470,4 +470,68 @@ JXTA_DECLARE(Jxta_boolean) jxta_endpoint_address_transport_addr_equals(Jxta_endp
             0 == strcasecmp(addr1->protocol_address, addr2->protocol_address));
 }
 
+static const char *replace_str(const char *str, const char *orig, const char *rep)
+{
+  static char buffer[4096];
+  char *p;
+
+    memset(buffer, 0, sizeof(buffer));
+    if(!(p = strstr(str, orig)))  // Is 'orig' even in 'str'?
+        return str;
+
+    strncpy(buffer, str, p-str); // Copy characters from 'str' start to 'orig' st$
+    buffer[p-str] = '\0';
+
+    sprintf(buffer+(p-str), "%s%s", rep, p+strlen(orig));
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Replaced %s with %s\n", str, buffer);
+
+    return buffer;
+}
+
+
+JXTA_DECLARE(void) jxta_endpoint_address_replace_variables(Jxta_endpoint_address * addr1, Jxta_hashtable *hash, Jxta_endpoint_address **new_addr)
+{
+    char **keys=NULL;
+    char **keys_save=NULL;
+    char *addr_string=NULL;
+
+    addr_string = jxta_endpoint_address_to_string(addr1);
+
+    keys = jxta_hashtable_keys_get(hash);
+    keys_save = keys;
+
+    while (NULL != keys && *keys) {
+        JString *elem_attribute_j = NULL;
+        JString *elem_att_value_j = NULL;
+        const char *elem_att_value_c = NULL;
+        const char *new_str;
+
+        jxta_hashtable_get(hash, *keys, strlen(*keys) + 1, JXTA_OBJECT_PPTR(&elem_att_value_j));
+        elem_attribute_j = jstring_new_2("%");
+        jstring_append_2(elem_attribute_j, *keys);
+        jstring_append_2(elem_attribute_j, "%");
+
+        elem_att_value_c = jstring_get_string(elem_att_value_j);
+
+        new_str = replace_str((char *) addr_string, jstring_get_string(elem_attribute_j), (char *) elem_att_value_c);
+
+        if (*new_addr)
+            JXTA_OBJECT_RELEASE(*new_addr);
+        *new_addr = jxta_endpoint_address_new(new_str);
+        if (addr_string) {
+            free(addr_string);
+            addr_string = NULL;
+        }
+        addr_string = strdup(new_str);
+        free(*(keys++));
+        JXTA_OBJECT_RELEASE(elem_attribute_j);
+        JXTA_OBJECT_RELEASE(elem_att_value_j);
+    }
+    if (addr_string)
+        free(addr_string);
+    free(keys_save);
+}
+
+
 /* vim: set ts=4 sw=4 tw=130 et: */

@@ -77,6 +77,7 @@ enum tokentype {
     Null_,
     PeerviewPingMsg_,
     Credential_,
+    Group_,
     Option_
 };
 
@@ -94,15 +95,26 @@ struct _Jxta_peerview_ping_msg {
     apr_uuid_t dst_peer_adv_gen;
     Jxta_boolean pv_id_only;
     Jxta_credential * credential;
-    
+    Jxta_vector * groups;
     Jxta_vector * options;
 };
+
+struct _jxta_pv_ping_msg_group_entry {
+    JXTA_OBJECT_HANDLE;
+    JString *groupid;
+    Jxta_boolean pv_id_only;
+    Jxta_peer *pve;
+    apr_uuid_t peer_adv_gen;
+    Jxta_boolean peer_adv_gen_set;
+};
+
 
 static void peerview_ping_msg_delete(Jxta_object * me);
 static Jxta_peerview_ping_msg *peerview_ping_msg_construct(Jxta_peerview_ping_msg * myself);
 static Jxta_status validate_message(Jxta_peerview_ping_msg * myself);
 static void handle_peerview_ping_msg(void *me, const XML_Char * cd, int len);
 static void handle_credential(void *me, const XML_Char * cd, int len);
+static void handle_group(void *me, const XML_Char * cd, int len);
 static void handle_option(void *me, const XML_Char * cd, int len);
 
 JXTA_DECLARE(Jxta_peerview_ping_msg *) jxta_peerview_ping_msg_new(void)
@@ -137,6 +149,10 @@ static void peerview_ping_msg_delete(Jxta_object * me)
         myself->credential = NULL;
     }
 
+    if (NULL != myself->groups) {
+        JXTA_OBJECT_RELEASE(myself->groups);
+        myself->groups = NULL;
+    }
     if (NULL != myself->options) {
         JXTA_OBJECT_RELEASE(myself->options);
         myself->options = NULL;
@@ -155,6 +171,7 @@ static const Kwdtab peerview_ping_msg_tags[] = {
     {"Null", Null_, NULL, NULL, NULL},
     {"jxta:PeerviewPing", PeerviewPingMsg_, *handle_peerview_ping_msg, NULL, NULL},
     {"Credential", Credential_, *handle_credential, NULL, NULL},
+    {"Group", Group_, *handle_group, NULL, NULL},
     {"Option", Option_, *handle_option, NULL, NULL},
     {NULL, 0, 0, NULL, NULL}
 };
@@ -178,6 +195,7 @@ static Jxta_peerview_ping_msg *peerview_ping_msg_construct(Jxta_peerview_ping_ms
         myself->pv_id_only = FALSE;
         myself->dst_peer_adv_gen_set = FALSE;
         myself->credential = NULL;
+        myself->groups = jxta_vector_new(0);
         myself->options = jxta_vector_new(0);
     }
 
@@ -249,6 +267,7 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_ping_msg_get_xml(Jxta_peerview_ping_msg 
     Jxta_status res;
     JString *string;
     JString *tempstr;
+    int i;
     char tmpbuf[256];   /* We use this buffer to store a string representation of a int */
 
     if (xml == NULL) {
@@ -262,16 +281,13 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_ping_msg_get_xml(Jxta_peerview_ping_msg 
     
     string = jstring_new_0();
 
-    jstring_append_2(string, "<jxta:PeerviewPing");
+    jstring_append_2(string, "<jxta:PeerviewPing ");
 
     jstring_append_2(string, " src_id=\"");
     jxta_id_to_jstring(myself->src_peer_id, &tempstr);
     jstring_append_1(string, tempstr);
     JXTA_OBJECT_RELEASE(tempstr);
     jstring_append_2(string, "\"");
-    if (myself->pv_id_only) {
-        jstring_append_2(string, " pv_id_only=\"yes\"");
-    }
     if( !jxta_id_equals(myself->dst_peer_id, jxta_id_nullID)) {
         jstring_append_2(string, " dst_id=\"");
         jxta_id_to_jstring(myself->dst_peer_id, &tempstr);
@@ -294,8 +310,31 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_ping_msg_get_xml(Jxta_peerview_ping_msg 
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
-
     jstring_append_2(string, ">\n ");
+    for (i=0; NULL != myself->groups && i < jxta_vector_size(myself->groups); i++) {
+        Jxta_pv_ping_msg_group_entry *entry=NULL;
+
+        jxta_vector_get_object_at(myself->groups, JXTA_OBJECT_PPTR(&entry), i);
+        jstring_append_2(string, "<Group");
+
+        jstring_append_2(string, " pv_id_only=\"");
+        jstring_append_2(string, TRUE == entry->pv_id_only ? "yes":"no");
+        jstring_append_2(string, "\"");
+        if (entry->peer_adv_gen_set) {
+            jstring_append_2(string, " adv_gen=\"");
+            apr_uuid_format(tmpbuf, &entry->peer_adv_gen);
+            jstring_append_2(string, tmpbuf);
+            jstring_append_2(string, "\"");
+        }
+        jstring_append_2(string, " id=\"");
+        jstring_append_2(string, jstring_get_string(entry->groupid));
+        jstring_append_2(string, "\"");
+        jstring_append_2(string, ">");
+
+        JXTA_OBJECT_RELEASE(entry);
+        jstring_append_2(string, "</Group>");
+    }
+
     
     /* FIXME 20060915 bondolo Handle credentials and options */
 
@@ -434,6 +473,46 @@ JXTA_DECLARE(void) jxta_peerview_ping_msg_set_credential(Jxta_peerview_ping_msg 
     }
 }
 
+JXTA_DECLARE(Jxta_status) jxta_peerview_ping_msg_add_group_entry(Jxta_peerview_ping_msg * myself, Jxta_pv_ping_msg_group_entry *entry)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    return jxta_vector_add_object_last(myself->groups, (Jxta_object *) entry);
+
+}
+
+JXTA_DECLARE(Jxta_status) jxta_peerview_ping_msg_get_group_entries(Jxta_peerview_ping_msg * myself, Jxta_vector **entries)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    *entries = JXTA_OBJECT_SHARE(myself->groups);
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_peer *) jxta_peerview_ping_msg_entry_get_pve(Jxta_pv_ping_msg_group_entry * myself)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    return NULL != myself->pve ? JXTA_OBJECT_SHARE(myself->pve):NULL;
+}
+
+JXTA_DECLARE(void) jxta_peerview_ping_msg_entry_set_pv_id_only(Jxta_pv_ping_msg_group_entry * me, Jxta_boolean pv_id_only) 
+{
+    JXTA_OBJECT_CHECK_VALID(me);
+
+    me->pv_id_only = pv_id_only;
+}
+
+JXTA_DECLARE(JString *) jxta_peerview_ping_msg_entry_group_name(Jxta_pv_ping_msg_group_entry *me)
+{
+    return NULL != me->groupid ? JXTA_OBJECT_SHARE(me->groupid):NULL;
+}
+
+JXTA_DECLARE(Jxta_boolean) jxta_peerview_ping_msg_entry_is_pv_id_only(Jxta_pv_ping_msg_group_entry * me)
+{
+    return me->pv_id_only;
+}
+
 /** 
 * Handler functions.  Each of these is responsible for
 * dealing with all of the character data associated with the 
@@ -536,6 +615,78 @@ static void handle_credential(void *me, const XML_Char * cd, int len)
     }
 }
 
+static void pv_group_entry_free(Jxta_object *me)
+{
+    Jxta_pv_ping_msg_group_entry *myself = (Jxta_pv_ping_msg_group_entry *) me;
+
+    if (myself->groupid)
+        JXTA_OBJECT_RELEASE(myself->groupid);
+    if (myself->pve)
+        JXTA_OBJECT_RELEASE(myself->pve);
+    memset(myself, 0xdd, sizeof(Jxta_pv_ping_msg_group_entry));
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Peerview Ping Group Entry FREE [%pp]\n", myself );
+
+    free(myself);
+}
+
+JXTA_DECLARE(Jxta_pv_ping_msg_group_entry *) jxta_pv_ping_msg_entry_new(Jxta_peer *peer, apr_uuid_t peer_adv_gen, Jxta_boolean peer_adv_gen_set, const char *group, Jxta_boolean pv_id_only)
+{
+    Jxta_pv_ping_msg_group_entry *entry;
+
+    entry = calloc(1, sizeof(Jxta_pv_ping_msg_group_entry));
+
+    JXTA_OBJECT_INIT(entry, pv_group_entry_free, NULL);
+
+    entry->groupid = jstring_new_2(group);
+    entry->pv_id_only = pv_id_only;
+    entry->peer_adv_gen_set = peer_adv_gen_set;
+    entry->peer_adv_gen = peer_adv_gen;
+    entry->pve = NULL != peer ? JXTA_OBJECT_SHARE(peer):NULL;
+
+    return entry;
+}
+
+static void handle_group(void *me, const XML_Char * cd, int len)
+{
+    Jxta_peerview_ping_msg *myself = (Jxta_peerview_ping_msg *) me;
+    apr_uuid_t peer_adv_gen;
+    const char **atts = ((Jxta_advertisement *) myself)->atts;
+    Jxta_boolean pv_id_only=FALSE;
+    Jxta_boolean peer_adv_gen_set=FALSE;
+    JString *value=NULL;
+
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <Group> : [%pp]\n", myself);
+
+    /** handle attributes */
+    while (atts && *atts) {
+        if (0 == strcmp(*atts, "pv_id_only")) {
+            pv_id_only = (0 == strcmp(atts[1], "yes")) ? TRUE:FALSE;
+        } else if (0 == strcmp(*atts, "adv_gen")) {
+            peer_adv_gen_set = (APR_SUCCESS == apr_uuid_parse( &peer_adv_gen, atts[1]));
+            if( !peer_adv_gen_set ) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,
+                            FILEANDLINE "UUID parse failure for group adv_gen [%pp] : %s\n", myself, atts[1]);
+            }
+        } else if (0 == strcmp(*atts, "id")) {
+            Jxta_pv_ping_msg_group_entry *group_entry;
+            value = jstring_new_2(atts[1]);
+
+            if (jstring_length(value) > 0) {
+                group_entry = jxta_pv_ping_msg_entry_new(NULL, peer_adv_gen, peer_adv_gen_set, jstring_get_string(value),  pv_id_only);
+                jxta_vector_add_object_last(myself->groups, (Jxta_object *) group_entry);
+                JXTA_OBJECT_RELEASE(group_entry);
+            }
+            JXTA_OBJECT_RELEASE(value);
+        } else {
+            /* just silently skip it. */
+        }
+        atts+=2;
+    }
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <Group> : [%pp]\n", myself);
+}
 
 static void handle_option(void *me, const XML_Char * cd, int len)
 {
