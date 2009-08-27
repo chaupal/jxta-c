@@ -122,9 +122,9 @@ static const apr_interval_time_t JXTA_PEERVIEW_ADD_INTERVAL = 15 * APR_USEC_PER_
 #define JXTA_PEERVIEW_VOTING_EXPIRATION (5 * JPR_INTERVAL_ONE_SECOND)
 #define JXTA_PEERVIEW_VOTING_WAIT (3 * JXTA_PEERVIEW_VOTING_EXPIRATION)
 
-static const unsigned int DEFAULT_CLUSTERS_COUNT = 4;
+static const unsigned int DEFAULT_CLUSTERS_COUNT = 2;
 
-static const unsigned int DEFAULT_CLUSTER_MEMBERS = 2;
+static const unsigned int DEFAULT_CLUSTER_MEMBERS = 4;
 
 static const unsigned int DEFAULT_REPLICATION_FACTOR = 2;
 
