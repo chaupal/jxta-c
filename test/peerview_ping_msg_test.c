@@ -78,7 +78,8 @@ const char *test_jxta_peerview_ping_construction(void) {
 }
 
 const char *test_jxta_peerview_ping_group_entry(void) {
-    Jxta_pv_ping_msg_group_entry *entry = jxta_pv_ping_msg_entry_new(NULL, "group1", TRUE);
+    apr_uuid_t adv_gen;
+    Jxta_pv_ping_msg_group_entry *entry = jxta_pv_ping_msg_entry_new(NULL, adv_gen, FALSE, "group1", TRUE);
 
     jxta_peerview_ping_msg_entry_set_pv_id_only(entry, TRUE);
 
@@ -108,6 +109,7 @@ const char *test_jxta_peerview_ping_serialization(void) {
     int i;
     Jxta_pv_ping_msg_group_entry *entry;
     char group_name[128];
+    apr_uuid_t adv_gen;
 
 
     jxta_advertisement_register_global_handler("jxta:PeerviewPing", (JxtaAdvertisementNewFunc) jxta_peerview_ping_msg_new );
@@ -120,7 +122,7 @@ const char *test_jxta_peerview_ping_serialization(void) {
 
     for (i=0; i<3; i++) {
         apr_snprintf(group_name, sizeof(group_name), "group%d", i + 1);
-        entry = jxta_pv_ping_msg_entry_new(NULL, group_name, TRUE);
+        entry = jxta_pv_ping_msg_entry_new(NULL, adv_gen, FALSE, group_name, TRUE);
         if (JXTA_SUCCESS != jxta_peerview_ping_msg_add_group_entry(msg, entry)) {
             return FILEANDLINE;
         }
