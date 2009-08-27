@@ -168,6 +168,13 @@ typedef struct {
     Jxta_time update_limit;
 } Jxta_srdi_service_ref;
 
+typedef struct {
+    JXTA_OBJECT_HANDLE;
+    Jxta_PG *group;
+    Jxta_listener *srdilistener;
+    void *ep_cookie;
+} Jxta_SRDIListenerRef;
+
 static Jxta_status srdi_service_remove_replicas(Jxta_srdi_service_ref * srdi, Jxta_vector * entries);
 static void get_replica_peers_priv(Jxta_srdi_service_ref * me, Jxta_SRDIEntryElement * entry, Jxta_peer **peer, Jxta_vector **peers);
 
@@ -279,6 +286,16 @@ static void add_replica_to_peers(Jxta_srdi_service_ref *me, Jxta_hashtable *peer
         JXTA_OBJECT_RELEASE(jRepId);
 }
 
+static void SRDIListenerRef_free(Jxta_object * o)
+{
+    Jxta_SRDIListenerRef *ref = (Jxta_SRDIListenerRef *) o;
+    if (ref->srdilistener) {
+        JXTA_OBJECT_RELEASE(ref->srdilistener);
+        ref->srdilistener = NULL;
+    }
+}
+    
+
 /**
  * Registers a given Listner.
  *
@@ -300,8 +317,18 @@ Jxta_status registerSrdiListener(Jxta_srdi_service * self, JString * name, Jxta_
     hashname = jstring_get_string(new_name);
 
     if (strlen(hashname) != 0 && JXTA_SUCCESS != jxta_hashtable_contains(me->srdilisteners, hashname, strlen(hashname))) {
-        res = jxta_PG_add_recipient(me->group, &me->ep_cookie, jstring_get_string(name), SRDI_QUEUENAME, srdi_service_srdi_cb, me);
-        jxta_hashtable_put(me->srdilisteners, hashname, strlen(hashname), (Jxta_object *) handler);
+        Jxta_SRDIListenerRef * listenerRef = (Jxta_SRDIListenerRef *) calloc(1, sizeof(Jxta_SRDIListenerRef));
+        if (listenerRef != NULL) {
+            JXTA_OBJECT_INIT(listenerRef, SRDIListenerRef_free, 0);
+            listenerRef->srdilistener = JXTA_OBJECT_SHARE(handler);
+            listenerRef->group = me->group;  //No need to share the group since the listener references
+                                             //will be deleted before the main srdi ref object
+            res = jxta_PG_add_recipient(listenerRef->group, &listenerRef->ep_cookie, jstring_get_string(name), SRDI_QUEUENAME, srdi_service_srdi_cb, me);
+            jxta_hashtable_put(me->srdilisteners, hashname, strlen(hashname), (Jxta_object *) listenerRef);
+            JXTA_OBJECT_RELEASE(listenerRef);
+        } else {
+            res = JXTA_NOMEM;
+        }
     } else {
         res = JXTA_INVALID_ARGUMENT;
     }
@@ -318,16 +345,25 @@ Jxta_status registerSrdiListener(Jxta_srdi_service * self, JString * name, Jxta_
   */
 static Jxta_status unregisterSrdiListener(Jxta_srdi_service * self, JString * name)
 {
-    Jxta_object *ignore = 0;
+    Jxta_object *obj = NULL;
     char const *hashname;
     Jxta_status status;
     Jxta_srdi_service_ref *me = PTValid(self, Jxta_srdi_service_ref);
 
     hashname = jstring_get_string(name);
 
-    status = jxta_hashtable_del(me->srdilisteners, hashname, strlen(hashname), &ignore);
-    if (ignore != 0)
-        JXTA_OBJECT_RELEASE(ignore);
+    status = jxta_hashtable_del(me->srdilisteners, hashname, strlen(hashname), &obj);
+    if (obj != NULL) {
+        Jxta_SRDIListenerRef *listenerRef = (Jxta_SRDIListenerRef *) obj;
+        if (listenerRef->group) {
+            if (listenerRef->ep_cookie) {
+                jxta_PG_remove_recipient(listenerRef->group, listenerRef->ep_cookie);
+                listenerRef->ep_cookie = NULL;
+            }
+            listenerRef->group = NULL;
+        }
+        JXTA_OBJECT_RELEASE(listenerRef);
+    }
     return status;
 }
 
@@ -652,8 +688,9 @@ static Jxta_status pushSrdi_priv(Jxta_srdi_service_ref * self, JString * instanc
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to send srdi message\n");
         }
     }
-
+#ifdef GZIP_ENABLED
 FINAL_EXIT:
+#endif
     if (el_name)
         JXTA_OBJECT_RELEASE(el_name);
     if (el)
@@ -1923,7 +1960,7 @@ static Jxta_status JXTA_STDCALL srdi_service_srdi_cb(Jxta_object * obj, void *ar
     Jxta_status res=JXTA_FAILED;
     Jxta_message *msg;
     Jxta_endpoint_address *address=NULL;
-    Jxta_listener *listener=NULL;
+    Jxta_SRDIListenerRef *listenerRef=NULL;
     const char *service_parms;
     Jxta_message_element *element=NULL;
 
@@ -1936,9 +1973,9 @@ static Jxta_status JXTA_STDCALL srdi_service_srdi_cb(Jxta_object * obj, void *ar
     if (NULL == service_parms) {
         goto FINAL_EXIT;
     }
-    jxta_hashtable_get(myself->srdilisteners, service_parms, strlen(service_parms), JXTA_OBJECT_PPTR(&listener));
+    jxta_hashtable_get(myself->srdilisteners, service_parms, strlen(service_parms), JXTA_OBJECT_PPTR(&listenerRef));
 
-    if (NULL == listener) {
+    if (NULL == listenerRef || NULL == listenerRef->srdilistener) {
         goto FINAL_EXIT;
     }
 
@@ -1979,7 +2016,7 @@ static Jxta_status JXTA_STDCALL srdi_service_srdi_cb(Jxta_object * obj, void *ar
 
                 parm_string = jstring_new_0();
                 jstring_append_0(parm_string, (const char *) uncompr, uncomprLen);
-                jxta_listener_process_object(listener, (Jxta_object *) parm_string);
+                jxta_listener_process_object(listenerRef->srdilistener, (Jxta_object *) parm_string);
                 JXTA_OBJECT_RELEASE(parm_string);
                 free(uncompr);
             }
@@ -1992,8 +2029,8 @@ static Jxta_status JXTA_STDCALL srdi_service_srdi_cb(Jxta_object * obj, void *ar
 FINAL_EXIT:
     if (address)
         JXTA_OBJECT_RELEASE(address);
-    if (listener)
-        JXTA_OBJECT_RELEASE(listener);
+    if (listenerRef)
+        JXTA_OBJECT_RELEASE(listenerRef);
     if (element)
         JXTA_OBJECT_RELEASE(element);
     return res;
@@ -2056,8 +2093,12 @@ static void stop(Jxta_module * me)
     jxta_rdv_service_remove_event_listener(myself->rendezvous, "SRDIMessage", "abc");
     JXTA_OBJECT_RELEASE(myself->rdv_listener);
 
-    endpoint_service_remove_recipient(myself->endpoint, myself->ep_cookie);
+    Jxta_status status = endpoint_service_remove_recipient(myself->endpoint, myself->ep_cookie);
+    if (JXTA_SUCCESS != status) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to remove endpoint listener for service (%x)\n", myself);
+    }
 }
+
 
 static Jxta_status start(Jxta_module * me, const char *argv[])
 {

@@ -413,7 +413,8 @@ static void stop(Jxta_module * module)
     }
     status = jxta_resolver_service_unregisterQueryHandler(discovery->resolver, discovery->instanceName);
     status = jxta_resolver_service_unregisterResHandler(discovery->resolver, discovery->instanceName);
-    status = jxta_resolver_service_unregisterSrdiHandler(discovery->resolver, discovery->instanceName);
+    
+    status = jxta_srdi_unregisterSrdiListener(discovery->srdi, discovery->instanceName);
 
     jxta_rdv_service_remove_event_listener(discovery->rdv,
                                            (char *) jstring_get_string(discovery->instanceName),
@@ -2473,9 +2474,7 @@ static void discovery_service_update_srdi_peers(Jxta_discovery_service_ref *disc
     jxta_srdi_message_get_PrevPID(smsg, &working_pid);
 
     if (NULL != working_pid) {
-        int i;
-
-
+        
         if (!bReplica) {
             /* notify the peerview the replicating rendezvous has changed */
             discovery_notify_peerview_peers(discovery, peerid, working_pid, NULL);
