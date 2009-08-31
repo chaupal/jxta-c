@@ -69,6 +69,19 @@ extern "C" {
 #endif
 #endif
 
+typedef enum _address_assign_type {
+    ADDRESS_ASSIGN=0,
+    ADDRESS_ASSIGN_LOCK=1,
+    ADDRESS_ASSIGN_LOCK_RSP=2,
+    ADDRESS_ASSIGN_UNLOCK=3,
+    ADDRESS_ASSIGN_BUSY=4,
+    ADDRESS_ASSIGN_ASSIGNED=5,
+    ADDRESS_ASSIGN_ASSIGNED_RSP=6,
+    ADDRESS_ASSIGN_FREE=7,
+    ADDRESS_ASSIGN_FREE_RSP=8,
+    ADDRESS_ASSIGN_STATUS=9,
+    ADDRESS_ASSIGN_ASSIGNED_RSP_NEG=10
+    } Jxta_address_assign_msg_type;
 
 /**
 *   Opaque pointer to a address_assign message.
@@ -88,6 +101,16 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_address_assign_msg_parse_file(Jxta_peerv
 JXTA_DECLARE(Jxta_id*) jxta_peerview_address_assign_msg_get_peer_id(Jxta_peerview_address_assign_msg * me);
 JXTA_DECLARE(void) jxta_peerview_address_assign_msg_set_peer_id(Jxta_peerview_address_assign_msg * me, Jxta_id* id);
 
+JXTA_DECLARE(Jxta_address_assign_msg_type) jxta_peerview_address_assign_msg_get_type(Jxta_peerview_address_assign_msg * me);
+JXTA_DECLARE(const char *) jxta_peerview_address_assign_msg_type_text(Jxta_peerview_address_assign_msg * me);
+JXTA_DECLARE(Jxta_status) jxta_peerview_address_assign_msg_set_type(Jxta_peerview_address_assign_msg * me, Jxta_address_assign_msg_type type);
+
+JXTA_DECLARE(Jxta_time_diff) jxta_peerview_address_assign_msg_get_expiration(Jxta_peerview_address_assign_msg * myself);
+JXTA_DECLARE(void) jxta_peerview_address_assign_msg_set_expiraton(Jxta_peerview_address_assign_msg * myself, Jxta_time_diff expiration);
+
+JXTA_DECLARE(Jxta_id *) jxta_peerview_address_assign_msg_get_assign_peer_id(Jxta_peerview_address_assign_msg * myself);
+JXTA_DECLARE(void) jxta_peerview_address_assign_msg_set_assign_peer_id(Jxta_peerview_address_assign_msg * myself, Jxta_id * peer_id);
+
 JXTA_DECLARE(Jxta_credential*) jxta_peerview_address_assign_msg_get_credential(Jxta_peerview_address_assign_msg * me);
 JXTA_DECLARE(void) jxta_peerview_address_assign_msg_set_credential(Jxta_peerview_address_assign_msg * me, Jxta_credential* credential);
 
@@ -97,9 +120,14 @@ JXTA_DECLARE(void) jxta_peerview_address_assign_msg_set_instance_mask(Jxta_peerv
 JXTA_DECLARE(const char *) jxta_peerview_address_assign_msg_get_target_hash(Jxta_peerview_address_assign_msg * me);
 JXTA_DECLARE(void) jxta_peerview_address_assign_msg_set_target_hash(Jxta_peerview_address_assign_msg * me, const char *target_hash);
 
+JXTA_DECLARE(int) jxta_peerview_address_assign_msg_get_cluster_peers(Jxta_peerview_address_assign_msg * me);
+JXTA_DECLARE(void) jxta_peerview_address_assign_msg_set_cluster_peers(Jxta_peerview_address_assign_msg * me, int peers);
+
+JXTA_DECLARE(Jxta_boolean) jxta_peerview_address_assign_msg_get_free_hash_list(Jxta_peerview_address_assign_msg * myself, Jxta_vector **free_list);
+JXTA_DECLARE(void) jxta_peerview_address_assign_msg_set_free_hash_list(Jxta_peerview_address_assign_msg * myself, Jxta_vector *free_hash_list, Jxta_boolean possible);
+
 JXTA_DECLARE(Jxta_vector *) jxta_peerview_address_assign_msg_get_options(Jxta_peerview_address_assign_msg * me);
 JXTA_DECLARE(void) jxta_peerview_address_assign_msg_set_options(Jxta_peerview_address_assign_msg * me, Jxta_vector *options);
-
 
 #ifdef __cplusplus
 #if 0

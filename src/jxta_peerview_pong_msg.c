@@ -64,7 +64,7 @@ static const char *__log_cat = "PV_PONG";
 #include "jxta_log.h"
 #include "jstring.h"
 #include "jxta_xml_util.h"
-
+#include "jxta_peerview_priv.h"
 #include "jxta_peerview_pong_msg.h"
 
 const char JXTA_PEERVIEW_PONG_ELEMENT_NAME[] = "PeerviewPong";
@@ -119,6 +119,7 @@ struct _Jxta_peerview_pong_msg {
     Jxta_boolean is_rendezvous;
     Jxta_boolean is_demoting;
 
+    Jxta_vector *free_hash_list;
     Jxta_vector *partners;
     Jxta_vector *associates;
     Jxta_vector *candidates;
@@ -221,6 +222,7 @@ JXTA_DECLARE(Jxta_peerview_pong_msg *) jxta_peerview_pong_msg_new(void)
         myself->peer_adv = NULL;
         myself->peer_adv_gen_set = FALSE;
         myself->peer_adv_exp = -1;
+        myself->free_hash_list = jxta_vector_new(0);
         myself->partners = jxta_vector_new(0);
         myself->associates = jxta_vector_new(0);
         myself->candidates = jxta_vector_new(0);
@@ -252,6 +254,11 @@ static void peerview_pong_msg_delete(Jxta_object * me)
     if (myself->peer_adv) {
         JXTA_OBJECT_RELEASE(myself->peer_adv);
         myself->peer_adv = NULL;
+    }
+
+    if (myself->free_hash_list) {
+        JXTA_OBJECT_RELEASE(myself->free_hash_list);
+        myself->free_hash_list = NULL;
     }
 
     if (myself->partners) {
@@ -453,6 +460,27 @@ JXTA_DECLARE(void) jxta_peerview_pong_msg_set_target_hash_radius(Jxta_peerview_p
         myself->peer->target_hash_radius = jstring_new_2(target_hash_radius);
         jstring_trim(myself->peer->target_hash_radius);
     }
+}
+
+
+JXTA_DECLARE(Jxta_vector *) jxta_peerview_pong_msg_get_free_hash_list(Jxta_peerview_pong_msg * myself)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    if (myself->free_hash_list) {
+        return JXTA_OBJECT_SHARE(myself->free_hash_list);
+    }
+    return NULL;
+}
+
+JXTA_DECLARE(void) jxta_peerview_pong_msg_set_free_hash_list(Jxta_peerview_pong_msg * myself, Jxta_vector *free_hash_list)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    if (myself->free_hash_list)
+        JXTA_OBJECT_RELEASE(myself->free_hash_list);
+
+    myself->free_hash_list = JXTA_OBJECT_SHARE(free_hash_list);
 }
 
 JXTA_DECLARE(Jxta_PA *) jxta_peerview_pong_msg_get_peer_adv(Jxta_peerview_pong_msg * myself)
@@ -751,6 +779,32 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml(Jxta_peerview_pong_msg 
     apr_snprintf(tmpbuf, sizeof(tmpbuf), "%d", myself->pong_action);
     jstring_append_2(string, tmpbuf);
     jstring_append_2(string, "\"");
+    
+    for (i=0; i < jxta_vector_size(myself->free_hash_list); i++) {
+        JString *hash_entry;
+        char *tmpc=NULL;
+        BIGNUM *target_bn=NULL;
+
+        if (0 == i) {
+            jstring_append_2(string, " free=\"");
+        } else {
+            jstring_append_2(string, ",");
+        }
+        jxta_vector_get_object_at(myself->free_hash_list, JXTA_OBJECT_PPTR(&hash_entry), i);
+        BN_hex2bn(&target_bn, jstring_get_string(hash_entry));
+        BN_rshift(target_bn, target_bn, PEERVIEW_FREE_LIST_BIT_SHIFT);
+        tmpc = BN_bn2hex(target_bn);
+
+        jstring_append_2(string, tmpc);
+
+        free(tmpc);
+        BN_free(target_bn);
+        JXTA_OBJECT_RELEASE(hash_entry);
+    }
+    if (i > 0) {
+        jstring_append_2(string, "\"");
+    }
+
     jstring_append_2(string, ">\n");
 
     jstring_append_2(string, "<InstanceMask>");
@@ -764,7 +818,7 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml(Jxta_peerview_pong_msg 
     jstring_append_2(string, ">\n");
     jstring_append_2(string, jxta_peerview_pong_msg_get_target_hash(myself));
     jstring_append_2(string, "</TargetHash>\n");
-    
+
     if( NULL != myself->peer_adv ) {
         char const *attrs[8] = { "type", "jxta:PA" };
         unsigned int free_mask = 0;
@@ -1073,6 +1127,13 @@ static void handle_peerview_pong_msg(void *me, const XML_Char * cd, int len)
                 Jxta_pong_msg_action action;
                 action = atoi(atts[1]);
                 myself->pong_action = action;
+            } else if (0 == strcmp(*atts, "free")) {
+
+                if (NULL == myself->free_hash_list) {
+                     myself->free_hash_list = jxta_vector_new(0);
+                }
+                peerview_handle_free_hash_list_attr(atts[1],myself->free_hash_list, FALSE);
+
             } else {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
             }

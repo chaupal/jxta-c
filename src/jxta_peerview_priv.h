@@ -70,6 +70,8 @@ extern "C" {
 #endif
 #endif
 
+#define PEERVIEW_FREE_LIST_BIT_SHIFT 140
+
     /**
  *  Name of the service (as being used in forming the Endpoint Address).
      **/
@@ -124,6 +126,9 @@ extern Jxta_status peerview_get_peer_address(Jxta_peer *peer, BIGNUM **address);
 
 extern Jxta_status peerview_send_disconnect(Jxta_peerview * pv, Jxta_peer * dest);
 
+/* convenience function to handle free list strings */
+
+extern Jxta_status peerview_handle_free_hash_list_attr(const char * ptr, Jxta_vector * free_v, Jxta_boolean print);
 #ifdef __cplusplus
 #if 0
 {

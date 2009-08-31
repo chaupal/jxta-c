@@ -120,6 +120,9 @@ JXTA_DECLARE(void) jxta_peerview_pong_msg_set_instance_mask(Jxta_peerview_pong_m
 JXTA_DECLARE(const char *) jxta_peerview_pong_msg_get_target_hash(Jxta_peerview_pong_msg * me);
 JXTA_DECLARE(void) jxta_peerview_pong_msg_set_target_hash(Jxta_peerview_pong_msg * me, const char *target_hash);
 
+JXTA_DECLARE(Jxta_vector *) jxta_peerview_pong_msg_get_free_hash_list(Jxta_peerview_pong_msg * me);
+JXTA_DECLARE(void) jxta_peerview_pong_msg_set_free_hash_list(Jxta_peerview_pong_msg * me, Jxta_vector *free_hash_list);
+
 JXTA_DECLARE(const char *) jxta_peerview_pong_msg_get_target_hash_radius(Jxta_peerview_pong_msg * me);
 JXTA_DECLARE(void) jxta_peerview_pong_msg_set_target_hash_radius(Jxta_peerview_pong_msg * me, const char *target_hash_radius);
 

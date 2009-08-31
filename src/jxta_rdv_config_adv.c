@@ -114,6 +114,7 @@ struct _jxta_RdvConfigAdvertisement {
     Jxta_time_diff pv_pong_due;
     Jxta_time_diff pv_voting_expiration;
     Jxta_time_diff pv_voting_wait;
+    Jxta_time_diff pv_address_assign_expiration;
     Peerview_address_assign_mode pv_address_assign_mode;
     Jxta_Peerview_walk_policy pv_walk_policy;
     int pv_walk_peers;
@@ -171,6 +172,7 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfig_clone(Jxta_RdvConfigAdvertisement * ad,
     cclone->pv_pong_due = ad->pv_pong_due;
     cclone->pv_voting_expiration = ad->pv_voting_expiration;
     cclone->pv_voting_wait = ad->pv_voting_wait;
+    cclone->pv_address_assign_expiration = ad->pv_address_assign_expiration;
     *ret_clone = cclone;
 
 ERROR_EXIT:
@@ -661,6 +663,19 @@ JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_voting_wait(Jxta_RdvConfigAdverti
 
 }
 
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_address_assign_expiration(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff ttime)
+{
+    JXTA_OBJECT_CHECK_VALID(ad);
+    ad->pv_address_assign_expiration = ttime;
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_address_assign_expiration(Jxta_RdvConfigAdvertisement * ad)
+{
+    JXTA_OBJECT_CHECK_VALID(ad);
+    return ad->pv_address_assign_expiration;
+}
+
 /* -----------------------------------------  Seeds -------------------------------- */
 
 JXTA_DECLARE(Jxta_vector *) jxta_RdvConfig_get_seeds(Jxta_RdvConfigAdvertisement * ad)
@@ -870,6 +885,8 @@ static void handlePeerView(void *me, const XML_Char * cd, int len)
                 myself->pv_voting_expiration = (atol(atts[1]));
             } else if (0 == strcmp(*atts, "pv_voting_wait")) {
                 myself->pv_voting_wait = (atol(atts[1]));
+            } else if (0 == strcmp(*atts, "pv_address_assign_expiration")) {
+                myself->pv_address_assign_expiration = (atol(atts[1]));
             } else {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized PeerView attribute : \"%s\" = \"%s\"\n", *atts,
                                 atts[1]);
@@ -1221,6 +1238,14 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
         jstring_append_2(string, "\"");
     }
 
+    if (-1 != ad->pv_address_assign_expiration) {
+        jstring_append_2(string, "\n    ");
+        jstring_append_2(string, "pv_address_assign_expiration=\"");
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->pv_address_assign_expiration);
+        jstring_append_2(string, tmpbuf);
+        jstring_append_2(string, "\"");
+    }
+
     if (-1 != ad->rdva_refresh) {
         apr_snprintf(tmpbuf, sizeof(tmpbuf), " rdvaRefreshPeerView=\"" JPR_DIFF_TIME_FMT "\"", ad->rdva_refresh);
         jstring_append_2(string, tmpbuf);
@@ -1329,6 +1354,7 @@ Jxta_RdvConfigAdvertisement *jxta_RdvConfigAdvertisement_construct(Jxta_RdvConfi
         self->pv_pong_due = -1;
         self->pv_voting_expiration = -1;
         self->pv_voting_wait = -1;
+        self->pv_address_assign_expiration = -1;
 
         /* Seeding */
         self->seeds = jxta_vector_new(4);
