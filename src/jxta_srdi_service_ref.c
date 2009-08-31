@@ -293,6 +293,8 @@ static void SRDIListenerRef_free(Jxta_object * o)
         JXTA_OBJECT_RELEASE(ref->srdilistener);
         ref->srdilistener = NULL;
     }
+
+    free(ref);
 }
     
 
