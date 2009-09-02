@@ -3537,6 +3537,10 @@ static void get_empty_cluster(Jxta_peerview *myself, int * cluster)
 
     low_cluster = 0;
 
+    if (1 == myself->clusters_count) {
+        *cluster = 0;
+        return;
+    }
     high_cluster = myself->clusters_count - 1;
 
     do {
