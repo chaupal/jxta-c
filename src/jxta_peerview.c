@@ -4007,6 +4007,34 @@ static void match_hash_to_list(Jxta_hashtable * peers, BIGNUM *space, BIGNUM *ha
     free(hashc);
 }
 
+static int find_smallest_cluster(Jxta_peerview *myself)
+{
+    Jxta_vector *pves=NULL;
+    int smallest_cluster=myself->my_cluster;
+    int smallest_cluster_peers=jxta_vector_size(myself->clusters[myself->my_cluster].members);
+    int i;
+
+    pves = peerview_get_all_pves(myself);
+
+    for (i=0; NULL != pves && i < jxta_vector_size(pves); i++) {
+        Jxta_status res;
+        Peerview_entry *pve;
+        res = jxta_vector_get_object_at(pves, JXTA_OBJECT_PPTR(&pve), i);
+        if (JXTA_SUCCESS != res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unable to retrieve entry from the pv entries res:%d\n", res);
+            continue;
+        }
+        if (pve->cluster != myself->my_cluster && pve->cluster_peers < smallest_cluster_peers) {
+            smallest_cluster = pve->cluster;
+            smallest_cluster_peers = pve->cluster_peers;
+        }
+        JXTA_OBJECT_RELEASE(pve);
+    }
+    if (NULL != pves)
+        JXTA_OBJECT_RELEASE(pves);
+    return smallest_cluster;
+}
+
 static Jxta_status peerview_handle_address_assign_lock_rsp(Jxta_peerview *myself, Jxta_peerview_address_assign_msg * addr_assign, Jxta_id *rcv_peerid, const char *rcv_peerid_c)
 {
     Jxta_status res=JXTA_SUCCESS;
@@ -4075,28 +4103,8 @@ static Jxta_status peerview_handle_address_assign_lock_rsp(Jxta_peerview *myself
         get_empty_cluster(myself, &cluster);
         /* if there was no empty cluster find the least populated cluster */
         if (myself->my_cluster == cluster) {
-            Jxta_vector *pves=NULL;
-            int smallest_cluster=myself->my_cluster;
-            int smallest_cluster_peers=jxta_vector_size(myself->clusters[myself->my_cluster].members);
+            cluster = find_smallest_cluster(myself);
 
-            pves = peerview_get_all_pves(myself);
-
-            for (i=0; NULL != pves && i < jxta_vector_size(pves); i++) {
-
-                res = jxta_vector_get_object_at(pves, JXTA_OBJECT_PPTR(&pve), i);
-                if (JXTA_SUCCESS != res) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unable to retrieve entry from the pv entries res:%d\n", res);
-                    continue;
-                }
-                if (pve->cluster != myself->my_cluster && pve->cluster_peers < smallest_cluster_peers) {
-                    smallest_cluster = pve->cluster;
-                    smallest_cluster_peers = pve->cluster_peers;
-                }
-                JXTA_OBJECT_RELEASE(pve);
-            }
-            cluster = smallest_cluster;
-            if (NULL != pves)
-                JXTA_OBJECT_RELEASE(pves);
         }
         /* if this peer's cluster is the smallest find a partner address */
         if (myself->my_cluster == cluster) {
@@ -7065,7 +7073,6 @@ static Jxta_status peerview_broadcast_address_assign(Jxta_peerview *myself, Jxta
 
 static void *APR_THREAD_FUNC activity_peerview_address_locking(apr_thread_t * thread, void *arg)
 {
-    Jxta_status res=JXTA_SUCCESS;
     apr_status_t apr_res;
     Jxta_peerview *myself = PTValid(arg, Jxta_peerview);
     Jxta_boolean locked = FALSE;
@@ -7127,34 +7134,51 @@ static void *APR_THREAD_FUNC activity_peerview_address_locking(apr_thread_t * th
                 Jxta_peer *dest=NULL;
                 Jxta_vector *half_list=NULL;
                 BIGNUM *target_hash=NULL;
-                int i;
+                BIGNUM *target_address=NULL;
                 int cluster;
 
                 cluster = myself->my_cluster;
                 get_empty_cluster(myself, &cluster);
+                if (cluster == myself->my_cluster) {
+                    cluster = find_smallest_cluster(myself);
+                }
+                if (cluster == myself->my_cluster) {
+                    find_best_target_address(jxta_RdvConfig_pv_get_address_assign_mode(myself->rdvConfig)
+                            , myself->clusters[cluster].histogram
+                            , myself->clusters[cluster].min
+                            , myself->clusters[cluster].max
+                            , myself->hash_attempts
+                            , myself->peer_address_space
+                            , &target_address);
 
-                for (i=0; target_hash == NULL && i<jxta_vector_size(myself->free_hash_list); i++) {
-                    JString *hash_entry=NULL;
 
-                    res = jxta_vector_get_object_at(myself->free_hash_list, JXTA_OBJECT_PPTR(&hash_entry), i);
-                    if (JXTA_SUCCESS != res) {
-                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unable to retrieve entry from my free hash list res:%d\n", res);
-                        continue;
-                    }
+                } else {
+                    if (NULL == myself->clusters[cluster].next_address) {
+                        BN_CTX *ctx = BN_CTX_new();
+                        target_address = BN_new();
+                        BIGNUM *cluster_bn = BN_new();
 
-                    BN_hex2bn(&target_hash, jstring_get_string(hash_entry));
-                    if (cluster != cluster_for_hash(myself, target_hash)) {
-                        BN_free(target_hash);
-                        target_hash = NULL;
+                        BN_set_word(cluster_bn, cluster);
+                        BN_set_word(target_address, 0);
+                        BN_add(target_address, target_address, myself->clusters[cluster].mid);
+                        myself->clusters[cluster].next_address = BN_dup(target_address);
+                        BN_mul(myself->clusters[cluster].next_address, myself->cluster_divisor, cluster_bn, ctx);
+
                     } else {
-                        if (BN_cmp(target_hash, myself->clusters[cluster].mid) < 0) {
-                            BN_free(target_hash);
-                            target_hash = NULL;
-                        } else {
-                            jxta_vector_remove_object_at(myself->free_hash_list, NULL, i--);
-                        }
+                        target_address = BN_dup(myself->clusters[cluster].next_address);
                     }
-                    JXTA_OBJECT_RELEASE(hash_entry);
+                }
+                if (target_address != NULL) {
+                    jxta_hashtable_put(myself->activity_address_locked_peers
+                                        , myself->pid_c, strlen(myself->pid_c) + 1, (Jxta_object *) myself->free_hash_list);
+
+                    match_hash_to_list(myself->activity_address_locked_peers, myself->cluster_divisor, target_address, &dest, &target_hash);
+                    if (NULL != dest && jxta_id_equals(jxta_peer_peerid(dest), myself->pid)) {
+                        JXTA_OBJECT_RELEASE(dest);
+                        dest = NULL;
+                    }
+                    BN_free(target_address);
+                    target_address = NULL;
                 }
                 half_the_free_list(myself, cluster, &half_list);
                 peerview_send_address_assign_and_unlock(myself, target_hash, half_list);
@@ -8328,6 +8352,7 @@ static Jxta_status histogram_predictable_entry(Jxta_vector * histogram, Jxta_vec
     BIGNUM *target_address=NULL;
     Jxta_vector *empty_space = NULL;
 
+    BN_set_word(biggest_gap, 0);
     histogram_get_empty_space(histogram, min_bn, max_bn, &empty_space);
 
     /* check for empty space */
@@ -8336,7 +8361,7 @@ static Jxta_status histogram_predictable_entry(Jxta_vector * histogram, Jxta_vec
         for (i=0; i < jxta_vector_size(empty_space); i++) {
             jxta_vector_get_object_at(empty_space, JXTA_OBJECT_PPTR(&entry), i);
             BN_sub(gap_bn, entry->end, entry->start);
-            if (BN_cmp(gap_bn, biggest_gap) > 0) {
+            if (BN_cmp(gap_bn, biggest_gap) >= 0) {
                 BN_copy(biggest_gap, gap_bn);
                 gap_idx = i;
             }
@@ -8353,13 +8378,15 @@ static Jxta_status histogram_predictable_entry(Jxta_vector * histogram, Jxta_vec
         size_of_entry = BN_new();
         BN_set_word(size_of_entry, 0);
         tmp_size = BN_new();
-        split_address = BN_new();
         BN_set_word(tmp_size, 0);
+        split_address = BN_new();
+
         for (i = 0; i < jxta_vector_size(histogram); i++) {
             jxta_vector_get_object_at(histogram, JXTA_OBJECT_PPTR(&entry), i);
             BN_sub(tmp_size, entry->end, entry->start);
-            if (BN_cmp(tmp_size, size_of_entry) > 0) {
-                if (jxta_vector_size(entry->peers) < num_peers) {
+
+            if (BN_cmp(tmp_size, size_of_entry) >= 0) {
+                if (jxta_vector_size(entry->peers) <= num_peers) {
                     num_peers = jxta_vector_size(entry->peers);
                     gap_idx = i;
                 }
@@ -8385,16 +8412,23 @@ static Jxta_status histogram_predictable_entry(Jxta_vector * histogram, Jxta_vec
                 Peerview_entry *peer=NULL;
 
                 jxta_vector_get_object_at(entry->peers, JXTA_OBJECT_PPTR(&peer), i);
-                /* BN_sub(how_far, peer->target_hash, entry->start); */
-                BN_sub(how_far, entry->end, peer->target_hash);
+                if (BN_cmp(peer->target_hash, entry->start) <= 0) {
+                    BN_sub(how_far, entry->start, peer->target_hash);
+                } else {
+                    BN_sub(how_far, peer->target_hash, entry->start);
+                }
                 if (BN_cmp(how_far, peer_hash) > 0) {
                     BN_copy(peer_hash, peer->target_hash);
+                    BN_copy(target_address, peer_hash);
+                    if (BN_cmp(peer_hash, entry->start) >= 0) {
+                        BN_sub(peer_hash, peer_hash, entry->start);
+                    } else {
+                        BN_sub(peer_hash, entry->start, peer_hash);
+                    }
                 }
                 JXTA_OBJECT_RELEASE(peer);
             }
 
-/*             BN_sub(*target_address, peer_hash, entry->start); */
-            BN_sub(target_address, entry->end, peer_hash);
             BN_rshift1(target_address, target_address);
 
             BN_free(peer_hash);
@@ -8402,9 +8436,11 @@ static Jxta_status histogram_predictable_entry(Jxta_vector * histogram, Jxta_vec
             JXTA_OBJECT_RELEASE(entry);
         }
         BN_add(target_address, target_address, min_bn);
-    } else {
-        tmp_biggest_gap = BN_bn2hex(biggest_gap);
+        tmp_biggest_gap = BN_bn2hex(target_address);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Assigning address with no empty space:%s\n", tmp_biggest_gap);
         free(tmp_biggest_gap);
+
+    } else {
 
         jxta_vector_get_object_at(empty_space, JXTA_OBJECT_PPTR(&entry), gap_idx);
         if (BN_cmp(biggest_gap, range) > 0) {
@@ -8413,6 +8449,10 @@ static Jxta_status histogram_predictable_entry(Jxta_vector * histogram, Jxta_vec
         /* split the gap in half */
         BN_rshift1(biggest_gap, biggest_gap);
         BN_add(target_address, entry->start, biggest_gap);
+
+        tmp_biggest_gap = BN_bn2hex(target_address);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Assigning address from empty space:%s\n", tmp_biggest_gap);
+        free(tmp_biggest_gap);
 
         JXTA_OBJECT_RELEASE(entry);
     }
@@ -8473,6 +8513,7 @@ static void histogram_get_empty_space(Jxta_vector * histogram, BIGNUM *min_bn, B
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to retrieve entry from the histogram res:%d\n", status);
             continue;
         }
+        print_start_end("ENTRY", i, 0, entry->start, entry->end);
         if (NULL != last_entry) {
             BIGNUM *diff = NULL;
             diff = BN_new();
@@ -8490,6 +8531,7 @@ static void histogram_get_empty_space(Jxta_vector * histogram, BIGNUM *min_bn, B
             }
         }
         if (NULL != free_space) {
+
             jxta_vector_add_object_last(*empty_locations, (Jxta_object *) free_space);
             JXTA_OBJECT_RELEASE(free_space);
             free_space = NULL;
@@ -8499,6 +8541,7 @@ static void histogram_get_empty_space(Jxta_vector * histogram, BIGNUM *min_bn, B
     if (last_entry) {
         if (BN_cmp(last_entry->end, max_bn) < 0) {
             free_space = peerview_histogram_entry_new(last_entry->end, max_bn);
+            print_start_end("Add free", i, 0, free_space->start, free_space->end);
             jxta_vector_add_object_last(*empty_locations, (Jxta_object *) free_space);
             JXTA_OBJECT_RELEASE(free_space);
         }
