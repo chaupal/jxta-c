@@ -7164,6 +7164,8 @@ static void *APR_THREAD_FUNC activity_peerview_address_locking(apr_thread_t * th
                         myself->clusters[cluster].next_address = BN_dup(target_address);
                         BN_mul(myself->clusters[cluster].next_address, myself->cluster_divisor, cluster_bn, ctx);
 
+                        BN_free(cluster_bn);
+                        BN_CTX_free(ctx);
                     } else {
                         target_address = BN_dup(myself->clusters[cluster].next_address);
                     }
