@@ -132,7 +132,7 @@ struct _jxta_discovery_service_methods {
 Jxta_status getLocalGroupsQuery (Jxta_discovery_service * self, const char *query,
                                 Jxta_credential *scope[], Jxta_vector ** results, int threshold, Jxta_boolean ads_only);
 
-Jxta_status discovery_send_srdi(Jxta_discovery_service * me, JString * pkey, Jxta_vector * entries, Jxta_id *prev_id, Jxta_boolean updates_only, Jxta_boolean sync);
+Jxta_status discovery_send_srdi(Jxta_discovery_service * me, JString * pkey, Jxta_vector * entries, Jxta_id *prev_id, Jxta_boolean updates_only, Jxta_boolean sync, Jxta_hashtable **msgs);
 /**
  * The base discovery service ctor (not public: the only public way to make a
  * new pg is to instantiate one of the derived types).

@@ -101,7 +101,7 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_unregisterSrdiListener(Jxta_srdi_service * s
  * @param  srdiMsg srdi message to replicate
  */
 JXTA_DECLARE(Jxta_status) jxta_srdi_replicateEntries(Jxta_srdi_service * service, Jxta_resolver_service * resolver,
-                                                     Jxta_SRDIMessage * srdiMsg, JString * queueName);
+                                                     Jxta_SRDIMessage * srdiMsg, JString * queueName, Jxta_hashtable **msgs);
 
 /**
  * Push an SRDI message to a peer using a resolver message
@@ -134,8 +134,23 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi(Jxta_srdi_service * service, JStrin
  * @param  sync - If TRUE, send synchronously
  */
 JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi_msg(Jxta_srdi_service * service, JString * instance, Jxta_SRDIMessage * msg,
-                                             Jxta_id * peer, Jxta_boolean update_delta, Jxta_boolean sync);
+                                             Jxta_id * peer, Jxta_boolean update_delta, Jxta_boolean sync, Jxta_hashtable **ret_msgs);
 
+/**
+ * Push SRDI messages contained in the hashtable keyed by the peer and groups
+ * The messages are packaged in an endpoint message that contains entries for all the groups.
+ *
+ * @param  peer  peer to push message to, if peer is null it is
+ *               the message is propagated
+ * @param  srdi  SRDI message to send
+ * @param  res pointer to the resolver
+ * @param  instance Instance string
+ * @param  msg Message to send
+ * @param  peer Id of the destination peer
+ * @param  update_delta - If FALSE, do not update delta entries in the cm
+ * @param  sync - If TRUE, send synchronously
+ */
+JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi_msgs(Jxta_srdi_service * service, JString * instance, Jxta_hashtable * msgs);
 /**
  * Forwards a Query to a specific peer
  * hopCount is incremented to indicate this query is forwarded

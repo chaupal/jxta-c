@@ -279,7 +279,7 @@ static Jxta_status send_srdi(Jxta_pipe_resolver * me, Jxta_pipe_adv * adv, Jxta_
     }
 
     if (jxta_rdv_service_is_rendezvous(me2->rdv_service)) {
-        res = jxta_srdi_replicateEntries(me2->srdi_service, me2->resolver, msg, me2->name);
+        res = jxta_srdi_replicateEntries(me2->srdi_service, me2->resolver, msg, me2->name, NULL);
         if (res != JXTA_SUCCESS) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Cannot replicate srdi message\n");
         }
@@ -1294,7 +1294,7 @@ static void JXTA_STDCALL srdi_listener(Jxta_object * obj, void *arg)
 
     /** Replicates entries only if unicast pipes */
     if ( 0 == strcmp(jstring_get_string(jPrimaryKey), "JxtaUnicast")) {
-            jxta_srdi_replicateEntries(self->srdi_service, self->resolver, smsg, self->name);
+            jxta_srdi_replicateEntries(self->srdi_service, self->resolver, smsg, self->name, NULL);
     }
     
     status = jxta_srdi_message_get_entries(smsg, &entries);

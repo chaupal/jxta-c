@@ -6351,9 +6351,10 @@ Jxta_vector *cm_get_srdi_delta_entries(Jxta_cm * self, JString * folder_name)
             JXTA_OBJECT_RELEASE(delta_hash);
         return NULL;
     }
+    if (NULL != delta_hash) {
     delta_entries = jxta_hashtable_values_get(delta_hash);
-    if (NULL != delta_hash)
         JXTA_OBJECT_RELEASE(delta_hash);
+    }
     return delta_entries;
 }
 

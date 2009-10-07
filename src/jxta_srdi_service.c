@@ -94,10 +94,10 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_unregisterSrdiListener(Jxta_srdi_service * s
 }
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_replicateEntries(Jxta_srdi_service * service, Jxta_resolver_service * resolver,
-                                                     Jxta_SRDIMessage * srdiMsg, JString * queueName)
+                                                     Jxta_SRDIMessage * srdiMsg, JString * queueName, Jxta_hashtable **msgs)
 {
     Jxta_srdi_service* srdi_service = PTValid(service, Jxta_srdi_service);
-    return VTBL->replicateEntries(srdi_service, resolver, srdiMsg, queueName);
+    return VTBL->replicateEntries(srdi_service, resolver, srdiMsg, queueName, msgs);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi(Jxta_srdi_service * service, JString * instance,
@@ -108,10 +108,17 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi(Jxta_srdi_service * service, JStrin
 }
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi_msg(Jxta_srdi_service * service, JString * instance,
-                                             Jxta_SRDIMessage * msg, Jxta_id * peer, Jxta_boolean update_delta, Jxta_boolean sync)
+                                                Jxta_SRDIMessage * msg, Jxta_id * peer, Jxta_boolean update_delta, Jxta_boolean sync,
+                                                Jxta_hashtable **ret_msgs)
 {
     Jxta_srdi_service* srdi_service = PTValid(service, Jxta_srdi_service);
-    return VTBL->pushSrdi_msg(srdi_service, instance, msg, peer, update_delta, sync);
+    return VTBL->pushSrdi_msg(srdi_service, instance, msg, peer, update_delta, sync, ret_msgs);
+}
+
+JXTA_DECLARE(Jxta_status) jxta_srdi_pushSrdi_msgs(Jxta_srdi_service * service, JString * instance, Jxta_hashtable * msgs)
+{
+    Jxta_srdi_service* srdi_service = PTValid(service, Jxta_srdi_service);
+    return VTBL->pushSrdi_msgs(srdi_service, instance, msgs);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_srdi_forwardQuery_peer(Jxta_srdi_service * service, Jxta_resolver_service * resolver,

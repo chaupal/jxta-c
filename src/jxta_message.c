@@ -2038,7 +2038,7 @@ JXTA_DECLARE(Jxta_message_element *) jxta_message_element_new_3(char const *ns, 
         return NULL;
     }
 
-    if (!JXTA_OBJECT_CHECK_VALID(value)) {
+    if (NULL != value && !JXTA_OBJECT_CHECK_VALID(value)) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "bad value parameter\n");
         return NULL;
     }
@@ -2087,8 +2087,9 @@ JXTA_DECLARE(Jxta_message_element *) jxta_message_element_new_3(char const *ns, 
     } else
         el->usr.mime_type = NULL;
 
-    el->usr.value = value;
-    JXTA_OBJECT_SHARE(el->usr.value);
+    if (NULL != value) {
+        el->usr.value = JXTA_OBJECT_SHARE(value);
+    }
 
     if (NULL != sig) {
         el->usr.sig = JXTA_OBJECT_SHARE(sig);

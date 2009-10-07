@@ -2071,9 +2071,9 @@ static Jxta_status send_message(Jxta_endpoint_service * me, Jxta_message * msg, 
 
     if (NULL == dest) {
         dest_tmp = jxta_message_get_destination(msg);
-        if (dest == NULL) {
+        if (dest_tmp == NULL) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,
-                            FILEANDLINE "Failed to get destination. Message [%pp] is discarded.\n", msg);
+                            FILEANDLINE "Failed to get destination from message. Message [%pp] is discarded.\n", msg);
             res = JXTA_FAILED;
             goto FINAL_EXIT;
         }

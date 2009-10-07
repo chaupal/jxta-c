@@ -94,11 +94,13 @@ struct _jxta_srdi_service_methods {
     Jxta_status(*unregisterSrdiListener) (Jxta_srdi_service * self, JString * name);
 
     Jxta_status(*replicateEntries) (Jxta_srdi_service * self,
-                                    Jxta_resolver_service * resolver, Jxta_SRDIMessage * srdiMsg, JString * queueName);
+                                    Jxta_resolver_service * resolver, Jxta_SRDIMessage * srdiMsg, JString * queueName, Jxta_hashtable **msgs);
 
     Jxta_status(*pushSrdi) (Jxta_srdi_service * self, JString * instance, Jxta_SRDIMessage * srdi, Jxta_id * peer, Jxta_boolean sync);
 
-    Jxta_status(*pushSrdi_msg) (Jxta_srdi_service * self, JString * instance, Jxta_SRDIMessage * srdi, Jxta_id * peer, Jxta_boolean update_delta, Jxta_boolean sync);
+    Jxta_status(*pushSrdi_msg) (Jxta_srdi_service * self, JString * instance, Jxta_SRDIMessage * srdi, Jxta_id * peer, Jxta_boolean update_delta, Jxta_boolean sync, Jxta_hashtable **ret_msgs);
+
+    Jxta_status(*pushSrdi_msgs) (Jxta_srdi_service * self, JString * instance, Jxta_hashtable *msgs);
 
     Jxta_status(*forwardQuery_peer) (Jxta_srdi_service * self,
                                      Jxta_resolver_service * resolver, Jxta_id * peer, ResolverQuery * query);

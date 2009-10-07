@@ -97,6 +97,8 @@
 #define HAVE_POOL
 #define QUERY_ID_EXPIRATION 30 /* 30 seconds */
 
+const char JXTA_DISCOVERY_SRDI_NAME[] = "Srdi";
+
 enum e_listener_entries {
     LISTENER_RES_RSP_HANDLER = 0,
     LISTENER_RDV_EVENT_HANDLER,
@@ -117,6 +119,7 @@ typedef struct {
     int query_expiration;
     Jxta_resolver_service *resolver;
     Jxta_endpoint_service *endpoint;
+    void *ep_cookie;
     Jxta_rdv_service *rdv;
     Jxta_srdi_service *srdi;
     /* vector to hold generic discovery listeners */
@@ -141,13 +144,20 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
 static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void *arg);
 static void JXTA_STDCALL discovery_service_response_listener(Jxta_object * obj, void *arg);
 static void JXTA_STDCALL discovery_service_rdv_listener(Jxta_object * obj, void *arg);
-static void *APR_THREAD_FUNC advertisement_handling_func(apr_thread_t * thread, void *arg);
-static Jxta_status discovery_service_send_delta_updates(Jxta_discovery_service_ref * discovery, const char * key, Jxta_hashtable * entries_update);
-static Jxta_status discovery_service_send_delta_update_msg(Jxta_discovery_service_ref * discovery, Jxta_PID *source_id, const char * key, Jxta_hashtable * entries_update);
+static void *APR_THREAD_FUNC delta_cycle_func(apr_thread_t *thread, void *arg);
+static void *APR_THREAD_FUNC cache_handling_func(apr_thread_t * thread, void *arg);
+static Jxta_status discovery_service_send_delta_updates(Jxta_discovery_service_ref * discovery, const char * key, Jxta_hashtable * source_entries_update, Jxta_hashtable **ret_msgs);
+
+static Jxta_status discovery_service_send_delta_update_msg(Jxta_discovery_service_ref * discovery, Jxta_PID *source_id, const char * key, Jxta_hashtable * entries_update, Jxta_hashtable **ret_msgs);
 static Jxta_status discovery_filter_replicas_forward(Jxta_discovery_service_ref * discovery, Jxta_vector * entries, const char * source_peer, JString *jRepPeerid, Jxta_hashtable ** fwd_entries);
 static Jxta_status discovery_get_responses(Jxta_discovery_service_ref *discovery, int threshold, short type, char **keys_parm, Jxta_vector **responses);
 
-Jxta_status jxta_discovery_push_srdi(Jxta_discovery_service_ref * discovery, Jxta_boolean ppublish, Jxta_boolean delta, Jxta_boolean sync);
+static Jxta_status discovery_push_srdi(Jxta_discovery_service_ref * discovery, Jxta_boolean ppublish, Jxta_boolean delta, Jxta_boolean sync);
+static Jxta_status discovery_push_srdi_1(Jxta_discovery_service_ref * discovery, Jxta_hashtable **elements);
+static Jxta_status discovery_push_srdi_2(Jxta_discovery_service_ref * discovery, Jxta_boolean ppublish, Jxta_boolean delta, Jxta_boolean sync);
+
+static Jxta_status discovery_delta_srdi_priv(Jxta_discovery_service_ref * discovery
+                                , Jxta_boolean ppublish, Jxta_boolean delta, Jxta_boolean sync, Jxta_hashtable **ret_msgs);
 
 static Jxta_status query_replica(Jxta_discovery_service_ref * self, Jxta_query_context * jContext, JString *jDrop, Jxta_vector ** peerids);
 static Jxta_status query_srdi(Jxta_discovery_service_ref * self, Jxta_query_context * jContext, JString * jDrop, Jxta_hashtable ** peerids);
@@ -179,10 +189,6 @@ void discovery_result_free (Jxta_object * obj)
     JXTA_OBJECT_RELEASE(res->adv);
     free(res);
 }
-
-/*
- * module methods
- */
 
 /**
  * Initializes an instance of the Discovery Service.
@@ -336,6 +342,7 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     discovery->listener_vec = jxta_vector_new(1);
     discovery->listeners = jxta_hashtable_new(1);
 
+
     /* Mark the service as running now. */
     discovery->running = TRUE;
     if (parentgroup)
@@ -356,6 +363,7 @@ static Jxta_status start(Jxta_module * discovery, const char *argv[])
 {
     Jxta_discovery_service_ref * me = (Jxta_discovery_service_ref *) discovery;
     Jxta_PA *padv;
+    Jxta_PG *parent=NULL;
     Jxta_status status;
     Jxta_listener *listener;
 
@@ -373,8 +381,17 @@ static Jxta_status start(Jxta_module * discovery, const char *argv[])
             PA_REMOTE_EXPIRATION);
     JXTA_OBJECT_RELEASE(padv);
 
-    /* start an SRDI push and Cache clean up function */
-    advertisement_handling_func(NULL, me);
+    /* start the delta func for the top level group */
+    jxta_PG_get_parentgroup(me->group, &parent);
+    if (NULL == parent) {
+        delta_cycle_func(NULL, me);
+        /* register endpoint listener for EndpointMessages */
+        /* jxta_PG_add_recipient(me->group, &me->ep_cookie, jstring_get_string(me->instanceName), JXTA_DISCOVERY_SRDI_NAME, discovery_srdi_cb, me); */
+    } else {
+        JXTA_OBJECT_RELEASE(parent);
+    }
+    /* start a Cache clean up function */
+    cache_handling_func(NULL, me);
 
     return JXTA_SUCCESS;
 }
@@ -1238,7 +1255,7 @@ static void flush_deltas(Jxta_discovery_service * service)
 {
     Jxta_discovery_service_ref *discovery = (Jxta_discovery_service_ref *) service;
 
-    jxta_discovery_push_srdi(discovery, TRUE, TRUE, TRUE);
+    discovery_push_srdi(discovery, TRUE, TRUE, TRUE);
 }
 
 static Jxta_status add_listener(Jxta_discovery_service * service, Jxta_discovery_listener * listener)
@@ -1705,7 +1722,7 @@ static Jxta_status discovery_re_replicate_srdi_entries(Jxta_discovery_service_re
                 srdi_msg = jxta_srdi_message_new_1(1, peer_id, types[x], entries_new_v);
                 jxta_srdi_message_get_xml(srdi_msg, &messageString);
 
-                jxta_srdi_replicateEntries(discovery->srdi, discovery->resolver, srdi_msg, discovery->instanceName);
+                jxta_srdi_replicateEntries(discovery->srdi, discovery->resolver, srdi_msg, discovery->instanceName, NULL);
 
                 JXTA_OBJECT_RELEASE(messageString);
                 JXTA_OBJECT_RELEASE(srdi_msg);
@@ -2304,7 +2321,7 @@ Jxta_status discovery_send_srdi_msg(Jxta_discovery_service_ref *discovery, Jxta_
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "cannot allocate jxta_srdi_message_new\n");
         goto FINAL_EXIT;
     }
-    jxta_srdi_pushSrdi_msg(discovery->srdi, discovery->instanceName, msg, to_peerid, FALSE, FALSE);
+    jxta_srdi_pushSrdi_msg(discovery->srdi, discovery->instanceName, msg, to_peerid, FALSE, FALSE, NULL);
 
 FINAL_EXIT:
 
@@ -2424,7 +2441,7 @@ static Jxta_status discovery_notify_peerview_peers(Jxta_discovery_service_ref *d
             jxta_srdi_message_set_ttl(smsg, 1);
             jxta_srdi_message_set_entries(smsg, NULL);
 
-            res = jxta_srdi_pushSrdi_msg(discovery->srdi, discovery->instanceName, smsg, jxta_peer_peerid(peer), TRUE, FALSE);
+            res = jxta_srdi_pushSrdi_msg(discovery->srdi, discovery->instanceName, smsg, jxta_peer_peerid(peer), TRUE, FALSE, NULL);
             if (JXTA_SUCCESS != res) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Error sending notify message [%pp] res:%d\n", smsg, res);
             } else {
@@ -2620,7 +2637,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
         src_pid_j = JXTA_OBJECT_SHARE(pid_j);
     }
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Received from %s %s : %s \n", jstring_get_string(pid_j), jstring_get_string(src_pid_j), jstring_get_string((JString *) obj));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Received from:%s src:%s : %s \n", jstring_get_string(pid_j), jstring_get_string(src_pid_j), jstring_get_string((JString *) obj));
 
 
     discovery_service_update_srdi_peers(discovery, peerid, smsg, bReplica);
@@ -2761,7 +2778,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
     if (!bReplica) {
         jxta_srdi_message_set_ttl(smsg, 2);
         if (!jxta_srdi_message_update_only(smsg)) {
-            jxta_srdi_replicateEntries(discovery->srdi, discovery->resolver, smsg, discovery->instanceName);
+            jxta_srdi_replicateEntries(discovery->srdi, discovery->resolver, smsg, discovery->instanceName, NULL);
         }
     }
 
@@ -2815,7 +2832,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
                         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to save replica forward indices status:%d\n", status);
                     }
 
-                    status = jxta_srdi_pushSrdi_msg(discovery->srdi, discovery->instanceName, msg, to_peerid, TRUE, FALSE);
+                    status = jxta_srdi_pushSrdi_msg(discovery->srdi, discovery->instanceName, msg, to_peerid, TRUE, FALSE, NULL);
                     if (JXTA_SUCCESS != status) {
                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Problem sending message with forwarded entries res:%d\n", status);
                     } else {
@@ -3016,7 +3033,7 @@ static void JXTA_STDCALL discovery_service_rdv_listener(Jxta_object * obj, void 
      * to our new RDV
      */
     if (republish && jxta_rdv_service_is_rendezvous(discovery->rdv) != TRUE) {
-        res = jxta_discovery_push_srdi(discovery, republish, delta, FALSE);
+        res = discovery_push_srdi_2(discovery, republish, delta, FALSE);
     }
     if (res != JXTA_SUCCESS) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "failed to push SRDI entries to new RDV res=%i\n", res);
@@ -3131,77 +3148,193 @@ static void JXTA_STDCALL discovery_service_response_listener(Jxta_object * obj, 
     JXTA_OBJECT_RELEASE(dr);
 }
 
-static void *APR_THREAD_FUNC advertisement_handling_func(apr_thread_t * thread, void *arg)
+static Jxta_vector * discovery_get_disc_services(JString *request_group)
 {
-    Jxta_status res = 0;
-    Jxta_time_diff wait_time=0;
-    Jxta_time_diff expired_cycle=0;
-    Jxta_time_diff delta_cycle=0;
-    Jxta_time_diff expired_diff;
-    Jxta_time_diff delta_diff;
+    Jxta_vector *groups=NULL;
+    Jxta_vector *dss=NULL;
+    int i;
+
+    dss = jxta_vector_new(0);
+    groups = jxta_get_registered_groups();
+    for (i=0; NULL != groups && i<jxta_vector_size(groups); i++) {
+        Jxta_PG *group;
+        JString *group_j;
+        Jxta_discovery_service *ds;
+        Jxta_boolean found=TRUE;
+
+        jxta_vector_get_object_at(groups, JXTA_OBJECT_PPTR(&group), i);
+        if (NULL != request_group) {
+            Jxta_id *groupid;
+            found = FALSE;
+
+            jxta_PG_get_GID(group, &groupid);
+            jxta_id_get_uniqueportion(groupid, &group_j);
+
+            found = (0 == jstring_equals(group_j, request_group)) ? TRUE:FALSE;
+
+            JXTA_OBJECT_RELEASE(groupid);
+            JXTA_OBJECT_RELEASE(group_j);
+        }
+        if (found) {
+            jxta_PG_get_discovery_service(group, &ds);
+
+            if (NULL != ds) {
+                jxta_vector_add_object_last(dss, (Jxta_object *) ds);
+            }
+            JXTA_OBJECT_RELEASE(ds);
+        }
+        JXTA_OBJECT_RELEASE(group);
+        if (found && NULL !=request_group) break;
+    }
+
+    if (groups)
+        JXTA_OBJECT_RELEASE(groups);
+    return dss;
+}
+
+static void *APR_THREAD_FUNC delta_cycle_func(apr_thread_t *thread, void *arg)
+{
+    Jxta_status res=JXTA_SUCCESS;
     apr_thread_pool_t * tp;
+    Jxta_vector *dss=NULL;
+    int i;
+    Jxta_hashtable *ret_msgs=NULL;
 
     Jxta_discovery_service_ref *discovery = (Jxta_discovery_service_ref *) arg;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "Enter delta cycle func\n");
+
+    jxta_service_lock((Jxta_service*) discovery);
 
     /* As long as discovery is running */
     if (!discovery->running) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Discovery has left the building 2\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Discovery [%pp] has left the building\n", discovery);
+        jxta_service_unlock((Jxta_service*)discovery);
         return NULL;
     }
-    delta_cycle = jxta_discovery_config_get_delta_update_cycle(discovery->config);
-    expired_cycle = jxta_discovery_config_get_expired_adv_cycle(discovery->config);
-    wait_time = delta_cycle > expired_cycle ? expired_cycle : delta_cycle;
+
+    jxta_service_unlock((Jxta_service*)discovery);
 
     /* thread is null on initialization */
     if (NULL == thread) {
         goto FINAL_EXIT;
     }
 
-    expired_diff = expired_cycle - discovery->expired_loop;
-    delta_diff = delta_cycle - discovery->delta_loop;
-    if (wait_time > (expired_diff) || wait_time > (delta_diff)) {
-        wait_time = delta_diff > expired_diff ? expired_diff : delta_diff;
-    }
-    discovery->expired_loop += wait_time;
-    discovery->delta_loop += wait_time;
+    dss = discovery_get_disc_services(NULL);
+    for (i=0; NULL != dss && i < jxta_vector_size(dss); i++) {
+        Jxta_discovery_service_ref *discovery_ref=NULL;
 
+        res = jxta_vector_get_object_at(dss, JXTA_OBJECT_PPTR(&discovery_ref), i);
+        if (JXTA_SUCCESS != res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unable to retrieve discovery vector entry at %d\n", i);
+            continue;
+        }
+        /*
+        * push delta if any
+        */
+        res = discovery_push_srdi_1(discovery_ref, &ret_msgs);
+
+        if (TRUE == jxta_rdv_service_is_rendezvous((Jxta_rdv_service *) discovery_ref->rdv)) {
+            cm_set_delta(discovery->cm, TRUE);
+        }
+
+        JXTA_OBJECT_RELEASE(discovery_ref);
+    }
+    if (NULL != ret_msgs) {
+        jxta_srdi_pushSrdi_msgs(discovery->srdi, discovery->instanceName, ret_msgs);
+        JXTA_OBJECT_RELEASE(ret_msgs);
+    }
+    discovery->delta_loop = 0;
+  
+FINAL_EXIT:
+  
+    if (dss)
+        JXTA_OBJECT_RELEASE(dss);
+    tp = jxta_PG_thread_pool_get(discovery->group);
+
+    if (NULL != tp) {
+        apr_thread_pool_schedule(tp, delta_cycle_func, discovery, jxta_discovery_config_get_delta_update_cycle(discovery->config) * 1000, discovery);
+    }
+
+    return NULL;
+}
+
+static void *APR_THREAD_FUNC cache_handling_func(apr_thread_t * thread, void *arg)
+{
+    apr_thread_pool_t * tp;
+
+    Jxta_discovery_service_ref *discovery = (Jxta_discovery_service_ref *) arg;
+
+    jxta_service_lock((Jxta_service*) discovery);
+
+    /* As long as discovery is running */
+    if (!discovery->running) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, FILEANDLINE "Discovery [%pp] has left the building\n", discovery);
+        jxta_service_unlock((Jxta_service*) discovery);
+        return NULL;
+    }
+
+    jxta_service_unlock((Jxta_service*) discovery);
+
+    /* thread is null on initialization */
+    if (NULL == thread) {
+        goto FINAL_EXIT;
+    }
 
     if (NULL == discovery->cm) {
         peergroup_get_cache_manager(discovery->group, &(discovery->cm));
     }
     if (NULL != discovery->cm) {
-        if (discovery->expired_loop >= expired_cycle) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Discovery is removing expired records from the CM\n");
-            cm_remove_expired_records(discovery->cm);
-            cm_remove_expired_response_entries(discovery->cm);
-            discovery->expired_loop = 0;
-        }
-        /*
-         * push delta if any
-        */
-        if (discovery->delta_loop >= delta_cycle) {
-            res = jxta_discovery_push_srdi(discovery, TRUE, TRUE, FALSE);
-            if (TRUE == jxta_rdv_service_is_rendezvous((Jxta_rdv_service *) discovery->rdv)) {
-                cm_set_delta(discovery->cm, TRUE);
-            }
-
-            discovery->delta_loop = 0;
-        }
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Discovery is removing expired records from the CM\n");
+        cm_remove_expired_records(discovery->cm);
+        cm_remove_expired_response_entries(discovery->cm);
     }
+
 
 FINAL_EXIT:
 
     tp = jxta_PG_thread_pool_get(discovery->group);
 
     if (NULL != tp) {
-        apr_thread_pool_schedule(tp, advertisement_handling_func, discovery, wait_time * 1000, discovery); 
+        apr_thread_pool_schedule(tp, cache_handling_func, discovery, jxta_discovery_config_get_expired_adv_cycle(discovery->config) * 1000, discovery);
     }
+
     return NULL;
 }
 
-Jxta_status jxta_discovery_push_srdi(Jxta_discovery_service_ref * discovery, Jxta_boolean ppublish, Jxta_boolean delta, Jxta_boolean sync)
+static Jxta_status discovery_push_srdi(Jxta_discovery_service_ref * discovery, Jxta_boolean ppublish, Jxta_boolean delta, Jxta_boolean sync)
+{
+    return discovery_delta_srdi_priv(discovery, ppublish, delta, sync, NULL);
+}
+
+static Jxta_status discovery_push_srdi_1(Jxta_discovery_service_ref * discovery, Jxta_hashtable **ret_msgs)
+{
+    return discovery_delta_srdi_priv(discovery, TRUE, TRUE, FALSE, ret_msgs);
+
+}
+
+static Jxta_status discovery_push_srdi_2(Jxta_discovery_service_ref * discovery, Jxta_boolean ppublish, Jxta_boolean delta, Jxta_boolean sync)
+{
+    Jxta_status res;
+    Jxta_hashtable *ret_msgs=NULL;
+
+    res = discovery_delta_srdi_priv(discovery, ppublish, delta, sync, &ret_msgs);
+    if (JXTA_SUCCESS == res) {
+        if (NULL != ret_msgs) {
+            jxta_srdi_pushSrdi_msgs(discovery->srdi, discovery->instanceName, ret_msgs);
+        }
+    }
+    if (ret_msgs)
+        JXTA_OBJECT_RELEASE(ret_msgs);
+    return res;
+}
+
+
+
+static Jxta_status discovery_delta_srdi_priv(Jxta_discovery_service_ref * discovery
+                                , Jxta_boolean ppublish, Jxta_boolean delta, Jxta_boolean sync, Jxta_hashtable **ret_msgs)
 {
     Jxta_status status;
+    Jxta_status res = JXTA_SUCCESS;
     Jxta_vector *entries = NULL;
     int i = 0;
 
@@ -3212,7 +3345,7 @@ Jxta_status jxta_discovery_push_srdi(Jxta_discovery_service_ref * discovery, Jxt
             name = jstring_new_2((char *) dirname[i]);
             entries = cm_get_srdi_delta_entries(discovery->cm, name);
             if (entries != NULL && jxta_vector_size(entries) > 0) {
-                status = discovery_send_srdi((Jxta_discovery_service *) discovery, name, entries, NULL, FALSE, sync);
+                status = discovery_send_srdi((Jxta_discovery_service *) discovery, name, entries, NULL, FALSE, sync, ret_msgs);
                 if (JXTA_SUCCESS != status || FALSE == discovery->running) {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Unable to send send SRDI deltas %i\n", status);
                     break;
@@ -3232,7 +3365,7 @@ Jxta_status jxta_discovery_push_srdi(Jxta_discovery_service_ref * discovery, Jxt
 
             if (NULL != peer_entries) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Send delta updates \n");
-                discovery_service_send_delta_updates(discovery, dirname[i], peer_entries);
+                discovery_service_send_delta_updates(discovery, dirname[i], peer_entries, ret_msgs);
                 JXTA_OBJECT_RELEASE(peer_entries);
             }
         }
@@ -3255,7 +3388,8 @@ Jxta_status jxta_discovery_push_srdi(Jxta_discovery_service_ref * discovery, Jxt
             name = jstring_new_2((char *) dirname[i]);
             entries = cm_create_srdi_entries(discovery->cm, name, NULL, NULL);
             if (entries != NULL && jxta_vector_size(entries) > 0) {
-                status = discovery_send_srdi((Jxta_discovery_service *) discovery, name, entries, prev_id, TRUE, sync);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "push all CM SRDI indexes for %s size:%d\n", dirname[i], jxta_vector_size(entries));
+                status = discovery_send_srdi((Jxta_discovery_service *) discovery, name, entries, prev_id, TRUE, sync, ret_msgs);
                 if (JXTA_SUCCESS != status || FALSE == discovery->running) {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Unable to send send SRDI messages %i\n", status);
                     break;
@@ -3277,45 +3411,53 @@ Jxta_status jxta_discovery_push_srdi(Jxta_discovery_service_ref * discovery, Jxt
         if (prev_id)
             JXTA_OBJECT_RELEASE(prev_id);
     }
+
     if (NULL != entries)
         JXTA_OBJECT_RELEASE(entries);
-    return JXTA_SUCCESS;
+    return res;
 }
 
-Jxta_status discovery_send_srdi(Jxta_discovery_service * me, JString * pkey, Jxta_vector * entries, Jxta_id *prev_id, Jxta_boolean updates_only, Jxta_boolean sync)
+Jxta_status discovery_send_srdi(Jxta_discovery_service * me, JString * pkey, Jxta_vector * entries, Jxta_id *prev_id, Jxta_boolean updates_only, Jxta_boolean sync, Jxta_hashtable **ret_msgs)
 {
     Jxta_discovery_service_ref * discovery = (Jxta_discovery_service_ref *) me;
-    Jxta_SRDIMessage *msg = NULL;
     Jxta_status res = JXTA_SUCCESS;
+    Jxta_SRDIMessage *msg=NULL;
     const char *cKey = jstring_get_string(pkey);
 
-    if (jxta_vector_size(entries) == 0)
-        return JXTA_SUCCESS;
 
+    if (jxta_vector_size(entries) == 0) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "No entries received discovery_send_srdi\n");
+        res = JXTA_SUCCESS;
+        goto FINAL_EXIT;
+    }
     msg = jxta_srdi_message_new_2(1, discovery->localPeerId, discovery->localPeerId, (char *) cKey, entries);
+
     if (msg == NULL) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "cannot allocate jxta_srdi_message_new\n");
-        return JXTA_NOMEM;
+        res = JXTA_NOMEM;
+        goto FINAL_EXIT;
     }
+
 
     jxta_srdi_message_set_PrevPID(msg, prev_id);
 
     if ( config_rendezvous == jxta_rdv_service_config( discovery->rdv ) ) {
-        res = jxta_srdi_replicateEntries(discovery->srdi, discovery->resolver, msg, discovery->instanceName);
+        res = jxta_srdi_replicateEntries(discovery->srdi, discovery->resolver, msg, discovery->instanceName, ret_msgs);
     } else {
         jxta_srdi_message_set_ttl(msg, 2);
         jxta_srdi_message_set_update_only(msg, updates_only);
-        res = jxta_srdi_pushSrdi_msg(discovery->srdi, discovery->instanceName, msg, NULL, TRUE, sync);
+        res = jxta_srdi_pushSrdi_msg(discovery->srdi, discovery->instanceName, msg, NULL, TRUE, sync, ret_msgs);
     }
-    if (res != JXTA_SUCCESS) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "cannot send srdi message\n");
-    }
-    JXTA_OBJECT_RELEASE(msg);
 
+FINAL_EXIT:
+
+    if (msg)
+        JXTA_OBJECT_RELEASE(msg);
     return res;
+
 }
 
-static Jxta_status discovery_service_send_delta_updates(Jxta_discovery_service_ref * discovery, const char * key, Jxta_hashtable * source_entries_update)
+static Jxta_status discovery_service_send_delta_updates(Jxta_discovery_service_ref * discovery, const char * key, Jxta_hashtable * source_entries_update, Jxta_hashtable **ret_msgs)
 {
     Jxta_status status = JXTA_SUCCESS;
     char ** source_peer_ids = NULL;
@@ -3335,7 +3477,7 @@ static Jxta_status discovery_service_send_delta_updates(Jxta_discovery_service_r
         if (JXTA_SUCCESS == status) {
             source_id_j = jstring_new_2(*source_peer_ids_tmp);
             jxta_id_from_jstring( &source_id, source_id_j);
-            discovery_service_send_delta_update_msg(discovery, source_id, key, entries_update);
+            discovery_service_send_delta_update_msg(discovery, source_id, key, entries_update, ret_msgs);
 
             JXTA_OBJECT_RELEASE(entries_update);
             JXTA_OBJECT_RELEASE(source_id);
@@ -3347,7 +3489,7 @@ static Jxta_status discovery_service_send_delta_updates(Jxta_discovery_service_r
     return status;
 }
 
-static Jxta_status discovery_service_send_delta_update_msg(Jxta_discovery_service_ref * discovery, Jxta_PID *source_id, const char * key, Jxta_hashtable * entries_update)
+static Jxta_status discovery_service_send_delta_update_msg(Jxta_discovery_service_ref * discovery, Jxta_PID *source_id, const char * key, Jxta_hashtable * entries_update, Jxta_hashtable **ret_msgs)
 {
     Jxta_status status = JXTA_SUCCESS;
     char ** peer_ids = NULL;
@@ -3380,7 +3522,7 @@ static Jxta_status discovery_service_send_delta_update_msg(Jxta_discovery_servic
         if (strcmp(*peer_ids_tmp, "NoPeer")) {
             jxta_id_from_cstr(&peerid, *peer_ids_tmp);
         }
-        jxta_srdi_pushSrdi_msg(discovery->srdi, discovery->instanceName, msg, peerid, FALSE, FALSE);
+        jxta_srdi_pushSrdi_msg(discovery->srdi, discovery->instanceName, msg, peerid, FALSE, FALSE, ret_msgs);
 
         if (status != JXTA_SUCCESS) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "cannot send srdi message [%pp} to %s\n", msg, *peer_ids_tmp);
@@ -3590,5 +3732,6 @@ static Jxta_status discovery_filter_replicas_forward(Jxta_discovery_service_ref 
 
     return status;
 }
+
 
 /* vi: set ts=4 sw=4 tw=130 et: */
