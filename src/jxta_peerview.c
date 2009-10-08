@@ -124,9 +124,9 @@ static const apr_interval_time_t JXTA_PEERVIEW_ADD_INTERVAL = 15 * APR_USEC_PER_
 
 #define JXTA_PEERVIEW_ADDRESS_ASSIGN_EXPIRATION (10 * JPR_INTERVAL_ONE_SECOND)
 
-static const unsigned int DEFAULT_CLUSTERS_COUNT = 2;
+static const unsigned int DEFAULT_CLUSTERS_COUNT = 3;
 
-static const unsigned int DEFAULT_CLUSTER_MEMBERS = 4;
+static const unsigned int DEFAULT_CLUSTER_MEMBERS = 5;
 
 static const unsigned int DEFAULT_REPLICATION_FACTOR = 2;
 
@@ -1756,14 +1756,18 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_get_globalview(Jxta_peerview * pv, Jxta_
         *view = jxta_vector_new(myself->clusters_count);
 
         for (each_cluster = 0; each_cluster < myself->clusters_count; each_cluster++) {
-            Jxta_peer *associate;
+            Jxta_status status;;
+            Jxta_peer *associate=NULL;
 
-            res = jxta_peerview_get_associate_peer(myself, each_cluster, &associate);
+            status = jxta_peerview_get_associate_peer(myself, each_cluster, &associate);
 
-            if (JXTA_SUCCESS == res) {
-                jxta_vector_add_object_last(*view, (Jxta_object *) associate);
-                JXTA_OBJECT_RELEASE(associate);
+            if (JXTA_SUCCESS != status) {
+                associate = JXTA_OBJECT_SHARE(myself->self_pve);
             }
+            jxta_vector_add_object_at(*view, (Jxta_object *) associate, each_cluster);
+
+            JXTA_OBJECT_RELEASE(associate);
+            res = status;
         }
     } else {
         /* We are inactive. No view. */
@@ -1939,7 +1943,7 @@ static Jxta_status peerview_get_for_target_hash(Jxta_peerview * me, BIGNUM * tar
         if (myself->my_cluster != target_cluster) {
             Jxta_peer *associate = NULL;
 
-            res = jxta_peerview_get_associate_peer(myself, target_cluster, &associate);
+            res = jxta_peerview_get_best_associate_peer(myself, target_cluster, &associate);
             if (NULL != peer) {
                 *peer = NULL != associate ? JXTA_OBJECT_SHARE(associate):NULL;
             }
@@ -2079,6 +2083,41 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_get_associate_peer(Jxta_peerview * me, u
 {
     Jxta_status res = JXTA_SUCCESS;
     Jxta_peerview *myself = PTValid(me, Jxta_peerview);
+
+    apr_thread_mutex_lock(myself->mutex);
+
+    *peer = NULL;
+
+    if (NULL == myself->self_pve) {
+        /* likely only during shutdown */
+        res = JXTA_FAILED;
+        goto FINAL_EXIT;
+    }
+
+    if (cluster == myself->my_cluster) {
+        *peer = JXTA_OBJECT_SHARE(myself->self_pve);
+        goto FINAL_EXIT;
+    }
+
+    if (jxta_vector_size(myself->clusters[cluster].members) > 0) {
+        res = jxta_vector_get_object_at(myself->clusters[cluster].members, JXTA_OBJECT_PPTR(peer), 0);
+    }
+
+    if (NULL == *peer) {
+        res = JXTA_FAILED;
+    }
+
+  FINAL_EXIT:
+
+    apr_thread_mutex_unlock(myself->mutex);
+
+    return res;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_peerview_get_best_associate_peer(Jxta_peerview * me, unsigned int cluster, Jxta_peer ** peer)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    Jxta_peerview *myself = PTValid(me, Jxta_peerview);
     unsigned int each_cluster;
 
     if ((NULL == peer) || (cluster >= myself->clusters_count)) {
@@ -2105,12 +2144,8 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_get_associate_peer(Jxta_peerview * me, u
     for (each_cluster = 0; each_cluster < myself->clusters_count; each_cluster++) {
         unsigned a_cluster = (cluster + each_cluster) % myself->clusters_count;
         if (a_cluster == myself->my_cluster) continue;
+
         if (0 != jxta_vector_size(myself->clusters[a_cluster].members)) {
-            /* XXX 20061009 bondolo Rather than using the oldest associate we 
-               might want to choose an associate by some other mechanism (similar
-               relative hash position in cluster, least similar relative hash
-               position. The current approach is more likely to produce unbalanced 
-               loading of associate peers. */
             res = jxta_vector_get_object_at(myself->clusters[a_cluster].members, JXTA_OBJECT_PPTR(peer), 0);
             if (JXTA_SUCCESS == res) {
                 break;

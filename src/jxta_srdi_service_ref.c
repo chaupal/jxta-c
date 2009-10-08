@@ -1646,7 +1646,7 @@ static Jxta_peer *getNumericReplica(Jxta_srdi_service * me, Jxta_range * rge, co
             }
         }
     } else {
-        status = jxta_peerview_get_associate_peer(rpv, pos, &peer);
+        status = jxta_peerview_get_best_associate_peer(rpv, pos, &peer);
         if (JXTA_SUCCESS == status) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Replica address from getNumericReplica : %s://%s\n",
                             jxta_endpoint_address_get_protocol_name(jxta_peer_address(peer)),

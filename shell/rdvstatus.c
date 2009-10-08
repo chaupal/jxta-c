@@ -73,8 +73,6 @@
 #include "jxta_rdv_lease_options.h"
 #include "rdvstatus.h"
 
-static const char *__log_cat = "rdvstatus";
-
 void print_options(Jxta_peer * peer, JString *out_string);
 
 static Jxta_PG *group;
@@ -104,7 +102,7 @@ void jxta_rdvstatus_process_input(Jxta_object * appl, JString * inputLine)
     JxtaShellApplication_terminate(app);
 }
 
-void print_peerview_peer( JString *outputLine, Jxta_peer *peer )
+void print_peerview_peer( JString *outputLine, Jxta_peer *peer, int cluster )
 {
    Jxta_status err;
    char linebuff[1024];
@@ -112,11 +110,12 @@ void print_peerview_peer( JString *outputLine, Jxta_peer *peer )
    Jxta_PA *adv = NULL;
    JString *string = NULL;
    Jxta_time expires = 0;
-   Jxta_boolean connected = FALSE;
    Jxta_time currentTime = jpr_time_now();
    char *tmp;
    BIGNUM *address_bn;
 
+   sprintf(linebuff, "%i ", cluster);
+   jstring_append_2(outputLine, linebuff);
    err = jxta_peer_get_peerid(peer, &pid);
 
    if ((NULL != pid) && (err == JXTA_SUCCESS)) {
@@ -191,8 +190,11 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
     }
 
     if( NULL != pv ) {
+        int this_cluster;
+
+        this_cluster = jxta_peerview_get_cluster_number(pv);
         jxta_peerview_get_self_peer(pv, &selfPVE);
-        sprintf(linebuff, "Cluster number:%i\n", jxta_peerview_get_cluster_number(pv));
+        sprintf(linebuff, "Cluster number:%i\n", this_cluster);
         jstring_append_2(outputLine, linebuff);
 
         /* Get the list of peers */
@@ -214,9 +216,12 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
                 res = FALSE;
                 goto Common_Exit;
             }
-
-            print_peerview_peer( outputLine, peer );
-
+            if (jxta_id_equals(jxta_peer_peerid(peer), jxta_peer_peerid(selfPVE)) && i != this_cluster) {
+                sprintf(linebuff, "-------------> Cluster:%i empty ------------->\n", i);
+                jstring_append_2(outputLine, linebuff);
+            } else {
+                print_peerview_peer( outputLine, peer, i );
+            }
             JXTA_OBJECT_RELEASE(peer);
             }
 
@@ -233,13 +238,6 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
 
         for (i = 0; i < jxta_vector_size(peers); ++i) {
             Jxta_peer *peer = NULL;
-            char linebuff[1024];
-            Jxta_id *pid = NULL;
-            Jxta_PA *adv = NULL;
-            JString *string = NULL;
-            Jxta_time expires = 0;
-            Jxta_boolean connected = FALSE;
-            Jxta_time currentTime = jpr_time_now();
 
             err = jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer), i);
             if (err != JXTA_SUCCESS) {
@@ -248,7 +246,7 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
                 goto Common_Exit;
             }
 
-            print_peerview_peer( outputLine, peer );
+            print_peerview_peer( outputLine, peer, this_cluster );
 
             JXTA_OBJECT_RELEASE(peer);
         }
@@ -272,7 +270,6 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
         Jxta_PA *adv = NULL;
         JString *string = NULL;
         Jxta_time expires = 0;
-        Jxta_boolean connected = FALSE;
         Jxta_time currentTime;
 
         err = jxta_vector_get_object_at(peers, JXTA_OBJECT_PPTR(&peer), i);
@@ -397,7 +394,6 @@ void print_options(Jxta_peer * peer, JString *out_string)
        for (i=0; i < jxta_vector_size(options); i++) {
             Jxta_status res;
             char tmp[256];
-            char *tmp1;
             Jxta_rdv_lease_options * lease_option;
 
             res = jxta_vector_get_object_at(options, JXTA_OBJECT_PPTR(&lease_option), i);
@@ -437,7 +433,6 @@ void jxta_rdvstatus_start(Jxta_object * appl, int argc, char **argv)
     display_peers(appl, rdv);
     JXTA_OBJECT_RELEASE(rdv);
 
-  Common_Exit:
     if (jstring_length(outputLine) > 0)
         JxtaShellApplication_print(appl, outputLine);
 

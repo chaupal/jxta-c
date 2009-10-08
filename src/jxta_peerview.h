@@ -246,7 +246,7 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_get_cluster_view(Jxta_peerview * pv, uns
 *
 **/
 JXTA_DECLARE(Jxta_status) jxta_peerview_gen_hash(Jxta_peerview * me, unsigned char const *value, size_t length, BIGNUM ** hash);
-                                                              
+
 /**
 *   Return the associate peer for the specified cluster.
 *
@@ -256,7 +256,18 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_gen_hash(Jxta_peerview * me, unsigned ch
 *   @return JXTA_SUCCESS If a peer could be returned otherwise errors per the fault.
 */
 JXTA_DECLARE(Jxta_status) jxta_peerview_get_associate_peer(Jxta_peerview * pv, unsigned int cluster, Jxta_peer ** peer);
-                                                              
+
+/**
+*   Return the best associate peer for the specified cluster. The best associate is chosen as the oldest peer
+*   in the cluster. If no peer exists the clusters are scanned upwards until an associate is found.
+*
+*   @param pv The peerview.
+*   @param cluster The cluster who's associate peer is sought.
+*   @param peer The result associate peer.
+*   @return JXTA_SUCCESS If a peer could be returned otherwise errors per the fault.
+*/
+JXTA_DECLARE(Jxta_status) jxta_peerview_get_best_associate_peer(Jxta_peerview * pv, unsigned int cluster, Jxta_peer ** peer);
+
 /**
 *   Returns a Jxta_peer object for the specified target hash value.
 *
