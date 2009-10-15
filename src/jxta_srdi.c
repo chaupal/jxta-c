@@ -612,6 +612,27 @@ JXTA_DECLARE(void) jxta_srdi_message_set_resend_entries(Jxta_SRDIMessage * ad, J
     return;
 }
 
+JXTA_DECLARE(void) jxta_srdi_message_clone(Jxta_SRDIMessage * ad, Jxta_SRDIMessage **msg)
+{
+    *msg = jxta_srdi_message_new();
+
+    (*msg)->TTL = ad->TTL;
+    (*msg)->PeerID = NULL != ad->PeerID ? JXTA_OBJECT_SHARE(ad->PeerID):NULL;
+    (*msg)->SrcPID = NULL != ad->SrcPID ? JXTA_OBJECT_SHARE(ad->SrcPID):NULL;
+    (*msg)->PrevPID = NULL !=ad->PrevPID ? JXTA_OBJECT_SHARE(ad->PrevPID):NULL;
+    if (NULL != ad->LostPIDs)
+        jxta_vector_clone(ad->LostPIDs, &((*msg)->LostPIDs), 0, INT_MAX);
+    if (NULL != ad->PrimaryKey)
+        (*msg)->PrimaryKey = jstring_clone(ad->PrimaryKey);
+    (*msg)->deltaSupport = ad->deltaSupport;
+    if (NULL != ad->Entries)
+        jxta_vector_clone(ad->Entries, &((*msg)->Entries), 0, INT_MAX);
+    if (NULL != ad->resendEntries)
+        jxta_vector_clone(ad->resendEntries, &((*msg)->resendEntries), 0, INT_MAX);
+    (*msg)->update_only = ad->update_only;
+}
+
+
 /** Now, build an array of the keyword structs.  Since
  * a top-level, or null state may be of interest, 
  * let that lead off.  Then, walk through the enums,

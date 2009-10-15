@@ -326,6 +326,8 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_resend_entries(Jxta_SRDIMessage 
  */
 JXTA_DECLARE(void) jxta_srdi_message_set_resend_entries(Jxta_SRDIMessage * ad, Jxta_vector * entries);
 
+JXTA_DECLARE(void) jxta_srdi_message_clone(Jxta_SRDIMessage * ad, Jxta_SRDIMessage **msg);
+
 /**
  * Creates a new SRDI entry element
  * @return Jxta_SRDIEntryElement 
