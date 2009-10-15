@@ -612,26 +612,6 @@ JXTA_DECLARE(void) jxta_srdi_message_set_resend_entries(Jxta_SRDIMessage * ad, J
     return;
 }
 
-JXTA_DECLARE(void) jxta_srdi_message_clone(Jxta_SRDIMessage * ad, Jxta_SRDIMessage **msg)
-{
-    *msg = jxta_srdi_message_new();
-
-    (*msg)->TTL = ad->TTL;
-    (*msg)->PeerID = NULL != ad->PeerID ? JXTA_OBJECT_SHARE(ad->PeerID):NULL;
-    (*msg)->SrcPID = NULL != ad->SrcPID ? JXTA_OBJECT_SHARE(ad->SrcPID):NULL;
-    (*msg)->PrevPID = NULL !=ad->PrevPID ? JXTA_OBJECT_SHARE(ad->PrevPID):NULL;
-    if (NULL != ad->LostPIDs)
-        jxta_vector_clone(ad->LostPIDs, &((*msg)->LostPIDs), 0, INT_MAX);
-    if (NULL != ad->PrimaryKey)
-        (*msg)->PrimaryKey = jstring_clone(ad->PrimaryKey);
-    (*msg)->deltaSupport = ad->deltaSupport;
-    if (NULL != ad->Entries)
-        jxta_vector_clone(ad->Entries, &((*msg)->Entries), 0, INT_MAX);
-    if (NULL != ad->resendEntries)
-        jxta_vector_clone(ad->resendEntries, &((*msg)->resendEntries), 0, INT_MAX);
-    (*msg)->update_only = ad->update_only;
-}
-
 
 /** Now, build an array of the keyword structs.  Since
  * a top-level, or null state may be of interest, 
@@ -905,6 +885,34 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_3(int ttl, Jxta_id * peer
     ad->PrimaryKey = jstring_new_2(primarykey);
     jstring_trim(ad->PrimaryKey);
     return ad;
+}
+
+JXTA_DECLARE(void) jxta_srdi_message_clone(Jxta_SRDIMessage * ad, Jxta_SRDIMessage **msg)
+{
+    *msg = (Jxta_SRDIMessage *) calloc(1, sizeof(Jxta_SRDIMessage));
+
+    (*msg)->TTL = ad->TTL;
+    (*msg)->PeerID = NULL != ad->PeerID ? JXTA_OBJECT_SHARE(ad->PeerID):NULL;
+    (*msg)->SrcPID = NULL != ad->SrcPID ? JXTA_OBJECT_SHARE(ad->SrcPID):NULL;
+    (*msg)->PrevPID = NULL !=ad->PrevPID ? JXTA_OBJECT_SHARE(ad->PrevPID):NULL;
+    if (NULL != ad->LostPIDs)
+        jxta_vector_clone(ad->LostPIDs, &((*msg)->LostPIDs), 0, INT_MAX);
+    if (NULL != ad->PrimaryKey)
+        (*msg)->PrimaryKey = jstring_clone(ad->PrimaryKey);
+    (*msg)->deltaSupport = ad->deltaSupport;
+    if (NULL != ad->Entries) {
+        jxta_vector_clone(ad->Entries, &((*msg)->Entries), 0, INT_MAX);
+    }
+    if (NULL != ad->resendEntries) {
+        jxta_vector_clone(ad->resendEntries, &((*msg)->resendEntries), 0, INT_MAX);
+    }
+    (*msg)->update_only = ad->update_only;
+
+    jxta_advertisement_initialize((Jxta_advertisement *) *msg,
+                                  "jxta:GenSRDI",
+                                  Jxta_SRDIMessage_tags,
+                                  (JxtaAdvertisementGetXMLFunc) jxta_srdi_message_get_xml,
+                                  NULL, NULL, (FreeFunc) jxta_srdi_message_free);
 }
 
 static void jxta_srdi_message_free(Jxta_SRDIMessage * ad)
