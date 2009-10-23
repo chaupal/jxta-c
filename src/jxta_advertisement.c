@@ -79,6 +79,7 @@ static const char *__log_cat = "ADV";
 #include "jxta_peerview_monitor_entry.h"
 #include "jxta_rdv_monitor_entry.h"
 #include "jxta_relaya.h"
+#include "jxta_piperesolver_msg.h"
 
 #define ENHANCED_QUERY_LOG "QueryLog"
 
@@ -1032,6 +1033,8 @@ void jxta_advertisement_register_global_handlers(void)
     jxta_advertisement_register_global_handler("jxta:ResolverQuery", (JxtaAdvertisementNewFunc) jxta_resolver_query_new);
     jxta_advertisement_register_global_handler("jxta:ResolverResponse", (JxtaAdvertisementNewFunc) jxta_resolver_response_new);
     jxta_advertisement_register_global_handler("jxta:DiscoveryQuery", (JxtaAdvertisementNewFunc) jxta_discovery_query_new);
+    jxta_advertisement_register_global_handler("jxta:PipeResolver", (JxtaAdvertisementNewFunc) jxta_piperesolver_msg_new);
+
 
     /* Config advertisement types */
     jxta_advertisement_register_global_handler("jxta:CacheConfig", (JxtaAdvertisementNewFunc) jxta_CacheConfigAdvertisement_new );

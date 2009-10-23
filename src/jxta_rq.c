@@ -371,7 +371,7 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_query_get_xml(ResolverQuery * adv, JStri
     jxta_resolver_query_get_query_adv(adv, &query_adv);
 
     if (NULL != query_adv) {
-        status = jxta_discovery_query_get_xml((Jxta_discovery_query *) query_adv, &tmps_adv);
+        status = jxta_advertisement_get_xml(query_adv, &tmps_adv);
         JXTA_OBJECT_RELEASE(query_adv);
         if (JXTA_SUCCESS != status) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR , "error creating query xml, return status :%d\n", status);
