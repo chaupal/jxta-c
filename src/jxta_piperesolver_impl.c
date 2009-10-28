@@ -67,6 +67,7 @@
 #include "jxta_vector.h"
 #include "jxta_resolver_service.h"
 #include "jxta_rq.h"
+#include "jxta_rq_callback.h"
 #include "jxta_rr.h"
 #include "jxta_srdi.h"
 #include "jxta_srdi_service.h"
@@ -934,7 +935,8 @@ static Jxta_status jxta_pipe_resolver_get_replica_peer(Pipe_resolver * me, Resol
 static Jxta_status JXTA_STDCALL query_listener(Jxta_object * obj, void *me)
 {
     Pipe_resolver *_self = (Pipe_resolver *) me;
-    ResolverQuery *rq = (ResolverQuery *) obj;
+    ResolverQueryCallback *rqc = (ResolverQueryCallback *) obj;
+    ResolverQuery *rq = NULL;
     ResolverResponse *rr = NULL;
     JString *queryString = NULL;
     Jxta_piperesolver_msg *msg = NULL;
@@ -949,6 +951,8 @@ static Jxta_status JXTA_STDCALL query_listener(Jxta_object * obj, void *me)
     Jxta_PA *padv;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "********** PIPE RESOLVER QUERY LISTENER *****************\n");
+
+    rq = jxta_resolver_query_callback_get_rq(rqc);
     jxta_resolver_query_get_query(rq, &queryString);
     msg = jxta_piperesolver_msg_new();
     jxta_piperesolver_msg_parse_charbuffer(msg,
@@ -966,6 +970,7 @@ static Jxta_status JXTA_STDCALL query_listener(Jxta_object * obj, void *me)
 
     if (!strcmp(jxta_piperesolver_msg_get_Type(msg), "JxtaPropagate")) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Get a resolver request for PROPAGATE pipe, ignore it.\n");
+        jxta_resolver_query_callback_set_walk(rqc, FALSE);
         goto FINAL_EXIT;
     }
         
@@ -986,6 +991,7 @@ static Jxta_status JXTA_STDCALL query_listener(Jxta_object * obj, void *me)
     if (peer_id != NULL && (!jxta_id_equals(peer_id, _self->local_peerid))) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Directed query for pipe %s but not on the correct peer, ignore it.\n",
                         jxta_pipe_adv_get_Id(adv));
+        jxta_resolver_query_callback_set_walk(rqc, FALSE);
         goto FINAL_EXIT;
     }
 
@@ -1038,6 +1044,7 @@ static Jxta_status JXTA_STDCALL query_listener(Jxta_object * obj, void *me)
             JXTA_OBJECT_RELEASE(src_pid);
         }
         /* local resolvable */
+        jxta_resolver_query_callback_set_walk(rqc, FALSE);
         res = JXTA_SUCCESS;
     } else {
         /* We are a rdv peer, look for something .. */
@@ -1050,6 +1057,7 @@ static Jxta_status JXTA_STDCALL query_listener(Jxta_object * obj, void *me)
 
             if (expression == NULL) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Out of memory?.\n");
+                jxta_resolver_query_callback_set_walk(rqc, FALSE);
                 res = JXTA_NOMEM;
                 goto FINAL_EXIT;
             }
@@ -1067,6 +1075,8 @@ static Jxta_status JXTA_STDCALL query_listener(Jxta_object * obj, void *me)
 
             if (res != JXTA_SUCCESS) {
                 jxta_resolver_query_set_hopcount(rq, jxta_resolver_query_get_hopcount(rq) + 1);
+                jxta_resolver_query_callback_set_walk(rqc, TRUE);
+                jxta_resolver_query_callback_set_propagate(rqc, TRUE);
                 res = JXTA_ITEM_NOTFOUND;
             }
         }
@@ -1079,6 +1089,8 @@ static Jxta_status JXTA_STDCALL query_listener(Jxta_object * obj, void *me)
         JXTA_OBJECT_RELEASE(reply);
     if (rr != NULL)
         JXTA_OBJECT_RELEASE(rr);
+    if (rq != NULL)
+        JXTA_OBJECT_RELEASE(rq);
     if (adv != NULL)
         JXTA_OBJECT_RELEASE(adv);
     if (peers != NULL)

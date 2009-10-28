@@ -137,7 +137,7 @@ static Jxta_status get_peers(Jxta_rdv_service_provider * provider, Jxta_vector *
 static Jxta_status propagate(Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
                              const char *serviceParam, int ttl);
 static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
-                        const char *serviceParam, const char *target_hash);
+                        const char *serviceParam, const char *target_hash, Jxta_boolean prop_to_all);
 static Jxta_status disconnect_peers(Jxta_rdv_service_provider * provider);
 
 static const _jxta_rdv_service_provider_methods JXTA_RDV_SERVICE_ADHOC_METHODS = {
@@ -478,7 +478,7 @@ static Jxta_status propagate(Jxta_rdv_service_provider * provider, Jxta_message 
  * @return error code.
  **/
 static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
-                        const char *serviceParam, const char *target_hash)
+                        const char *serviceParam, const char *target_hash, Jxta_boolean prop_to_all)
 {
     Jxta_status res;
     _jxta_rdv_service_adhoc *myself = (_jxta_rdv_service_adhoc *) PTValid(provider, _jxta_rdv_service_adhoc);

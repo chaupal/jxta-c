@@ -243,7 +243,7 @@ static void process_referrals(_jxta_rdv_service_client * myself, Jxta_lease_resp
 static Jxta_status propagate(Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
                              const char *serviceParam, int ttl);
 static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
-                        const char *serviceParam, const char *target_hash);
+                        const char *serviceParam, const char *target_hash, Jxta_boolean prop_to_all);
 static Jxta_status disconnect_peers(Jxta_rdv_service_provider * provider);
 
 static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, void *cookie);
@@ -726,7 +726,7 @@ static Jxta_status propagate(Jxta_rdv_service_provider * provider, Jxta_message 
  * @return error code.
  **/
 static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
-                        const char *serviceParam, const char *target_hash)
+                        const char *serviceParam, const char *target_hash, Jxta_boolean prop_to_all)
 {
     Jxta_status res;
     Jxta_rdv_diffusion *header = NULL;

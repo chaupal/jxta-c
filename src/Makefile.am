@@ -80,6 +80,7 @@ include_HEADERS = EndpointRouter.h          \
                   jxta_resolver_service.h   \
 				  jxta_resolver_config_adv.h \
                   jxta_rq.h                 \
+                  jxta_rq_callback.h        \
                   jxta_rr.h                 \
                   jxta_rsrdi.h              \
                   jxta_srdi.h               \
@@ -144,6 +145,7 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_id_uuid.c                 \
                      jxta_pa.c                      \
                      jxta_rq.c                      \
+                     jxta_rq_callback.c             \
                      jxta_rr.c                      \
                      jxta_rsrdi.c                   \
                      jxta_srdi.c                    \

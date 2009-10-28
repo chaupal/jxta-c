@@ -66,6 +66,7 @@
 #include "jxta_cm.h"
 #include "jxta_cm_private.h"
 #include "jxta_rq.h"
+#include "jxta_rq_callback.h"
 #include "jxta_rr.h"
 #include "jxta_dq.h"
 #include "jxta_dr.h"
@@ -1768,7 +1769,8 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
     long qid = -1;
     unsigned int i=0;
     int threshold = 0;
-    ResolverQuery *rq = (ResolverQuery *) obj;
+    ResolverQueryCallback *rqc = (ResolverQueryCallback *) obj;
+    ResolverQuery *rq = NULL;
     Jxta_id *src_pid = NULL;
     Jxta_vector *qAdvs = NULL;
     short type = 0;
@@ -1776,7 +1778,7 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
     JString *print_ext=NULL;
     Jxta_discovery_ext_query_state rcvd_state;
 
-
+    rq = jxta_resolver_query_callback_get_rq(rqc);
     qid = jxta_resolver_query_get_queryid(rq);
     jxta_resolver_query_get_query(rq, &query);
     rqId = jxta_resolver_query_get_src_peer_id(rq);
@@ -2140,6 +2142,9 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "forward the query from replicaExpression %s\n"
                                 , jstring_length(replicaExpression) > 0 ? jstring_get_string(replicaExpression):"(none)");
 
+            jxta_resolver_query_callback_set_walk(rqc, TRUE);
+            jxta_resolver_query_callback_set_propagate(rqc, FALSE);
+
             if (DEQ_FWD_SRDI == rcvd_state || DEQ_SUPRESS == rcvd_state) {
                 res = discovery_service_send_to_replica(discovery, rq, replicaExpression, jContext);
                 if (JXTA_ITEM_NOTFOUND == res) {
@@ -2150,6 +2155,7 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
                 res = JXTA_ITEM_NOTFOUND;
             }
         } else if (!walk_it) {
+            jxta_resolver_query_callback_set_walk(rqc, FALSE);
             res = JXTA_SUCCESS;
         }
     } else {
@@ -2200,6 +2206,8 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
 
     if (id_str_j)
         JXTA_OBJECT_RELEASE(id_str_j);
+    if (rq)
+        JXTA_OBJECT_RELEASE(rq);
     if (query)
         JXTA_OBJECT_RELEASE(query);
     if (src_pid)

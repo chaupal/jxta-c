@@ -183,7 +183,7 @@ static Jxta_status get_peers(Jxta_rdv_service_provider * provider, Jxta_vector *
 static Jxta_status propagate(Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
                              const char *serviceParam, int ttl);
 static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
-                        const char *serviceParam, const char *target_hash);
+                        const char *serviceParam, const char *target_hash, Jxta_boolean prop_to_all);
 static Jxta_status disconnect_peers(Jxta_rdv_service_provider *provider);
 static Jxta_status walk_to_view (Jxta_rdv_service_provider * provider, Jxta_vector * view, Jxta_id * sourceId, Jxta_message * msg);
 
@@ -708,7 +708,7 @@ static Jxta_status propagate(Jxta_rdv_service_provider * provider, Jxta_message 
  * @return error code.
  **/
 static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
-                        const char *serviceParam, const char *target_hash)
+                        const char *serviceParam, const char *target_hash, Jxta_boolean prop_to_all)
 {
     Jxta_status res = JXTA_SUCCESS;
     _jxta_rdv_service_server *myself = (_jxta_rdv_service_server *) PTValid(provider, _jxta_rdv_service_server);
@@ -749,7 +749,7 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
             jxta_rdv_diffusion_set_policy(header, JXTA_RDV_DIFFUSION_POLICY_TRAVERSAL);
         }
         jxta_rdv_diffusion_set_src_peer_id(header, provider->local_peer_id);
-        jxta_rdv_diffusion_set_ttl(header, 1);
+        jxta_rdv_diffusion_set_ttl(header, (TRUE == prop_to_all)? 1:0);
         jxta_rdv_diffusion_set_target_hash(header, target_hash);
         jxta_rdv_diffusion_set_dest_svc_name(header, serviceName);
         jxta_rdv_diffusion_set_dest_svc_param(header, serviceParam);

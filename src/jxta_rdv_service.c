@@ -613,7 +613,7 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_directed_walk(Jxta_rdv_service * rdv,
 
     apr_thread_mutex_lock(myself->mutex);
     if (NULL != myself->provider) {
-        res = PROVIDER_VTBL(myself->provider)->walk(myself->provider, msg, serviceName, serviceParam, target_hash);
+        res = PROVIDER_VTBL(myself->provider)->walk(myself->provider, msg, serviceName, serviceParam, target_hash, TRUE);
     } else {
         res = JXTA_BUSY;
     }
@@ -636,7 +636,30 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_walk(Jxta_rdv_service * rdv, Jxta_mes
 
     apr_thread_mutex_lock(myself->mutex);
     if (NULL != myself->provider) {
-        res = PROVIDER_VTBL(myself->provider)->walk(myself->provider, msg, serviceName, serviceParam, NULL);
+        res = PROVIDER_VTBL(myself->provider)->walk(myself->provider, msg, serviceName, serviceParam, NULL, TRUE);
+    } else {
+        res = JXTA_BUSY;
+    }
+    apr_thread_mutex_unlock(myself->mutex);
+
+    return res;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_rdv_service_walk_no_propagate(Jxta_rdv_service * rdv, Jxta_message * msg, const char *serviceName,
+                                                const char *serviceParam)
+{
+    _jxta_rdv_service *myself = PTValid(rdv, _jxta_rdv_service);
+    Jxta_status res = JXTA_SUCCESS;
+
+    /* Test arguments first */
+    if ((msg == NULL) || (NULL == serviceName)) {
+        /* Invalid args. */
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    apr_thread_mutex_lock(myself->mutex);
+    if (NULL != myself->provider) {
+        res = PROVIDER_VTBL(myself->provider)->walk(myself->provider, msg, serviceName, serviceParam, NULL, FALSE);
     } else {
         res = JXTA_BUSY;
     }

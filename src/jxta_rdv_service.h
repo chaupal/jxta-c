@@ -317,6 +317,22 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_walk(Jxta_rdv_service * rdv, Jxta_mes
 
 /**
 * Walk a message within the PeerGroup for which the instance of the 
+* Rendezvous Service is running in.  Set the ttl of the walk to 0 so 
+* the message is not propagated to clients
+*
+* @param rdv a pointer to the instance of the Rendezvous Service
+* @param msg the Jxta_message* to propagate.
+* @param serviceName pointer to a string containing the name of the service 
+* on which the listener is listening on.
+* @param serviceParam pointer to a string containing the parameter associated
+* to the serviceName.
+* @return error code.
+**/
+JXTA_DECLARE(Jxta_status) jxta_rdv_service_walk_no_propagate(Jxta_rdv_service * rdv, Jxta_message * msg, const char *serviceName,
+                                                const char *serviceParam);
+
+/**
+* Walk a message within the PeerGroup for which the instance of the 
 * Rendezvous Service is running in.
 *
 * @param rdv a pointer to the instance of the Rendezvous Service

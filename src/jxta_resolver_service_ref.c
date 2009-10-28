@@ -66,6 +66,7 @@ static const char *__log_cat = "RSLVR";
 #include "jxta_id.h"
 #include "jxta_rr.h"
 #include "jxta_rq.h"
+#include "jxta_rq_callback.h"
 #include "jxta_rsrdi.h"
 #include "jxta_hashtable.h"
 #include "jxta_peergroup.h"
@@ -370,6 +371,9 @@ static void get_interface(Jxta_service * self, Jxta_service ** svc)
 
 /**
  * Registers a given ResolveHandler.
+ * The handler should expect a callback object of type ResolverQueryCallback.
+ * The called method should set the fields of the callback object to direct the 
+ * resolver in taking future actions
  *
  * @param name The name under which this handler is to be registered.
  * @param handler The handler.
@@ -1190,6 +1194,7 @@ static Jxta_status JXTA_STDCALL resolver_service_query_cb(Jxta_object * obj, voi
     Jxta_bytevector *bytes = NULL;
     JString *string = NULL;
     int rq_missing_ra = 0;
+    ResolverQueryCallback * rqc = NULL;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Resolver Query Listener, query received\n");
 
@@ -1257,7 +1262,8 @@ static Jxta_status JXTA_STDCALL resolver_service_query_cb(Jxta_object * obj, voi
                                         &handler);
             /* call the query handler with the query */
             if (handler != NULL) {
-                status = jxta_callback_process_object((Jxta_callback *) handler, (Jxta_object *) rq);
+                rqc = jxta_resolver_query_callback_new_1(rq, FALSE, TRUE);
+                status = jxta_callback_process_object((Jxta_callback *) handler, (Jxta_object *) rqc);
                 JXTA_OBJECT_RELEASE(handler);
             } else {
                 assert(JXTA_SUCCESS != status);
@@ -1273,23 +1279,25 @@ static Jxta_status JXTA_STDCALL resolver_service_query_cb(Jxta_object * obj, voi
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Cannot solve query at edge, done deal\n");
             status = JXTA_SUCCESS;
         } else {
-            /* update message with resolver query has route adv if needed */
-            /* status = (rq_missing_ra) ? replace_rq_element(_self, msg, rq) : JXTA_SUCCESS; */
-
             /* this will unconditionally replace the resolver query. */
             /* This was added for the discovery state changes because the discovery query changes. */
-            status = JXTA_SUCCESS;
             replace_rq_element(_self, msg, rq);
-            if (JXTA_SUCCESS == status) {
+            if (NULL != rqc && TRUE == jxta_resolver_query_callback_walk(rqc)) {
+                if (TRUE == jxta_resolver_query_callback_propagate(rqc)) {
+                    status = jxta_rdv_service_walk(_self->rendezvous, msg, _self->instanceName, _self->outque);
+                } else {
+                    status = jxta_rdv_service_walk_no_propagate(_self->rendezvous, msg, _self->instanceName, _self->outque);
+                }
+            }
+            else {
                 status = jxta_rdv_service_walk(_self->rendezvous, msg, _self->instanceName, _self->outque);
-            } else {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Discard resolver query %ld without valid route adv.\n",
-                                jxta_resolver_query_get_queryid(rq));
             }
         }
     }
     JXTA_OBJECT_RELEASE(src_pid);
     JXTA_OBJECT_RELEASE(rq);
+    if (NULL != rqc)
+        JXTA_OBJECT_RELEASE(rqc);
     return status;
 }
 

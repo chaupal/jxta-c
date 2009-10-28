@@ -128,6 +128,9 @@ typedef struct _jxta_resolver_service Jxta_resolver_service;
 
 /**
  * Registers a given Resolver Query Handler.
+ * The handler should expect a callback object of type ResolverQueryCallback.
+ * The called method should set the fields of the callback object to direct the 
+ * resolver in taking future actions
  *
  * @param service pointer to the Jxta_resolver_service
  * @param name the name under which this handler is to be registered, typically

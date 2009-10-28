@@ -125,10 +125,11 @@ struct _jxta_rdv_service_provider_methods {
      * @param serviceParam pointer to a string containing the parameter associated
      * to the serviceName.
      * @param target_hash The hash value which is being sought.
+     * @param prop_to_all Indicator to set the ttl of a walked message
      * @return error code.
      **/
     Jxta_status(*walk) (Jxta_rdv_service_provider * provider, Jxta_message * msg, const char *serviceName,
-                        const char *serviceParam, const char *target_hash);
+                        const char *serviceParam, const char *target_hash, Jxta_boolean prop_to_all);
 
     /**
     * Sends messages to each connected peer causing a disconnect.
