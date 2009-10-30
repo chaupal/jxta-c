@@ -1992,11 +1992,6 @@ Jxta_status cm_remove_advertisement(Jxta_cm * self, const char *folder_name, cha
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s Error removing ElementAttributes -- %i\n",
                             dbSpace->conn->log_id, dbSpace->id, status);
         }
-        status = cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI, where, TRUE);
-        if (JXTA_SUCCESS != status) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s Error removing SRDI -- %i\n", dbSpace->conn->log_id,
-                            dbSpace->id, status);
-        }
         JXTA_OBJECT_RELEASE(dbSpace);
     }
     JXTA_OBJECT_RELEASE(jFolder);
