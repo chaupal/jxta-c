@@ -151,7 +151,7 @@ typedef struct {
     Jxta_hashtable *srdilisteners;
     long connectPollInterval;
     long pushInterval;
-
+    Jxta_boolean running;
     Jxta_boolean stop;
     Jxta_boolean republish;
     Jxta_PGID *gid;
@@ -246,6 +246,7 @@ Jxta_status jxta_srdi_service_ref_init(Jxta_module * module, Jxta_PG * group, Jx
 
     if (status != JXTA_SUCCESS)
         return JXTA_FAILED;
+
     jxta_advertisement_register_global_handler("jxta:GenSRDI", (JxtaAdvertisementNewFunc) jxta_srdi_message_new);
 
     me->srdilisteners = jxta_hashtable_new(0);
@@ -2130,6 +2131,9 @@ static Jxta_status JXTA_STDCALL srdi_service_srdi_cb(Jxta_object * obj, void *ar
     const char *service_parms;
     Jxta_message_element *element=NULL;
 
+    if (!myself->running) {
+        goto FINAL_EXIT;
+    }
     msg = (Jxta_message *) obj;
 
     address = jxta_message_get_destination(msg);
@@ -2256,6 +2260,8 @@ static void stop(Jxta_module * me)
 {
     Jxta_srdi_service_ref *myself = PTValid( me, Jxta_srdi_service_ref );
 
+    myself->running = FALSE;
+
     jxta_listener_stop(myself->rdv_listener);
     jxta_rdv_service_remove_event_listener(myself->rendezvous, "SRDIMessage", "abc");
     JXTA_OBJECT_RELEASE(myself->rdv_listener);
@@ -2276,6 +2282,8 @@ static Jxta_status start(Jxta_module * me, const char *argv[])
     assert(myself->rendezvous);
     assert(myself->endpoint);
     assert(myself->resolver);
+
+    myself->running = TRUE;
 
     /** Add a listener to rdv events */
     listener = jxta_listener_new((Jxta_listener_func) srdi_rdv_listener, myself, 1, 1);
@@ -2388,6 +2396,7 @@ Jxta_srdi_service_ref *jxta_srdi_service_ref_new_instance(void)
     /* Initialize the object */
     JXTA_OBJECT_INIT(srdi, srdi_free, 0);
 
+    srdi->running = FALSE;
     /* call the hierarchy of ctors */
     jxta_srdi_service_ref_construct(srdi, &jxta_srdi_service_ref_methods);
 
