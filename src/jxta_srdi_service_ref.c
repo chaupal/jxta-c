@@ -2131,9 +2131,12 @@ static Jxta_status JXTA_STDCALL srdi_service_srdi_cb(Jxta_object * obj, void *ar
     const char *service_parms;
     Jxta_message_element *element=NULL;
 
+    jxta_service_lock((Jxta_service *) myself);
     if (!myself->running) {
+        jxta_service_unlock((Jxta_service *) myself);
         goto FINAL_EXIT;
     }
+    jxta_service_unlock((Jxta_service *) myself);
     msg = (Jxta_message *) obj;
 
     address = jxta_message_get_destination(msg);
@@ -2260,7 +2263,9 @@ static void stop(Jxta_module * me)
 {
     Jxta_srdi_service_ref *myself = PTValid( me, Jxta_srdi_service_ref );
 
+    jxta_service_lock((Jxta_service *) myself);
     myself->running = FALSE;
+    jxta_service_unlock((Jxta_service *) myself);
 
     jxta_listener_stop(myself->rdv_listener);
     jxta_rdv_service_remove_event_listener(myself->rendezvous, "SRDIMessage", "abc");
