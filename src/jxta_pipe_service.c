@@ -72,7 +72,6 @@ struct _jxta_pipe_service {
 
     Jxta_PG *group;
     Dlist *impls;
-    Jxta_id *assigned_id;
     Jxta_advertisement *impl_adv;
     Jxta_pipe_resolver *pipe_resolver;
     apr_thread_mutex_t *mutex;
@@ -470,10 +469,6 @@ static void pipe_service_free(Jxta_object * obj)
 
     self->group = NULL;
 
-    if (self->assigned_id != NULL) {
-        JXTA_OBJECT_RELEASE(self->assigned_id);
-        self->assigned_id = NULL;
-    }
     if (self->impl_adv != NULL) {
         JXTA_OBJECT_RELEASE(self->impl_adv);
         self->impl_adv = NULL;
@@ -508,7 +503,6 @@ Jxta_pipe_service *jxta_pipe_service_new_instance(void)
 
         self->group = NULL;
         self->impls = NULL;
-        self->assigned_id = NULL;
         self->impl_adv = NULL;
         self->pipe_resolver = NULL;
         self->mutex = NULL;
@@ -539,12 +533,6 @@ static Jxta_status jxta_pipe_service_init(Jxta_module * module, Jxta_PG * group,
     res = apr_thread_mutex_create(&self->mutex, APR_THREAD_MUTEX_NESTED,    /* nested */
                                   self->pool);
 
-    /* store our assigned id. */
-    if (assigned_id != 0) {
-
-        JXTA_OBJECT_SHARE(assigned_id);
-        self->assigned_id = assigned_id;
-    }
 
     /* impl_adv are jxta_objects that we share */
 

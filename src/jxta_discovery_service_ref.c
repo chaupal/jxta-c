@@ -130,7 +130,6 @@ typedef struct {
     Jxta_PID *localPeerId;
     Jxta_id *prev_id;
     char *pid_str;
-    Jxta_id *assigned_id;
     Jxta_advertisement *impl_adv;
     Jxta_cm *cm;
     Jxta_boolean cm_on;
@@ -212,6 +211,7 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     Jxta_svc *svc = NULL;
     int instance;
     Jxta_discovery_service_ref *discovery = (Jxta_discovery_service_ref *) module;
+
     Jxta_PG *parentgroup=NULL;
     const char *p_keywords[][2] = {
         {"Name", NULL},
@@ -243,12 +243,6 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     }
 
     jxta_service_init((Jxta_service *) module, group, assigned_id, impl_adv);
-
-    /* store a copy of our assigned id */
-    if (assigned_id != NULL) {
-        JXTA_OBJECT_SHARE(assigned_id);
-        discovery->assigned_id = assigned_id;
-    }
 
     /* keep a reference to our group and impl adv */
     discovery->group = group;   /* not shared because that would create a circular dependence */
@@ -286,7 +280,7 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
      ** Build the local name of the instance
      **/
     discovery->instanceName = NULL;
-    jxta_id_to_jstring(discovery->assigned_id, &discovery->instanceName);
+    jxta_id_to_jstring(assigned_id, &discovery->instanceName);
     jxta_PG_get_resolver_service(group, &(discovery->resolver));
     jxta_PG_get_endpoint_service(group, &(discovery->endpoint));
     jxta_PG_get_rendezvous_service(group, &(discovery->rdv));
@@ -1369,9 +1363,6 @@ void jxta_discovery_service_ref_destruct(Jxta_discovery_service_ref * discovery)
     }
     if (self->impl_adv != NULL) {
         JXTA_OBJECT_RELEASE(self->impl_adv);
-    }
-    if (self->assigned_id != NULL) {
-        JXTA_OBJECT_RELEASE(self->assigned_id);
     }
     if (NULL != discovery->rdv) {
         JXTA_OBJECT_RELEASE(self->rdv);

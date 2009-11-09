@@ -91,7 +91,6 @@ typedef struct {
     Jxta_hashtable *responsehandlers;
     Jxta_hashtable *srdihandlers;
     Jxta_PID *localPeerId;
-    Jxta_id *assigned_id;
     Jxta_advertisement *impl_adv;
     char *instanceName;
     char *inque;
@@ -191,11 +190,6 @@ jxta_resolver_service_ref_init(Jxta_module * resolver, Jxta_PG * group, Jxta_id 
         return JXTA_NOMEM;
     }
     self->query_id = 0;
-    /* store a copy of our assigned id */
-    if (assigned_id != 0) {
-        JXTA_OBJECT_SHARE(assigned_id);
-        self->assigned_id = assigned_id;
-    }
 
     /* keep a reference to our impl adv */
     if (impl_adv != 0) {
@@ -207,7 +201,7 @@ jxta_resolver_service_ref_init(Jxta_module * resolver, Jxta_PG * group, Jxta_id 
      ** Build the local name of the instance
      **/
     self->instanceName = NULL;
-    jxta_id_to_cstr(self->assigned_id, &self->instanceName, pool);
+    jxta_id_to_cstr(assigned_id, &self->instanceName, pool);
 
     {   /* don't release this object */
         JString *grp_str = NULL;
@@ -1021,9 +1015,6 @@ void jxta_resolver_service_ref_destruct(Jxta_resolver_service_ref * self)
 
     if (myself->impl_adv != 0) {
         JXTA_OBJECT_RELEASE(myself->impl_adv);
-    }
-    if (myself->assigned_id != 0) {
-        JXTA_OBJECT_RELEASE(myself->assigned_id);
     }
 
     apr_thread_mutex_destroy(myself->mutex);

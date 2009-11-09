@@ -78,8 +78,6 @@ typedef struct {
 
     Jxta_PG *group;
 
-    Jxta_id *assigned_id;
-
     Jxta_advertisement *impl_adv;
 
     Jxta_vector *creds;
@@ -114,12 +112,6 @@ jxta_membership_service_null_init(Jxta_module * membership, Jxta_PG * group, Jxt
         return JXTA_INVALID_ARGUMENT;
     }
 
-
-    /* store a copy of our assigned id */
-    if (assigned_id != NULL) {
-        JXTA_OBJECT_SHARE(assigned_id);
-        self->assigned_id = assigned_id;
-    }
 
     /* keep a reference to our group and impl adv */
 
@@ -325,10 +317,6 @@ void jxta_membership_service_null_destruct(Jxta_membership_service_null * self)
 
     if (self->impl_adv) {
         JXTA_OBJECT_RELEASE(self->impl_adv);
-    }
-
-    if (self->assigned_id) {
-        JXTA_OBJECT_RELEASE(self->assigned_id);
     }
 
     /* call the base classe's dtor. */
