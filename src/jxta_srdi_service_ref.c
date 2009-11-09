@@ -192,8 +192,8 @@ Jxta_status jxta_srdi_service_ref_init(Jxta_module * module, Jxta_PG * group, Jx
     me = (Jxta_srdi_service_ref *) module;
 
     status = JXTA_SUCCESS;
-    if (impl_adv) {
-    }
+
+    jxta_service_init((Jxta_service *) module, group, assigned_id, impl_adv);
 
     me->group = group;
     jxta_PG_get_parentgroup(me->group, &parentgroup);
