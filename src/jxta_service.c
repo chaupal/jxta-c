@@ -88,10 +88,12 @@ Jxta_service *jxta_service_construct(Jxta_service * svc, Jxta_service_methods co
 void jxta_service_destruct(Jxta_service * svc)
 {
     Jxta_service *self = (Jxta_service *) svc;
+    JString *id_j=NULL;
 
     self->group = NULL;
 
     if (NULL != self->assigned_id) {
+        jxta_id_to_jstring(self->assigned_id, &id_j);
         JXTA_OBJECT_RELEASE(self->assigned_id);
     }
 
@@ -103,9 +105,13 @@ void jxta_service_destruct(Jxta_service * svc)
 
 #if APR_HAS_THREADS
     if (NULL != self->mutex) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Jxta_service_init is not called??\n");
         apr_thread_mutex_destroy(self->mutex);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Jxta_service_init is not called id:%s \n"
+                            , NULL != id_j ? jstring_get_string(id_j) : "no id");
     }
+    if (NULL != id_j)
+        JXTA_OBJECT_RELEASE(id_j);
 #endif
 
     jxta_module_destruct((Jxta_module *) svc);
