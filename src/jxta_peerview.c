@@ -3377,7 +3377,7 @@ static Jxta_status JXTA_STDCALL peerview_protocol_cb(Jxta_object * obj, void *ar
                 jxta_peerview_address_request_msg_parse_charbuffer(addr_request, jstring_get_string(string),
                                                                    jstring_length(string));
 
-            if (JXTA_SUCCESS == res && my_cluster_in_range(myself)) {
+            if (JXTA_SUCCESS == res) {
                 res = peerview_handle_address_request(myself, addr_request);
             }
 
@@ -3700,6 +3700,7 @@ static Jxta_status peerview_handle_address_assign_msg(Jxta_peerview * myself, Jx
     Jxta_address_assign_msg_type msg_type;
     Jxta_id *rcv_peerid=NULL;
     JString *rcv_peerid_j=NULL;
+    Jxta_boolean send_busy=FALSE;
 
     msg_type = jxta_peerview_address_assign_msg_get_type(addr_assign);
 
@@ -3722,36 +3723,37 @@ static Jxta_status peerview_handle_address_assign_msg(Jxta_peerview * myself, Jx
                             , "Received address asssign msg "
                             , jstring_get_string(msg_j) , jxta_peerview_address_assign_msg_get_cluster_peers(addr_assign));
 
-    if (!my_cluster_in_range(myself)) {
-        if (ADDRESS_ASSIGN != msg_type && ADDRESS_ASSIGN_LOCK != msg_type && ADDRESS_ASSIGN_UNLOCK != msg_type) {
+    apr_thread_mutex_lock(myself->mutex);
+
+    if ((!my_cluster_in_range(myself) || NULL == myself->instance_mask) && ADDRESS_ASSIGN != msg_type) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING
-                        , "Cluster is not in range - %s [%pp]\n"
+                        , "Received an address assign msg that cannot be handled - %s [%pp]\n"
                         , jstring_get_string(msg_j), myself);
+
+            /* make sure the sending peer doesn't have wait for a timeout */
+            if (ADDRESS_ASSIGN_LOCK == msg_type) {
+                send_busy = TRUE;
+            }
             res = JXTA_FAILED;
-        }
-    } if (msg_type != ADDRESS_ASSIGN) {
+    } else if (msg_type != ADDRESS_ASSIGN) {
         Jxta_boolean same=FALSE;
-        if (NULL != myself->instance_mask) {
- 
-            BIGNUM *instance_mask;
+        BIGNUM *instance_mask;
 
-            instance_mask = BN_new();
-            BN_hex2bn(&instance_mask, jxta_peerview_address_assign_msg_get_instance_mask(addr_assign));
+        instance_mask = BN_new();
+        BN_hex2bn(&instance_mask, jxta_peerview_address_assign_msg_get_instance_mask(addr_assign));
+        same = 0 == BN_cmp(myself->instance_mask, instance_mask);
 
-            same = 0 == BN_cmp(myself->instance_mask, instance_mask);
-            BN_free(instance_mask);
-        }
         if (!same) {
             /* This has to be an address assignment msg we never asked for. Ignore it. */
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING
-                    , "Unexpected address assignement - %s from unknown peerview. [%pp]\n"
+                    , "Unexpected address assignement msg - %s from unknown peerview. [%pp]\n"
                     ,  jstring_get_string(msg_j), myself);
             res = JXTA_FAILED;
-            goto FINAL_EXIT;
         }
-    } else {
-
+        BN_free(instance_mask);
     }
+    apr_thread_mutex_unlock(myself->mutex);
+
     if (JXTA_FAILED == res)
         goto FINAL_EXIT;
 
@@ -3792,6 +3794,18 @@ static Jxta_status peerview_handle_address_assign_msg(Jxta_peerview * myself, Jx
     }
 
 FINAL_EXIT:
+
+    if (send_busy) {
+        Jxta_peer *dest;
+
+        dest = jxta_peer_new();
+        jxta_peer_set_peerid(dest, rcv_peerid);
+
+        res = peerview_send_address_assign_msg(myself, dest, dest
+                    , ADDRESS_ASSIGN_BUSY, NULL, NULL);
+
+        JXTA_OBJECT_RELEASE(dest);
+    }
 
     if (msg_j)
         JXTA_OBJECT_RELEASE(msg_j);
@@ -4474,7 +4488,7 @@ static Jxta_status peerview_handle_address_assign_lock(Jxta_peerview * myself, J
         locked = FALSE;
         apr_thread_mutex_unlock(myself->mutex);
         peerview_send_address_assign_msg(myself, dest, assign_peer, ADDRESS_ASSIGN_BUSY, NULL, NULL);
-    } else {
+    } else if (my_cluster_in_range(myself)) {
         Jxta_vector *free_hash_list=NULL;
 
         if (NULL == myself->free_hash_list) {
