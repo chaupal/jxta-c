@@ -333,10 +333,21 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
         jstring_append_2(outputLine, "client\n");
         break;
 
-    case config_rendezvous:
-        jstring_append_2(outputLine, "rendezvous\n");
-        break;
+    case config_rendezvous: {
+        JString *instance_j=NULL;
 
+        jstring_append_2(outputLine, "rendezvous ");
+
+        instance_j = jxta_peerview_get_instance_mask(pv);
+
+        if (instance_j) {
+            jstring_append_2(outputLine, " pv-instance:");
+            jstring_append_1(outputLine, instance_j);
+            JXTA_OBJECT_RELEASE(instance_j);
+        }
+        jstring_append_2(outputLine, "\n");
+        break;
+    }
     default:
         jstring_append_2(outputLine, "[unknown]\n");
         break;
@@ -434,10 +445,10 @@ void jxta_rdvstatus_start(Jxta_object * appl, int argc, char **argv)
     JXTA_OBJECT_RELEASE(rdv);
 
     if (jstring_length(outputLine) > 0)
-        JxtaShellApplication_print(appl, outputLine);
+        JxtaShellApplication_print((JxtaShellApplication *) appl, outputLine);
 
     JXTA_OBJECT_RELEASE(outputLine);
-    JxtaShellApplication_terminate(appl);
+    JxtaShellApplication_terminate((JxtaShellApplication *) appl);
 }
 
 /* vim: set ts=4 sw=4 et tw=130: */
