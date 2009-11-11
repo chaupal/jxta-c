@@ -603,12 +603,17 @@ static void terminate_maintain_thread()
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Stopping maintain thread\n");
 
     if (MAINTAIN_RUNNING == maintain_state) {
+        apr_status_t res;
         apr_thread_mutex_lock(maintain_lock);
         maintain_state = MAINTAIN_SHUTDOWN;
         apr_thread_mutex_unlock(maintain_lock);
         apr_thread_mutex_lock(maintain_cond_lock);
         apr_thread_cond_signal(maintain_cond);
         apr_thread_mutex_unlock(maintain_cond_lock);
+        apr_thread_join(&res, maintain_thread);
+        if (APR_SUCCESS != res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to join the maintenance thread res:%d\n", res);
+        }
     }
 
     if (maintain_peerview)
@@ -7891,7 +7896,9 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
         wwait = jxta_RdvConfig_pv_maintenance_interval(myself->rdvConfig);
         apr_thread_mutex_unlock(maintain_lock);
 
+        apr_thread_mutex_lock(maintain_cond_lock);
         apr_status = apr_thread_cond_timedwait(maintain_cond, maintain_cond_lock, wwait);
+        apr_thread_mutex_unlock(maintain_cond_lock);
 
         /* if it was a signal and not a time out */
         if (APR_TIMEUP != apr_status && MAINTAIN_SHUTDOWN == maintain_state) {
