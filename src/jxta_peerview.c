@@ -323,7 +323,7 @@ struct _jxta_peerview {
     /**
     *   The cluster my pve is located.
     */
-    unsigned int my_cluster;
+    int my_cluster;
 
     /**
     *   Our own pve or NULL if we have no assigned address within the peerview.
@@ -794,7 +794,7 @@ static Jxta_peerview *peerview_construct(Jxta_peerview * myself, apr_pool_t * pa
         myself->discovery = NULL;
         myself->rdv = NULL;
 
-        myself->my_cluster = INT_MAX;
+        myself->my_cluster = -1;
         myself->clusters = NULL;
         myself->self_pve = NULL;
         myself->my_willingness = 25;
@@ -1808,7 +1808,7 @@ JXTA_DECLARE(JString *) jxta_peerview_get_instance_mask(Jxta_peerview * me)
 
 static Jxta_boolean my_cluster_in_range(Jxta_peerview * me)
 {
-    return me->my_cluster == INT_MAX || me->my_cluster > me->clusters_count - 1 ? FALSE:TRUE;
+    return -1 == me->my_cluster || me->my_cluster > me->clusters_count - 1 ? FALSE:TRUE;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_peerview_get_localview(Jxta_peerview * me, Jxta_vector ** cluster_view)
@@ -2094,7 +2094,7 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_get_associate_peer(Jxta_peerview * me, u
 
     *peer = NULL;
 
-    if (NULL == myself->self_pve) {
+    if (NULL == myself->self_pve || !my_cluster_in_range(myself)) {
         /* likely only during shutdown */
         res = JXTA_FAILED;
         goto FINAL_EXIT;
@@ -2133,7 +2133,7 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_get_best_associate_peer(Jxta_peerview * 
     apr_thread_mutex_lock(myself->mutex);
 
 
-    if (NULL == myself->self_pve) {
+    if (NULL == myself->self_pve || !my_cluster_in_range(myself)) {
         /* likely only during shutdown */
         res = JXTA_FAILED;
         goto FINAL_EXIT;
@@ -3372,7 +3372,7 @@ static Jxta_status JXTA_STDCALL peerview_protocol_cb(Jxta_object * obj, void *ar
                 jxta_peerview_address_request_msg_parse_charbuffer(addr_request, jstring_get_string(string),
                                                                    jstring_length(string));
 
-            if (JXTA_SUCCESS == res) {
+            if (JXTA_SUCCESS == res && my_cluster_in_range(myself)) {
                 res = peerview_handle_address_request(myself, addr_request);
             }
 
@@ -3523,7 +3523,6 @@ static Jxta_status peerview_handle_address_request(Jxta_peerview * myself, Jxta_
 
     apr_thread_mutex_lock(myself->mutex);
     locked = TRUE;
-
     dest = jxta_peer_new();
     dest_pa = jxta_peerview_address_request_msg_get_peer_adv(addr_req);
     jxta_peer_set_adv(dest, dest_pa);
@@ -3552,7 +3551,7 @@ static Jxta_status peerview_handle_address_request(Jxta_peerview * myself, Jxta_
         res = peerview_send_address_assign_msg(myself, dest, dest
                     , ADDRESS_ASSIGN, target_address, NULL);
 
-    } else {
+    } else if (my_cluster_in_range(myself)) {
         locked = FALSE;
         apr_thread_mutex_unlock(myself->mutex);
 
@@ -3583,11 +3582,11 @@ static void get_empty_cluster(Jxta_peerview *myself, int * cluster)
     int cluster_size;
 
     low_cluster = 0;
-    *cluster = INT_MAX;
+    *cluster = -1;
     if (1 == myself->clusters_count) {
         *cluster = 0;
         return;
-    } else if (FALSE == my_cluster_in_range(myself)) {
+    } else if (!my_cluster_in_range(myself)) {
         return;
     }
     high_cluster = myself->clusters_count - 1;
@@ -3711,8 +3710,11 @@ static Jxta_status peerview_handle_address_assign_msg(Jxta_peerview * myself, Jx
     jstring_append_2(msg_j, " from:");
     jstring_append_1(msg_j, rcv_peerid_j);
 
+    jstring_append_2(msg_j, " instance:");
+    jstring_append_2(msg_j, jxta_peerview_address_assign_msg_get_instance_mask(addr_assign));
+
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "%s %s peers:%d\n"
-                            , "Received address asssing msg "
+                            , "Received address asssign msg "
                             , jstring_get_string(msg_j) , jxta_peerview_address_assign_msg_get_cluster_peers(addr_assign));
 
     if (!my_cluster_in_range(myself)) {
@@ -3722,12 +3724,28 @@ static Jxta_status peerview_handle_address_assign_msg(Jxta_peerview * myself, Jx
                         , jstring_get_string(msg_j), myself);
             res = JXTA_FAILED;
         }
-    } else if (NULL == myself->instance_mask && msg_type != ADDRESS_ASSIGN) {
-        /* This has to be an address assignment msg we never asked for. Ignore it. */
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING
+    } if (msg_type != ADDRESS_ASSIGN) {
+        Jxta_boolean same=FALSE;
+        if (NULL != myself->instance_mask) {
+ 
+            BIGNUM *instance_mask;
+
+            instance_mask = BN_new();
+            BN_hex2bn(&instance_mask, jxta_peerview_address_assign_msg_get_instance_mask(addr_assign));
+
+            same = 0 == BN_cmp(myself->instance_mask, instance_mask);
+            BN_free(instance_mask);
+        }
+        if (!same) {
+            /* This has to be an address assignment msg we never asked for. Ignore it. */
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING
                     , "Unexpected address assignement - %s from unknown peerview. [%pp]\n"
                     ,  jstring_get_string(msg_j), myself);
-        res = JXTA_FAILED;
+            res = JXTA_FAILED;
+            goto FINAL_EXIT;
+        }
+    } else {
+
     }
     if (JXTA_FAILED == res)
         goto FINAL_EXIT;
@@ -4073,7 +4091,7 @@ static int find_smallest_cluster(Jxta_peerview *myself)
     int i;
 
     if (FALSE == my_cluster_in_range(myself)) {
-        return INT_MAX;
+        return -1;
     }
 
     smallest_cluster_peers=jxta_vector_size(myself->clusters[myself->my_cluster].members);
@@ -4136,7 +4154,7 @@ static Jxta_status peerview_handle_address_assign_lock_rsp(Jxta_peerview *myself
 
         JXTA_OBJECT_RELEASE(hash_entry);
     }
-    if (jxta_peerview_is_associate(myself, rcv_peerid)) {
+    if (!jxta_peerview_is_partner(myself, rcv_peerid)) {
         int peer_cluster;
 
         peer_cluster = cluster_for_hash(myself, pve->target_hash);
@@ -4156,7 +4174,7 @@ static Jxta_status peerview_handle_address_assign_lock_rsp(Jxta_peerview *myself
         JXTA_OBJECT_RELEASE(pve);
 
     /* add the entries to the free list */
-    if (0 >= --myself->activity_address_locking_peers_sent) {
+    if (my_cluster_in_range(myself) && 0 >= --myself->activity_address_locking_peers_sent) {
         Jxta_peer *dest=NULL;
         BIGNUM *target_hash=NULL;
         int cluster;
@@ -4457,7 +4475,7 @@ static Jxta_status peerview_handle_address_assign_lock(Jxta_peerview * myself, J
         if (NULL == myself->free_hash_list) {
             myself->free_hash_list = jxta_vector_new(0);
         }
-        if (jxta_peerview_is_associate(myself, rcv_peerid)) {
+        if (!jxta_peerview_is_partner(myself, rcv_peerid)) {
 
             free_hash_list = JXTA_OBJECT_SHARE(myself->free_hash_list);
 

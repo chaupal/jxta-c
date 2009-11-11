@@ -349,6 +349,8 @@ JXTA_DECLARE(unsigned int) jxta_peerview_get_cluster_number(Jxta_peerview * me);
 
 JXTA_DECLARE(Jxta_status) jxta_peerview_get_client_pong_msg(Jxta_object * me, Jxta_peerview_pong_msg ** pong_msg);
 
+JXTA_DECLARE(JString *) jxta_peerview_get_instance_mask(Jxta_peerview * me);
+
 #ifdef __cplusplus
 #if 0
 {
