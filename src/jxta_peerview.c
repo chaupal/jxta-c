@@ -7763,7 +7763,7 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
         maintain_state = MAINTAIN_RUNNING;
         maintain_running = TRUE;
         apr_thread_mutex_lock(maintain_lock);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "ACT[maintain] [%pp]: Running. \n", myself);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "ACT[maintain]: Running. \n");
 
         all_pvs = peerview_get_pvs(NULL);
 
@@ -7781,7 +7781,7 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
             Jxta_boolean is_rdv;
 
             if (JXTA_SUCCESS != jxta_vector_get_object_at(all_pvs, JXTA_OBJECT_PPTR(&pv), i)) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "ACT[maintain] [%pp]: Unable to retrieve a peerview [%pp] i:%d.\n", myself, all_pvs, i);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "ACT[maintain]: Unable to retrieve a peerview [%pp] i:%d.\n", all_pvs, i);
                 continue;
             }
             jxta_PG_get_rendezvous_service(pv->group, &rdv);
@@ -7808,7 +7808,7 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
             Jxta_id *peerid;
 
             if (JXTA_SUCCESS != jxta_hashtable_get(ret_msgs, *peers, strlen(*peers) + 1, JXTA_OBJECT_PPTR(&grps_hash))) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "ACT[maintain] [%pp]: Able to retrieve a group hash key:%s\n",myself, *peers);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "ACT[maintain]: Able to retrieve a group hash key:%s\n", *peers);
                 free(*(peers++));
                 continue;
             }
@@ -7821,12 +7821,12 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
                 Peerview_entry *a_pve=NULL;
 
                 if (JXTA_SUCCESS != jxta_hashtable_get(grps_hash, *groups, strlen(*groups) + 1, JXTA_OBJECT_PPTR(&entry))) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "ACT[maintain] [%pp]: grps_hash:[%pp]: Unable to retrieve a group:%s\n", myself, grps_hash, *groups);
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "ACT[maintain]: grps_hash:[%pp]: Unable to retrieve a group:%s\n", grps_hash, *groups);
                 } else {
                     a_pve = (Peerview_entry *) jxta_peerview_ping_msg_entry_get_pve(entry);
                     if (NULL == a_pve || NULL == ((_jxta_peer_entry *) a_pve)->adv) {
-                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "ACT[maintain] [%pp]: Able to retrieve a pve?:%s for %s\n", myself
-                            , NULL == a_pve ? "no":"yes", *peers);
+                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "ACT[maintain]: Able to retrieve a pve?:%s for %s\n",
+                            NULL == a_pve ? "no":"yes", *peers);
                         JXTA_OBJECT_RELEASE(peerid);
                         JXTA_OBJECT_RELEASE(grps_hash);
                         if (a_pve)
@@ -7841,8 +7841,8 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
                                 , &ping);
 
                         }
-                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "ACT[maintain] [%pp]: Add a group to the ping message:%s\n"
-                                            , myself, *groups);
+                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "ACT[maintain]: Add a group to the ping message:%s\n"
+                                            , *groups);
                         jxta_peerview_ping_msg_add_group_entry(ping, entry);
                     } else {
                         JString *group_j=NULL;
@@ -7905,7 +7905,7 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
             JXTA_OBJECT_RELEASE(all_pvs);
 
 
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "ACT[maintain] [%pp]: Rescheduled.\n", myself);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "ACT[maintain]: Rescheduled.\n");
 
         wwait = jxta_RdvConfig_pv_maintenance_interval(myself->rdvConfig);
         apr_thread_mutex_unlock(maintain_lock);
@@ -7921,7 +7921,7 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
     }
     maintain_state = MAINTAIN_SHUTDOWN;
     maintain_running = FALSE;
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "ACT[maintain] [%pp]: Exit.\n", myself);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "ACT[maintain]: Exit.\n");
     apr_thread_exit(thread, APR_SUCCESS);
     return NULL;
 
@@ -7933,11 +7933,13 @@ static Jxta_status peerview_maintain(Jxta_peerview *myself, Jxta_boolean all, Jx
     apr_status_t apr_res;
 
 
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "peerview_maintain [%pp]: run\n", myself);
+    
     apr_thread_mutex_lock(myself->mutex);
 
     if ((PV_ADDRESSING != myself->state) && (PV_MAINTENANCE != myself->state)) {
         apr_thread_mutex_unlock(myself->mutex);
-        return JXTA_SUCCESS;
+        goto FINAL_EXIT;
     }
 
     current_pves = peerview_get_all_pves(myself);
@@ -7952,11 +7954,8 @@ static Jxta_status peerview_maintain(Jxta_peerview *myself, Jxta_boolean all, Jx
     probe_referrals(myself);
 
     if (PV_ADDRESSING != myself->state && PV_MAINTENANCE != myself->state) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "peerview_maintain [%pp]: done. \n", myself);
-        return JXTA_SUCCESS;
+        goto FINAL_EXIT;
     }
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "peerview_maintain [%pp]\n", myself);
 
     if (jxta_vector_size(myself->possible_free_list) > 0) {
         peerview_reclaim_addresses(myself);
@@ -7975,6 +7974,10 @@ static Jxta_status peerview_maintain(Jxta_peerview *myself, Jxta_boolean all, Jx
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "peerview_maintain [%pp]: Scheduled [Add].\n", myself);
         }
     }
+
+FINAL_EXIT:
+    
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "peerview_maintain [%pp]: done. \n", myself);
     return JXTA_SUCCESS;
 }
 
