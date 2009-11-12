@@ -461,6 +461,7 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_address_assign_msg_get_xml(Jxta_peerview
     JString *string;
     JString *temp;
     int i;
+    const char *instance_c;
     const char *target_hash_c=NULL;
     char tmpbuf[256];   /* We use this buffer to store a string representation of a int */
     JXTA_OBJECT_CHECK_VALID(myself);
@@ -531,9 +532,12 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_address_assign_msg_get_xml(Jxta_peerview
 
     jstring_append_2(string, ">\n");
 
-    jstring_append_2(string, "<InstanceMask>");
-    jstring_append_2(string, jxta_peerview_address_assign_msg_get_instance_mask(myself));
-    jstring_append_2(string, "</InstanceMask>\n");
+    instance_c = jxta_peerview_address_assign_msg_get_instance_mask(myself);
+    if (NULL != instance_c) {
+        jstring_append_2(string, "<InstanceMask>");
+        jstring_append_2(string, instance_c);
+        jstring_append_2(string, "</InstanceMask>\n");
+    }
     target_hash_c = jxta_peerview_address_assign_msg_get_target_hash(myself);
 
     if (NULL != target_hash_c) {
