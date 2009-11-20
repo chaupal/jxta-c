@@ -89,7 +89,6 @@ struct _jxta_SrdiConfigAdvertisement {
     Jxta_boolean noRangeWithValue;
     Jxta_boolean SRDIDeltaSupport;
     int SRDIDeltaWindow;
-    Jxta_time replica_expiration;
     Jxta_time_diff replica_update_limit;
 };
 
@@ -166,9 +165,7 @@ static void handleReplica(void *userdata, const XML_Char *cd, int len)
     }
 
     while (atts && *atts) {
-        if (0 == strcmp(*atts, "expiration")) {
-            ad->replica_expiration = (atoi(atts[1]));
-        } else if (0 == strcmp(*atts, "update_limit")) {
+        if (0 == strcmp(*atts, "update_limit")) {
             ad->replica_update_limit = (atoi(atts[1]));
         }
         atts+=2;
@@ -193,17 +190,6 @@ JXTA_DECLARE(void) jxta_srdi_config_set_replication_threshold(Jxta_SrdiConfigAdv
 JXTA_DECLARE(int) jxta_srdi_cfg_get_replication_threshold(Jxta_SrdiConfigAdvertisement * adv)
 {
     return adv->replicationThreshold;
-}
-
-JXTA_DECLARE(Jxta_time) jxta_srdi_cfg_get_replica_expiration(Jxta_SrdiConfigAdvertisement * adv)
-{
-    return adv->replica_expiration;
-}
-
-JXTA_DECLARE(void) jxta_srdi_cfg_set_replica_expiration(Jxta_SrdiConfigAdvertisement * adv, Jxta_time expiration)
-{
-    adv->replica_expiration = expiration;
-    return;
 }
 
 JXTA_DECLARE(Jxta_time_diff) jxta_srdi_cfg_get_replica_update_limit(Jxta_SrdiConfigAdvertisement * adv)
@@ -275,14 +261,8 @@ JXTA_DECLARE(Jxta_status) jxta_SrdiConfigAdvertisement_get_xml(Jxta_SrdiConfigAd
     apr_snprintf(tmpbuf, sizeof(tmpbuf), "%d", jxta_srdi_cfg_get_replication_threshold(ad));
     jstring_append_2(string, tmpbuf);
     jstring_append_2(string, "</ReplicationThreshold>\n");
-    if (-1 != ad->replica_expiration || -1 != ad->replica_update_limit) {
+    if (-1 != ad->replica_update_limit) {
         jstring_append_2(string, "<Replica");
-        if (-1 != ad->replica_expiration) {
-            jstring_append_2(string, " expiration=\"");
-            apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->replica_expiration);
-            jstring_append_2(string, tmpbuf);
-            jstring_append_2(string, "\"");
-        }
         if (-1 != ad->replica_update_limit) {
             jstring_append_2(string, " update_limit=\"");
             apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->replica_update_limit);
@@ -315,7 +295,6 @@ Jxta_SrdiConfigAdvertisement *jxta_SrdiConfigAdvertisement_construct(Jxta_SrdiCo
         self->dup_srdi_entries = FALSE;
         self->SRDIDeltaSupport = TRUE;
         self->SRDIDeltaWindow = DEFAULT_SRDI_DELTA_WINDOW;
-        self->replica_expiration = -1;
         self->replica_update_limit = -1;
     }
     return self;

@@ -139,7 +139,6 @@ static Jxta_status forwardSrdiEntry(Jxta_srdi_service * service, Jxta_resolver_s
                                     Jxta_id * srcPid, Jxta_SRDIEntryElement * entry, JString * queueName);
 #endif
 
-#define DEFAULT_REPLICA_EXPIRATION (60 * 60 * 1000)  /* 60 minutes */
 #define DEFAULT_REPLICA_UPDATE_LIMIT (5 * 60 * 1000)  /* 5 minutes */
 
 typedef struct {
@@ -228,13 +227,9 @@ Jxta_status jxta_srdi_service_ref_init(Jxta_module * module, Jxta_PG * group, Jx
     }
     if (-1 == jxta_srdi_cfg_get_replica_update_limit(me->config)) {
         jxta_srdi_cfg_set_replica_update_limit(me->config,DEFAULT_REPLICA_UPDATE_LIMIT);
+    }
 
-    }
-    if (-1 == jxta_srdi_cfg_get_replica_expiration(me->config)) {
-        jxta_srdi_cfg_set_replica_expiration(me->config,DEFAULT_REPLICA_EXPIRATION);
-    }
     me->update_limit = cm_get_latest_timestamp(me->cm);
-
     me->update_limit += jxta_srdi_cfg_get_replica_update_limit(me->config);
 
     me->srdi_id = me->instanceName;
