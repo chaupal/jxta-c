@@ -112,7 +112,7 @@ void handleJxta_DiscoveryConfigAdvertisement(void *userdata, const XML_Char * cd
             /* just silently skip it. */
         } else if (0 == strcmp(*atts, "instance")) {
             ad->instance = atoi(atts[1]);
-        } else if (0 == strcmp(*atts, "expire_queries")) {
+        } else if (0 == strcmp(*atts, "query_expiration")) {
             ad->query_expiration = atoi(atts[1]);
         } else if (0 == strcmp(*atts, "deltaCycle")) {
             ad->delta_update_cycle = (atoi(atts[1]) * 1000);
