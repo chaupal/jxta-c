@@ -544,7 +544,6 @@ static apr_thread_mutex_t *maintain_cond_lock=NULL;
 static apr_thread_cond_t *maintain_cond=NULL;
 static Jxta_peerview *maintain_peerview=NULL;
 static Jxta_endpoint_service *maintain_endpoint=NULL;
-static Jxta_boolean maintain_running=FALSE;
 static void *maintain_cookie;
 
 static void initiate_maintain_thread(Jxta_peerview *myself)
@@ -602,9 +601,10 @@ static void terminate_maintain_thread()
     endpoint_service_remove_recipient(maintain_endpoint, &maintain_cookie);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Stopping maintain thread\n");
 
+    apr_thread_mutex_lock(maintain_lock);
+    
     if (MAINTAIN_RUNNING == maintain_state) {
         apr_status_t res;
-        apr_thread_mutex_lock(maintain_lock);
         maintain_state = MAINTAIN_SHUTDOWN;
         apr_thread_mutex_unlock(maintain_lock);
         apr_thread_mutex_lock(maintain_cond_lock);
@@ -614,6 +614,9 @@ static void terminate_maintain_thread()
         if (APR_SUCCESS != res) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to join the maintenance thread res:%d\n", res);
         }
+    }
+    else {
+        apr_thread_mutex_unlock(maintain_lock);
     }
 
     if (maintain_peerview)
@@ -7763,7 +7766,10 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
 {
     Jxta_peerview *myself = PTValid(cookie, Jxta_peerview);
 
-    while (TRUE) {
+    apr_thread_mutex_lock(maintain_lock);
+    maintain_state = MAINTAIN_RUNNING;
+
+    while (MAINTAIN_SHUTDOWN != maintain_state) {
         Jxta_vector *all_pvs=NULL;
         int i;
         Jxta_status res;
@@ -7776,17 +7782,13 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
         apr_interval_time_t wwait;
         apr_status_t apr_status;
 
-        maintain_state = MAINTAIN_RUNNING;
-        maintain_running = TRUE;
-        apr_thread_mutex_lock(maintain_lock);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "ACT[maintain]: Running. \n");
 
         all_pvs = peerview_get_pvs(NULL);
 
         if (jxta_vector_size(all_pvs) < 1) {
             JXTA_OBJECT_RELEASE(all_pvs);
-            maintain_state = MAINTAIN_SHUTDOWN;
-            break;
+            goto RESCHEDULE_EXIT;
         }
         if (NULL != ret_msgs) {
             jxta_hashtable_stats(ret_msgs, NULL, &msgs_size, NULL, NULL, NULL);
@@ -7920,7 +7922,7 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
         if (all_pvs)
             JXTA_OBJECT_RELEASE(all_pvs);
 
-
+RESCHEDULE_EXIT:
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "ACT[maintain]: Rescheduled.\n");
 
         wwait = jxta_RdvConfig_pv_maintenance_interval(myself->rdvConfig);
@@ -7930,13 +7932,10 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
         apr_status = apr_thread_cond_timedwait(maintain_cond, maintain_cond_lock, wwait);
         apr_thread_mutex_unlock(maintain_cond_lock);
 
-        /* if it was a signal and not a time out */
-        if (APR_TIMEUP != apr_status && MAINTAIN_SHUTDOWN == maintain_state) {
-            break;
-        }
+        apr_thread_mutex_lock(maintain_lock);
     }
-    maintain_state = MAINTAIN_SHUTDOWN;
-    maintain_running = FALSE;
+    
+    apr_thread_mutex_unlock(maintain_lock);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "ACT[maintain]: Exit.\n");
     apr_thread_exit(thread, APR_SUCCESS);
     return NULL;
