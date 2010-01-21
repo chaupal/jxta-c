@@ -886,6 +886,7 @@ Jxta_status endpoint_service_demux(Jxta_endpoint_service * me, const char *name,
     key = get_service_key(name, param);
     if (NULL == key) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No key found for name:%s param:%s \n", name, param);
+        rv = JXTA_ITEM_NOTFOUND;
         goto FINAL_EXIT;
     }
     apr_thread_mutex_lock(me->demux_mutex);
