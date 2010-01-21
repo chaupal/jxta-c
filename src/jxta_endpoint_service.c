@@ -884,8 +884,13 @@ Jxta_status endpoint_service_demux(Jxta_endpoint_service * me, const char *name,
     Cb_elt *cb;
 
     key = get_service_key(name, param);
+    if (NULL == key) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No key found for name:%s param:%s \n", name, param);
+        goto FINAL_EXIT;
+    }
     apr_thread_mutex_lock(me->demux_mutex);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Demux: Looking up callback for %s\n", key);
+
     cb = apr_hash_get(me->cb_table, key, APR_HASH_KEY_STRING);
     if (!cb && param) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Demux: Looking up callback for fallback %s\n", name);
@@ -898,7 +903,10 @@ Jxta_status endpoint_service_demux(Jxta_endpoint_service * me, const char *name,
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Demux: No callback found for %s.\n", key);
         rv = JXTA_ITEM_NOTFOUND;
     }
-    free(key);
+
+FINAL_EXIT:
+    if (NULL != key)
+        free(key);
     return rv;
 }
 

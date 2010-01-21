@@ -470,16 +470,20 @@ JXTA_DECLARE(Jxta_boolean) jxta_endpoint_address_transport_addr_equals(Jxta_endp
             0 == strcasecmp(addr1->protocol_address, addr2->protocol_address));
 }
 
-static const char *replace_str(const char *str, const char *orig, const char *rep)
-{
-  static char buffer[4096];
-  char *p;
 
-    memset(buffer, 0, sizeof(buffer));
-    if(!(p = strstr(str, orig)))  // Is 'orig' even in 'str'?
+static char *replace_str(const char *str, const char *orig, const char *rep)
+{
+    char *buffer;
+    char *p;
+
+    buffer = calloc(1, strlen(str) + strlen(rep) + 1);
+
+    /* Is 'orig' even in 'str'? */
+    if(!(p = strstr(str, orig)))
         return str;
 
-    strncpy(buffer, str, p-str); // Copy characters from 'str' start to 'orig' st$
+    /* Copy characters from 'str' start to 'orig' str */
+    strncpy(buffer, str, p-str);
     buffer[p-str] = '\0';
 
     sprintf(buffer+(p-str), "%s%s", rep, p+strlen(orig));
@@ -505,7 +509,7 @@ JXTA_DECLARE(void) jxta_endpoint_address_replace_variables(Jxta_endpoint_address
         JString *elem_attribute_j = NULL;
         JString *elem_att_value_j = NULL;
         const char *elem_att_value_c = NULL;
-        const char *new_str;
+        char *new_str;
 
         jxta_hashtable_get(hash, *keys, strlen(*keys) + 1, JXTA_OBJECT_PPTR(&elem_att_value_j));
         elem_attribute_j = jstring_new_2("%");
@@ -523,7 +527,7 @@ JXTA_DECLARE(void) jxta_endpoint_address_replace_variables(Jxta_endpoint_address
             free(addr_string);
             addr_string = NULL;
         }
-        addr_string = strdup(new_str);
+        addr_string = new_str;
         free(*(keys++));
         JXTA_OBJECT_RELEASE(elem_attribute_j);
         JXTA_OBJECT_RELEASE(elem_att_value_j);
