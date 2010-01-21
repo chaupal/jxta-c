@@ -479,9 +479,10 @@ static char *replace_str(const char *str, const char *orig, const char *rep)
     buffer = calloc(1, strlen(str) + strlen(rep) + 1);
 
     /* Is 'orig' even in 'str'? */
-    if(!(p = strstr(str, orig)))
-        return str;
-
+    if(!(p = strstr(str, orig))) {
+        strcpy(buffer, str);
+        return buffer;
+    }
     /* Copy characters from 'str' start to 'orig' str */
     strncpy(buffer, str, p-str);
     buffer[p-str] = '\0';
