@@ -957,6 +957,21 @@ JXTA_DECLARE(Jxta_status) jxta_PG_add_relay_address(Jxta_PG * pg, Jxta_RdvAdvert
  */
 JXTA_DECLARE(Jxta_status) jxta_PG_remove_relay_address(Jxta_PG * pg, Jxta_id * relayid);
 
+/*
+ * Sends a message to a specific group
+ *
+ *  @param group pointer
+ *  @param message to be sent
+ *  @param service name to use
+ *  @param service parameters to use
+ *
+ *  @return Jxta_status JXTA_SUCCESS if succeeded, an error otherwise
+ *
+ */
+
+JXTA_DECLARE(Jxta_status) jxta_PG_propagate(Jxta_PG * pg, Jxta_message * msg, const char *service_name, const char *service_param);
+
+
 #ifdef __cplusplus
 #if 0
 {

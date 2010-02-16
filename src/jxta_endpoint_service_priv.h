@@ -99,6 +99,9 @@ Jxta_status endpoint_service_remove_recipient_by_addr(Jxta_endpoint_service * me
 Jxta_status endpoint_service_poll(Jxta_endpoint_service * me, apr_interval_time_t timeout);
 Jxta_status endpoint_service_demux(Jxta_endpoint_service * me, const char *name, const char *param, Jxta_message * msg);
 
+Jxta_status endpoint_service_propagate_by_group(Jxta_PG * pg, Jxta_message * msg, const char *service_name, const char *service_param);
+
+
 #ifdef __cplusplus
 #if 0
 {

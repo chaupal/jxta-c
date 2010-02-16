@@ -386,7 +386,8 @@ Jxta_status jxta_rdv_service_provider_prop_handler(Jxta_rdv_service_provider * m
     /* broadcast it? */
     src_peer_id = jxta_rdv_diffusion_get_src_peer_id(header);
     if (!SELECTIVE_BROADCAST || jxta_id_equals(src_peer_id, myself->local_peer_id)) {
-        res = jxta_endpoint_service_propagate(myself->service->endpoint, msg, RDV_V3_MSID, JXTA_RDV_PROPAGATE_SERVICE_NAME);
+        Jxta_PG *pg = jxta_service_get_peergroup_priv((Jxta_service*) myself->service);
+        res = endpoint_service_propagate_by_group(pg, msg, RDV_V3_MSID, JXTA_RDV_LEASING_SERVICE_NAME);
     }
     JXTA_OBJECT_RELEASE(src_peer_id);
 
@@ -608,8 +609,8 @@ Jxta_status provider_send_seed_request(Jxta_rdv_service_provider * me)
         /*
          *   Send the message via the endpoint.
          */
-        res =
-            jxta_endpoint_service_propagate(myself->service->endpoint, msg, RDV_V3_MSID, JXTA_RDV_LEASING_SERVICE_NAME);
+        Jxta_PG *pg = jxta_service_get_peergroup_priv((Jxta_service*) myself->service);
+        res = endpoint_service_propagate_by_group(pg, msg, RDV_V3_MSID, JXTA_RDV_LEASING_SERVICE_NAME);
     }
 
     JXTA_OBJECT_RELEASE(msg);

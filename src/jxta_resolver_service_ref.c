@@ -549,7 +549,7 @@ static Jxta_status do_send(Jxta_resolver_service_ref * me, Jxta_id * peerid, JSt
     if (NULL == peerid) {
         status = jxta_rdv_service_walk(me->rendezvous, msg, me->instanceName, queue);
         if (me->alwaysPropagate || JXTA_SUCCESS != status) {
-            status = jxta_endpoint_service_propagate(me->endpoint, msg, me->instanceName, queue);
+            status = endpoint_service_propagate_by_group(me->group, msg, me->instanceName, queue);
             if (JXTA_SUCCESS != status) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Endpoint service propagation status= %d\n", status);
                 goto FINAL_EXIT;

@@ -1345,7 +1345,6 @@ JXTA_DECLARE(void) jxta_endpoint_service_remove_transport(Jxta_endpoint_service 
     Jxta_object *rmd = NULL;
 
     Jxta_endpoint_service* endpoint_service = PTValid(service, Jxta_endpoint_service);
-
     jxta_hashtable_del(endpoint_service->transport_table, jstring_get_string(name), jstring_length(name), &rmd);
 
     /* String copied. Not needed anymore. */
@@ -1803,6 +1802,76 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_propagate(Jxta_endpoint_service 
     JXTA_OBJECT_RELEASE(param);
     JXTA_OBJECT_RELEASE(svc);
     return JXTA_SUCCESS;
+}
+
+ Jxta_status endpoint_service_propagate_by_group(Jxta_PG * pg, Jxta_message * msg, const char *service_name, const char *service_param)
+ {
+     Jxta_vector *tps = NULL;
+     Jxta_transport *transport = NULL;
+     JString *svc = NULL;
+     JString *param = NULL;
+     unsigned int idx;
+     Jxta_status rv = JXTA_SUCCESS;
+ 
+     if (service_name == NULL && service_param == NULL)
+         return JXTA_INVALID_ARGUMENT;
+ 
+     Jxta_endpoint_service* endpoint_service = NULL;
+     jxta_PG_get_endpoint_service(pg, &endpoint_service);
+     if (NULL == endpoint_service)
+         return JXTA_FAILED;
+ 
+     tps = jxta_hashtable_values_get(endpoint_service->transport_table);
+     if (!tps) {
+         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Fail to enumerate available transports!\n");
+         rv = JXTA_FAILED;
+         goto FINAL_EXIT;
+     }
+ 
+     /*
+      * Correctly set the endpoint address for cross-group
+      * demuxing via the NetPeerGroup endpoint service
+      */
+     svc = jstring_new_2(JXTA_ENDPOINT_SERVICE_NAME);
+     if (svc == NULL) {
+         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory\n");
+         rv = JXTA_NOMEM;
+         goto FINAL_EXIT;
+     }
+ 
+     Jxta_PGID * gid = NULL;    
+     jxta_PG_get_GID(pg, &gid);
+     JString *gidString = NULL; 
+     jxta_id_get_uniqueportion(gid, &gidString);
+     JXTA_OBJECT_RELEASE(gid);
+     
+     jstring_append_2(svc, ":");
+     jstring_append_1(svc, gidString);
+ 
+     param = jstring_new_2(service_name);
+     jstring_append_2(param, "/");
+     jstring_append_2(param, service_param);
+ 
+     for (idx = 0; idx < jxta_vector_size(tps); ++idx) {
+         rv = jxta_vector_get_object_at(tps, JXTA_OBJECT_PPTR(&transport), idx);
+         if (JXTA_SUCCESS != rv) {
+             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Fail to get transport %d of %d!\n", idx, jxta_vector_size(tps));
+             break;
+         }
+ 
+         assert(PTValid(transport, Jxta_transport));
+         jxta_transport_propagate(transport, msg, jstring_get_string(svc), jstring_get_string(param));
+         JXTA_OBJECT_RELEASE(transport);
+     }
+ 
+ FINAL_EXIT: 
+ 
+     if (gidString) JXTA_OBJECT_RELEASE(gidString);
+     if (tps) JXTA_OBJECT_RELEASE(tps);
+     if (param) JXTA_OBJECT_RELEASE(param);
+     if (svc) JXTA_OBJECT_RELEASE(svc);
+     JXTA_OBJECT_RELEASE(endpoint_service);
+     return rv;
 }
 
 static apr_status_t msg_task_cleanup(void *me)

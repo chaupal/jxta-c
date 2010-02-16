@@ -1349,6 +1349,12 @@ JXTA_DECLARE(Jxta_status) jxta_PG_remove_relay_address(Jxta_PG * self, Jxta_id *
     return (VTBL->remove_relay_address) (myself, relayid);
 }
 
+JXTA_DECLARE(Jxta_status) jxta_PG_propagate(Jxta_PG * pg, Jxta_message * msg, const char *service_name, const char *service_param)
+{
+    return endpoint_service_propagate_by_group(pg, msg, service_name, service_param);
+}
+ 
+
 void peergroup_get_cache_manager(Jxta_PG * self, Jxta_cm ** cm)
 {
     self = PTValid(self, Jxta_PG);
