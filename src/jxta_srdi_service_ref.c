@@ -327,6 +327,7 @@ Jxta_status registerSrdiListener(Jxta_srdi_service * self, JString * name, Jxta_
                                              //will be deleted before the main srdi ref object
             res = jxta_PG_add_recipient(listenerRef->group, &listenerRef->ep_cookie, jstring_get_string(name), SRDI_QUEUENAME, srdi_service_srdi_cb, me);
             jxta_hashtable_put(me->srdilisteners, hashname, strlen(hashname), (Jxta_object *) listenerRef);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "SRDI listener registered for %s in group %s\n", hashname, me->groupid_c);
             JXTA_OBJECT_RELEASE(listenerRef);
         } else {
             res = JXTA_NOMEM;
@@ -351,8 +352,13 @@ static Jxta_status unregisterSrdiListener(Jxta_srdi_service * self, JString * na
     char const *hashname;
     Jxta_status status;
     Jxta_srdi_service_ref *me = PTValid(self, Jxta_srdi_service_ref);
+    JString *new_name;
 
-    hashname = jstring_get_string(name);
+    new_name = jstring_new_0();
+    jstring_append_1(new_name, name);
+    jstring_append_2(new_name, "/");
+    jstring_append_2(new_name, SRDI_QUEUENAME);
+    hashname = jstring_get_string(new_name);
 
     status = jxta_hashtable_del(me->srdilisteners, hashname, strlen(hashname), &obj);
     if (obj != NULL) {
@@ -360,6 +366,7 @@ static Jxta_status unregisterSrdiListener(Jxta_srdi_service * self, JString * na
         if (listenerRef->group) {
             if (listenerRef->ep_cookie) {
                 jxta_PG_remove_recipient(listenerRef->group, listenerRef->ep_cookie);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "SRDI Listener unregistered for %s in group %s\n", hashname, me->groupid_c);
                 listenerRef->ep_cookie = NULL;
             }
             listenerRef->group = NULL;
@@ -2270,6 +2277,8 @@ static void stop(Jxta_module * me)
     if (JXTA_SUCCESS != status) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to remove endpoint listener for service (%x)\n", myself);
     }
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Stopped.\n");
 }
 
 
@@ -2282,6 +2291,8 @@ static Jxta_status start(Jxta_module * me, const char *argv[])
     assert(myself->rendezvous);
     assert(myself->endpoint);
     assert(myself->resolver);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Starting...\n");
 
     myself->running = TRUE;
 
@@ -2300,6 +2311,8 @@ static Jxta_status start(Jxta_module * me, const char *argv[])
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "adding recipient %s\n", jstring_get_string(myself->srdi_queue_name));
 
     status = jxta_PG_add_recipient(myself->group, &myself->ep_cookie, jstring_get_string(myself->instanceName), SRDI_QUEUENAME, srdi_service_srdi_cb, myself);
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Started.\n");
 
     return status;
 }
