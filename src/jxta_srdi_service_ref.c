@@ -373,6 +373,7 @@ static Jxta_status unregisterSrdiListener(Jxta_srdi_service * self, JString * na
         }
         JXTA_OBJECT_RELEASE(listenerRef);
     }
+    JXTA_OBJECT_RELEASE(new_name);
     return status;
 }
 
