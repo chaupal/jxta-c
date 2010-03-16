@@ -263,6 +263,8 @@ XML2_CPPFLAGS=$xml2_cppflags
 xml2_libs=" `$xml2_config --libs` "
 XML2_LIBS=$xml2_libs
 
+LIBXML2_VERSION_TEST($xml2_prefix)
+
 AC_SUBST(XML2_CPPFLAGS)
 AC_SUBST(XML2_LIBS)
 

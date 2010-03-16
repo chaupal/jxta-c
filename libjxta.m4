@@ -1,4 +1,45 @@
 dnl
+dnl LIBXML2_VERSION_TEST
+dnl
+dnl $1 = prefix location of libxml2 install
+dnl
+dnl Checks to see if the given version of libxml2
+dnl is available and sets flags to indicate
+dnl internal libxml2 api availability
+dnl
+AC_DEFUN([LIBXML2_VERSION_TEST], [
+
+xml2_xpath_rewrite_version="2.6.26"
+xml_version_valid="no"
+xml_version_check="libxml-2.0 >= $xml2_xpath_rewrite_version"
+
+dnl Sets up the pkg-config path in case the install location
+dnl is non-standard
+export PKG_CONFIG_PATH=$1/lib/pkgconfig:$PKG_CONFIG_PATH
+
+
+dnl Check to make sure pkg-config is available
+if test -z "$PKG_CONFIG"; then
+    AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
+fi
+
+if test "$PKG_CONFIG" = "no" ; then
+    echo "pkg-config script not found"
+else
+    AC_MSG_CHECKING(for $xml_version_check)
+    if $PKG_CONFIG --exists "$xml_version_check" ; then
+        AC_MSG_RESULT(yes)
+        LIBXML2_XPATH_REWRITE_FLAG="-DLIBXML2_XPATH_REWRITE"
+        AC_SUBST(LIBXML2_XPATH_REWRITE_FLAG)
+    else
+        AC_MSG_RESULT(no)
+        errors=`$PKG_CONFIG --errors-to-stdout --print-errors --exists $xml_version_check`
+        echo $errors
+    fi
+fi
+])dnl
+
+dnl
 dnl JXTA_CONFIG_NICE(filename)
 dnl
 dnl Copied from apr_common.m4 (http://apr.apache.org)

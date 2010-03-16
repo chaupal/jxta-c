@@ -9,7 +9,7 @@ REQUIRED_LIBTOOL_VER=1.3.5
 RECOMMENDED_GCC_VER=4.0
 REQUIRED_GCC_VER=3.3
 
-AM_PROGS="automake-1.7 automake-1.8 automake-1.9 automake"
+AM_PROGS="automake-1.10 automake-1.7 automake-1.8 automake-1.9 automake"
 AC_PROGS="autoconf-2.5x autoconf"
 
 # compare 2 versions 

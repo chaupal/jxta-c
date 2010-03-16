@@ -241,6 +241,9 @@ struct _xmlXPathStepOp {
     void *value5;
     void *cache;
     void *cacheURI;
+#ifdef LIBXML2_XPATH_REWRITE    /*defined by jxta-c configure scripts to allow */
+    int rewriteType;            /*backwards compatibility prior to libxml2-2.2.26*/
+#endif
 };
 
 struct _xmlXPathCompExpr {
@@ -253,6 +256,9 @@ struct _xmlXPathCompExpr {
 #ifdef DEBUG_EVAL_COUNTS
     int nb;
     xmlChar *string;
+#endif
+#ifdef XPATH_STREAMING
+    xmlPatternPtr stream;
 #endif
 };
 
