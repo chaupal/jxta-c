@@ -183,7 +183,7 @@ void *APR_THREAD_FUNC single_test(apr_thread_t * thread, void *arg)
                         printf("Read into msg %p\n", msg);
                         if (strstr(entry->d_name, "output")) {
                             printf("It's an output message, sending it.\n");
-                            jxta_endpoint_service_send(pg, endpoint, msg, hostAddr);
+                            jxta_endpoint_service_send(pg, endpoint, msg, hostAddr, NULL);
 /*         } else if (strstr (entry->d_name, "input")) {
             printf ("It's a sample input message, demuxing it.\n");
             jxta_endpoint_service_demux (endpoint, msg);

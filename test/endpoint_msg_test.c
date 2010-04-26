@@ -108,7 +108,7 @@ const char *test_jxta_endpoint_serialization(void) {
         return FILEANDLINE;
     }
 
-    result = jxta_endpoint_msg_get_xml(msg, TRUE, &dump1);
+    result = jxta_endpoint_msg_get_xml(msg, TRUE, &dump1, TRUE);
     if( JXTA_SUCCESS != result ) {
         return FILEANDLINE;
     }    

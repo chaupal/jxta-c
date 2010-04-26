@@ -270,7 +270,7 @@ int main(int argc, char **argv)
         jxta_qos_set_long(qos_set[i], "jxtaMsg:lifespan", time(NULL) + tdiff[i]);
         jxta_message_attach_qos(msg, qos_set[i]);
 
-        jxta_endpoint_service_send_async(pg, endpoint, msg, hostAddr);
+        jxta_endpoint_service_send_async(pg, endpoint, msg, hostAddr, NULL);
         JXTA_OBJECT_RELEASE(msg);
     }
 
@@ -279,7 +279,7 @@ int main(int argc, char **argv)
     for (i = 0; i < 10; i++) {
         msg = jxta_message_new();
         jxta_message_attach_qos(msg, qos_set[i]);
-        jxta_endpoint_service_send_sync(pg, endpoint, msg, hostAddr);
+        jxta_endpoint_service_send_sync(pg, endpoint, msg, hostAddr, NULL);
         JXTA_OBJECT_RELEASE(msg);
     }
     
