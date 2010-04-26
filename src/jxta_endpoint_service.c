@@ -2691,7 +2691,7 @@ static Jxta_status send_with_messenger(Jxta_endpoint_service * me, JxtaEndpointM
         res = messenger->jxta_send(messenger, msg);
 
     } else if (JXTA_BUSY == res) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "busy messenger:[%pp] msg:[%pp]\n"
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "busy messenger:[%pp] msg:[%pp]\n"
                                             , messenger, msg);
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Removing messenger [%pp] \n", me);

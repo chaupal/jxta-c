@@ -77,10 +77,10 @@ void traffic_shaping_init(Jxta_traffic_shaping *t);
 void traffic_shaping_lock(Jxta_traffic_shaping *flow);
 void traffic_shaping_unlock(Jxta_traffic_shaping *flow);
 
-Jxta_boolean traffic_shaping_check_size(Jxta_traffic_shaping *flow, apr_int32_t size, Jxta_boolean update, Jxta_boolean *look_ahead_update);
-void traffic_shaping_update(Jxta_traffic_shaping *flow, apr_int32_t size, Jxta_boolean look_ahead_update);
+Jxta_boolean traffic_shaping_check_size(Jxta_traffic_shaping *flow, apr_int64_t size, Jxta_boolean update, Jxta_boolean *look_ahead_update);
+void traffic_shaping_update(Jxta_traffic_shaping *flow, apr_int64_t size, Jxta_boolean look_ahead_update);
 
-Jxta_status traffic_shaping_check_max(Jxta_traffic_shaping *ts, apr_int32_t length, apr_int64_t *max, float compression, float *compressed);
+Jxta_status traffic_shaping_check_max(Jxta_traffic_shaping *ts, apr_int64_t length, apr_int64_t *max, float compression, float *compressed);
 
 void traffic_shaping_set_time(Jxta_traffic_shaping *t, Jxta_time time);
 Jxta_time traffic_shaping_time(Jxta_traffic_shaping *t);

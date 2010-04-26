@@ -177,7 +177,7 @@ static Jxta_status discovery_notify_peerview_peers(Jxta_discovery_service_ref *d
 static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref * discovery
                             , ResolverQuery * rq, Jxta_DiscoveryResponse *dr);
 
-static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString * response_j, Jxta_vector **new_responses, apr_int32_t max_length);
+static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString * response_j, Jxta_vector **new_responses, apr_int64_t max_length);
 
 
 static const char *__log_cat = "DiscoveryService";
@@ -2339,7 +2339,7 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
             int j;
             Jxta_vector *new_responses=NULL;
 
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING
                                     , "discovery:send res_response [%pp] exceeded max:%ld\n"
                                     , res_response, max_length);
 
@@ -2370,6 +2370,7 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
         } else if (JXTA_LENGTH_EXCEEDED) {
             break_it = TRUE;
         } else if (JXTA_BUSY == res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "rsp [%pp] busy\n", res_response);
             apr_sleep(1000 * 1000);
             if (!discovery->running) {
                 break_it = TRUE;
@@ -2404,7 +2405,7 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
     return res;
 }
 
-static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString * response_j, Jxta_vector **new_responses, apr_int32_t max_length)
+static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString * response_j, Jxta_vector **new_responses, apr_int64_t max_length)
 {
     Jxta_status res=JXTA_SUCCESS;
     Jxta_DiscoveryResponse *dr_tmp=NULL;

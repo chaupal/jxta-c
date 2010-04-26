@@ -163,7 +163,7 @@ static Jxta_status JXTA_STDCALL msg_wireformat_size(void *arg, const char *buf, 
 /* Tcp Messenger implementation */
 static TcpMessenger *tcp_messenger_new(Jxta_transport_tcp_connection * conn);
 static int tcp_header_size(JxtaEndpointMessenger * mes);
-static apr_int32_t tcp_get_msg_size(JxtaEndpointMessenger * me, Jxta_message * msg);
+static apr_int64_t tcp_get_msg_size(JxtaEndpointMessenger * me, Jxta_message * msg);
 static float tcp_get_msg_compression(JxtaEndpointMessenger * me, Jxta_message * msg);
 static Jxta_status tcp_get_msg_details(JxtaEndpointMessenger * me, Jxta_message * msg, apr_int64_t *size, float *compression);
 
@@ -1150,7 +1150,7 @@ static Jxta_status tcp_get_msg_details(JxtaEndpointMessenger * me, Jxta_message 
     return JXTA_SUCCESS;
 }
 
-static apr_int32_t tcp_get_msg_size(JxtaEndpointMessenger * me, Jxta_message * msg)
+static apr_int64_t tcp_get_msg_size(JxtaEndpointMessenger * me, Jxta_message * msg)
 {
     size_t res;
     TcpMessenger *myself = (TcpMessenger *) me;

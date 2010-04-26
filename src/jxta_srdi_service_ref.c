@@ -700,7 +700,7 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
 }
 
 static Jxta_status split_srdi_message(Jxta_srdi_service_ref *self, Jxta_SRDIMessage *srdiMsg
-                            , Jxta_vector *msgs, apr_int32_t max_size, Jxta_time timestamp
+                            , Jxta_vector *msgs, apr_int64_t max_size, Jxta_time timestamp
                             , Jxta_boolean double_encode)
 {
     Jxta_status res=JXTA_SUCCESS;
@@ -1916,7 +1916,7 @@ static Jxta_status get_srdi_msg_from_ep_elem(Jxta_endpoint_msg_entry_element *ep
 
 static Jxta_status split_endpoint_message(Jxta_srdi_service_ref *self, Jxta_endpoint_message *ep_msg
                             , Jxta_endpoint_address *ea
-                            , Jxta_vector **new_ep_entries, apr_int32_t max_size)
+                            , Jxta_vector **new_ep_entries, apr_int64_t max_size)
 {
     Jxta_status res = JXTA_SUCCESS;
     Jxta_vector *entries;

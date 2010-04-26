@@ -129,7 +129,7 @@ struct _frame {
     int num_buckets;
     int active_buckets;
     Bucket **buckets;
-    int reserve;
+    int reserve_pct;
     Look_ahead *look_ahead;
 };
 
@@ -145,7 +145,7 @@ struct _bucket {
 struct _look_ahead {
     int id;
     apr_int64_t bytes_available;
-    apr_int32_t rate;
+    int rate;
     apr_int64_t max;
     apr_int64_t bytes;
     apr_int64_t reserve;
@@ -289,7 +289,7 @@ static Frame *init_frame(Jxta_time now, int p_interval, apr_int32_t p_rate, int 
     f->end = (f_start + ((num_buckets * f->interval * 1000) -1));
     f->bytes_available = f->size;
     f->id = ++frame_id;
-    f->reserve = reserve;
+    f->reserve_pct = reserve;
     f->look_ahead = l;
 /* #ifdef P_DEBUG */
     /* jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "id:%d interval:%d rate:%d buckets:%d Start " JPR_DIFF_TIME_FMT " End:" JPR_DIFF_TIME_FMT "\n"
@@ -413,7 +413,7 @@ static void adjust_frames(Jxta_time now, Frame **frames)
                 start_time = i == 0 ? now:now + (f->interval * 1000);
             }
 
-            frames[j-1] = init_frame(now, f->interval, f->rate, f->reserve, start_time, f->num_buckets, create_b, f->look_ahead);
+            frames[j-1] = init_frame(now, f->interval, f->rate, f->reserve_pct, start_time, f->num_buckets, create_b, f->look_ahead);
             if (align_b) {
                 align_buckets(now, frames[j-1], last_f);
             }
@@ -677,7 +677,7 @@ void traffic_shaping_unlock(Jxta_traffic_shaping *traffic)
     apr_thread_mutex_unlock(traffic->frame_lock);
 }
 
-Jxta_status traffic_shaping_check_max(Jxta_traffic_shaping *ts, apr_int32_t length, apr_int64_t *max, float compression, float *compressed)
+Jxta_status traffic_shaping_check_max(Jxta_traffic_shaping *ts, apr_int64_t length, apr_int64_t *max, float compression, float *compressed)
 {
     Jxta_status res = JXTA_SUCCESS;
     float expand_factor;
@@ -703,7 +703,7 @@ Jxta_status traffic_shaping_check_max(Jxta_traffic_shaping *ts, apr_int32_t leng
     return res;
 }
 
-Jxta_boolean traffic_shaping_check_size(Jxta_traffic_shaping *traffic, apr_int32_t size, Jxta_boolean update, Jxta_boolean *look_ahead_update)
+Jxta_boolean traffic_shaping_check_size(Jxta_traffic_shaping *traffic, apr_int64_t size, Jxta_boolean update, Jxta_boolean *look_ahead_update)
 {
     Jxta_time now;
     Jxta_boolean enough;
@@ -742,7 +742,7 @@ Jxta_boolean traffic_shaping_check_size(Jxta_traffic_shaping *traffic, apr_int32
     return enough;
 }
 
-JXTA_DECLARE(void traffic_shaping_update(Jxta_traffic_shaping *traffic, apr_int32_t size, Jxta_boolean look_ahead_update))
+JXTA_DECLARE(void traffic_shaping_update(Jxta_traffic_shaping *traffic, apr_int64_t size, Jxta_boolean look_ahead_update))
 {
     Jxta_time now;
 
