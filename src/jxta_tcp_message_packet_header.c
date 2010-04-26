@@ -220,18 +220,20 @@ Jxta_status JXTA_STDCALL message_packet_header_read(char *header_buf, ReadFunc r
     return JXTA_SUCCESS;
 }
 
-Jxta_status JXTA_STDCALL message_packet_header_write(WriteFunc write_func, void *stream, apr_int64_t msg_size,
-                                                     Jxta_boolean is_multicast, char *src_addr)
+Jxta_status JXTA_STDCALL message_packet_header(WriteFunc write_func, void *stream, apr_int64_t msg_size,
+                                                     Jxta_boolean is_multicast, char *src_addr, apr_int64_t *ret_len)
 {
     MessagePacketHeader header[MESSAGE_PACKET_HEADER_COUNT];
     BYTE empty_header = 0;
     int i, j;
     int header_count;
+    apr_int64_t total_length=0;
 
     header_count = is_multicast ? MESSAGE_PACKET_HEADER_COUNT : MESSAGE_PACKET_HEADER_COUNT - 1;
 
     /* write message header */
     for (i = 0; i < header_count; i++) {
+        int length=0;
         header[i].name = (BYTE *) MESSAGE_PACKET_HEADER[i];
         header[i].name_size = strlen((char *) header[i].name);
 
@@ -256,20 +258,51 @@ Jxta_status JXTA_STDCALL message_packet_header_write(WriteFunc write_func, void 
             break;
         }
 
+        length += header[i].value_size;
+        length += header[i].name_size;
+
         header[i].value_size = htons(header[i].value_size);
 
-        write_func(stream, (char *) &header[i].name_size, 1);   /* size = 1 */
-        write_func(stream, (char *) header[i].name, header[i].name_size);
-        write_func(stream, (char *) &header[i].value_size, 2);  /* size = 2 */
-        write_func(stream, (char *) header[i].value, ntohs(header[i].value_size));
+        if (NULL != write_func) {
+            write_func(stream, (char *) &header[i].name_size, 1);   /* size = 1 */
+        }
+        length += 1;
+        if (NULL != write_func) {
+            write_func(stream, (char *) header[i].name, header[i].name_size);
+            write_func(stream, (char *) &header[i].value_size, 2);  /* size = 2 */
+        }
+        length += 2;
+        if (NULL != write_func) {
+            write_func(stream, (char *) header[i].value, ntohs(header[i].value_size));
+        }
+        total_length += length;
     }
-
-    write_func(stream, (char *) &empty_header, 1);
+    if (NULL != write_func) {
+        write_func(stream, (char *) &empty_header, 1);
+    }
+    total_length += 1;
+    if (NULL != ret_len) {
+        *ret_len = total_length;
+    }
 
     /** Free message size */
     free(header[CONTENT_LENGTH_HEADER].value);
-
     return JXTA_SUCCESS;
+}
+
+Jxta_status JXTA_STDCALL message_packet_header_size(void *stream, apr_int64_t msg_size,
+                                                    Jxta_boolean is_multicast, apr_int64_t *ret_len)
+{
+
+    return message_packet_header(NULL, stream, msg_size, is_multicast, NULL, ret_len);
+
+}
+
+Jxta_status JXTA_STDCALL message_packet_header_write(WriteFunc write_func, void *stream, apr_int64_t msg_size,
+                                                     Jxta_boolean is_multicast, char *src_addr)
+{
+    return message_packet_header(write_func, stream, msg_size, is_multicast, src_addr, NULL);
+
 }
 
 /* vi: set ts=4 sw=4 tw=130 et: */

@@ -143,6 +143,9 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_3(int ttl, Jxta_id * peer
  */
 JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_xml(Jxta_SRDIMessage *, JString **);
 
+JXTA_DECLARE(Jxta_status) jxta_srdi_entries_print_xml(Jxta_vector *entries, JString *js, Jxta_boolean encode);
+
+
 
 /**
  * Wrapper for jxta_advertisement_parse_charbuffer,
@@ -326,7 +329,7 @@ JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_resend_entries(Jxta_SRDIMessage 
  */
 JXTA_DECLARE(void) jxta_srdi_message_set_resend_entries(Jxta_SRDIMessage * ad, Jxta_vector * entries);
 
-JXTA_DECLARE(void) jxta_srdi_message_clone(Jxta_SRDIMessage * ad, Jxta_SRDIMessage **msg);
+JXTA_DECLARE(void) jxta_srdi_message_clone(Jxta_SRDIMessage * ad, Jxta_SRDIMessage **msg, Jxta_boolean add_entries);
 
 /**
  * Creates a new SRDI entry element

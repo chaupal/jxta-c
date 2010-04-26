@@ -176,6 +176,8 @@ Jxta_boolean run_jxta_peerview_address_assign_tests(int *tests_run, int *tests_p
 
 Jxta_boolean run_jxta_endpoint_msg_tests(int *tests_run, int *tests_passed, int *tests_failed);
 
+Jxta_boolean run_traffic_shaping_tests(int *tests_run, int *tests_passed, int *tests_failed);
+
 /** 
 * The list of tests to run, terminated by NULL
 */
@@ -202,6 +204,7 @@ static struct _suite testfuncs[] = {
     {*run_jxta_peerview_pong_tests, "Jxta_peerview_pong_msg Tests"},
     {*run_jxta_peerview_address_request_tests, "Jxta_peerview_address_request_msg Tests"},
     {*run_jxta_peerview_address_assign_tests, "Jxta_peerview_address_assign_msg Tests"},
+    {*run_traffic_shaping_tests, "Jxta traffic shaping tests"},
 
     {NULL, "null"}
 };

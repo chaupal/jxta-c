@@ -100,6 +100,7 @@ struct _Jxta_DiscoveryResponse {
     Jxta_vector *advertisements;
     long resolver_query_id;
     Jxta_discovery_service *ds;
+    Jxta_time timestamp;
 };
 
 /**
@@ -409,9 +410,22 @@ JXTA_DECLARE(void) jxta_discovery_response_set_responses(Jxta_DiscoveryResponse 
     if (responselist != NULL) {
         JXTA_OBJECT_SHARE(responselist);
         ad->responselist = responselist;
+    } else {
+        ad->responselist = jxta_vector_new(0);
     }
     return;
 }
+
+JXTA_DECLARE(Jxta_time) jxta_discovery_response_timestamp(Jxta_DiscoveryResponse * ad)
+{
+    return ad->timestamp;
+}
+
+JXTA_DECLARE(void) jxta_discovery_response_set_timestamp(Jxta_DiscoveryResponse * ad, Jxta_time timestamp)
+{
+    ad->timestamp = timestamp;
+}
+
 
 JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_advertisements(Jxta_DiscoveryResponse * ad, Jxta_vector ** advertisements)
 {
@@ -501,7 +515,8 @@ Jxta_status response_print(Jxta_DiscoveryResponse * ad, JString * js)
         }
 
         JXTA_OBJECT_CHECK_VALID(anElement);
-        apr_snprintf(buf, sizeof(buf), "<Response Expiration=\"%" APR_INT64_T_FMT "\">\n", anElement->expiration);
+        apr_snprintf(buf, sizeof(buf), DR_TAG_START APR_INT64_T_FMT DR_TAG_START_RIGHT_PAREN, anElement->expiration);
+        /* apr_snprintf(buf, sizeof(buf), "<Response Expiration=\"%" APR_INT64_T_FMT "\">\n",  anElement->expiration);*/
         jstring_append_2(js, buf);
         status = jxta_xml_util_encode_jstring(anElement->response, &tmps);
         if (status != JXTA_SUCCESS) {
@@ -511,7 +526,8 @@ Jxta_status response_print(Jxta_DiscoveryResponse * ad, JString * js)
 
         jstring_append_1(js, tmps);
         JXTA_OBJECT_RELEASE(tmps);
-        jstring_append_2(js, "</Response>\n");
+        jstring_append_2(js, DR_TAG_END);
+        /* jstring_append_2(js, "</Response>\n"); */
 
         JXTA_OBJECT_RELEASE(anElement);
     }
@@ -526,23 +542,20 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_xml(Jxta_DiscoveryResponse
     Jxta_status status;
     char *buf = calloc(1, 128);
 
-    doc = jstring_new_2("<?xml version=\"1.0\"?>\n");
-    jstring_append_2(doc, "<!DOCTYPE jxta:DiscoveryResponse>\n");
+    doc = jstring_new_2(DR_TAG_1);
 
-    jstring_append_2(doc, "<jxta:DiscoveryResponse>\n");
-
-    jstring_append_2(doc, "<Type>");
+    jstring_append_2(doc, DR_TAG_2);
     apr_snprintf(buf, 128, "%d", ad->Type);
     jstring_append_2(doc, buf);
-    jstring_append_2(doc, "</Type>\n");
+    jstring_append_2(doc, DR_TAG_3);
 
-    jstring_append_2(doc, "<Count>");
+    jstring_append_2(doc, DR_TAG_4);
     apr_snprintf(buf, 128, "%d", ad->Count);
     jstring_append_2(doc, buf);
-    jstring_append_2(doc, "</Count>\n");
+    jstring_append_2(doc, DR_TAG_5);
 
     if (ad->PeerAdv) {
-        jstring_append_2(doc, "<PeerAdv>");
+        jstring_append_2(doc, DR_TAG_6);
         status = jxta_xml_util_encode_jstring(ad->PeerAdv, &tmps);
         if (status != JXTA_SUCCESS) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "error encoding the PeerAdv, retrun status :%d\n", status);
@@ -551,16 +564,16 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_xml(Jxta_DiscoveryResponse
         }
         jstring_append_1(doc, tmps);
         JXTA_OBJECT_RELEASE(tmps);
-        jstring_append_2(doc, "</PeerAdv>\n");
+        jstring_append_2(doc, DR_TAG_7);
     }
 
-    jstring_append_2(doc, "<Attr>");
-    jstring_append_2(doc, "</Attr>\n");
+    jstring_append_2(doc, DR_TAG_8);
+    jstring_append_2(doc, DR_TAG_9);
 
-    jstring_append_2(doc, "<Value>");
-    jstring_append_2(doc, "</Value>\n");
+    jstring_append_2(doc, DR_TAG_10);
+    jstring_append_2(doc, DR_TAG_11);
     response_print(ad, doc);
-    jstring_append_2(doc, "</jxta:DiscoveryResponse>\n");
+    jstring_append_2(doc, DR_TAG_12);
 
     free(buf);
     *document = doc;

@@ -447,7 +447,7 @@ static void JXTA_STDCALL bidipipe_input_listener(Jxta_object * obj, void *arg)
             rv = construct_response_message(self, &open_msg, self->i_pipe_adv);
         }
         if (JXTA_SUCCESS == rv) {
-            rv = jxta_endpoint_service_send(self->group, self->ep_svc, open_msg, self->ep_addr);
+            rv = jxta_endpoint_service_send(self->group, self->ep_svc, open_msg, self->ep_addr, NULL);
             JXTA_OBJECT_RELEASE(open_msg);
         }
         if (JXTA_SUCCESS == rv) {
@@ -758,7 +758,7 @@ JXTA_DECLARE(Jxta_status) jxta_bidipipe_close(Jxta_bidipipe * self)
     JXTA_OBJECT_RELEASE(e);
 
     jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_TRACE, "Sending close message ...\n");
-    rv = jxta_endpoint_service_send(self->group, self->ep_svc, msg, self->ep_addr);
+    rv = jxta_endpoint_service_send(self->group, self->ep_svc, msg, self->ep_addr, NULL);
     JXTA_OBJECT_RELEASE(msg);
     if (JXTA_SUCCESS != rv) {
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_WARNING, "Failed to make close request\n");
@@ -810,7 +810,7 @@ JXTA_DECLARE(Jxta_status) jxta_bidipipe_send(Jxta_bidipipe * self, Jxta_message 
         return JXTA_VIOLATION;
     }
 
-    return jxta_endpoint_service_send(self->group, self->ep_svc, msg, self->ep_addr);
+    return jxta_endpoint_service_send(self->group, self->ep_svc, msg, self->ep_addr, NULL);
 }
 
 JXTA_DECLARE(Jxta_bidipipe_state) jxta_bidipipe_get_state(Jxta_bidipipe * self)

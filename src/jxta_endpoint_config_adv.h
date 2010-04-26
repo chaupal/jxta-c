@@ -60,6 +60,7 @@
 #include "jxta_types.h"
 #include "jxta_advertisement.h"
 #include "jxta_endpoint_address.h"
+#include "jxta_traffic_shaping_priv.h"
 #include "jxta_vector.h"
 
 #ifdef __cplusplus
@@ -69,7 +70,7 @@ extern "C" {
 #endif
 #endif
 typedef struct _jxta_EndPointConfigAdvertisement Jxta_EndPointConfigAdvertisement;
-
+typedef struct _jxta_ep_flow_control Jxta_ep_flow_control;
 
 JXTA_DECLARE(Jxta_EndPointConfigAdvertisement *) jxta_EndPointConfigAdvertisement_new(void);
 JXTA_DECLARE(Jxta_status) jxta_EndPointConfigAdvertisement_get_xml(Jxta_EndPointConfigAdvertisement *, JString **);
@@ -77,6 +78,9 @@ JXTA_DECLARE(void) jxta_EndPointConfigAdvertisement_parse_charbuffer(Jxta_EndPoi
                                                                      size_t len);
 JXTA_DECLARE(void) jxta_EndPointConfigAdvertisement_parse_file(Jxta_EndPointConfigAdvertisement *, FILE * stream);
 JXTA_DECLARE(Jxta_vector *) jxta_EndPointConfigAdvertisement_get_indexes(void);
+
+JXTA_DECLARE(void) jxta_epcfg_get_traffic_shaping(Jxta_EndPointConfigAdvertisement * me
+                    , Jxta_traffic_shaping **ts);
 
 JXTA_DECLARE(void) jxta_epcfg_set_nc_timeout_init(Jxta_EndPointConfigAdvertisement * me, int timeout);
 JXTA_DECLARE(Jxta_time_diff) jxta_epcfg_get_nc_timeout_init(Jxta_EndPointConfigAdvertisement * me);
@@ -89,6 +93,9 @@ JXTA_DECLARE(size_t) jxta_epcfg_get_ncrq_size(Jxta_EndPointConfigAdvertisement *
 
 JXTA_DECLARE(void) jxta_epcfg_set_ncrq_retry(Jxta_EndPointConfigAdvertisement * me, size_t cnt);
 JXTA_DECLARE(size_t) jxta_epcfg_get_ncrq_retry(Jxta_EndPointConfigAdvertisement * me);
+
+JXTA_DECLARE(Jxta_status) jxta_epcfg_get_fc_parm(Jxta_EndPointConfigAdvertisement * me, const char *msg_type, Jxta_ep_flow_control **fc_parm);
+JXTA_DECLARE(Jxta_status) jxta_epcfg_set_fc_parm(Jxta_EndPointConfigAdvertisement * me, const char *msg_type, Jxta_ep_flow_control *fc_entry);
 
 JXTA_DECLARE(int) endpoint_config_threads_init(Jxta_EndPointConfigAdvertisement * me);
 JXTA_DECLARE(int) endpoint_config_threads_maximum(Jxta_EndPointConfigAdvertisement * me);

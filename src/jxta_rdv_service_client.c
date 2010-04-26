@@ -848,7 +848,7 @@ static Jxta_status send_lease_request(_jxta_rdv_service_client * myself, _jxta_p
 
     if ((peer->lastConnectTry + peer->connectInterval) > currentTime) {
         /* Not time yet to try to connect */
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Too soon for another connect.\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Too soon for another connect.\n");
         goto FINAL_EXIT;
     }
 
@@ -941,7 +941,7 @@ static Jxta_status send_lease_request(_jxta_rdv_service_client * myself, _jxta_p
      */
     if (pa) {
         Jxta_id *pid = jxta_PA_get_PID(pa);
-        res = jxta_PG_sync_send(pg, msg, pid, RDV_V3_MSID, JXTA_RDV_LEASING_SERVICE_NAME);
+        res = jxta_PG_sync_send(pg, msg, pid, RDV_V3_MSID, JXTA_RDV_LEASING_SERVICE_NAME, NULL);
         JXTA_OBJECT_RELEASE(pid);
     } else if (address != NULL) {
         Jxta_endpoint_address *dest = NULL;
@@ -949,7 +949,7 @@ static Jxta_status send_lease_request(_jxta_rdv_service_client * myself, _jxta_p
                                          jxta_endpoint_address_get_protocol_address(address), 
                                          RDV_V3_MSID, JXTA_RDV_LEASING_SERVICE_NAME, &dest);
         if (JXTA_SUCCESS == res) {
-            res = jxta_endpoint_service_send_ex(provider->service->endpoint, msg, dest, JXTA_TRUE);
+            res = jxta_endpoint_service_send_ex(provider->service->endpoint, msg, dest, JXTA_TRUE, NULL);
             JXTA_OBJECT_RELEASE(dest);
         }
     } else {
@@ -1517,7 +1517,7 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
 
         /* Final lap -- try to connect to a candidate rdv */
         if (NULL != myself->candidate) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Try connecting to candidate.\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Try connecting to candidate.\n");
 
             if ((myself->candidate->lastConnectTry + myself->candidate->connectInterval) > jpr_time_now()) {
                 /* Time for the next candidate. */

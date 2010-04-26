@@ -235,8 +235,7 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendQuery(Jxta_resolver_service 
  * @return Jxta_status
  * @see Jxta_status
  */
-JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendResponse(Jxta_resolver_service * service, ResolverResponse * response,
-                                                             Jxta_id * peerid);
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendResponse(Jxta_resolver_service * service, ResolverResponse * response, Jxta_id * peerid, apr_int64_t *max_length);
 /**
  * For Services that wish to implement a ResolverService Service they must
  * implement this interface Sends query to the specified address.

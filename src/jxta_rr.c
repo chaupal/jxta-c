@@ -193,7 +193,8 @@ static void trim_elements(ResolverResponse * adv)
 {
     jstring_trim(adv->Credential);
     jstring_trim(adv->HandlerName);
-    jstring_trim(adv->Response);
+    if (NULL != adv->Response)
+        jstring_trim(adv->Response);
 }
 
 /** The get/set functions represent the public
@@ -245,17 +246,18 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_response_get_xml(ResolverResponse * adv,
     /* done with buf, free it */
     free(buf);
 
-    jstring_append_2(doc, "<Response>");
-    status = jxta_xml_util_encode_jstring(adv->Response, &tmps);
-    if (status != JXTA_SUCCESS) {
-        JXTA_LOG("error encoding the response, retrun status :%d\n", status);
-        JXTA_OBJECT_RELEASE(doc);
-        return status;
+    if (NULL != adv->Response) {
+        jstring_append_2(doc, "<Response>");
+        status = jxta_xml_util_encode_jstring(adv->Response, &tmps);
+        if (status != JXTA_SUCCESS) {
+            JXTA_LOG("error encoding the response, retrun status :%d\n", status);
+            JXTA_OBJECT_RELEASE(doc);
+            return status;
+        }
+        jstring_append_1(doc, tmps);
+        JXTA_OBJECT_RELEASE(tmps);
+        jstring_append_2(doc, "</Response>\n");
     }
-
-    jstring_append_1(doc, tmps);
-    JXTA_OBJECT_RELEASE(tmps);
-    jstring_append_2(doc, "</Response>\n");
     jstring_append_2(doc, "</jxta:ResolverResponse>\n");
 
     *document = doc;
@@ -356,13 +358,11 @@ JXTA_DECLARE(void) jxta_resolver_response_set_response(ResolverResponse * ad, JS
     if (ad == NULL) {
         return;
     }
-    if (ad->Response != NULL) {
-        JXTA_OBJECT_RELEASE(ad->Response);
-        ad->Response = NULL;
-    }
+
     if (response != NULL) {
-        JXTA_OBJECT_SHARE(response);
-        ad->Response = response;
+        if (ad->Response)
+            JXTA_OBJECT_RELEASE(ad->Response);
+        ad->Response = JXTA_OBJECT_SHARE(response);
     }
 }
 
@@ -438,19 +438,24 @@ JXTA_DECLARE(ResolverResponse *) jxta_resolver_response_new_2(JString * handlern
 
     /* Fill in the required initialization code here. */
     ad->Credential = jstring_new_0();
-	if (res_pid != NULL) {
-	  jxta_id_to_jstring(res_pid, &temps);
-	  jxta_id_from_jstring(&ad->ResPeerID, temps);
-	  JXTA_OBJECT_RELEASE(temps);
-	} else {
-	  ad->ResPeerID = jxta_id_nullID;
-	}
+    if (res_pid != NULL) {
+        jxta_id_to_jstring(res_pid, &temps);
+        jxta_id_from_jstring(&ad->ResPeerID, temps);
+        JXTA_OBJECT_RELEASE(temps);
+    } else {
+        ad->ResPeerID = jxta_id_nullID;
+    }
 
     JXTA_OBJECT_SHARE(handlername);
     ad->HandlerName = handlername;
     ad->QueryID = qid;
-    JXTA_OBJECT_SHARE(response);
-    ad->Response = response;
+    if (NULL != response) {
+        /* if (ad->Response)
+            JXTA_OBJECT_RELEASE(ad->Response); */
+        ad->Response = JXTA_OBJECT_SHARE(response);
+    } else {
+        ad->Response = NULL;
+    }
     ad->qos = NULL;
     return ad;
 }

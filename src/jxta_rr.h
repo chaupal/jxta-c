@@ -194,7 +194,7 @@ JXTA_DECLARE(void) jxta_resolver_response_get_response(ResolverResponse * ad, JS
  * @param ResolverResponse the resolver response object
  * @param Jstring the Response
  */
-JXTA_DECLARE(void) jxta_resolver_resposne_set_response(ResolverResponse * ad, JString * response);
+JXTA_DECLARE(void) jxta_resolver_response_set_response(ResolverResponse * ad, JString * response);
 
 JXTA_DECLARE(Jxta_status) jxta_resolver_response_attach_qos(Jxta_resolver_response * me, const Jxta_qos * qos);
 JXTA_DECLARE(const Jxta_qos *) jxta_resolver_response_qos(Jxta_resolver_response * me);

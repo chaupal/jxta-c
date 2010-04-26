@@ -438,4 +438,43 @@ Jxta_status query_all_advs(const char *query, Jxta_credential *scope[], int thre
     return status;
 }
 
+JString ** tokenize_string_j(JString *string_j, char separator)
+{
+    int str_length;
+    char *str_ptr = NULL;
+    char *str_ptr_save = NULL;
+    char *str_start = NULL;
+    JString **str_array = NULL;
+    JString **res;
+    int str_array_length = 0;
+
+    str_length = jstring_length(string_j);
+    str_ptr = calloc(str_length + 1, 1);
+    str_ptr_save = str_ptr;
+    memmove(str_ptr, jstring_get_string(string_j),str_length);
+    str_start = str_ptr;
+    if ('\0' != *str_ptr) {
+        str_array_length = 1;
+    }
+    while (*str_ptr != '\0') {
+        if (separator == *str_ptr) {
+            str_array_length++;
+            *str_ptr = '\0';
+        }
+        str_ptr++;
+    }
+
+    str_array = calloc(str_array_length + 1, sizeof(JString*));
+    res = str_array;
+    while (str_array_length--) {
+        *str_array = jstring_new_2(str_start);
+        str_start += jstring_length(*str_array) + 1;
+        str_array++;
+    }
+    free(str_ptr_save);
+    *str_array = NULL;
+    return res;
+}
+
+
 /* vim: set ts=4 sw=4 et tw=130: */

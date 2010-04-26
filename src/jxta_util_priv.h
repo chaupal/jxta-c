@@ -169,6 +169,8 @@ Jxta_status JXTA_STDCALL brigade_read(void *b, char *buf, apr_size_t len);
 **/
 Jxta_status query_all_advs(const char *query,Jxta_credential *scope[], int threshold, Jxta_vector ** advertisements);
 
+JString ** tokenize_string_j(JString *string_j, char separator);
+
 #ifdef __cplusplus
 #if 0
 {

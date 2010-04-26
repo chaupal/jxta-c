@@ -483,7 +483,7 @@ static int zip_uncompress(Byte * dest, uLong * destLen, Byte * source, uLong sou
 
 JXTA_DECLARE(Jxta_status) jxta_xml_util_uncompress(unsigned char *bytes, int size, unsigned char **uncompr, unsigned long *uncomprLen)
 {
-    Jxta_status res;
+    Jxta_status res=JXTA_SUCCESS;
     int err;
 
     *uncomprLen = 40 * size;

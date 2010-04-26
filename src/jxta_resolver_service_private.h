@@ -101,7 +101,7 @@ struct _jxta_resolver_service_methods {
 
     Jxta_status(*sendQuery) (Jxta_resolver_service * resolver, ResolverQuery * query, Jxta_id * peerid);
 
-    Jxta_status(*sendResponse) (Jxta_resolver_service * resolver, ResolverResponse * response, Jxta_id * peerid);
+    Jxta_status(*sendResponse) (Jxta_resolver_service * resolver, ResolverResponse * response, Jxta_id * peerid, apr_int64_t *max_length);
 
     Jxta_status(*sendSrdi) (Jxta_resolver_service * resolver, ResolverSrdi * message, Jxta_id * peerid, Jxta_boolean sync);
 

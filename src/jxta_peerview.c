@@ -2882,7 +2882,8 @@ static Jxta_status peerview_send_pong_2(Jxta_peerview * myself, Jxta_peer * dest
     while (NULL != groups && *groups) free(*(groups++));
 
 
-    res = jxta_PG_async_send_1(myself->group, ep_msg, jxta_peer_peerid(dest), "groupid", RDV_V3_MSID, JXTA_PEERVIEW_NAME);
+    res = jxta_PG_async_send_1(myself->group, ep_msg, jxta_peer_peerid(dest), "groupid"
+                                , RDV_V3_MSID, JXTA_PEERVIEW_NAME, NULL);
 
 
     if (groups_save)
@@ -3166,7 +3167,7 @@ static Jxta_status peerview_send_pvm_ep(Jxta_peerview * me, Jxta_peer * dest, Jx
     new_param = get_service_key(RDV_V3_MSID, JXTA_PEERVIEW_NAME_CONS);
     dest_ea = jxta_endpoint_address_new_3(jxta_peer_peerid(dest), jstring_get_string(ep_name_j), new_param);
 
-    rv = jxta_endpoint_service_send_ex(maintain_endpoint, msg, dest_ea, JXTA_FALSE);
+    rv = jxta_endpoint_service_send_ex(maintain_endpoint, msg, dest_ea, JXTA_FALSE, NULL);
 
     free(new_param);
     JXTA_OBJECT_RELEASE(ep_name_j);
@@ -3200,9 +3201,9 @@ static Jxta_status peerview_send_pvm_priv(Jxta_peerview * me, Jxta_peer * dest, 
                         jstring_get_string(pid_jstr));
         JXTA_OBJECT_RELEASE(pid_jstr);
         if (sync) {
-            res = jxta_PG_sync_send(me->group, msg, peerid, RDV_V3_MSID, parm);
+            res = jxta_PG_sync_send(me->group, msg, peerid, RDV_V3_MSID, parm, NULL);
         } else {
-            res = jxta_PG_async_send(me->group, msg, peerid, RDV_V3_MSID, parm);
+            res = jxta_PG_async_send(me->group, msg, peerid, RDV_V3_MSID, parm, NULL);
         }
     } else {
         peer_addr = jxta_peer_address(dest);
@@ -3248,7 +3249,7 @@ static Jxta_status peerview_send_pvm_priv(Jxta_peerview * me, Jxta_peer * dest, 
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "%s Sending peerview message [%pp] to : %s\n", send == TRUE ? "":"Not", msg, addr_str);
             free(addr_str);
             if (send) {
-                res = jxta_endpoint_service_send_ex(me->endpoint, msg, dest_addr, sync);
+                res = jxta_endpoint_service_send_ex(me->endpoint, msg, dest_addr, sync, NULL);
             }
             JXTA_OBJECT_RELEASE(dest_addr);
         } else {

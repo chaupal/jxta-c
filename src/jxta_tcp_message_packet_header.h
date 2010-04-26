@@ -82,6 +82,8 @@ Jxta_status JXTA_STDCALL message_packet_header_read(char *header_buf, ReadFunc r
 Jxta_status JXTA_STDCALL message_packet_header_write(WriteFunc write_func, void *stream, apr_int64_t msg_size,
                                                      Jxta_boolean is_multicast, char *src_addr);
 
+Jxta_status JXTA_STDCALL message_packet_header_size(void *stream, apr_int64_t msg_size,
+                                                    Jxta_boolean is_multicast, apr_int64_t *ret_len);
 #ifdef __cplusplus
 #if 0
 {

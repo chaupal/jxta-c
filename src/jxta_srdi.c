@@ -636,13 +636,26 @@ static const Kwdtab Jxta_SRDIMessage_tags[] = {
 
 Jxta_status srdi_message_print(Jxta_SRDIMessage * ad, JString * js)
 {
+    Jxta_status res=JXTA_SUCCESS;
+    Jxta_vector *entries;
+
+    jxta_srdi_message_get_entries(ad, &entries);
+    if (NULL != entries) {
+        res = jxta_srdi_entries_print_xml(entries, js, FALSE);
+    }
+
+    JXTA_OBJECT_RELEASE(entries);
+    return res;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_srdi_entries_print_xml(Jxta_vector *entries, JString *js, Jxta_boolean encode)
+{
     char *buf = calloc( sizeof(char), 512);
     char tmpbuf[32];
-    Jxta_vector *entries;
     unsigned int eachElement = 0;
     Jxta_SRDIEntryElement *anElement;
-    jxta_srdi_message_get_entries(ad, &entries);
-    for (eachElement = 0; entries != NULL && eachElement < jxta_vector_size(entries); eachElement++) {
+
+    for (eachElement = 0; eachElement < jxta_vector_size(entries); eachElement++) {
         anElement = NULL;
         jxta_vector_get_object_at(entries, JXTA_OBJECT_PPTR(&anElement), eachElement);
         if (NULL == anElement) {
@@ -711,13 +724,13 @@ Jxta_status srdi_message_print(Jxta_SRDIMessage * ad, JString * js)
             jstring_append_1(js, anElement->value);
         }
         jstring_append_2(js, "</Entry>\n");
+
         JXTA_OBJECT_RELEASE(anElement);
     }
 
+
     free(buf);
 
-    if (entries)
-        JXTA_OBJECT_RELEASE(entries);
     return JXTA_SUCCESS;
 }
 
@@ -887,7 +900,7 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_3(int ttl, Jxta_id * peer
     return ad;
 }
 
-JXTA_DECLARE(void) jxta_srdi_message_clone(Jxta_SRDIMessage * ad, Jxta_SRDIMessage **msg)
+JXTA_DECLARE(void) jxta_srdi_message_clone(Jxta_SRDIMessage * ad, Jxta_SRDIMessage **msg, Jxta_boolean add_entries)
 {
     *msg = (Jxta_SRDIMessage *) calloc(1, sizeof(Jxta_SRDIMessage));
 
@@ -900,7 +913,7 @@ JXTA_DECLARE(void) jxta_srdi_message_clone(Jxta_SRDIMessage * ad, Jxta_SRDIMessa
     if (NULL != ad->PrimaryKey)
         (*msg)->PrimaryKey = jstring_clone(ad->PrimaryKey);
     (*msg)->deltaSupport = ad->deltaSupport;
-    if (NULL != ad->Entries) {
+    if (NULL != ad->Entries && add_entries) {
         jxta_vector_clone(ad->Entries, &((*msg)->Entries), 0, INT_MAX);
     }
     if (NULL != ad->resendEntries) {

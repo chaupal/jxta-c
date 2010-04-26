@@ -67,6 +67,32 @@ extern "C" {
 #endif
 #endif
 
+#define DR_TAG_START "<Response Expiration=\"%"
+#define DR_TAG_START_RIGHT_PAREN "\">\n"
+#define DR_TAG_END "</Response>\n"
+#define DR_TAG_1 "<?xml version=\"1.0\"?>\n<!DOCTYPE jxta:DiscoveryResponse>\n<jxta:DiscoveryResponse>\n"
+#define DR_TAG_2 "<Type>"
+#define DR_TAG_3 "</Type>\n"
+
+#define DR_TAG_4 "<Count>"
+
+#define DR_TAG_5 "</Count>\n"
+
+#define DR_TAG_6 "<PeerAdv>"
+
+#define DR_TAG_7 "</PeerAdv>\n"
+
+#define DR_TAG_8    "<Attr>"
+#define DR_TAG_9    "</Attr>\n"
+
+#define DR_TAG_10    "<Value>"
+#define DR_TAG_11    "</Value>\n"
+
+#define DR_TAG_12    "</jxta:DiscoveryResponse>\n"
+
+
+#define DR_TAG_SIZE sizeof(DR_TAG_START) + sizeof(DR_TAG_START_RIGHT_PAREN) + sizeof(DR_TAG_END) + 10
+
 typedef struct _Jxta_DiscoveryResponse Jxta_DiscoveryResponse;
 typedef struct _jxta_DiscoveryResponseElement Jxta_DiscoveryResponseElement;
 
@@ -358,6 +384,9 @@ JXTA_DECLARE(Jxta_DiscoveryResponseElement *) jxta_discovery_response_new_elemen
  */
 JXTA_DECLARE(Jxta_DiscoveryResponseElement *) jxta_discovery_response_new_element_1(JString * response,
                                                                                     Jxta_expiration_time expiration);
+
+JXTA_DECLARE(Jxta_time) jxta_discovery_response_timestamp(Jxta_DiscoveryResponse *);
+JXTA_DECLARE(void) jxta_discovery_response_set_timestamp(Jxta_DiscoveryResponse *, Jxta_time);
 #ifdef __cplusplus
 #if 0
 {

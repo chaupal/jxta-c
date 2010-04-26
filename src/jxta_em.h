@@ -68,17 +68,27 @@ extern "C" {
 
 static const char JXTA_ENDPOINT_MSG_JXTA_NS[] = "jxta";
 static const char JXTA_ENPOINT_MSG_ELEMENT_NAME[] = "EndpointMessage";
+static const char JXTA_FLOWCONTROL_MSG_ELEMENT_NAME[] = "FlowControl";
 
 typedef struct _jxta_endpoint_message Jxta_endpoint_message;
 typedef struct _jxta_endpoint_msg_entry_element Jxta_endpoint_msg_entry_element;
 
 JXTA_DECLARE(Jxta_endpoint_message *) jxta_endpoint_msg_new(void);
-JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_get_xml(Jxta_endpoint_message *, Jxta_boolean encode, JString ** xml);
+JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_get_xml(Jxta_endpoint_message * myself
+                                    , Jxta_boolean encode, JString ** xml, Jxta_boolean with_entries);
 JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_parse_charbuffer(Jxta_endpoint_message *, const char *, int len);
 JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_parse_file(Jxta_endpoint_message *, FILE * stream);
 
+JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_set_timestamp(Jxta_endpoint_message *myself, Jxta_time timestamp);
+JXTA_DECLARE(Jxta_time) jxta_endpoint_msg_timestamp(Jxta_endpoint_message *myself);
+
 JXTA_DECLARE(Jxta_endpoint_msg_entry_element *) jxta_endpoint_message_entry_new();
+JXTA_DECLARE(void) jxta_endpoint_msg_set_priority(Jxta_endpoint_message *ep_msg, Msg_priority p);
+JXTA_DECLARE(Msg_priority) jxta_endpoint_msg_priority(Jxta_endpoint_message *ep_msg);
 JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_entry_add_attribute(Jxta_endpoint_msg_entry_element *entry, const char *attribute, const char *value);
+JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_entry_get_attribute(Jxta_endpoint_msg_entry_element *entry, const char *attribute
+                                    , JString ** get_att_j);
+
 JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_entry_get_attributes(Jxta_endpoint_msg_entry_element *entry, Jxta_hashtable **attributes);
 JXTA_DECLARE(void) jxta_endpoint_msg_entry_set_value(Jxta_endpoint_msg_entry_element *entry, Jxta_message_element *msg_elem);
 JXTA_DECLARE(void) jxta_endpoint_msg_entry_get_value(Jxta_endpoint_msg_entry_element *entry, Jxta_message_element **msg_elem);

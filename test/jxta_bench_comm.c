@@ -379,7 +379,7 @@ static Jxta_status send_message(Jxta_message * message)
         printf("Sending an endpoint message of size %i, of iter %i, remaining increase %i\n", current_msg_size,
                remaining_msg_iter, specified_ntime_of_increase);
 #endif
-        status = jxta_endpoint_service_send(pg, endpoint_service, message, dest_address);
+        status = jxta_endpoint_service_send(pg, endpoint_service, message, dest_address, NULL);
     }
 
     remaining_msg_iter--;

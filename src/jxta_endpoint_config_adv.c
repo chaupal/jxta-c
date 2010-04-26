@@ -61,9 +61,11 @@ static const char *const __log_cat = "EPCfgAdv";
 
 #include "jxta_errno.h"
 #include "jxta_endpoint_config_adv.h"
+#include "jxta_endpoint_service.h"
 #include "jxta_log.h"
 #include "jxta_xml_util.h"
 #include "jxta_apr.h"
+#include "jxta_traffic_shaping_priv.h"
 
 /** Each of these corresponds to a tag in the 
  * xml ad.
@@ -72,6 +74,10 @@ enum tokentype {
     Null_,
     Jxta_EndPointConfigAdvertisement_
 };
+
+#define DIRECTION_BOTH "both"
+#define DIRECTION_INBOUND "inbound"
+#define DIRECTION_OUTBOUND "outbound"
 
 /** This is the representation of the 
  * actual ad in the code.  It should
@@ -86,6 +92,8 @@ struct _jxta_EndPointConfigAdvertisement {
     size_t ncrq_retry;
     int init_threads;
     int max_threads;
+    Jxta_hashtable *fc_entries;
+    Jxta_traffic_shaping *ts;
 };
 
 /* Forward decl. of un-exported function */
@@ -101,6 +109,7 @@ void handleJxta_EndPointConfigAdvertisement(void *userdata, const XML_Char * cd,
     const char **atts = ((Jxta_advertisement *) ad)->atts;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Begining parse of jxta:EndPointConfig\n");
+    if (0 != len) return;
 
     while (atts && *atts) {
         if (0 == strcmp(*atts, "threads_init")) {
@@ -182,6 +191,116 @@ JXTA_DECLARE(size_t) jxta_epcfg_get_ncrq_retry(Jxta_EndPointConfigAdvertisement 
     return me->ncrq_retry;
 }
 
+static void handleFlowControl(void *me, const XML_Char * cd, int len)
+{
+    Jxta_EndPointConfigAdvertisement *_self = (Jxta_EndPointConfigAdvertisement *) me;
+    const char **atts = ((Jxta_advertisement *) me)->atts;
+    Jxta_ep_flow_control *msg_fc;
+    char *msg_type=NULL;
+
+    msg_fc = jxta_ep_flow_control_new();
+
+    while (atts && *atts) {
+        int tmp;
+        if (0 == strcmp(*atts, "msg_type")) {
+            jxta_ep_fc_set_msg_type(msg_fc, atts[1]);
+        } else if (0 == strcmp(*atts, "direction")) {
+            Jxta_boolean both = (0 == strcmp(atts[1], DIRECTION_BOTH));
+
+            jxta_ep_fc_set_inbound(msg_fc, 0 == strcmp(atts[1], DIRECTION_INBOUND) || both ? TRUE:FALSE);
+            jxta_ep_fc_set_outbound(msg_fc, 0 == strcmp(atts[1], DIRECTION_OUTBOUND) || both ? TRUE:FALSE);
+        } else if (0 == strcmp(*atts, "rate")) {
+            tmp = atoi(atts[1]);
+            jxta_ep_fc_set_rate(msg_fc, tmp);
+        }
+
+        atts += 2;
+    }
+    if (JXTA_SUCCESS == jxta_ep_fc_get_msg_type(msg_fc, &msg_type)) {
+        jxta_hashtable_put(_self->fc_entries, msg_type, strlen(msg_type) + 1, (Jxta_object *) msg_fc);
+    }
+    if (msg_type)
+        free(msg_type);
+
+    JXTA_OBJECT_RELEASE(msg_fc);
+}
+
+static void handleTrafficShaping(void *me, const XML_Char * cd, int len)
+{
+    Jxta_EndPointConfigAdvertisement *_self = (Jxta_EndPointConfigAdvertisement *) me;
+    const char **atts = ((Jxta_advertisement *) me)->atts;
+    Jxta_traffic_shaping *ts;
+
+    if (0 != len) return;
+
+    ts = _self->ts;
+    if (NULL == ts) {
+        ts = traffic_shaping_new();
+        _self->ts = ts;
+    }
+
+    while (atts && *atts) {
+        int tmp;
+        apr_int64_t tmp_l;
+
+        if (0 == strcmp(*atts, "size")) {
+            tmp_l = apr_atoi64(atts[1]);
+            traffic_shaping_set_size(ts, tmp_l);
+        } else if (0 == strcmp(*atts, "time")) {
+            tmp = atoi(atts[1]);
+            traffic_shaping_set_time(ts, tmp);
+        } else if (0 == strcmp(*atts, "interval")) {
+            tmp = atoi(atts[1]);
+            traffic_shaping_set_interval(ts, tmp);
+        } else if (0 == strcmp(*atts, "frame")) {
+            tmp = atoi(atts[1]);
+            traffic_shaping_set_frame(ts, tmp);
+        } else if (0 == strcmp(*atts, "look_ahead")) {
+            tmp = atoi(atts[1]);
+            traffic_shaping_set_look_ahead(ts, tmp);
+        } else if (0 == strcmp(*atts, "reserve")) {
+            tmp = atoi(atts[1]);
+            traffic_shaping_set_reserve(ts, tmp);
+        } else if (0 == strcmp(*atts, "max_option")) {
+            traffic_shaping_set_max_option(ts
+                        , strcmp(atts[1], "frame") == 0 ? TS_MAX_OPTION_FRAME:TS_MAX_OPTION_LOOK_AHEAD);
+        }
+        atts += 2;
+    }
+}
+
+JXTA_DECLARE(Jxta_status) jxta_epcfg_get_fc_parm(Jxta_EndPointConfigAdvertisement * me, const char *msg_type, Jxta_ep_flow_control **fc_parm)
+{
+    Jxta_status res;
+
+    res = jxta_hashtable_get(me->fc_entries, msg_type, strlen(msg_type) + 1, JXTA_OBJECT_PPTR(fc_parm));
+
+    return res;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_epcfg_set_fc_parm(Jxta_EndPointConfigAdvertisement * me, const char *msg_type, Jxta_ep_flow_control *fc_entry)
+{
+    Jxta_status res;
+
+    if (JXTA_SUCCESS != jxta_hashtable_contains(me->fc_entries, msg_type, strlen(msg_type) + 1)) {
+        jxta_hashtable_put(me->fc_entries, msg_type, strlen(msg_type) +1, (Jxta_object *) fc_entry);
+        res = JXTA_SUCCESS;
+    } else {
+        res = JXTA_ITEM_EXISTS;
+    }
+    return res;
+}
+
+JXTA_DECLARE(void) jxta_epcfg_get_traffic_shaping(Jxta_EndPointConfigAdvertisement * me
+                    , Jxta_traffic_shaping **ts)
+{
+    *ts = NULL;
+    if (NULL != me->ts) {
+        *ts = JXTA_OBJECT_SHARE(me->ts);
+    }
+    return;
+}
+
 /** Now, build an array of the keyword structs.  Since 
  * a top-level, or null state may be of interest, 
  * let that lead off.  Then, walk through the enums,
@@ -193,6 +312,8 @@ JXTA_DECLARE(size_t) jxta_epcfg_get_ncrq_retry(Jxta_EndPointConfigAdvertisement 
 static const Kwdtab Jxta_EndPointConfigAdvertisement_tags[] = {
     {"Null", Null_, NULL, NULL, NULL},
     {"jxta:EndPointConfig", Null_, *handleJxta_EndPointConfigAdvertisement, NULL, NULL},
+    {"FlowControl", Null_, *handleFlowControl, NULL, NULL},
+    {"TrafficShaping", Null_, *handleTrafficShaping, NULL, NULL},
     {"NegativeCache", Null_, *handleNegativeCache, NULL, NULL},
     {NULL, 0, 0, NULL, NULL}
 };
@@ -202,6 +323,8 @@ JXTA_DECLARE(Jxta_status) jxta_EndPointConfigAdvertisement_get_xml(Jxta_EndPoint
     char tmpbuf[256];
     JString *string = jstring_new_0();
     int timeout;
+    char **fc_keys;
+    char **fc_keys_save;
 
     jstring_append_2(string, "<!-- JXTA EndPoint Configuration Advertisement -->\n");
     jstring_append_2(string, "<jxta:EndPointConfig xmlns:jxta=\"http://jxta.org\" type=\"jxta:EndPointConfig\" ");
@@ -235,6 +358,96 @@ JXTA_DECLARE(Jxta_status) jxta_EndPointConfigAdvertisement_get_xml(Jxta_EndPoint
     apr_snprintf(tmpbuf, sizeof(tmpbuf), " msgToRetry=\"%d\"\n", me->ncrq_retry);
     jstring_append_2(string, tmpbuf);
     jstring_append_2(string, "/>\n");
+
+    if (-1 == traffic_shaping_time(me->ts)) {
+        traffic_shaping_set_time(me->ts, 2000);
+    }
+
+    if (-1 == traffic_shaping_size(me->ts)) {
+        traffic_shaping_set_size(me->ts, 30000);
+    }
+
+    if (-1 == traffic_shaping_interval(me->ts)) {
+        traffic_shaping_set_interval(me->ts, 2);
+    }
+
+    if (-1 == traffic_shaping_frame(me->ts)) {
+        traffic_shaping_set_frame(me->ts, 5);
+    }
+
+    if (-1 == traffic_shaping_look_ahead(me->ts)) {
+        traffic_shaping_set_look_ahead(me->ts, 20);
+    }
+
+    if (-1 == traffic_shaping_reserve(me->ts)) {
+        traffic_shaping_set_reserve(me->ts, 15);
+    }
+
+    if (-1 == traffic_shaping_max_option(me->ts)) {
+        traffic_shaping_set_max_option(me->ts, TS_MAX_OPTION_LOOK_AHEAD);
+    }
+
+    jstring_append_2(string, "<!-- Traffic Shaping -->\n");
+    jstring_append_2(string, "<TrafficShaping");
+    apr_snprintf(tmpbuf, sizeof(tmpbuf), " size=\"%" APR_INT64_T_FMT "\"\n", traffic_shaping_size( me->ts));
+    jstring_append_2(string, tmpbuf);
+    apr_snprintf(tmpbuf, sizeof(tmpbuf), " time=\"%ld\"\n", (long) traffic_shaping_time( me->ts));
+    jstring_append_2(string, tmpbuf);
+    apr_snprintf(tmpbuf, sizeof(tmpbuf), " interval=\"%d\"\n", traffic_shaping_interval(me->ts));
+    jstring_append_2(string, tmpbuf);
+    apr_snprintf(tmpbuf, sizeof(tmpbuf), " look_ahead=\"" JPR_DIFF_TIME_FMT "\"\n"
+                        , traffic_shaping_look_ahead(me->ts));
+    jstring_append_2(string, tmpbuf);
+    apr_snprintf(tmpbuf, sizeof(tmpbuf), " frame=\"" JPR_DIFF_TIME_FMT "\"\n"
+                        , traffic_shaping_frame(me->ts));
+    jstring_append_2(string, tmpbuf);
+    apr_snprintf(tmpbuf, sizeof(tmpbuf), " reserve=\"%d\"\n", traffic_shaping_reserve(me->ts));
+    jstring_append_2(string, tmpbuf);
+    jstring_append_2(string, " max_option=\"");
+    jstring_append_2(string, traffic_shaping_max_option(me->ts) == TS_MAX_OPTION_LOOK_AHEAD ? "look_ahead":"frame");
+    jstring_append_2(string, "\"");
+    jstring_append_2(string, "/>\n");
+
+    fc_keys = jxta_hashtable_keys_get(me->fc_entries);
+    fc_keys_save = fc_keys;
+    while (NULL != fc_keys && *fc_keys) {
+        Jxta_ep_flow_control *fc_entry=NULL;
+
+        if (JXTA_SUCCESS == jxta_hashtable_get(me->fc_entries, *fc_keys, strlen(*fc_keys) + 1, JXTA_OBJECT_PPTR(&fc_entry))) {
+            char *tmp_char;
+            const char *direction;
+
+            jstring_append_2(string, "<FlowControl");
+            apr_snprintf(tmpbuf, sizeof(tmpbuf), " cfg_parm=\"%s\"", *fc_keys);
+            jstring_append_2(string, tmpbuf);
+            jxta_ep_fc_get_msg_type(fc_entry, &tmp_char);
+            apr_snprintf(tmpbuf, sizeof(tmpbuf), " msg_type=\"%s\"", tmp_char);
+            jstring_append_2(string, tmpbuf);
+            free(tmp_char);
+            direction="both";
+            if (jxta_ep_fc_outbound(fc_entry) && jxta_ep_fc_inbound(fc_entry)) {
+                direction="both";
+            } else if (jxta_ep_fc_outbound(fc_entry)) {
+                direction="outbound";
+            } else if (jxta_ep_fc_inbound(fc_entry)) {
+                direction="indbound";
+            }
+            apr_snprintf(tmpbuf, sizeof(tmpbuf), " direction=\"%s\"", direction);
+            jstring_append_2(string, tmpbuf);
+            apr_snprintf(tmpbuf, sizeof(tmpbuf), " rate=\"%d\"", jxta_ep_fc_rate(fc_entry));
+            jstring_append_2(string, tmpbuf);
+            apr_snprintf(tmpbuf, sizeof(tmpbuf), " rate_window=\"%d\"", jxta_ep_fc_rate_window(fc_entry));
+            jstring_append_2(string, tmpbuf);
+            jstring_append_2(string, "/>\n");
+        } else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Could not retrieve entry in flow control: %s\n", *fc_keys);
+        }
+        if (fc_entry)
+            JXTA_OBJECT_RELEASE(fc_entry);
+        free(*(fc_keys++));
+    }
+    if (fc_keys_save)
+        free(fc_keys_save);
     jstring_append_2(string, "</jxta:EndPointConfig>\n");
 
     *result = string;
@@ -259,6 +472,8 @@ Jxta_EndPointConfigAdvertisement *jxta_EndPointConfigAdvertisement_construct(Jxt
         self->ncrq_retry = 20;
         self->init_threads = -1;
         self->max_threads = -1;
+        self->fc_entries = jxta_hashtable_new(0);
+        self->ts = traffic_shaping_new();
     }
 
     return self;
@@ -266,6 +481,13 @@ Jxta_EndPointConfigAdvertisement *jxta_EndPointConfigAdvertisement_construct(Jxt
 
 void jxta_EndPointConfigAdvertisement_destruct(Jxta_EndPointConfigAdvertisement * self)
 {
+
+    if (self->ts) {
+        JXTA_OBJECT_RELEASE(self->ts);
+    }
+    if (self->fc_entries) {
+        JXTA_OBJECT_RELEASE(self->fc_entries);
+    }
     jxta_advertisement_destruct((Jxta_advertisement *) self);
 
 }

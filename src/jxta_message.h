@@ -72,6 +72,10 @@ extern "C" {
 #endif
 #endif
 
+typedef enum _msg_priority {
+    MSG_EXPEDITED=0,
+    MSG_NORMAL_FLOW
+} Msg_priority;
 /**
 *  JXTA messages are opaque JXTA objects. Jxta messages are not thread-safe.
 *  You must provide your own locking if you wish to use mutable messages from
@@ -95,7 +99,8 @@ JXTA_DECLARE(Jxta_message *) jxta_message_new(void);
 
 JXTA_DECLARE(Jxta_status) jxta_message_create(Jxta_message ** me, apr_pool_t *pool);
 JXTA_DECLARE(Jxta_status) jxta_message_destroy(Jxta_message * me);
-
+JXTA_DECLARE(void) jxta_message_set_timestamp(Jxta_message * me, Jxta_time time_stamp);
+JXTA_DECLARE(Jxta_time) jxta_message_timestamp(Jxta_message * me);
 /**
  *  Copies a Jxta message. The copy can then be modified seperately from the
  *  originial. (JXTA_SHARE_OBJECT does not copy the message). The cloned message
@@ -161,6 +166,9 @@ JXTA_DECLARE(Jxta_endpoint_address *) jxta_message_get_destination(Jxta_message 
 
 JXTA_DECLARE(Jxta_status) jxta_message_set_destination(Jxta_message * msg, Jxta_endpoint_address * dst);
 
+JXTA_DECLARE(Jxta_status) jxta_message_set_priority(Jxta_message * msg, Msg_priority priority);
+
+JXTA_DECLARE(Msg_priority) jxta_message_priority(Jxta_message * msg);
 /**
  * Add an element to a message. The element is shared.
  *

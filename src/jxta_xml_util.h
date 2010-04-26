@@ -64,7 +64,7 @@
 
 #ifdef GZIP_ENABLED
 #ifndef GUNZIP_ENABLED
-#define GUNZIP_ENABLED
+/* #define GUNZIP_ENABLED */
 #endif /* ndef GUNZIP_ENABLED */
 #endif /* GZIP_ENABLED */
 

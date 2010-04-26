@@ -58,6 +58,7 @@ bin_PROGRAMS = jstring_test	    \
 	       peerview_pong_msg_test \
 	       peerview_address_request_msg_test \
 	       peerview_address_assign_msg_test \
+	       traffic_shaping_test \
                monitor_msg_test \
                rdv_diffusion_msg_test    
 
@@ -259,6 +260,10 @@ peerview_address_assign_msg_test_SOURCES	     = peerview_address_assign_msg_test
 peerview_address_assign_msg_test.o:  peerview_address_assign_msg_test.c 
 	$(COMPILE) -DSTANDALONE -o peerview_address_assign_msg_test.o -c $(srcdir)/peerview_address_assign_msg_test.c
 
+traffic_shaping_test_SOURCES	     = traffic_shaping_test.c unittest_jxta_func.c
+traffic_shaping_test.o:  traffic_shaping_test.c 
+	$(COMPILE) -DSTANDALONE -o traffic_shaping_test.o -c $(srcdir)/traffic_shaping_test.c
+
 cm_test_SOURCES		     = cm_test.c
 cm_test.o:  cm_test.c
 	$(COMPILE) -DSTANDALONE -o cm_test.o -c $(srcdir)/cm_test.c
@@ -292,6 +297,7 @@ unit_test_runner_extra_obj = jstring_test_comp.o	    \
 			   peerview_pong_msg_test_comp.o            \
 			   peerview_address_request_msg_test_comp.o            \
 			   peerview_address_assign_msg_test_comp.o            \
+			   traffic_shaping_test_comp.o \
 			   rdv_diffusion_msg_test_comp.o
 
 unit_test_runner_DEPENDENCIES = $(unit_test_runner_extra_obj)
@@ -346,3 +352,5 @@ peerview_address_request_msg_test_comp.o:  peerview_address_request_msg_test.c
 	$(COMPILE) -o peerview_address_request_msg_test_comp.o -c $(srcdir)/peerview_address_request_msg_test.c
 peerview_address_assign_msg_test_comp.o:  peerview_address_assign_msg_test.c
 	$(COMPILE) -o peerview_address_assign_msg_test_comp.o -c $(srcdir)/peerview_address_assign_msg_test.c
+traffic_shaping_test_comp.o:  traffic_shaping_test.c
+	$(COMPILE) -o traffic_shaping_test_comp.o -c $(srcdir)/traffic_shaping_test.c

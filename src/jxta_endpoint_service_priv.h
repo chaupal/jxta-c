@@ -101,7 +101,8 @@ Jxta_status endpoint_service_demux(Jxta_endpoint_service * me, const char *name,
 
 Jxta_status endpoint_service_propagate_by_group(Jxta_PG * pg, Jxta_message * msg, const char *service_name, const char *service_param);
 
-
+Jxta_status endpoint_messenger_get(Jxta_endpoint_service * me, Jxta_endpoint_address * dest
+                            , JxtaEndpointMessenger **msgr);
 #ifdef __cplusplus
 #if 0
 {

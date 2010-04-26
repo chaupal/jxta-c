@@ -1496,7 +1496,7 @@ JXTA_DECLARE(Jxta_status) jxta_PG_remove_recipient(Jxta_PG * me, void *cookie)
 }
 
 JXTA_DECLARE(Jxta_status) jxta_PG_sync_send(Jxta_PG * me, Jxta_message * msg, Jxta_id * peer_id, 
-                                            const char *svc_name, const char *svc_param)
+                                            const char *svc_name, const char *svc_param, apr_int64_t *max_size)
 {
     Jxta_endpoint_service *ep;
     Jxta_status rv;
@@ -1506,7 +1506,7 @@ JXTA_DECLARE(Jxta_status) jxta_PG_sync_send(Jxta_PG * me, Jxta_message * msg, Jx
     new_param = get_service_key(svc_name, svc_param);
     dest = jxta_endpoint_address_new_3(peer_id, me->ep_name, new_param);
     jxta_PG_get_endpoint_service(me, &ep);
-    rv = jxta_endpoint_service_send_ex(ep, msg, dest, JXTA_TRUE);
+    rv = jxta_endpoint_service_send_ex(ep, msg, dest, JXTA_TRUE, max_size);
     free(new_param);
     JXTA_OBJECT_RELEASE(ep);
     JXTA_OBJECT_RELEASE(dest);
@@ -1515,7 +1515,7 @@ JXTA_DECLARE(Jxta_status) jxta_PG_sync_send(Jxta_PG * me, Jxta_message * msg, Jx
 }
 
 JXTA_DECLARE(Jxta_status) jxta_PG_async_send(Jxta_PG * me, Jxta_message * msg, Jxta_id * peer_id, 
-                                             const char *svc_name, const char *svc_param)
+                                             const char *svc_name, const char *svc_param, apr_int64_t *max_size)
 {
     Jxta_endpoint_service *ep;
     Jxta_status rv;
@@ -1525,7 +1525,13 @@ JXTA_DECLARE(Jxta_status) jxta_PG_async_send(Jxta_PG * me, Jxta_message * msg, J
     new_param = get_service_key(svc_name, svc_param);
     dest = jxta_endpoint_address_new_3(peer_id, me->ep_name, new_param);
     jxta_PG_get_endpoint_service(me, &ep);
-    rv = jxta_endpoint_service_send_ex(ep, msg, dest, JXTA_FALSE);
+    rv = jxta_endpoint_service_check_msg_length(ep, dest, msg, max_size);
+    if (JXTA_SUCCESS != rv) {
+        goto FINAL_EXIT;
+    }
+    rv = jxta_endpoint_service_send_ex(ep, msg, dest, JXTA_FALSE, max_size);
+
+FINAL_EXIT:
     free(new_param);
     JXTA_OBJECT_RELEASE(ep);
     JXTA_OBJECT_RELEASE(dest);
@@ -1534,7 +1540,7 @@ JXTA_DECLARE(Jxta_status) jxta_PG_async_send(Jxta_PG * me, Jxta_message * msg, J
 }
 
 JXTA_DECLARE(Jxta_status) jxta_PG_async_send_1(Jxta_PG * me, Jxta_endpoint_message * msg, Jxta_id * peer_id, 
-                                             const char *ep_variable, const char *svc_name, const char *svc_param)
+                                             const char *ep_variable, const char *svc_name, const char *svc_param, apr_int64_t *max_size)
 {
     Jxta_endpoint_service *ep;
     Jxta_status rv;
@@ -1550,9 +1556,37 @@ JXTA_DECLARE(Jxta_status) jxta_PG_async_send_1(Jxta_PG * me, Jxta_endpoint_messa
     new_param = get_service_key(svc_name, svc_param);
     dest = jxta_endpoint_address_new_3(peer_id, jstring_get_string(ep_name_j), new_param);
     jxta_PG_get_endpoint_service(me, &ep);
+    rv = jxta_endpoint_service_send_ep_msg_async(ep, msg, dest, max_size);
 
-    rv = jxta_endpoint_service_send_ep_msg_async(ep, msg, dest);
+FINAL_EXIT:
+    free(new_param);
+    JXTA_OBJECT_RELEASE(ep);
+    JXTA_OBJECT_RELEASE(dest);
+    JXTA_OBJECT_RELEASE(ep_name_j);
 
+    return rv;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_PG_sync_send_1(Jxta_PG * me, Jxta_endpoint_message * msg, Jxta_id * peer_id, 
+                                             const char *ep_variable, const char *svc_name, const char *svc_param, apr_int64_t *max_size)
+{
+    Jxta_endpoint_service *ep;
+    Jxta_status rv;
+    char *new_param;
+    Jxta_endpoint_address * dest;
+    JString *ep_name_j;
+
+    ep_name_j = jstring_new_2(ep_prefix);
+    jstring_append_2(ep_name_j, "%");
+    jstring_append_2(ep_name_j, ep_variable);
+    jstring_append_2(ep_name_j, "%");
+
+    new_param = get_service_key(svc_name, svc_param);
+    dest = jxta_endpoint_address_new_3(peer_id, jstring_get_string(ep_name_j), new_param);
+    jxta_PG_get_endpoint_service(me, &ep);
+    rv = jxta_endpoint_service_send_ep_msg_sync(ep, msg, dest, max_size);
+
+FINAL_EXIT:
     free(new_param);
     JXTA_OBJECT_RELEASE(ep);
     JXTA_OBJECT_RELEASE(dest);

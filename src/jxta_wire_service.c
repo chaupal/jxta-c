@@ -637,7 +637,7 @@ static Jxta_status notify_remote_listeners(Jxta_wire_service * me, const char *p
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "notify remote peer %s\n", jstring_get_string(peer_id_jstring));
 
         destAddr = jxta_endpoint_address_new_3(peer_id, WIRE_SERVICE_NAME, me->groupid);
-        if (JXTA_SUCCESS != jxta_endpoint_service_send(me->group, me->endpoint, msg, destAddr)) {
+        if (JXTA_SUCCESS != jxta_endpoint_service_send(me->group, me->endpoint, msg, destAddr, NULL)) {
             res = JXTA_UNREACHABLE_DEST;
         }
 

@@ -584,7 +584,7 @@ static Jxta_status messenger_route(Router_messenger * messenger, Jxta_message * 
             }
 
             if (new_addr != NULL) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Send msg to address %s://%s\n",
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Route to address %s://%s\n",
                                 jxta_endpoint_address_get_protocol_name(new_addr),
                                 jxta_endpoint_address_get_protocol_address(new_addr));
             } else {
@@ -645,15 +645,57 @@ static Jxta_status messenger_route(Router_messenger * messenger, Jxta_message * 
     return res;
 }
 
+static Jxta_status messenger_get_endpoint_messenger(Router_messenger *messenger, Jxta_endpoint_address *dest_addr, JxtaEndpointMessenger **endpoint_messenger)
+{
+    Jxta_status status=JXTA_SUCCESS;
+    char *caddress = NULL;
+    Jxta_transport *transport = NULL;
+    const char *transport_name;
+    Jxta_endpoint_address *addr = NULL;
+
+    caddress = jxta_endpoint_address_to_string(dest_addr);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Send destination %s\n", caddress);
+
+    apr_thread_mutex_lock(messenger->router->mutex);
+    if (FALSE == messenger->router->started) {
+        apr_thread_mutex_unlock(messenger->router->mutex);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Trying to get a messenger after router was stopped.\n");
+        goto FINAL_EXIT;
+    }
+    transport_name = jxta_endpoint_address_get_protocol_name(dest_addr);
+    transport = jxta_endpoint_service_lookup_transport(messenger->router->endpoint, transport_name);
+    apr_thread_mutex_unlock(messenger->router->mutex);
+    if (NULL == transport) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Could not obtain a transport for : %s\n", caddress);
+        goto FINAL_EXIT;
+    }
+
+    *endpoint_messenger = jxta_transport_messenger_get(transport, dest_addr);
+    if (NULL == *endpoint_messenger) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Could not obtain a messenger for : %s\n", caddress);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "obtained a messenger [%pp]\n", *endpoint_messenger);
+    }
+
+FINAL_EXIT:
+    if (caddress)
+        free(caddress);
+    if (addr)
+        JXTA_OBJECT_RELEASE(addr);
+    if (transport)
+        JXTA_OBJECT_RELEASE(transport);
+
+    return status;
+
+}
+
 static Jxta_status messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
 {
     Jxta_status status;
     Router_messenger *messenger = (Router_messenger *) m;
     JString *dest = NULL;
     Jxta_endpoint_address *dest_addr = NULL;
-    char *caddress = NULL;
-    Jxta_transport *transport = NULL;
-    const char *transport_name;
+    /* Jxta_transport *transport = NULL; */
     JxtaEndpointMessenger *endpoint_messenger = NULL;
     Jxta_endpoint_address *addr = NULL;
 
@@ -718,47 +760,21 @@ static Jxta_status messenger_send(JxtaEndpointMessenger * m, Jxta_message * msg)
         }
     }
 
-    caddress = jxta_endpoint_address_to_string(dest_addr);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Send destination %s\n", caddress);
-
-    apr_thread_mutex_lock(messenger->router->mutex);
-    if (FALSE == messenger->router->started) {
-        apr_thread_mutex_unlock(messenger->router->mutex);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Trying to send a message after router was stopped.\n");
-        free(caddress);
-        JXTA_OBJECT_RELEASE(dest_addr);
-        return JXTA_FAILED;
-    }
-    transport_name = jxta_endpoint_address_get_protocol_name(dest_addr);
-    transport = jxta_endpoint_service_lookup_transport(messenger->router->endpoint, transport_name);
-    apr_thread_mutex_unlock(messenger->router->mutex);
-
-    if (NULL == transport) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Could not obtain a transport for : %s\n", caddress);
-        free(caddress);
-        JXTA_OBJECT_RELEASE(dest_addr);
-        return JXTA_FAILED;
+    status = messenger_get_endpoint_messenger(messenger, dest_addr, &endpoint_messenger);
+    if (JXTA_FAILED == status || NULL == endpoint_messenger) {
+        goto FINAL_EXIT;
     }
 
-    endpoint_messenger = jxta_transport_messenger_get(transport, dest_addr);
-    if (NULL == endpoint_messenger) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Could not obtain a messenger for : %s\n", caddress);
-        free(caddress);
-        JXTA_OBJECT_RELEASE(dest_addr);
-        JXTA_OBJECT_RELEASE(transport);
-        return JXTA_FAILED;
-    }
-    free(caddress);
-    JXTA_OBJECT_RELEASE(dest_addr);
-
-    JXTA_OBJECT_CHECK_VALID(endpoint_messenger);
-    addr = jxta_transport_publicaddr_get(transport);
-    jxta_message_set_source(msg, addr);
+    /* jxta_message_set_source(msg, addr); */
     status = endpoint_messenger->jxta_send(endpoint_messenger, msg);
-    JXTA_OBJECT_RELEASE(endpoint_messenger);
-    JXTA_OBJECT_RELEASE(addr);
-    JXTA_OBJECT_RELEASE(transport);
 
+FINAL_EXIT:
+    if (dest_addr)
+        JXTA_OBJECT_RELEASE(dest_addr);
+    if (endpoint_messenger)
+        JXTA_OBJECT_RELEASE(endpoint_messenger);
+    if (addr)
+        JXTA_OBJECT_RELEASE(addr);
     return status;
 }
 
@@ -970,6 +986,46 @@ static Jxta_endpoint_address * demangle_ea(Jxta_router_client * me, Jxta_endpoin
 }
 #endif
 
+static Jxta_status messenger_get_msg_details(JxtaEndpointMessenger *messenger, Jxta_message *msg, apr_int64_t *size, float *compression)
+{
+    Jxta_status status=JXTA_SUCCESS;
+    Router_messenger *route_msgr=NULL;
+    JxtaEndpointMessenger *ep_msgr=NULL;
+    Jxta_endpoint_address *dest_addr=NULL;
+
+    route_msgr = (Router_messenger *) messenger;
+    if (route_msgr->peerid == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Direct pre-resolved route\n");
+        dest_addr = jxta_message_get_destination(msg);
+        if (dest_addr == NULL) {
+            goto FINAL_EXIT;
+        }
+    } else {
+        if (status != JXTA_SUCCESS) {
+            goto FINAL_EXIT;
+        }
+    }
+
+    if (JXTA_FAILED == status || NULL == ep_msgr) {
+        goto FINAL_EXIT;
+    }
+    ep_msgr = messenger;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Got messenger: [%pp] endpoint messenger [%pp]\n", messenger, ep_msgr);
+
+    if (NULL != ep_msgr->jxta_get_msg_details) {
+        ep_msgr->jxta_get_msg_details(ep_msgr, msg, size, compression);
+    }
+
+FINAL_EXIT:
+
+    if (ep_msgr)
+        JXTA_OBJECT_RELEASE(ep_msgr);
+    if (dest_addr)
+        JXTA_OBJECT_RELEASE(dest_addr);
+
+    return status;
+}
+
 static JxtaEndpointMessenger *messenger_get(Jxta_transport * t, Jxta_endpoint_address * dest)
 {
     Jxta_router_client *self = PTValid(t, Jxta_router_client);
@@ -992,6 +1048,7 @@ static JxtaEndpointMessenger *messenger_get(Jxta_transport * t, Jxta_endpoint_ad
 
     messenger->generic.address = JXTA_OBJECT_SHARE(dest);
     messenger->generic.jxta_send = messenger_send;
+    messenger->generic.jxta_get_msg_details = messenger_get_msg_details;
     messenger->peerid = get_peerid_from_endpoint_address(dest);
 
     /* FIXME 20040316 tra need to watch for physical transport addresses

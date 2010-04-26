@@ -100,6 +100,8 @@ struct _shell_startup_application {
     JxtaShellApplication *currentProcess;
 };
 
+static void flow_control();
+
 void ShellStartupApplication_delete(Jxta_object * app);
 
 /**

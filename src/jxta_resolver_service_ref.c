@@ -500,7 +500,7 @@ static Jxta_status unregisterResponseHandler(Jxta_resolver_service * resolver, J
 }
 
 static Jxta_status do_send(Jxta_resolver_service_ref * me, Jxta_id * peerid, JString * doc, const char *queue, 
-                           const Jxta_qos * qos)
+                           const Jxta_qos * qos, apr_int64_t *max_length)
 {
     Jxta_message *msg = NULL;
     Jxta_message_element *msgElem;
@@ -523,7 +523,6 @@ static Jxta_status do_send(Jxta_resolver_service_ref * me, Jxta_id * peerid, JSt
         free(tmp);
         return JXTA_NOMEM;
     }
-
     if (qos) {
         jxta_message_attach_qos(msg, qos);
     }
@@ -568,13 +567,24 @@ static Jxta_status do_send(Jxta_resolver_service_ref * me, Jxta_id * peerid, JSt
             status = JXTA_NOMEM;
             goto FINAL_EXIT;
         }
-        status = jxta_endpoint_service_send(me->group, me->endpoint, msg, address);
+        if (NULL != max_length) {
+            jxta_message_set_priority(msg, MSG_NORMAL_FLOW);
+            status = jxta_endpoint_service_check_msg_length(me->endpoint, address, msg, max_length);
+            if (JXTA_SUCCESS == status) {
+                status = jxta_endpoint_service_send_sync(me->group, me->endpoint, msg, address, max_length);
+            }
+        } else {
+            status = jxta_endpoint_service_send_async(me->group, me->endpoint, msg, address, max_length);
+        }
         if (status != JXTA_SUCCESS) {
             JString *peerid_j = NULL;
 
             jxta_id_to_jstring(peerid, &peerid_j);
-
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to send resolver message to %s status:%d\n", jstring_get_string(peerid_j), status);
+            if (JXTA_BUSY != status && JXTA_LENGTH_EXCEEDED != status) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING
+                            , "Failed to send resolver message to %s status:%d\n"
+                            , jstring_get_string(peerid_j), status);
+            }
             JXTA_OBJECT_RELEASE(peerid_j);
         }
         tmp = jxta_endpoint_address_to_string(address);
@@ -753,7 +763,7 @@ static Jxta_status sendQuery(Jxta_resolver_service * resolver, ResolverQuery * q
         jxta_service_default_qos((Jxta_service*) myself, NULL, &qos);
     }
 
-    status = do_send(myself, peerid, doc, myself->outque, qos);
+    status = do_send(myself, peerid, doc, myself->outque, qos, NULL);
     JXTA_OBJECT_RELEASE(doc);
     return status;
 }
@@ -762,7 +772,7 @@ static Jxta_status sendQuery(Jxta_resolver_service * resolver, ResolverQuery * q
    send query, and response will use 
  */
 
-static Jxta_status sendResponse(Jxta_resolver_service * resolver, ResolverResponse * response, Jxta_id * peerid)
+static Jxta_status sendResponse(Jxta_resolver_service * resolver, ResolverResponse * response, Jxta_id * peerid, apr_int64_t *max_length)
 {
     JString *doc;
     Jxta_status status;
@@ -779,12 +789,12 @@ static Jxta_status sendResponse(Jxta_resolver_service * resolver, ResolverRespon
         return status;
     }
 
-    status = do_send(self, peerid, doc, self->inque, jxta_resolver_response_qos(response));
+    status = do_send(self, peerid, doc, self->inque, jxta_resolver_response_qos(response), max_length);
     JXTA_OBJECT_RELEASE(doc);
     return status;
 }
 
-static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * message, Jxta_id * peerid, Jxta_boolean sync)
+static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * message, Jxta_id * peerid, Jxta_boolean sync, apr_int64_t *max_length)
 {
     Jxta_message *msg = NULL;
     Jxta_message_element *msgElem = NULL;
@@ -863,9 +873,9 @@ static Jxta_status sendSrdi(Jxta_resolver_service * resolver, ResolverSrdi * mes
             goto FINAL_EXIT;
         }
         if (!sync) {
-            status = jxta_endpoint_service_send(self->group, self->endpoint, msg, address);
+            status = jxta_endpoint_service_send(self->group, self->endpoint, msg, address, max_length);
         } else {
-            status = jxta_endpoint_service_send_async(self->group, self->endpoint, msg, address);
+            status = jxta_endpoint_service_send_async(self->group, self->endpoint, msg, address, max_length);
         }
         if (status != JXTA_SUCCESS) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to send srdi message\n");
@@ -1153,6 +1163,7 @@ static Jxta_status replace_rq_element(Jxta_resolver_service_ref *me, Jxta_messag
         return JXTA_FAILED;
     }
     JXTA_OBJECT_RELEASE(doc);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Remove element resolver [%pp] \n", me->outque);
 
     jxta_message_remove_element_2(msg, "jxta", me->outque);
     jxta_message_add_element(msg, el);

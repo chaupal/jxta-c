@@ -99,6 +99,7 @@ extern "C" {
 #define JXTA_NOT_CONFIGURED ((Jxta_status) (JXTA_START_ERROR + 11))
 #define JXTA_UNREACHABLE_DEST ((Jxta_status) (JXTA_START_ERROR + 12))
 #define JXTA_TTL_EXPIRED ((Jxta_status) (JXTA_START_ERROR + 13))
+#define JXTA_LENGTH_EXCEEDED ((Jxta_status) (JXTA_START_ERROR + 14))
 
 #ifdef __cplusplus
 #if 0

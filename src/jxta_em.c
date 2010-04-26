@@ -93,6 +93,8 @@ struct _jxta_endpoint_message {
     Jxta_endpoint_address *dst_peer_ea;
     Jxta_vector * options;
     Jxta_endpoint_msg_entry_element *curr_elem;
+    Msg_priority priority;
+    Jxta_time timestamp;
 };
 
 struct _jxta_endpoint_msg_entry_element {
@@ -225,6 +227,7 @@ static Jxta_endpoint_message *endpoint_msg_construct(Jxta_endpoint_message * mys
         myself->dst_peer_ea = NULL;
         myself->credential = NULL;
         myself->entries = jxta_vector_new(0);
+        myself->priority = MSG_EXPEDITED;
     }
 
     return myself;
@@ -291,7 +294,8 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_parse_file(Jxta_endpoint_message * m
     return res;
 }
 
-JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_get_xml(Jxta_endpoint_message * myself, Jxta_boolean encode, JString ** xml)
+JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_get_xml(Jxta_endpoint_message * myself
+                                    , Jxta_boolean encode, JString ** xml, Jxta_boolean with_entries)
 {
     Jxta_status res;
     JString *string;
@@ -335,7 +339,7 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_get_xml(Jxta_endpoint_message * myse
 
     jstring_append_2(string, ">\n ");
 
-    for (i=0; i< jxta_vector_size(myself->entries); i++) {
+    for (i=0; TRUE == with_entries && i< jxta_vector_size(myself->entries); i++) {
         Jxta_status status;
         Jxta_endpoint_msg_entry_element *entry;
         char **keys=NULL;
@@ -387,6 +391,7 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_get_xml(Jxta_endpoint_message * myse
         tmp_val_j = jstring_new_2(jxta_bytevector_content_ptr(bytes));
         if (encode) {
             jxta_xml_util_encode_jstring(tmp_val_j, &tmp_j);
+
             jstring_append_1(string, tmp_j);
         } else {
             jstring_append_1(string, tmp_val_j);
@@ -502,6 +507,27 @@ JXTA_DECLARE(void) jxta_endpoint_msg_set_credential(Jxta_endpoint_message * myse
     }
 }
 
+JXTA_DECLARE(void) jxta_endpoint_msg_set_priority(Jxta_endpoint_message *ep_msg, Msg_priority p)
+{
+    ep_msg->priority = p;
+}
+
+JXTA_DECLARE(Msg_priority) jxta_endpoint_msg_priority(Jxta_endpoint_message *ep_msg)
+{
+    return ep_msg->priority;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_set_timestamp(Jxta_endpoint_message *myself, Jxta_time timestamp)
+{
+    myself->timestamp = timestamp;
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_time) jxta_endpoint_msg_timestamp(Jxta_endpoint_message *myself)
+{
+    return myself->timestamp;
+}
+
 JXTA_DECLARE(Jxta_endpoint_msg_entry_element *) jxta_endpoint_message_entry_new()
 {
     Jxta_endpoint_msg_entry_element *myself = (Jxta_endpoint_msg_entry_element *) calloc(1, sizeof(Jxta_endpoint_msg_entry_element));
@@ -526,14 +552,13 @@ JXTA_DECLARE(void) jxta_endpoint_msg_entry_set_value(Jxta_endpoint_msg_entry_ele
     entry->mime = strdup(jxta_message_element_get_mime_type(value));
     entry->ns = strdup(jxta_message_element_get_namespace(value));
     entry->name = strdup(jxta_message_element_get_name(value));
-    entry->value = NULL != value ? JXTA_OBJECT_SHARE(value):NULL;
+    entry->value = (NULL != value) ? JXTA_OBJECT_SHARE(value):NULL;
 }
 
 JXTA_DECLARE(void) jxta_endpoint_msg_entry_get_value(Jxta_endpoint_msg_entry_element *entry, Jxta_message_element **value)
 {
     JXTA_OBJECT_CHECK_VALID(entry);
-
-    *value = NULL != entry->value ? JXTA_OBJECT_SHARE(entry->value):NULL;
+    *value = (NULL != entry->value) ? JXTA_OBJECT_SHARE(entry->value):NULL;
 }
 
 JXTA_DECLARE(void) jxta_endpoint_msg_entry_set_msg(Jxta_endpoint_msg_entry_element *entry, Jxta_message * msg)
@@ -569,6 +594,21 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_entry_add_attribute(Jxta_endpoint_ms
 
     if (att_value_j)
         JXTA_OBJECT_RELEASE(att_value_j);
+    return res;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_entry_get_attribute(Jxta_endpoint_msg_entry_element *entry, const char *attribute
+                                    , JString ** get_att_j)
+{
+    Jxta_status res;
+    JString * att_j;
+
+    if (JXTA_SUCCESS == jxta_hashtable_get(entry->attributes, attribute, strlen(attribute) + 1,  JXTA_OBJECT_PPTR(&att_j))) {
+        res = JXTA_ITEM_EXISTS;
+        *get_att_j = att_j;
+    } else {
+        res = JXTA_ITEM_NOTFOUND;
+    }
     return res;
 }
 

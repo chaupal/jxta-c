@@ -1136,7 +1136,7 @@ static Jxta_status outputpipe_send(Jxta_outputpipe * obj, Jxta_message * msg)
              jxta_endpoint_address_get_protocol_address(self->addr),
              jxta_endpoint_address_get_service_name(self->addr), jxta_endpoint_address_get_service_params(self->addr));
 
-    res = jxta_endpoint_service_send(self->pipe->unipipe_service->group, endpoint, msg, self->addr);
+    res = jxta_endpoint_service_send(self->pipe->unipipe_service->group, endpoint, msg, self->addr, NULL);
     JXTA_OBJECT_RELEASE(endpoint);
 
     return res;

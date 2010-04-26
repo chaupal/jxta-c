@@ -518,7 +518,6 @@ static Jpr_interval_time lifetime_get(Jpr_interval_time base, Jpr_interval_time 
 static void cm_prefix_split_type_and_check_wc(const char *pAdvType, char prefix[], const char **type, Jxta_boolean * wildcard,
                                               Jxta_boolean * wildCardPrefix);
 
-static JString ** tokenize_string_j(JString *string_j, char separator);
 
 void cm_sql_numeric_quote(JString * jDest, JString * jStr, Jxta_boolean isNumeric);
 
@@ -7639,44 +7638,6 @@ Jxta_status cm_update_delta_entries(Jxta_cm * self, JString *jPeerid, JString *j
     }
 
     return status;
-}
-
-static JString ** tokenize_string_j(JString *string_j, char separator)
-{
-    int str_length;
-    char *str_ptr = NULL;
-    char *str_ptr_save = NULL;
-    char *str_start = NULL;
-    JString **str_array = NULL;
-    JString **res;
-    int str_array_length = 0;
-
-    str_length = jstring_length(string_j);
-    str_ptr = calloc(str_length + 1, 1);
-    str_ptr_save = str_ptr;
-    memmove(str_ptr, jstring_get_string(string_j),str_length);
-    str_start = str_ptr;
-    if ('\0' != *str_ptr) {
-        str_array_length = 1;
-    }
-    while (*str_ptr != '\0') {
-        if (separator == *str_ptr) {
-            str_array_length++;
-            *str_ptr = '\0';
-        }
-        str_ptr++;
-    }
-
-    str_array = calloc(str_array_length + 1, sizeof(JString*));
-    res = str_array;
-    while (str_array_length--) {
-        *str_array = jstring_new_2(str_start);
-        str_start += jstring_length(*str_array) + 1;
-        str_array++;
-    }
-    free(str_ptr_save);
-    *str_array = NULL;
-    return res;
 }
 
 Jxta_status cm_update_delta_entry(Jxta_cm * self, JString * jPeerid, JString * jSourceid, JString * jHandler, Jxta_SRDIEntryElement * entry, Jxta_expiration_time next_update)

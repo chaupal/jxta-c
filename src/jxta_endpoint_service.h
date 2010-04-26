@@ -69,6 +69,8 @@
 #include "jxta_message.h"
 #include "jxta_routea.h"
 #include "jxta_pa.h"
+#include "jxta_traffic_shaping_priv.h"
+
 
 
 #ifdef __cplusplus
@@ -211,6 +213,9 @@ JXTA_DECLARE(void) jxta_endpoint_service_add_filter(Jxta_endpoint_service * serv
  */
 JXTA_DECLARE(void) jxta_endpoint_service_remove_filter(Jxta_endpoint_service * service, JxtaEndpointFilter filter);
 
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_check_msg_length(Jxta_endpoint_service * service
+                                            , Jxta_endpoint_address *addr, Jxta_message * msg, apr_int64_t *max_length);
+
 /*
  * Sends the given message to the given destination using the appropriate
  * transport according to the protocol name referenced by the given
@@ -224,11 +229,11 @@ JXTA_DECLARE(void) jxta_endpoint_service_remove_filter(Jxta_endpoint_service * s
  * @param dest_addr The destination of the message.
  * @return Jxta_status success or failed
  */
-JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ep_msg_sync(Jxta_endpoint_service * service, Jxta_endpoint_message * msg,
-                                                          Jxta_endpoint_address * dest_addr);
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ep_msg_sync(Jxta_endpoint_service *service
+                    , Jxta_endpoint_message * ep_msg, Jxta_endpoint_address * dest_addr, apr_int64_t *max_size);
 
-JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ep_msg_async(Jxta_endpoint_service * service, Jxta_endpoint_message * msg,
-                                                           Jxta_endpoint_address * dest_addr);
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ep_msg_async(Jxta_endpoint_service *service
+                    , Jxta_endpoint_message * ep_msg, Jxta_endpoint_address * dest_addr, apr_int64_t *max_size);
 
 #define jxta_endpoint_service_send jxta_endpoint_service_send_async
 
@@ -248,7 +253,7 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ep_msg_async(Jxta_endpoint_
  * @note: This version does not do peergroup mangling. Use jxta_PG_send instead.
  */
 JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ex(Jxta_endpoint_service * me, Jxta_message * msg,
-                                                        Jxta_endpoint_address * dest_addr, Jxta_boolean sync);
+                                                        Jxta_endpoint_address * dest_addr, Jxta_boolean sync, apr_int64_t *max_size);
 
 /*
  * Propagate the given message to the given service destination using 
@@ -267,27 +272,31 @@ JXTA_DECLARE(Jxta_status)
                                 Jxta_message * msg, const char *service_name, const char *service_parameter);
 
 /**
- * Send the endpoint message synchronously to the given destination. This call should be used when applications
- * want to consolidate messages within a single endpoint message.
+ * Send a JXTA message synchronously to the given destination.
  *
  * @param service Endpoint service object
- * @param ep_msg Enpoint message to send
- * @param 
+ * @param msg message to send
+ * @param dest_addr Destination address
  *
+ * @return status JXTA_SUCCESS if message sent successfully.
  * 
  */
-JXTA_DECLARE(Jxta_status) 
-jxta_endpoint_service_send_sync(Jxta_PG * pg, Jxta_endpoint_service * service
-                                                         , Jxta_message * ep_msg
-                                                         , Jxta_endpoint_address * dest_addr);
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_sync(Jxta_PG * obj, Jxta_endpoint_service * service
+                    , Jxta_message * msg, Jxta_endpoint_address * dest_addr, apr_int64_t *max_length);
 
-/*
+/**
+ * Send a JXTA message asynchronously to the given destination.
  *
+ * @param service Endpoint service object
+ * @param msg message to send
+ * @param dest_addr Destination address
+ *
+ * @return status JXTA_SUCCESS if message sent successfully.
+ * 
  */
-JXTA_DECLARE(Jxta_status) 
-jxta_endpoint_service_send_async(Jxta_PG * pg, Jxta_endpoint_service * service
-                                                         , Jxta_message * ep_msg
-                                                         , Jxta_endpoint_address * dest_addr);
+
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_async(Jxta_PG * obj, Jxta_endpoint_service * service
+                    ,Jxta_message * msg, Jxta_endpoint_address * dest_addr, apr_int64_t *max_length);
 /**
  ** Adds a listener to a specific service and parameters.
  **
@@ -406,6 +415,120 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_get_thread_pool(Jxta_endpoint_se
  ** @return Jxta_status
  **/
 JXTA_DECLARE(Jxta_status) jxta_endpoint_service_get_connection_peers(Jxta_endpoint_service * service, const char * protocol, const char * address, Jxta_vector **endpoints);
+
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_fc(Jxta_endpoint_service * me, Jxta_endpoint_address *ea
+                                , apr_int32_t num_bytes, Jxta_time time_period);
+/**
+ * Callback to provide an ordered vector of destination addresses that are used to determine priority of messages
+ *
+ * @param group - group object
+ * @param dest_eps Vector of destination peers.
+ * @param ordered_eps Order peers should be used.
+ *
+ * @return JXTA_SUCCESS If the dest_eps vector is valid.
+ **/
+typedef Jxta_status (JXTA_STDCALL * Jxta_endpoint_flow_list_func) (Jxta_PG *group, Jxta_vector const *dest_eps, Jxta_vector **ordered_eps);
+
+/**
+ * Set the callback function to order the list of destination addresses for flow control
+ *
+ * @param Jxta_endpoint_service * endpoint service
+ * @param group - group pointer
+ * @param Jxta_endpoint_flow_list_func - pointer to callback
+ *
+ **/
+JXTA_DECLARE(void) jxta_endpoint_service_set_flow_list_func(Jxta_endpoint_service * service, Jxta_PG *group, Jxta_endpoint_flow_list_func *func);
+
+/**
+ ** Get the flow control metrics for a destination - These are received from the peer.
+ **
+ ** @param Jxta_endpoint_service * endpoint service
+ ** @param group - group pointer
+ ** @param dest Jxta_endpoint_address of the peer requested. If NULL return the local peer's flow control metrics
+ ** @param fcs location to store a vector of flow control objects with the metrics of the endpoint requested.
+ **
+ ** @return JXTA_SUCCESS if found JXTA_ITEM_NOT_FOUND if no entry for the endpoint
+**/
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_get_rcv_flow_control(Jxta_endpoint_service * service, Jxta_PG *group, Jxta_endpoint_address *dest, Jxta_vector **fcs);
+
+/**
+ ** Get the endpoint metrics for all connected peers of a specific type - These are received from the peer
+ **
+ ** @param Jxta_endpoint_service service
+ ** @param group - group pointer
+ ** @param type the requested type
+ ** @param fcs location to store a Vector of Jxta_ep_flow_control objects of the type requested
+ **
+ ** @return JXTA_SUCCESS if found JXTA_ITEM_NOT_FOUND if no entries for the type.
+**/
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_get_rcv_flow_control_of_type(Jxta_endpoint_service * service, Jxta_PG * group, const char *type, Jxta_vector **fcs);
+
+/**
+ ** Get the transmit endpoint metrics of the local peer.
+ **
+ ** @param Jxta_endpoint_service service
+ ** @param group - group pointer
+ ** @param dest Jxta_endpoint_address of the peer requested. If NULL return the local peer's flow control metrics
+ ** @param fcs location to store a vector of flow control objects of the local peer's transmit endpoint connections
+ **
+**/
+JXTA_DECLARE(void) jxta_endpoint_service_get_xmit_flow_control(Jxta_endpoint_service *service, Jxta_PG * group, Jxta_endpoint_address *dest, Jxta_vector **fcs);
+
+/**
+ ** Get the transmit endpoint metrics of the local peer of msg type.
+ **
+ ** @param Jxta_endpoint_service service
+ ** @param group - group pointer
+ ** @param type Message types
+ ** @param fc location to store a vector of flow control objects of the local peer's transmit endpoint connections
+ **
+**/
+JXTA_DECLARE(void) jxta_endpoint_service_get_xmit_flow_control_of_type(Jxta_endpoint_service *service, Jxta_PG *group, const char *type, Jxta_vector **fcs);
+
+/** Endpoint flow control entry objects **/
+
+JXTA_DECLARE(Jxta_ep_flow_control *) jxta_ep_flow_control_new();
+
+/** 
+ * get/set the message type for this entry
+ *
+ * @param ep_fc flow control entry 
+ *               type values "Endpoint" "GenSRDI" "DiscoveryRequest" "DiscoveryResponse" "EndpointMessage"
+ **/
+JXTA_DECLARE(void) jxta_ep_fc_set_msg_type(Jxta_ep_flow_control *ep_fc, const char *type);
+JXTA_DECLARE(Jxta_status) jxta_ep_fc_get_msg_type(Jxta_ep_flow_control *ep_fc, char **msg_type);
+
+/** get/set the peer group for this entry - Flow control entries can be defined for any group **/
+JXTA_DECLARE(void) jxta_ep_fc_set_group(Jxta_ep_flow_control *ep_fc, Jxta_PG *group);
+JXTA_DECLARE(Jxta_status) jxta_ep_fc_get_group(Jxta_ep_flow_control *ep_fc, Jxta_PG **group);
+
+/** get/set the endpoint address for this entry - Only valid for direction inbound **/
+JXTA_DECLARE(void) jxta_ep_fc_set_ea(Jxta_ep_flow_control *ep_fc, Jxta_endpoint_address *ea);
+JXTA_DECLARE(Jxta_status) jxta_ep_fc_get_ea(Jxta_ep_flow_control *ep_fc, Jxta_endpoint_address **ea);
+
+/** get/set outbound TRUE or FALSE - Local peer **/
+JXTA_DECLARE(void) jxta_ep_fc_set_outbound(Jxta_ep_flow_control *ep_fc, Jxta_boolean);
+JXTA_DECLARE(Jxta_boolean) jxta_ep_fc_outbound(Jxta_ep_flow_control *ep_fc);
+
+/** get/set inbound TRUE or FALSE - Local peer **/
+JXTA_DECLARE(void) jxta_ep_fc_set_inbound(Jxta_ep_flow_control *ep_fc, Jxta_boolean inbound);
+JXTA_DECLARE(Jxta_boolean) jxta_ep_fc_inbound(Jxta_ep_flow_control *ep_fc);
+
+/** get/set the rate allowed within the rate window **/
+JXTA_DECLARE(Jxta_status) jxta_ep_fc_set_rate(Jxta_ep_flow_control *ep_fc, int rate);
+JXTA_DECLARE(int) jxta_ep_fc_rate(Jxta_ep_flow_control *ep_fc);
+
+/** get/set the size of the window for rate and burst rate **/
+JXTA_DECLARE(void) jxta_ep_fc_set_rate_window(Jxta_ep_flow_control *ep_fc, int window);
+JXTA_DECLARE(int) jxta_ep_fc_rate_window(Jxta_ep_flow_control *ep_fc);
+
+/** get/set the expected delay for a message of indicated size **/
+JXTA_DECLARE(void) jxta_ep_fc_set_expect_delay(Jxta_ep_flow_control *ep_fc, Jxta_time time);
+JXTA_DECLARE(Jxta_time) jxta_ep_fc_expect_delay(Jxta_ep_flow_control *ep_fc);
+
+/** get/set the message size available within the current window **/
+JXTA_DECLARE(void) jxta_ep_fc_set_msg_size(Jxta_ep_flow_control *ep_fc, apr_uint32_t size);
+JXTA_DECLARE(apr_uint32_t) jxta_ep_fc_msg_size(Jxta_ep_flow_control *ep_fc);
 
 #ifdef __cplusplus
 #if 0

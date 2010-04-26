@@ -124,6 +124,8 @@ struct _Jxta_message {
     } usr;
     const Jxta_qos * qos;
     apr_pool_t * pool;
+    Msg_priority priority;
+    Jxta_time timestamp;
 };
 
 typedef struct _Jxta_message Jxta_message_mutable;
@@ -188,6 +190,7 @@ static void jxta_message_delete(Jxta_object * ptr)
     Jxta_message_mutable *msg = (Jxta_message_mutable *) ptr;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Deleting message [%pp]\n", msg);
+
     JXTA_OBJECT_RELEASE(msg->usr.elements);
     msg->usr.elements = NULL;
     apr_pool_destroy(msg->pool);
@@ -253,7 +256,7 @@ JXTA_DECLARE(Jxta_message *) jxta_message_new(void)
     }
 
     msg->qos = NULL;
-
+    msg->priority = MSG_EXPEDITED;
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Created new message [%pp]\n", msg);
 
     return msg;
@@ -280,8 +283,19 @@ JXTA_DECLARE(Jxta_message *) jxta_message_clone(Jxta_message * old)
     } else {
         msg->qos = NULL;
     }
+    jxta_message_set_priority(msg, jxta_message_priority(old));
 
     return msg;
+}
+
+JXTA_DECLARE(void) jxta_message_set_timestamp(Jxta_message * me, Jxta_time time_stamp)
+{
+    me->timestamp = time_stamp;
+}
+
+JXTA_DECLARE(Jxta_time) jxta_message_timestamp(Jxta_message * me)
+{
+    return me->timestamp;
 }
 
 JXTA_DECLARE(Jxta_endpoint_address *) jxta_message_get_source(Jxta_message * msg)
@@ -443,6 +457,19 @@ JXTA_DECLARE(Jxta_status) jxta_message_set_destination(Jxta_message * msg, Jxta_
     el_value = NULL;
 
     return res;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_message_set_priority(Jxta_message * msg, Msg_priority priority)
+{
+    Jxta_status res=JXTA_SUCCESS;
+
+    msg->priority = priority;
+    return res;
+}
+
+JXTA_DECLARE(Msg_priority) jxta_message_priority(Jxta_message * msg)
+{
+    return msg->priority;
 }
 
 JXTA_DECLARE(Jxta_vector *) jxta_message_get_elements_of_namespace(Jxta_message * msg, char const *ns)

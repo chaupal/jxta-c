@@ -61,6 +61,7 @@ static const char *__log_cat = "RdvProvider";
 #include <assert.h>
 
 #include "jxta_log.h"
+#include "jxta_endpoint_service_priv.h"
 #include "jxta_peer_private.h"
 #include "jxta_peergroup.h"
 #include "jxta_lease_request_msg.h"
@@ -444,7 +445,7 @@ Jxta_status jxta_rdv_service_provider_prop_to_peers(Jxta_rdv_service_provider * 
                                                  jxta_endpoint_address_get_protocol_address(peer->address),
                                                  RDV_V3_MSID, JXTA_RDV_PROPAGATE_SERVICE_NAME, &destAddr);
                 if (JXTA_SUCCESS == res) {
-                    res = jxta_endpoint_service_send_ex(provider->service->endpoint, msg, destAddr, JXTA_FALSE);
+                    res = jxta_endpoint_service_send_ex(provider->service->endpoint, msg, destAddr, JXTA_FALSE, NULL);
                 }
 
                 if (res != JXTA_SUCCESS) {

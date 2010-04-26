@@ -425,6 +425,24 @@ JXTA_DECLARE(const char *) jxta_endpoint_address_get_service_params(Jxta_endpoin
     return a->service_params;
 }
 
+JXTA_DECLARE(Jxta_status) jxta_endpoint_address_get_peerid(Jxta_endpoint_address * a, Jxta_id ** peerid)
+{
+    Jxta_status res;
+    JString *peerid_j=NULL;
+
+    *peerid = NULL;
+    peerid_j = jstring_new_2("urn:jxta:");
+    jstring_append_2(peerid_j, a->protocol_address);
+
+    res = jxta_id_from_jstring(peerid, peerid_j);
+    if (JXTA_SUCCESS != res) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Unable to create peerid from %s\n", jstring_get_string(peerid_j));
+    }
+    if (peerid_j)
+        JXTA_OBJECT_RELEASE(peerid_j);
+    return res;
+}
+
 static Jxta_boolean string_compare(char const *v1, char const *v2)
 {
     if (v1 == v2) {
@@ -485,6 +503,7 @@ static char *replace_str(const char *str, const char *orig, const char *rep)
     }
     /* Copy characters from 'str' start to 'orig' str */
     strncpy(buffer, str, p-str);
+
     buffer[p-str] = '\0';
 
     sprintf(buffer+(p-str), "%s%s", rep, p+strlen(orig));
@@ -528,7 +547,9 @@ JXTA_DECLARE(void) jxta_endpoint_address_replace_variables(Jxta_endpoint_address
             free(addr_string);
             addr_string = NULL;
         }
+
         addr_string = new_str;
+
         free(*(keys++));
         JXTA_OBJECT_RELEASE(elem_attribute_j);
         JXTA_OBJECT_RELEASE(elem_att_value_j);
