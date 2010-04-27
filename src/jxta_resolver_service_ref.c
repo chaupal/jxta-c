@@ -586,11 +586,12 @@ static Jxta_status do_send(Jxta_resolver_service_ref * me, Jxta_id * peerid, JSt
                             , jstring_get_string(peerid_j), status);
             }
             JXTA_OBJECT_RELEASE(peerid_j);
-        }
-        tmp = jxta_endpoint_address_to_string(address);
-        if (tmp) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Resolver message sent to %s\n", tmp);
-            free(tmp);
+        } else {
+            tmp = jxta_endpoint_address_to_string(address);
+            if (tmp) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Resolver message sent to %s\n", tmp);
+                free(tmp);
+            }
         }
         JXTA_OBJECT_RELEASE(address);
     }
