@@ -1696,13 +1696,11 @@ static Jxta_status find_seq_numbers_and_remove(Jxta_vector *queued_entries, Jxta
                 Jxta_endpoint_msg_entry_element *ep_elem=NULL;
                 Jxta_message_element *msg_el=NULL;
                 JString *ep_msg_entry_j=NULL;
-                Jxta_bytevector *b_element;
 
                 jxta_vector_get_object_at(ep_entries_v, JXTA_OBJECT_PPTR(&ep_elem), j);
                 jxta_endpoint_msg_entry_get_value(ep_elem, &msg_el);
                 /* jxta_endpoint_msg_entry_get_attribute(ep_elem, "groupid", &groupid_j); */
 
-                b_element = jxta_message_element_get_value(msg_el);
                 get_element_bytes(msg_el, &ep_msg_entry_j);
                 new_srdi_msg = jxta_srdi_message_new();
 
@@ -1939,7 +1937,6 @@ static Jxta_status split_endpoint_message(Jxta_srdi_service_ref *self, Jxta_endp
         JString *ep_msg_entry_j=NULL;
         Jxta_vector *msgs=NULL;
         int j;
-        Jxta_bytevector *b_element=NULL;
         JString *groupid_j=NULL;
 
         if (JXTA_SUCCESS != jxta_vector_get_object_at(entries, JXTA_OBJECT_PPTR(&elem), i)) {
@@ -1950,9 +1947,7 @@ static Jxta_status split_endpoint_message(Jxta_srdi_service_ref *self, Jxta_endp
         jxta_endpoint_msg_entry_get_value(elem, &el);
         jxta_endpoint_msg_entry_get_attribute(elem, "groupid", &groupid_j);
 
-        b_element = jxta_message_element_get_value(el);
         get_element_bytes(el, &ep_msg_entry_j);
-        /* ep_msg_entry_j = jstring_new_3(b_element); */
 
         srdi_msg = jxta_srdi_message_new();
 
@@ -1967,14 +1962,14 @@ static Jxta_status split_endpoint_message(Jxta_srdi_service_ref *self, Jxta_endp
         for (j=0; j<jxta_vector_size(new_msgs); j++) {
             Jxta_endpoint_msg_entry_element *ep_element=NULL;
             Jxta_message_element *msg_elem=NULL;
-            Jxta_SRDIMessage *srdi_msg=NULL;
+            Jxta_SRDIMessage *new_srdi_msg=NULL;
             JString  *srdi_msg_xml=NULL;
             JString *el_name=NULL;
 
-            jxta_vector_get_object_at(new_msgs, JXTA_OBJECT_PPTR(&srdi_msg), j);
+            jxta_vector_get_object_at(new_msgs, JXTA_OBJECT_PPTR(&new_srdi_msg), j);
  
             ep_element = jxta_endpoint_message_entry_new();
-            jxta_advertisement_get_xml((Jxta_advertisement *) srdi_msg, &srdi_msg_xml);
+            jxta_advertisement_get_xml((Jxta_advertisement *) new_srdi_msg, &srdi_msg_xml);
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "New SRDI msg length:%d\n"
                                 , jstring_length(srdi_msg_xml));
 
@@ -2003,7 +1998,7 @@ static Jxta_status split_endpoint_message(Jxta_srdi_service_ref *self, Jxta_endp
             JXTA_OBJECT_RELEASE(msg_elem);
             JXTA_OBJECT_RELEASE(ep_element);
             JXTA_OBJECT_RELEASE(el_name);
-            JXTA_OBJECT_RELEASE(srdi_msg);
+            JXTA_OBJECT_RELEASE(new_srdi_msg);
             JXTA_OBJECT_RELEASE(srdi_msg_xml);
         }
 
@@ -2012,7 +2007,6 @@ static Jxta_status split_endpoint_message(Jxta_srdi_service_ref *self, Jxta_endp
         JXTA_OBJECT_RELEASE(el);
         JXTA_OBJECT_RELEASE(ep_msg_entry_j);
         JXTA_OBJECT_RELEASE(msgs);
-        JXTA_OBJECT_RELEASE(b_element);
         JXTA_OBJECT_RELEASE(groupid_j);
     }
 #ifdef GZIP_ENABLED

@@ -2441,8 +2441,8 @@ static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString
     for (i = 0; i < jxta_vector_size(responses); i++) {
         Jxta_DiscoveryResponseElement *rsp_element=NULL;
         Jxta_DiscoveryResponse *dr_new=NULL;
-        JString *tmp_j=NULL;
         JString *tmp_j_1=NULL;
+        tmp_j=NULL;
 
         res = jxta_vector_get_object_at(responses, JXTA_OBJECT_PPTR(&rsp_element), i);
 
