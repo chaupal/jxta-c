@@ -2367,7 +2367,7 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
             }
             if (new_responses)
                 JXTA_OBJECT_RELEASE(new_responses);
-        } else if (JXTA_LENGTH_EXCEEDED) {
+        } else if (JXTA_LENGTH_EXCEEDED == res) {
             break_it = TRUE;
         } else if (JXTA_BUSY == res) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "rsp [%pp] busy\n", res_response);
@@ -2409,7 +2409,7 @@ static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString
 {
     Jxta_status res=JXTA_SUCCESS;
     Jxta_DiscoveryResponse *dr_tmp=NULL;
-    apr_int32_t total_length=0;
+    apr_int64_t total_length=0;
     Jxta_vector *all_entries;
     Jxta_vector *elem_v;
     Jxta_vector *responses=NULL;
