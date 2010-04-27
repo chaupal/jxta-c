@@ -559,7 +559,7 @@ static Jxta_boolean check_buckets(Jxta_time now, Frame *f, apr_int64_t size)
     return enough;
 }
 
-static void update_bucket_bytes(Jxta_time now, Frame *f, apr_int32_t size)
+static void update_bucket_bytes(Jxta_time now, Frame *f, apr_int64_t size)
 {
     int i=0;
     apr_int64_t div_size=0;
@@ -580,7 +580,7 @@ static void update_bucket_bytes(Jxta_time now, Frame *f, apr_int32_t size)
 #endif
         if (b->bytes_available >= working_size && 0 == div_size) {
             b->bytes_available -= working_size;
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Update wid:%d bid:%d %ld minus %ld\n", f->id, b->id, b->bytes_available, working_size);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Update wid:%d bid:%d %" APR_INT64_T_FMT " minus %" APR_INT64_T_FMT "\n", f->id, b->id, b->bytes_available, working_size);
             break;
         } else {
             if (0 == div_size) {
@@ -634,7 +634,7 @@ static void update_look_ahead_bytes(Look_ahead *l, Jxta_time now, apr_int64_t si
                 , l->bytes_available, l->end - now);
 }
 
-static Jxta_boolean check_active_frames(Jxta_traffic_shaping *traffic, Jxta_time now, apr_int32_t size)
+static Jxta_boolean check_active_frames(Jxta_traffic_shaping *traffic, Jxta_time now, apr_int64_t size)
 {
     Jxta_boolean enough=FALSE;
     int i=0;
@@ -696,7 +696,7 @@ Jxta_status traffic_shaping_check_max(Jxta_traffic_shaping *ts, apr_int64_t leng
         res = JXTA_LENGTH_EXCEEDED;
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG
-                            , "length:%d compressed_size:%f expand factor: %f max:%" APR_INT64_T_FMT "\n"
+                            , "length:%" APR_INT64_T_FMT "compressed_size:%f expand factor: %f max:%" APR_INT64_T_FMT "\n"
                             , length, compressed_size, expand_factor, *max);
     }
 
@@ -710,7 +710,7 @@ Jxta_boolean traffic_shaping_check_size(Jxta_traffic_shaping *traffic, apr_int64
 
     now = jpr_time_now();
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Check message size:%ld *****\n", size);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Check message size:%" APR_INT64_T_FMT "*****\n", size);
 
     enough = check_active_frames(traffic, now, size);
     if (enough) {
