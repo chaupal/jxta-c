@@ -1275,17 +1275,6 @@ JXTA_DECLARE(void) jxta_endpoint_service_demux_addr(Jxta_endpoint_service * serv
 
     apr_thread_mutex_unlock(endpoint_service->demux_mutex);
 
-
-
-    Jxta_endpoint_address *ea;
-    JxtaEndpointMessenger *msgr;
-
-    ea = jxta_message_get_source(msg);
-    if (NULL != ea) {
-        get_messenger(endpoint_service, ea, FALSE, &msgr);
-        JXTA_OBJECT_RELEASE(ea);
-    }
-
     destStr = jxta_endpoint_address_to_string(dest);
 
     if (endpoint_service_demux(endpoint_service, jxta_endpoint_address_get_service_name(dest),
@@ -2165,6 +2154,16 @@ static Jxta_status get_messenger(Jxta_endpoint_service * me, Jxta_endpoint_addre
     res = endpoint_messenger_get(me, dest, msgr);
     if (JXTA_ITEM_NOTFOUND == res) {
         *msgr = NULL;
+        
+        if (me->router_transport == NULL) {
+            me->router_transport = jxta_endpoint_service_lookup_transport(me, "jxta");
+            if (me->router_transport == NULL) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING,
+                                FILEANDLINE "Router transport not available.\n");
+                return JXTA_BUSY;
+            }
+        }
+
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "No existing messenger dest [%pp] - try router\n", dest);
         *msgr = jxta_transport_messenger_get(me->router_transport, dest);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Returned dest:[%pp] msgr:[%pp] - after try router\n"
