@@ -95,7 +95,7 @@ struct _traffic {
     JXTA_OBJECT_HANDLE;
     int id;
     Jxta_time time;
-    int rate;
+    apr_int64_t rate;
     apr_int64_t size;
     int interval;
     int frame;
@@ -121,7 +121,7 @@ struct _frame {
     int id;
     apr_int64_t size;
     int interval;
-    int rate;
+    apr_int64_t rate;
     apr_int64_t bytes_available;
     apr_int64_t bytes_reserve;
     Jxta_time start;
@@ -145,7 +145,7 @@ struct _bucket {
 struct _look_ahead {
     int id;
     apr_int64_t bytes_available;
-    int rate;
+    apr_int64_t rate;
     apr_int64_t max;
     apr_int64_t bytes;
     apr_int64_t reserve;
@@ -266,7 +266,7 @@ static void print_frame_info(JString *s, Jxta_time now, Frame *f, Jxta_boolean d
 }
 
 
-static Frame *init_frame(Jxta_time now, int p_interval, apr_int32_t p_rate, int reserve, Jxta_time start, int num_buckets, Jxta_boolean add_buckets, Look_ahead *l)
+static Frame *init_frame(Jxta_time now, int p_interval, apr_int64_t p_rate, int reserve, Jxta_time start, int num_buckets, Jxta_boolean add_buckets, Look_ahead *l)
 {
     Frame *f;
     ;
@@ -692,7 +692,7 @@ Jxta_status traffic_shaping_check_max(Jxta_traffic_shaping *ts, apr_int64_t leng
     *compressed = compressed_size;
     if (compressed_size > ts->max_bytes) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG
-            , "Length:%ld compressed:%f exceeded max bytes:%" APR_INT64_T_FMT " ts->max:%" APR_INT64_T_FMT "\n", length, compressed_size, *max, ts->max_bytes);
+            , "Length:%" APR_INT64_T_FMT " compressed:%f exceeded max bytes:%" APR_INT64_T_FMT " ts->max:%" APR_INT64_T_FMT "\n", length, compressed_size, *max, ts->max_bytes);
         res = JXTA_LENGTH_EXCEEDED;
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG
@@ -756,7 +756,7 @@ JXTA_DECLARE(void traffic_shaping_update(Jxta_traffic_shaping *traffic, apr_int6
     adjust_frames(now, traffic->active_frames);
 }
 
-static Look_ahead * init_look_ahead(Jxta_time now, apr_int32_t add, apr_int32_t fc_rate, Jxta_time fc_look_ahead, float fc_reserve)
+static Look_ahead * init_look_ahead(Jxta_time now, apr_int64_t add, apr_int64_t fc_rate, Jxta_time fc_look_ahead, float fc_reserve)
 {
     Look_ahead *l;
 
@@ -838,7 +838,7 @@ void traffic_shaping_init(Jxta_traffic_shaping *t)
     Jxta_time now;
     Look_ahead *l;
 
-    t->rate = t->size / (t->time);
+    t->rate = t->size / ((apr_int64_t) t->time);
     t->bytes_frame = t->rate * t->frame;
     t->bytes_frame_reserve = t->bytes_frame * (t->reserve/100);
     t->bytes_frame_normal = t->bytes_frame - t->bytes_frame_reserve;
@@ -884,7 +884,7 @@ void traffic_shaping_init(Jxta_traffic_shaping *t)
     for (i=0; i < num_active_frames; i++) {
         Frame *act_ptr;
 
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "fc_size:%" APR_INT64_T_FMT " interval:%d rate:%ld\n", t->size, t->interval, t->rate);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "fc_size:%" APR_INT64_T_FMT " interval:%d rate:%" APR_INT64_T_FMT "\n", t->size, t->interval, t->rate);
         act_ptr = init_frame(now, t->interval,  t->rate, t->reserve, start, num_active_frames, TRUE, l);
         init = FALSE;
         start += (t->interval * 1000);
