@@ -5691,7 +5691,6 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
             /* must unlock mutex while calling rdv_service functions that lock rdv mutex */
             apr_thread_mutex_unlock(me->mutex);
             rdv_service_switch_config(me->rdv, config_rendezvous);
-            initiate_maintain_thread(me);
             apr_thread_mutex_lock(me->mutex);
             if (me->self_pve) {
                 jxta_peer_set_expires((Jxta_peer *) me->self_pve, 0);
@@ -7807,7 +7806,6 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
             is_rdv = jxta_rdv_service_is_rendezvous(rdv);
             JXTA_OBJECT_RELEASE(rdv);
             if (!is_rdv) {
-                /* terminate_maintain_thread(); */
                 JXTA_OBJECT_RELEASE(pv);
                 continue;
             }
@@ -8855,10 +8853,8 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
                                      APR_THREAD_TASK_PRIORITY_HIGH, me);
             }
             peerview_has_changed(me);
-            terminate_maintain_thread();
             apr_thread_mutex_unlock(me->mutex);
         } else if (config_rendezvous == new_config) {
-            initiate_maintain_thread(me);
             rdv_service_switch_config(rdv, new_config);
         }
         me->iterations_since_switch = 0;
