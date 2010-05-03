@@ -196,7 +196,7 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendResponse(Jxta_resolver_servi
  * @param addr  Peer address (unicast) , or NULL (propagate)
  * @param sync If TRUE send the message asynchronously
  */
-JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendSrdi(Jxta_resolver_service * service, ResolverSrdi * message, Jxta_id * peerid, Jxta_boolean sync)
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendSrdi(Jxta_resolver_service * service, ResolverSrdi * message, Jxta_id * peerid, Jxta_boolean sync, apr_int64_t *max_length)
 {
     Jxta_resolver_service* resolver_service = PTValid(service, Jxta_resolver_service);
     return VTBL->sendSrdi(resolver_service, message, peerid, sync);

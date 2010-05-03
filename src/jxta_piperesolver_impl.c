@@ -300,7 +300,7 @@ static Jxta_status send_srdi(Jxta_pipe_resolver * me, Jxta_pipe_adv * adv, Jxta_
             return JXTA_NOMEM;
         }
 
-        res = jxta_resolver_service_sendSrdi(me2->resolver, srdi, peerid, FALSE);
+        res = jxta_resolver_service_sendSrdi(me2->resolver, srdi, peerid, FALSE, NULL);
         if (res != JXTA_SUCCESS) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Cannot send srdi message\n");
         }

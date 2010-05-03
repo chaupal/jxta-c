@@ -248,7 +248,7 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendResponse(Jxta_resolver_servi
  * @see Jxta_status
  */
 JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendSrdi(Jxta_resolver_service * service, ResolverSrdi * message,
-                                                         Jxta_id * peerid, Jxta_boolean sync);
+                                                         Jxta_id * peerid, Jxta_boolean sync, apr_int64_t *max_length);
 
 #ifdef __cplusplus
 #if 0
