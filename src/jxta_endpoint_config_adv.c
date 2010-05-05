@@ -360,15 +360,15 @@ JXTA_DECLARE(Jxta_status) jxta_EndPointConfigAdvertisement_get_xml(Jxta_EndPoint
     jstring_append_2(string, "/>\n");
 
     if (-1 == traffic_shaping_time(me->ts)) {
-        traffic_shaping_set_time(me->ts, 2000);
+        traffic_shaping_set_time(me->ts, 60);
     }
 
     if (-1 == traffic_shaping_size(me->ts)) {
-        traffic_shaping_set_size(me->ts, 30000);
+        traffic_shaping_set_size(me->ts, 600000);
     }
 
     if (-1 == traffic_shaping_interval(me->ts)) {
-        traffic_shaping_set_interval(me->ts, 2);
+        traffic_shaping_set_interval(me->ts, 1);
     }
 
     if (-1 == traffic_shaping_frame(me->ts)) {
@@ -380,7 +380,7 @@ JXTA_DECLARE(Jxta_status) jxta_EndPointConfigAdvertisement_get_xml(Jxta_EndPoint
     }
 
     if (-1 == traffic_shaping_reserve(me->ts)) {
-        traffic_shaping_set_reserve(me->ts, 15);
+        traffic_shaping_set_reserve(me->ts, 10);
     }
 
     if (-1 == traffic_shaping_max_option(me->ts)) {

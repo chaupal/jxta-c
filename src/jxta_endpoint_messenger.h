@@ -62,6 +62,7 @@
 #include "jxta_object.h"
 #include "jxta_message.h"
 #include "jxta_traffic_shaping_priv.h"
+#include "jxta_endpoint_config_adv.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -76,14 +77,15 @@ struct _JxtaEndpointMessenger {
     JXTA_OBJECT_HANDLE;
     Jxta_endpoint_address *address;
 
-    Jxta_traffic_shaping *ts;
     int header_size;
     Jxta_status(*jxta_send) (JxtaEndpointMessenger *, Jxta_message *);
-
     Jxta_status(*jxta_get_msg_details) (JxtaEndpointMessenger *, Jxta_message *, apr_int64_t *size, float *compression);
     int (*jxta_header_size) (JxtaEndpointMessenger *);
-    Jxta_time fc_time_period;
-    apr_int32_t fc_num_bytes;
+    /* Jxta_ep_flow_control *ep_fc; */
+    Jxta_traffic_shaping *ts;
+    int fc_frame_seconds;
+    apr_int64_t fc_num_bytes;
+    int fc_msgs_sent;
 };
 
 

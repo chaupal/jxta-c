@@ -291,11 +291,10 @@ static Frame *init_frame(Jxta_time now, int p_interval, apr_int64_t p_rate, int 
     f->id = ++frame_id;
     f->reserve_pct = reserve;
     f->look_ahead = l;
-/* #ifdef P_DEBUG */
-    /* jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "id:%d interval:%d rate:%d buckets:%d Start " JPR_DIFF_TIME_FMT " End:" JPR_DIFF_TIME_FMT "\n"
+#ifdef P_DEBUG
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "id:%d interval:%d rate:%ld buckets:%d Start " JPR_DIFF_TIME_FMT " End:" JPR_DIFF_TIME_FMT "\n"
                         , f->id, f->interval, f->rate, num_buckets, (start - now), (f->end - now) );
-*/
-/* #endif */
+#endif
     if (add_buckets) {
         int i;
         apr_int64_t bucket_bytes;
@@ -696,7 +695,7 @@ Jxta_status traffic_shaping_check_max(Jxta_traffic_shaping *ts, apr_int64_t leng
         res = JXTA_LENGTH_EXCEEDED;
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG
-                            , "length:%" APR_INT64_T_FMT "compressed_size:%f expand factor: %f max:%" APR_INT64_T_FMT "\n"
+                            , "length:%" APR_INT64_T_FMT " compressed_size:%f expand factor: %f max:%" APR_INT64_T_FMT "\n"
                             , length, compressed_size, expand_factor, *max);
     }
 
@@ -710,18 +709,18 @@ Jxta_boolean traffic_shaping_check_size(Jxta_traffic_shaping *traffic, apr_int64
 
     now = jpr_time_now();
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Check message size:%" APR_INT64_T_FMT "*****\n", size);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Check message size:%" APR_INT64_T_FMT "*****\n", size);
 
     enough = check_active_frames(traffic, now, size);
     if (enough) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "*Have enough to send the message\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "*Have enough to send the message\n");
         *look_ahead_update = FALSE;
         if (update) {
             update_frame_bytes(traffic, now, size);
         }
 
     } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG
                         , "Don't have enough to send the message check look ahead with %" APR_INT64_T_FMT " bytes\n"
                         , traffic->la_ptr->bytes_available);
         if (size < traffic->la_ptr->bytes_available) {
@@ -748,11 +747,15 @@ JXTA_DECLARE(void traffic_shaping_update(Jxta_traffic_shaping *traffic, apr_int6
 
     now = jpr_time_now();
 
+
     if (look_ahead_update) {
         traffic->la_ptr->bytes_available -= size;
     } else {
         update_frame_bytes(traffic, now , size);
     }
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Updated %s to %" APR_INT64_T_FMT "\n"
+                                , look_ahead_update ? "look_ahead":"frame"
+                                , look_ahead_update ? traffic->la_ptr->bytes_available:0);
     adjust_frames(now, traffic->active_frames);
 }
 

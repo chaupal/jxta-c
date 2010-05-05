@@ -411,13 +411,13 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_get_thread_pool(Jxta_endpoint_se
  ** @param const char * protocol - protocol of the connection
  ** @param const char * address - address of the connection
  ** @param Jxta_vector ** endpoints - location to store a vector of peerids for the connection
+ ** @param int *pointer to store the number of unique entries
  ** 
  ** @return Jxta_status
  **/
-JXTA_DECLARE(Jxta_status) jxta_endpoint_service_get_connection_peers(Jxta_endpoint_service * service, const char * protocol, const char * address, Jxta_vector **endpoints);
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_get_connection_peers(Jxta_endpoint_service * service, const char * protocol, const char * address, Jxta_vector **endpoints, int *unique);
 
-JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_fc(Jxta_endpoint_service * me, Jxta_endpoint_address *ea
-                                , apr_int32_t num_bytes, Jxta_time time_period);
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_fc(Jxta_endpoint_service * me, Jxta_endpoint_address *ea, Jxta_boolean normal);
 /**
  * Callback to provide an ordered vector of destination addresses that are used to determine priority of messages
  *
@@ -489,12 +489,18 @@ JXTA_DECLARE(void) jxta_endpoint_service_get_xmit_flow_control_of_type(Jxta_endp
 
 JXTA_DECLARE(Jxta_ep_flow_control *) jxta_ep_flow_control_new();
 
+
 /** 
  * get/set the message type for this entry
  *
  * @param ep_fc flow control entry 
  *               type values "Endpoint" "GenSRDI" "DiscoveryRequest" "DiscoveryResponse" "EndpointMessage"
  **/
+
+/** get/set the traffic shaping object set by the remote peer **/
+JXTA_DECLARE(Jxta_status) jxta_ep_fc_set_traffic_shaping(Jxta_ep_flow_control *ep_fc, Jxta_traffic_shaping *ts);
+JXTA_DECLARE(Jxta_status) jxta_ep_fc_get_traffic_shaping(Jxta_ep_flow_control *ep_fc, Jxta_traffic_shaping **ts);
+
 JXTA_DECLARE(void) jxta_ep_fc_set_msg_type(Jxta_ep_flow_control *ep_fc, const char *type);
 JXTA_DECLARE(Jxta_status) jxta_ep_fc_get_msg_type(Jxta_ep_flow_control *ep_fc, char **msg_type);
 
@@ -515,8 +521,8 @@ JXTA_DECLARE(void) jxta_ep_fc_set_inbound(Jxta_ep_flow_control *ep_fc, Jxta_bool
 JXTA_DECLARE(Jxta_boolean) jxta_ep_fc_inbound(Jxta_ep_flow_control *ep_fc);
 
 /** get/set the rate allowed within the rate window **/
-JXTA_DECLARE(Jxta_status) jxta_ep_fc_set_rate(Jxta_ep_flow_control *ep_fc, int rate);
-JXTA_DECLARE(int) jxta_ep_fc_rate(Jxta_ep_flow_control *ep_fc);
+JXTA_DECLARE(Jxta_status) jxta_ep_fc_set_rate(Jxta_ep_flow_control *ep_fc, apr_int32_t rate);
+JXTA_DECLARE(apr_int32_t) jxta_ep_fc_rate(Jxta_ep_flow_control *ep_fc);
 
 /** get/set the size of the window for rate and burst rate **/
 JXTA_DECLARE(void) jxta_ep_fc_set_rate_window(Jxta_ep_flow_control *ep_fc, int window);
@@ -527,8 +533,12 @@ JXTA_DECLARE(void) jxta_ep_fc_set_expect_delay(Jxta_ep_flow_control *ep_fc, Jxta
 JXTA_DECLARE(Jxta_time) jxta_ep_fc_expect_delay(Jxta_ep_flow_control *ep_fc);
 
 /** get/set the message size available within the current window **/
-JXTA_DECLARE(void) jxta_ep_fc_set_msg_size(Jxta_ep_flow_control *ep_fc, apr_uint32_t size);
-JXTA_DECLARE(apr_uint32_t) jxta_ep_fc_msg_size(Jxta_ep_flow_control *ep_fc);
+JXTA_DECLARE(void) jxta_ep_fc_set_msg_size(Jxta_ep_flow_control *ep_fc, apr_int64_t size);
+JXTA_DECLARE(apr_int64_t) jxta_ep_fc_msg_size(Jxta_ep_flow_control *ep_fc);
+
+/** get/set the reserve percentage for the bytes available **/
+JXTA_DECLARE(void) jxta_ep_fc_set_reserve(Jxta_ep_flow_control *ep_fc, int reserve);
+JXTA_DECLARE(int) jxta_ep_fc_reserve(Jxta_ep_flow_control *ep_fc);
 
 #ifdef __cplusplus
 #if 0

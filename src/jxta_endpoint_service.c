@@ -122,8 +122,8 @@ typedef struct tc_elt {
 
 typedef struct peer_route_elt {
     char * ta;
-    JxtaEndpointMessenger * msgr;
     Jxta_ep_flow_control *ep_fc;
+    JxtaEndpointMessenger * msgr;
 } Peer_route_elt;
 
 struct jxta_endpoint_service {
@@ -168,7 +168,6 @@ struct jxta_endpoint_service {
     apr_pool_t *mypool;
     apr_thread_pool_t *thd_pool;
 
-    Jxta_ep_flow_control *ep_fc;
     Jxta_traffic_shaping *ts;
 };
 
@@ -176,13 +175,14 @@ struct _jxta_ep_flow_control {
     JXTA_OBJECT_HANDLE;
     Jxta_PG *group;
     Jxta_endpoint_address *ea;
+    Jxta_traffic_shaping *ts;
     char *msg_type;
     Jxta_boolean inbound;
     Jxta_boolean outbound;
     int rate;
     int rate_window;
     Jxta_time expect_delay;
-    apr_uint32_t msg_size;
+    apr_int64_t msg_size;
 };
 
 static Jxta_listener *lookup_listener(Jxta_endpoint_service * me, Jxta_endpoint_address * addr);
@@ -533,9 +533,17 @@ static Jxta_status tc_destroy(Tc_elt * me)
     return JXTA_SUCCESS;
 }
 
+static int number_of_connected_peers(Jxta_endpoint_service * service)
+{
+    int count=0;
+
+    jxta_endpoint_service_get_connection_peers(service, NULL, NULL, NULL, &count);
+
+    return count;
+}
+
 JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_fc(Jxta_endpoint_service * me
-                                , Jxta_endpoint_address *ea
-                                , apr_int32_t num_bytes, Jxta_time time_period)
+                                , Jxta_endpoint_address *ea, Jxta_boolean normal)
 {
     Jxta_status res=JXTA_FAILED;
     Jxta_message *msg;
@@ -545,17 +553,37 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_fc(Jxta_endpoint_service * 
     Jxta_endpoint_address *send_ea=NULL;
     JxtaEndpointMessenger *msgr=NULL;
     Jxta_id *pid;
+    apr_int64_t num_bytes;
+    int frame_seconds;
+    int connected_peers;
+    int time;
+
 
     send_ea = jxta_endpoint_address_new_4(ea, "Endpoint", "FlowControl");
-
+    frame_seconds = traffic_shaping_frame(me->ts);
+    num_bytes =  traffic_shaping_size(me->ts);
+    time = traffic_shaping_time(me->ts);
     endpoint_messenger_get(me, send_ea, &msgr);
+    connected_peers = number_of_connected_peers(me);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Send FC Number of connected peers %d\n", connected_peers);
+    if (!normal) {
+        num_bytes = num_bytes/connected_peers;
+    }
+
     if (NULL != msgr) {
-        if (msgr->fc_time_period == time_period && msgr->fc_num_bytes == num_bytes) {
-            goto FINAL_EXIT;
+        if (msgr->fc_frame_seconds == frame_seconds && msgr->fc_num_bytes == num_bytes) {
+            if (msgr->fc_msgs_sent++ > 3) {
+                goto FINAL_EXIT;
+            }
         }
+    } else {
+        res = JXTA_ITEM_NOTFOUND;
+        goto FINAL_EXIT;
     }
     msg = jxta_message_new();
-    ep_fc_msg = jxta_ep_flow_control_msg_new_1(time_period, num_bytes, 1, 6, 0, 5, TS_MAX_OPTION_LOOK_AHEAD);
+
+
+    ep_fc_msg = jxta_ep_flow_control_msg_new_1(time, num_bytes, 1, frame_seconds, 0, 5, TS_MAX_OPTION_FRAME);
     jxta_PG_get_PID(me->my_group, &pid);
 
     jxta_ep_flow_control_msg_set_peerid(ep_fc_msg, pid);
@@ -568,7 +596,7 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_fc(Jxta_endpoint_service * 
     res = jxta_endpoint_service_send_ex(me, msg, send_ea, JXTA_TRUE, NULL);
     if (JXTA_SUCCESS == res) {
         msgr->fc_num_bytes = num_bytes;
-        msgr->fc_time_period = time_period;
+        msgr->fc_frame_seconds = frame_seconds;
     }
     JXTA_OBJECT_RELEASE(msg);
     JXTA_OBJECT_RELEASE(msg_elem);
@@ -582,7 +610,6 @@ FINAL_EXIT:
     JXTA_OBJECT_RELEASE(send_ea);
     return res;
 }
-
 
 static void messenger_add(Jxta_endpoint_service * me, Jxta_endpoint_address *ea, JxtaEndpointMessenger *msgr)
 {
@@ -624,13 +651,7 @@ static void messenger_add(Jxta_endpoint_service * me, Jxta_endpoint_address *ea,
     ptr->ta = ta;
     ptr->msgr = JXTA_OBJECT_SHARE(msgr);
     ptr->ep_fc = jxta_ep_flow_control_new();
-    jxta_ep_fc_set_outbound(ptr->ep_fc, TRUE);
-    jxta_ep_fc_set_inbound(ptr->ep_fc, FALSE);
-/*    if (JXTA_SUCCESS != jxta_endpoint_service_send_fc(me, ea, 5900000, 3600)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, FILEANDLINE "Unable to send flow control message \n");
-    }
-*/
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Add messenger [%pp]: %s\n", ptr->msgr, ta);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Add messenger [%pp]: %s\n", ptr->msgr, ta);
 
 }
 
@@ -666,8 +687,8 @@ static void messengers_destroy(Jxta_endpoint_service * me)
         apr_hash_set(me->messengers, ptr->ta, APR_HASH_KEY_STRING, NULL);
 
         free(ptr->ta);
-        JXTA_OBJECT_RELEASE(ptr->msgr);
         JXTA_OBJECT_RELEASE(ptr->ep_fc);
+        JXTA_OBJECT_RELEASE(ptr->msgr);
         free(ptr);
     }
 }
@@ -748,7 +769,13 @@ static Jxta_status endpoint_init(Jxta_module * it, Jxta_PG * group, Jxta_id * as
         }
     }
 
+
+    jxta_epcfg_get_traffic_shaping(self->config, &ts);
+    traffic_shaping_init(ts);
+
+    self->ts = JXTA_OBJECT_SHARE(ts);
     ep_fc = jxta_ep_flow_control_new();
+
     jxta_ep_fc_set_msg_type(ep_fc, "default");
     jxta_ep_fc_set_inbound(ep_fc, TRUE);
     jxta_ep_fc_set_rate(ep_fc, 1000);
@@ -757,10 +784,6 @@ static Jxta_status endpoint_init(Jxta_module * it, Jxta_PG * group, Jxta_id * as
     jxta_epcfg_set_fc_parm(self->config, "default", ep_fc);
     jxta_epcfg_set_fc_parm(self->config, "default1", ep_fc);
 
-    jxta_epcfg_get_traffic_shaping(self->config, &ts);
-    traffic_shaping_init(ts);
-
-    self->ts = JXTA_OBJECT_SHARE(ts);
     apr_pollset_create(&self->pollset, 100, pool, 0);
     self->pollfd_cnt = 0;
 
@@ -1052,13 +1075,14 @@ static void demux_ep_flow_control_message(Jxta_endpoint_service * me
     Jxta_id *peer_id=NULL;
     Jxta_endpoint_address *fc_ea=NULL;
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Demux flow control message [%pp]\n", ep_fc_msg);
 
     jxta_ep_flow_control_msg_get_peerid(ep_fc_msg, &peer_id);
     if (NULL == peer_id) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Received a fc msg [%pp] without a peer\n", ep_fc_msg);
         goto FINAL_EXIT;
     }
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Demux flow control message [%pp]\n"
+                    , ep_fc_msg);
 
     fc_ea = jxta_endpoint_address_new_3(peer_id, NULL, NULL);
     if (JXTA_SUCCESS == get_messenger(me, fc_ea, FALSE, &msgr)) {
@@ -1072,20 +1096,18 @@ static void demux_ep_flow_control_message(Jxta_endpoint_service * me
             msgr->ts = NULL;
         }
         msgr->ts = traffic_shaping_new();
-        traffic_shaping_lock(msgr->ts);
         ts = msgr->ts;
+        traffic_shaping_lock(ts);
         traffic_shaping_set_size(ts, jxta_ep_flow_control_msg_get_size(ep_fc_msg));
         traffic_shaping_set_time(ts, jxta_ep_flow_control_msg_get_time(ep_fc_msg));
-        traffic_shaping_set_interval(ts, traffic_shaping_interval(me->ts));
-        /* traffic_shaping_set_interval(ts, jxta_ep_flow_control_msg_get_interval(ep_fc_msg)); */
+        /* traffic_shaping_set_interval(ts, traffic_shaping_interval(me->ts)); */
+        traffic_shaping_set_interval(ts, jxta_ep_flow_control_msg_get_interval(ep_fc_msg));
         traffic_shaping_set_frame(ts, jxta_ep_flow_control_msg_get_frame(ep_fc_msg));
-        /* traffic_shaping_set_look_ahead(ts, jxta_ep_flow_control_msg_get_look_ahead(ep_fc_msg)); */
-        traffic_shaping_set_reserve(ts, traffic_shaping_reserve(me->ts));
-        /* traffic_shaping_set_reserve(ts, jxta_ep_flow_control_msg_get_reserve(ep_fc_msg)); */
-        /* traffic_shaping_set_max_option(ts, traffic_shaping_max_option(me->ts)); */
-        traffic_shaping_set_max_option(msgr->ts, jxta_ep_flow_control_msg_get_max_option(ep_fc_msg));
-        traffic_shaping_init(msgr->ts);
-        traffic_shaping_unlock(msgr->ts);
+        traffic_shaping_set_look_ahead(ts, jxta_ep_flow_control_msg_get_look_ahead(ep_fc_msg));
+        traffic_shaping_set_reserve(ts, jxta_ep_flow_control_msg_get_reserve(ep_fc_msg));
+        traffic_shaping_set_max_option(ts, jxta_ep_flow_control_msg_get_max_option(ep_fc_msg));
+        traffic_shaping_init(ts);
+        traffic_shaping_unlock(ts);
         if (peer_id)
             JXTA_OBJECT_RELEASE(peer_id);
         if (ep_str)
@@ -1197,7 +1219,6 @@ JXTA_DECLARE(void) jxta_endpoint_service_demux(Jxta_endpoint_service * service, 
             ep_fc_msg = jxta_ep_flow_control_msg_new();
             jxta_ep_flow_control_msg_parse_charbuffer(ep_fc_msg
                         , jstring_get_string(string), jstring_length(string));
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "%s\n", jstring_get_string(string));
 
             demux_ep_flow_control_message(service, dest, ep_fc_msg);
             if (ep_fc_msg)
@@ -1274,7 +1295,6 @@ JXTA_DECLARE(void) jxta_endpoint_service_demux_addr(Jxta_endpoint_service * serv
     }
 
     apr_thread_mutex_unlock(endpoint_service->demux_mutex);
-
     destStr = jxta_endpoint_address_to_string(dest);
 
     if (endpoint_service_demux(endpoint_service, jxta_endpoint_address_get_service_name(dest),
@@ -1596,15 +1616,24 @@ JXTA_DECLARE(Jxta_transport *) jxta_endpoint_service_lookup_transport(Jxta_endpo
     return t;
 }
 
-JXTA_DECLARE(Jxta_status) jxta_endpoint_service_get_connection_peers(Jxta_endpoint_service * service, const char * protocol, const char * address, Jxta_vector **endpoints)
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_get_connection_peers(Jxta_endpoint_service * service, const char * protocol, const char * address, Jxta_vector **endpoints, int *unique)
 {
     apr_hash_index_t *hi = NULL;
     Peer_route_elt *ptr;
     const char *ta;
     Jxta_status res = JXTA_SUCCESS;
+    unsigned int i;
+    JxtaEndpointMessenger **found_entries=NULL;
 
-    *endpoints = jxta_vector_new(0);
+    i = apr_hash_count(service->messengers);
+    found_entries = calloc(i+1, sizeof(char *));
+    found_entries[i] = NULL;
+    endpoints != NULL ? *endpoints = jxta_vector_new(0):NULL;
+    if (NULL != unique) {
+        *unique = 0;
+    }
 
+    i = 0;
     apr_thread_mutex_lock(service->mutex);
     for (hi = apr_hash_first(NULL, service->messengers); hi; hi = apr_hash_next(hi)) {
         JxtaEndpointMessenger * msgr;
@@ -1621,7 +1650,32 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_get_connection_peers(Jxta_endpoi
         p_prot = jxta_endpoint_address_get_protocol_name(addr);
         p_addr = jxta_endpoint_address_get_protocol_address(addr);
 
-        if (!strcmp(p_prot, protocol) && !strcmp(p_addr, address)) {
+        if (NULL != unique) {
+            int j=0;
+            Jxta_boolean match=FALSE;
+
+            while (found_entries[j]) {
+                JxtaEndpointMessenger *check_msgr;
+                Jxta_endpoint_address *check_addr;
+
+                check_msgr = found_entries[j];
+                check_addr = check_msgr->address;
+
+                if (0 == strcmp(p_prot, jxta_endpoint_address_get_protocol_name(check_addr)) &&
+                    0 == strcmp(p_addr, jxta_endpoint_address_get_protocol_address(check_addr))) {
+                    match = TRUE;
+                    break;
+
+                }
+                j++;
+            }
+            if (!match) {
+                found_entries[j] = msgr;
+                (*unique)++;
+            }
+        }
+
+        if (NULL != protocol && NULL != address && !strcmp(p_prot, protocol) && !strcmp(p_addr, address)) {
             /* this is an alternate messenger when it doesn't match */
             if (0 != strncasecmp(p_prot, ptr->ta, strlen(p_prot))) {
                 JString *peerid_j=NULL;
@@ -1644,6 +1698,7 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_get_connection_peers(Jxta_endpoi
             }
         }
     }
+    free(found_entries);
     apr_thread_mutex_unlock(service->mutex);
     return res;
 }
@@ -2154,7 +2209,7 @@ static Jxta_status get_messenger(Jxta_endpoint_service * me, Jxta_endpoint_addre
     res = endpoint_messenger_get(me, dest, msgr);
     if (JXTA_ITEM_NOTFOUND == res) {
         *msgr = NULL;
-        
+
         if (me->router_transport == NULL) {
             me->router_transport = jxta_endpoint_service_lookup_transport(me, "jxta");
             if (me->router_transport == NULL) {
@@ -2570,14 +2625,38 @@ JXTA_DECLARE(Jxta_time) jxta_ep_fc_expect_delay(Jxta_ep_flow_control *ep_fc)
     return ep_fc->expect_delay;
 }
 
-JXTA_DECLARE(void) jxta_ep_fc_set_msg_size(Jxta_ep_flow_control *ep_fc, apr_uint32_t size)
+JXTA_DECLARE(void) jxta_ep_fc_set_msg_size(Jxta_ep_flow_control *ep_fc, apr_int64_t size)
 {
     ep_fc->msg_size = size;
 }
 
-JXTA_DECLARE(apr_uint32_t) jxta_ep_fc_msg_size(Jxta_ep_flow_control *ep_fc)
+JXTA_DECLARE(apr_int64_t) jxta_ep_fc_msg_size(Jxta_ep_flow_control *ep_fc)
 {
     return ep_fc->msg_size;
+}
+
+JXTA_DECLARE(void) jxta_ep_fc_set_reserve(Jxta_ep_flow_control *ep_fc, int reserve)
+{
+    if (ep_fc->ts != NULL) {
+        traffic_shaping_set_reserve(ep_fc->ts, reserve);
+    }
+}
+
+JXTA_DECLARE(int) jxta_ep_fc_reserve(Jxta_ep_flow_control *ep_fc)
+{
+    return NULL != ep_fc->ts ? traffic_shaping_reserve(ep_fc->ts):0;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_ep_fc_set_traffic_shaping(Jxta_ep_flow_control *ep_fc, Jxta_traffic_shaping *ts)
+{
+    ep_fc->ts = NULL != ts ? JXTA_OBJECT_SHARE(ts):NULL;
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_ep_fc_get_traffic_shaping(Jxta_ep_flow_control *ep_fc, Jxta_traffic_shaping **ts)
+{
+    *ts = (NULL != ep_fc->ts) ? JXTA_OBJECT_SHARE(ep_fc->ts):NULL;
+    return JXTA_SUCCESS;
 }
 
 static void *APR_THREAD_FUNC outgoing_message_thread(apr_thread_t * thread, void *arg)
@@ -2690,7 +2769,7 @@ static Jxta_status send_with_messenger(Jxta_endpoint_service * me, JxtaEndpointM
         res = messenger->jxta_send(messenger, msg);
 
     } else if (JXTA_BUSY == res) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "busy messenger:[%pp] msg:[%pp]\n"
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "busy messenger:[%pp] msg:[%pp]\n"
                                             , messenger, msg);
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Removing messenger [%pp] \n", me);
@@ -2724,7 +2803,7 @@ static Jxta_status send_message(Jxta_endpoint_service * me, Jxta_message * msg, 
     }
 
     res = get_messenger(me, dest_tmp , FALSE, &messenger);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "send message to [%pp]\n", dest);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "send message to [%pp] status:%ld\n", dest, res);
 
     if (JXTA_SUCCESS != res) {
         res = JXTA_UNREACHABLE_DEST;
@@ -2797,14 +2876,16 @@ static Jxta_status outgoing_message_process(Jxta_endpoint_service * me, Jxta_mes
         apr_thread_mutex_unlock(me->nc_wlock);
         res = send_message(me, msg, dest);
         if (JXTA_UNREACHABLE_DEST == res) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Peer at %s is unreachable, queueing msg[%pp]\n", baseAddrStr, msg);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Peer at %s is unreachable, queueing msg[%pp]\n", baseAddrStr, msg);
             ptr = nc_add_peer(me, baseAddrStr, msg);
         } else if (JXTA_LENGTH_EXCEEDED == res) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Message [%pp] dropped should never exceed max here\n", msg);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Message [%pp] dropped - Should not exceed max\n", msg);
         }
     }
     if (JXTA_SUCCESS == res) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Message [%pp] send successful.\n", msg);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Message [%pp] send successful.\n", msg);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Message [%pp] send unsuccessful. status:%ld\n", msg, res);
     }
 
     free(baseAddrStr);
@@ -2814,7 +2895,6 @@ static Jxta_status outgoing_message_process(Jxta_endpoint_service * me, Jxta_mes
         apr_atomic_set32(&cnt, 0);
         nc_review_all(me);
     }
-
     return res;
 }
 

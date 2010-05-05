@@ -996,7 +996,7 @@ static void srdi_push_srdi_msg(Jxta_srdi_service_ref * self, JString * instance,
             if (new_msgs)
                 JXTA_OBJECT_RELEASE(new_msgs);
         } else if (JXTA_BUSY == res) {
-            apr_sleep(3000 * 1000);
+            apr_sleep(1000 * 1000);
             if (self->running) {
                 jxta_vector_add_object_first(msgs, (Jxta_object *) send_msg);
                 prev_diff = diff;
@@ -2233,7 +2233,7 @@ static Jxta_status srdi_send_srdi_msgs(Jxta_srdi_service_ref * self, JString *in
             if (new_entries)
                 JXTA_OBJECT_RELEASE(new_entries);
         } else if (JXTA_BUSY == res) {
-            apr_sleep(3000 * 1000);
+            apr_sleep(1000 * 1000);
             if (self->running) {
                 jxta_vector_add_object_first(msgs, (Jxta_object *) send_ep_msg);
                 prev_diff = diff;
@@ -2686,7 +2686,7 @@ static Jxta_status forwardSrdiEntries_priv(Jxta_srdi_service * service, Jxta_res
     }
 
     if (NULL == ret_msgs) {
-        pushSrdi_msg(service, queueName, msg, pid, TRUE, FALSE, NULL);
+        res = pushSrdi_msg(service, queueName, msg, pid, TRUE, FALSE, NULL);
     } else {
         JString *peerid_j=NULL;
         Jxta_vector *msg_v=NULL;

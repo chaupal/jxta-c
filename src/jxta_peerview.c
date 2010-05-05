@@ -3218,10 +3218,11 @@ static Jxta_status peerview_send_pvm_priv(Jxta_peerview * me, Jxta_peer * dest, 
 
             /* only send if there is no peerid in the peerview */
             if (peerid_only) {
+                int count;
                 Jxta_vector *peerids=NULL;
                 /* get any peerids for this protocol/address */
                 jxta_endpoint_service_get_connection_peers(me->endpoint, jxta_endpoint_address_get_protocol_name(peer_addr),
-                                         jxta_endpoint_address_get_protocol_address(peer_addr), &peerids);
+                                         jxta_endpoint_address_get_protocol_address(peer_addr), &peerids, &count);
 
                 for (i=0; peerid_only && i < jxta_vector_size(peerids); i++) {
                     Jxta_id *peerid_conn = NULL;

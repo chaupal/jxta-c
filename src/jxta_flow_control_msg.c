@@ -71,10 +71,10 @@ struct _jxta_ep_flow_control_msg {
 
     Jxta_id *peer_id;
     Jxta_time time;
-    apr_int32_t size;
+    apr_int64_t size;
     int interval;
-    Jxta_time frame;
-    Jxta_time look_ahead;
+    int frame;
+    int look_ahead;
     int reserve;
     Ts_max_option max_option;
 };
@@ -129,7 +129,7 @@ JXTA_DECLARE(Jxta_ep_flow_control_msg *) jxta_ep_flow_control_msg_new(void)
 }
 
 JXTA_DECLARE(Jxta_ep_flow_control_msg *) jxta_ep_flow_control_msg_new_1(int fc_time
-                            , apr_int32_t fc_size, int fc_interval, int fc_frame
+                            , apr_int64_t fc_size, int fc_interval, int fc_frame
                             , int fc_look_ahead, int fc_reserve, Ts_max_option max_option){
     Jxta_ep_flow_control_msg * myself;
 
@@ -218,14 +218,14 @@ JXTA_DECLARE(Jxta_status) jxta_ep_flow_control_msg_get_xml(Jxta_ep_flow_control_
     apr_snprintf(tmp, sizeof(tmp), " fc_time=\"%ld\"", (long) myself->time);
     jstring_append_2(string, tmp);
 
-    apr_snprintf(tmp, sizeof(tmp), " fc_size=\"%ld\"", (long) myself->size);
+    apr_snprintf(tmp, sizeof(tmp), " fc_size=\"%" APR_INT64_T_FMT "\"", myself->size);
     jstring_append_2(string, tmp);
 
     apr_snprintf(tmp, sizeof(tmp), " fc_interval=\"%d\"", myself->interval);
     jstring_append_2(string, tmp);
-    apr_snprintf(tmp, sizeof(tmp), " fc_frame=\"" JPR_DIFF_TIME_FMT "\"", myself->frame);
+    apr_snprintf(tmp, sizeof(tmp), " fc_frame=\"%d\"", myself->frame);
     jstring_append_2(string, tmp);
-    apr_snprintf(tmp, sizeof(tmp), " fc_look_ahead=\"" JPR_DIFF_TIME_FMT "\"", myself->look_ahead);
+    apr_snprintf(tmp, sizeof(tmp), " fc_look_ahead=\"%d\"", myself->look_ahead);
     jstring_append_2(string, tmp);
     apr_snprintf(tmp, sizeof(tmp), " fc_reserve=\"%d\"", myself->reserve);
     jstring_append_2(string, tmp);
@@ -268,7 +268,7 @@ static void handle_ep_flow_control_msg(void *me, const XML_Char * cd, int len)
             } else if (0 == strcmp(*atts, "fc_time")) {
                 myself->time = atoi(atts[1]);
             } else if (0 == strcmp(*atts, "fc_size")) {
-                myself->size = atoi(atts[1]);
+                myself->size = apr_atoi64(atts[1]);
             } else if (0 == strcmp(*atts, "fc_interval")) {
                 myself->interval = atoi(atts[1]);
             } else if (0 == strcmp(*atts, "fc_frame")) {
@@ -311,12 +311,12 @@ JXTA_DECLARE(Jxta_status) jxta_ep_flow_control_msg_get_peerid(Jxta_ep_flow_contr
     return JXTA_SUCCESS;
 }
 
-JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_size(Jxta_ep_flow_control_msg * myself, apr_int32_t size)
+JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_size(Jxta_ep_flow_control_msg * myself, apr_int64_t size)
 {
     myself->size = size;
 }
 
-JXTA_DECLARE(apr_int32_t) jxta_ep_flow_control_msg_get_size(Jxta_ep_flow_control_msg * myself)
+JXTA_DECLARE(apr_int64_t) jxta_ep_flow_control_msg_get_size(Jxta_ep_flow_control_msg * myself)
 {
     return myself->size;
 
@@ -360,20 +360,6 @@ JXTA_DECLARE(int) jxta_ep_flow_control_msg_get_frame(Jxta_ep_flow_control_msg * 
 
 }
 
-
-JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_look_ahead(Jxta_ep_flow_control_msg * myself, Jxta_time look_ahead)
-{
-   myself->look_ahead = look_ahead;
-
-}
-
-JXTA_DECLARE(Jxta_time) jxta_ep_flow_control_msg_get_look_ahead(Jxta_ep_flow_control_msg * myself)
-{
-    return myself->look_ahead;
-
-}
-
-
 JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_reserve(Jxta_ep_flow_control_msg * myself, int reserve)
 {
    myself->reserve = reserve;
@@ -386,6 +372,18 @@ JXTA_DECLARE(int) jxta_ep_flow_control_msg_get_reserve(Jxta_ep_flow_control_msg 
 
 }
 
+
+JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_look_ahead(Jxta_ep_flow_control_msg * myself, int look_ahead)
+{
+   myself->look_ahead = look_ahead;
+
+}
+
+JXTA_DECLARE(int) jxta_ep_flow_control_msg_get_look_ahead(Jxta_ep_flow_control_msg * myself)
+{
+    return myself->look_ahead;
+
+}
 
 JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_max_option(Jxta_ep_flow_control_msg * myself, Ts_max_option max_option)
 {

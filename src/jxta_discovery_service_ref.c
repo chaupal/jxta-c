@@ -2370,7 +2370,7 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
         } else if (JXTA_LENGTH_EXCEEDED == res) {
             break_it = TRUE;
         } else if (JXTA_BUSY == res) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "rsp [%pp] busy\n", res_response);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "rsp [%pp] busy\n", res_response);
             apr_sleep(1000 * 1000);
             if (!discovery->running) {
                 break_it = TRUE;
@@ -2994,6 +2994,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
 
     /* get the entries within the message */
     status = jxta_srdi_message_get_entries(smsg, &msg_entries);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Received %ld srdi msg entries from: %s \n", jxta_vector_size(msg_entries), jstring_get_string(pid_j));
 
 
     if (status != JXTA_SUCCESS || NULL == msg_entries) {
@@ -3059,10 +3060,12 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
 
             busy_status = jxta_srdi_replicateEntries(discovery->srdi, discovery->resolver, smsg, discovery->instanceName, NULL);
             if (JXTA_BUSY == busy_status) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "SEND FLOW CONTROL HERE *****************\n");
-/*                jxta_endpoint_service_send_fc(discovery->endpoint, ea, 2000000, 3600 ); */
+                Jxta_ep_flow_control *flow_control;
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Flow control the remote peer *****************\n");
+                jxta_endpoint_service_send_fc(discovery->endpoint, ea, FALSE);
             } else if (JXTA_SUCCESS == busy_status) {
-/*                jxta_endpoint_service_send_fc(discovery->endpoint, ea, 5900000, 3600); */
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Continue at normal flow ********\n");
+                jxta_endpoint_service_send_fc(discovery->endpoint, ea, TRUE);
             } else {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error returned from repicateEntries:%ld\n"
                                 , busy_status);

@@ -81,14 +81,16 @@ typedef struct _jxta_ep_flow_control_msg Jxta_ep_flow_control_msg;
 JXTA_DECLARE_DATA const char JXTA_FLOW_CONTROL_ELEMENT_NAME[];
 
 JXTA_DECLARE(Jxta_ep_flow_control_msg *) jxta_ep_flow_control_msg_new(void);
-JXTA_DECLARE(Jxta_ep_flow_control_msg *) jxta_ep_flow_control_msg_new_1(int, apr_int32_t, int, int, int, int, Ts_max_option);
+JXTA_DECLARE(Jxta_ep_flow_control_msg *) jxta_ep_flow_control_msg_new_1(int fc_time
+                            , apr_int64_t fc_size, int fc_interval, int fc_frame
+                            , int fc_look_ahead, int fc_reserve, Ts_max_option max_option);
 JXTA_DECLARE(Jxta_status) jxta_ep_flow_control_msg_get_xml(Jxta_ep_flow_control_msg *, JString ** xml);
 
 JXTA_DECLARE(Jxta_status) jxta_ep_flow_control_msg_set_peerid(Jxta_ep_flow_control_msg *, Jxta_id *);
 JXTA_DECLARE(Jxta_status) jxta_ep_flow_control_msg_get_peerid(Jxta_ep_flow_control_msg *, Jxta_id **);
 
-JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_size(Jxta_ep_flow_control_msg *, apr_int32_t);
-JXTA_DECLARE(apr_int32_t) jxta_ep_flow_control_msg_get_size(Jxta_ep_flow_control_msg *);
+JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_size(Jxta_ep_flow_control_msg *, apr_int64_t);
+JXTA_DECLARE(apr_int64_t) jxta_ep_flow_control_msg_get_size(Jxta_ep_flow_control_msg *);
 
 JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_time(Jxta_ep_flow_control_msg *, Jxta_time);
 JXTA_DECLARE(Jxta_time) jxta_ep_flow_control_msg_get_time(Jxta_ep_flow_control_msg *);
@@ -99,14 +101,14 @@ JXTA_DECLARE(int) jxta_ep_flow_control_msg_get_interval(Jxta_ep_flow_control_msg
 JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_frame(Jxta_ep_flow_control_msg *, int);
 JXTA_DECLARE(int) jxta_ep_flow_control_msg_get_frame(Jxta_ep_flow_control_msg *);
 
-JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_look_ahead(Jxta_ep_flow_control_msg *, Jxta_time);
-JXTA_DECLARE(Jxta_time) jxta_ep_flow_control_msg_get_look_ahead(Jxta_ep_flow_control_msg *);
-
-JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_reserve(Jxta_ep_flow_control_msg *, int);
-JXTA_DECLARE(int) jxta_ep_flow_control_msg_get_reserve(Jxta_ep_flow_control_msg *);
+JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_look_ahead(Jxta_ep_flow_control_msg *, int);
+JXTA_DECLARE(int) jxta_ep_flow_control_msg_get_look_ahead(Jxta_ep_flow_control_msg *);
 
 JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_max_option(Jxta_ep_flow_control_msg *, Ts_max_option);
 JXTA_DECLARE(Ts_max_option) jxta_ep_flow_control_msg_get_max_option(Jxta_ep_flow_control_msg *);
+
+JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_reserve(Jxta_ep_flow_control_msg *, int reserve);
+JXTA_DECLARE(int) jxta_ep_flow_control_msg_get_reserve(Jxta_ep_flow_control_msg *);
 
 
 JXTA_DECLARE(Jxta_status) jxta_ep_flow_control_msg_parse_charbuffer(Jxta_ep_flow_control_msg *
