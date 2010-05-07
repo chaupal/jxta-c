@@ -2281,6 +2281,7 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
     int i;
     apr_int32_t rr_length=0;
     int split_already = 0;
+    apr_int64_t peer_max_length=0;
 
     dr_rsps = jxta_vector_new(0);
     jxta_vector_add_object_last(dr_rsps, (Jxta_object *) dr);
@@ -2333,15 +2334,19 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
         src_pid = jxta_resolver_query_get_src_peer_id(rq);
         jxta_resolver_response_attach_qos(res_response, jxta_resolver_query_qos(rq));
 
-        res = jxta_resolver_service_sendResponse(discovery->resolver, res_response, src_pid, split_already <= 2 ? &max_length:NULL);
+        res = jxta_resolver_service_sendResponse(discovery->resolver, res_response, src_pid, split_already  < 2 ? &max_length:NULL);
 
-        if (JXTA_LENGTH_EXCEEDED == res && split_already++ <= 2) {
+        if (JXTA_LENGTH_EXCEEDED == res && peer_max_length != max_length) {
             int j;
             Jxta_vector *new_responses=NULL;
 
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING
-                                    , "discovery:send res_response [%pp] exceeded max:%ld\n"
-                                    , res_response, max_length);
+            if (0 == split_already++) {
+                peer_max_length = max_length;
+            }
+
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG
+                                    , "discovery:send res_response [%pp] exceeded max:%" APR_INT64_T_FMT " peer_max_length:%" APR_INT64_T_FMT "\n"
+                                    , res_response, max_length, peer_max_length);
 
             split_discovery_responses(dr, rdoc, &new_responses, max_length - rr_length);
 
@@ -2383,6 +2388,7 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
             split_already = 0;
             jxta_vector_remove_object_at(dr_rsps, NULL, i--);
             prev_diff = 0;
+            peer_max_length = 0;
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "discovery rcvd error on send res: %d\n", res);
             break_it = TRUE;

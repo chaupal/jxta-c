@@ -910,13 +910,14 @@ static Jxta_status remove_queue_entry(Jxta_vector *queue, Jxta_object *ptr)
 static void srdi_push_srdi_msg(Jxta_srdi_service_ref * self, JString * instance,
                             Jxta_message * msg, Jxta_id * peerid, Jxta_boolean sync)
 {
-    apr_int64_t max_size;
+    apr_int64_t max_length=0;
     Jxta_vector *msgs=NULL;
     Jxta_boolean init=TRUE;
     apr_int32_t prev_diff=0;
     Jxta_status res=JXTA_SUCCESS;
     JString *peerid_j=NULL;
     int split_already = 0;
+    apr_int64_t peer_max_length=0;
 
 
     jxta_id_to_jstring(peerid, &peerid_j);
@@ -957,13 +958,17 @@ static void srdi_push_srdi_msg(Jxta_srdi_service_ref * self, JString * instance,
                 JXTA_OBJECT_RELEASE(src_pid);
         }
         res = jxta_PG_sync_send(self->group, send_msg, peerid
-                        , jstring_get_string(instance), SRDI_QUEUENAME, split_already <= 2 ? &max_size:NULL);
+                        , jstring_get_string(instance), SRDI_QUEUENAME,  split_already  < 2 ? &max_length:NULL);
         init = FALSE;
-        if (JXTA_LENGTH_EXCEEDED == res && split_already++ <= 2) {
+        if (JXTA_LENGTH_EXCEEDED == res && peer_max_length != max_length) {
             Jxta_vector *new_msgs;
 
+            if (0 == split_already++) {
+                peer_max_length = max_length;
+            }
+
             new_msgs = jxta_vector_new(0);
-            split_srdi_message(self, srdi_msg, new_msgs, max_size, jpr_time_now(), FALSE);
+            split_srdi_message(self, srdi_msg, new_msgs, max_length, jpr_time_now(), FALSE);
 
             for (j=0; j<jxta_vector_size(new_msgs); j++) {
                 Jxta_message *new_msg;
@@ -978,10 +983,10 @@ static void srdi_push_srdi_msg(Jxta_srdi_service_ref * self, JString * instance,
                     jxta_message_set_timestamp(new_msg, jpr_time_now());
 
 
-                    if (jstring_length(srdi_xml)  > max_size) {
-                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING
-                                , "This message [%pp] is too large size:%ld max_size:%ld\n"
-                                , new_msg, jstring_length(srdi_xml), max_size);
+                    if (jstring_length(srdi_xml)  > max_length) {
+                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG
+                                , "This message [%pp] is too large size:%ld max_length:%ld\n"
+                                , new_msg, jstring_length(srdi_xml), max_length);
                     } else {
                         jxta_vector_add_object_last(msgs, (Jxta_object *) new_msg);
                     }
@@ -1007,6 +1012,7 @@ static void srdi_push_srdi_msg(Jxta_srdi_service_ref * self, JString * instance,
         } else if (JXTA_SUCCESS == res) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "message sent msg [%pp] \n", send_msg);
             prev_diff = 0;
+            split_already = 0;
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "message sent error:%ld msg [%pp] \n", res, send_msg);
             break_out = TRUE;
@@ -2098,11 +2104,13 @@ static Jxta_status srdi_send_srdi_msgs(Jxta_srdi_service_ref * self, JString *in
     Jxta_vector *msgs;
     Jxta_endpoint_message *ep_msg=NULL;
     Jxta_endpoint_address *ep_addr=NULL;
-    apr_int64_t max_size;
+    apr_int64_t max_length;
     JString *ep_msg_xml=NULL;
     Jxta_boolean init=TRUE;
     Jxta_time prev_diff=0;
     JString *peerid_j=NULL;
+    apr_int64_t peer_max_length=0;
+    int split_already=0;
 
 
     jxta_id_to_jstring(jxta_peer_peerid(dest), &peerid_j);
@@ -2198,13 +2206,16 @@ static Jxta_status srdi_send_srdi_msgs(Jxta_srdi_service_ref * self, JString *in
          }
 
         res = jxta_PG_sync_send_1(self->group, send_ep_msg, jxta_peer_peerid(dest), "groupid"
-                            , jstring_get_string(instance), SRDI_QUEUENAME, &max_size);
+                            , jstring_get_string(instance), SRDI_QUEUENAME, split_already < 2 ? &max_length:NULL);
         init = FALSE;
-        if (JXTA_LENGTH_EXCEEDED == res) {
+        if (JXTA_LENGTH_EXCEEDED == res && peer_max_length != max_length) {
             Jxta_vector *new_entries=NULL;
 
-            split_endpoint_message(self, ep_msg, ep_addr, &new_entries, max_size);
+            split_endpoint_message(self, ep_msg, ep_addr, &new_entries, max_length);
 
+            if (0 == split_already++) {
+                peer_max_length = max_length;
+            }
             for (j=0; NULL != new_entries && j < jxta_vector_size(new_entries); j++) {
                 Jxta_endpoint_message *new_msg;
                 Jxta_endpoint_msg_entry_element *new_elem;
@@ -2216,10 +2227,10 @@ static Jxta_status srdi_send_srdi_msgs(Jxta_srdi_service_ref * self, JString *in
                 jxta_endpoint_msg_add_entry(new_msg, new_elem);
                 jxta_endpoint_msg_set_timestamp(new_msg, jpr_time_now());
                 jxta_endpoint_msg_get_xml(new_msg, FALSE, &msg_j, TRUE);
-                if (jstring_length(msg_j) > max_size) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING
-                                , "This message [%pp] is too large size:%ld max_size:%ld\n"
-                                , new_msg, jstring_length(msg_j), max_size);
+                if (jstring_length(msg_j) > max_length) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG
+                                , "This message [%pp] is too large size:%ld max_length:%ld\n"
+                                , new_msg, jstring_length(msg_j), max_length);
                 } else {
                     jxta_vector_add_object_first(msgs, (Jxta_object *) new_msg);
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE
@@ -2243,6 +2254,8 @@ static Jxta_status srdi_send_srdi_msgs(Jxta_srdi_service_ref * self, JString *in
             }
         } else if (JXTA_SUCCESS == res) {
             prev_diff = 0;
+            split_already = 0;
+            peer_max_length = 0;
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Endpoint msg sent error:%ld msg [%pp] \n", res, send_ep_msg);
             break_out = TRUE;
