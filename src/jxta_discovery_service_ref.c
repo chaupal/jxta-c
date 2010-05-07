@@ -2333,7 +2333,7 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
         src_pid = jxta_resolver_query_get_src_peer_id(rq);
         jxta_resolver_response_attach_qos(res_response, jxta_resolver_query_qos(rq));
 
-        res = jxta_resolver_service_sendResponse(discovery->resolver, res_response, src_pid, &max_length);
+        res = jxta_resolver_service_sendResponse(discovery->resolver, res_response, src_pid, split_already <= 2 ? &max_length:NULL);
 
         if (JXTA_LENGTH_EXCEEDED == res && split_already++ <= 2) {
             int j;
@@ -3060,7 +3060,6 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
 
             busy_status = jxta_srdi_replicateEntries(discovery->srdi, discovery->resolver, smsg, discovery->instanceName, NULL);
             if (JXTA_BUSY == busy_status) {
-                Jxta_ep_flow_control *flow_control;
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Flow control the remote peer *****************\n");
                 jxta_endpoint_service_send_fc(discovery->endpoint, ea, FALSE);
             } else if (JXTA_SUCCESS == busy_status) {

@@ -916,6 +916,7 @@ static void srdi_push_srdi_msg(Jxta_srdi_service_ref * self, JString * instance,
     apr_int32_t prev_diff=0;
     Jxta_status res=JXTA_SUCCESS;
     JString *peerid_j=NULL;
+    int split_already = 0;
 
 
     jxta_id_to_jstring(peerid, &peerid_j);
@@ -956,9 +957,9 @@ static void srdi_push_srdi_msg(Jxta_srdi_service_ref * self, JString * instance,
                 JXTA_OBJECT_RELEASE(src_pid);
         }
         res = jxta_PG_sync_send(self->group, send_msg, peerid
-                        , jstring_get_string(instance), SRDI_QUEUENAME, &max_size);
+                        , jstring_get_string(instance), SRDI_QUEUENAME, split_already <= 2 ? &max_size:NULL);
         init = FALSE;
-        if (JXTA_LENGTH_EXCEEDED == res ) {
+        if (JXTA_LENGTH_EXCEEDED == res && split_already++ <= 2) {
             Jxta_vector *new_msgs;
 
             new_msgs = jxta_vector_new(0);
