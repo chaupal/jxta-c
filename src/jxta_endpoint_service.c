@@ -813,7 +813,6 @@ static Jxta_status endpoint_start(Jxta_module * me, const char *args[])
 {
     /* construct + init have done everything already */
     Jxta_endpoint_service * myself = PTValid(me, Jxta_endpoint_service);
-    Jxta_ep_flow_control * ep_fc;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Starting ...\n");
 
@@ -843,16 +842,8 @@ static Jxta_status endpoint_start(Jxta_module * me, const char *args[])
         apr_thread_pool_push(myself->thd_pool, do_poll, myself, APR_THREAD_TASK_PRIORITY_HIGHEST, myself);
     }
 
-    jxta_epcfg_get_fc_parm(myself->config, "default", &ep_fc);
-
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Endpoint default direction: %s rate:%d rate_window:%d\n"
-                            , TRUE == jxta_ep_fc_outbound(ep_fc) ? "outbound":"inbound"
-                            , jxta_ep_fc_rate(ep_fc)
-                            , jxta_ep_fc_rate_window(ep_fc));
-
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Started\n");
 
-    JXTA_OBJECT_RELEASE(ep_fc);
     return JXTA_SUCCESS;
 }
 
@@ -2875,7 +2866,7 @@ static Jxta_status outgoing_message_process(Jxta_endpoint_service * me, Jxta_mes
     }
     if (JXTA_SUCCESS == res) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Message [%pp] send successful.\n", msg);
-    } else {
+    } else if (JXTA_BUSY != res) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Message [%pp] send unsuccessful. status:%ld\n", msg, res);
     }
 

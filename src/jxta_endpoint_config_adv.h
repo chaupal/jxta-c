@@ -91,9 +91,6 @@ JXTA_DECLARE(size_t) jxta_epcfg_get_ncrq_size(Jxta_EndPointConfigAdvertisement *
 JXTA_DECLARE(void) jxta_epcfg_set_ncrq_retry(Jxta_EndPointConfigAdvertisement * me, size_t cnt);
 JXTA_DECLARE(size_t) jxta_epcfg_get_ncrq_retry(Jxta_EndPointConfigAdvertisement * me);
 
-JXTA_DECLARE(Jxta_status) jxta_epcfg_get_fc_parm(Jxta_EndPointConfigAdvertisement * me, const char *msg_type, Jxta_ep_flow_control **fc_parm);
-JXTA_DECLARE(Jxta_status) jxta_epcfg_set_fc_parm(Jxta_EndPointConfigAdvertisement * me, const char *msg_type, Jxta_ep_flow_control *fc_entry);
-
 JXTA_DECLARE(void) jxta_epcfg_get_traffic_shaping(Jxta_EndPointConfigAdvertisement * me
                     , Jxta_traffic_shaping **ts);
 

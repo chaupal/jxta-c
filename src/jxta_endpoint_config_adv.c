@@ -92,7 +92,7 @@ struct _jxta_EndPointConfigAdvertisement {
     size_t ncrq_retry;
     int init_threads;
     int max_threads;
-    Jxta_hashtable *fc_entries;
+    /* Jxta_hashtable *fc_entries; */
     Jxta_traffic_shaping *ts;
 };
 
@@ -191,40 +191,6 @@ JXTA_DECLARE(size_t) jxta_epcfg_get_ncrq_retry(Jxta_EndPointConfigAdvertisement 
     return me->ncrq_retry;
 }
 
-static void handleFlowControl(void *me, const XML_Char * cd, int len)
-{
-    Jxta_EndPointConfigAdvertisement *_self = (Jxta_EndPointConfigAdvertisement *) me;
-    const char **atts = ((Jxta_advertisement *) me)->atts;
-    Jxta_ep_flow_control *msg_fc;
-    char *msg_type=NULL;
-
-    msg_fc = jxta_ep_flow_control_new();
-
-    while (atts && *atts) {
-        int tmp;
-        if (0 == strcmp(*atts, "msg_type")) {
-            jxta_ep_fc_set_msg_type(msg_fc, atts[1]);
-        } else if (0 == strcmp(*atts, "direction")) {
-            Jxta_boolean both = (0 == strcmp(atts[1], DIRECTION_BOTH));
-
-            jxta_ep_fc_set_inbound(msg_fc, 0 == strcmp(atts[1], DIRECTION_INBOUND) || both ? TRUE:FALSE);
-            jxta_ep_fc_set_outbound(msg_fc, 0 == strcmp(atts[1], DIRECTION_OUTBOUND) || both ? TRUE:FALSE);
-        } else if (0 == strcmp(*atts, "rate")) {
-            tmp = atoi(atts[1]);
-            jxta_ep_fc_set_rate(msg_fc, tmp);
-        }
-
-        atts += 2;
-    }
-    if (JXTA_SUCCESS == jxta_ep_fc_get_msg_type(msg_fc, &msg_type)) {
-        jxta_hashtable_put(_self->fc_entries, msg_type, strlen(msg_type) + 1, (Jxta_object *) msg_fc);
-    }
-    if (msg_type)
-        free(msg_type);
-
-    JXTA_OBJECT_RELEASE(msg_fc);
-}
-
 static void handleTrafficShaping(void *me, const XML_Char * cd, int len)
 {
     Jxta_EndPointConfigAdvertisement *_self = (Jxta_EndPointConfigAdvertisement *) me;
@@ -269,28 +235,6 @@ static void handleTrafficShaping(void *me, const XML_Char * cd, int len)
     }
 }
 
-JXTA_DECLARE(Jxta_status) jxta_epcfg_get_fc_parm(Jxta_EndPointConfigAdvertisement * me, const char *msg_type, Jxta_ep_flow_control **fc_parm)
-{
-    Jxta_status res;
-
-    res = jxta_hashtable_get(me->fc_entries, msg_type, strlen(msg_type) + 1, JXTA_OBJECT_PPTR(fc_parm));
-
-    return res;
-}
-
-JXTA_DECLARE(Jxta_status) jxta_epcfg_set_fc_parm(Jxta_EndPointConfigAdvertisement * me, const char *msg_type, Jxta_ep_flow_control *fc_entry)
-{
-    Jxta_status res;
-
-    if (JXTA_SUCCESS != jxta_hashtable_contains(me->fc_entries, msg_type, strlen(msg_type) + 1)) {
-        jxta_hashtable_put(me->fc_entries, msg_type, strlen(msg_type) +1, (Jxta_object *) fc_entry);
-        res = JXTA_SUCCESS;
-    } else {
-        res = JXTA_ITEM_EXISTS;
-    }
-    return res;
-}
-
 JXTA_DECLARE(void) jxta_epcfg_get_traffic_shaping(Jxta_EndPointConfigAdvertisement * me
                     , Jxta_traffic_shaping **ts)
 {
@@ -312,7 +256,6 @@ JXTA_DECLARE(void) jxta_epcfg_get_traffic_shaping(Jxta_EndPointConfigAdvertiseme
 static const Kwdtab Jxta_EndPointConfigAdvertisement_tags[] = {
     {"Null", Null_, NULL, NULL, NULL},
     {"jxta:EndPointConfig", Null_, *handleJxta_EndPointConfigAdvertisement, NULL, NULL},
-    {"FlowControl", Null_, *handleFlowControl, NULL, NULL},
     {"TrafficShaping", Null_, *handleTrafficShaping, NULL, NULL},
     {"NegativeCache", Null_, *handleNegativeCache, NULL, NULL},
     {NULL, 0, 0, NULL, NULL}
@@ -323,8 +266,6 @@ JXTA_DECLARE(Jxta_status) jxta_EndPointConfigAdvertisement_get_xml(Jxta_EndPoint
     char tmpbuf[256];
     JString *string = jstring_new_0();
     int timeout;
-    char **fc_keys;
-    char **fc_keys_save;
 
     jstring_append_2(string, "<!-- JXTA EndPoint Configuration Advertisement -->\n");
     jstring_append_2(string, "<jxta:EndPointConfig xmlns:jxta=\"http://jxta.org\" type=\"jxta:EndPointConfig\" ");
@@ -408,46 +349,6 @@ JXTA_DECLARE(Jxta_status) jxta_EndPointConfigAdvertisement_get_xml(Jxta_EndPoint
     jstring_append_2(string, "\"");
     jstring_append_2(string, "/>\n");
 
-    fc_keys = jxta_hashtable_keys_get(me->fc_entries);
-    fc_keys_save = fc_keys;
-    while (NULL != fc_keys && *fc_keys) {
-        Jxta_ep_flow_control *fc_entry=NULL;
-
-        if (JXTA_SUCCESS == jxta_hashtable_get(me->fc_entries, *fc_keys, strlen(*fc_keys) + 1, JXTA_OBJECT_PPTR(&fc_entry))) {
-            char *tmp_char;
-            const char *direction;
-
-            jstring_append_2(string, "<FlowControl");
-            apr_snprintf(tmpbuf, sizeof(tmpbuf), " cfg_parm=\"%s\"", *fc_keys);
-            jstring_append_2(string, tmpbuf);
-            jxta_ep_fc_get_msg_type(fc_entry, &tmp_char);
-            apr_snprintf(tmpbuf, sizeof(tmpbuf), " msg_type=\"%s\"", tmp_char);
-            jstring_append_2(string, tmpbuf);
-            free(tmp_char);
-            direction="both";
-            if (jxta_ep_fc_outbound(fc_entry) && jxta_ep_fc_inbound(fc_entry)) {
-                direction="both";
-            } else if (jxta_ep_fc_outbound(fc_entry)) {
-                direction="outbound";
-            } else if (jxta_ep_fc_inbound(fc_entry)) {
-                direction="indbound";
-            }
-            apr_snprintf(tmpbuf, sizeof(tmpbuf), " direction=\"%s\"", direction);
-            jstring_append_2(string, tmpbuf);
-            apr_snprintf(tmpbuf, sizeof(tmpbuf), " rate=\"%d\"", jxta_ep_fc_rate(fc_entry));
-            jstring_append_2(string, tmpbuf);
-            apr_snprintf(tmpbuf, sizeof(tmpbuf), " rate_window=\"%d\"", jxta_ep_fc_rate_window(fc_entry));
-            jstring_append_2(string, tmpbuf);
-            jstring_append_2(string, "/>\n");
-        } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Could not retrieve entry in flow control: %s\n", *fc_keys);
-        }
-        if (fc_entry)
-            JXTA_OBJECT_RELEASE(fc_entry);
-        free(*(fc_keys++));
-    }
-    if (fc_keys_save)
-        free(fc_keys_save);
     jstring_append_2(string, "</jxta:EndPointConfig>\n");
 
     *result = string;
@@ -472,7 +373,6 @@ Jxta_EndPointConfigAdvertisement *jxta_EndPointConfigAdvertisement_construct(Jxt
         self->ncrq_retry = 20;
         self->init_threads = -1;
         self->max_threads = -1;
-        self->fc_entries = jxta_hashtable_new(0);
         self->ts = traffic_shaping_new();
     }
 
@@ -484,9 +384,6 @@ void jxta_EndPointConfigAdvertisement_destruct(Jxta_EndPointConfigAdvertisement 
 
     if (self->ts) {
         JXTA_OBJECT_RELEASE(self->ts);
-    }
-    if (self->fc_entries) {
-        JXTA_OBJECT_RELEASE(self->fc_entries);
     }
     jxta_advertisement_destruct((Jxta_advertisement *) self);
 
