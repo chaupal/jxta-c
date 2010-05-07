@@ -705,7 +705,6 @@ static Jxta_status endpoint_init(Jxta_module * it, Jxta_PG * group, Jxta_id * as
     apr_pool_t *pool;
     Jxta_PG *parentgroup;
     Jxta_traffic_shaping *ts=NULL;
-    Jxta_ep_flow_control *ep_fc=NULL;
     Jxta_endpoint_service *self = PTValid(it, Jxta_endpoint_service);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Initializing ...\n");
@@ -774,15 +773,6 @@ static Jxta_status endpoint_init(Jxta_module * it, Jxta_PG * group, Jxta_id * as
     traffic_shaping_init(ts);
 
     self->ts = JXTA_OBJECT_SHARE(ts);
-    ep_fc = jxta_ep_flow_control_new();
-
-    jxta_ep_fc_set_msg_type(ep_fc, "default");
-    jxta_ep_fc_set_inbound(ep_fc, TRUE);
-    jxta_ep_fc_set_rate(ep_fc, 1000);
-    jxta_ep_fc_set_rate_window(ep_fc, 30000);
-
-    jxta_epcfg_set_fc_parm(self->config, "default", ep_fc);
-    jxta_epcfg_set_fc_parm(self->config, "default1", ep_fc);
 
     apr_pollset_create(&self->pollset, 100, pool, 0);
     self->pollfd_cnt = 0;
@@ -791,8 +781,6 @@ static Jxta_status endpoint_init(Jxta_module * it, Jxta_PG * group, Jxta_id * as
 
 FINAL_EXIT:
 
-    if (ep_fc)
-        JXTA_OBJECT_RELEASE(ep_fc);
     if (gid)
         JXTA_OBJECT_RELEASE(gid);
     if (ts)
@@ -1074,15 +1062,17 @@ static void demux_ep_flow_control_message(Jxta_endpoint_service * me
     JxtaEndpointMessenger *msgr=NULL;
     Jxta_id *peer_id=NULL;
     Jxta_endpoint_address *fc_ea=NULL;
+    JString *peerid_j=NULL;
 
 
     jxta_ep_flow_control_msg_get_peerid(ep_fc_msg, &peer_id);
     if (NULL == peer_id) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Received a fc msg [%pp] without a peer\n", ep_fc_msg);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Received a fc msg [%pp] without a peer id\n", ep_fc_msg);
         goto FINAL_EXIT;
     }
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Demux flow control message [%pp]\n"
-                    , ep_fc_msg);
+    jxta_id_to_jstring(peer_id, &peerid_j);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Demux flow control message [%pp] from %s\n"
+                    , ep_fc_msg, jstring_get_string(peerid_j));
 
     fc_ea = jxta_endpoint_address_new_3(peer_id, NULL, NULL);
     if (JXTA_SUCCESS == get_messenger(me, fc_ea, FALSE, &msgr)) {
@@ -1098,11 +1088,12 @@ static void demux_ep_flow_control_message(Jxta_endpoint_service * me
         msgr->ts = traffic_shaping_new();
         ts = msgr->ts;
         traffic_shaping_lock(ts);
+
+        traffic_shaping_set_interval(ts, traffic_shaping_interval(me->ts));
+        traffic_shaping_set_frame(ts, traffic_shaping_frame(me->ts));
+
         traffic_shaping_set_size(ts, jxta_ep_flow_control_msg_get_size(ep_fc_msg));
         traffic_shaping_set_time(ts, jxta_ep_flow_control_msg_get_time(ep_fc_msg));
-        /* traffic_shaping_set_interval(ts, traffic_shaping_interval(me->ts)); */
-        traffic_shaping_set_interval(ts, jxta_ep_flow_control_msg_get_interval(ep_fc_msg));
-        traffic_shaping_set_frame(ts, jxta_ep_flow_control_msg_get_frame(ep_fc_msg));
         traffic_shaping_set_look_ahead(ts, jxta_ep_flow_control_msg_get_look_ahead(ep_fc_msg));
         traffic_shaping_set_reserve(ts, jxta_ep_flow_control_msg_get_reserve(ep_fc_msg));
         traffic_shaping_set_max_option(ts, jxta_ep_flow_control_msg_get_max_option(ep_fc_msg));
@@ -1116,6 +1107,8 @@ static void demux_ep_flow_control_message(Jxta_endpoint_service * me
     }
 
 FINAL_EXIT:
+    if (peerid_j)
+        JXTA_OBJECT_RELEASE(peerid_j);
     if (fc_ea)
         JXTA_OBJECT_RELEASE(fc_ea);
     if (peer_id)
@@ -2217,10 +2210,10 @@ static Jxta_status get_messenger(Jxta_endpoint_service * me, Jxta_endpoint_addre
             }
         }
 
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "No existing messenger dest [%pp] - try router\n", dest);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No existing messenger dest [%pp] - try router\n", dest);
         *msgr = jxta_transport_messenger_get(me->router_transport, dest);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Returned dest:[%pp] msgr:[%pp] - after try router\n"
-                                , dest, *msgr);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Returned msgr:[%pp] - after try router\n"
+                                , *msgr);
         if (NULL != *msgr) {
             res = JXTA_SUCCESS;
         }
@@ -2344,16 +2337,16 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_check_msg_length(Jxta_endpoint_s
 
             traffic_shaping_lock(service->ts);
             res = traffic_shaping_check_max(service->ts, length, max_length, compression, &compressed);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Checked service with msgr: [%pp] TS max_length:%" APR_INT64_T_FMT "\n"
-                        , messenger, *max_length);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Checked service with msgr:[%pp] length:%" APR_INT64_T_FMT " TS max_length:%" APR_INT64_T_FMT "\n"
+                        , messenger, length, *max_length);
             traffic_shaping_unlock(service->ts);
 
             if (NULL != messenger->ts && JXTA_LENGTH_EXCEEDED != res) {
                 traffic_shaping_lock(messenger->ts);
                 msgr_status = traffic_shaping_check_max(messenger->ts
                                 , length, &max_msgr_length, compression, &compressed);
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Checked messenger [%pp] TS max_length:%" APR_INT64_T_FMT "\n"
-                            , messenger, max_msgr_length);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Checked messenger [%pp] length:%" APR_INT64_T_FMT " TS max_length:%" APR_INT64_T_FMT "\n"
+                            , messenger, length, max_msgr_length);
                 *max_length = max_msgr_length;
                 res = msgr_status;
                 traffic_shaping_unlock(messenger->ts);
