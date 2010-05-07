@@ -1108,8 +1108,6 @@ static void demux_ep_flow_control_message(Jxta_endpoint_service * me
         traffic_shaping_set_max_option(ts, jxta_ep_flow_control_msg_get_max_option(ep_fc_msg));
         traffic_shaping_init(ts);
         traffic_shaping_unlock(ts);
-        if (peer_id)
-            JXTA_OBJECT_RELEASE(peer_id);
         if (ep_str)
             free(ep_str);
     } else {
