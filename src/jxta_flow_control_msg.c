@@ -152,6 +152,11 @@ static void jxta_ep_flow_control_msg_delete(Jxta_object * me)
 
     jxta_advertisement_destruct((Jxta_advertisement *) myself);
 
+    if (NULL != myself->peer_id)
+    {
+        JXTA_OBJECT_RELEASE(myself->peer_id);
+    }
+
     memset(myself, 0xdd, sizeof(Jxta_ep_flow_control_msg));
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Jxta_ep_flow_control_msg FREE [%pp]\n", myself);
