@@ -131,6 +131,7 @@ include_HEADERS = EndpointRouter.h          \
 		  jxta_callback.h \
 		  jxta_constants.h \
 		  jxta_version.h		\
+          jxta_rdv_lease_options.h      \
 		  jxta_qos.h
 
 
@@ -172,7 +173,6 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_rdv_service_adhoc.c       \
                      jxta_rdv_service_client.c      \
                      jxta_rdv_service_server.c      \
-                     jxta_rdv_lease_options.h       \
                      jxta_rdv_lease_options.c       \
 					 jxta_rdv_monitor_entry.c		\
                      jxta_endpoint_config_adv.c     \

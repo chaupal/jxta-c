@@ -1529,7 +1529,7 @@ JXTA_DECLARE(Jxta_boolean) rdv_service_call_candidate_list_cb(Jxta_rdv_service *
         res = jxta_rdv_service_get_peers(rdv, &connections);
 
         if (JXTA_SUCCESS == res) {
-            res = (service->candidate_list_func)(connections, candidates, new_candidates, shuffle);
+            res = (service->candidate_list_func)(service->group, connections, candidates, new_candidates, shuffle);
         }
 
         if (NULL != connections) {

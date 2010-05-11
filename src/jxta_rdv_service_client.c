@@ -1338,7 +1338,6 @@ static void process_referrals(_jxta_rdv_service_client * myself, Jxta_lease_resp
             }
             if (NULL == referral_candidate) {
                 referral_candidate = (Jxta_peer *) rdv_entry_new();
-                jxta_vector_add_object_first(myself->candidates, (Jxta_object *) referral_candidate);
                 added = TRUE;
             }
             jxta_peer_set_adv(referral_candidate, referral_adv);
@@ -1346,6 +1345,12 @@ static void process_referrals(_jxta_rdv_service_client * myself, Jxta_lease_resp
             jxta_peer_set_peerid(referral_candidate, pid);
             jxta_peer_set_expires(referral_candidate, jpr_time_now() + jxta_lease_adv_info_get_adv_exp(referral));
             jxta_id_to_jstring(pid, &jPeerid);
+           
+            if (added == TRUE)
+            {
+                jxta_vector_add_object_first(myself->candidates, (Jxta_object *) referral_candidate);
+            }
+            
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "%s referral %s \n", added == TRUE ? "Added":"Updated", jstring_get_string(jPeerid));
 
             JXTA_OBJECT_RELEASE(jPeerid);

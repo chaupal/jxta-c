@@ -208,7 +208,7 @@ JXTA_DECLARE(Jxta_status) jxta_rdv_service_add_event_listener(Jxta_rdv_service *
  * @return  TRUE - attempt connection 
  *          FALSE - Do not attempt connection (begin referral and seeding again).
  **/
-typedef Jxta_boolean(JXTA_STDCALL * Jxta_rendezvous_candidate_list_func) ( Jxta_vector * connections, Jxta_vector const *candidates, Jxta_vector **new_candidates, Jxta_boolean *shuffle);
+typedef Jxta_boolean(JXTA_STDCALL * Jxta_rendezvous_candidate_list_func) ( Jxta_PG * group, Jxta_vector * connections, Jxta_vector const *candidates, Jxta_vector **new_candidates, Jxta_boolean *shuffle);
 
 /**
  * Sets a callback that is invoked before a client attempts connecting to rendezvous peers.
