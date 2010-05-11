@@ -125,6 +125,9 @@ JXTA_DECLARE(void) jxta_RdvConfig_set_connect_cycle_normal(Jxta_RdvConfigAdverti
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_connect_cycle_fast(Jxta_RdvConfigAdvertisement *);
 JXTA_DECLARE(void) jxta_RdvConfig_set_connect_cycle_fast(Jxta_RdvConfigAdvertisement *, Jxta_time_diff);
 
+JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_max_connect_cycle_fast(Jxta_RdvConfigAdvertisement *);
+JXTA_DECLARE(void) jxta_RdvConfig_set_max_connect_cycle_fast(Jxta_RdvConfigAdvertisement *, Jxta_time_diff);
+
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_min_retry_delay(Jxta_RdvConfigAdvertisement *);
 JXTA_DECLARE(void) jxta_RdvConfig_set_min_retry_delay(Jxta_RdvConfigAdvertisement *, Jxta_time_diff);
 

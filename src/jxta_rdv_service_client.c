@@ -108,7 +108,7 @@ static const Jxta_time_diff CONNECT_THREAD_NAP_TIME_NORMAL = ((Jxta_time_diff) 6
  * means that we are not connected to a rdv.
  * Measured in relative microseconds.
  **/
-static const Jxta_time_diff CONNECT_THREAD_NAP_TIME_FAST = ((Jxta_time_diff) 2) * 1000; /* 2 Seconds */
+static const Jxta_time_diff CONNECT_THREAD_NAP_TIME_FAST = ((Jxta_time_diff) 4) * 1000; /* 4 Seconds */
 
 /**
  * Minimal number of rendezvous this client will attempt to connect to.
@@ -159,6 +159,11 @@ static const int DEFAULT_SEEDS_PROBED = 2;
 *   The maximum TTL we will allow for propagated messages.
 */
 static const int DEFAULT_MAX_TTL = 2;
+
+/**
+*   The maximum time for a client to wait when searching for a rdv
+*/
+static const Jxta_time_diff MAX_CONNECT_CYCLE_FAST = ((Jxta_time_diff) 5) * 60 * 1000; /* 5 Minutes */
 
 /**
  * Internal structure of a peer used by this service.
@@ -217,6 +222,7 @@ struct _jxta_rdv_service_client {
     Jxta_object *leasing_cookie;
 
     Jxta_time connect_time;
+    Jxta_time fast_wait_time;
 };
 
 /**
@@ -516,6 +522,9 @@ static Jxta_status init(Jxta_rdv_service_provider * provider, _jxta_rdv_service 
     if (-1 == jxta_RdvConfig_get_connect_cycle_fast(myself->rdvConfig)) {
         jxta_RdvConfig_set_connect_cycle_fast(myself->rdvConfig, CONNECT_THREAD_NAP_TIME_FAST);
     }
+    if (-1 == jxta_RdvConfig_get_max_connect_cycle_fast(myself->rdvConfig)) {
+        jxta_RdvConfig_set_max_connect_cycle_fast(myself->rdvConfig, MAX_CONNECT_CYCLE_FAST);
+    }
     if (-1 == jxta_RdvConfig_get_connect_cycle_normal(myself->rdvConfig)) {
         jxta_RdvConfig_set_connect_cycle_normal(myself->rdvConfig, CONNECT_THREAD_NAP_TIME_NORMAL);
     }
@@ -567,6 +576,8 @@ static Jxta_status start(Jxta_rdv_service_provider * provider)
     jxta_rdv_service_provider_unlock_priv(provider);
 
     myself->connect_time = jpr_time_now();
+
+    myself->fast_wait_time = jxta_RdvConfig_get_connect_cycle_fast(myself->rdvConfig);
 
     rdv_service_generate_event(provider->service, JXTA_RDV_BECAME_EDGE, provider->local_peer_id);
 
@@ -1582,9 +1593,19 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
         apr_interval_time_t wait_time;
 
         if (nbOfConnectedRdvs < (unsigned int) jxta_RdvConfig_get_min_connected_rendezvous(myself->rdvConfig)) {
-            wait_time = jxta_RdvConfig_get_connect_cycle_fast(myself->rdvConfig);
+            if (myself->fast_wait_time >= jxta_RdvConfig_get_max_connect_cycle_fast(myself->rdvConfig)) 
+            {
+                wait_time = jxta_RdvConfig_get_max_connect_cycle_fast(myself->rdvConfig);
+                myself->fast_wait_time = jxta_RdvConfig_get_max_connect_cycle_fast(myself->rdvConfig);
+            } else {
+                wait_time = myself->fast_wait_time;
+                myself->fast_wait_time += myself->fast_wait_time;
+            }
         } else {
             wait_time = jxta_RdvConfig_get_connect_cycle_normal(myself->rdvConfig);
+            /* now that we are connected, reset the fast wait time so we can attempt
+               a quick connect again when needed */
+            myself->fast_wait_time = jxta_RdvConfig_get_connect_cycle_fast(myself->rdvConfig);
         }
 
         wait_time *= 1000;  /* msec to microseconds */

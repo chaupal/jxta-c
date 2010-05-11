@@ -89,6 +89,7 @@ struct _jxta_RdvConfigAdvertisement {
     Jxta_time_diff max_retry_delay;
     Jxta_time_diff connect_cycle_normal;
     Jxta_time_diff connect_cycle_fast;
+    Jxta_time_diff max_connect_cycle_fast;
     Jxta_time_diff lease_renewal_delay;
     Jxta_time_diff rdva_refresh;
     Jxta_time_diff connect_delay;
@@ -142,6 +143,7 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfig_clone(Jxta_RdvConfigAdvertisement * ad,
     cclone->max_retry_delay = ad->max_retry_delay;
     cclone->connect_cycle_normal = ad->connect_cycle_normal;
     cclone->connect_cycle_fast = ad->connect_cycle_fast;
+    cclone->max_connect_cycle_fast = ad->max_connect_cycle_fast;
     cclone->lease_renewal_delay = ad->lease_renewal_delay;
     cclone->rdva_refresh = ad->rdva_refresh;
     cclone->connect_delay = ad->connect_delay;
@@ -280,6 +282,21 @@ JXTA_DECLARE(void) jxta_RdvConfig_set_connect_cycle_fast(Jxta_RdvConfigAdvertise
 
     ad->connect_cycle_fast = ttime;
 }
+
+JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_max_connect_cycle_fast(Jxta_RdvConfigAdvertisement * ad)
+{
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    return ad->max_connect_cycle_fast;
+}
+
+JXTA_DECLARE(void) jxta_RdvConfig_set_max_connect_cycle_fast(Jxta_RdvConfigAdvertisement * ad, Jxta_time_diff ttime)
+{
+    JXTA_OBJECT_CHECK_VALID(ad);
+
+    ad->max_connect_cycle_fast = ttime;
+}
+
 
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_get_min_retry_delay(Jxta_RdvConfigAdvertisement * ad)
 {
@@ -766,6 +783,8 @@ void handleJxta_RdvConfigAdvertisement(void *me, const XML_Char * cd, int len)
                 myself->connect_cycle_normal = atoi(atts[1]);
             } else if (0 == strcmp(*atts, "connectCycleFast")) {
                 myself->connect_cycle_fast = atoi(atts[1]);
+            } else if (0 == strcmp(*atts, "maxConnectCycleFast")) {
+                myself->max_connect_cycle_fast = atoi(atts[1]);
             } else if (0 == strcmp(*atts, "minRetryDelay")) {
                 myself->min_retry_delay = atoi(atts[1]);
             } else if (0 == strcmp(*atts, "maxRetryDelay")) {
@@ -1035,6 +1054,15 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
         jstring_append_2(string, tmpbuf);
         jstring_append_2(string, "\"");
     }
+    if (-1 != ad->max_connect_cycle_fast) {
+        jstring_append_2(string, "\n    ");
+        jstring_append_2(string, "maxConnectCycleFast=\"");
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_DIFF_TIME_FMT, ad->max_connect_cycle_fast);
+        jstring_append_2(string, tmpbuf);
+        jstring_append_2(string, "\"");
+    }
+
+
     if (-1 != ad->min_retry_delay) {
         jstring_append_2(string, "\n    ");
         jstring_append_2(string, "minRetryDelay=\"");
@@ -1333,6 +1361,7 @@ Jxta_RdvConfigAdvertisement *jxta_RdvConfigAdvertisement_construct(Jxta_RdvConfi
         self->connect_time_interval = -1;
         self->connect_cycle_normal = -1;
         self->connect_cycle_fast = -1;
+        self->max_connect_cycle_fast = -1;
         self->rdva_refresh = -1;
         self->use_only_seeds = FALSE;
         self->connect_delay = -1;
