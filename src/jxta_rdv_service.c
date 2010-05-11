@@ -1522,13 +1522,14 @@ JXTA_DECLARE(Jxta_boolean) rdv_service_call_candidate_list_cb(Jxta_rdv_service *
 {
     _jxta_rdv_service * service = (_jxta_rdv_service *) rdv;
     Jxta_boolean res = TRUE;
+    Jxta_status status = JXTA_FAILED;
 
     if (config_edge == service->current_config && NULL != service->candidate_list_func ) {
         Jxta_vector * connections = NULL;
 
-        res = jxta_rdv_service_get_peers(rdv, &connections);
+        status = jxta_rdv_service_get_peers(rdv, &connections);
 
-        if (JXTA_SUCCESS == res) {
+        if (JXTA_SUCCESS == status) {
             res = (service->candidate_list_func)(service->group, connections, candidates, new_candidates, shuffle);
         }
 
