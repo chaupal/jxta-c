@@ -937,6 +937,10 @@ Jxta_status rdv_service_start_peerview(_jxta_rdv_service * myself, RdvConfig_con
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "[%pp] Created new peerview [%pp].\n", myself, myself->peerview);
     }
+    else
+    {
+        jxta_peerview_set_auto_cycle(myself->peerview, myself->auto_rdv_interval);
+    }
 
   FINAL_EXIT:
     return res;

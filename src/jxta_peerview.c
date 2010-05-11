@@ -1706,10 +1706,26 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_flag_walk_peer_usage(Jxta_peerview * me,
 JXTA_DECLARE(void) jxta_peerview_set_auto_cycle(Jxta_peerview * pv, Jxta_time_diff ttime )
 {
     Jxta_peerview *myself = PTValid(pv, Jxta_peerview);
+    apr_status_t res = APR_SUCCESS;
+    Jxta_time_diff origCycleTime = 0;
 
     apr_thread_mutex_lock(myself->mutex);
 
+    origCycleTime = myself->auto_cycle;
     myself->auto_cycle = 1000 * ttime;
+
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In set auto cycle, origCycleTime(%" APR_INT64_T_FMT "), new auto_time(%" APR_INT64_T_FMT ")\n", origCycleTime, ttime);
+
+    if (NULL != myself->thread_pool &&origCycleTime <= 0 && ttime > 0) {
+        myself->iterations_since_switch = 0;
+        myself->loneliness_factor = 0;
+        res = apr_thread_pool_schedule(myself->thread_pool, activity_peerview_auto_cycle, myself, myself->auto_cycle, &myself->auto_cycle);
+
+        if (APR_SUCCESS != res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "[%pp]: Could not schedule auto cycle activity : %d\n", myself, res);
+        }
+
+    }
 
     apr_thread_mutex_unlock(myself->mutex);
 
@@ -8753,11 +8769,10 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
     int tmp_iterations_since_switch = -1;
     Jxta_boolean locked = FALSE;
 
-
     if (PV_STOPPED == me->state) {
         return NULL;
     }
-
+    
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "ACT[auto-cycle] %pp RUN.\n", me);
 
     apr_thread_mutex_lock(me->mutex);
