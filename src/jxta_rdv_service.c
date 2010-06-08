@@ -1025,7 +1025,7 @@ JXTA_DECLARE(Jxta_status) rdv_service_switch_config(Jxta_rdv_service * rdv, RdvC
     _jxta_rdv_service *myself = PTValid(rdv, _jxta_rdv_service);
     Jxta_rdv_service_provider *newProvider;
     Jxta_rdv_service_provider *oldProvider;
-    RendezVousStatus new_status = myself->current_config;
+    RendezVousStatus new_status = myself->status;
     Jxta_boolean locked = FALSE;
 
     if ((NULL != myself->provider) && (myself->current_config == config)) {
