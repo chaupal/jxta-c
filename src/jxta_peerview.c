@@ -4433,6 +4433,8 @@ static Jxta_status peerview_handle_address_assigned_rsp_negative(Jxta_peerview *
     Jxta_vector *free_hash_list=NULL;
     JString *back_in_free=NULL;
 
+    apr_thread_mutex_lock(myself->mutex);
+
     back_in_free = jstring_new_2(jxta_peerview_address_assign_msg_get_target_hash(addr_assign));
     if (NULL == myself->free_hash_list) {
         myself->free_hash_list = jxta_vector_new(0);
@@ -4441,10 +4443,14 @@ static Jxta_status peerview_handle_address_assigned_rsp_negative(Jxta_peerview *
 
     jxta_peerview_address_assign_msg_get_free_hash_list(addr_assign, &free_hash_list);
 
-    jxta_vector_addall_objects_last(myself->free_hash_list, free_hash_list);
+    if (NULL != free_hash_list) {
+        jxta_vector_addall_objects_last(myself->free_hash_list, free_hash_list);
+    }
     peerview_send_address_assign_unlock(myself);
-
     jxta_hashtable_clear(myself->activity_address_locked_peers);
+
+    apr_thread_mutex_unlock(myself->mutex);
+
     JXTA_OBJECT_RELEASE(free_hash_list);
     JXTA_OBJECT_RELEASE(back_in_free);
     BN_free(target_hash);

@@ -480,7 +480,7 @@ JXTA_DECLARE(void) jxta_peerview_pong_msg_set_free_hash_list(Jxta_peerview_pong_
     if (myself->free_hash_list)
         JXTA_OBJECT_RELEASE(myself->free_hash_list);
 
-    myself->free_hash_list = JXTA_OBJECT_SHARE(free_hash_list);
+    myself->free_hash_list = (NULL == free_hash_list) ? NULL:JXTA_OBJECT_SHARE(free_hash_list);
 }
 
 JXTA_DECLARE(Jxta_PA *) jxta_peerview_pong_msg_get_peer_adv(Jxta_peerview_pong_msg * myself)
@@ -780,7 +780,8 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml(Jxta_peerview_pong_msg 
     jstring_append_2(string, tmpbuf);
     jstring_append_2(string, "\"");
     
-    for (i=0; i < jxta_vector_size(myself->free_hash_list); i++) {
+    for (i=0; NULL != myself->free_hash_list 
+                        && i < jxta_vector_size(myself->free_hash_list); i++) {
         JString *hash_entry;
         char *tmpc=NULL;
         BIGNUM *target_bn=NULL;

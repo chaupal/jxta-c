@@ -393,9 +393,7 @@ JXTA_DECLARE(Jxta_boolean) jxta_peerview_address_assign_msg_get_free_hash_list(J
 {
     JXTA_OBJECT_CHECK_VALID(myself);
 
-    if (myself->free_hash_list) {
-        *free_list = JXTA_OBJECT_SHARE(myself->free_hash_list);
-    }
+    *free_list = NULL == myself->free_hash_list ? NULL:JXTA_OBJECT_SHARE(myself->free_hash_list);
     return myself->free_list_possible;
 }
 
