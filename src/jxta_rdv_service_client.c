@@ -1552,7 +1552,9 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
         }
 
         if (NULL != new_candidate_list) {
-            JXTA_OBJECT_RELEASE(myself->candidates);
+            if (NULL != myself->candidates) {
+                JXTA_OBJECT_RELEASE(myself->candidates);
+            }
             myself->candidates = new_candidate_list;
         }
         while (connect && (NULL == myself->candidate) && (jxta_vector_size(myself->candidates) > 0)) {

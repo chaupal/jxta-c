@@ -250,6 +250,8 @@ JXTA_DECLARE(Jxta_boolean) jxta_rdv_service_is_rendezvous(Jxta_rdv_service * rdv
 **/
 JXTA_DECLARE(Jxta_boolean) jxta_rdv_service_is_demoting(Jxta_rdv_service * rdv);
 
+JXTA_DECLARE(void) jxta_rdv_service_set_demoting(Jxta_rdv_service * rdv, Jxta_boolean demoting);
+
 /**
 * Adds an Propagation listener. The listener is invoked when there is a incoming
 * propagated message for the given EndpointAddress.

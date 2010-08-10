@@ -68,7 +68,8 @@ include_HEADERS = EndpointRouter.h          \
                   jxta_peer.h               \
                   jxta_peerview.h           \
                   jxta_peerview_monitor_entry.h \
-				  jxta_peerview_pong_msg.h  \
+		  jxta_peerview_pong_msg.h  \
+		  jxta_peerview_option_entry.h \
                   jxta_peer_private.h       \
                   jxta_peerinfo_service.h   \
                   jxta_pga.h                \
@@ -210,6 +211,7 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_peerview.c                \
 		     jxta_peerview_priv.h           \
                      jxta_peerview_monitor_entry.c \
+		     jxta_peerview_option_entry.c \
                      jxta_peerview_ping_msg.c       \
                      jxta_peerview_ping_msg.h       \
                      jxta_peerview_pong_msg.c       \

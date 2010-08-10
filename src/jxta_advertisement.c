@@ -1053,6 +1053,8 @@ void jxta_advertisement_register_global_handlers(void)
     jxta_advertisement_register_global_handler("demo:TestAdvertisement", (JxtaAdvertisementNewFunc) jxta_test_adv_new);
     jxta_advertisement_register_global_handler("jxta:PV3MonEntry", (JxtaAdvertisementNewFunc) jxta_peerview_monitor_entry_new );
     jxta_advertisement_register_global_handler("jxta:RdvMonEntry", (JxtaAdvertisementNewFunc) jxta_rdv_monitor_entry_new );
+    jxta_advertisement_register_global_handler("jxta:PV3OptionEntry", (JxtaAdvertisementNewFunc) jxta_rdv_monitor_entry_new );
+
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Global ad hash table initialized\n");
 
 

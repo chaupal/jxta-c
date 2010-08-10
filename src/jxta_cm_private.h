@@ -698,6 +698,9 @@ Jxta_status cm_get_srdi_replica_index_entries(Jxta_cm *cm, JString *peer_id_j, J
 
 Jxta_time cm_get_latest_timestamp(Jxta_cm *cm);
 
+apr_int32_t cm_number_of_srdi_entries(Jxta_cm *cm);
+apr_int32_t cm_number_of_replica_entries(Jxta_cm *cm);
+
 void cm_get_previous_delta_pid(Jxta_cm * self, Jxta_id **prev_pid);
 
 

@@ -327,6 +327,9 @@ static void jxta_rdv_service_destruct(_jxta_rdv_service * rdv)
         JXTA_OBJECT_RELEASE(myself->prop_key_j);
     }
 
+    if (NULL != myself->peerview) {
+        JXTA_OBJECT_RELEASE(myself->peerview);
+    }
     apr_thread_mutex_destroy(myself->mutex);
     apr_thread_mutex_destroy(myself->cb_mutex);
 
@@ -776,6 +779,13 @@ JXTA_DECLARE(Jxta_boolean) jxta_rdv_service_is_demoting(Jxta_rdv_service * rdv)
 
 }
 
+JXTA_DECLARE(void) jxta_rdv_service_set_demoting(Jxta_rdv_service * rdv, Jxta_boolean demoting)
+{
+    _jxta_rdv_service *myself = PTValid(rdv, _jxta_rdv_service);
+    myself->is_demoting = demoting;
+    return;
+}
+
 JXTA_DECLARE(Jxta_status) jxta_rdv_service_add_seed(Jxta_rdv_service * rdv, Jxta_peer * peer)
 {
     _jxta_rdv_service *myself = PTValid(rdv, _jxta_rdv_service);
@@ -894,10 +904,12 @@ Jxta_status rdv_service_start_peerview(_jxta_rdv_service * myself, RdvConfig_con
 {
     Jxta_status res = JXTA_SUCCESS;
     if (NULL == myself->peerview) {
+        Jxta_PG *pg;
+
         myself->peerview = jxta_peerview_new(myself->pool);
         jxta_peerview_set_auto_cycle(myself->peerview, myself->auto_rdv_interval);
-
-        res = peerview_init(myself->peerview, myself->group, jxta_service_get_assigned_ID_priv((Jxta_rdv_service*) myself));
+        pg = jxta_service_get_peergroup_priv((Jxta_service*) myself);
+        res = peerview_init(myself->peerview, pg, jxta_service_get_assigned_ID_priv((Jxta_rdv_service*) myself));
 
         if (JXTA_SUCCESS != res) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Failed to init peerview %d\n", res);
@@ -1550,6 +1562,7 @@ static void JXTA_STDCALL peerview_event_listener(Jxta_object * obj, void *arg)
     Jxta_boolean locked = FALSE;
     Jxta_peerview_event *event = (Jxta_peerview_event *) obj;
     _jxta_rdv_service *myself = PTValid(arg, _jxta_rdv_service);
+    Jxta_vector *peers=NULL;
 
     if (!myself->running) {
         /* We don't want to churn while things are shutting down. */
@@ -1608,11 +1621,16 @@ static void JXTA_STDCALL peerview_event_listener(Jxta_object * obj, void *arg)
         break;
 
     case JXTA_PEERVIEW_DEMOTE:
+
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "DEMOTE EVENT FROM PEERVIEW \n");
         if (status_rendezvous == myself->status) {
             myself->is_demoting = TRUE;
         }
-        rdv_service_switch_config((Jxta_rdv_service *)myself, config_edge);
+        if (JXTA_SUCCESS == jxta_rdv_service_get_peers((Jxta_rdv_service *) myself, &peers)) {
+            if (0 == jxta_vector_size(peers)) {
+                rdv_service_switch_config((Jxta_rdv_service *)myself, config_edge);
+            }
+        }
         break;
     default:
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Catch All for event %d ignored\n", event->event);
@@ -1620,6 +1638,8 @@ static void JXTA_STDCALL peerview_event_listener(Jxta_object * obj, void *arg)
     }
 
   FINAL_EXIT:
+    if (peers)
+        JXTA_OBJECT_RELEASE(peers);
     if (locked)
         apr_thread_mutex_unlock(myself->mutex);
 }
@@ -1743,6 +1763,7 @@ static Jxta_status JXTA_STDCALL call_entry(Jxta_object * obj, void *arg, JString
     myself->processing_callbacks++;
 
     JXTA_OBJECT_CHECK_VALID(msg);
+    myself->switch_config = FALSE;
     apr_thread_mutex_unlock(myself->mutex);
     locked = FALSE;
 

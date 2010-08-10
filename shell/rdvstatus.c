@@ -223,7 +223,7 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
                 print_peerview_peer( outputLine, peer, i );
             }
             JXTA_OBJECT_RELEASE(peer);
-            }
+        }
 
         JXTA_OBJECT_RELEASE(peers);
 
@@ -354,14 +354,14 @@ Jxta_boolean display_peers(Jxta_object * appl, Jxta_rdv_service * rdv)
     }
 
 
-    if (jxta_rdv_service_is_demoting(rdv)) {
-        jstring_append_2(outputLine, "demoting\n");
-    }
     time = jxta_rdv_service_get_running_time(rdv);
     apr_snprintf(linebuff, sizeof(linebuff), JPR_DIFF_TIME_FMT, time / 1000);
     jstring_append_2(outputLine, " running_time: ");
     jstring_append_2(outputLine, linebuff);
     jstring_append_2(outputLine, " s\n");
+    if (jxta_rdv_service_is_demoting(rdv)) {
+        jstring_append_2(outputLine, "demoting\n");
+    }
 
   Common_Exit:
     if (jstring_length(outputLine) > 0) {

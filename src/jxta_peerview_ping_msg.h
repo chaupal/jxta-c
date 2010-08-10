@@ -63,6 +63,7 @@
 #include "jxta_vector.h"
 #include "jxta_cred.h"
 #include "jxta_peer.h"
+#include "jxta_peerview_option_entry.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -93,6 +94,8 @@ JXTA_DECLARE(void) jxta_peerview_ping_msg_set_dst_peer_ea(Jxta_peerview_ping_msg
 JXTA_DECLARE(Jxta_boolean) jxta_peerview_ping_msg_is_pv_id_only(Jxta_peerview_ping_msg * myself);
 JXTA_DECLARE(void) jxta_peerview_ping_msg_set_pv_id_only(Jxta_peerview_ping_msg * myself, Jxta_boolean id_only);
 
+JXTA_DECLARE(Jxta_boolean) jxta_peerview_ping_msg_is_broadcast(Jxta_peerview_ping_msg *myself);
+
 JXTA_DECLARE(apr_uuid_t*) jxta_peerview_ping_msg_get_dest_peer_adv_gen(Jxta_peerview_ping_msg * me);
 JXTA_DECLARE(void) jxta_peerview_ping_msg_set_dest_peer_adv_gen(Jxta_peerview_ping_msg * me, apr_uuid_t*);
 
@@ -101,6 +104,7 @@ JXTA_DECLARE(void) jxta_peerview_ping_msg_set_credential(Jxta_peerview_ping_msg 
 
 JXTA_DECLARE(Jxta_vector*) jxta_peerview_ping_msg_get_options(Jxta_peerview_ping_msg * me);
 JXTA_DECLARE(void) jxta_peerview_ping_msg_set_options(Jxta_peerview_ping_msg * me, Jxta_vector*);
+JXTA_DECLARE(void) jxta_peerview_ping_msg_add_option_entry(Jxta_peerview_ping_msg *me, Jxta_peerview_option_entry *option_entry);
 
 JXTA_DECLARE(void) jxta_peerview_ping_msg_set_composite(Jxta_peerview_ping_msg *me, Jxta_boolean comp);
 JXTA_DECLARE(Jxta_boolean) jxta_peerview_ping_msg_is_composite(Jxta_peerview_ping_msg *me);
@@ -115,6 +119,7 @@ JXTA_DECLARE(Jxta_peer *) jxta_peerview_ping_msg_entry_get_pve(Jxta_pv_ping_msg_
 JXTA_DECLARE(void) jxta_peerview_ping_msg_entry_set_pv_id_only(Jxta_pv_ping_msg_group_entry * me, Jxta_boolean pv_id_only);
 JXTA_DECLARE(Jxta_boolean) jxta_peerview_ping_msg_entry_is_pv_id_only(Jxta_pv_ping_msg_group_entry * me);
 JXTA_DECLARE(JString *) jxta_peerview_ping_msg_entry_group_name(Jxta_pv_ping_msg_group_entry *me);
+
 
 #ifdef __cplusplus
 #if 0

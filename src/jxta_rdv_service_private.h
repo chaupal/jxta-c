@@ -114,7 +114,7 @@ struct _jxta_rdv_service_methods {
 typedef struct _jxta_rdv_service_methods _jxta_rdv_service_methods;
 
 enum RendezVousStatuses {
-    status_none,
+    status_none=0,
     status_unknown,
     status_adhoc,
     status_edge,

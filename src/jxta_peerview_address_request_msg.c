@@ -407,24 +407,25 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_address_request_msg_parse_file(Jxta_peer
 
 static Jxta_status validate_message(Jxta_peerview_address_request_msg * myself) {
 
-#if 0
-    if ( NULL == myself->credential ) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Credential must not be NULL [%pp]\n", myself);
-        return JXTA_INVALID_ARGUMENT;
-    }
-#endif
+    Jxta_status res=JXTA_SUCCESS;
 
     if ( (NULL != myself->current_target_hash) && (NULL == myself->current_target_hash_radius)  ) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "target hash radius must not be NULL [%pp]\n", myself);
-        return JXTA_INVALID_ARGUMENT;
+        res =JXTA_INVALID_ARGUMENT;
+        goto ERROR_EXIT;
     }
 
-    if ( NULL == myself->peer_adv ) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Peer advertisement not be NULL [%pp]\n", myself);
-        return JXTA_INVALID_ARGUMENT;
+    if (myself->peer_adv_gen_set) {
+        if ( NULL == myself->peer_adv ) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "A uuid requires a padv [%pp]\n", myself);
+            res = JXTA_INVALID_ARGUMENT;
+            goto ERROR_EXIT;
+        }
     }
 
-    return JXTA_SUCCESS;
+ERROR_EXIT:
+
+    return res;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_peerview_address_request_msg_get_xml(Jxta_peerview_address_request_msg * myself, JString ** xml)
@@ -441,11 +442,6 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_address_request_msg_get_xml(Jxta_peervie
 
     if (xml == NULL) {
         return JXTA_INVALID_ARGUMENT;
-    }
-    
-    res = validate_message(myself);
-    if( JXTA_SUCCESS != res ) {
-        return res;
     }
     
     string = jstring_new_0();
@@ -545,11 +541,6 @@ static void handle_credential(void *me, const XML_Char * cd, int len)
 
     if( 0 == len ) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <Credential> : [%pp]\n", myself);
-#if 0
-        jxta_advertisement_set_handlers((Jxta_advertisement *) server_adv, ((Jxta_advertisement *) myself)->parser, (void *) myself);
-
-        ((Jxta_advertisement *) server_adv)->atts = ((Jxta_advertisement *) myself)->atts;
-#endif
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <Credential> : [%pp]\n", myself);
     }

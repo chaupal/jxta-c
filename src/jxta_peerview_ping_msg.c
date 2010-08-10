@@ -211,15 +211,6 @@ static Jxta_status validate_message(Jxta_peerview_ping_msg * myself) {
         return JXTA_INVALID_ARGUMENT;
     }
 
-    if ( jxta_id_equals(myself->dst_peer_id, jxta_id_nullID)) {
-        if ( NULL == myself->dst_peer_ea ) { 
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Dest peer id and EA must not both be NULL [%pp]\n", myself);
-            return JXTA_INVALID_ARGUMENT;
-        }
-    } else if ( NULL != myself->dst_peer_ea ) { 
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Dest peer id and EA must not both be defined. [%pp]\n", myself);
-        return JXTA_INVALID_ARGUMENT;
-    }
 
 #if 0 
     /* FIXME 20060827 bondolo Credential processing not yet implemented. */
@@ -264,7 +255,6 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_ping_msg_parse_file(Jxta_peerview_ping_m
 
 JXTA_DECLARE(Jxta_status) jxta_peerview_ping_msg_get_xml(Jxta_peerview_ping_msg * myself, JString ** xml)
 {
-    Jxta_status res;
     JString *string;
     JString *tempstr;
     int i;
@@ -274,14 +264,10 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_ping_msg_get_xml(Jxta_peerview_ping_msg 
         return JXTA_INVALID_ARGUMENT;
     }
 
-    res = validate_message(myself);
-    if( JXTA_SUCCESS != res ) {
-        return res;
-    }
-    
     string = jstring_new_0();
 
     jstring_append_2(string, "<jxta:PeerviewPing ");
+
 
     jstring_append_2(string, " src_id=\"");
     jxta_id_to_jstring(myself->src_peer_id, &tempstr);
@@ -333,6 +319,18 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_ping_msg_get_xml(Jxta_peerview_ping_msg 
 
         JXTA_OBJECT_RELEASE(entry);
         jstring_append_2(string, "</Group>");
+    }
+    for (i=0; i < jxta_vector_size(myself->options); i++) {
+        Jxta_peerview_option_entry *entry=NULL;
+        JString *entry_j;
+
+        jxta_vector_get_object_at(myself->options, JXTA_OBJECT_PPTR(&entry), i);
+
+        jxta_peerview_option_entry_get_xml(entry, &entry_j);
+        jstring_append_1(string, entry_j);
+
+        JXTA_OBJECT_RELEASE(entry);
+        JXTA_OBJECT_RELEASE(entry_j);
     }
 
     
@@ -418,6 +416,11 @@ JXTA_DECLARE(void) jxta_peerview_ping_msg_set_pv_id_only(Jxta_peerview_ping_msg 
     myself->pv_id_only = pv_id_only;
 }
 
+JXTA_DECLARE(Jxta_boolean) jxta_peerview_ping_msg_is_broadcast(Jxta_peerview_ping_msg *myself)
+{
+    return (jxta_id_equals(myself->dst_peer_id, jxta_id_nullID) && NULL == myself->dst_peer_ea) ? TRUE:FALSE;
+}
+
 JXTA_DECLARE(apr_uuid_t *) jxta_peerview_ping_msg_get_dest_peer_adv_gen(Jxta_peerview_ping_msg * myself)
 {
     JXTA_OBJECT_CHECK_VALID(myself);
@@ -496,6 +499,12 @@ JXTA_DECLARE(Jxta_peer *) jxta_peerview_ping_msg_entry_get_pve(Jxta_pv_ping_msg_
     return NULL != myself->pve ? JXTA_OBJECT_SHARE(myself->pve):NULL;
 }
 
+JXTA_DECLARE(void) jxta_peerview_ping_msg_add_option_entry(Jxta_peerview_ping_msg *me, Jxta_peerview_option_entry *option_entry)
+{
+    jxta_vector_add_object_last(me->options, (Jxta_object *) option_entry);
+    return;
+}
+
 JXTA_DECLARE(void) jxta_peerview_ping_msg_entry_set_pv_id_only(Jxta_pv_ping_msg_group_entry * me, Jxta_boolean pv_id_only) 
 {
     JXTA_OBJECT_CHECK_VALID(me);
@@ -543,9 +552,9 @@ static void handle_peerview_ping_msg(void *me, const XML_Char * cd, int len)
                     myself->pv_id_only = FALSE;
                 }
             } else if (0 == strcmp(*atts, "src_id")) {
+
                 JString *idstr = jstring_new_2(atts[1]);
                 jstring_trim(idstr);
-                
                 JXTA_OBJECT_RELEASE(myself->src_peer_id);
                 myself->src_peer_id = NULL;
 

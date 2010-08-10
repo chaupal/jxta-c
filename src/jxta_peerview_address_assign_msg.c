@@ -180,6 +180,7 @@ JXTA_DECLARE(Jxta_peerview_address_assign_msg *) jxta_peerview_address_assign_ms
         myself->options = jxta_vector_new(0);
         myself->free_list_possible = FALSE;
         myself->cluster_peers = 0;
+        myself->address_assign_type = -1;
     }
 
     return myself;
@@ -257,10 +258,11 @@ JXTA_DECLARE(void) jxta_peerview_address_assign_msg_set_assign_peer_id(Jxta_peer
     JXTA_OBJECT_CHECK_VALID(myself);
     JXTA_OBJECT_CHECK_VALID(peer_id);
 
-    JXTA_OBJECT_RELEASE(myself->assign_peer_id);
-    
+    if (NULL != myself->assign_peer_id) {
+        JXTA_OBJECT_RELEASE(myself->assign_peer_id);
+    }
     /* peer id may not be NULL. */
-    myself->assign_peer_id = JXTA_OBJECT_SHARE(peer_id);
+    myself->assign_peer_id = (NULL != peer_id) ? JXTA_OBJECT_SHARE(peer_id):NULL;
 }
 
 JXTA_DECLARE(Jxta_address_assign_msg_type) jxta_peerview_address_assign_msg_get_type(Jxta_peerview_address_assign_msg * me)
@@ -432,30 +434,32 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_address_assign_msg_parse_file(Jxta_peerv
 
 static Jxta_status validate_message(Jxta_peerview_address_assign_msg * myself) {
 
-#if 0
-    if ( NULL == myself->credential ) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Credential must not be NULL [%pp]\n", myself);
-        return JXTA_INVALID_ARGUMENT;
-    }
-#endif
+    Jxta_status res = JXTA_SUCCESS;
 
+    if (NULL == myself->peer_id) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Peerid must not be NULL [%pp]\n", myself);
+        res = JXTA_INVALID_ARGUMENT;
+        goto ERROR_EXIT;
+
+    }
     if ( NULL == myself->instance_mask ) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Instance mask must not be NULL [%pp]\n", myself);
-        return JXTA_INVALID_ARGUMENT;
+        res = JXTA_INVALID_ARGUMENT;
+        goto ERROR_EXIT;
+    }
+    if (-1 == myself->address_assign_type) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "A message type must exist [%pp]\n", myself);
+        res = JXTA_INVALID_ARGUMENT;
+        goto ERROR_EXIT;
     }
 
-#if 0
-    if ( NULL == myself->target_hash  ) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Target hash must not be NULL [%pp]\n", myself);
-        return JXTA_INVALID_ARGUMENT;
-    }
-#endif
-    return JXTA_SUCCESS;
+ERROR_EXIT:
+
+    return res;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_peerview_address_assign_msg_get_xml(Jxta_peerview_address_assign_msg * myself, JString ** xml)
 {
-    Jxta_status res;
     JString *string;
     JString *temp;
     int i;
@@ -467,12 +471,7 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_address_assign_msg_get_xml(Jxta_peerview
     if (xml == NULL) {
         return JXTA_INVALID_ARGUMENT;
     }
-    
-    res = validate_message(myself);
-    if( JXTA_SUCCESS != res ) {
-        return res;
-    }
-    
+
     string = jstring_new_0();
 
     jstring_append_2(string, "<jxta:PeerviewAddressAssign ");

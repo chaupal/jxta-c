@@ -141,6 +141,7 @@ typedef struct {
     char *name;
     char *id;
     JString *jId;
+    Jxta_cm *cm;
     Jxta_hashtable *secondary_keys;
     apr_thread_pool_t *thread_pool;
     Jxta_addressSpace *jas;
@@ -177,6 +178,8 @@ struct _jxta_cm {
     Jxta_id *prev_delta_pid;
     int log_id;
     Jxta_boolean global_cm;
+    apr_uint32_t num_srdi;
+    apr_uint32_t num_replica;
 };
 
 typedef struct resolved_adv_type {
@@ -418,7 +421,7 @@ static Jxta_status cm_sql_select_join(DBSpace * dbSpace, apr_pool_t * pool, apr_
 static Jxta_status cm_sql_select_join_generic(DBSpace * dbSpace, apr_pool_t * pool, JString * jJoin, JString * jSort,
                                               apr_dbd_results_t ** res, JString * where, Jxta_boolean bCheckGroup);
 
-static Jxta_status cm_sql_delete_with_where(DBSpace * dbSpace, const char *table, JString * where, Jxta_boolean group_check);
+static Jxta_status cm_sql_delete_with_where(DBSpace * dbSpace, const char *table, JString * where, Jxta_boolean group_check, apr_uint32_t *ret_rows);
 
 static Jxta_status cm_sql_update_with_where(DBSpace * dbSpace, const char *table, JString * columns, JString * where);
 
@@ -1038,6 +1041,7 @@ static Jxta_status cm_address_spaces_process(Jxta_cm * self)
         dbSpace = calloc(1, sizeof(DBSpace));
         JXTA_OBJECT_INIT(dbSpace, dbSpace_free, 0);
         dbSpace->thread_pool = self->thread_pool;
+        dbSpace->cm = self;
         status = jxta_vector_get_object_at(self->addressSpaces, JXTA_OBJECT_PPTR(&jas), i);
         if (JXTA_SUCCESS != status) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Error obtaining address space -- %i\n", status);
@@ -1512,20 +1516,21 @@ static apr_status_t cm_sql_db_init(DBSpace * dbSpace, Jxta_addressSpace * jas)
     if (rv != APR_SUCCESS)
         goto FINAL_EXIT;
 
-    cm_sql_delete_with_where(dbSpace, jxta_srdiTable, NULL, TRUE);
+    cm_sql_delete_with_where(dbSpace, jxta_srdiTable, NULL, TRUE, NULL);
+    dbSpace->cm->num_srdi = 0;
 
     rv = cm_sql_table_create(dbSpace, jxta_replicaTable, jxta_replicaTable_fields[0], &pps->insert_replica_j);
     if (rv != APR_SUCCESS)
         goto FINAL_EXIT;
 
-    cm_sql_delete_with_where(dbSpace, jxta_replicaTable, NULL, TRUE);
+    rv = cm_sql_delete_with_where(dbSpace, jxta_replicaTable, NULL, TRUE, NULL);
+    dbSpace->cm->num_replica = 0;
 
-    rv = cm_sql_table_create(dbSpace, jxta_queriesTable, jxta_queriesTable_fields[0], &pps->insert_queries_j);
+    cm_sql_table_create(dbSpace, jxta_queriesTable, jxta_queriesTable_fields[0], &pps->insert_queries_j);
     if (rv != APR_SUCCESS)
         goto FINAL_EXIT;
 
-    cm_sql_delete_with_where(dbSpace, jxta_queriesTable, NULL, TRUE);
-
+    cm_sql_delete_with_where(dbSpace, jxta_queriesTable, NULL, TRUE, NULL);
     rv = cm_sql_table_create(dbSpace, jxta_srdiIndexTable, jxta_srdiIndexTable_fields[0], &pps->insert_srdi_index_j);
     if (rv != APR_SUCCESS)
         goto FINAL_EXIT;
@@ -1534,7 +1539,7 @@ static apr_status_t cm_sql_db_init(DBSpace * dbSpace, Jxta_addressSpace * jas)
     if (rv != APR_SUCCESS)
         goto FINAL_EXIT;
 
-    cm_sql_delete_with_where(dbSpace, jxta_srdiDeltaTable, NULL, FALSE);
+    cm_sql_delete_with_where(dbSpace, jxta_srdiDeltaTable, NULL, FALSE, NULL);
 
 
     /** create indexes */
@@ -1794,9 +1799,9 @@ static apr_status_t cm_best_choice_tables_clean(Jxta_cm * me)
     where = jstring_new_2(CM_COL_GroupID SQL_EQUAL);
     SQL_VALUE(where, me->jGroupID_string);
 
-    res = cm_sql_delete_with_where(me->bestChoiceDB, jxta_srdiIndexTable, where, FALSE);
+    res = cm_sql_delete_with_where(me->bestChoiceDB, jxta_srdiIndexTable, where, FALSE, NULL);
 
-    res = cm_sql_delete_with_where(me->deltaDB, jxta_srdiDeltaTable, where, FALSE);
+    res = cm_sql_delete_with_where(me->deltaDB, jxta_srdiDeltaTable, where, FALSE, NULL);
 
     if (APR_SUCCESS != res) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Error cleaning bestChoice dbs %s",
@@ -1908,6 +1913,16 @@ Jxta_time cm_get_latest_timestamp(Jxta_cm * self)
     return self->latest_timestamp;
 }
 
+apr_int32_t cm_number_of_srdi_entries(Jxta_cm *cm)
+{
+    return cm->num_srdi;
+}
+
+apr_int32_t cm_number_of_replica_entries(Jxta_cm *cm)
+{
+    return cm->num_replica;
+}
+
 void cm_get_previous_delta_pid(Jxta_cm * self, Jxta_id **prev_pid)
 {
     if (NULL != self->prev_delta_pid) {
@@ -1981,12 +1996,12 @@ Jxta_status cm_remove_advertisement(Jxta_cm * self, const char *folder_name, cha
                             status);
             continue;
         }
-        status = cm_sql_delete_with_where(dbSpace, CM_TBL_ADVERTISEMENTS, where, TRUE);
+        status = cm_sql_delete_with_where(dbSpace, CM_TBL_ADVERTISEMENTS, where, TRUE, NULL);
         if (JXTA_SUCCESS != status) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s Error removing Advertisement -- %i\n",
                             dbSpace->conn->log_id, dbSpace->id, status);
         }
-        status = cm_sql_delete_with_where(dbSpace, CM_TBL_ELEM_ATTRIBUTES, where, TRUE);
+        status = cm_sql_delete_with_where(dbSpace, CM_TBL_ELEM_ATTRIBUTES, where, TRUE, NULL);
         if (JXTA_SUCCESS != status) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s Error removing ElementAttributes -- %i\n",
                             dbSpace->conn->log_id, dbSpace->id, status);
@@ -3461,7 +3476,7 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
             SQL_VALUE(where, jRemoveSource);
             jstring_append_2(where, SQL_AND CM_COL_SeqNumber SQL_EQUAL);
             SQL_VALUE(where, *jRemoveSeqNumber);
-            cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_DELTA, where, FALSE);
+            cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_DELTA, where, FALSE, NULL);
             JXTA_OBJECT_RELEASE(jRemoveSource);
             if (entry->expiration > 0) {
                 *update_srdi = TRUE;
@@ -4575,7 +4590,7 @@ Jxta_status cm_get_resend_delta_entries(Jxta_cm * me, JString * peerid_j, Jxta_v
             } else {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Adding peer %s to reverse entries and removing from the delta\n", rep_id);
                 /* remove the entry since the replicating peer should re-replicate */
-                rv = cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_DELTA, where, FALSE);
+                rv = cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_DELTA, where, FALSE, NULL);
                 if (rv) {
                     JXTA_OBJECT_RELEASE(entry);
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- cm_save_delta_entry Delete failed: %s %i\n",
@@ -6565,13 +6580,20 @@ void cm_remove_srdi_entries(Jxta_cm * self, JString * peerid, Jxta_vector **srdi
 
     *srdi_entries = cm_get_srdi_entries_1(self, NULL, NULL, peerid);
     dbSpace = JXTA_OBJECT_SHARE(self->bestChoiceDB);
-    cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_DELTA, where, FALSE);
-    cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_INDEX, where, FALSE);
+    cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_DELTA, where, FALSE, NULL);
+    cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_INDEX, where, FALSE, NULL);
     JXTA_OBJECT_RELEASE(dbSpace);
     for (i = 0; i < jxta_vector_size(self->dbSpaces); i++) {
+        apr_uint32_t rows;
         jxta_vector_get_object_at(self->dbSpaces, JXTA_OBJECT_PPTR(&dbSpace), i);
-        cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI, where, FALSE);
-        cm_sql_delete_with_where(dbSpace, CM_TBL_REPLICA, where, FALSE);
+        cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI, where, FALSE, &rows);
+        while (rows--) {
+            apr_atomic_dec32(&self->num_srdi);
+        }
+        cm_sql_delete_with_where(dbSpace, CM_TBL_REPLICA, where, FALSE, &rows);
+        while (rows--) {
+            apr_atomic_dec32(&self->num_replica);
+        }
         JXTA_OBJECT_RELEASE(dbSpace);
     }
     JXTA_OBJECT_RELEASE(where);
@@ -6620,7 +6642,7 @@ void cm_remove_srdi_delta_entries(Jxta_cm * me, JString * jPeerid, Jxta_vector *
         SQL_VALUE(jWhere, me->jGroupID_string);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "db_id: %d %s Removing from delta table %s \n", dbSpace->conn->log_id,
                         dbSpace->id, jstring_get_string(jWhere));
-        cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_DELTA, jWhere, FALSE);
+        cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_DELTA, jWhere, FALSE, NULL);
         apr_thread_mutex_unlock(dbSpace->conn->lock);
         JXTA_OBJECT_RELEASE(jWhere);
     } else {
@@ -6631,7 +6653,7 @@ void cm_remove_srdi_delta_entries(Jxta_cm * me, JString * jPeerid, Jxta_vector *
                                 "Unable to retrieve dbSpace removing srdi delta delta status=%i\n", status);
                 continue;
             }
-            cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_DELTA, NULL, TRUE);
+            cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_DELTA, NULL, TRUE, NULL);
             JXTA_OBJECT_RELEASE(dbSpace);
             dbSpace = NULL;
         }
@@ -7207,6 +7229,11 @@ static Jxta_status cm_srdi_element_save(DBSpace * dbSpace, JString * Handler, JS
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- Unable to save srdi entry rc=%i\n",
                         dbSpace->conn->log_id, dbSpace->id, rv);
             status = JXTA_FAILED;
+        } else {
+            apr_uint32_t *type_inserted;
+
+            type_inserted = replica ? &dbSpace->cm->num_replica:&dbSpace->cm->num_srdi;
+            apr_atomic_inc32(type_inserted);
         }
         JXTA_OBJECT_RELEASE(jAdjValue);
         JXTA_OBJECT_RELEASE(jAdjNumValue);
@@ -7341,7 +7368,7 @@ static Jxta_status cm_srdi_index_save(Jxta_cm * me, const char *alias, JString *
             jstring_append_2(where, SQL_AND CM_COL_GroupID SQL_EQUAL);
             SQL_VALUE(where, me->jGroupID_string);
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Remove entry from the index where %s\n", jstring_get_string(where));
-            cm_sql_delete_with_where(me->bestChoiceDB, CM_TBL_SRDI_INDEX, where, FALSE);
+            cm_sql_delete_with_where(me->bestChoiceDB, CM_TBL_SRDI_INDEX, where, FALSE, NULL);
             JXTA_OBJECT_RELEASE(where);
         }
         JXTA_OBJECT_RELEASE(jSeq);
@@ -7582,6 +7609,7 @@ static Jxta_status cm_srdi_item_update(DBSpace * dbSpace, const char *table, JSt
             JXTA_OBJECT_RELEASE(adjNumValue);
     } else {
         int i=0;
+        apr_uint32_t *type_deleted;
         const char *items[DELETE_SRDI_REPLICA_ITEMS];
 
         items[i++] = jstring_get_string(jAdvid);
@@ -7595,8 +7623,10 @@ static Jxta_status cm_srdi_item_update(DBSpace * dbSpace, const char *table, JSt
 
         if (!strcmp(table, CM_TBL_SRDI)) {
             pps = dbSpace->conn->pp_statements->delete_srdi;
+            type_deleted = &dbSpace->cm->num_srdi;
         } else {
             pps = dbSpace->conn->pp_statements->delete_replica;
+            type_deleted = &dbSpace->cm->num_replica;
         }
 
         LOG_PARM_LIST("delete item ", items, DELETE_SRDI_REPLICA_ITEMS)
@@ -7608,6 +7638,9 @@ static Jxta_status cm_srdi_item_update(DBSpace * dbSpace, const char *table, JSt
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "db_id: %d %s -- Couldn't delete %s  rc=%i\n",
                         dbSpace->conn->log_id, dbSpace->id, apr_dbd_error(dbSpace->conn->driver, dbSpace->conn->sql, rv), rv);
         } else {
+            while (0 != nrows--) {
+                apr_atomic_dec32(type_deleted);
+            }
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Deleted %d srdi/replica entries\n", nrows);
         }
 
@@ -7714,7 +7747,7 @@ static Jxta_status cm_sql_delta_entry_update(DBSpace * dbSpace, JString * jPeeri
 
 
     if (0 == entry->expiration) {
-        status = cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_DELTA, where, FALSE);
+        status = cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_DELTA, where, FALSE, NULL);
     } else {
         JString *columns = NULL;
         char aTmp[24];
@@ -7876,7 +7909,7 @@ static Jxta_status cm_item_delete(DBSpace * dbSpace, const char *table, const ch
     return status;
 }
 
-static Jxta_status cm_sql_delete_with_where(DBSpace * dbSpace, const char *table, JString * where, Jxta_boolean group_check)
+static Jxta_status cm_sql_delete_with_where(DBSpace * dbSpace, const char *table, JString * where, Jxta_boolean group_check, apr_uint32_t *ret_rows)
 {
     int rv = 0;
     int nrows = 0;
@@ -7906,6 +7939,8 @@ static Jxta_status cm_sql_delete_with_where(DBSpace * dbSpace, const char *table
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d %s -- Deleted %i rows  %s\n", dbSpace->conn->log_id,
                         dbSpace->id, nrows, jstring_get_string(statement));
+        if (NULL != ret_rows)
+            *ret_rows = nrows;
     }
     JXTA_OBJECT_RELEASE(statement);
     return status;
@@ -7948,33 +7983,42 @@ static Jxta_status cm_expired_records_remove(DBSpace * dbSpace, const char *fold
     Jxta_status status = JXTA_SUCCESS;
     JString *jTime = jstring_new_0();
     JString *where = jstring_new_0();
+    apr_uint32_t rows;
 
     cm_sql_correct_space(folder_name, where);
 
     jstring_append_2(where, SQL_AND);
     cm_sql_append_timeout_check_less(where);
 
-    status = cm_sql_delete_with_where(dbSpace, CM_TBL_ELEM_ATTRIBUTES, where, TRUE);
+    status = cm_sql_delete_with_where(dbSpace, CM_TBL_ELEM_ATTRIBUTES, where, TRUE, NULL);
     if (status != JXTA_SUCCESS)
         goto finish;
 
-    status = cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI, where, TRUE);
-    if (status != JXTA_SUCCESS)
+    status = cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI, where, TRUE, &rows);
+    if (status != JXTA_SUCCESS) {
         goto finish;
-    status = cm_sql_delete_with_where(dbSpace, CM_TBL_REPLICA, where, TRUE);
-    if (status != JXTA_SUCCESS)
+    } else {
+        while (rows--)
+            apr_atomic_dec32(&dbSpace->cm->num_srdi);
+    }
+    status = cm_sql_delete_with_where(dbSpace, CM_TBL_REPLICA, where, TRUE, &rows);
+    if (status != JXTA_SUCCESS) {
         goto finish;
-    status = cm_sql_delete_with_where(dbSpace, CM_TBL_ADVERTISEMENTS, where, TRUE);
+    } else {
+        while (rows--)
+            apr_atomic_dec32(&dbSpace->cm->num_replica);
+    }
+    status = cm_sql_delete_with_where(dbSpace, CM_TBL_ADVERTISEMENTS, where, TRUE, NULL);
     if (status != JXTA_SUCCESS)
         goto finish;
 
     if (all) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "db_id: %d Removing from bestChoice tables\n", dbSpace->conn->log_id);
-        status = cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_INDEX, where, TRUE);
+        status = cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_INDEX, where, TRUE, NULL);
         if (status != JXTA_SUCCESS)
             goto finish;
 
-        status = cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_DELTA, where, TRUE);
+        status = cm_sql_delete_with_where(dbSpace, CM_TBL_SRDI_DELTA, where, TRUE, NULL);
         if (status != JXTA_SUCCESS)
             goto finish;
     }

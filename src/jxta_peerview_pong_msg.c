@@ -230,6 +230,7 @@ JXTA_DECLARE(Jxta_peerview_pong_msg *) jxta_peerview_pong_msg_new(void)
         myself->is_rendezvous = FALSE;
         myself->is_demoting = FALSE;
         myself->pong_action = PONG_STATUS;
+        myself->rdv_state = -1;
     }
 
     return myself;
@@ -243,34 +244,28 @@ static void peerview_pong_msg_delete(Jxta_object * me)
         JXTA_OBJECT_RELEASE(myself->credential);
         myself->credential = NULL;
     }
-
     if (myself->instance_mask) {
         JXTA_OBJECT_RELEASE(myself->instance_mask);
         myself->instance_mask = NULL;
     }
-
-    JXTA_OBJECT_RELEASE(myself->peer);
-
+    if (myself->peer)
+        JXTA_OBJECT_RELEASE(myself->peer);
     if (myself->peer_adv) {
         JXTA_OBJECT_RELEASE(myself->peer_adv);
         myself->peer_adv = NULL;
     }
-
     if (myself->free_hash_list) {
         JXTA_OBJECT_RELEASE(myself->free_hash_list);
         myself->free_hash_list = NULL;
     }
-
     if (myself->partners) {
         JXTA_OBJECT_RELEASE(myself->partners);
         myself->partners = NULL;
     }
-
     if (myself->associates) {
         JXTA_OBJECT_RELEASE(myself->associates);
         myself->associates = NULL;
     }
-
     if (myself->candidates) {
         JXTA_OBJECT_RELEASE(myself->candidates);
         myself->candidates = NULL;
@@ -641,35 +636,43 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_parse_file(Jxta_peerview_pong_m
     return res;
 }
 
-static Jxta_status validate_message(Jxta_peerview_pong_msg * myself) {
+static Jxta_status validate_message(Jxta_peerview_pong_msg * myself) 
+{
+    Jxta_status res=JXTA_SUCCESS;
+    int i;
 
-    if ( (NULL == myself->peer->peer_id) || jxta_id_equals(myself->peer->peer_id, jxta_id_nullID) ) {
+    if ((NULL == myself->peer->peer_id) || jxta_id_equals(myself->peer->peer_id, jxta_id_nullID) ) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "peer id must not be NULL [%pp]\n", myself);
-        return JXTA_INVALID_ARGUMENT;
+        res = JXTA_INVALID_ARGUMENT;
+        goto FINAL_EXIT;
     }
 
     if (myself->pv_id_gen_only) {
         if (myself->pv_id_gen_set) {
-            return JXTA_SUCCESS;
+            goto FINAL_EXIT;
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "must have a pv_id_gen if pv_id_gen_only is indicated [%pp]\n", myself);
-            return JXTA_INVALID_ARGUMENT;
+        res = JXTA_INVALID_ARGUMENT;
+        goto FINAL_EXIT;
         }
     }
 
     if ( NULL == myself->instance_mask ) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Instance mask must not be NULL [%pp]\n", myself);
-        return JXTA_INVALID_ARGUMENT;
+        res = JXTA_INVALID_ARGUMENT;
+        goto FINAL_EXIT;
     }
 
     if ( NULL == myself->peer->target_hash ) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "target hash must not be NULL [%pp]\n", myself);
-        return JXTA_INVALID_ARGUMENT;
+        res = JXTA_INVALID_ARGUMENT;
+        goto FINAL_EXIT;
     }
 
     if ( NULL == myself->peer->target_hash_radius ) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "target hash radius must not be NULL [%pp]\n", myself);
-        return JXTA_INVALID_ARGUMENT;
+        res = JXTA_INVALID_ARGUMENT;
+        goto FINAL_EXIT;
     }
     
     if( NULL != myself->peer_adv ) {
@@ -679,11 +682,93 @@ static Jxta_status validate_message(Jxta_peerview_pong_msg * myself) {
         JXTA_OBJECT_RELEASE(pid);
         if( !same ) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "peer id and peer advertisement id not the same. [%pp]\n", myself);
-            return JXTA_INVALID_ARGUMENT;
+        res = JXTA_INVALID_ARGUMENT;
+        goto FINAL_EXIT;
         }
     }
+    for (i=0; NULL != myself->associates && i<jxta_vector_size(myself->associates); i++) {
+        Jxta_peerview_peer_info *peer;
+        Jxta_boolean break_out=FALSE;
 
-    return JXTA_SUCCESS;
+        res = jxta_vector_get_object_at(myself->associates, JXTA_OBJECT_PPTR(&peer), i);
+        if (JXTA_SUCCESS != res) {
+            res = JXTA_FAILED;
+            goto FINAL_EXIT;
+        }
+        if (!peer->peer_adv_gen_set) {
+            res = JXTA_INVALID_ARGUMENT;
+            break_out = TRUE;
+        }
+        if (!peer->peer_id) {
+            res = JXTA_INVALID_ARGUMENT;
+            break_out = TRUE;
+        }
+        if (NULL == peer->target_hash || NULL == peer->target_hash_radius) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR
+                            , "associate target hash or radius must not be NULL [%pp]\n", myself);
+            res = JXTA_INVALID_ARGUMENT;
+            break_out = TRUE;
+        }
+        JXTA_OBJECT_RELEASE(peer);
+        if (break_out) goto FINAL_EXIT;
+    }
+    for (i=0; NULL != myself->partners && i<jxta_vector_size(myself->partners); i++) {
+        Jxta_peerview_peer_info *peer;
+        Jxta_boolean break_out=FALSE;
+
+        res = jxta_vector_get_object_at(myself->partners, JXTA_OBJECT_PPTR(&peer), i);
+        if (JXTA_SUCCESS != res) {
+            res = JXTA_FAILED;
+            goto FINAL_EXIT;
+        }
+        if (!peer->peer_adv_gen_set) {
+            res = JXTA_INVALID_ARGUMENT;
+            break_out = TRUE;
+        }
+        if (!peer->peer_id) {
+            res = JXTA_INVALID_ARGUMENT;
+            break_out = TRUE;
+        }
+        if (NULL == peer->target_hash || NULL == peer->target_hash_radius) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR
+                            , "partner target hash or radius must not be NULL [%pp]\n", myself);
+            res = JXTA_INVALID_ARGUMENT;
+            break_out = TRUE;
+        }
+        JXTA_OBJECT_RELEASE(peer);
+        if (break_out) goto FINAL_EXIT;
+    }
+
+    for (i=0; NULL != myself->candidates && i<jxta_vector_size(myself->candidates); i++) {
+        Jxta_peerview_peer_info *peer;
+        Jxta_boolean break_out=FALSE;
+
+        res = jxta_vector_get_object_at(myself->candidates, JXTA_OBJECT_PPTR(&peer), i);
+        if (JXTA_SUCCESS != res) {
+            res = JXTA_FAILED;
+            goto FINAL_EXIT;
+        }
+        if (!peer->peer_adv_gen_set) {
+            res = JXTA_INVALID_ARGUMENT;
+            break_out = TRUE;
+        }
+        if (!peer->peer_id) {
+            res = JXTA_INVALID_ARGUMENT;
+            break_out = TRUE;
+        }
+         if (NULL == peer->target_hash || NULL == peer->target_hash_radius) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR
+                            , "candidate target hash or radius must not be NULL [%pp]\n", myself);
+            res = JXTA_INVALID_ARGUMENT;
+            break_out = TRUE;
+        }
+        JXTA_OBJECT_RELEASE(peer);
+       if (break_out) goto FINAL_EXIT;
+    }
+
+FINAL_EXIT:
+
+    return res;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml_1(Jxta_peerview_pong_msg * myself, JString ** xml)
@@ -744,12 +829,6 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_pong_msg_get_xml(Jxta_peerview_pong_msg 
     if (xml == NULL) {
         return JXTA_INVALID_ARGUMENT;
     }
-    
-    res = validate_message(myself);
-    if( JXTA_SUCCESS != res ) {
-        return res;
-    }
-    
     string = jstring_new_0();
 
     jstring_append_2(string, "<jxta:PeerviewPong");
@@ -1124,6 +1203,7 @@ static void handle_peerview_pong_msg(void *me, const XML_Char * cd, int len)
                         myself->is_demoting = TRUE;
                         break;
                 };
+                myself->rdv_state = state;
             } else if (0 == strcmp(*atts, "pong_action")) {
                 Jxta_pong_msg_action action;
                 action = atoi(atts[1]);
@@ -1730,7 +1810,8 @@ static void peerview_peer_info_delete(Jxta_object * me)
 {
     Jxta_peerview_peer_info *myself = (Jxta_peerview_peer_info *) me;
     
-    JXTA_OBJECT_RELEASE(myself->peer_id);
+    if (myself->peer_id)
+        JXTA_OBJECT_RELEASE(myself->peer_id);
 
     if( NULL != myself->target_hash ) {
         JXTA_OBJECT_RELEASE(myself->target_hash);

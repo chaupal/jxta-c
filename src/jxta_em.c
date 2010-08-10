@@ -237,22 +237,6 @@ static Jxta_status validate_message(Jxta_endpoint_message * myself) {
 
     JXTA_OBJECT_CHECK_VALID(myself);
 
-    if (TRUE) return JXTA_SUCCESS;
-    if ( jxta_id_equals(myself->src_peer_id, jxta_id_nullID)) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Source peer id must not be NULL [%pp]\n", myself);
-        return JXTA_INVALID_ARGUMENT;
-    }
-
-    if ( jxta_id_equals(myself->dst_peer_id, jxta_id_nullID)) {
-        if ( NULL == myself->dst_peer_ea ) { 
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Dest peer id and EA must not both be NULL [%pp]\n", myself);
-            return JXTA_INVALID_ARGUMENT;
-        }
-    } else if ( NULL != myself->dst_peer_ea ) { 
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Dest peer id and EA must not both be defined. [%pp]\n", myself);
-        return JXTA_INVALID_ARGUMENT;
-    }
-
 #if 0 
     /* FIXME 20060827 bondolo Credential processing not yet implemented. */
     if ( NULL != myself->credential ) {
