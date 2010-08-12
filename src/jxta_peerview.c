@@ -353,6 +353,7 @@ struct _jxta_peerview {
     Jxta_boolean activity_maintain_last_pves_modcount;
     Jxta_vector *activity_maintain_referral_peers;
     unsigned int activity_maintain_referral_pings_sent;
+    Jxta_peerview_option_entry *metrics_option_entry;
 
     /* ACTIVITY Address Locking */
     Jxta_time activity_address_locking_ends;
@@ -444,7 +445,7 @@ static Jxta_status create_self_pve(Jxta_peerview * myself, BIGNUM * address);
 static void peerview_update_id(Jxta_peerview * myself);
 static void peerview_has_changed(Jxta_peerview * myself);
 
-static Jxta_status peerview_maintain(Jxta_peerview *myself, Jxta_boolean all, Jxta_hashtable **ret_msgs);
+static Jxta_status peerview_maintain(Jxta_peerview *myself, Jxta_boolean all, Jxta_peerview_option_entry *option_entry, Jxta_hashtable **ret_msgs);
 static Jxta_vector * peerview_get_pvs(JString *request_group);
 static Peerview_entry *peerview_get_pve(Jxta_peerview * myself, Jxta_PID * pid);
 static Jxta_boolean peerview_check_pve(Jxta_peerview * myself, Jxta_PID * pid);
@@ -943,6 +944,9 @@ static void peerview_destruct(Jxta_peerview * myself)
     }
     if (NULL != myself->activity_address_free_peers) {
         JXTA_OBJECT_RELEASE(myself->activity_address_free_peers);
+    }
+    if (NULL != myself->metrics_option_entry) {
+        JXTA_OBJECT_RELEASE(myself->metrics_option_entry);
     }
     if (NULL != myself->activity_locate_seeds) {
         JXTA_OBJECT_RELEASE(myself->activity_locate_seeds);
@@ -2514,8 +2518,9 @@ static Jxta_status peerview_create_ping_msg(Jxta_peerview * myself, Jxta_peer * 
         }
     }
     jxta_peerview_ping_msg_set_pv_id_only(*ping, pv_id_only);
-    peerview_create_metrics_option_entry(myself, &option_entry);
-    jxta_peerview_ping_msg_add_option_entry(*ping, option_entry);
+    if (NULL != myself->metrics_option_entry) {
+        jxta_peerview_ping_msg_add_option_entry(*ping, myself->metrics_option_entry);
+    }
     jxta_peerview_ping_msg_set_dest_peer_adv_gen(*ping, adv_gen);
     JXTA_OBJECT_CHECK_VALID(*ping);
 
@@ -2651,7 +2656,6 @@ static Jxta_status peerview_create_pong_msg(Jxta_peerview * myself, Jxta_pong_ms
     Jxta_vector *peers=NULL;
     apr_uuid_t adv_gen;
     Jxta_rdv_lease_options *rdv_options=NULL;
-    Jxta_peerview_option_entry * option_entry=NULL;
 
     pong = jxta_peerview_pong_msg_new();
 
@@ -2716,8 +2720,9 @@ static Jxta_status peerview_create_pong_msg(Jxta_peerview * myself, Jxta_pong_ms
         jxta_peerview_pong_msg_add_option(pong, (Jxta_advertisement *) rdv_options);
         JXTA_OBJECT_RELEASE(rdv_options);
     }
-    peerview_create_metrics_option_entry(myself, &option_entry);
-    jxta_peerview_pong_msg_add_option(pong, (Jxta_advertisement *) option_entry);
+    if (NULL != myself->metrics_option_entry) {
+        jxta_peerview_pong_msg_add_option(pong, (Jxta_advertisement *) myself->metrics_option_entry);
+    }
     jxta_peerview_pong_msg_set_peer_adv_exp(pong, jxta_RdvConfig_pv_entry_expires(myself->rdvConfig));
 
     if (candidates_only) {
@@ -2814,8 +2819,6 @@ static Jxta_status peerview_create_pong_msg(Jxta_peerview * myself, Jxta_pong_ms
     }
     JXTA_OBJECT_RELEASE(pa);
     JXTA_OBJECT_RELEASE(peers);
-    if (option_entry)
-        JXTA_OBJECT_RELEASE(option_entry);
     *pong_msg = pong;
 
     return res;
@@ -8088,7 +8091,14 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
             }
 
             if (PV_MAINTENANCE == pv->state) {
-                peerview_maintain(pv, msgs_size > 0 ? TRUE:FALSE, &ret_msgs);
+                Jxta_peerview_option_entry *option_entry=NULL;
+
+                peerview_create_metrics_option_entry(myself, &option_entry);
+                if (NULL != myself->metrics_option_entry && NULL != option_entry) {
+                    JXTA_OBJECT_RELEASE(myself->metrics_option_entry);
+                    myself->metrics_option_entry = NULL;
+                }
+                peerview_maintain(pv, msgs_size > 0 ? TRUE:FALSE, option_entry, &ret_msgs);
             }
             peerview_send_ping(pv, NULL, NULL, FALSE, TRUE);
             JXTA_OBJECT_RELEASE(pv);
@@ -8223,7 +8233,7 @@ RESCHEDULE_EXIT:
 
 }
 
-static Jxta_status peerview_maintain(Jxta_peerview *myself, Jxta_boolean all, Jxta_hashtable **ret_msgs)
+static Jxta_status peerview_maintain(Jxta_peerview *myself, Jxta_boolean all, Jxta_peerview_option_entry *option_entry, Jxta_hashtable **ret_msgs)
 {
     Jxta_vector * current_pves;
     apr_status_t apr_res;
@@ -8236,7 +8246,12 @@ static Jxta_status peerview_maintain(Jxta_peerview *myself, Jxta_boolean all, Jx
         apr_thread_mutex_unlock(myself->mutex);
         goto FINAL_EXIT;
     }
-
+    if (NULL != option_entry) {
+        if (NULL != myself->metrics_option_entry) {
+            JXTA_OBJECT_RELEASE(myself->metrics_option_entry);
+        }
+        myself->metrics_option_entry = option_entry;
+    }
     current_pves = peerview_get_all_pves(myself);
 
     check_pves(myself, current_pves, all, ret_msgs);
@@ -8251,6 +8266,7 @@ static Jxta_status peerview_maintain(Jxta_peerview *myself, Jxta_boolean all, Jx
     if (PV_ADDRESSING != myself->state && PV_MAINTENANCE != myself->state) {
         goto FINAL_EXIT;
     }
+
 
     if (jxta_vector_size(myself->possible_free_list) > 0) {
         peerview_reclaim_addresses(myself);
