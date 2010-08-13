@@ -939,6 +939,9 @@ static void peerview_destruct(Jxta_peerview * myself)
     if (NULL != myself->activity_address_locked_peers) {
         JXTA_OBJECT_RELEASE(myself->activity_address_locked_peers);
     }
+    if (NULL != myself->activity_address_locking_peer) {
+        free(myself->activity_address_locking_peer);
+    }
     if (NULL != myself->activity_address_assign_peer) {
         JXTA_OBJECT_RELEASE(myself->activity_address_assign_peer);
     }
@@ -2518,9 +2521,13 @@ static Jxta_status peerview_create_ping_msg(Jxta_peerview * myself, Jxta_peer * 
         }
     }
     jxta_peerview_ping_msg_set_pv_id_only(*ping, pv_id_only);
+
+    apr_thread_mutex_lock(myself->mutex);
     if (NULL != myself->metrics_option_entry) {
         jxta_peerview_ping_msg_add_option_entry(*ping, myself->metrics_option_entry);
     }
+    apr_thread_mutex_unlock(myself->mutex);
+
     jxta_peerview_ping_msg_set_dest_peer_adv_gen(*ping, adv_gen);
     JXTA_OBJECT_CHECK_VALID(*ping);
 
@@ -2720,9 +2727,12 @@ static Jxta_status peerview_create_pong_msg(Jxta_peerview * myself, Jxta_pong_ms
         jxta_peerview_pong_msg_add_option(pong, (Jxta_advertisement *) rdv_options);
         JXTA_OBJECT_RELEASE(rdv_options);
     }
+    apr_thread_mutex_lock(myself->mutex);
     if (NULL != myself->metrics_option_entry) {
         jxta_peerview_pong_msg_add_option(pong, (Jxta_advertisement *) myself->metrics_option_entry);
     }
+    apr_thread_mutex_unlock(myself->mutex);
+
     jxta_peerview_pong_msg_set_peer_adv_exp(pong, jxta_RdvConfig_pv_entry_expires(myself->rdvConfig));
 
     if (candidates_only) {
@@ -8094,10 +8104,7 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
                 Jxta_peerview_option_entry *option_entry=NULL;
 
                 peerview_create_metrics_option_entry(myself, &option_entry);
-                if (NULL != myself->metrics_option_entry && NULL != option_entry) {
-                    JXTA_OBJECT_RELEASE(myself->metrics_option_entry);
-                    myself->metrics_option_entry = NULL;
-                }
+
                 peerview_maintain(pv, msgs_size > 0 ? TRUE:FALSE, option_entry, &ret_msgs);
             }
             peerview_send_ping(pv, NULL, NULL, FALSE, TRUE);
