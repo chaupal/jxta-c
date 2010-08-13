@@ -1491,6 +1491,13 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
             Jxta_vector *active_seeds = NULL;
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Get additional candidates by obtaining seeds.\n");
 
+            /* Attempt to locate other unknown rendezvous nodes
+             * The first cycle through the list of candidates will consider seeds only, but subsequent
+             * cycles will make use of any discovered rendezvous
+             */
+            rdv_service_send_seed_request((Jxta_rdv_service *) (PTSuper(myself))->service);
+
+            /* get the current list of known rendezvous nodes */
             res = rdv_service_get_seeds((Jxta_rdv_service *) provider->service, &active_seeds, provider->service->shuffle);
 
             if (JXTA_SUCCESS != res) {
@@ -1577,10 +1584,8 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Send lease request to candidate\n");
             if(send_lease_request(myself, myself->candidate, FALSE) != JXTA_SUCCESS)
             {
-                rdv_service_send_seed_request((Jxta_rdv_service *) (PTSuper(myself))->service);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to send lease request to candidate\n");
             }
-        } else {
-            rdv_service_send_seed_request((Jxta_rdv_service *) (PTSuper(myself))->service);
         }
     } 
 
