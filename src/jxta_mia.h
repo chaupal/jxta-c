@@ -72,8 +72,8 @@ typedef struct _jxta_MIA Jxta_MIA;
 JXTA_DECLARE(Jxta_MIA *) jxta_MIA_new(void);
 JXTA_DECLARE(void) jxta_MIA_set_handlers(Jxta_MIA *, XML_Parser, void *);
 JXTA_DECLARE(Jxta_status) jxta_MIA_get_xml(Jxta_MIA *, JString **);
-JXTA_DECLARE(void) jxta_MIA_parse_charbuffer(Jxta_MIA *, const char *, int len);
-JXTA_DECLARE(void) jxta_MIA_parse_file(Jxta_MIA *, FILE * stream);
+JXTA_DECLARE(Jxta_status) jxta_MIA_parse_charbuffer(Jxta_MIA *, const char *, int len);
+JXTA_DECLARE(Jxta_status) jxta_MIA_parse_file(Jxta_MIA *, FILE * stream);
 
 JXTA_DECLARE(char *) jxta_MIA_get_jxta_MIA(Jxta_MIA *);
 JXTA_DECLARE(void) jxta_MIA_set_jxta_MIA(Jxta_MIA *, char *);

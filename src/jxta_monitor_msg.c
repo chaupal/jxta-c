@@ -461,11 +461,6 @@ JXTA_DECLARE(Jxta_status) jxta_monitor_msg_get_xml(Jxta_monitor_msg * myself, JS
         goto FINAL_EXIT;
     }
     
-/*    res = validate_message(myself);
-    if( JXTA_SUCCESS != res ) {
-        return res;
-    }
-*/ 
     string = jstring_new_0();
 
     jstring_append_2(string, "<jxta:Monitor");

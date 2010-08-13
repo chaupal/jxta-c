@@ -56,7 +56,6 @@
 static const char *__log_cat = "EA";
 
 #include <stdlib.h>
-#include <assert.h>
 #include <apr_uri.h>
 
 #include "jxta_types.h"
@@ -477,8 +476,10 @@ JXTA_DECLARE(Jxta_boolean) jxta_endpoint_address_equals(Jxta_endpoint_address * 
 JXTA_DECLARE(Jxta_boolean) jxta_endpoint_address_transport_addr_equals(Jxta_endpoint_address * addr1, 
                                                                        Jxta_endpoint_address * addr2)
 {
-    assert(JXTA_OBJECT_CHECK_VALID(addr1));
-    assert(JXTA_OBJECT_CHECK_VALID(addr2));
+    if(!JXTA_OBJECT_CHECK_VALID(addr1) || !JXTA_OBJECT_CHECK_VALID(addr2)) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "one of the EA for the equals was invalid\n");
+        return FALSE;
+    }
 
     if (addr1 == addr2) {
         return TRUE;

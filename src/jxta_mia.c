@@ -116,6 +116,7 @@ struct _jxta_MIA {
  * Forw decl. for unexported function
  */
 static void jxta_MIA_delete(Jxta_MIA * ad);
+static Jxta_status validate_message(Jxta_MIA * myself);
 
 /** Handler functions.  Each of these is responsible for 
  * dealing with all of the character data associated with the 
@@ -616,6 +617,20 @@ static const Kwdtab jxta_MIA_tags[] = {
     {NULL, 0, 0, NULL, NULL}
 };
 
+static Jxta_status validate_message(Jxta_MIA * myself)
+{
+    if(myself->MSID == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "MSID was null [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if(myself->Code == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Code was null [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    return JXTA_SUCCESS;
+
+}
+
 JXTA_DECLARE(Jxta_status) jxta_MIA_get_xml(Jxta_MIA * ad, JString ** string)
 {
     JString *mcids;
@@ -726,14 +741,24 @@ JXTA_DECLARE(Jxta_vector *) jxta_MIA_get_indexes(Jxta_advertisement * dummy)
     return jxta_advertisement_return_indexes(idx[0]);
 }
 
-JXTA_DECLARE(void) jxta_MIA_parse_charbuffer(Jxta_MIA * ad, const char *buf, int len)
+JXTA_DECLARE(Jxta_status) jxta_MIA_parse_charbuffer(Jxta_MIA * ad, const char *buf, int len)
 {
-    jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    Jxta_status rv = JXTA_SUCCESS;
+    rv = jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    if(rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
+    return rv;
 }
 
-JXTA_DECLARE(void) jxta_MIA_parse_file(Jxta_MIA * ad, FILE * stream)
+JXTA_DECLARE(Jxta_status) jxta_MIA_parse_file(Jxta_MIA * ad, FILE * stream)
 {
-    jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    Jxta_status rv = JXTA_SUCCESS;
+    rv = jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    if (rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
+    return rv;
 }
 
 #ifdef STANDALONE

@@ -146,7 +146,7 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_xml(Jxta_DiscoveryResponse
  *
  * @return void Doesn't return anything.
  */
-JXTA_DECLARE(void) jxta_discovery_response_parse_charbuffer(Jxta_DiscoveryResponse *, const char *, int len);
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_parse_charbuffer(Jxta_DiscoveryResponse *, const char *, int len);
 
 
 
@@ -161,7 +161,7 @@ JXTA_DECLARE(void) jxta_discovery_response_parse_charbuffer(Jxta_DiscoveryRespon
  *
  * @return void Doesn't return anything.
  */
-JXTA_DECLARE(void) jxta_discovery_response_parse_file(Jxta_DiscoveryResponse *, FILE * stream);
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_parse_file(Jxta_DiscoveryResponse *, FILE * stream);
 
 /**
  * Gets the query ID of the resolver query generates this discovery response.

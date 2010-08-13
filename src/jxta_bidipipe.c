@@ -54,7 +54,6 @@
  */
 
 #include <stdlib.h>
-#include <assert.h>
 
 #include "jxta_log.h"
 #include "jxta_bidipipe.h"
@@ -420,7 +419,10 @@ static void JXTA_STDCALL bidipipe_input_listener(Jxta_object * obj, void *arg)
         apr_thread_mutex_unlock(self->mutex);
 
         jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_TRACE, "Schedule regular message to pipe owner\n");
-        assert(NULL != self->listener);
+        if (self->listener == NULL) {
+            jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_WARNING, "listener was null [%pp]\n", self); 
+            break; 
+        }
         jxta_listener_process_object(self->listener, obj);
         break;
 
@@ -662,7 +664,14 @@ JXTA_DECLARE(Jxta_status) jxta_bidipipe_connect(Jxta_bidipipe * self, Jxta_pipe_
         return rv;
     }
 
-    assert(NULL == self->listener);
+    if (NULL != self->listener) {
+        self->state = JXTA_BIDIPIPE_CLOSED;
+        JXTA_OBJECT_RELEASE(o_pipe);
+        JXTA_OBJECT_RELEASE(self->listener);
+        listener = NULL;
+        rv = JXTA_FAILED;
+        return rv;
+    }
     JXTA_OBJECT_SHARE(listener);
     self->listener = listener;
 
@@ -783,7 +792,13 @@ JXTA_DECLARE(Jxta_status) jxta_bidipipe_accept(Jxta_bidipipe * self, Jxta_pipe_a
     self->state = JXTA_BIDIPIPE_ACCEPTING;
     apr_thread_mutex_unlock(self->mutex);
 
-    assert(NULL == self->listener);
+    if(NULL != self->listener)
+    {
+        jxta_log_append(JXTA_BIDIPIPE_LOG, JXTA_LOG_LEVEL_WARNING, "listener was null [%pp]\n", self);
+        self->state = JXTA_BIDIPIPE_CLOSED;
+        rv = JXTA_FAILED;
+        return rv;
+    }
     JXTA_OBJECT_SHARE(listener);
     self->listener = listener;
 

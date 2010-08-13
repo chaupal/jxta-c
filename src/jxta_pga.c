@@ -98,6 +98,7 @@ struct _jxta_PGA {
  * Forw decl. of unexported function.
  */
 static void PGA_delete(Jxta_object *);
+static Jxta_status validate_message(Jxta_PGA * myself);
 
 /** Handler functions.  Each of these is responsible for 
  * dealing with all of the character data associated with the 
@@ -465,6 +466,20 @@ static const Kwdtab jxta_PGA_tags[] = {
     {NULL, 0, 0, NULL, NULL}
 };
 
+static Jxta_status validate_message(Jxta_PGA * myself)
+{
+    if ( jxta_id_equals(myself->GID, jxta_id_nullID)) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "group id must not be null ID [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if ( jxta_id_equals(myself->MSID, jxta_id_nullID)) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "MSID must not be null ID [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    return JXTA_SUCCESS;
+}
+
 JXTA_DECLARE(Jxta_status) jxta_PGA_get_xml(Jxta_PGA * ad, JString ** xml)
 {
     Jxta_status res = JXTA_SUCCESS;
@@ -610,7 +625,12 @@ JXTA_DECLARE(Jxta_vector *) jxta_PGA_get_indexes(Jxta_advertisement * dummy)
 
 JXTA_DECLARE(Jxta_status) jxta_PGA_parse_charbuffer(Jxta_PGA * ad, const char *buf, int len)
 {
-    return jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    Jxta_status res = JXTA_SUCCESS;
+    res = jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    if(res == JXTA_SUCCESS) {
+        res = validate_message(ad);
+    }
+    return res;
 }
 
 /** The main external method used to extract 
@@ -619,7 +639,12 @@ JXTA_DECLARE(Jxta_status) jxta_PGA_parse_charbuffer(Jxta_PGA * ad, const char *b
 
 JXTA_DECLARE(Jxta_status) jxta_PGA_parse_file(Jxta_PGA * ad, FILE * stream)
 {
-    return jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    Jxta_status res = JXTA_SUCCESS;
+    res = jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    if(res == JXTA_SUCCESS) {
+        res = validate_message(ad);
+    }
+    return res;
 }
 
 /* vim: set ts=4 sw=4 et tw=130: */

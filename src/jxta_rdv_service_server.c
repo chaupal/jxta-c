@@ -65,7 +65,6 @@
 static const char *__log_cat = "RdvServer";
 
 #include <limits.h>
-#include <assert.h>
 
 #include "jxta_apr.h"
 
@@ -492,7 +491,6 @@ static Jxta_status start(Jxta_rdv_service_provider * provider)
     {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "RDV server is already started, ignore start request.\n");
         jxta_rdv_service_provider_unlock_priv(provider);
-        assert(FALSE);
         return APR_SUCCESS;
     }
 
@@ -810,11 +808,11 @@ static Jxta_status walk(Jxta_rdv_service_provider * provider, Jxta_message * msg
 
         BN_free(bn_target_hash);
 
-        if (JXTA_SUCCESS != res) {
+        if (JXTA_SUCCESS != res || peer->peerid == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Send walk message failed, failed to get target hash or peerid was null\n");
             goto FINAL_EXIT;
         }
 
-        assert(peer->peerid);
         if (!jxta_id_equals(((_jxta_peer_entry *) peer)->peerid, provider->local_peer_id)) {
             Jxta_PG * pg;
             JString * pid;
@@ -920,10 +918,10 @@ static Jxta_status walk_to_view (Jxta_rdv_service_provider * provider, Jxta_vect
         for (each_peer = 0; each_peer < view_size; each_peer++) {
             Jxta_peer *peer = NULL;
             res = jxta_vector_get_object_at(view, JXTA_OBJECT_PPTR(&peer), each_peer);
-            if (JXTA_SUCCESS != res) {
+            if (JXTA_SUCCESS != res || peer->peerid == NULL) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "failed to get peer or peerid is null skipping peer\n");
                 continue;
             }
-            assert(peer->peerid);
             if (!jxta_id_equals(jxta_peer_peerid(peer), provider->local_peer_id)
                     && !jxta_id_equals(jxta_peer_peerid(peer), sourceId)) {
                 Jxta_PG * pg;
@@ -1164,13 +1162,16 @@ static Jxta_status handle_lease_request(_jxta_rdv_service_server * myself, Jxta_
         }
     }
 
-    if (NULL != peer) {
+    if (NULL != peer && lease_event != 0) {
         /*
          *  notify the RDV listeners about the client activity
          */
-        assert(lease_event != 0);
         rdv_service_generate_event(provider->service, lease_event, client_peerid);
     }
+    else if (NULL != peer && lease_event == 0) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "did not generate even because event not set\n");
+    }
+
 
 
     res = JXTA_SUCCESS;

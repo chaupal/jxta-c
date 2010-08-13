@@ -957,9 +957,12 @@ static Jxta_status JXTA_STDCALL query_listener(Jxta_object * obj, void *me)
     rq = jxta_resolver_query_callback_get_rq(rqc);
     jxta_resolver_query_get_query(rq, &queryString);
     msg = jxta_piperesolver_msg_new();
-    jxta_piperesolver_msg_parse_charbuffer(msg,
+    res = jxta_piperesolver_msg_parse_charbuffer(msg,
                                            (const char *) jstring_get_string(queryString),
                                            strlen(jstring_get_string(queryString)));
+    if(res != JXTA_SUCCESS) {
+        goto FINAL_EXIT;
+    }
 
     publish_peer_adv(_self, msg);
 
@@ -1139,9 +1142,14 @@ static void JXTA_STDCALL response_listener(Jxta_object * obj, void *arg)
     }
 
     msg = jxta_piperesolver_msg_new();
-    jxta_piperesolver_msg_parse_charbuffer(msg,
+    res = jxta_piperesolver_msg_parse_charbuffer(msg,
                                            jstring_get_string(queryString),
                                            strlen(jstring_get_string(queryString)));
+    if (res != JXTA_SUCCESS) {
+       JXTA_OBJECT_RELEASE(queryString);
+       JXTA_OBJECT_RELEASE(msg);
+       return;
+    }
 
     publish_peer_adv(self, msg);
 

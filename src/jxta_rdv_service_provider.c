@@ -58,7 +58,6 @@ static const char *__log_cat = "RdvProvider";
 #include <stddef.h>
 
 #include <openssl/sha.h>
-#include <assert.h>
 
 #include "jxta_log.h"
 #include "jxta_endpoint_service_priv.h"

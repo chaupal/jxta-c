@@ -695,7 +695,6 @@ static Jxta_status mru_capacity_set(Jxta_resolver_service_ref * me, size_t capac
  */
 static void mru_check(Jxta_resolver_service_ref * me, ResolverQuery * query, Jxta_id * peerid)
 {
-    size_t i;
     Jxta_RouteAdvertisement *route;
 
     route = jxta_resolver_query_get_src_peer_route(query);
@@ -1269,7 +1268,8 @@ static Jxta_status JXTA_STDCALL resolver_service_query_cb(Jxta_object * obj, voi
                 status = jxta_callback_process_object((Jxta_callback *) handler, (Jxta_object *) rqc);
                 JXTA_OBJECT_RELEASE(handler);
             } else {
-                assert(JXTA_SUCCESS != status);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Failed to get handler from hashtable\n");
+                status = JXTA_FAILED;
             }
             JXTA_OBJECT_RELEASE(handlername);
         } else {
@@ -1318,11 +1318,10 @@ static Jxta_status JXTA_STDCALL resolver_service_response_cb(Jxta_object * obj, 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Resolver Response Listener, response received\n");
 
     status = jxta_message_get_element_2(msg, "jxta", resolver->inque, &element);
-    if (element) {
+    if (element && status == JXTA_SUCCESS) {
         Jxta_bytevector *bytes = NULL;
         JString *string = NULL;
 
-        assert(JXTA_SUCCESS == status);
         rr = jxta_resolver_response_new();
         if (rr == NULL) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "out of memory\n");
@@ -1339,10 +1338,15 @@ static Jxta_status JXTA_STDCALL resolver_service_response_cb(Jxta_object * obj, 
             return JXTA_NOMEM;
         }
         bytes = NULL;
-        jxta_resolver_response_parse_charbuffer(rr, jstring_get_string(string), jstring_length(string));
+        status = jxta_resolver_response_parse_charbuffer(rr, jstring_get_string(string), jstring_length(string));
         JXTA_OBJECT_RELEASE(string);
         string = NULL;
         JXTA_OBJECT_RELEASE(element);
+        if(status != JXTA_SUCCESS) {
+            JXTA_OBJECT_RELEASE(rr);
+            return status;
+        }
+
         jxta_resolver_response_attach_qos(rr, jxta_message_qos(msg));
     } else {
         return JXTA_INVALID_ARGUMENT;

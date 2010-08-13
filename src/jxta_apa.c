@@ -63,7 +63,6 @@ static const char *__log_cat = "APA";
 #include "jdlist.h"
 #include "jxta_apa.h"
 #include "jxta_xml_util.h"
-#include <assert.h>
 
 /** Each of these corresponds to a tag in the 
  * xml ad.
@@ -88,6 +87,7 @@ struct _jxta_AccessPointAdvertisement {
 
 /* Forw decl for un-exported function */
 static void AccessPointAdvertisement_delete(Jxta_object *);
+static Jxta_status validate_message(Jxta_AccessPointAdvertisement * myself);
 
 /** Handler functions.  Each of these is responsible for 
  * dealing with all of the character data associated with the 
@@ -219,7 +219,11 @@ JXTA_DECLARE(Jxta_status) jxta_AccessPointAdvertisement_add_EndpointAddress(Jxta
     char *cstr;
     JString *jstr;
 
-    assert(NULL != me->endpoints);
+    if (NULL == me->endpoints) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "unable to add EA to NULL endpoints list\n");
+        return JXTA_INVALID_ARGUMENT; 
+    }
+
     cstr = jxta_endpoint_address_get_transport_addr(ea);
     if (NULL == cstr) {
         return JXTA_INVALID_ARGUMENT;
@@ -272,6 +276,19 @@ Jxta_status endpoints_printer(Jxta_AccessPointAdvertisement * ad, JString * js)
         JXTA_OBJECT_RELEASE(endpoint);
     }
     
+    return JXTA_SUCCESS;
+}
+static Jxta_status validate_message(Jxta_AccessPointAdvertisement * myself)
+{
+    if (myself->PID == NULL ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "PID is NULL [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if (myself->endpoints == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "endpoints are NULL [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+
     return JXTA_SUCCESS;
 }
 
@@ -368,15 +385,23 @@ static void AccessPointAdvertisement_delete(Jxta_object * me)
 JXTA_DECLARE(Jxta_status) jxta_AccessPointAdvertisement_parse_charbuffer(Jxta_AccessPointAdvertisement * ad, const char *buf, int len)
 {
     JXTA_OBJECT_CHECK_VALID(ad);
-    
-    return jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    Jxta_status rv = JXTA_SUCCESS;
+    rv = jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    if(rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
+    return rv;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_AccessPointAdvertisement_parse_file(Jxta_AccessPointAdvertisement * ad, FILE * stream)
 {
     JXTA_OBJECT_CHECK_VALID(ad);
-
-    return jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    Jxta_status rv = JXTA_SUCCESS;
+    rv = jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    if(rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
+    return rv;
 }
 
 JXTA_DECLARE(Jxta_vector *) jxta_AccessPointAdvertisement_get_indexes(Jxta_advertisement * dummy)

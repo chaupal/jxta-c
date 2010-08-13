@@ -777,7 +777,11 @@ static Jxta_status queryLocal(Jxta_discovery_service_ref * discovery, Jxta_crede
     int i;
     unsigned int j;
 
-    assert(TRUE == jContext->compound_query);
+    if (TRUE != jContext->compound_query) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "queryLocal failed because compound_query was false [%pp]\n",
+        jContext); 
+        return JXTA_FAILED;
+    }
     responses = jxta_vector_new(1);
 
     for (j = 0; j < jxta_vector_size(jContext->queries); j++) {
@@ -2426,7 +2430,11 @@ static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString
     *new_responses = jxta_vector_new(0);
 
     dr_tmp = jxta_discovery_response_new();
-    jxta_discovery_response_parse_charbuffer(dr_tmp, jstring_get_string(response_j), jstring_length(response_j));
+    res = jxta_discovery_response_parse_charbuffer(dr_tmp, jstring_get_string(response_j), jstring_length(response_j));
+    if(res != JXTA_SUCCESS) {
+        JXTA_OBJECT_RELEASE(dr_tmp);
+        goto FINAL_EXIT;
+    }
     jxta_discovery_response_set_responses(dr_tmp, NULL);
 
     jxta_discovery_response_get_xml(dr_tmp, &tmp_j);
@@ -2463,7 +2471,8 @@ static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString
                 dr_new = NULL;
             }
             dr_new = jxta_discovery_response_new();
-            jxta_discovery_response_parse_charbuffer(dr_new, jstring_get_string(response_j), jstring_length(response_j));
+            res = jxta_discovery_response_parse_charbuffer(dr_new, jstring_get_string(response_j), jstring_length(response_j));
+            if (res == JXTA_SUCCESS) {
             jxta_discovery_response_set_responses(dr_new, all_entries);
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "discovery:split add new rsp [%pp]\n", dr_new);
             jxta_vector_add_object_last(*new_responses, (Jxta_object *) dr_new);
@@ -2474,6 +2483,8 @@ static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString
             if (total_length < max_length) {
                 jxta_vector_add_object_last(all_entries, (Jxta_object *) rsp_element);
             }
+            }
+
 
         } else {
             if ((jstring_length(rsp_element->response) + DR_TAG_SIZE + total_length) < max_length) {
@@ -2496,10 +2507,11 @@ static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString
         dr_add = jxta_discovery_response_new();
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "discovery:split dr_add [%pp]\n", dr_add);
 
-        jxta_discovery_response_parse_charbuffer(dr_add, jstring_get_string(response_j), jstring_length(response_j));
+        res = jxta_discovery_response_parse_charbuffer(dr_add, jstring_get_string(response_j), jstring_length(response_j));
+        if( res == JXTA_SUCCESS) {
         jxta_discovery_response_set_responses(dr_add, all_entries);
         jxta_vector_add_object_last(*new_responses, (Jxta_object *) dr_add);
-
+        }
         JXTA_OBJECT_RELEASE(dr_add);
     }
 
@@ -2614,8 +2626,11 @@ static Jxta_status discovery_filter_advid_duplicates(Jxta_discovery_service_ref 
     Jxta_status res = JXTA_SUCCESS;
     int i;
 
-    assert(NULL != dupEntries);
-    assert(NULL != entries);
+    if (NULL == dupEntries || NULL == entries) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "failed to filter duplicate advids because dupEntries or entries were null\n");
+        res = JXTA_FAILED;
+        goto FINAL_EXIT;
+    }
 
     *dupEntries = NULL;
     for (i=0; i<jxta_vector_size(entries); i++) {
@@ -3376,8 +3391,11 @@ static void JXTA_STDCALL discovery_service_response_listener(Jxta_object * obj, 
     dr = jxta_discovery_response_new();
     discovery_response_set_query_id(dr, qid);
     discovery_response_set_discovery_service(dr, (Jxta_discovery_service*) discovery);
-    jxta_discovery_response_parse_charbuffer(dr, jstring_get_string(response), jstring_length(response));
+    status = jxta_discovery_response_parse_charbuffer(dr, jstring_get_string(response), jstring_length(response));
     JXTA_OBJECT_RELEASE(response);
+    if(status != JXTA_SUCCESS) {
+        goto finish;
+    }
     jxta_discovery_response_get_peer_advertisement(dr, (Jxta_advertisement **) JXTA_OBJECT_PPTR(&peerAdv));
     if (NULL != peerAdv) {
         id = jxta_PA_get_PID(peerAdv);

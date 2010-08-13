@@ -73,8 +73,8 @@ typedef struct _JxtaWire JxtaWire;
 JXTA_DECLARE(JxtaWire *) JxtaWire_new(void);
 JXTA_DECLARE(void) JxtaWire_set_handlers(JxtaWire *, XML_Parser, void *);
 JXTA_DECLARE(Jxta_status) JxtaWire_get_xml(JxtaWire *, JString ** xml);
-JXTA_DECLARE(void) JxtaWire_parse_charbuffer(JxtaWire *, const char *, int len);
-JXTA_DECLARE(void) JxtaWire_parse_file(JxtaWire *, FILE * stream);
+JXTA_DECLARE(Jxta_status) JxtaWire_parse_charbuffer(JxtaWire *, const char *, int len);
+JXTA_DECLARE(Jxta_status) JxtaWire_parse_file(JxtaWire *, FILE * stream);
 
 JXTA_DECLARE(char *) JxtaWire_get_JxtaWire(JxtaWire *);
 JXTA_DECLARE(void) JxtaWire_set_JxtaWire(JxtaWire *, const char *);

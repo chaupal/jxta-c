@@ -108,6 +108,7 @@ struct _jxta_piperesolver_msg {
 
 
 void jxta_piperesolver_msg_delete(Jxta_piperesolver_msg *);
+static Jxta_status validate_message(Jxta_piperesolver_msg *myself);
 
     /** Handler functions.  Each of these is responsible for
      * dealing with all of the character data associated with the 
@@ -396,12 +397,30 @@ static const Kwdtab PipeResolver_tags[] = {
     {NULL, 0, 0, NULL, NULL}
 };
 
+static Jxta_status validate_message(Jxta_piperesolver_msg *myself)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    if ( jxta_piperesolver_msg_get_MsgType(myself) == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "MsgType must not be NULL [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    if ( jxta_piperesolver_msg_get_Type(myself) == NULL ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Type must not be NULL {%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    return JXTA_SUCCESS;
+}
+
+
 JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_get_xml(Jxta_piperesolver_msg * ad, JString ** xml)
 {
     JString *string = NULL;
     JString *tmp = NULL;
     Jxta_status rv = JXTA_SUCCESS;
-    ;
+    
 
     if (xml == NULL) {
         return JXTA_INVALID_ARGUMENT;
@@ -534,16 +553,26 @@ void jxta_piperesolver_msg_delete(Jxta_piperesolver_msg * ad)
     free(ad);
 }
 
-JXTA_DECLARE(void) jxta_piperesolver_msg_parse_charbuffer(Jxta_piperesolver_msg * ad, const char *buf, int len)
+JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_parse_charbuffer(Jxta_piperesolver_msg * ad, const char *buf, int len)
 {
-    jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    Jxta_status rv = JXTA_SUCCESS;
+    rv =jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    if(rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
+    return rv;
 }
 
 
 
-JXTA_DECLARE(void) jxta_piperesolver_msg_parse_file(Jxta_piperesolver_msg * ad, FILE * stream)
+JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_parse_file(Jxta_piperesolver_msg * ad, FILE * stream)
 {
-    jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    Jxta_status rv = JXTA_SUCCESS;
+    rv = jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    if(rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
+    return rv;
 }
 
 #ifdef STANDALONE

@@ -64,11 +64,13 @@
      -lexpat -L/usr/local/apache2/lib/ -lapr
  */
 
+
 #include <stdio.h>
 #include <string.h>
 
 #include "jxta_debug.h"
 #include "jxta_errno.h"
+#include "jxta_log.h"
 #include "jdlist.h"
 #include "jxta_xml_util.h"
 #include "jxta_relaya.h"
@@ -106,6 +108,7 @@ struct _jxta_RelayAdvertisement {
 
 /* Forw decl for un-exported function */
 static void jxta_RelayAdvertisement_delete(Jxta_RelayAdvertisement *);
+static Jxta_status validate_message(Jxta_RelayAdvertisement * myself);
 
 static Jxta_vector *
     jxta_RelayAdvertisement_get_indexes(Jxta_advertisement * dummy);
@@ -369,6 +372,10 @@ JXTA_DECLARE(void) tcpRelay_printer(Jxta_RelayAdvertisement * ad, JString * js)
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16
 #endif
+static Jxta_status validate_message(Jxta_RelayAdvertisement * myself)
+{
+    return JXTA_SUCCESS;
+}
 
 JXTA_DECLARE(Jxta_status)
     jxta_RelayAdvertisement_get_xml(Jxta_RelayAdvertisement * ad, JString ** result)
@@ -447,14 +454,20 @@ static void jxta_RelayAdvertisement_delete(Jxta_RelayAdvertisement * ad)
 
 JXTA_DECLARE(Jxta_status) jxta_RelayAdvertisement_parse_charbuffer(Jxta_RelayAdvertisement * ad, const char *buf, int len)
 {
-
-    return jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    Jxta_status rv = jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    if(rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
+    return rv;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_RelayAdvertisement_parse_file(Jxta_RelayAdvertisement * ad, FILE * stream)
 {
-
-    return jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    Jxta_status rv = jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    if (rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
+    return rv;
 }
 
 static Jxta_vector *

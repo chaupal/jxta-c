@@ -111,6 +111,7 @@ struct _Jxta_DiscoveryResponse {
  * @return void Doesn't return anything.
  */
 static void discovery_response_free(void * me);
+static Jxta_status validate_message(Jxta_DiscoveryResponse * myself);
 
 /** Handler functions.  Each of these is responsible for
  * dealing with all of the character data associated with the 
@@ -255,8 +256,10 @@ void discovery_response_set_query_id(Jxta_DiscoveryResponse *me, long qid)
 
 void discovery_response_set_discovery_service(Jxta_DiscoveryResponse * me, Jxta_discovery_service * ds)
 {
-    assert(NULL == me->ds);
+    if(NULL == me->ds)
     me->ds = JXTA_OBJECT_SHARE(ds);
+    else 
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Discovery Service already set [%pp]\n", me);
 }
 
 JXTA_DECLARE(Jxta_discovery_service*) jxta_discovery_response_discovery_service(Jxta_DiscoveryResponse * me)
@@ -535,6 +538,16 @@ Jxta_status response_print(Jxta_DiscoveryResponse * ad, JString * js)
     return JXTA_SUCCESS;
 }
 
+static Jxta_status validate_message(Jxta_DiscoveryResponse * myself)
+{
+    if(myself->responselist == NULL || jxta_vector_size(myself->responselist) == 0) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "response list is null or empty [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    return JXTA_SUCCESS;
+}
+
 JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_xml(Jxta_DiscoveryResponse * ad, JString ** document)
 {
     JString *doc;
@@ -657,14 +670,24 @@ static void discovery_response_free(void * me)
     free(ad);
 }
 
-JXTA_DECLARE(void) jxta_discovery_response_parse_charbuffer(Jxta_DiscoveryResponse * ad, const char *buf, int len)
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_parse_charbuffer(Jxta_DiscoveryResponse * ad, const char *buf, int len)
 {
-    jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    Jxta_status res = JXTA_SUCCESS;
+    res = jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    if(res == JXTA_SUCCESS) {
+        res = validate_message(ad);
+    }
+    return res;
 }
 
-JXTA_DECLARE(void) jxta_discovery_response_parse_file(Jxta_DiscoveryResponse * ad, FILE * stream)
+JXTA_DECLARE(Jxta_status) jxta_discovery_response_parse_file(Jxta_DiscoveryResponse * ad, FILE * stream)
 {
-    jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    Jxta_status res = JXTA_SUCCESS;
+    res = jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    if(res == JXTA_SUCCESS) {
+        res = validate_message(ad);
+    }
+    return res;
 }
 
 static void response_element_free(Jxta_object * o)

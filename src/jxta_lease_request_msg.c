@@ -280,11 +280,6 @@ JXTA_DECLARE(Jxta_status) jxta_lease_request_msg_get_xml(Jxta_lease_request_msg 
         return JXTA_INVALID_ARGUMENT;
     }
 
-    res = validate_message(myself);
-    if( JXTA_SUCCESS != res ) {
-        return res;
-    }
-    
     string = jstring_new_0();
 
     jstring_append_2(string, "<jxta:LeaseRequest");

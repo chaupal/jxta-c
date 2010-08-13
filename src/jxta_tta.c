@@ -57,7 +57,6 @@ static const char *__log_cat = "TCPADV";
 
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
 
 #include "jxta_errno.h"
 #include "jxta_tta.h"
@@ -206,7 +205,11 @@ static void handleInterfaceAddress(void *userdata, const XML_Char * cd, int len)
     if (len == 0)
         return;
 
-    assert(NULL == ad->InterfaceAddress);
+    if ( ad->InterfaceAddress != NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "InterfaceAddress is already set [%pp]\n", ad);
+        return;
+    }
+
     i = 0;
     while (len > 0 && ('\n' == *cd || '\r' == *cd || ' ' == *cd)) {
         ++cd;

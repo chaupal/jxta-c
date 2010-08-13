@@ -187,15 +187,20 @@ JXTA_DECLARE(Jxta_status) jxta_ep_flow_control_msg_parse_file(Jxta_ep_flow_contr
     return res;
 }
 
-static Jxta_status validate_message(Jxta_ep_flow_control_msg * myself) {
+static Jxta_status validate_message(Jxta_ep_flow_control_msg * myself) 
+{
+    Jxta_status res = JXTA_SUCCESS;
+
+    if( myself->peer_id == NULL){
+        res = JXTA_INVALID_ARGUMENT;
+    }
 
 
-    return JXTA_SUCCESS;
+    return res;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_ep_flow_control_msg_get_xml(Jxta_ep_flow_control_msg * myself, JString ** xml)
 {
-    Jxta_status res;
     JString *string;
     JString *peer_j=NULL;
     char tmp[256];
@@ -204,11 +209,6 @@ JXTA_DECLARE(Jxta_status) jxta_ep_flow_control_msg_get_xml(Jxta_ep_flow_control_
 
     if (xml == NULL) {
         return JXTA_INVALID_ARGUMENT;
-    }
-    
-    res = validate_message(myself);
-    if( JXTA_SUCCESS != res ) {
-        return res;
     }
     
     string = jstring_new_0();

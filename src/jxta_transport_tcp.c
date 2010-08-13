@@ -780,7 +780,7 @@ static JxtaEndpointMessenger *messenger_get(Jxta_transport * me, Jxta_endpoint_a
             msgr = NULL;
             break;
         default:
-            assert(FALSE);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "failed to get messenger\n");
             msgr = NULL;
             break;
     }

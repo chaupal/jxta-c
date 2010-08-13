@@ -93,6 +93,7 @@ struct _EndpointRouterMessage {
 };
 
 static void EndpointRouterMessage_delete(Jxta_object *me);
+static Jxta_status validate_message(EndpointRouterMessage * myself);
 
 /** Handler functions.  Each of these is responsible for
  * dealing with all of the character data associated with the 
@@ -378,6 +379,18 @@ static const Kwdtab EndpointRouterMessage_tags[] = {
     {"Rvs", GatewayReverse_, *handleGatewayReverse, NULL, NULL},
     {NULL, 0, 0, NULL, NULL}
 };
+static Jxta_status validate_message(EndpointRouterMessage * myself)
+{
+    if(myself->Src == NULL ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Src was NULL [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if(myself->Dest == NULL ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Dest was NULL [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    return JXTA_SUCCESS;
+}
 
 JXTA_DECLARE(Jxta_status) EndpointRouterMessage_get_xml(EndpointRouterMessage * ad, JString ** xml)
 {
@@ -528,12 +541,20 @@ static void EndpointRouterMessage_delete(Jxta_object * me)
 
 JXTA_DECLARE(Jxta_status) EndpointRouterMessage_parse_charbuffer(EndpointRouterMessage * ad, const char *buf, int len)
 {
-    return jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    Jxta_status rv = jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    if(rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
+    return rv;
 }
 
 JXTA_DECLARE(Jxta_status) EndpointRouterMessage_parse_file(EndpointRouterMessage * ad, FILE * stream)
 {
-    return jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    Jxta_status rv = jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    if(rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
+    return rv;
 }
 
 /* vim: set ts=4 sw=4 et tw=130: */

@@ -113,7 +113,7 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_response_get_xml(ResolverResponse * ad, 
  * @param len length of the buffer
  * @deprecated Use jxta_advertisement_parse_charbuffer instead.
  */
-JXTA_DECLARE(void) jxta_resolver_response_parse_charbuffer(ResolverResponse * ad, const char *buf, int len);
+JXTA_DECLARE(Jxta_status) jxta_resolver_response_parse_charbuffer(ResolverResponse * ad, const char *buf, int len);
 
 /**
  * @param ResolverResponse the resolver response object
@@ -122,7 +122,7 @@ JXTA_DECLARE(void) jxta_resolver_response_parse_charbuffer(ResolverResponse * ad
  * @param len length of the buffer
  * @deprecated Use jxta_advertisement_parse_file instead.
  */
-JXTA_DECLARE(void) jxta_resolver_response_parse_file(ResolverResponse * ad, FILE * stream);
+JXTA_DECLARE(Jxta_status) jxta_resolver_response_parse_file(ResolverResponse * ad, FILE * stream);
 
 /**
  * get the message credential

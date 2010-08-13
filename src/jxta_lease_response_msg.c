@@ -356,10 +356,6 @@ JXTA_DECLARE(Jxta_status) jxta_lease_response_msg_get_xml(Jxta_lease_response_ms
         return JXTA_INVALID_ARGUMENT;
     }
 
-    res = validate_message(myself);
-    if( JXTA_SUCCESS != res ) {
-        return res;
-    }
     string = jstring_new_0();
 
     jstring_append_2(string, "<?xml version=\"1.0\"?>\n");
@@ -707,6 +703,7 @@ static Jxta_lease_response_msg *lease_response_msg_construct(Jxta_lease_response
 }
 
 static Jxta_status validate_message(Jxta_lease_response_msg * myself) {
+    unsigned int each_referral;
 
     JXTA_OBJECT_CHECK_VALID(myself);
 
@@ -740,6 +737,33 @@ static Jxta_status validate_message(Jxta_lease_response_msg * myself) {
     if ( myself->offered_lease < -1L ) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Offered lease must be >= -1 [%pp].\n", myself);
         return JXTA_INVALID_ARGUMENT;
+    }
+
+    if (jxta_vector_size(myself->referrals) > 0) {
+        Jxta_status res = JXTA_SUCCESS;
+        for (each_referral = 0; each_referral < jxta_vector_size(myself->referrals); each_referral++) {
+            Jxta_lease_adv_info *referral;
+
+            res = jxta_vector_get_object_at(myself->referrals, JXTA_OBJECT_PPTR(& referral), each_referral);
+            if(res == JXTA_SUCCESS) {
+
+                Jxta_id * peer_id = jxta_PA_get_PID(referral->adv);
+                Jxta_boolean same = jxta_id_equals( jxta_id_nullID, peer_id);
+
+                if( NULL != peer_id ) {
+                    JXTA_OBJECT_RELEASE(peer_id);
+                }
+
+                if( same ) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Peer id of Advertisement is NULL[%pp].\n", myself);
+                    return JXTA_INVALID_ARGUMENT;
+                }
+
+                JXTA_OBJECT_RELEASE(referral);
+            }
+
+        }
+        
     }
 
     return JXTA_SUCCESS;

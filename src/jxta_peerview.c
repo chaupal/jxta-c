@@ -3603,7 +3603,7 @@ static Jxta_status JXTA_STDCALL peerview_protocol_cb(Jxta_object * obj, void *ar
     case ADV_REQ:{
             Jxta_adv_request_msg *req = jxta_adv_request_msg_new();
 
-            res = jxta_advertisement_parse_charbuffer((Jxta_advertisement *) req, jstring_get_string(string), jstring_length(string));
+            res = jxta_adv_request_msg_parse_charbuffer(req, jstring_get_string(string), jstring_length(string));
 
             if (JXTA_SUCCESS == res) {
                 res = peerview_handle_adv_request(myself, req);
@@ -3616,7 +3616,7 @@ static Jxta_status JXTA_STDCALL peerview_protocol_cb(Jxta_object * obj, void *ar
     case ADV_RESP:{
             Jxta_adv_response_msg *resp = jxta_adv_response_msg_new();
 
-            res = jxta_advertisement_parse_charbuffer((Jxta_advertisement *)resp, jstring_get_string(string), jstring_length(string));
+            res = jxta_adv_response_msg_parse_charbuffer(resp, jstring_get_string(string), jstring_length(string));
 
             if (JXTA_SUCCESS == res) {
                 res = peerview_handle_adv_response(myself, resp);

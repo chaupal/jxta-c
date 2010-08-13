@@ -561,7 +561,18 @@ Jxta_status replicateEntries(Jxta_srdi_service * self, Jxta_resolver_service * r
                     JXTA_OBJECT_RELEASE(alt_peer_j);
                 }
                 peerVersion = jxta_PA_get_version(jxta_peer_adv(advPeer));
-                assert(NULL != peerVersion);
+                if(peerVersion == NULL ) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Got a PA without a peer version [%pp]\n", advPeer);
+                    if (alt_repPeer)
+                        JXTA_OBJECT_RELEASE(alt_repPeer);
+                    if (advPeer)
+                        JXTA_OBJECT_RELEASE(advPeer);
+                    if (repPeer)
+                        JXTA_OBJECT_RELEASE(repPeer);
+                    if (repPeers)
+                        JXTA_OBJECT_RELEASE(repPeers);
+                    goto FINAL_EXIT;
+                }
             }
             while ((repPeer && first_pass) || (NULL != repPeers && jxta_vector_size(repPeers) > 0)) {
                 if (!first_pass) {
@@ -1176,13 +1187,16 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
             return JXTA_SUCCESS;
         }
 
-    assert(NULL != peer);
+    if (peer == NULL || orig_pid == NULL || src_pid == NULL )
+    {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid arguments to record_delta_entry\n");
+        return JXTA_FAILED;
+    }
+
     jxta_id_to_jstring(peer, &jPeer);
 
-    assert(NULL != orig_pid);
     jxta_id_to_jstring(orig_pid, &jOrigPeer);
 
-    assert(NULL != src_pid);
     jxta_id_to_jstring(src_pid, &jSourcePeer);
 
     peergroup_find_peer_PA(me->group, peer, 0, &peer_adv);
@@ -2302,7 +2316,7 @@ static Jxta_status pushSrdi_msgs(Jxta_srdi_service * service, JString * instance
             apr_thread_pool_t *tp;
 
             jxta_id_from_cstr(&destid, *peers);
-            assert(NULL != destid);
+            if(destid != NULL ) {
 
             dest = jxta_peer_new();
             jxta_peer_set_peerid(dest, destid);
@@ -2330,6 +2344,10 @@ static Jxta_status pushSrdi_msgs(Jxta_srdi_service * service, JString * instance
 
             JXTA_OBJECT_RELEASE(dest);
             JXTA_OBJECT_RELEASE(destid);
+            }
+            else {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to get dest id from key\n"); 
+            }
 
         }
         if (groupid_hash)
@@ -2935,11 +2953,16 @@ static void JXTA_STDCALL srdi_rdv_listener(Jxta_object * obj, void *arg)
                             JXTA_OBJECT_RELEASE(entry);
                             continue;
                         }
-                        assert(NULL != entry->adv_id);
+                        if(entry->adv_id == NULL ) {
+                            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Entry does not have an adv_id [%pp]\n", entry);
+                            JXTA_OBJECT_RELEASE(entry);
+                            break;
+                        }
  
                         res = jxta_id_from_jstring(&rep_id, entry->dup_id);
                         if (JXTA_SUCCESS != res) {
                             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error creating an id from %s\n", jstring_get_string(entry->dup_id));
+                            JXTA_OBJECT_RELEASE(entry);
                             continue;
                         }
                         if (entry->peer_id) {

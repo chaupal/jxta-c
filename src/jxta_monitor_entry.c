@@ -198,7 +198,11 @@ JXTA_DECLARE(Jxta_status) jxta_monitor_entry_get_context(Jxta_monitor_entry * my
 JXTA_DECLARE(Jxta_status) jxta_monitor_entry_set_context(Jxta_monitor_entry * myself, const char * context)
 {
     JXTA_OBJECT_CHECK_VALID(myself);
-    assert(NULL != context);
+    if(NULL == context) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to set context will NULL value [%pp]\n", myself);
+        return JXTA_FAILED;
+    }
+
 
     if (myself->context) {
         free(myself->context);
@@ -219,7 +223,9 @@ JXTA_DECLARE(Jxta_status) jxta_monitor_entry_get_sub_context(Jxta_monitor_entry 
 JXTA_DECLARE(Jxta_status) jxta_monitor_entry_set_sub_context(Jxta_monitor_entry * myself, const char * sub_context)
 {
     JXTA_OBJECT_CHECK_VALID(myself);
-    assert(NULL != sub_context);
+    if(NULL == sub_context) {
+        return JXTA_FAILED;
+    }
 
     if (myself->sub_context) {
         free(myself->sub_context);
@@ -241,7 +247,10 @@ JXTA_DECLARE(Jxta_status) jxta_monitor_entry_get_type(Jxta_monitor_entry * mysel
 JXTA_DECLARE(Jxta_status) jxta_monitor_entry_set_type(Jxta_monitor_entry * myself, const char * type)
 {
     JXTA_OBJECT_CHECK_VALID(myself);
-    assert(NULL != type);
+    if(NULL == type) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to set type with NULL value [%pp]\n", myself);
+        return JXTA_FAILED;
+    }
 
     if (myself->type) {
         free(myself->type);

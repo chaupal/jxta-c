@@ -110,6 +110,7 @@ struct jxta_DiscoveryQuery {
  * @return void Doesn't return anything.
  */
 static void discovery_query_free(void * me);
+static Jxta_status validate_message(Jxta_DiscoveryQuery * myself);
 
 
 /** Handler functions.  Each of these is responsible for
@@ -458,6 +459,12 @@ static const Kwdtab Jxta_DiscoveryQuery_tags[] = {
     {NULL, 0, 0, NULL, NULL}
 };
 
+static Jxta_status validate_message(Jxta_DiscoveryQuery * myself)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+    return JXTA_SUCCESS;
+}
+
 JXTA_DECLARE(Jxta_status) jxta_discovery_query_get_xml(Jxta_DiscoveryQuery * adv, JString ** document)
 {
     JString *doc;
@@ -691,16 +698,24 @@ static void discovery_query_free(void * me)
 
 JXTA_DECLARE(Jxta_status) jxta_discovery_query_parse_charbuffer(Jxta_DiscoveryQuery * ad, const char *buf, int len)
 {
-    jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    Jxta_status rv = JXTA_SUCCESS;
+    rv = jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    if(rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
     /* xxx when the above returns a status we should return it, for now return success */
-    return JXTA_SUCCESS;
+    return rv;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_discovery_query_parse_file(Jxta_DiscoveryQuery * ad, FILE * stream)
 {
-    jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    Jxta_status rv = JXTA_SUCCESS;
+    rv = jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    if(rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
     /* xxx when the above returns a status we should return it, for now return success */
-    return JXTA_SUCCESS;
+    return rv;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_discovery_query_attach_qos(Jxta_discovery_query * me, const Jxta_qos * qos)

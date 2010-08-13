@@ -69,7 +69,6 @@
 static const char *__log_cat = "RdvEdge";
 
 #include <limits.h>
-#include <assert.h>
 
 #include "jxta_apr.h"
 

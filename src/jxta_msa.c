@@ -101,6 +101,7 @@ struct _jxta_MSA {
 };
 
 static void MSA_delete(void * me);
+static Jxta_status validate_message(Jxta_MSA * myself);
 
 /** Handler functions.  Each of these is responsible for
 * dealing with all of the character data associated with the 
@@ -524,6 +525,48 @@ static const Kwdtab MSA_tags[] = {
     {"Auth", Auth_, *handleAuth, NULL, NULL},
     {NULL, 0, 0, NULL, NULL}
 };
+
+static Jxta_status validate_message(Jxta_MSA * myself)
+{
+    if( myself->MSID == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "MSID was null [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if( myself->Name == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Name was null [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if( myself->Crtr == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Crtr was null [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if( myself->SURI == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "SURI was null [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if( myself->Vers == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Vers was null [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if( myself->Desc == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Desc was null [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if( myself->Parm == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Parm was null [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if( myself->Proxy == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Proxy was null [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if( myself->Auth == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Auth was null [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    return JXTA_SUCCESS;
+}
 
 JXTA_DECLARE(Jxta_status) jxta_MSA_get_xml(Jxta_MSA * ad, JString ** string)
 {

@@ -120,9 +120,9 @@ JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_get_xml(Jxta_piperesolver_msg * 
  */
 JXTA_DECLARE(Jxta_piperesolver_msg *) jxta_piperesolver_msg_new(void);
 
-JXTA_DECLARE(void) jxta_piperesolver_msg_parse_charbuffer(Jxta_piperesolver_msg * ad, const char *buf, int len);
+JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_parse_charbuffer(Jxta_piperesolver_msg * ad, const char *buf, int len);
 
-JXTA_DECLARE(void) jxta_piperesolver_msg_parse_file(Jxta_piperesolver_msg * ad, FILE * stream);
+JXTA_DECLARE(Jxta_status) jxta_piperesolver_msg_parse_file(Jxta_piperesolver_msg * ad, FILE * stream);
 
 #ifdef __cplusplus
 #if 0

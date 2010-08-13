@@ -68,7 +68,6 @@ static const char *__log_cat = "MESSAGE";
 #include <netinet/in.h> /* for hton & ntoh byte-order swapping funcs */
 #endif
 
-#include <assert.h>
 
 #include "jxta_errno.h"
 #include "jxta_log.h"
@@ -993,7 +992,8 @@ JXTA_DECLARE(Jxta_status) jxta_message_read(Jxta_message * msg, char const *mime
         } else if (JXTAMSG_MSGVERS2 == message_format_version) {
             res = read_v2_element(&el, read_func, stream, names_table, names_count);
         } else {
-            assert(FALSE);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "invalid message version found, failing\n");
+            res = JXTA_INVALID_ARGUMENT;
         }
 
         if (JXTA_SUCCESS != res) {

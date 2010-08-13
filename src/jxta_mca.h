@@ -75,8 +75,8 @@ typedef struct _jxta_MCA Jxta_MCA;
 JXTA_DECLARE(Jxta_MCA *) jxta_MCA_new(void);
 
 JXTA_DECLARE(Jxta_status) jxta_MCA_get_xml(Jxta_MCA *, JString **);
-JXTA_DECLARE(void) jxta_MCA_parse_charbuffer(Jxta_MCA *, const char *, int len);
-JXTA_DECLARE(void) jxta_MCA_parse_file(Jxta_MCA *, FILE * stream);
+JXTA_DECLARE(Jxta_status) jxta_MCA_parse_charbuffer(Jxta_MCA *, const char *, int len);
+JXTA_DECLARE(Jxta_status) jxta_MCA_parse_file(Jxta_MCA *, FILE * stream);
 
 JXTA_DECLARE(char *) jxta_MCA_get_MCA(Jxta_MCA *);
 JXTA_DECLARE(void) jxta_MCA_set_MCA(Jxta_MCA *, char *);

@@ -300,7 +300,10 @@ static Jxta_status validate_msg(ResolverQuery * myself) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Query must not be null ID [%pp]\n", myself);
         return JXTA_INVALID_ARGUMENT;
     }
-    
+    if (myself->HandlerName == NULL ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "HandlerName must not be NULL [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
     return JXTA_SUCCESS;
 }
 

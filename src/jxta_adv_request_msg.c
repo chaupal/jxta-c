@@ -187,18 +187,44 @@ static Jxta_status validate_message(Jxta_adv_request_msg * myself) {
     return JXTA_SUCCESS;
 }
 
-JXTA_DECLARE(Jxta_status) jxta_adv_request_msg_get_xml(Jxta_adv_request_msg * myself, JString ** xml)
+JXTA_DECLARE(Jxta_status) jxta_adv_request_msg_parse_charbuffer(Jxta_adv_request_msg * myself, const char *buf, int len)
 {
     Jxta_status res;
+
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    res =  jxta_advertisement_parse_charbuffer((Jxta_advertisement *) myself, buf, len);
+
+    if( JXTA_SUCCESS == res ) {
+        res = validate_message(myself);
+    }
+
+    return res;
+    }
+
+JXTA_DECLARE(Jxta_status) jxta_adv_request_msg_parse_file(Jxta_adv_request_msg * myself, FILE * stream)
+{
+    Jxta_status res;
+
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    res = jxta_advertisement_parse_file((Jxta_advertisement *) myself, stream);
+
+    if( JXTA_SUCCESS == res ) {
+    res = validate_message(myself);
+    }
+
+        return res;
+    }
+
+
+
+JXTA_DECLARE(Jxta_status) jxta_adv_request_msg_get_xml(Jxta_adv_request_msg * myself, JString ** xml)
+{
     JString *string;
     JString *tempstr;
     if (xml == NULL) {
         return JXTA_INVALID_ARGUMENT;
-    }
-
-    res = validate_message(myself);
-    if( JXTA_SUCCESS != res ) {
-        return res;
     }
 
     string = jstring_new_0();

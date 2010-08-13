@@ -97,6 +97,7 @@ struct _LimitedRangeRdvMessage {
 };
 
 static void LimitedRangeRdvMessage_delete(LimitedRangeRdvMessage * ad);
+static Jxta_status validate_message(LimitedRangeRdvMessage * myself);
 
 /** Handler functions.  Each of these is responsible for
 * dealing with all of the character data associated with the 
@@ -283,10 +284,35 @@ static const Kwdtab LimitedRangeRdvMessage_tags[] = {
     {NULL, 0, 0, NULL, NULL}
 };
 
+static Jxta_status validate_message(LimitedRangeRdvMessage * myself)
+{
+    JXTA_OBJECT_CHECK_VALID(myself);
+
+    if( LimitedRangeRdvMessage_get_direction(myself) > WALK_BOTH || LimitedRangeRdvMessage_get_direction(myself) < WALK_UP) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Direction was outside valid range [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    if( LimitedRangeRdvMessage_get_SrcPeerID(myself) == NULL ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "SrcPeerID was NULL [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if( LimitedRangeRdvMessage_get_SrcSvcName(myself) == NULL ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "SrcSvcName was NULL [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if(LimitedRangeRdvMessage_get_SrcSvcParams(myself) == NULL ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "SrcSvcParams was NULL [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    return JXTA_SUCCESS;
+}
 
 JXTA_DECLARE(Jxta_status) LimitedRangeRdvMessage_get_xml(LimitedRangeRdvMessage * ad, JString ** xml)
 {
     JString *string;
+    Jxta_booleans rv = JXTA_SUCCESS;
     char buf[12];               /* We use this buffer to store a string representation of a int < 10 */
 
     if (xml == NULL) {
@@ -368,12 +394,20 @@ static void LimitedRangeRdvMessage_delete(LimitedRangeRdvMessage * ad)
 
 JXTA_DECLARE(Jxta_status) LimitedRangeRdvMessage_parse_charbuffer(LimitedRangeRdvMessage * ad, const char *buf, int len)
 {
-    return jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    Jxta_status rv = jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    if (rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
+    return rv;
 }
 
 JXTA_DECLARE(Jxta_status) LimitedRangeRdvMessage_parse_file(LimitedRangeRdvMessage * ad, FILE * stream)
 {
-    return jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    Jxta_status rv = jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    if (rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
+    return rv;
 }
 
 /* vim: set ts=4 sw=4 et tw=130: */

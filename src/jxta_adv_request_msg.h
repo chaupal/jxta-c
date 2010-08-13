@@ -76,6 +76,9 @@ typedef struct _Jxta_adv_request_msg Jxta_adv_request_msg;
 
 JXTA_DECLARE(Jxta_adv_request_msg *) jxta_adv_request_msg_new(void);
 JXTA_DECLARE(Jxta_status) jxta_adv_request_msg_get_xml(Jxta_adv_request_msg *, JString ** xml);
+JXTA_DECLARE(Jxta_status) jxta_adv_request_msg_parse_charbuffer(Jxta_adv_request_msg *, const char *, int len);
+JXTA_DECLARE(Jxta_status) jxta_adv_request_msg_parse_file(Jxta_adv_request_msg *, FILE * stream);
+
 
 JXTA_DECLARE(Jxta_credential*) jxta_adv_request_msg_get_credential(Jxta_adv_request_msg * me);
 JXTA_DECLARE(void) jxta_adv_request_msg_set_credential(Jxta_adv_request_msg * me, Jxta_credential* credential);

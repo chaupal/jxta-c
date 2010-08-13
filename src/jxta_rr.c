@@ -64,6 +64,8 @@
   `/usr/local/apache2/bin/apr-config --cflags --includes --libs` \
   -lexpat -L/usr/local/apache2/lib/ -lapr
 */
+static const char *__log_cat = "RSLVResp";
+
 
 #include <stdio.h>
 #include <string.h>
@@ -112,6 +114,7 @@ struct _ResolverResponse {
  * @param ResolverQuery the resolver response object to free
  */
 static void resolver_response_free(void * me);
+static Jxta_status validate_message(ResolverResponse * myself);
 
 
 /** Handler functions.  Each of these is responsible for
@@ -200,6 +203,15 @@ static void trim_elements(ResolverResponse * adv)
 /** The get/set functions represent the public
     * interface to the ad class, that is, the API.
 */
+static Jxta_status validate_message(ResolverResponse * myself)
+{
+    if(myself->HandlerName == NULL ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "HandlerName was null [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    return JXTA_SUCCESS;
+}
+
     
 JXTA_DECLARE(Jxta_status) jxta_resolver_response_get_xml(ResolverResponse * adv, JString ** document) 
 {
@@ -487,16 +499,26 @@ static void resolver_response_free(void * me)
     free(ad);
 }
 
-JXTA_DECLARE(void) jxta_resolver_response_parse_charbuffer(ResolverResponse * ad, const char *buf, int len) 
+JXTA_DECLARE(Jxta_status) jxta_resolver_response_parse_charbuffer(ResolverResponse * ad, const char *buf, int len) 
 {
     JXTA_DEPRECATED_API();
-    jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    Jxta_status rv = JXTA_SUCCESS;
+    rv = jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    if(rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
+    return rv;
 }
 
-JXTA_DECLARE(void) jxta_resolver_response_parse_file(ResolverResponse * ad, FILE * stream) 
+JXTA_DECLARE(Jxta_status) jxta_resolver_response_parse_file(ResolverResponse * ad, FILE * stream) 
 {
     JXTA_DEPRECATED_API();
-    jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    Jxta_status rv = JXTA_SUCCESS;
+    rv = jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    if (rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
+    return rv;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_resolver_response_attach_qos(Jxta_resolver_response * me, const Jxta_qos * qos)

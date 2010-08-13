@@ -54,7 +54,6 @@
  */
 static const char *__log_cat = "PG";
 
-#include <assert.h>
 
 #include "jpr/jpr_excep.h"
 
@@ -1616,14 +1615,16 @@ static Jxta_status find_peer_PA_remotely(Jxta_discovery_service *ds, JString *pi
         Jxta_PA *padv = NULL;
 
         jxta_discovery_response_get_advertisements(dr, &res);
-        if (NULL == res) {
+        if (NULL == res || !(jxta_vector_size(res) > 0)) {
             return JXTA_ITEM_NOTFOUND;
         }
 
-        assert(jxta_vector_size(res) > 0);
         jxta_vector_get_object_at(res, JXTA_OBJECT_PPTR(&padv), 0);
-        assert(NULL != padv);
         JXTA_OBJECT_RELEASE(res);
+        if( padv == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to get padv from vector\n");
+            return JXTA_FAILED;
+        }
         *pa = padv;
         rv = JXTA_SUCCESS;
     }
@@ -1687,14 +1688,18 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
     if (JXTA_ITEM_NOTFOUND == rv) {
         jxta_PG_get_discovery_service(me, &ds);
         discovery_service_get_local_advertisements(ds, DISC_PEER, "PID", jstring_get_string(pid), &res);
-        if (res != NULL) {
+        if (res != NULL && jxta_vector_size(res) > 0) {
             Jxta_PA *padv = NULL;
-            assert(jxta_vector_size(res) > 0);
             jxta_vector_get_object_at(res, JXTA_OBJECT_PPTR(&padv), 0);
-            assert(NULL != padv);
             JXTA_OBJECT_RELEASE(res);
+            if(padv != NULL) {
             *pa = padv;
             rv = JXTA_SUCCESS;
+        }
+            else {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to get padv from vector\n");
+                rv = JXTA_ITEM_NOTFOUND;
+            }
         }
     }
     if (JXTA_ITEM_NOTFOUND == rv) {
@@ -1732,15 +1737,18 @@ Jxta_status peergroup_find_peer_RA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
 
     /* find RA in local cm */
     discovery_service_get_local_advertisements(ds, DISC_ADV, "DstPID", jstring_get_string(pid), &res);
-    if (res != NULL) {
+    if (res != NULL && jxta_vector_size(res) > 0) {
         Jxta_RouteAdvertisement *route = NULL;
 
-        assert(jxta_vector_size(res) > 0);
         jxta_vector_get_object_at(res, JXTA_OBJECT_PPTR(&route), 0);
-        assert(NULL != route);
         JXTA_OBJECT_RELEASE(res);
+        if(route != NULL) {
         *ra = route;
         rv = JXTA_SUCCESS;
+    }
+        else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to get padv from vector\n");
+        }
     }
 
     /* Try to find PA, which will have RA. */

@@ -87,6 +87,7 @@ struct _jxta_MCA {
 };
 
 static void MCA_delete(void * me);
+static Jxta_status validate_message(Jxta_MCA * myself);
 
 /** Handler functions.  Each of these is responsible for
 * dealing with all of the character data associated with the 
@@ -263,9 +264,29 @@ static const Kwdtab MCA_tags[] = {
     {NULL, 0, 0, NULL, NULL}
 };
 
+
+static Jxta_status validate_message(Jxta_MCA * myself)
+{
+    if(myself->MCID == NULL) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "MCID is NULL [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if(myself->Name == NULL ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Name is NULL [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if(myself->Desc == NULL ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Desc is NULL [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    return JXTA_SUCCESS;
+}
+
 JXTA_DECLARE(Jxta_status) jxta_MCA_get_xml(Jxta_MCA * ad, JString ** string)
 {
     JString *cids;
+
     JString *tmp = jstring_new_0();
 
     jstring_append_2(tmp, "<?xml version=\"1.0\"?>" "<!DOCTYPE jxta:MCA>" "<jxta:MCA xmlns:jxta=\"http://jxta.org\">\n");
@@ -340,14 +361,24 @@ static void MCA_delete(void * me)
     free(ad);
 }
 
-JXTA_DECLARE(void) jxta_MCA_parse_charbuffer(Jxta_MCA * ad, const char *buf, int len)
+JXTA_DECLARE(Jxta_status) jxta_MCA_parse_charbuffer(Jxta_MCA * ad, const char *buf, int len)
 {
-    jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    Jxta_status res = JXTA_SUCCESS;
+    res = jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    if(res == JXTA_SUCCESS) {
+        res = validate_message(ad);
+    }
+    return res;
 }
 
-JXTA_DECLARE(void) jxta_MCA_parse_file(Jxta_MCA * ad, FILE * stream)
+JXTA_DECLARE(Jxta_status) jxta_MCA_parse_file(Jxta_MCA * ad, FILE * stream)
 {
-    jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    Jxta_status res = JXTA_SUCCESS;
+    res = jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    if(res == JXTA_SUCCESS) {
+        res = validate_message(ad);
+    }
+    return res;
 }
 
 JXTA_DECLARE(Jxta_vector *) jxta_MCA_get_indexes(Jxta_advertisement * dummy)

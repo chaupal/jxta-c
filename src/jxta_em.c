@@ -236,6 +236,36 @@ static Jxta_endpoint_message *endpoint_msg_construct(Jxta_endpoint_message * mys
 static Jxta_status validate_message(Jxta_endpoint_message * myself) {
 
     JXTA_OBJECT_CHECK_VALID(myself);
+    Jxta_status res = JXTA_SUCCESS;
+
+    if (jxta_vector_size(myself->entries) > 0) {
+        int i =0;
+        for (i=0; i<jxta_vector_size(myself->entries); i++) {
+            Jxta_endpoint_msg_entry_element *entry;
+            res = jxta_vector_get_object_at(myself->entries, JXTA_OBJECT_PPTR(&entry), i);
+            if (JXTA_SUCCESS != res) {
+                continue;
+            }
+            if(entry->mime == NULL ) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "mime type for entry is null [%pp]\n", myself);
+                res = JXTA_INVALID_ARGUMENT;
+            }
+            if(entry->ns == NULL ) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "ns for entry is null [%pp]\n", myself);
+                res = JXTA_INVALID_ARGUMENT;
+            }
+            if(entry->name == NULL) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "name for entry is null [%pp]\n", myself);
+                res = JXTA_INVALID_ARGUMENT;
+            }
+            JXTA_OBJECT_RELEASE(entry);
+
+            if(res != JXTA_SUCCESS)
+                return res;
+
+        }
+    }
+
 
 #if 0 
     /* FIXME 20060827 bondolo Credential processing not yet implemented. */
@@ -245,7 +275,7 @@ static Jxta_status validate_message(Jxta_endpoint_message * myself) {
     }
 #endif
 
-    return JXTA_SUCCESS;
+    return res;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_parse_charbuffer(Jxta_endpoint_message * myself, const char *buf, int len)
@@ -281,7 +311,6 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_parse_file(Jxta_endpoint_message * m
 JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_get_xml(Jxta_endpoint_message * myself
                                     , Jxta_boolean encode, JString ** xml, Jxta_boolean with_entries)
 {
-    Jxta_status res;
     JString *string;
     JString *tempstr;
     int i;
@@ -290,11 +319,6 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_msg_get_xml(Jxta_endpoint_message * myse
         return JXTA_INVALID_ARGUMENT;
     }
 
-    res = validate_message(myself);
-    if( JXTA_SUCCESS != res ) {
-        return res;
-    }
-    
     string = jstring_new_0();
 
     jstring_append_2(string, "<jxta:EndpointMessage");

@@ -59,7 +59,6 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 #include "jxta_apr.h"
 #include "jxta_errno.h"
@@ -283,7 +282,9 @@ JXTA_DECLARE(Jxta_status) jxta_id_from_str(Jxta_id ** id, const char * id_str, s
     size_t offset;
     int eachFormat;
 
-    assert(id_str);
+    if (id_str == NULL) {
+        return JXTA_INVALID_ARGUMENT;
+    }
 
     if (jxta_id_PREFIX_LENGTH > len) {
         return JXTA_INVALID_ARGUMENT;

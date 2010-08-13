@@ -275,8 +275,10 @@ static Nc_entry *nc_add_peer(Jxta_endpoint_service * me, const char *addr, Jxta_
 {
     Nc_entry *ptr = NULL;
 
-    assert(NULL != addr);
-    assert(NULL != me);
+    if ( addr == NULL || me == NULL ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Invalid argument to nc_add_peer\n");
+        return NULL;
+    }
 
     apr_thread_mutex_lock(me->nc_wlock);
     ptr = calloc(1, sizeof(*ptr));
@@ -319,7 +321,10 @@ static Nc_entry *nc_add_peer(Jxta_endpoint_service * me, const char *addr, Jxta_
 
 static void nc_remove_peer(Jxta_endpoint_service * me, Nc_entry * ptr)
 {
-    assert(NULL == ptr->rq || -1 == ptr->rq_tail);
+    if (NULL == ptr->rq || -1 == ptr->rq_tail) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "trying to remove peer from the nc but the queue is null or tail is unset [%pp]\n", ptr);
+        return;
+    }
 
     apr_thread_mutex_lock(me->nc_wlock);
     apr_thread_mutex_lock(me->mutex);
@@ -362,11 +367,15 @@ static void nc_destroy(Jxta_endpoint_service * me)
 
     for (hi = apr_hash_first(NULL, me->nc); hi; hi = apr_hash_next(hi)) {
         apr_hash_this(hi, NULL, NULL, (void **) ((void *)&ptr));
-        assert(NULL != ptr);
-
+        if (NULL != ptr)
+        {
         nc_peer_drop_retransmit_queue(ptr);
         free(ptr->addr);
         free(ptr);
+    }
+        else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "nc entry already null for destroy call [%pp]\n", ptr);
+        }
     }
 }
 
@@ -492,12 +501,15 @@ static void nc_review_all(Jxta_endpoint_service * me)
         apr_hash_this(hi, NULL, NULL, (void **) ((void *)&ptr));
         /* move index before calling nc_remove_peer which removes entry from cache table and could screw the index */
         hi = apr_hash_next(hi);
-        assert(NULL != ptr);
-
+        if(NULL != ptr) {
         res = nc_peer_process_queue(me, ptr);
         if (JXTA_SUCCESS == res && NULL != ptr->rq) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Peer at %s is back online.\n", ptr->addr);
             nc_remove_peer(me, ptr);
+        }
+    }
+        else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Peer is null in review of nc [%pp]\n", me);
         }
     }
     apr_thread_mutex_unlock(me->nc_wlock);
@@ -685,14 +697,17 @@ static void messengers_destroy(Jxta_endpoint_service * me)
 
     for (hi = apr_hash_first(NULL, me->messengers); hi; hi = apr_hash_next(hi)) {
         apr_hash_this(hi, (const void **) ((void *)&ta), NULL, (void **) ((void *)&ptr));
-        assert(NULL != ptr);
-        assert(ta == ptr->ta);
+        if( ptr != NULL && ta == ptr->ta) {
         apr_hash_set(me->messengers, ptr->ta, APR_HASH_KEY_STRING, NULL);
 
         free(ptr->ta);
         JXTA_OBJECT_RELEASE(ptr->ep_fc);
         JXTA_OBJECT_RELEASE(ptr->msgr);
         free(ptr);
+    }
+        else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "messenger already null before destroy of messengers [%pp]\n", me);
+        }   
     }
 }
 
@@ -1342,7 +1357,10 @@ Jxta_status endpoint_service_poll(Jxta_endpoint_service * me, apr_interval_time_
     apr_int32_t num_sockets;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "before the pollset poll\n");
-    assert(me->pollfd_cnt > 0);
+    if (!(me->pollfd_cnt > 0)) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Pollfd cnt was not greater than zero [%pp]\n", me);
+        return JXTA_FAILED;
+    }
     rv = apr_pollset_poll(me->pollset, timeout, &num_sockets, &fds);
 
 /* Not sure if we can safely ignore when endpoint is stopping. Transport should still get a chance to handle it.
@@ -1552,7 +1570,10 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_remove_poll(Jxta_endpoint_servic
     Tc_elt *tc = cookie;
 
     apr_thread_mutex_lock(me->mutex);
-    assert(me->pollfd_cnt > 0);
+    if (!(me->pollfd_cnt > 0)) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Pollfd cnt was not greater than zero [%pp]\n", me);
+        return JXTA_FAILED;
+    }
     rv = apr_pollset_remove (me->pollset, &tc->fd);
     if (APR_SUCCESS == rv) {
         --me->pollfd_cnt;
@@ -2077,7 +2098,12 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_propagate(Jxta_endpoint_service 
             break;
         }
 
-        assert(PTValid(transport, Jxta_transport));
+        if (!PTValid(transport, Jxta_transport)) {
+            JXTA_OBJECT_RELEASE(tps);
+            JXTA_OBJECT_RELEASE(param);
+            JXTA_OBJECT_RELEASE(svc);
+            return JXTA_FAILED;
+        }
         jxta_transport_propagate(transport, msg, jstring_get_string(svc), jstring_get_string(param));
         JXTA_OBJECT_RELEASE(transport);
     }
@@ -2143,7 +2169,9 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_propagate(Jxta_endpoint_service 
              break;
          }
  
-         assert(PTValid(transport, Jxta_transport));
+         if(!PTValid(transport, Jxta_transport)) {
+            goto FINAL_EXIT;
+         }
          jxta_transport_propagate(transport, msg, jstring_get_string(svc), jstring_get_string(param));
          JXTA_OBJECT_RELEASE(transport);
      }
@@ -2813,7 +2841,11 @@ static Jxta_status send_message(Jxta_endpoint_service * me, Jxta_message * msg, 
             res = JXTA_FAILED;
             goto FINAL_EXIT;
         }
-        assert(NULL != jxta_endpoint_address_get_service_name(dest_tmp));
+        if(NULL == jxta_endpoint_address_get_service_name(dest_tmp)) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to get endpoint address service name [%pp]\n", dest_tmp);
+            res = JXTA_FAILED;
+            goto FINAL_EXIT;
+        }
     } else {
         dest_tmp = JXTA_OBJECT_SHARE(dest);
     }
@@ -2870,7 +2902,9 @@ static Jxta_status outgoing_message_process(Jxta_endpoint_service * me, Jxta_mes
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "No destination. Message [%pp] is discarded.\n", msg);
         return JXTA_ITEM_NOTFOUND;
     }
-    assert(NULL != jxta_endpoint_address_get_service_name(dest));
+    if (NULL == jxta_endpoint_address_get_service_name(dest)) {
+        return JXTA_ITEM_NOTFOUND;
+    }
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Outgoing message [%pp] -> %s://%s/%s/%s\n",
                     msg,
@@ -2944,9 +2978,10 @@ void jxta_endpoint_service_transport_event(Jxta_endpoint_service * me, Jxta_tran
 
     switch (e->type) {
     case JXTA_TRANSPORT_INBOUND_CONNECTED:
-        assert(e->dest_addr);
-        assert(e->peer_id);
-        assert(e->msgr);
+        if (e->dest_addr == NULL || e->peer_id == NULL || e->msgr == NULL ) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "transport event missing required information [%pp]\n", e);
+            break;
+        }
 
         addr = jxta_endpoint_address_get_transport_addr(e->dest_addr);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Inbound connection from %s.\n", addr);
@@ -2972,9 +3007,10 @@ void jxta_endpoint_service_transport_event(Jxta_endpoint_service * me, Jxta_tran
         break;
 
     case JXTA_TRANSPORT_OUTBOUND_CONNECTED:
-        assert(e->dest_addr);
-        assert(e->peer_id);
-        assert(e->msgr);
+        if (e->dest_addr == NULL || e->peer_id == NULL || e->msgr == NULL ) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "transport event missing required information [%pp]\n", e);
+            break;
+        }
 
         addr = jxta_endpoint_address_get_transport_addr(e->dest_addr);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Outbound connection to %s.\n", addr);
@@ -2992,8 +3028,10 @@ void jxta_endpoint_service_transport_event(Jxta_endpoint_service * me, Jxta_tran
         break;
 
     case JXTA_TRANSPORT_CONNECTION_CLOSED:
-        assert(e->dest_addr);
-        assert(e->peer_id);
+        if (e->dest_addr == NULL || e->peer_id == NULL) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "transport event missing required information [%pp]\n", e);
+            break;
+        }
 
         addr = jxta_endpoint_address_get_transport_addr(e->dest_addr);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Close connection to %s.\n", addr);

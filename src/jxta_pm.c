@@ -92,6 +92,7 @@ struct _RendezVousPropagateMessage {
 };
 
 static void RendezVousPropagateMessage_delete(Jxta_object * obj);
+static Jxta_status validate_message(RendezVousPropagateMessage * myself);
 
     /** Handler functions.  Each of these is responsible for
      * dealing with all of the character data associated with the 
@@ -293,10 +294,31 @@ static const Kwdtab RendezVousPropagateMessage_tags[] = {
     {NULL, 0, 0, NULL, NULL}
 };
 
+static Jxta_status validate_message(RendezVousPropagateMessage * myself)
+{
+    if(myself->destSName == NULL)
+    {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "destSName is null [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if(myself->destSParam == NULL)
+    {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "destSParam is null [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if(myself->messageId == NULL)
+    {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "messageId is null [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+
+    return JXTA_SUCCESS;
+}
 
 JXTA_DECLARE(Jxta_status) RendezVousPropagateMessage_get_xml(RendezVousPropagateMessage * ad, JString ** xml)
 {
     JString *string;
+    Jxta_status res = JXTA_SUCCESS;
     char buf[18];               /* We use this buffer to store a string representation of a int < 10 */
     unsigned int i = 0;
 
@@ -401,12 +423,20 @@ static void RendezVousPropagateMessage_delete(Jxta_object * obj)
 JXTA_DECLARE(Jxta_status) RendezVousPropagateMessage_parse_charbuffer(RendezVousPropagateMessage * ad, const char *buf,
                                                                       size_t len)
 {
-    return jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    Jxta_status rv =  jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    if(rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
+    return rv;
 }
 
 JXTA_DECLARE(Jxta_status) RendezVousPropagateMessage_parse_file(RendezVousPropagateMessage * ad, FILE * stream)
 {
-    return jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    Jxta_status rv =jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    if(rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
+    return rv;
 }
 
 /* vim: set ts=4 sw=4 tw=130 et: */

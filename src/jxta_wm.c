@@ -95,6 +95,7 @@ struct _JxtaWire {
 };
 
 void JxtaWire_delete(Jxta_object * obj);
+static Jxta_status validate_message(JxtaWire * myself);
 
 /** Handler functions.  Each of these is responsible for
  * dealing with all of the character data associated with the 
@@ -326,7 +327,19 @@ static const Kwdtab JxtaWire_tags[] = {
     {"TTL", TTL_, *handleTTL, NULL, NULL},
     {NULL, 0, 0, NULL, NULL}
 };
+static Jxta_status validate_message(JxtaWire * myself)
+{
+    if(myself->pipeId == NULL ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "pipeId was null [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
+    if(myself->msgId == NULL ) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "msgId was null [%pp]\n", myself);
+        return JXTA_INVALID_ARGUMENT;
+    }
 
+    return JXTA_SUCCESS;
+}
 
 JXTA_DECLARE(Jxta_status) JxtaWire_get_xml(JxtaWire * ad, JString ** xml)
 {
@@ -439,17 +452,25 @@ void JxtaWire_delete(Jxta_object * obj)
     free(ad);
 }
 
-JXTA_DECLARE(void) JxtaWire_parse_charbuffer(JxtaWire * ad, const char *buf, int len)
+JXTA_DECLARE(Jxta_status) JxtaWire_parse_charbuffer(JxtaWire * ad, const char *buf, int len)
 {
-
-    jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    Jxta_status rv = JXTA_SUCCESS;
+    rv = jxta_advertisement_parse_charbuffer((Jxta_advertisement *) ad, buf, len);
+    if (rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
+    return rv;
 }
 
 
-JXTA_DECLARE(void) JxtaWire_parse_file(JxtaWire * ad, FILE * stream)
+JXTA_DECLARE(Jxta_status) JxtaWire_parse_file(JxtaWire * ad, FILE * stream)
 {
-
-    jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    Jxta_status rv = JXTA_SUCCESS;
+    rv = jxta_advertisement_parse_file((Jxta_advertisement *) ad, stream);
+    if (rv == JXTA_SUCCESS) {
+        rv = validate_message(ad);
+    }
+    return rv;
 }
 
 /* vim: set ts=4 sw=4 et tw=130: */

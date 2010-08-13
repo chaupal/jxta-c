@@ -503,9 +503,13 @@ static Jxta_boolean check_wire_header(Jxta_wire_service * self, Jxta_message * m
     string = jstring_new_3(bytes);
     JXTA_OBJECT_RELEASE(bytes);
     bytes = NULL;
-    JxtaWire_parse_charbuffer(*wm, jstring_get_string(string), jstring_length(string));
+    res = JxtaWire_parse_charbuffer(*wm, jstring_get_string(string), jstring_length(string));
     JXTA_OBJECT_RELEASE(string);
     string = NULL;
+    if(res != JXTA_SUCCESS) {
+        rc = FALSE;
+        goto FINAL_EXIT;
+    }
 
     srcPeer = JxtaWire_get_SrcPeer(*wm);
 

@@ -363,18 +363,12 @@ static Jxta_status validate_message(Jxta_rdv_diffusion * myself)
 
 JXTA_DECLARE(Jxta_status) jxta_rdv_diffusion_get_xml(Jxta_rdv_diffusion * myself, JString ** xml)
 {
-    Jxta_status res;
     JString *string;
     JString *temp;
     char buf[12];               /* We use this buffer to store a string representation of a int < 10 */
 
     if (xml == NULL) {
         return JXTA_INVALID_ARGUMENT;
-    }
-
-    res = validate_message(myself);
-    if (JXTA_SUCCESS != res) {
-        return res;
     }
 
     string = jstring_new_0();
