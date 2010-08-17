@@ -100,7 +100,6 @@ struct _Jxta_DiscoveryResponse {
     Jxta_vector *advertisements;
     long resolver_query_id;
     Jxta_discovery_service *ds;
-    JString *query;
     Jxta_time timestamp;
 };
 
@@ -420,19 +419,6 @@ JXTA_DECLARE(void) jxta_discovery_response_set_responses(Jxta_DiscoveryResponse 
     return;
 }
 
-JXTA_DECLARE(void) jxta_discovery_response_set_query(Jxta_DiscoveryResponse * dr, JString * query)
-{
-    if (dr->query) {
-        JXTA_OBJECT_RELEASE(dr->query);
-    }
-    dr->query = query != NULL ? JXTA_OBJECT_SHARE(query):NULL;
-}
-
-JXTA_DECLARE(void) jxta_discovery_response_get_query(Jxta_DiscoveryResponse * dr, JString **query)
-{
-    *query = dr->query == NULL ? NULL:JXTA_OBJECT_SHARE(dr->query);
-}
-
 JXTA_DECLARE(Jxta_time) jxta_discovery_response_timestamp(Jxta_DiscoveryResponse * ad)
 {
     return ad->timestamp;
@@ -678,8 +664,6 @@ static void discovery_response_free(void * me)
         JXTA_OBJECT_RELEASE(ad->peer_advertisement);
     if (ad->ds)
         JXTA_OBJECT_RELEASE(ad->ds);
-    if (ad->query)
-        JXTA_OBJECT_RELEASE(ad->query);
 
     jxta_advertisement_delete((Jxta_advertisement *) ad);
     memset(ad, 0x0, sizeof(Jxta_DiscoveryResponse));

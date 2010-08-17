@@ -104,7 +104,6 @@ struct _jxta_DiscoveryResponseElement {
     JXTA_OBJECT_HANDLE;
     Jxta_expiration_time expiration;
     JString *response;
-    JString *query;
 };
 
 /**
@@ -388,9 +387,6 @@ JXTA_DECLARE(Jxta_DiscoveryResponseElement *) jxta_discovery_response_new_elemen
 
 JXTA_DECLARE(Jxta_time) jxta_discovery_response_timestamp(Jxta_DiscoveryResponse *);
 JXTA_DECLARE(void) jxta_discovery_response_set_timestamp(Jxta_DiscoveryResponse *, Jxta_time);
-JXTA_DECLARE(void) jxta_discovery_response_set_query(Jxta_DiscoveryResponse * dr, JString * query);
-JXTA_DECLARE(void) jxta_discovery_response_get_query(Jxta_DiscoveryResponse * dr, JString **query);
-
 #ifdef __cplusplus
 #if 0
 {

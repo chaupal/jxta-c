@@ -3565,7 +3565,7 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
         memset(aTime3, 0, sizeof(aTime3));
         apr_snprintf(aTime3, sizeof(aTime3), JPR_DIFF_TIME_FMT, jpr_time_now());
 
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Create an entry --- time: " JPR_ABS_TIME_FMT " next_update: 0 Timeout: " JPR_ABS_TIME_FMT "\n", nnow, actual_timeout);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Create an entry --- time: " JPR_ABS_TIME_FMT " next_update: 0 Timeout: " JPR_ABS_TIME_FMT "\n", nnow, actual_timeout);
 
         items = calloc(INSERT_SRDI_DELTA_ITEMS, sizeof(char *));
 
@@ -3593,7 +3593,7 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
 
         assert(i == (INSERT_SRDI_DELTA_ITEMS - 1));
 
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Save srdi delta seq no: " JXTA_SEQUENCE_NUMBER_FMT "\n", entry->seqNumber);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Save srdi delta seq no: " JXTA_SEQUENCE_NUMBER_FMT "\n", entry->seqNumber);
 
         pps_entry = calloc(1, sizeof(Jxta_cm_pps_transaction_entry));
         JXTA_OBJECT_INIT(pps_entry, pps_transaction_entry_free, NULL);

@@ -252,7 +252,7 @@ static void print_frame_info(JString *s, Jxta_time now, Frame *f, Jxta_boolean d
     end = (f->end - now);
 
 
-    apr_snprintf(tmpbuf, sizeof(tmpbuf), "fid:%d avail:%" APR_INT64_T_FMT " start:" JPR_DIFF_TIME_FMT " ends:" JPR_DIFF_TIME_FMT " active_buckets:%d\n", f->id
+    apr_snprintf(tmpbuf, sizeof(tmpbuf), "id:%d avail:%" APR_INT64_T_FMT " start:" JPR_DIFF_TIME_FMT " ends:" JPR_DIFF_TIME_FMT " active_buckets:%d\n", f->id
                             , f->bytes_available
                             , start, end 
                             , f->active_buckets);
@@ -269,6 +269,7 @@ static void print_frame_info(JString *s, Jxta_time now, Frame *f, Jxta_boolean d
 static Frame *init_frame(Jxta_time now, int p_interval, apr_int64_t p_rate, int reserve, Jxta_time start, int num_buckets, Jxta_boolean add_buckets, Look_ahead *l)
 {
     Frame *f;
+    ;
     Bucket **buckets;
     Jxta_time f_start;
     apr_int64_t bytes_frame_reserve;
@@ -291,19 +292,17 @@ static Frame *init_frame(Jxta_time now, int p_interval, apr_int64_t p_rate, int 
     f->reserve_pct = reserve;
     f->look_ahead = l;
 #ifdef P_DEBUG
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "fid:%d interval:%d rate:%" APR_INT64_T_FMT " buckets:%d Start " JPR_DIFF_TIME_FMT " End:" JPR_DIFF_TIME_FMT " size:%" APR_INT64_T_FMT "\n"
-                        , f->id, f->interval, f->rate, num_buckets, (start - now), (f->end - now) , f->size);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "id:%d interval:%d rate:%ld buckets:%d Start " JPR_DIFF_TIME_FMT " End:" JPR_DIFF_TIME_FMT "\n"
+                        , f->id, f->interval, f->rate, num_buckets, (start - now), (f->end - now) );
 #endif
     if (add_buckets) {
         int i;
         apr_int64_t bucket_bytes;
-        apr_int64_t frame_total=0;
 
         f->buckets = calloc(num_buckets + 1, sizeof(Bucket *));
         f->active_buckets = num_buckets;
         buckets = f->buckets;
         bucket_bytes = (f->bytes_available/num_buckets);
-        frame_total = f->bytes_available;
         for (i=0; i<num_buckets; i++) {
             Bucket *b;
             b = calloc(1, sizeof(Bucket));
@@ -315,14 +314,10 @@ static Frame *init_frame(Jxta_time now, int p_interval, apr_int64_t p_rate, int 
             b->start = f_start;
             b->end = b->start + (p_interval * 1000) - 1;
             f_start = b->end + 1;
-            frame_total -= bucket_bytes;
 #ifdef P_DEBUG
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Bucket start:" JPR_DIFF_TIME_FMT " end:" JPR_DIFF_TIME_FMT " avail:%" APR_INT64_T_FMT "\n"
                     , b->start - now, b->end - now, b->bytes_available);
 #endif
-        }
-        if (frame_total > 0) {
-            buckets[i-1]->bytes_available += frame_total;
         }
         f->buckets[i] = NULL;
     }
@@ -493,7 +488,7 @@ static void align_buckets(Jxta_time now, Frame *rcv_f, Frame *give_f)
 
         last_b = new_b;
 #ifdef P_DEBUG
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "new_b id:%d start:" JPR_DIFF_TIME_FMT " end:" JPR_DIFF_TIME_FMT " size:%" APR_INT64_T_FMT "\n", new_b->id, new_b->start - now, new_b->end - now, new_b->bytes_available);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "new_b id:%d start:" JPR_DIFF_TIME_FMT " end:" JPR_DIFF_TIME_FMT "\n", new_b->id, new_b->start - now, new_b->end - now);
 #endif
     }
     while (rcv_f->active_buckets < num_buckets_max) {
@@ -518,7 +513,7 @@ static void align_buckets(Jxta_time now, Frame *rcv_f, Frame *give_f)
         rcv_f->buckets[j] = NULL;
         last_b = new_b;
 #ifdef P_DEBUG
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "new_b id:%d j:%d start:" JPR_DIFF_TIME_FMT " end:" JPR_DIFF_TIME_FMT " size:%" APR_INT64_T_FMT "\n", new_b->id, j, new_b->start - now, new_b->end - now, new_b->bytes_available);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "new_b id:%d j:%d start:" JPR_DIFF_TIME_FMT " end:" JPR_DIFF_TIME_FMT "\n", new_b->id, j, new_b->start - now, new_b->end - now);
 #endif
     }
 }
@@ -620,7 +615,6 @@ static void update_frame_bytes(Jxta_traffic_shaping *traffic, Jxta_time now, apr
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR
                                 , "Size %" APR_INT64_T_FMT " exceeded frame bytes %" APR_INT64_T_FMT " available reset to 0\n", size, f->bytes_available);
                 f->bytes_available = 0;
-                assert(f->bytes_available != 0);
             }
         }
     }
@@ -715,18 +709,18 @@ Jxta_boolean traffic_shaping_check_size(Jxta_traffic_shaping *traffic, apr_int64
 
     now = jpr_time_now();
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Check message size:%" APR_INT64_T_FMT "*****\n", size);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Check message size:%" APR_INT64_T_FMT "*****\n", size);
 
     enough = check_active_frames(traffic, now, size);
     if (enough) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "*Have enough to send the message\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "*Have enough to send the message\n");
         *look_ahead_update = FALSE;
         if (update) {
             update_frame_bytes(traffic, now, size);
         }
 
-    } else if (traffic->max_option == TS_MAX_OPTION_LOOK_AHEAD) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG
                         , "Don't have enough to send the message check look ahead with %" APR_INT64_T_FMT " bytes\n"
                         , traffic->la_ptr->bytes_available);
         if (size < traffic->la_ptr->bytes_available) {
@@ -737,10 +731,10 @@ Jxta_boolean traffic_shaping_check_size(Jxta_traffic_shaping *traffic, apr_int64
             }
         }
 
-    }
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG
                 , "enough %s look_ahead_available:-------------------> %" APR_INT64_T_FMT " " JPR_DIFF_TIME_FMT "\n"
                 , !enough ? "FALSE":"TRUE", traffic->la_ptr->bytes_available, traffic->la_ptr->end - now);
+    }
     if (update) {
         adjust_frames(now, traffic->active_frames);
     }
@@ -752,6 +746,7 @@ JXTA_DECLARE(void traffic_shaping_update(Jxta_traffic_shaping *traffic, apr_int6
     Jxta_time now;
 
     now = jpr_time_now();
+
 
     if (look_ahead_update) {
         traffic->la_ptr->bytes_available -= size;
@@ -895,7 +890,7 @@ void traffic_shaping_init(Jxta_traffic_shaping *t)
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "ts:[%pp] size:%" APR_INT64_T_FMT " interval:%d rate:%" APR_INT64_T_FMT " max_bytes:%" APR_INT64_T_FMT "\n"
                 , t, t->size, t->interval, t->rate, t->max_bytes);
 
-    jxta_log_append(__log_cat,  JXTA_LOG_LEVEL_DEBUG, "ts:[%pp] bytes_frame:%" APR_INT64_T_FMT " bytes_frame_normal:%" APR_INT64_T_FMT " bytes_frame_reserve:%" APR_INT64_T_FMT " bytes_interval:%" APR_INT64_T_FMT " bytes_interval_normal:%" APR_INT64_T_FMT " bytes_interval_reserve:%" APR_INT64_T_FMT "\n"
+    jxta_log_append(__log_cat,  JXTA_LOG_LEVEL_TRACE, "ts:[%pp] bytes_frame:%" APR_INT64_T_FMT " bytes_frame_normal:%" APR_INT64_T_FMT " bytes_frame_reserve:%" APR_INT64_T_FMT " bytes_interval:%" APR_INT64_T_FMT " bytes_interval_normal:%" APR_INT64_T_FMT " bytes_interval_reserve:%" APR_INT64_T_FMT "\n"
         , t, t->bytes_frame, t->bytes_frame_normal, t->bytes_frame_reserve
         , t->bytes_interval, t->bytes_interval_normal, t->bytes_interval_reserve);
 
