@@ -695,6 +695,7 @@ static Jxta_status mru_capacity_set(Jxta_resolver_service_ref * me, size_t capac
  */
 static void mru_check(Jxta_resolver_service_ref * me, ResolverQuery * query, Jxta_id * peerid)
 {
+    size_t i;
     Jxta_RouteAdvertisement *route;
 
     route = jxta_resolver_query_get_src_peer_route(query);
@@ -1163,7 +1164,7 @@ static Jxta_status replace_rq_element(Jxta_resolver_service_ref *me, Jxta_messag
         return JXTA_FAILED;
     }
     JXTA_OBJECT_RELEASE(doc);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Remove element resolver [%pp] \n", me->outque);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Remove element resolver [%pp] \n", me->outque);
 
     jxta_message_remove_element_2(msg, "jxta", me->outque);
     jxta_message_add_element(msg, el);
