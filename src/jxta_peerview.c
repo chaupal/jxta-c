@@ -4852,24 +4852,45 @@ static Jxta_status peerview_handle_ping_broadcast(Jxta_peerview * myself
     Jxta_status res=JXTA_SUCCESS;
     Jxta_peer *dest=NULL;
     Jxta_id *pid=NULL;
-    
+    Jxta_boolean send_pong=FALSE;
 
     
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Processing a broadcast PING\n");
-     if (myself->state == PV_ADDRESSING) {
+    if (myself->state == PV_ADDRESSING) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Can't send a PONG while I'm addressing\n");
         goto FINAL_EXIT;
     }
-
     pid = jxta_peerview_ping_msg_get_src_peer_id(ping);
     if (jxta_id_equals(pid, myself->pid)) goto FINAL_EXIT;
 
-    if ((!jxta_rdv_service_is_rendezvous(myself->rdv) 
-            && -1 != jxta_rdv_service_auto_interval(myself->rdv)) ||
-            jxta_rdv_service_is_rendezvous(myself->rdv)) {
+    if (jxta_rdv_service_is_rendezvous(myself->rdv)) {
+        Peerview_entry *pve=NULL;
+
+        pve = peerview_get_pve(myself, pid);
+
+        if (NULL != pve) {
+            Jxta_time now;
+            Jxta_time expires;
+
+            now = jpr_time_now();
+            expires = jxta_peer_get_expires((Jxta_peer *) pve);
+            if ((expires - now) <= jxta_RdvConfig_pv_ping_due(myself->rdvConfig)) {
+                send_pong = TRUE;
+            }
+            JXTA_OBJECT_RELEASE(pve);
+        } else {
+            send_pong = TRUE;
+        }
+
+    } else if (-1 != jxta_rdv_service_auto_interval(myself->rdv)) {
+        send_pong = TRUE;
+    }
+    if (send_pong) {
         dest = jxta_peer_new();
         jxta_peer_set_address(dest, src_addr);
         res = peerview_send_pong_1(myself, dest, PONG_STATUS, FALSE, FALSE, FALSE, FALSE);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Not Sending a PONG after receiving a broadcast ping\n");
     }
 
 FINAL_EXIT:
@@ -8110,6 +8131,7 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
             peerview_send_ping(pv, NULL, NULL, FALSE, TRUE);
             JXTA_OBJECT_RELEASE(pv);
         }
+
         if (NULL != ret_msgs) {
             peers = jxta_hashtable_keys_get(ret_msgs);
         }
