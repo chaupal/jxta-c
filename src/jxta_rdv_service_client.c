@@ -1167,7 +1167,7 @@ static Jxta_status handle_leasing_reply(_jxta_rdv_service_client * myself, Jxta_
                         jstring_get_string(server_peerid_str), lease);
         status = JXTA_FAILED;
 
-        process_referrals(myself, lease_response, server_peerid);
+        process_referrals(myself, lease_response, NULL);
 
         goto FINAL_EXIT;
     }
@@ -1241,7 +1241,7 @@ static Jxta_status handle_leasing_reply(_jxta_rdv_service_client * myself, Jxta_
         }
     }
 
-    process_referrals(myself, lease_response, NULL);
+    process_referrals(myself, lease_response, server_peerid);
 
     /*
      *  notify the RDV listeners about the lease activity.
@@ -1292,6 +1292,7 @@ static Jxta_status handle_leasing_reply(_jxta_rdv_service_client * myself, Jxta_
 
 static void process_referrals(_jxta_rdv_service_client * myself, Jxta_lease_response_msg * lease_response, Jxta_id * ignore_pid)
 {
+    Jxta_rdv_service_provider *provider = PTValid(myself, _jxta_rdv_service_provider);
     Jxta_vector * referrals = NULL;
     unsigned int all_referrals;
     unsigned int each_referral;
@@ -1321,7 +1322,8 @@ static void process_referrals(_jxta_rdv_service_client * myself, Jxta_lease_resp
             Jxta_boolean added=FALSE;
 
             pid  = jxta_PA_get_PID(referral_adv);
-            if (NULL != ignore_pid && jxta_id_equals(pid, ignore_pid) && all_referrals > 1) {
+            if (jxta_id_equals(pid, provider->local_peer_id) || 
+                (NULL != ignore_pid && jxta_id_equals(pid, ignore_pid) && all_referrals > 1)) {
                 JXTA_OBJECT_RELEASE(pid);
                 JXTA_OBJECT_RELEASE(referral);
                 JXTA_OBJECT_RELEASE(referral_adv);
