@@ -4888,8 +4888,6 @@ static Jxta_status peerview_handle_ping_broadcast(Jxta_peerview * myself
             send_pong = TRUE;
         }
 
-    } else if (-1 != jxta_rdv_service_auto_interval(myself->rdv)) {
-        send_pong = TRUE;
     }
     if (send_pong) {
         dest = jxta_peer_new();
