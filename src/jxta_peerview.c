@@ -2995,6 +2995,7 @@ static Jxta_status peerview_send_pong_2(Jxta_peerview * myself, Jxta_peer * dest
     char **groups=NULL;
     char **groups_save=NULL;
     Jxta_endpoint_message *ep_msg=NULL;
+    Jxta_boolean send_msg = JXTA_FALSE;
 
     ep_msg = jxta_endpoint_msg_new();
     groups = jxta_hashtable_keys_get(msgs);
@@ -3014,6 +3015,8 @@ static Jxta_status peerview_send_pong_2(Jxta_peerview * myself, Jxta_peer * dest
             jxta_endpoint_msg_entry_add_attribute(elem, "groupid", *groups);
             jxta_endpoint_msg_add_entry(ep_msg, elem);
 
+            send_msg = JXTA_TRUE;
+
             JXTA_OBJECT_RELEASE(msg_elem);
             JXTA_OBJECT_RELEASE(elem);
         }
@@ -3024,9 +3027,11 @@ static Jxta_status peerview_send_pong_2(Jxta_peerview * myself, Jxta_peer * dest
     while (NULL != groups && *groups) free(*(groups++));
 
 
-    res = jxta_PG_async_send_1(myself->group, ep_msg, jxta_peer_peerid(dest), "groupid"
+    if (JXTA_TRUE == send_msg)
+    {
+        res = jxta_PG_async_send_1(myself->group, ep_msg, jxta_peer_peerid(dest), "groupid"
                                 , RDV_V3_MSID, JXTA_PEERVIEW_NAME, NULL);
-
+    }
 
     if (groups_save)
         free(groups_save);
@@ -4922,6 +4927,7 @@ static Jxta_status peerview_handle_ping(Jxta_peerview * myself, Jxta_peerview_pi
     JString* pid_j=NULL;
     Jxta_boolean send=FALSE;
     int i;
+    Jxta_rdv_service *rdv = NULL;
 
 
     /* FIXME 20060926 bondolo Valdiate credential on ping message */
@@ -4971,6 +4977,26 @@ static Jxta_status peerview_handle_ping(Jxta_peerview * myself, Jxta_peerview_pi
         JXTA_OBJECT_RELEASE(dest);
         dest = NULL;
     } else if (0 == jxta_vector_size(entries)) {
+
+        apr_thread_mutex_lock(myself->mutex);
+        if (NULL == myself->rdv) {
+            jxta_PG_get_rendezvous_service(myself->group, &myself->rdv);
+        }
+        rdv = myself->rdv;
+        apr_thread_mutex_unlock(myself->mutex);
+
+        if (NULL == rdv) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "[%pp] Cannot handle ping since rdv service is not available\n", myself);
+            goto FINAL_EXIT;
+        }
+
+        if (jxta_rdv_service_is_rendezvous(rdv) && jxta_rdv_service_is_demoting(rdv))
+        {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "[%pp] Rendezvous Service (%pp) is in the process of demoting..."
+                                                            "Ignore incoming ping\n", myself, rdv);
+            goto FINAL_EXIT;
+        }
+
         res = peerview_create_pong_msg(myself, PONG_STATUS, FALSE, &pong_msg, FALSE);
 
         if (consolidated) {
@@ -5015,14 +5041,47 @@ static Jxta_status peerview_handle_ping(Jxta_peerview * myself, Jxta_peerview_pi
         group_j = jxta_peerview_ping_msg_entry_group_name(entry);
         pvs = peerview_get_pvs(group_j);
 
-        if (jxta_vector_size(pvs) > 0) {
+        if (NULL != pvs && jxta_vector_size(pvs) > 0) {
+            res = jxta_vector_get_object_at(pvs, JXTA_OBJECT_PPTR(&pv), 0);
+            if (JXTA_SUCCESS != res)
+            {
+                if (NULL != pv) {
+                    JXTA_OBJECT_RELEASE(pv);
+                    pv = NULL;
+                }
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed to get peerview from pvs vector\n");
+            }
+            else {
 
-            jxta_vector_get_object_at(pvs, JXTA_OBJECT_PPTR(&pv), 0);
+                apr_thread_mutex_lock(myself->mutex);
+                if (NULL == myself->rdv) {
+                    jxta_PG_get_rendezvous_service(myself->group, &myself->rdv);
+                }
+                rdv = myself->rdv;
+                apr_thread_mutex_unlock(myself->mutex);
 
-            pve = peerview_get_pve(pv, pid);
+                if (NULL == rdv) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "[%pp] Cannot handle ping since rdv service is not "
+                                                                        "available\n", myself);
+                    JXTA_OBJECT_RELEASE(pv);
+                    pv = NULL;
+                }
 
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "pvs:%d Receive ping msg group:%s %s\n"
-                            , jxta_vector_size(pvs), jstring_get_string(group_j), NULL == pve ? " with no pve": " with pve");
+                if (jxta_rdv_service_is_rendezvous(rdv) && jxta_rdv_service_is_demoting(rdv))
+                {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "[%pp] Rendezvous Service (%pp) is in the process of demoting..."
+                                                                    "Ignore incoming ping\n", pv, rdv);
+                    JXTA_OBJECT_RELEASE(pv);
+                    pv = NULL;
+                }
+
+                if (pv != NULL) {
+                    pve = peerview_get_pve(pv, pid);
+
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "pvs:%d Receive ping msg group:%s %s\n"
+                                , jxta_vector_size(pvs), jstring_get_string(group_j), NULL == pve ? " with no pve": " with pve");
+                }
+            }
 
         }
         if (pve && pv) {
@@ -5069,6 +5128,7 @@ static Jxta_status peerview_handle_ping(Jxta_peerview * myself, Jxta_peerview_pi
         if (pv)
             JXTA_OBJECT_RELEASE(pv);
         JXTA_OBJECT_RELEASE(entry);
+        rdv = NULL;
     }
 
     if (send) {
@@ -5813,6 +5873,10 @@ static Jxta_status handle_existing_pve_pong(Jxta_peerview * me, Peerview_entry *
         jxta_peer_set_expires((Jxta_peer *) pve, 0);
     } else {
         pve->is_demoting = jxta_peerview_pong_msg_is_demoting(pong);
+        if (pve->is_demoting)
+        {
+            jxta_peer_set_expires((Jxta_peer *) pve, 0);
+        }
     }
 
     free_hash_list = jxta_peerview_pong_msg_get_free_hash_list(pong);
@@ -5873,6 +5937,7 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
     JString *pid_j;
     Jxta_boolean locked = FALSE;
     JString *msg_j=NULL;
+    Jxta_rdv_service *rdv = NULL;
 
     pid = jxta_peerview_pong_msg_get_peer_id(pong);
 
@@ -5883,6 +5948,22 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
     apr_thread_mutex_lock(me->mutex);
     locked = TRUE;
 
+    if (NULL == me->rdv) {
+        jxta_PG_get_rendezvous_service(me->group, &me->rdv);
+    }
+    rdv = me->rdv;
+
+    if (NULL == rdv) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "[%pp] Cannot handle pong since rdv service is not available\n", me);
+        goto FINAL_EXIT;
+    }
+
+    if (jxta_rdv_service_is_rendezvous(rdv) && jxta_rdv_service_is_demoting(rdv))
+    {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "[%pp] Rendezvous Service (%pp) is in the process of demoting..."
+                                                        "Ignore incoming pong\n", me, rdv);
+        goto FINAL_EXIT;
+    }
 
     if (jxta_peerview_pong_msg_is_compact(pong)) {
 
@@ -9139,6 +9220,7 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
                 check_peers_size = TRUE;
                 tmp_config = config_edge;
                 jxta_rdv_service_set_demoting(rdv, TRUE);
+                jxta_rdv_service_disconnect_peers(rdv);
             }
         }
     } else if (jxta_rdv_service_config(rdv) == config_edge) {

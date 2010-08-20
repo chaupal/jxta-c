@@ -1845,14 +1845,29 @@ static Jxta_status disconnect_peers(Jxta_rdv_service_provider *provider)
     sz = jxta_vector_size(clients);
     for (i = 0; i < sz; i++) {
         _jxta_peer_client_entry *peer;
+        Jxta_id *client_peerid = NULL;
+        Jxta_Rendezvous_event_type lease_event = 0;
 
         res = jxta_vector_get_object_at(clients, JXTA_OBJECT_PPTR(&peer), i);
         if (res != JXTA_SUCCESS) {
             continue;
         }
 
+        jxta_peer_lock((Jxta_peer *) peer);
+
+        client_peerid = jxta_peer_peerid((Jxta_peer *) peer);
+
         if (check_peer_lease(peer)) {
-            res = send_connect_reply(myself, jxta_peer_peerid((Jxta_peer *) peer), 0);
+            res = send_connect_reply(myself, client_peerid, 0);
+            jxta_peer_set_expires((Jxta_peer *) peer, 0);
+            lease_event = JXTA_RDV_CLIENT_DISCONNECTED;
+        }
+
+        jxta_peer_unlock((Jxta_peer *) peer);
+
+        if (lease_event != 0)
+        {
+            rdv_service_generate_event(provider->service, lease_event, client_peerid);
         }
 
         JXTA_OBJECT_RELEASE(peer);
