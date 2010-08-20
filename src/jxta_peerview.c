@@ -130,7 +130,7 @@ static const apr_interval_time_t JXTA_PEERVIEW_ADD_INTERVAL = 15 * APR_USEC_PER_
 
 #define JXTA_PEERVIEW_ADDRESS_ASSIGN_EXPIRATION (10 * JPR_INTERVAL_ONE_SECOND)
 
-static const unsigned int DEFAULT_CLUSTERS_COUNT = 2;
+static const unsigned int DEFAULT_CLUSTERS_COUNT = 1;
 
 static const unsigned int DEFAULT_CLUSTER_MEMBERS = 4;
 
@@ -354,6 +354,7 @@ struct _jxta_peerview {
     Jxta_vector *activity_maintain_referral_peers;
     unsigned int activity_maintain_referral_pings_sent;
     Jxta_peerview_option_entry *metrics_option_entry;
+    int skipped_cycles;
 
     /* ACTIVITY Address Locking */
     Jxta_time activity_address_locking_ends;
@@ -445,7 +446,7 @@ static Jxta_status create_self_pve(Jxta_peerview * myself, BIGNUM * address);
 static void peerview_update_id(Jxta_peerview * myself);
 static void peerview_has_changed(Jxta_peerview * myself);
 
-static Jxta_status peerview_maintain(Jxta_peerview *myself, Jxta_boolean all, Jxta_peerview_option_entry *option_entry, Jxta_hashtable **ret_msgs);
+static Jxta_status peerview_maintain(Jxta_peerview *myself, Jxta_boolean all, Jxta_peerview_option_entry *option_entry, Jxta_boolean demoting, Jxta_hashtable **ret_msgs);
 static Jxta_vector * peerview_get_pvs(JString *request_group);
 static Peerview_entry *peerview_get_pve(Jxta_peerview * myself, Jxta_PID * pid);
 static Jxta_boolean peerview_check_pve(Jxta_peerview * myself, Jxta_PID * pid);
@@ -8155,6 +8156,21 @@ static Jxta_vector * peerview_get_pvs(JString *request_group)
     return pvs;
 }
 
+double calculate_skip_maintain_cycles(Jxta_peerview *myself)
+{
+    double res;
+    int max_check;
+    int members;
+
+    max_check = myself->clusters_count == 1 ? 1: myself->clusters_count - 1;
+    max_check = max_check + myself->cluster_members - 1;
+
+    members = jxta_vector_size(myself->clusters[myself->my_cluster].members);
+    res = members;
+    if (members > 0) res = pow(members, 2);
+    return res;
+}
+
 /**
 *   The maintain task is responsible for :
 *       - expiring dead PVEs
@@ -8181,6 +8197,7 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
         Jxta_version * peer_version=NULL;
         size_t msgs_size=0;
         apr_interval_time_t wwait;
+        Jxta_boolean is_demoting=FALSE;
         apr_status_t apr_status;
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "ACT[maintain]: Running. state:%s\n"
@@ -8206,20 +8223,22 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
             }
             jxta_PG_get_rendezvous_service(pv->group, &rdv);
             is_rdv = jxta_rdv_service_is_rendezvous(rdv);
+            is_demoting = jxta_rdv_service_is_demoting(rdv);
             JXTA_OBJECT_RELEASE(rdv);
             if (!is_rdv) {
                 JXTA_OBJECT_RELEASE(pv);
                 continue;
             }
-
             if (PV_MAINTENANCE == pv->state) {
                 Jxta_peerview_option_entry *option_entry=NULL;
 
                 peerview_create_metrics_option_entry(myself, &option_entry);
-
-                peerview_maintain(pv, msgs_size > 0 ? TRUE:FALSE, option_entry, &ret_msgs);
+                peerview_maintain(pv, msgs_size > 0 ? TRUE:FALSE, option_entry, is_demoting , &ret_msgs);
             }
-            peerview_send_ping(pv, NULL, NULL, FALSE, TRUE);
+            if (pv->skipped_cycles++ >= calculate_skip_maintain_cycles(pv)) {
+                peerview_send_ping(pv, NULL, NULL, FALSE, TRUE);
+                pv->skipped_cycles = 0;
+            }
             JXTA_OBJECT_RELEASE(pv);
         }
 
@@ -8353,7 +8372,7 @@ RESCHEDULE_EXIT:
 
 }
 
-static Jxta_status peerview_maintain(Jxta_peerview *myself, Jxta_boolean all, Jxta_peerview_option_entry *option_entry, Jxta_hashtable **ret_msgs)
+static Jxta_status peerview_maintain(Jxta_peerview *myself, Jxta_boolean all, Jxta_peerview_option_entry *option_entry, Jxta_boolean demoting, Jxta_hashtable **ret_msgs)
 {
     Jxta_vector * current_pves;
     apr_status_t apr_res;
@@ -8381,31 +8400,32 @@ static Jxta_status peerview_maintain(Jxta_peerview *myself, Jxta_boolean all, Jx
 
     JXTA_OBJECT_RELEASE(current_pves);
 
-    probe_referrals(myself);
+    if (!demoting) {
+        probe_referrals(myself);
 
-    if (PV_ADDRESSING != myself->state && PV_MAINTENANCE != myself->state) {
-        goto FINAL_EXIT;
-    }
+        if (PV_ADDRESSING != myself->state && PV_MAINTENANCE != myself->state) {
+            goto FINAL_EXIT;
+        }
 
 
-    if (jxta_vector_size(myself->possible_free_list) > 0) {
-        peerview_reclaim_addresses(myself);
-    }
-    if (!myself->activity_add && need_additional_peers(myself, myself->cluster_members)) {
-        /* Start the add activity? */
+        if (jxta_vector_size(myself->possible_free_list) > 0) {
+            peerview_reclaim_addresses(myself);
+        }
+        if (!myself->activity_add && need_additional_peers(myself, myself->cluster_members)) {
+            /* Start the add activity? */
 
-        myself->activity_add = TRUE;
-        apr_res = apr_thread_pool_push(myself->thread_pool, activity_peerview_add, myself,
+            myself->activity_add = TRUE;
+            apr_res = apr_thread_pool_push(myself->thread_pool, activity_peerview_add, myself,
                                             APR_THREAD_TASK_PRIORITY_HIGH, &myself->activity_add);
-        if (APR_SUCCESS != apr_res) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,
+            if (APR_SUCCESS != apr_res) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,
                             FILEANDLINE "peerview_maintain [%pp]: Could not start add activity.\n", myself);
-            myself->activity_add = FALSE;
-        } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "peerview_maintain [%pp]: Scheduled [Add].\n", myself);
+                myself->activity_add = FALSE;
+            } else {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "peerview_maintain [%pp]: Scheduled [Add].\n", myself);
+            }
         }
     }
-
 FINAL_EXIT:
     
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "peerview_maintain [%pp]: done. \n", myself);
@@ -8782,7 +8802,7 @@ static int ranking_sort(Jxta_peer **peer_a, Jxta_peer **peer_b)
             }
             if (NULL == *lease_option) continue;
             if (strcmp(jxta_advertisement_get_document_name((Jxta_advertisement *) *lease_option), "jxta:RdvLeaseOptions")) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Not a rendezvous lease option\n");
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, FILEANDLINE "Not a rendezvous lease option\n");
                 JXTA_OBJECT_RELEASE(*lease_option);
                 *lease_option = NULL;
                 continue;
