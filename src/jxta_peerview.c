@@ -117,6 +117,11 @@ static const apr_interval_time_t JXTA_PEERVIEW_MAINTAIN_INTERVAL = 20 * APR_USEC
 static const unsigned int DEFAULT_LONELINESS_FACTOR = 2;
 
 /**
+*   Number of auto-cycle iterations to wait between switches
+*/
+static const unsigned int DEFAULT_SWITCH_ITERATIONS = 2;
+
+/**
 *   Interval at which we (may) attempt to nominate additional peers to join the peerview.
 **/
 static const apr_interval_time_t JXTA_PEERVIEW_ADD_INTERVAL = 15 * APR_USEC_PER_SEC;
@@ -278,6 +283,7 @@ struct _jxta_peerview {
     Jxta_time_diff pa_refresh;
 
     Jxta_time_diff auto_cycle;
+    Jxta_boolean do_demotion;
     int iterations_since_switch;
     int loneliness_factor;
     unsigned int my_suitability;
@@ -813,6 +819,8 @@ static Jxta_peerview *peerview_construct(Jxta_peerview * myself, apr_pool_t * pa
         myself->endpoint = NULL;
         myself->discovery = NULL;
         myself->rdv = NULL;
+
+        myself->do_demotion = FALSE;
 
         myself->my_cluster = -1;
         myself->clusters = NULL;
@@ -8162,10 +8170,13 @@ double calculate_skip_maintain_cycles(Jxta_peerview *myself)
     int max_check;
     int members;
 
-    max_check = myself->clusters_count == 1 ? 1: myself->clusters_count - 1;
-    max_check = max_check + myself->cluster_members - 1;
+    max_check = myself->clusters_count - 1;
+    max_check += myself->cluster_members - 1;
 
-    members = jxta_vector_size(myself->clusters[myself->my_cluster].members);
+    members = my_cluster_in_range(myself) ? 
+        jxta_vector_size(myself->clusters[myself->my_cluster].members) : 0;
+    
+    members = (members < max_check) ? members : max_check;
     res = members;
     if (members > 0) res = pow(members, 2);
     return res;
@@ -8235,10 +8246,12 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
                 peerview_create_metrics_option_entry(myself, &option_entry);
                 peerview_maintain(pv, msgs_size > 0 ? TRUE:FALSE, option_entry, is_demoting , &ret_msgs);
             }
-            if (pv->skipped_cycles++ >= calculate_skip_maintain_cycles(pv)) {
+            /* Only send the broadcast ping if not demoting and enough cycles have passed */
+            if (!is_demoting && (pv->skipped_cycles++ >= calculate_skip_maintain_cycles(pv))) {
                 peerview_send_ping(pv, NULL, NULL, FALSE, TRUE);
                 pv->skipped_cycles = 0;
             }
+
             JXTA_OBJECT_RELEASE(pv);
         }
 
@@ -9184,7 +9197,6 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
     Jxta_status res = JXTA_SUCCESS;
     RdvConfig_configuration new_config;
     RdvConfig_configuration tmp_config;
-    Jxta_boolean demoted = FALSE;
     Jxta_vector *rdvs = NULL;
     Jxta_id *id = NULL;
     Jxta_boolean check_peers_size = FALSE;
@@ -9228,19 +9240,25 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
     /* if we're demoting and we've shed all obligations switch to edge */
     if (jxta_rdv_service_is_rendezvous(rdv) && jxta_rdv_service_is_demoting(rdv)) {
         check_peers_size = TRUE;
-        demoted = TRUE;
         tmp_config = config_edge;
     }
 
     /* if there are too many peers in the pv */
-    if (!need_additional_peers(me, me->cluster_members) ) {
+    if (jxta_rdv_service_is_rendezvous(rdv) && 
+        !jxta_rdv_service_is_demoting(rdv) &&
+        !need_additional_peers(me, me->cluster_members) ) {
         me->loneliness_factor = 0;
-        if (!demoted) {
-            if (remain_in_peerview(me, me->cluster_members) == FALSE) {
-                check_peers_size = TRUE;
-                tmp_config = config_edge;
-                jxta_rdv_service_set_demoting(rdv, TRUE);
-                jxta_rdv_service_disconnect_peers(rdv);
+        if (remain_in_peerview(me, me->cluster_members) == FALSE) {
+            check_peers_size = TRUE;
+            tmp_config = config_edge;
+            me->do_demotion = TRUE;
+        }
+        else {
+            /* if for some reason we are still needed, go ahead and cancel the demotion 
+             * but only if we haven't already begun the demotion process 
+             */
+            if (!jxta_rdv_service_is_demoting(rdv)) {
+                me->do_demotion = FALSE;
             }
         }
     } else if (jxta_rdv_service_config(rdv) == config_edge) {
@@ -9251,6 +9269,16 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
             tmp_iterations_since_switch = 3;
             tmp_config = config_rendezvous;
         }
+    }
+
+    /* disconnect the peers and set the rdv to demote in the cycle before we expect to switch
+     * We don't want to cut off the rendezvous/peerview too early and have the peer
+     * sit without an interface to other peers for longer than is necessary
+     */
+    if (me->do_demotion && !jxta_rdv_service_is_demoting(rdv) && me->iterations_since_switch >= DEFAULT_SWITCH_ITERATIONS) {
+        jxta_rdv_service_set_demoting(rdv, TRUE);
+        jxta_rdv_service_disconnect_peers(rdv);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Demoting and disconnecting peers from rdv (%pp) \n" , rdv);
     }
 
     apr_thread_mutex_unlock(me->mutex);
@@ -9280,12 +9308,13 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
      */
      
     /* Refuse to switch if we just switched */
-    if ((jxta_rdv_service_config(rdv) != new_config) && (me->iterations_since_switch > 2)) {
+    if ((jxta_rdv_service_config(rdv) != new_config) && (me->iterations_since_switch > DEFAULT_SWITCH_ITERATIONS)) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO,"Auto-rendezvous new_config -- %s\n", new_config == config_edge ? "edge":"rendezvous");
         if (config_edge == new_config) {
             /* the switch is done in the rdv_service in this case */
             peerview_remove_pves(me);
             apr_thread_mutex_lock(me->mutex);
+            me->do_demotion = FALSE;
             if (PV_STOPPED != me->state) {
                 Jxta_peerview_event *event = peerview_event_new(JXTA_PEERVIEW_DEMOTE, id);
                 res = jxta_vector_add_object_last(me->event_list, (Jxta_object *) event);
