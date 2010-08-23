@@ -2553,8 +2553,8 @@ static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString
     Jxta_status res=JXTA_SUCCESS;
     Jxta_DiscoveryResponse *dr_tmp=NULL;
     apr_int64_t total_length=0;
-    Jxta_vector *all_entries;
-    Jxta_vector *elem_v;
+    Jxta_vector *all_entries=NULL;
+    Jxta_vector *elem_v=NULL;
     Jxta_vector *responses=NULL;
     JString *tmp_j=NULL;
     int msg_length=0;
@@ -2625,7 +2625,7 @@ static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString
             if (0 != jxta_vector_size(all_entries)) {
                 dr_new = jxta_discovery_response_new();
                 res = jxta_discovery_response_parse_charbuffer(dr_new, jstring_get_string(response_j), jstring_length(response_j));
-                if (JXTA_SUCCESS != status) {
+                if (JXTA_SUCCESS != res) {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to parse %s\n", jstring_get_string(response_j));
 
                 }
