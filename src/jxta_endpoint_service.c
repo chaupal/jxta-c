@@ -563,7 +563,7 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_fc(Jxta_endpoint_service * 
     Jxta_status res=JXTA_FAILED;
     Jxta_message *msg;
     Jxta_message_element *msg_elem;
-    JString *ep_fc_msg_xml;
+    JString *ep_fc_msg_xml=NULL;
     Jxta_ep_flow_control_msg *ep_fc_msg;
     Jxta_endpoint_address *send_ea=NULL;
     JxtaEndpointMessenger *msgr=NULL;
@@ -572,28 +572,29 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_fc(Jxta_endpoint_service * 
     int frame_seconds;
     int connected_peers;
     int time;
-
+    char *ea_string;
 
     send_ea = jxta_endpoint_address_new_4(ea, "Endpoint", "FlowControl");
     frame_seconds = traffic_shaping_frame(me->ts);
     num_bytes =  traffic_shaping_size(me->ts);
+
     time = traffic_shaping_time(me->ts);
     endpoint_messenger_get(me, send_ea, &msgr);
     connected_peers = number_of_connected_peers(me);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Send FC Number of connected peers %d\n", connected_peers);
     if (!normal) {
-        num_bytes = num_bytes/connected_peers;
+        num_bytes = ((float) 40 * num_bytes/100);
     }
 
-    if (NULL != msgr) {
-        if (msgr->fc_frame_seconds == frame_seconds && msgr->fc_num_bytes == num_bytes) {
-            if (msgr->fc_msgs_sent++ > 3) {
-                goto FINAL_EXIT;
-            }
+    if (NULL == msgr) {
+        goto FINAL_EXIT;
+    }
+    if (msgr->fc_frame_seconds == frame_seconds
+                  && msgr->fc_num_bytes == num_bytes) {
+        if (msgr->fc_msgs_sent++ > 3) {
+            goto FINAL_EXIT;
         }
     } else {
-        res = JXTA_ITEM_NOTFOUND;
-        goto FINAL_EXIT;
+        msgr->fc_msgs_sent = 0;
     }
     msg = jxta_message_new();
 
@@ -608,6 +609,13 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_fc(Jxta_endpoint_service * 
 
     jxta_message_add_element(msg, msg_elem);
 
+    ea_string = jxta_endpoint_address_to_string(send_ea);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE
+                        , "Send FC - %s bytes:%" APR_INT64_T_FMT " to:%s \n%s\n"
+                        , normal == TRUE ? "normal":"reduced"
+                        , num_bytes, ea_string, jstring_get_string(ep_fc_msg_xml));
+    free(ea_string);
+
     res = jxta_endpoint_service_send_ex(me, msg, send_ea, JXTA_TRUE, NULL);
     if (JXTA_SUCCESS == res) {
         msgr->fc_num_bytes = num_bytes;
@@ -615,11 +623,12 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_fc(Jxta_endpoint_service * 
     }
     JXTA_OBJECT_RELEASE(msg);
     JXTA_OBJECT_RELEASE(msg_elem);
-    JXTA_OBJECT_RELEASE(ep_fc_msg_xml);
     JXTA_OBJECT_RELEASE(ep_fc_msg);
     JXTA_OBJECT_RELEASE(pid);
 
 FINAL_EXIT:
+    if (ep_fc_msg_xml)
+        JXTA_OBJECT_RELEASE(ep_fc_msg_xml);
     if (msgr)
         JXTA_OBJECT_RELEASE(msgr);
     JXTA_OBJECT_RELEASE(send_ea);
@@ -2370,6 +2379,8 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_check_msg_length(Jxta_endpoint_s
     Jxta_status res=JXTA_SUCCESS;
     apr_int64_t length=0;
     JxtaEndpointMessenger *messenger=NULL;
+    Jxta_boolean ep_locked=FALSE;
+    Jxta_boolean msgr_locked=FALSE;
     float compression=1;
     float compressed;
 
@@ -2388,27 +2399,32 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_check_msg_length(Jxta_endpoint_s
             apr_int64_t max_msgr_length=200;
 
             traffic_shaping_lock(service->ts);
+            ep_locked = TRUE;
             res = traffic_shaping_check_max(service->ts, length, max_length, compression, &compressed);
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Checked service with msgr:[%pp] length:%" APR_INT64_T_FMT " TS max_length:%" APR_INT64_T_FMT "\n"
                         , messenger, length, *max_length);
-            traffic_shaping_unlock(service->ts);
 
-            if (NULL != messenger->ts && JXTA_LENGTH_EXCEEDED != res) {
+            if (NULL != messenger->ts) {
                 traffic_shaping_lock(messenger->ts);
+                msgr_locked = TRUE;
                 msgr_status = traffic_shaping_check_max(messenger->ts
                                 , length, &max_msgr_length, compression, &compressed);
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Checked messenger [%pp] length:%" APR_INT64_T_FMT " TS max_length:%" APR_INT64_T_FMT "\n"
                             , messenger, length, max_msgr_length);
-                *max_length = max_msgr_length;
-                res = msgr_status;
-                traffic_shaping_unlock(messenger->ts);
+                if (max_msgr_length < *max_length) {
+                    *max_length = max_msgr_length;
+                    res = msgr_status;
+                }
             }
         } else {
             res = JXTA_SUCCESS;
         }
     }
 FINAL_EXIT:
-
+    if (ep_locked)
+        traffic_shaping_unlock(service->ts);
+    if (msgr_locked)
+        traffic_shaping_unlock(messenger->ts);
     if (messenger)
         JXTA_OBJECT_RELEASE(messenger);
     return res;
@@ -2692,6 +2708,8 @@ JXTA_DECLARE(int) jxta_ep_fc_reserve(Jxta_ep_flow_control *ep_fc)
 
 JXTA_DECLARE(Jxta_status) jxta_ep_fc_set_traffic_shaping(Jxta_ep_flow_control *ep_fc, Jxta_traffic_shaping *ts)
 {
+    if (NULL != ep_fc->ts)
+        JXTA_OBJECT_RELEASE(ep_fc->ts);
     ep_fc->ts = NULL != ts ? JXTA_OBJECT_SHARE(ts):NULL;
     return JXTA_SUCCESS;
 }
