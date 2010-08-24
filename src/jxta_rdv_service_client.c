@@ -886,6 +886,8 @@ static Jxta_status send_lease_request(_jxta_rdv_service_client * myself, _jxta_p
         jxta_lease_request_msg_set_client_adv_exp(lease_request, jxta_RdvConfig_get_lease_duration(myself->rdvConfig) * 2);
     }
     else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Requesting lease of duration %d\n", 
+                        jxta_RdvConfig_get_lease_duration(myself->rdvConfig));
         jxta_lease_request_msg_set_requested_lease(lease_request, jxta_RdvConfig_get_lease_duration(myself->rdvConfig));
     }
 
@@ -1542,6 +1544,13 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
         /* Final lap -- try to connect to a candidate rdv */
         if (NULL != myself->candidate) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Try connecting to candidate.\n");
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, 
+                            "\nlastConnect try = " JPR_DIFF_TIME_FMT
+                            "\nconnectInterval = " JPR_DIFF_TIME_FMT 
+                            "\ncurrentTime = " JPR_DIFF_TIME_FMT "\n", 
+                            myself->candidate->lastConnectTry,
+                            myself->candidate->connectInterval, 
+                            jpr_time_now());
 
             if (jpr_time_now() > (myself->candidate->lastConnectTry + myself->candidate->connectInterval)) {
                 /* Time for the next candidate. */
@@ -1567,6 +1576,7 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
         }
         while (connect && (NULL == myself->candidate) && (jxta_vector_size(myself->candidates) > 0)) {
             /* Try connecting to a new candidate */
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Trying to connect to a new candidate\n");
             res = jxta_vector_remove_object_at(myself->candidates, JXTA_OBJECT_PPTR(&myself->candidate), 0);
 
             if (res != JXTA_SUCCESS) {
