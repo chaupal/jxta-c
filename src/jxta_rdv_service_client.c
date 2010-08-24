@@ -1543,7 +1543,7 @@ static void *APR_THREAD_FUNC rdv_client_maintain_task(apr_thread_t * thread, voi
         if (NULL != myself->candidate) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Try connecting to candidate.\n");
 
-            if ((myself->candidate->lastConnectTry + myself->candidate->connectInterval) > jpr_time_now()) {
+            if (jpr_time_now() > (myself->candidate->lastConnectTry + myself->candidate->connectInterval)) {
                 /* Time for the next candidate. */
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Candidate timed out - try next\n");
                 JXTA_OBJECT_RELEASE(myself->candidate);
