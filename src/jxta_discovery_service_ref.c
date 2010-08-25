@@ -2345,10 +2345,12 @@ static Jxta_status find_responses(Jxta_discovery_service_ref * discovery, Jxta_D
                 if (older == TRUE) {
                     if (time_entry < time_msg) {
                         jxta_vector_remove_object_at(queued_entries, NULL, i--);
-                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "query %s Found an older response:" JPR_DIFF_TIME_FMT " newer:" JPR_DIFF_TIME_FMT "\n", curr - time_entry , curr - time_msg);
+                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "query %s Found an older response:" JPR_DIFF_TIME_FMT " newer:" JPR_DIFF_TIME_FMT "\n", 
+                            jstring_get_string(queued_query_j), curr - time_entry , curr - time_msg);
                     }
                 } else if (time_entry > time_msg) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "query %s Found a newer response time:" JPR_DIFF_TIME_FMT " older:" JPR_DIFF_TIME_FMT "\n", curr - time_entry, curr - time_msg );
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "query %s Found a newer response time:" JPR_DIFF_TIME_FMT " older:" JPR_DIFF_TIME_FMT "\n", 
+                        jstring_get_string(queued_query_j), curr - time_entry, curr - time_msg );
                     res = JXTA_SUCCESS;
                     break;
                 }
@@ -2423,6 +2425,9 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
                         , "Unable to create a rr response to calcuate the overhead\n");
         goto FINAL_EXIT;
     }
+    /* rsp_lock must be locked to enter processing of this loop
+     * the lock will be re-obtained at the end of the while loop
+     */
     while (jxta_vector_size(dr_rsps) > 0) {
         JString *rdoc = NULL;
         apr_int64_t max_length=0;
@@ -2440,6 +2445,12 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
             res = adjust_dr_entries(discovery, dr_msg, dr_rsps, src_pid, diff, prev_diff);
         }
         init = FALSE;
+
+        if (locked) {
+            locked = FALSE;
+            apr_thread_mutex_unlock(discovery->rsp_lock);
+        }
+
         status = jxta_discovery_response_get_xml(dr_msg, &rdoc);
 
         res_response = jxta_resolver_response_new_2(discovery->instanceName
@@ -2451,10 +2462,6 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
 
         jxta_resolver_response_attach_qos(res_response, jxta_resolver_query_qos(rq));
 
-        if (locked) {
-            locked = FALSE;
-            apr_thread_mutex_unlock(discovery->rsp_lock);
-        }
         res = jxta_resolver_service_sendResponse(discovery->resolver, res_response, src_pid, FALSE == bypass_message ? &max_length:NULL);
 
         if (JXTA_LENGTH_EXCEEDED == res) {
@@ -2533,6 +2540,12 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
         if (dr_msg)
             JXTA_OBJECT_RELEASE(dr_msg);
         if (break_it) break;
+
+        /* re-lock to check the beginning of the while loop */
+        if (!locked) {
+            apr_thread_mutex_lock(discovery->rsp_lock);
+            locked = TRUE;
+        }
     }
 
 FINAL_EXIT:
