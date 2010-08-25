@@ -137,12 +137,14 @@ typedef struct {
     Jxta_listener *my_listeners[LISTENER_MAX];
     volatile Jxta_time_diff expired_loop;
     volatile Jxta_time_diff delta_loop;
+    Jxta_vector *dr_queue;
     Jxta_hashtable *dr_rsps;
     apr_thread_mutex_t *rsp_lock;
     volatile apr_uint32_t rsp_cnt;
 } Jxta_discovery_service_ref;
 
 typedef struct _DR_thread_struct {
+    Extends(Jxta_object);
     Jxta_discovery_service_ref  *discovery;
     ResolverQuery *rq;
     Jxta_DiscoveryResponse *dr;
@@ -354,6 +356,7 @@ static Jxta_status init(Jxta_module * module, Jxta_PG * group, Jxta_id * assigne
     discovery->listener_vec = jxta_vector_new(1);
     discovery->listeners = jxta_hashtable_new(1);
 
+    discovery->dr_queue = jxta_vector_new(0);
     discovery->dr_rsps = jxta_hashtable_new(0);
     apr_thread_mutex_create(&discovery->rsp_lock,APR_THREAD_MUTEX_NESTED , jxta_PG_pool_get(discovery->group));
 
@@ -438,6 +441,12 @@ static void stop(Jxta_module * module)
         apr_thread_pool_tasks_cancel(tp, discovery);
     }
     jxta_service_unlock((Jxta_service*) discovery);
+
+    while(jxta_vector_size(discovery->dr_queue) > 0) {
+        DR_thread_struct *thread = NULL;
+        jxta_vector_remove_object_at(discovery->dr_queue, (Jxta_object **)thread, 0);
+        if (NULL != thread) JXTA_OBJECT_RELEASE(thread);
+    }
 
     for (i = 0; i < LISTENER_MAX; i++) {
         jxta_listener_stop(discovery->my_listeners[i]);
@@ -1403,6 +1412,8 @@ void jxta_discovery_service_ref_destruct(Jxta_discovery_service_ref * discovery)
         JXTA_OBJECT_RELEASE(self->prev_id);
     }
 
+    if (self->dr_queue)
+        JXTA_OBJECT_RELEASE(self->dr_queue);
     if (self->dr_rsps)
         JXTA_OBJECT_RELEASE(self->dr_rsps);
     if (self->rsp_lock)
@@ -1762,6 +1773,16 @@ static Jxta_status discovery_re_replicate_srdi_entries(Jxta_discovery_service_re
     }
 
     return res;
+}
+
+static void dr_thread_free(Jxta_object *obj)
+{
+    DR_thread_struct *thread = (DR_thread_struct*) obj;
+    JXTA_OBJECT_RELEASE(thread->discovery);
+    JXTA_OBJECT_RELEASE(thread->rq);
+    JXTA_OBJECT_RELEASE(thread->dr);
+
+    free(thread);
 }
 
 static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * obj, void *arg)
@@ -2209,11 +2230,20 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
         dr_thread = (DR_thread_struct *) arg;
         tp = jxta_PG_thread_pool_get(discovery->group);
         dr_thread = calloc(1, sizeof(DR_thread_struct));
+        JXTA_OBJECT_INIT(dr_thread, dr_thread_free, (void*)NULL);
         dr_thread->discovery = JXTA_OBJECT_SHARE(discovery);
         dr_thread->dr = JXTA_OBJECT_SHARE(dr);
         dr_thread->rq = JXTA_OBJECT_SHARE(rq);
+        
+        jxta_service_lock((Jxta_service*) discovery);
+        jxta_vector_add_object_last(discovery->dr_queue, (Jxta_object*)dr_thread);
+        JXTA_OBJECT_RELEASE(dr_thread);
 
-        apr_thread_pool_push(tp, discovery_send_response_thread, dr_thread, APR_THREAD_TASK_PRIORITY_HIGHEST, discovery);
+        if (discovery->running) {
+            apr_thread_pool_push(tp, discovery_send_response_thread, discovery, APR_THREAD_TASK_PRIORITY_HIGHEST, discovery);
+        }
+        
+        jxta_service_unlock((Jxta_service*) discovery);
 
         if (dr)
             JXTA_OBJECT_RELEASE(dr);
@@ -2265,20 +2295,46 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
 
 void *APR_THREAD_FUNC discovery_send_response_thread(apr_thread_t *apr_thread, void *arg)
 {
-    DR_thread_struct *thread;
+    DR_thread_struct *thread = NULL;
+    Jxta_discovery_service_ref *discovery = NULL;
+    Jxta_status res = JXTA_FAILED;
+    Jxta_boolean locked = FALSE;
 
-    thread = (DR_thread_struct *) arg;
-    if (!thread->discovery->running) {
-        free(thread);
-        return JXTA_SUCCESS;
+    discovery = (Jxta_discovery_service_ref *) arg;
+
+    jxta_service_lock((Jxta_service *) discovery);
+    locked = TRUE;
+    if (!discovery->running) {
+        goto FINAL_EXIT;
     }
-    discovery_send_discovery_response(thread->discovery, thread->rq, thread->dr);
-    JXTA_OBJECT_RELEASE(thread->discovery);
-    JXTA_OBJECT_RELEASE(thread->rq);
-    JXTA_OBJECT_RELEASE(thread->dr);
+    
+    if (discovery->dr_queue != NULL) {
+        res = jxta_vector_remove_object_at(discovery->dr_queue, (Jxta_object**)&thread, 0);
+        if (res != JXTA_SUCCESS || NULL == thread) {
+            goto FINAL_EXIT;
+        }
+    }
+    else
+    {
+        goto FINAL_EXIT;
+    }
 
-    free(thread);
-    return JXTA_SUCCESS;
+    jxta_service_unlock((Jxta_service *) discovery);
+    locked = FALSE;
+
+    if (thread->discovery->running) {
+        res = discovery_send_discovery_response(thread->discovery, thread->rq, thread->dr);
+    }
+
+FINAL_EXIT:
+
+    if (locked) {
+        jxta_service_unlock((Jxta_service *) discovery);
+    }
+
+    if (NULL != thread) JXTA_OBJECT_RELEASE(thread);
+    
+    return NULL;
 }
 
 static Jxta_status adjust_dr_entries(Jxta_discovery_service_ref * discovery, Jxta_DiscoveryResponse * dr_msg
