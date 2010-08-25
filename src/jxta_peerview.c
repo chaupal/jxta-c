@@ -7247,15 +7247,51 @@ static Jxta_status probe_a_seed(Jxta_peerview * me)
 {
     Jxta_status res = JXTA_FAILED;
     Jxta_boolean sent_seed = FALSE;
+    Jxta_boolean get_seeds = FALSE;
+    Jxta_vector *rdv_seeds = NULL;
     Jxta_peer *seed;
+
+    /* check to see if we need to access the seeds from the RdvConfig */
+    apr_thread_mutex_lock(me->mutex);
+
+    if ((NULL == me->activity_locate_seeds) || (0 == jxta_vector_size(me->activity_locate_seeds))) {
+        get_seeds = TRUE;
+    }
+    apr_thread_mutex_unlock(me->mutex);
+
+    /* cannot hold peerview lock while calling the rdv service */
+    if (get_seeds) {
+        if (NULL != me->rdv) {
+            res = rdv_service_get_seeds(me->rdv, &rdv_seeds, TRUE);
+            if (JXTA_SUCCESS != res) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Could not obtain seeds"
+                    " from rendezvous service\n");
+                if (rdv_seeds) JXTA_OBJECT_RELEASE(rdv_seeds);
+                rdv_seeds = NULL;
+            }
+        }
+    }
 
     apr_thread_mutex_lock(me->mutex);
 
+    /* Check again now that the lock is re-obtained */
     /* Get more seeds? */
     if ((NULL == me->activity_locate_seeds) || (0 == jxta_vector_size(me->activity_locate_seeds))) {
-        if (NULL != me->activity_locate_seeds) {
-            JXTA_OBJECT_RELEASE(me->activity_locate_seeds);
-            me->activity_locate_seeds = NULL;
+        if (rdv_seeds != NULL) {
+            if (NULL == me->activity_locate_seeds) {
+                jxta_vector_clone(rdv_seeds, &me->activity_locate_seeds, 0, INT_MAX);
+            }
+            else
+            {
+                jxta_vector_addall_objects_last(me->activity_locate_seeds, rdv_seeds);
+            }
+        }
+        else
+        {
+            if (NULL != me->activity_locate_seeds) {
+                JXTA_OBJECT_RELEASE(me->activity_locate_seeds);
+                me->activity_locate_seeds = NULL;
+            }
         }
 
         peerview_send_ping(me, NULL, NULL, FALSE, TRUE);
@@ -7282,6 +7318,10 @@ static Jxta_status probe_a_seed(Jxta_peerview * me)
     }
 
     apr_thread_mutex_unlock(me->mutex);
+
+    if (NULL != rdv_seeds)
+        JXTA_OBJECT_RELEASE(rdv_seeds);
+    rdv_seeds = NULL;
 
     return res;
 }
