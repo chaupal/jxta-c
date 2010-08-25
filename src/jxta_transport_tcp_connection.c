@@ -180,15 +180,13 @@ static void tcp_messenger_free(Jxta_object * obj)
 
     me->conn->msgr = NULL;
 
-    JXTA_OBJECT_RELEASE(me->_super.address);
+    /* JXTA_OBJECT_RELEASE(me->_super.address); */
+    jxta_endpoint_messenger_destruct((JxtaEndpointMessenger *) me);
 
     if (CONN_DISCONNECTED != tcp_connection_state(me->conn)) {
         jxta_transport_tcp_connection_close(me->conn);
         JXTA_OBJECT_RELEASE(me->conn);
     }
-
-    if (me->_super.ts)
-        JXTA_OBJECT_RELEASE(me->_super.ts);
 
     memset(me, 0xDD, sizeof(TcpMessenger));
     free(me);
@@ -211,13 +209,12 @@ static TcpMessenger * tcp_messenger_new(Jxta_transport_tcp_connection * conn)
     }
 
     me->conn = JXTA_OBJECT_SHARE(conn);
-    me->_super.jxta_send = tcp_messenger_send;
-    me->_super.jxta_get_msg_details = tcp_get_msg_details;
-    me->_super.jxta_header_size = tcp_header_size;
-    me->_super.address = JXTA_OBJECT_SHARE(conn->dest_addr);
 
     /* initialize it */
     JXTA_OBJECT_INIT(me, tcp_messenger_free, NULL);
+
+    jxta_endpoint_messenger_initialize((JxtaEndpointMessenger *) me
+                    , tcp_messenger_send, tcp_get_msg_details, tcp_header_size, conn->dest_addr);
 
     return me;
 }

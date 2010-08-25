@@ -183,6 +183,7 @@ libjxta_la_SOURCES = jstring.c                      \
                      jxta_flow_control_msg.c        \
 		     jxta_traffic_shaping.c            \
                      jxta_em.c                      \
+	             jxta_endpoint_messenger.c      \
                      jxta_membership_service.c      \
                      jxta_membership_service_null.c \
                      jxta_monitor_config_adv.c      \

@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002 Sun Microsystems, Inc.  All rights
- * reserved.
+ * Copyright(c) 2005 Sun Microsystems, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,7 +29,7 @@
  *    nor may "JXTA" appear in their name, without prior written
  *    permission of Sun.
  *
- * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
+ * THIS SOFTWARE IS PROVIDED AS IS'' AND ANY EXPRESSED OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
  * DISCLAIMED.  IN NO EVENT SHALL SUN MICROSYSTEMS OR
@@ -39,7 +38,7 @@
  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
  * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+ * OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * ====================================================================
@@ -54,68 +53,61 @@
  * $Id$
  */
 
+#include <stdio.h>
+#include <string.h>
 
-
-#ifndef JXTA_ENDPOINT_MESSENGER_H
-#define JXTA_ENDPOINT_MESSENGER_H
-
-#include "jxta_object.h"
-#include "jxta_message.h"
-#include "jxta_traffic_shaping_priv.h"
-#include "jxta_endpoint_config_adv.h"
 #include "jxta_apr.h"
-#include "jxta_callback.h"
+#include "jxta_errno.h"
+#include "jxta_log.h"
+#include "jstring.h"
+#include "jxta_xml_util.h"
+#include "jxta_endpoint_messenger.h"
 
-#ifdef __cplusplus
-extern "C" {
-#if 0
-};
-#endif
-#endif
-
-
-typedef struct _JxtaEndpointMessenger JxtaEndpointMessenger;
-typedef Jxta_status(JXTA_STDCALL * MessengerSendFunc) (JxtaEndpointMessenger *, Jxta_message *);
-typedef Jxta_status(JXTA_STDCALL * MessengerDetailsFunc) (JxtaEndpointMessenger *, Jxta_message *, apr_int64_t *size, float *compression);
-typedef int(JXTA_STDCALL * MessengerHeaderFunc) (JxtaEndpointMessenger *);
-
-struct _JxtaEndpointMessenger {
-    JXTA_OBJECT_HANDLE;
-    Jxta_endpoint_address *address;
-    int header_size;
-    Jxta_status(*jxta_send) (JxtaEndpointMessenger *, Jxta_message *);
-    Jxta_status(*jxta_get_msg_details) (JxtaEndpointMessenger *, Jxta_message *, apr_int64_t *size, float *compression);
-    int (*jxta_header_size) (JxtaEndpointMessenger *);
-    /* Jxta_ep_flow_control *ep_fc; */
-    Jxta_traffic_shaping *ts;
-    int fc_frame_seconds;
-    apr_int64_t fc_num_bytes;
-    int fc_msgs_sent;
-    apr_thread_mutex_t * mutex;
-    apr_pool_t *pool;
-};
+static const char *__log_cat = "MESSENGER";
 
 JXTA_DECLARE(JxtaEndpointMessenger *) jxta_endpoint_messenger_initialize(JxtaEndpointMessenger * me
-                                    ,MessengerSendFunc jxta_send, MessengerDetailsFunc jxta_get_msg_details, MessengerHeaderFunc header_size, Jxta_endpoint_address * address);
+                                    ,MessengerSendFunc jxta_send, MessengerDetailsFunc jxta_get_msg_details, MessengerHeaderFunc header_size, Jxta_endpoint_address * address)
+{
+    me->jxta_send = jxta_send;
+    me->jxta_get_msg_details = jxta_get_msg_details;
+    me->jxta_header_size = header_size;
+    me->address = address != NULL ? JXTA_OBJECT_SHARE(address):NULL;
 
-JXTA_DECLARE(JxtaEndpointMessenger *) jxta_endpoint_messenger_construct(JxtaEndpointMessenger * msgr);
+    return jxta_endpoint_messenger_construct(me);
+}
+
+JXTA_DECLARE(JxtaEndpointMessenger *) jxta_endpoint_messenger_construct(JxtaEndpointMessenger * msgr)
+{
+    apr_status_t res;
+
+    res =  apr_pool_create(&msgr->pool, NULL);
+    if (APR_SUCCESS != res) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to create a pool in the messenger:%d\n", res);
+    } else {
+        res = apr_thread_mutex_create(&msgr->mutex, APR_THREAD_MUTEX_DEFAULT, msgr->pool);
+        if (APR_SUCCESS != res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to create a mutex in the messenger:%d\n", res);
+        }
+    }
+    return msgr;
+}
+
 /**
 *   to be called from inside destruct functions for sub-classes
 */
-JXTA_DECLARE(void) jxta_endpoint_messenger_destruct(JxtaEndpointMessenger * msgr);
-
-
-
-
-
-
-#ifdef __cplusplus
-#if 0
+JXTA_DECLARE(void) jxta_endpoint_messenger_destruct(JxtaEndpointMessenger * msgr)
 {
-#endif
+
+    if (msgr->address)
+        JXTA_OBJECT_RELEASE(msgr->address);
+    if (msgr->pool) {
+        apr_pool_destroy(msgr->pool);
+    }
+    if (msgr->mutex) {
+        apr_thread_mutex_destroy(msgr->mutex);
+    }
+    if (msgr->ts) {
+        JXTA_OBJECT_RELEASE(msgr->ts);
+    }
 }
-#endif
 
-#endif /* JXTA_ENDPOINT_MESSENGER_H */
-
-/* vi: set ts=4 sw=4 tw=130 et: */
