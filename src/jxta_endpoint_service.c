@@ -2794,11 +2794,9 @@ static Jxta_status send_with_messenger(Jxta_endpoint_service * me, JxtaEndpointM
     Jxta_boolean msgr_locked=FALSE;
     Jxta_traffic_shaping *local_ts=NULL;
 
-    if (NULL != messenger->mutex) {
-        apr_thread_mutex_lock(messenger->mutex);
-        local_ts = JXTA_OBJECT_SHARE(messenger->ts);
-        apr_thread_mutex_unlock(messenger->mutex);
-    }
+    apr_thread_mutex_lock(messenger->mutex);
+    local_ts = JXTA_OBJECT_SHARE(messenger->ts);
+    apr_thread_mutex_unlock(messenger->mutex);
 
     if (NULL != messenger->jxta_get_msg_details) {
         messenger->jxta_get_msg_details(messenger, msg, &msg_size, &compression);

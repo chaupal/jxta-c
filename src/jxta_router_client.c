@@ -879,11 +879,6 @@ static void messenger_delete(Jxta_object * obj)
 {
     Router_messenger *self = (Router_messenger *) obj;
 
-    if (self->generic.address != NULL) {
-        JXTA_OBJECT_RELEASE(self->generic.address);
-        self->generic.address = NULL;
-    }
-
     if (self->router != NULL) {
         JXTA_OBJECT_RELEASE(self->router);
         self->router = NULL;
@@ -893,7 +888,7 @@ static void messenger_delete(Jxta_object * obj)
         JXTA_OBJECT_RELEASE(self->peerid);
         self->peerid = NULL;
     }
-
+    jxta_endpoint_messenger_destruct((JxtaEndpointMessenger *) self);
     free(self);
 }
 
@@ -1046,10 +1041,9 @@ static JxtaEndpointMessenger *messenger_get(Jxta_transport * t, Jxta_endpoint_ad
     /* disable demangle until compatibility with JSE can be resolved */
     /* messenger->generic.address = demangle_ea(self, dest); */
 
-    messenger->generic.address = JXTA_OBJECT_SHARE(dest);
-    messenger->generic.jxta_send = messenger_send;
-    messenger->generic.jxta_get_msg_details = messenger_get_msg_details;
     messenger->peerid = get_peerid_from_endpoint_address(dest);
+    jxta_endpoint_messenger_initialize((JxtaEndpointMessenger *) messenger
+                 , messenger_send, messenger_get_msg_details, NULL,dest);
 
     /* FIXME 20040316 tra need to watch for physical transport addresses
      * we cannot assume that we only have PeerIDs as now all messages
