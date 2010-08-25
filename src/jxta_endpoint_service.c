@@ -578,10 +578,12 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_fc(Jxta_endpoint_service * 
     frame_seconds = traffic_shaping_frame(me->ts);
     num_bytes =  traffic_shaping_size(me->ts);
 
+
     time = traffic_shaping_time(me->ts);
     endpoint_messenger_get(me, send_ea, &msgr);
     connected_peers = number_of_connected_peers(me);
     if (!normal) {
+        /* TODO: Let's take a look at this and enhance the algorithm */
         num_bytes = ((float) 40 * num_bytes/100);
     }
 
@@ -2407,6 +2409,7 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_check_msg_length(Jxta_endpoint_s
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Checked service with msgr:[%pp] length:%" APR_INT64_T_FMT " TS max_length:%" APR_INT64_T_FMT "\n"
                         , messenger, length, *max_length);
 
+            apr_thread_mutex_lock(messenger->mutex);
             if (NULL != messenger->ts) {
                 traffic_shaping_lock(messenger->ts);
                 msgr_locked = TRUE;
@@ -2419,6 +2422,7 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_check_msg_length(Jxta_endpoint_s
                     res = msgr_status;
                 }
             }
+            apr_thread_mutex_unlock(messenger->mutex);
         } else {
             res = JXTA_SUCCESS;
         }
@@ -2788,6 +2792,13 @@ static Jxta_status send_with_messenger(Jxta_endpoint_service * me, JxtaEndpointM
     apr_int64_t max_size;
     Jxta_boolean ep_locked=FALSE;
     Jxta_boolean msgr_locked=FALSE;
+    Jxta_traffic_shaping *local_ts=NULL;
+
+    if (NULL != messenger->mutex) {
+        apr_thread_mutex_lock(messenger->mutex);
+        local_ts = JXTA_OBJECT_SHARE(messenger->ts);
+        apr_thread_mutex_unlock(messenger->mutex);
+    }
 
     if (NULL != messenger->jxta_get_msg_details) {
         messenger->jxta_get_msg_details(messenger, msg, &msg_size, &compression);
@@ -2800,19 +2811,19 @@ static Jxta_status send_with_messenger(Jxta_endpoint_service * me, JxtaEndpointM
         traffic_shaping_lock(me->ts);
         ep_locked = TRUE;
         res = traffic_shaping_check_max(me->ts, msg_size, &max_size, compression, &compressed);
-        if (NULL != messenger->ts && JXTA_SUCCESS == res) {
+        if (NULL != local_ts && JXTA_SUCCESS == res) {
             Jxta_status msgr_status;
             apr_int64_t max_msgr_length;
 
-            traffic_shaping_lock(messenger->ts);
+            traffic_shaping_lock(local_ts);
             msgr_locked = TRUE;
-            msgr_status = traffic_shaping_check_max(messenger->ts
+            msgr_status = traffic_shaping_check_max(local_ts
                                 , msg_size, &max_msgr_length, compression, &compressed);
             res = msgr_status;
 
             look_ahead_update = FALSE;
-            if (traffic_shaping_check_size(messenger->ts, compressed, FALSE, &look_ahead_update)) {
-                traffic_shaping_update(messenger->ts, compressed, look_ahead_update);
+            if (traffic_shaping_check_size(local_ts, compressed, FALSE, &look_ahead_update)) {
+                traffic_shaping_update(local_ts, compressed, look_ahead_update);
             } else {
                 res = JXTA_BUSY;
             }
@@ -2828,7 +2839,7 @@ static Jxta_status send_with_messenger(Jxta_endpoint_service * me, JxtaEndpointM
             ep_locked = FALSE;
         }
         if (msgr_locked) {
-            traffic_shaping_unlock(messenger->ts);
+            traffic_shaping_unlock(local_ts);
             msgr_locked = FALSE;
         }
         res = messenger->jxta_send(messenger, msg);
@@ -2840,11 +2851,12 @@ static Jxta_status send_with_messenger(Jxta_endpoint_service * me, JxtaEndpointM
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Removing messenger [%pp] \n", me);
         messenger_remove(me, dest);
     }
-
     if (ep_locked)
-        traffic_shaping_unlock(me->ts);
+        traffic_shaping_unlock(local_ts);
     if (msgr_locked)
         traffic_shaping_unlock(messenger->ts);
+    if (local_ts)
+        JXTA_OBJECT_RELEASE(local_ts);
     return res;
 }
 
