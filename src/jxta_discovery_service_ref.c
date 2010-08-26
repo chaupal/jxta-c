@@ -2387,6 +2387,7 @@ static Jxta_status find_responses(Jxta_discovery_service_ref * discovery, Jxta_D
     for (i=0; i<jxta_vector_size(queued_entries); i++) {
         Jxta_DiscoveryResponse *queued_rsp=NULL;
         JString *queued_query_j=NULL;
+        Jxta_boolean found_newer = FALSE;
 
         jxta_vector_get_object_at(queued_entries, JXTA_OBJECT_PPTR(&queued_rsp), i);
         jxta_discovery_response_get_query(queued_rsp, &queued_query_j);
@@ -2408,7 +2409,7 @@ static Jxta_status find_responses(Jxta_discovery_service_ref * discovery, Jxta_D
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "query %s Found a newer response time:" JPR_DIFF_TIME_FMT " older:" JPR_DIFF_TIME_FMT "\n", 
                         jstring_get_string(queued_query_j), curr - time_entry, curr - time_msg );
                     res = JXTA_SUCCESS;
-                    break;
+                    found_newer = TRUE;
                 }
             }
         }
@@ -2416,6 +2417,8 @@ static Jxta_status find_responses(Jxta_discovery_service_ref * discovery, Jxta_D
             JXTA_OBJECT_RELEASE(queued_query_j);
         if (queued_rsp)
             JXTA_OBJECT_RELEASE(queued_rsp);
+        if (found_newer)
+            break;
     }
 
     if (q_string_j)
