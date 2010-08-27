@@ -622,7 +622,7 @@ JXTA_DECLARE(Jxta_status) jxta_advertisement_global_handler(Jxta_advertisement *
         res = JXTA_SUCCESS;
     } else {
         /* let the back end know that no handler was found */
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "No Advertisement handler for : %s \n", doc_type);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "No Advertisement handler for : %s \n", doc_type);
         res = JXTA_ITEM_NOTFOUND;
     }
 
@@ -821,7 +821,7 @@ static void advertisement_start_element(void *me, const char *ename, const char 
     /* Include this start element in the accumulator */
     XML_DefaultCurrent(ad->parser);
     
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unhandled element during <%s> [%pp] parse : %s.\n", ad->document_name, me, ename );
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Unhandled element during <%s> [%pp] parse : %s.\n", ad->document_name, me, ename );
 }
 
 /**

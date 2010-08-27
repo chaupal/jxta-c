@@ -82,7 +82,7 @@ JXTA_DECLARE(JxtaEndpointMessenger *) jxta_endpoint_messenger_construct(JxtaEndp
 
     res =  apr_pool_create(&msgr->pool, NULL);
     if (APR_SUCCESS != res) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to create a pool in the messenger:%d\n", res);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, __log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to create a pool in the messenger:%d\n", res);
     } else {
         res = apr_thread_mutex_create(&msgr->mutex, APR_THREAD_MUTEX_DEFAULT, msgr->pool);
         if (APR_SUCCESS != res) {

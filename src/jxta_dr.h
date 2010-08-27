@@ -90,8 +90,8 @@ extern "C" {
 
 #define DR_TAG_12    "</jxta:DiscoveryResponse>\n"
 
-
-#define DR_TAG_SIZE sizeof(DR_TAG_START) + sizeof(DR_TAG_START_RIGHT_PAREN) + sizeof(DR_TAG_END) + 10
+/* accomidate +40 for expiration and encoding bytes */
+#define DR_TAG_SIZE sizeof(DR_TAG_START) + sizeof(DR_TAG_START_RIGHT_PAREN) + sizeof(DR_TAG_END) + 60
 
 typedef struct _Jxta_DiscoveryResponse Jxta_DiscoveryResponse;
 typedef struct _jxta_DiscoveryResponseElement Jxta_DiscoveryResponseElement;

@@ -3923,7 +3923,7 @@ static void cm_srdi_delta_add(Jxta_hashtable * srdi_delta, Folder * folder, Jxta
     Jxta_hashtable *delta_entries=NULL;
     JString *entry_key = NULL;
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "add SRDI delta entry: SKey:%s Val:%s\n",
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "add SRDI delta entry: SKey:%s Val:%s\n",
                     jstring_get_string(entry->key), jstring_get_string(entry->value));
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, jstring_get_string(fmtTime), entry->expiration);
 
@@ -5830,9 +5830,9 @@ static Jxta_status cm_get_time(Jxta_cm * self, const char *folder_name, const ch
     if (status == JXTA_SUCCESS) {
 
         sscanf(entry, JPR_DIFF_TIME_FMT, &exp[0]);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "db_id: %d %s expiration time retreived \n", dbSpace->conn->log_id,
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "db_id: %d %s expiration time retreived \n", dbSpace->conn->log_id,
                         dbSpace->id);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, jstring_get_string(fmtTime), exp[0]);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, jstring_get_string(fmtTime), exp[0]);
         *ttime = exp[0];
     }
 
@@ -5874,13 +5874,13 @@ static Jxta_status cm_create_delta_entries(Jxta_cm * self, JString *peerid, JStr
     }
     if (NULL != pentry->sn_cs_values) {
         sn_ptr = tokenize_string_j(pentry->sn_cs_values, ',');
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Create entries - %s dup:%s \n", jstring_get_string(pentry->sn_cs_values), TRUE == pentry->duplicate? "yes":"no");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Create entries - %s dup:%s \n", jstring_get_string(pentry->sn_cs_values), TRUE == pentry->duplicate? "yes":"no");
     } else if (pentry->seqNumber > 0) {
         char tmp[64];
         sn_ptr = calloc(1, sizeof(JString *) + 1);
         apr_snprintf(tmp, sizeof(tmp), JXTA_SEQUENCE_NUMBER_FMT, pentry->seqNumber);
         *sn_ptr = jstring_new_2(tmp);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Create entry - %s \n", jstring_get_string(*sn_ptr));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Create entry - %s \n", jstring_get_string(*sn_ptr));
     }
 
     sn_ptr_save = sn_ptr;

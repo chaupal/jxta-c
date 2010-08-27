@@ -600,8 +600,7 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_fc(Jxta_endpoint_service * 
     }
     msg = jxta_message_new();
 
-
-    ep_fc_msg = jxta_ep_flow_control_msg_new_1(time, num_bytes, 1, frame_seconds, 0, 5, TS_MAX_OPTION_FRAME);
+    ep_fc_msg = jxta_ep_flow_control_msg_new_1(time, num_bytes, 1, frame_seconds, traffic_shaping_look_ahead(me->ts) , 0, TS_MAX_OPTION_FRAME);
     jxta_PG_get_PID(me->my_group, &pid);
 
     jxta_ep_flow_control_msg_set_peerid(ep_fc_msg, pid);
@@ -2405,6 +2404,7 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_check_msg_length(Jxta_endpoint_s
             traffic_shaping_lock(service->ts);
             ep_locked = TRUE;
             res = traffic_shaping_check_max(service->ts, length, max_length, compression, &compressed);
+
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Checked service with msgr:[%pp] length:%" APR_INT64_T_FMT " TS max_length:%" APR_INT64_T_FMT "\n"
                         , messenger, length, *max_length);
 
@@ -2415,6 +2415,7 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_check_msg_length(Jxta_endpoint_s
                                 , length, &max_msgr_length, compression, &compressed);
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Checked messenger [%pp] length:%" APR_INT64_T_FMT " TS max_length:%" APR_INT64_T_FMT "\n"
                             , messenger, length, max_msgr_length);
+
                 if (max_msgr_length < *max_length) {
                     *max_length = max_msgr_length;
                     res = msgr_status;
@@ -2432,7 +2433,6 @@ FINAL_EXIT:
     if (messenger)
         JXTA_OBJECT_RELEASE(messenger);
     return res;
-
 }
 
 JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ep_msg_sync(Jxta_endpoint_service *service

@@ -761,7 +761,7 @@ char *JXTA_STDCALL jxta_test_adv_handle_parm(Jxta_advertisement * adv, const cha
 {
     if (adv) {
     }
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "got the message back in the advertisement with parm ---- %s \n",
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "got the message back in the advertisement with parm ---- %s \n",
                     (char *) test);
     return strdup(test);
 }
@@ -1010,7 +1010,7 @@ JXTA_DECLARE(Jxta_status) jxta_test_adv_add_range(Jxta_test_adv * adv, const cha
     if (NULL == adv->rangeList) {
         adv->rangeList = jxta_hashtable_new(0);
     }
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Range Published findex: %s e:%s a:%s low: %f high:%f \n",
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Range Published findex: %s e:%s a:%s low: %f high:%f \n",
                     full_index_name, jxta_range_get_element(rge)
                     , jxta_range_get_attribute(rge)
                     , jxta_range_get_low(rge)
