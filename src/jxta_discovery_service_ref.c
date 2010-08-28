@@ -2696,6 +2696,8 @@ static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString
                 }
                 jxta_discovery_response_set_responses(dr_new, all_entries);
                 end_entries += jxta_vector_size(all_entries);
+                jxta_discovery_response_set_query(dr_new, q_string_j);
+                jxta_discovery_response_set_timestamp(dr_new, dr_time);
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID
                             , "discovery:split add new rsp [%pp] end_entries:%d all_entries_size:%d\n"
                             , dr_new, end_entries, jxta_vector_size(all_entries));
@@ -2738,6 +2740,8 @@ static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString
             jxta_discovery_response_set_responses(dr_add, all_entries);
             end_entries += jxta_vector_size(all_entries);
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "discovery:split dr_add [%pp] end_entries:%d all_entries size:%d\n", dr_add, end_entries, jxta_vector_size(all_entries));
+            jxta_discovery_response_set_query(dr_add, q_string_j);
+            jxta_discovery_response_set_timestamp(dr_add, dr_time);
             jxta_vector_add_object_last(*new_responses, (Jxta_object *) dr_add);
         }
         JXTA_OBJECT_RELEASE(dr_add);

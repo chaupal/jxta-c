@@ -1111,14 +1111,7 @@ static void demux_ep_flow_control_message(Jxta_endpoint_service * me
         ep_str = jxta_endpoint_address_to_string(fc_ea);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Found messenger [%pp] for %s\n", msgr, ep_str);
 
-        apr_thread_mutex_lock(msgr->mutex);
-        if (NULL != msgr->ts) {
-            JXTA_OBJECT_RELEASE(msgr->ts);
-            msgr->ts = NULL;
-        }
-        msgr->ts = traffic_shaping_new();
-        ts = msgr->ts;
-        traffic_shaping_lock(ts);
+        ts = traffic_shaping_new();
 
         traffic_shaping_set_interval(ts, traffic_shaping_interval(me->ts));
         traffic_shaping_set_frame(ts, traffic_shaping_frame(me->ts));
@@ -1129,8 +1122,15 @@ static void demux_ep_flow_control_message(Jxta_endpoint_service * me
         traffic_shaping_set_reserve(ts, jxta_ep_flow_control_msg_get_reserve(ep_fc_msg));
         traffic_shaping_set_max_option(ts, jxta_ep_flow_control_msg_get_max_option(ep_fc_msg));
         traffic_shaping_init(ts);
-        traffic_shaping_unlock(ts);
+        
+        apr_thread_mutex_lock(msgr->mutex);
+        if (NULL != msgr->ts) {
+            JXTA_OBJECT_RELEASE(msgr->ts);
+            msgr->ts = NULL;
+        }
+        msgr->ts = ts;
         apr_thread_mutex_unlock(msgr->mutex);
+        
         if (ep_str)
             free(ep_str);
     } else {
