@@ -564,6 +564,10 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
         return APR_SUCCESS;
     }
 
+    /* We need to tell the background thread that it has to die. */
+    myself->running = FALSE;
+    jxta_rdv_service_provider_unlock_priv(provider);
+
     if (myself->leasing_cookie) {
         rdv_service_remove_cb((Jxta_rdv_service *) provider->service, myself->leasing_cookie);
         JXTA_OBJECT_RELEASE(myself->leasing_cookie);
@@ -581,10 +585,6 @@ static Jxta_status stop(Jxta_rdv_service_provider * provider)
         JXTA_OBJECT_RELEASE(myself->discovery);
         myself->discovery = NULL;
     }
-
-    /* We need to tell the background thread that it has to die. */
-    myself->running = FALSE;
-    jxta_rdv_service_provider_unlock_priv(provider);
 
     apr_thread_pool_tasks_cancel(provider->thread_pool, myself);
 

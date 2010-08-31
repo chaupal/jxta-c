@@ -209,6 +209,15 @@ void discovery_result_free (Jxta_object * obj)
     free(res);
 }
 
+static Jxta_boolean isRunning (Jxta_discovery_service_ref *discovery) 
+{
+    Jxta_boolean running = FALSE;
+    jxta_service_lock((Jxta_service*) discovery);
+    running = discovery->running;
+    jxta_service_unlock((Jxta_service*) discovery);
+    return running;
+}
+
 /**
  * Initializes an instance of the Discovery Service.
  * 
@@ -2236,15 +2245,14 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
         dr_thread->rq = JXTA_OBJECT_SHARE(rq);
         
         jxta_service_lock((Jxta_service*) discovery);
-        jxta_vector_add_object_last(discovery->dr_queue, (Jxta_object*)dr_thread);
-        JXTA_OBJECT_RELEASE(dr_thread);
-
         if (discovery->running) {
+            jxta_vector_add_object_last(discovery->dr_queue, (Jxta_object*)dr_thread);
             apr_thread_pool_push(tp, discovery_send_response_thread, discovery, APR_THREAD_TASK_PRIORITY_HIGHEST, discovery);
         }
-        
         jxta_service_unlock((Jxta_service*) discovery);
 
+        JXTA_OBJECT_RELEASE(dr_thread);
+        
         if (dr)
             JXTA_OBJECT_RELEASE(dr);
     }
@@ -3140,6 +3148,10 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
 
     JXTA_OBJECT_CHECK_VALID(obj);
 
+    if (!isRunning(discovery)) {
+        goto FINAL_EXIT;
+    }
+
     rdv = discovery->rdv;
     am_rdv = jxta_rdv_service_is_rendezvous((Jxta_rdv_service *) rdv);
 
@@ -3206,8 +3218,8 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
             while (*source_peers) {
                 Jxta_id * source_peerid=NULL;
 
-                status = jxta_hashtable_get(resend_hash, *source_peers, strlen(*source_peers) + 1, JXTA_OBJECT_PPTR(&resendDelta));
-                if (JXTA_SUCCESS != status) {
+                if (!isRunning(discovery) || 
+                    JXTA_SUCCESS != jxta_hashtable_get(resend_hash, *source_peers, strlen(*source_peers) + 1, JXTA_OBJECT_PPTR(&resendDelta))) {
                     free(*(source_peers++));
                     continue;
                 }
@@ -3230,8 +3242,8 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
             while (*source_peers) {
                 Jxta_id * source_peerid=NULL;
 
-                status = jxta_hashtable_get(reverse_hash, *source_peers, strlen(*source_peers) + 1, JXTA_OBJECT_PPTR(&resendDelta));
-                if (JXTA_SUCCESS != status) {
+                if (!isRunning(discovery) || 
+                    JXTA_SUCCESS != jxta_hashtable_get(reverse_hash, *source_peers, strlen(*source_peers) + 1, JXTA_OBJECT_PPTR(&resendDelta))) {
                     free(*(source_peers++));
                     continue;
                 }
@@ -3245,7 +3257,6 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
             }
             free(source_peers_save);
             JXTA_OBJECT_RELEASE(reverse_hash);
-
         }
         JXTA_OBJECT_RELEASE(entries);
         entries = NULL;
@@ -3286,10 +3297,11 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
         JXTA_OBJECT_RELEASE(entry);
     }
     if (NULL != resendDelta) {
+        if (isRunning(discovery)) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Request %d resend entries \n", jxta_vector_size(resendDelta));
 
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Request %d resend entries \n", jxta_vector_size(resendDelta));
-
-        discovery_send_srdi_msg(discovery, peerid, discovery->localPeerId, src_pid , jPrimaryKey, resendDelta);
+            discovery_send_srdi_msg(discovery, peerid, discovery->localPeerId, src_pid , jPrimaryKey, resendDelta);
+        }
 
         JXTA_OBJECT_RELEASE(resendDelta);
         resendDelta = NULL;
@@ -3299,7 +3311,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
 
     /* if we've exhausted the entries we're done */
 
-    if (NULL == entries || 0 == jxta_vector_size(entries)) {
+    if (NULL == entries || 0 == jxta_vector_size(entries) || !isRunning(discovery)) {
         goto FINAL_EXIT;
     }
 
@@ -3334,7 +3346,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
         }
     }
 
-    if (NULL != discovery->cm && jxta_vector_size(entries) > 0) {
+    if (isRunning(discovery) && NULL != discovery->cm && jxta_vector_size(entries) > 0) {
         Jxta_vector * resendEntries = NULL;
         Jxta_vector * dupEntries = NULL;
         Jxta_hashtable * fwdEntries = NULL;
@@ -3363,6 +3375,11 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
                     Jxta_id *to_peerid = NULL;
                     Jxta_SRDIMessage *msg=NULL;
                     JString * peerid_j=NULL;
+
+                    if (!isRunning(discovery)) {
+                        free(*(peers++));
+                        continue;
+                    }
 
                     jxta_hashtable_get(fwdEntries, *peers, strlen(*peers) + 1, JXTA_OBJECT_PPTR(&peer_entries));
 
@@ -3631,7 +3648,8 @@ static void JXTA_STDCALL discovery_service_response_listener(Jxta_object * obj, 
     apr_atomic_inc32(&discovery->rsp_cnt);
 
     ea = jxta_endpoint_address_new_3(rr_res_pid, NULL, NULL);
-    if (apr_atomic_read32(&discovery->rsp_cnt) > 1) {
+    /* TODO: Need to revisit this metric, but for now we will use something more conservative */
+    if (apr_atomic_read32(&discovery->rsp_cnt) > 10) {
         jxta_endpoint_service_send_fc(discovery->endpoint, ea, FALSE);
     } else {
         jxta_endpoint_service_send_fc(discovery->endpoint, ea, TRUE);
