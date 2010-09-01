@@ -1831,11 +1831,10 @@ static JString ** normalize_srdi_sequence_number(Jxta_SRDIEntryElement *entry_el
     return sn_ptr;
 }
 
-static void remove_srdi_entries(Jxta_vector *srdi_entries, JString **sn, Jxta_object *remove_object, Jxta_vector **removed_entries)
+static void remove_srdi_entries(Jxta_vector *srdi_entries, JString **sn, Jxta_object *remove_object, Jxta_vector *removed_entries)
 {
     int i;
 
-    *removed_entries = jxta_vector_new(0);
     for (i=0; i<jxta_vector_size(srdi_entries); i++) {
         Jxta_SRDIEntryElement *elem;
         JString **sn_tmp;
@@ -1857,7 +1856,9 @@ static void remove_srdi_entries(Jxta_vector *srdi_entries, JString **sn, Jxta_ob
                 sn_64_check = apr_atoi64(jstring_get_string(*sn_check));
                 if (sn_64_check == sn_64) {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Remove sequence:%" APR_INT64_T_FMT "\n", sn_64);
-                        jxta_vector_add_object_last(*removed_entries, (Jxta_object *) remove_object);
+                        if (NULL != removed_entries) {
+                            jxta_vector_add_object_last(removed_entries, (Jxta_object *) remove_object);
+                        }
                         jxta_vector_remove_object_at(srdi_entries, NULL, i--);
                         removed = TRUE;
                         break;
@@ -1892,7 +1893,6 @@ static Jxta_status find_ep_msg_seq_numbers_and_remove(Jxta_vector *queued_entrie
             Jxta_endpoint_msg_entry_element *ep_elem=NULL;
             JString *ep_msg_entry_j=NULL;
             Jxta_vector *ep_srdi_msg_entries=NULL;
-            Jxta_vector *remove_entries=NULL;
             Jxta_bytevector *ep_elem_bv=NULL;
 
             jxta_vector_get_object_at(ep_entries_v, JXTA_OBJECT_PPTR(&ep_elem), j);
@@ -1907,7 +1907,7 @@ static Jxta_status find_ep_msg_seq_numbers_and_remove(Jxta_vector *queued_entrie
             }
 
             jxta_srdi_message_get_entries(new_srdi_msg, &ep_srdi_msg_entries);
-            remove_srdi_entries(ep_srdi_msg_entries, sn, (Jxta_object *) ep_elem, &remove_entries);
+            remove_srdi_entries(ep_srdi_msg_entries, sn, (Jxta_object *) ep_elem, NULL);
 
             if (jxta_vector_size(ep_srdi_msg_entries) == 0) {
                 jxta_vector_remove_object_at(ep_entries_v, NULL, j--);
@@ -1932,8 +1932,6 @@ static Jxta_status find_ep_msg_seq_numbers_and_remove(Jxta_vector *queued_entrie
                 JXTA_OBJECT_RELEASE(new_srdi_msg);
             if (ep_elem)
                 JXTA_OBJECT_RELEASE(ep_elem);
-            if (remove_entries)
-                JXTA_OBJECT_RELEASE(remove_entries);
             if (ep_elem_bv)
                 JXTA_OBJECT_RELEASE(ep_elem_bv);
         }
@@ -1950,10 +1948,10 @@ static Jxta_status find_ep_msg_seq_numbers_and_remove(Jxta_vector *queued_entrie
 
 static Jxta_status find_srdi_seq_numbers_and_remove(Jxta_vector *queued_entries, Jxta_id *peerid, JString **sn)
 {
-    Jxta_status res;
+    Jxta_status res=JXTA_SUCCESS;
     int i;
     Jxta_vector *remove_entries=NULL;
-
+    
     for (i=0; i<jxta_vector_size(queued_entries); i++) {
         Jxta_object *queued_object=NULL;
         Jxta_message *msg = NULL;
@@ -1977,8 +1975,22 @@ static Jxta_status find_srdi_seq_numbers_and_remove(Jxta_vector *queued_entries,
 
             jxta_srdi_message_get_entries(srdi_msg, &srdi_entries);
             if (NULL != srdi_entries) {
+                /* attempt to create new remove_entries vector */
+                if (NULL == remove_entries) {
+                    remove_entries = jxta_vector_new(0);
+                    if (NULL == remove_entries) {
+                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Failed to allocate memory for "
+                            "jxta_vector in find_srdi_seq_numbers_and_remove\n");
+                        res = JXTA_NOMEM;
+                    }
+                }
 
-                remove_srdi_entries(srdi_entries, sn, queued_object, &remove_entries);
+                /* need to check if the vector is NULL a second time to ensure the creation
+                 * completed properly
+                 */
+                if (NULL != remove_entries) {
+                    remove_srdi_entries(srdi_entries, sn, queued_object, remove_entries);
+                }
 
                 JXTA_OBJECT_RELEASE(srdi_entries);
             }
@@ -1990,6 +2002,7 @@ static Jxta_status find_srdi_seq_numbers_and_remove(Jxta_vector *queued_entries,
         if (queued_object)
             JXTA_OBJECT_RELEASE(queued_object);
     }
+    
     if (NULL != remove_entries) {
         for (i=0; i<jxta_vector_size(remove_entries); i++) {
             Jxta_object *remove_entry=NULL;
@@ -2001,6 +2014,7 @@ static Jxta_status find_srdi_seq_numbers_and_remove(Jxta_vector *queued_entries,
         }
         JXTA_OBJECT_RELEASE(remove_entries);
     }
+    
     return res;
 }
 
