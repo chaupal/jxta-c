@@ -497,14 +497,18 @@ static Jxta_status start(Jxta_rdv_service_provider * provider)
     pg = jxta_service_get_peergroup_priv((Jxta_service*) provider->service);
     jxta_PG_get_discovery_service(pg, &myself->discovery);
 
+    /* Mark the service as running now. */
+    myself->running = TRUE;
+
+    jxta_rdv_service_provider_unlock_priv(provider);
+
     rdv_service_add_cb((Jxta_rdv_service *)provider->service, &myself->leasing_cookie, RDV_V3_MSID, JXTA_RDV_LEASING_SERVICE_NAME, leasing_cb, myself);
     rdv_service_add_cb((Jxta_rdv_service *)provider->service, &myself->walker_cookie, RDV_V3_MSID, JXTA_RDV_WALKER_SERVICE_NAME, walker_cb, myself);
 
     res = jxta_rdv_service_provider_start(provider);
 
-    /* Mark the service as running now. */
-    myself->running = TRUE;
-
+    jxta_rdv_service_provider_lock_priv(provider);
+    
     apr_thread_pool_push(provider->thread_pool, periodic_task, myself, APR_THREAD_TASK_PRIORITY_HIGH, myself);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, FILEANDLINE "Started for %s\n", provider->gid_uniq_str);

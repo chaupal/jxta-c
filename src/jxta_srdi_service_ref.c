@@ -3473,13 +3473,13 @@ static void stop(Jxta_module * me)
 
     while(jxta_vector_size(myself->srdi_msgs_queue) > 0) {
         Srdi_msg_thread_struct *srdi_thread = NULL;
-        jxta_vector_remove_object_at(myself->srdi_msgs_queue, JXTA_OBJECT_PPTR(srdi_thread), 0);
+        jxta_vector_remove_object_at(myself->srdi_msgs_queue, JXTA_OBJECT_PPTR(&srdi_thread), 0);
         if (NULL != srdi_thread) JXTA_OBJECT_RELEASE(srdi_thread);
     }
 
     while(jxta_vector_size(myself->ep_msgs_queue) > 0) {
         Srdi_msgs_thread_struct *ep_thread = NULL;
-        jxta_vector_remove_object_at(myself->ep_msgs_queue, JXTA_OBJECT_PPTR(ep_thread), 0);
+        jxta_vector_remove_object_at(myself->ep_msgs_queue, JXTA_OBJECT_PPTR(&ep_thread), 0);
         if (NULL != ep_thread) JXTA_OBJECT_RELEASE(ep_thread);
     }
 

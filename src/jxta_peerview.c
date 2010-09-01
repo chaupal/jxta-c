@@ -561,7 +561,7 @@ static apr_thread_mutex_t *maintain_cond_lock=NULL;
 static apr_thread_cond_t *maintain_cond=NULL;
 static Jxta_peerview *maintain_peerview=NULL;
 static Jxta_endpoint_service *maintain_endpoint=NULL;
-static void *maintain_cookie;
+static void *maintain_cookie=NULL;
 
 static void initiate_maintain_thread(Jxta_peerview *myself)
 {
@@ -3882,6 +3882,7 @@ static Jxta_status peerview_reclaim_addresses(Jxta_peerview * myself)
     if (ASSIGN_IDLE == myself->assign_state) {
 
         myself->assign_state = ASSIGN_SEND_FREE;
+        apr_thread_mutex_unlock(myself->mutex);
         apr_thread_pool_tasks_cancel(myself->thread_pool, &myself->assign_state);
 
         if (APR_SUCCESS != apr_thread_pool_push(myself->thread_pool, activity_peerview_address_locking, myself,
@@ -3889,10 +3890,10 @@ static Jxta_status peerview_reclaim_addresses(Jxta_peerview * myself)
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not initiate address lock activity. [%pp]\n", myself);
         }
     } else {
+        apr_thread_mutex_unlock(myself->mutex);
         res = JXTA_BUSY;
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Return busy from peerview_reclaim_address\n", myself);
     }
-    apr_thread_mutex_unlock(myself->mutex);
     return res;
 }
 
@@ -8501,7 +8502,7 @@ static Jxta_boolean need_additional_peers(Jxta_peerview * me, int max_check)
         }
     }
 
-    if (!need_additional) {
+    if (!need_additional && my_cluster_in_range(me)) {
         /* Survey and determine if additional Peerview members are needed in our cluster */
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Are peers %d less than %d. \n",jxta_vector_size(me->clusters[me->my_cluster].members), max_check  );
         if (jxta_vector_size(me->clusters[me->my_cluster].members) < max_check) {
