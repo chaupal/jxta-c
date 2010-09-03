@@ -2688,7 +2688,6 @@ static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString
         jxta_xml_util_encode_jstring(tmp_j, &tmp_j_1);
 
         total_length += (jstring_length(tmp_j_1) + DR_TAG_SIZE);
-        total_length += 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Total length 1 %" APR_INT64_T_FMT " max_length %" APR_INT64_T_FMT "\n"
                     , total_length, max_length);
 

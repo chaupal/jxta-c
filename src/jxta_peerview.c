@@ -8284,7 +8284,7 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
             if (PV_MAINTENANCE == pv->state) {
                 Jxta_peerview_option_entry *option_entry=NULL;
 
-                peerview_create_metrics_option_entry(myself, &option_entry);
+                peerview_create_metrics_option_entry(pv, &option_entry);
                 peerview_maintain(pv, msgs_size > 0 ? TRUE:FALSE, option_entry, is_demoting , &ret_msgs);
             }
             /* Only send the broadcast ping if not demoting and enough cycles have passed */
