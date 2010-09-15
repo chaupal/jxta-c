@@ -242,9 +242,12 @@ static void stdpg_stop(Jxta_module * self)
     char **keys_of_services = NULL;
     Jxta_stdpg *it = PTValid(self, Jxta_stdpg);
 
+#if 0
+// BAW no need to flush the pending deltas if we are shutting down
     if (it->discovery) {
         discovery_service_flush_pending_deltas(it->discovery);
     }
+#endif
 
     jxta_stdpg_disconnect_peers(it);
 
@@ -254,6 +257,8 @@ static void stdpg_stop(Jxta_module * self)
     gid = jxta_PA_get_GID(it->peer_adv);
     jxta_unregister_group_instance(gid, (Jxta_PG *) self);
     JXTA_OBJECT_RELEASE(gid);
+
+    cm_stop_processing(it->cm);
 
     /** First stop, custom user services */
     keys_of_services = jxta_hashtable_keys_get(it->services);

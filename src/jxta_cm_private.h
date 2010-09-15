@@ -202,6 +202,20 @@ Jxta_cm * cm_shared_DB_new(Jxta_cm *cm,  Jxta_id * group_id);
 void cm_stop(Jxta_cm *cm);
 
 /**
+ * Stop the CM from processing new operations
+ * 
+ * @param Jxta_cm the CM object
+ */
+void cm_stop_processing(Jxta_cm *cm);
+
+/**
+ * Check if the CM has stopped processing
+ *
+ * @param Jxta_cm the CM object
+ */
+Jxta_boolean isCMRunning(Jxta_cm *cm);
+
+/**
  * Create a new folder.
  * This operation is idem-potent.
  *

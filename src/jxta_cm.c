@@ -173,6 +173,7 @@ struct _jxta_cm {
     DBSpace *bestChoiceDB;
     apr_thread_pool_t *thread_pool;
     volatile Jxta_boolean available;
+    Jxta_boolean stopping;
     volatile Jxta_sequence_number delta_seq_number;
     Jxta_time latest_timestamp;
     Jxta_id *prev_delta_pid;
@@ -592,6 +593,22 @@ void cm_stop(Jxta_cm * me)
     }
 }
 
+void cm_stop_processing(Jxta_cm *me)
+{
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Preparing for shutdown, stop cm from processing\n");
+    me->stopping = TRUE;
+}
+
+
+Jxta_boolean isCMRunning(Jxta_cm *me)
+{
+    if(me== NULL) {
+        return FALSE;
+    }
+
+    return !me->stopping;
+}
+
 /* Destroy the cm and free all allocated memory */
 static void cm_free(Jxta_object * cm)
 {
@@ -925,6 +942,7 @@ Jxta_cm *cm_new_priv(Jxta_cm * cm, const char *home_directory, Jxta_id * group_i
     cm_srdi_delta_seq_number_set(self);
 
     self->available = TRUE;
+    self->stopping = FALSE;
     if (APR_SUCCESS != res) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to create Best Choice Table - Using Default table - res:%d\n",
                         res);
@@ -4155,7 +4173,7 @@ static Jxta_status cm_srdi_transaction_save(Jxta_cm_srdi_task * task_parms)
         PERF_START("Save Transaction", "cm_srdi_transaction_save")
 #endif
 
-        while (NULL != vElements && jxta_vector_size(vElements) > 0 && retry_count > 0 && self->available) {
+        while (NULL != vElements && jxta_vector_size(vElements) > 0 && retry_count > 0 && self->available && !self->stopping) {
             Jxta_boolean retry_transaction = FALSE;
             Jxta_boolean retries_exhausted = FALSE;
             Jxta_SRDIEntryElement *entry = NULL;
@@ -4203,7 +4221,7 @@ static Jxta_status cm_srdi_transaction_save(Jxta_cm_srdi_task * task_parms)
                -- retry
              */
             if (i++ > dbSpace->xaction_threshold || jxta_vector_size(vElements) == 0
-                || FALSE == self->available || retry_transaction || retries_exhausted) {
+                || FALSE == self->available || retry_transaction || retries_exhausted || self->stoping) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "db_id: %d ----      Ending Transaction -- %s\n",
                                 dbSpace->conn->log_id, dbSpace->alias);
                 rv = apr_dbd_transaction_end(dbSpace->conn->driver, pool, dbSpace->conn->transaction);
@@ -4238,7 +4256,7 @@ static Jxta_status cm_srdi_transaction_save(Jxta_cm_srdi_task * task_parms)
                     xactionElements = NULL;
                 }
                 dbSpace->conn->transaction = NULL;
-                if (jxta_vector_size(vElements) > 0 && self->available && !retry_transaction && !retries_exhausted) {
+                if (jxta_vector_size(vElements) > 0 && self->available  && !self->stopping && !retry_transaction && !retries_exhausted) {
                     /* unlock the database to allow other threads access and clear the xaction elements */
                     apr_thread_mutex_unlock(dbSpace->conn->lock);
                     i = 0;
@@ -4258,7 +4276,7 @@ static Jxta_status cm_srdi_transaction_save(Jxta_cm_srdi_task * task_parms)
                     }
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "db_id: %d ----      Starting Inner Transaction\n",
                                     dbSpace->conn->log_id);
-                } else if (retry_transaction && self->available) {
+                } else if (retry_transaction && self->available && !self->stopping) {
                     /* retry the transaction */
                     rv = apr_dbd_transaction_start(dbSpace->conn->driver, pool, dbSpace->conn->sql,
                                                    &dbSpace->conn->transaction);
