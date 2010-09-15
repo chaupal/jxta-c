@@ -4221,7 +4221,7 @@ static Jxta_status cm_srdi_transaction_save(Jxta_cm_srdi_task * task_parms)
                -- retry
              */
             if (i++ > dbSpace->xaction_threshold || jxta_vector_size(vElements) == 0
-                || FALSE == self->available || retry_transaction || retries_exhausted || self->stoping) {
+                || FALSE == self->available || retry_transaction || retries_exhausted || self->stopping) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "db_id: %d ----      Ending Transaction -- %s\n",
                                 dbSpace->conn->log_id, dbSpace->alias);
                 rv = apr_dbd_transaction_end(dbSpace->conn->driver, pool, dbSpace->conn->transaction);
