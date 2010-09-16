@@ -1282,7 +1282,7 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
         return JXTA_FAILED;
     }
 
-    if (!isRunning(me) || !isCMRunning(me->cm)) {
+    if (!isRunning(me)) {
         return JXTA_FAILED;
     }
 
@@ -2028,7 +2028,7 @@ static Jxta_status adjust_srdi_entries(Jxta_srdi_service *service, Jxta_SRDIMess
     Jxta_vector *srdi_entries=NULL;
 
     jxta_srdi_message_get_entries(srdi_msg, &srdi_entries);
-    for (i=0; i<jxta_vector_size(srdi_entries) && isCMRunning(me->cm); i++) {
+    for (i=0; i<jxta_vector_size(srdi_entries) && isRunning(me); i++) {
         Jxta_SRDIEntryElement *entry_elem;
 
         jxta_vector_get_object_at(srdi_entries, JXTA_OBJECT_PPTR(&entry_elem), i);
@@ -2248,7 +2248,7 @@ static void *APR_THREAD_FUNC srdi_send_srdi_msgs_thread(apr_thread_t * thread, v
 
     jxta_service_lock((Jxta_service *)srdi);
     locked = TRUE;
-    if (!srdi->running || !isCMRunning(srdi->cm)) {
+    if (!srdi->running) {
         goto FINAL_EXIT;
     }
 
@@ -2360,7 +2360,7 @@ static Jxta_status srdi_send_srdi_msgs(Jxta_srdi_service_ref * self, JString *in
     /* rsp_lock must be locked to enter processing of this loop
      * the lock will be re-obtained at the end of the while loop
      */
-    while (jxta_vector_size(msgs) > 0 && isCMRunning(self->cm)) {
+    while (jxta_vector_size(msgs) > 0 && isRunning(self)) {
         Jxta_endpoint_message *send_ep_msg=NULL;
         Jxta_vector *ep_msg_entries=NULL;
         int j;

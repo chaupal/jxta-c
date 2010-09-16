@@ -209,13 +209,6 @@ void cm_stop(Jxta_cm *cm);
 void cm_stop_processing(Jxta_cm *cm);
 
 /**
- * Check if the CM has stopped processing
- *
- * @param Jxta_cm the CM object
- */
-Jxta_boolean isCMRunning(Jxta_cm *cm);
-
-/**
  * Create a new folder.
  * This operation is idem-potent.
  *

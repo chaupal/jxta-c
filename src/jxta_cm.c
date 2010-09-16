@@ -600,15 +600,6 @@ void cm_stop_processing(Jxta_cm *me)
 }
 
 
-Jxta_boolean isCMRunning(Jxta_cm *me)
-{
-    if(me== NULL) {
-        return FALSE;
-    }
-
-    return !me->stopping;
-}
-
 /* Destroy the cm and free all allocated memory */
 static void cm_free(Jxta_object * cm)
 {
@@ -3847,7 +3838,7 @@ static Jxta_status secondary_indexing(Jxta_cm * me, DBSpace * dbSpace, Folder * 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID,
                     "db_id: %d Advertisement : SKey:%s Expiration:" JPR_DIFF_TIME_FMT " others:" JPR_DIFF_TIME_FMT "\n",
                     dbSpace->conn->log_id, documentName, exp, exp_others);
-    for (i = 0; sv != NULL && i < jxta_vector_size(sv); i++) {
+    for (i = 0; sv != NULL && i < jxta_vector_size(sv) && !me->stopping; i++) {
         char *val = NULL;
         const char *range = NULL;
         Jxta_index *ji = NULL;
