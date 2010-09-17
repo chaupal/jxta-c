@@ -1496,6 +1496,11 @@ static Jxta_status discovery_service_send_to_replica(Jxta_discovery_service_ref 
     Jxta_peer *replicaPeer = NULL;
     long hc = -1;
 
+    if(!isRunning(discovery)) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Stop discovery_service_send_to_replica, discovery service stopping\n");
+        return JXTA_FAILED;
+    }
+
     thisIdChar = discovery->pid_str;
     hc = jxta_resolver_query_get_hopcount(rq);
     if (hc == 0) {
@@ -3925,6 +3930,11 @@ static Jxta_status discovery_delta_srdi_priv(Jxta_discovery_service_ref * discov
     Jxta_vector *entries = NULL;
     int i = 0;
 
+    if (!isRunning(discovery)) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Stop discovery_delta_srdi_priv, discovery service stopping\n");
+        return JXTA_FAILED;
+    }
+
     if (delta && ppublish) {
         JString *name = NULL;
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "push SRDI delta %s\n", jstring_get_string(discovery->gid_str));
@@ -4014,6 +4024,11 @@ Jxta_status discovery_send_srdi(Jxta_discovery_service * me, JString * pkey, Jxt
     Jxta_SRDIMessage *msg=NULL;
     const char *cKey = jstring_get_string(pkey);
 
+    if (!isRunning(discovery)) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Stop discovery_send_srdi, discovery service stopping\n");
+        res = JXTA_FAILED;
+        goto FINAL_EXIT;
+    }
 
     if (jxta_vector_size(entries) == 0) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "No entries received discovery_send_srdi\n");

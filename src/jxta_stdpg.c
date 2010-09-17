@@ -288,14 +288,14 @@ static void stdpg_stop(Jxta_module * self)
     if (it->pipe != NULL) {
         jxta_module_stop((Jxta_module *) (it->pipe));
     }
+    if (it->srdi != NULL) {
+        jxta_module_stop((Jxta_module *) (it->srdi));
+    }
     if (it->discovery != NULL) {
         jxta_module_stop((Jxta_module *) (it->discovery));
     }
     if (it->resolver != NULL) {
         jxta_module_stop((Jxta_module *) (it->resolver));
-    }
-    if (it->srdi != NULL) {
-        jxta_module_stop((Jxta_module *) (it->srdi));
     }
     if (it->rendezvous != NULL) {
         jxta_module_stop((Jxta_module *) (it->rendezvous));
