@@ -61,6 +61,7 @@
 #include "jxta_bytevector.h"
 #include "jxta_vector.h"
 #include "jstring.h"
+#include "jxta_service.h"
 #include "jxta_endpoint_address.h"
 #include "jxta_qos.h"
 
@@ -101,6 +102,8 @@ JXTA_DECLARE(Jxta_status) jxta_message_create(Jxta_message ** me, apr_pool_t *po
 JXTA_DECLARE(Jxta_status) jxta_message_destroy(Jxta_message * me);
 JXTA_DECLARE(void) jxta_message_set_timestamp(Jxta_message * me, Jxta_time time_stamp);
 JXTA_DECLARE(Jxta_time) jxta_message_timestamp(Jxta_message * me);
+JXTA_DECLARE(apr_int64_t) jxta_message_max_size(Jxta_message *msg);
+JXTA_DECLARE(void) jxta_message_set_max_size(Jxta_message *msg, apr_int64_t max_size);
 /**
  *  Copies a Jxta message. The copy can then be modified seperately from the
  *  originial. (JXTA_SHARE_OBJECT does not copy the message). The cloned message
@@ -169,6 +172,11 @@ JXTA_DECLARE(Jxta_status) jxta_message_set_destination(Jxta_message * msg, Jxta_
 JXTA_DECLARE(Jxta_status) jxta_message_set_priority(Jxta_message * msg, Msg_priority priority);
 
 JXTA_DECLARE(Msg_priority) jxta_message_priority(Jxta_message * msg);
+
+JXTA_DECLARE(Jxta_status) jxta_message_set_remove(Jxta_message * msg, Jxta_boolean remove);
+
+JXTA_DECLARE(Jxta_boolean) jxta_message_remove(Jxta_message * msg);
+
 /**
  * Add an element to a message. The element is shared.
  *

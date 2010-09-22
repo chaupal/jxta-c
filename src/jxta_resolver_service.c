@@ -54,6 +54,7 @@
  */
 
 #include "jxta_resolver_service_private.h"
+#include "jxta_endpoint_service.h"
 
 /**
  * The base resolver service ctor (not public: the only public way to make a
@@ -184,10 +185,10 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendQuery(Jxta_resolver_service 
  * @param response is the response to be sent
  * @param addr  Peer address (unicast) , or NULL (propagate)
  */
-JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendResponse(Jxta_resolver_service * service, ResolverResponse * response, Jxta_id * peerid, apr_int64_t *max_length)
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendResponse(Jxta_resolver_service * service, ResolverResponse * response, Jxta_id * peerid, Jxta_endpoint_return_parms * return_parms)
 {
     Jxta_resolver_service* resolver_service = PTValid(service, Jxta_resolver_service);
-    return VTBL->sendResponse(resolver_service, response, peerid, max_length);
+    return VTBL->sendResponse(resolver_service, response, peerid, return_parms);
 }
 
 /**
@@ -196,10 +197,10 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendResponse(Jxta_resolver_servi
  * @param addr  Peer address (unicast) , or NULL (propagate)
  * @param sync If TRUE send the message asynchronously
  */
-JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendSrdi(Jxta_resolver_service * service, ResolverSrdi * message, Jxta_id * peerid, Jxta_boolean sync, apr_int64_t *max_length)
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendSrdi(Jxta_resolver_service * service, ResolverSrdi * message, Jxta_id * peerid, Jxta_boolean sync, Jxta_endpoint_return_parms *ret_parms)
 {
     Jxta_resolver_service* resolver_service = PTValid(service, Jxta_resolver_service);
-    return VTBL->sendSrdi(resolver_service, message, peerid, sync, max_length);
+    return VTBL->sendSrdi(resolver_service, message, peerid, sync, ret_parms);
 }
 
 JXTA_DECLARE(Jxta_status) jxta_resolver_service_create_query(Jxta_resolver_service * service, JString * handlername, 

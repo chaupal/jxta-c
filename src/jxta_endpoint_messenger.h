@@ -88,12 +88,14 @@ struct _JxtaEndpointMessenger {
     int (*jxta_header_size) (JxtaEndpointMessenger *);
     /* Jxta_ep_flow_control *ep_fc; */
     Jxta_traffic_shaping *ts;
+    Jxta_vector *active_q;
+    Jxta_vector *pending_q;
     int fc_frame_seconds;
     apr_int64_t fc_num_bytes;
     int fc_msgs_sent;
     apr_thread_mutex_t * mutex;
     apr_pool_t *pool;
-};
+ };
 
 JXTA_DECLARE(JxtaEndpointMessenger *) jxta_endpoint_messenger_initialize(JxtaEndpointMessenger * me
                                     ,MessengerSendFunc jxta_send, MessengerDetailsFunc jxta_get_msg_details, MessengerHeaderFunc header_size, Jxta_endpoint_address * address);

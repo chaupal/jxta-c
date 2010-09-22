@@ -444,7 +444,7 @@ Jxta_status jxta_rdv_service_provider_prop_to_peers(Jxta_rdv_service_provider * 
                                                  jxta_endpoint_address_get_protocol_address(peer->address),
                                                  RDV_V3_MSID, JXTA_RDV_PROPAGATE_SERVICE_NAME, &destAddr);
                 if (JXTA_SUCCESS == res) {
-                    res = jxta_endpoint_service_send_ex(provider->service->endpoint, msg, destAddr, JXTA_FALSE, NULL);
+                    res = jxta_endpoint_service_send_ex(provider->service->endpoint, msg, destAddr, JXTA_FALSE, NULL, JXTA_FALSE);
                 }
 
                 if (res != JXTA_SUCCESS) {

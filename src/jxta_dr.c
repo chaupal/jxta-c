@@ -242,7 +242,6 @@ static void handleResponse(void *userdata, const XML_Char * cd, int len)
     jxta_vector_add_object_last(ad->responselist, (Jxta_object *) r);
     JXTA_OBJECT_RELEASE(r);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Response element\n");
 }
 
 JXTA_DECLARE(long) jxta_discovery_response_get_query_id(Jxta_DiscoveryResponse * ad)
@@ -459,7 +458,7 @@ JXTA_DECLARE(Jxta_status) jxta_discovery_response_get_advertisements(Jxta_Discov
         ad->advertisements = jxta_vector_new(1);
         for (i = 0; i < jxta_vector_size(ad->responselist); i++) {
             Jxta_object *tmpadv = NULL;
-            
+
             res = NULL;
             jxta_vector_get_object_at(ad->responselist, JXTA_OBJECT_PPTR(&res), i);
             if (res != NULL) {

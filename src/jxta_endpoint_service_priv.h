@@ -103,6 +103,9 @@ Jxta_status endpoint_service_propagate_by_group(Jxta_PG * pg, Jxta_message * msg
 
 Jxta_status endpoint_messenger_get(Jxta_endpoint_service * me, Jxta_endpoint_address * dest
                             , JxtaEndpointMessenger **msgr);
+
+JXTA_DECLARE(Jxta_status) endpoint_msg_get_ep_msg(Jxta_message *msg, Jxta_endpoint_message **ep_msg);
+
 #ifdef __cplusplus
 #if 0
 {

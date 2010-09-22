@@ -4,7 +4,7 @@
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
- *  are met:
+ *  are met:c
  *
  *  1. Redistributions of source code must retain the above copyright
  *  notice, this list of conditions and the following disclaimer.
@@ -123,9 +123,11 @@ static Jxta_status JXTA_STDCALL srdi_service_srdi_cb(Jxta_object * obj, void *ar
 static Jxta_status get_element_bytes(Jxta_message_element *element, JString **string);
 static Jxta_status get_srdi_msg_from_msg(Jxta_message *msg, Jxta_bytevector **msg_elem_bv, Jxta_SRDIMessage **srdi_msg);
 static Jxta_status get_srdi_msg_from_ep_elem(Jxta_endpoint_msg_entry_element *ep_elem, Jxta_bytevector **ep_elem_bv, Jxta_SRDIMessage **srdi_msg);
-static Jxta_status adjust_srdi_entries(Jxta_srdi_service * me, Jxta_SRDIMessage * srdi_msg
-                    , Jxta_vector *queued_entries, Jxta_id *peerid
-                    , Jxta_time_diff diff_time, Jxta_time prev_diff, Jxta_boolean ep_entries);
+static Jxta_boolean adjust_srdi_entries(Jxta_srdi_service *service, Jxta_SRDIMessage * srdi_msg
+                    , Jxta_vector *queued_entries, Jxta_id *peerid, Jxta_time prev_diff, Jxta_boolean ep_entries);
+
+static Jxta_status split_endpoint_message(Jxta_srdi_service *self, Jxta_endpoint_message *ep_msg
+                            , Jxta_vector **new_ep_entries, apr_int64_t max_size);
 
 static Jxta_status remove_queue_entry(Jxta_vector *queue, Jxta_object *ptr);
 static Jxta_boolean hopcount_ok(ResolverQuery * query, long count);
@@ -209,6 +211,18 @@ typedef struct _srdi_msg_thread_struct {
     Jxta_boolean sync;
 } Srdi_msg_thread_struct;
 
+typedef struct _SRDI_parm_arg {
+    JXTA_OBJECT_HANDLE;
+    Jxta_message *msg;
+    Jxta_time timestamp;
+    JString *peerid_j;
+    Jxta_id * peer_id;
+    const char *ep_variable;
+    JString *svc_name;
+    const char *svc_param;
+    Jxta_time prev_diff;
+} SRDI_parm_arg;
+
 static Jxta_status srdi_service_remove_replicas(Jxta_srdi_service_ref * srdi, Jxta_vector * entries);
 static void get_replica_peers_priv(Jxta_srdi_service_ref * me, Jxta_SRDIEntryElement * entry, Jxta_peer **peer, Jxta_vector **peers);
 static Jxta_status srdi_send_srdi_msgs(Jxta_srdi_service_ref * self, JString *instance
@@ -216,6 +230,28 @@ static Jxta_status srdi_send_srdi_msgs(Jxta_srdi_service_ref * self, JString *in
 
 static void srdi_push_srdi_msg(Jxta_srdi_service_ref * self, JString * instance,
                             Jxta_message * msg, Jxta_id * peerid, Jxta_boolean sync);
+
+
+static void srdi_parm_arg_free(Jxta_object *obj)
+{
+    SRDI_parm_arg *parm_arg = (SRDI_parm_arg*) obj;
+
+    JXTA_OBJECT_RELEASE(parm_arg->msg);
+    JXTA_OBJECT_RELEASE(parm_arg->peerid_j);
+    JXTA_OBJECT_RELEASE(parm_arg->peer_id);
+    JXTA_OBJECT_RELEASE(parm_arg->svc_name);
+    free(parm_arg);
+}
+
+static SRDI_parm_arg * srdi_parm_arg_new()
+{
+    SRDI_parm_arg *res;
+    res = calloc(1, sizeof(SRDI_parm_arg));
+    JXTA_OBJECT_INIT(res, srdi_parm_arg_free, NULL);
+    res->prev_diff = jpr_time_now();
+    return res;
+}
+
 
 static Jxta_boolean isRunning(Jxta_srdi_service_ref * srdi)
 {
@@ -748,8 +784,9 @@ static Jxta_status split_srdi_message(Jxta_srdi_service_ref *self, Jxta_SRDIMess
     jxta_srdi_message_clone(srdiMsg, &msg_clone, FALSE);
     jxta_srdi_message_get_xml(msg_clone, &msg_xml);
     msg_length = jstring_length(msg_xml) + 1;
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Start splitting srdi [%pp] max_size:%ld \n",srdiMsg, max_size);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Start splitting srdi [%pp] max_size:%ld \n",srdiMsg, max_size);
 
+    /* TODO Review the values here */
     if (msg_length > max_size) {
         res =JXTA_LENGTH_EXCEEDED;
         goto FINAL_EXIT;
@@ -776,8 +813,7 @@ static Jxta_status split_srdi_message(Jxta_srdi_service_ref *self, Jxta_SRDIMess
                                 , (Jxta_object *) ads_v);
         }
         old_expiration = entry->expiration + timestamp;
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Message entry expiration:" JPR_DIFF_TIME_FMT "\n"
-                                , old_expiration - jpr_time_now() > 0 ? old_expiration - jpr_time_now():0);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Message entry expiration:" JPR_DIFF_TIME_FMT "\n", old_expiration - jpr_time_now() > 0 ? old_expiration - jpr_time_now():0);
 
         jxta_vector_add_object_last(ads_v, (Jxta_object *) entry);
         if (entry)
@@ -788,7 +824,7 @@ static Jxta_status split_srdi_message(Jxta_srdi_service_ref *self, Jxta_SRDIMess
     keys = jxta_hashtable_keys_get(ads_hash);
     keys_save = keys;
     total_length = msg_length;
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Message length total:%ld\n", total_length);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Message length total:%ld\n", total_length);
     jxta_srdi_message_clone(msg_clone, &working_msg, FALSE);
     while (*keys) {
         Jxta_vector *advs_v=NULL;
@@ -809,8 +845,8 @@ static Jxta_status split_srdi_message(Jxta_srdi_service_ref *self, Jxta_SRDIMess
             jxta_xml_util_encode_jstring(tmp_j, &tmp_j_1);
         }
         total_length += jstring_length(NULL != tmp_j_1 ? tmp_j_1:tmp_j);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "length of entries %d encoded:%d total:%ld\n"
-                        , jstring_length(entries_j),jstring_length(tmp_j),  total_length);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "key:%s length of entries %d encoded:%d total:%ld\n"
+                        , *keys, jstring_length(entries_j),jstring_length(tmp_j),  total_length);
         if (total_length >= max_size) {
 
             jxta_srdi_message_set_entries(working_msg, all_entries);
@@ -845,7 +881,7 @@ static Jxta_status split_srdi_message(Jxta_srdi_service_ref *self, Jxta_SRDIMess
     }
 
 FINAL_EXIT:
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Done splitting srdi message [%pp]\n", srdiMsg);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Done splitting srdi message [%pp]\n", srdiMsg);
 
     if (all_entries)
         JXTA_OBJECT_RELEASE(all_entries);
@@ -884,8 +920,8 @@ static Jxta_status create_msg_from_srdi(Jxta_SRDIMessage *srdi_msg, JString **sr
 
     if (res == JXTA_SUCCESS) {
         *msg = jxta_message_new();
-        JXTA_OBJECT_CHECK_VALID(*msg);
 
+        JXTA_OBJECT_CHECK_VALID(*msg);
         jxta_message_add_element(*msg, el);
     }
     if (el_name)
@@ -960,167 +996,231 @@ static Jxta_status remove_queue_entry(Jxta_vector *queue, Jxta_object *ptr)
     return res;
 }
 
+static Jxta_status return_func(Jxta_service *service, Jxta_message *msg, void *arg, Jxta_vector **ret_v, Jxta_endpoint_service_action action)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    Jxta_SRDIMessage *srdi_msg=NULL;
+
+    res = get_srdi_msg_from_msg(msg, NULL, &srdi_msg);
+
+    if (JXTA_SUCCESS != res) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to find SRDI message in msg: [%pp] res:%ld\n", msg, res);
+        goto FINAL_EXIT;
+    }
+
+    switch (action) {
+
+        case JXTA_EP_ACTION_REDUCE:
+        {
+            Jxta_vector *new_srdi_msgs=NULL;
+            Jxta_message *msg_clone=NULL;
+            int i;
+
+            msg_clone = jxta_message_clone(msg);
+            *ret_v = jxta_vector_new(0);
+
+            split_srdi_message ((Jxta_srdi_service_ref *) service, srdi_msg, *ret_v, jxta_message_max_size(msg), jxta_message_timestamp(msg), TRUE);
+
+
+            for (i = 0; i < jxta_vector_size(new_srdi_msgs); i++) {
+                Jxta_message *new_msg=NULL;
+                JString *srdi_msg_xml=NULL;
+                Jxta_SRDIMessage *srdi=NULL;
+
+                jxta_vector_get_object_at(new_srdi_msgs, JXTA_OBJECT_PPTR(&srdi), i);
+
+                res = create_msg_from_srdi(srdi, &srdi_msg_xml, &new_msg);
+
+                if (JXTA_SUCCESS != res) {
+                    JXTA_OBJECT_RELEASE(srdi);
+                    continue;
+                }
+                jxta_vector_add_object_last(*ret_v, (Jxta_object *) new_msg);
+
+                JXTA_OBJECT_RELEASE(srdi_msg_xml);
+                JXTA_OBJECT_RELEASE(new_msg);
+                JXTA_OBJECT_RELEASE(srdi);
+            }
+
+            JXTA_OBJECT_RELEASE(msg_clone);
+            JXTA_OBJECT_RELEASE(new_srdi_msgs);
+        }
+
+            break;
+        case JXTA_EP_ACTION_FILTER:
+            break;
+    };
+
+FINAL_EXIT:
+
+    if (srdi_msg)
+        JXTA_OBJECT_RELEASE(srdi_msg);
+    return res;
+}
+
+Jxta_status return_ep_msg_func(Jxta_service *service, Jxta_endpoint_return_parms *ret_parms, Jxta_vector **ret_v, Jxta_endpoint_service_action action)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    SRDI_parm_arg *srdi_arg=NULL;
+
+    jxta_endpoint_return_parms_get_arg(ret_parms, JXTA_OBJECT_PPTR(&srdi_arg));
+
+    switch (action) {
+        case JXTA_EP_ACTION_REDUCE:
+        {
+            Jxta_vector *new_entries;
+            int i;
+
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "JXTA_EP_ACTION_REDUCE - SRDI\n");
+
+            split_endpoint_message ((Jxta_srdi_service *) service, (Jxta_endpoint_message *) srdi_arg->msg, &new_entries, jxta_endpoint_return_parms_max_length(ret_parms));
+
+            *ret_v = jxta_vector_new(0);
+            for (i =0; i<jxta_vector_size(new_entries); i++) {
+                Jxta_message *msg;
+                Jxta_endpoint_message *new_ep_msg=NULL;
+                Jxta_endpoint_return_parms *new_return_parms=NULL;
+                SRDI_parm_arg *parm_arg=NULL;
+                Jxta_endpoint_address *dest=NULL;
+                Jxta_message_element *msg_elem=NULL;
+                JString *ep_msg_xml=NULL;
+                Jxta_endpoint_msg_entry_element *new_elem;
+                JString *msg_j;
+
+                jxta_vector_get_object_at(new_entries, JXTA_OBJECT_PPTR(&new_elem), i);
+                new_ep_msg = jxta_endpoint_msg_new();
+                /* jxta_endpoint_msg_set_priority(new_ep_msg, MSG_NORMAL_FLOW); */
+                jxta_endpoint_msg_add_entry(new_ep_msg, new_elem);
+                jxta_endpoint_msg_set_timestamp(new_ep_msg, jpr_time_now());
+                jxta_endpoint_msg_get_xml(new_ep_msg, FALSE, &msg_j, TRUE);
+                peergroup_dest_addr_get(srdi_arg->peer_id, srdi_arg->ep_variable, jstring_get_string(srdi_arg->svc_name), srdi_arg->svc_param, &dest);
+                msg = jxta_message_new();
+                jxta_message_set_destination(msg, dest);
+                jxta_endpoint_msg_get_xml(new_ep_msg, TRUE, &ep_msg_xml, TRUE);
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Add ep msg [%pp] length:%d to new entries\n", new_ep_msg, jstring_length(ep_msg_xml));
+
+                msg_elem = jxta_message_element_new_2(JXTA_ENDPOINT_MSG_JXTA_NS, JXTA_ENPOINT_MSG_ELEMENT_NAME, "text/xml", jstring_get_string(ep_msg_xml), jstring_length(ep_msg_xml), NULL);
+
+                jxta_message_add_element(msg, msg_elem);
+                jxta_message_set_priority(msg, jxta_endpoint_msg_priority(new_ep_msg));
+
+                new_return_parms = jxta_endpoint_return_parms_new();
+                jxta_endpoint_return_parms_set_function(new_return_parms, (EndpointReturnFunc) return_ep_msg_func);
+                jxta_endpoint_return_parms_set_msg(new_return_parms, msg);
+                jxta_endpoint_return_parms_set_service(new_return_parms, service);
+                parm_arg = srdi_parm_arg_new();
+                parm_arg->msg = (Jxta_message *)(JXTA_OBJECT_SHARE(new_ep_msg));
+                parm_arg->peerid_j = jstring_clone(srdi_arg->peerid_j);
+                parm_arg->timestamp = jpr_time_now();
+                parm_arg->peer_id = JXTA_OBJECT_SHARE(srdi_arg->peer_id);
+                parm_arg->ep_variable = "groupid";
+                parm_arg->svc_name = JXTA_OBJECT_SHARE(srdi_arg->svc_name);
+                parm_arg->svc_param = SRDI_QUEUENAME;
+                jxta_endpoint_return_parms_set_arg(new_return_parms, (Jxta_object *) parm_arg);
+
+                jxta_vector_add_object_last(*ret_v, (Jxta_object *) new_return_parms);
+
+                JXTA_OBJECT_RELEASE(new_return_parms);
+                JXTA_OBJECT_RELEASE(parm_arg);
+                JXTA_OBJECT_RELEASE(msg);
+                JXTA_OBJECT_RELEASE(new_ep_msg);
+                JXTA_OBJECT_RELEASE(dest);
+                JXTA_OBJECT_RELEASE(msg_elem);
+                JXTA_OBJECT_RELEASE(ep_msg_xml);
+                JXTA_OBJECT_RELEASE(new_elem);
+                JXTA_OBJECT_RELEASE(msg_j);
+            }
+            JXTA_OBJECT_RELEASE(new_entries);
+            break;
+        }
+        case JXTA_EP_ACTION_FILTER:
+        {
+            int i, j;
+            Jxta_vector *filter_list=NULL;
+            Jxta_endpoint_message *ep_msg=NULL;
+            Jxta_vector *ep_entries_v=NULL;
+            SRDI_parm_arg *parm_arg=NULL;
+            Jxta_vector *queued_entries=NULL;
+
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "JXTA_EP_ACTION_FILTER - SRDI ret_parms:[%pp]\n", ret_parms);
+            jxta_endpoint_return_parms_get_filter_list(ret_parms, &filter_list);
+
+            jxta_endpoint_return_parms_get_arg(ret_parms, JXTA_OBJECT_PPTR(&parm_arg));
+            ep_msg = (Jxta_endpoint_message *) parm_arg->msg;
+            if (NULL == ep_msg) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "What's going on? no ep_msg?\n");
+                return JXTA_FAILED;
+            }
+            jxta_endpoint_msg_get_entries(ep_msg, &ep_entries_v);
+
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "ep_msg [%pp] ep_entries_v size %d\n", ep_msg, NULL == ep_entries_v ? 0: jxta_vector_size(ep_entries_v));
+
+            for (i=0; i<jxta_vector_size(ep_entries_v); i++) {
+                Jxta_SRDIMessage *new_srdi_msg=NULL;
+                Jxta_endpoint_msg_entry_element *ep_elem=NULL;
+                Jxta_bytevector *ep_elem_bv=NULL;
+
+                jxta_vector_get_object_at(ep_entries_v, JXTA_OBJECT_PPTR(&ep_elem), i);
+                if (JXTA_SUCCESS != get_srdi_msg_from_ep_elem(ep_elem, &ep_elem_bv, &new_srdi_msg)) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to get SRDI message from ep_elem [%pp]\n", ep_elem);
+                    JXTA_OBJECT_RELEASE(ep_elem);
+                    if (new_srdi_msg)
+                        JXTA_OBJECT_RELEASE(new_srdi_msg);
+                    if (ep_elem_bv)
+                        JXTA_OBJECT_RELEASE(ep_elem_bv);
+                    continue;
+                }
+                if (NULL == queued_entries) {
+                    queued_entries = jxta_vector_new(0);
+                } else {
+                    jxta_vector_clear(queued_entries);
+                }
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "filter list size %d\n", jxta_vector_size(filter_list));
+                for (j=0; j<jxta_vector_size(filter_list); j++) {
+                    Jxta_endpoint_filter_entry *f_entry=NULL;
+                    Jxta_message *orig_msg;
+
+                    jxta_vector_get_object_at(filter_list, JXTA_OBJECT_PPTR(&f_entry), j);
+                    jxta_endpoint_filter_entry_get_orig_msg(f_entry, &orig_msg);
+                    if (FALSE == jxta_message_remove(orig_msg)) {
+                        jxta_vector_add_object_last(queued_entries, (Jxta_object *) f_entry);
+                    }
+                    JXTA_OBJECT_RELEASE(f_entry);
+                    JXTA_OBJECT_RELEASE(orig_msg);
+                }
+                if (TRUE == adjust_srdi_entries ((Jxta_srdi_service *) jxta_endpoint_return_parms_service(ret_parms) , (Jxta_SRDIMessage *) new_srdi_msg,  queued_entries, NULL,parm_arg->prev_diff, TRUE)) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Message should be deleted\n");
+                }
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "%d ep msg entries have been adjusted\n", jxta_vector_size(queued_entries));
+                JXTA_OBJECT_RELEASE(new_srdi_msg);
+                JXTA_OBJECT_RELEASE(ep_elem);
+                JXTA_OBJECT_RELEASE(ep_elem_bv);
+            }
+            JXTA_OBJECT_RELEASE(filter_list);
+            if (ep_entries_v)
+                JXTA_OBJECT_RELEASE(ep_entries_v);
+            JXTA_OBJECT_RELEASE(parm_arg);
+            JXTA_OBJECT_RELEASE(queued_entries);
+            break;
+        }
+    };
+    if (srdi_arg)
+        JXTA_OBJECT_RELEASE(srdi_arg);
+    return res;
+}
+
 static void srdi_push_srdi_msg(Jxta_srdi_service_ref * self, JString * instance,
                             Jxta_message * msg, Jxta_id * peerid, Jxta_boolean sync)
 {
-    apr_int64_t max_length=0;
-    Jxta_vector *msgs=NULL;
-    Jxta_boolean init=TRUE;
-    apr_int32_t prev_diff=0;
     Jxta_status res=JXTA_SUCCESS;
-    JString *peerid_j=NULL;
-    int split_already = 0;
-    apr_int64_t peer_max_length=0;
-    Jxta_boolean locked = FALSE;
 
-    jxta_id_to_jstring(peerid, &peerid_j);
-
-    apr_thread_mutex_lock(self->srdi_msgs_lock);
-    locked = TRUE;
-    if (JXTA_SUCCESS != jxta_hashtable_get(self->srdi_msgs
-                        , jstring_get_string(peerid_j), jstring_length(peerid_j) +1, JXTA_OBJECT_PPTR(&msgs))) {
-        msgs = jxta_vector_new(0);
-        jxta_hashtable_put(self->srdi_msgs
-                        , jstring_get_string(peerid_j), jstring_length(peerid_j) + 1,(Jxta_object *) msgs);
+    res = jxta_PG_sync_send(self->group, msg, peerid
+                    , jstring_get_string(instance), SRDI_QUEUENAME,  (EndpointReturnFunc) return_func);
+    if (JXTA_SUCCESS != res) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to send msg [%pp] res:%d \n", msg, res);
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "message sent [%pp] \n", msg);
     }
-    jxta_vector_add_object_first(msgs, (Jxta_object *) msg);
-
-    /* srdi_msgs_lock must be locked to enter processing of this loop
-     * the lock will be re-obtained at the end of the while loop
-     */
-    while (jxta_vector_size(msgs) > 0) {
-        Jxta_status status;
-        Jxta_message *send_msg = NULL;
-        Jxta_time_diff diff=0;
-        Jxta_SRDIMessage *srdi_msg=NULL;
-        Jxta_bytevector *msg_elem_bv=NULL;
-        int j=0;
-        Jxta_boolean break_out = FALSE;
-
-        jxta_vector_remove_object_at(msgs, JXTA_OBJECT_PPTR(&send_msg), 0);
-
-        status = get_srdi_msg_from_msg(send_msg, &msg_elem_bv, &srdi_msg);
-        if (JXTA_SUCCESS != status) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Couldn't find an SRDI message in [%pp]\n", send_msg);
-            JXTA_OBJECT_RELEASE(send_msg);
-            continue;
-        }
-
-        if (locked) {
-            apr_thread_mutex_unlock(self->srdi_msgs_lock);
-            locked = FALSE;
-        }
-
-        if (FALSE == init) {
-            Jxta_id *src_pid=NULL;
-
-            diff = jpr_time_now() - jxta_message_timestamp(send_msg);
-            jxta_srdi_message_get_SrcPID(srdi_msg, &src_pid);
-
-            adjust_srdi_entries((Jxta_srdi_service *) self, srdi_msg, msgs, src_pid, diff, prev_diff, FALSE);
-            if (src_pid)
-                JXTA_OBJECT_RELEASE(src_pid);
-        }
-        res = jxta_PG_sync_send(self->group, send_msg, peerid
-                        , jstring_get_string(instance), SRDI_QUEUENAME,  split_already  < 2 ? &max_length:NULL);
-        init = FALSE;
-        if (JXTA_LENGTH_EXCEEDED == res && peer_max_length != max_length) {
-            Jxta_vector *new_msgs;
-
-            if (0 == split_already++) {
-                peer_max_length = max_length;
-            }
-
-            new_msgs = jxta_vector_new(0);
-            split_srdi_message(self, srdi_msg, new_msgs, max_length, jpr_time_now(), FALSE);
-
-            apr_thread_mutex_lock(self->srdi_msgs_lock);
-            locked = TRUE;
-            for (j=0; j<jxta_vector_size(new_msgs); j++) {
-                Jxta_message *new_msg;
-                Jxta_SRDIMessage *new_srdi_msg;
-                JString *srdi_xml=NULL;
-
-                jxta_vector_get_object_at(new_msgs, JXTA_OBJECT_PPTR(&new_srdi_msg), j);
-                res = create_msg_from_srdi(new_srdi_msg, &srdi_xml, &new_msg);
-                if (JXTA_SUCCESS == res) {
-                    JString *msg_xml=NULL;
-
-                    jxta_message_set_timestamp(new_msg, jpr_time_now());
-
-
-                    if (jstring_length(srdi_xml)  > max_length) {
-                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG
-                                , "This message [%pp] is too large size:%ld max_length:%ld\n"
-                                , new_msg, jstring_length(srdi_xml), max_length);
-                    } else {
-                        jxta_vector_add_object_last(msgs, (Jxta_object *) new_msg);
-                    }
-                    JXTA_OBJECT_RELEASE(msg_xml);
-                }
-                JXTA_OBJECT_RELEASE(new_srdi_msg);
-                if (srdi_xml)
-                    JXTA_OBJECT_RELEASE(srdi_xml);
-                if (new_msg)
-                    JXTA_OBJECT_RELEASE(new_msg);
-            }
-            locked = FALSE;
-            apr_thread_mutex_unlock(self->srdi_msgs_lock);
-            prev_diff = 0;
-            if (new_msgs)
-                JXTA_OBJECT_RELEASE(new_msgs);
-        } else if (JXTA_BUSY == res) {
-            apr_sleep(1000 * 1000);
-            if (self->running) {
-                apr_thread_mutex_lock(self->srdi_msgs_lock);
-                locked = TRUE;
-                jxta_vector_add_object_first(msgs, (Jxta_object *) send_msg);
-                apr_thread_mutex_unlock(self->srdi_msgs_lock);
-                locked = FALSE;
-                prev_diff = diff;
-            } else {
-                break_out = TRUE;
-            }
-        } else if (JXTA_SUCCESS == res) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "message sent msg [%pp] \n", send_msg);
-            prev_diff = 0;
-            split_already = 0;
-        } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "message sent error:%ld msg [%pp] \n", res, send_msg);
-            break_out = TRUE;
-        }
-        if (send_msg)
-            JXTA_OBJECT_RELEASE(send_msg);
-        if (srdi_msg)
-            JXTA_OBJECT_RELEASE(srdi_msg);
-        if (msg_elem_bv)
-            JXTA_OBJECT_RELEASE(msg_elem_bv);
-        if (TRUE == break_out) break;
-
-        /* re-lock to check the beginning of the while loop */
-        if (!locked) {
-            apr_thread_mutex_lock(self->srdi_msgs_lock);
-            locked = TRUE;
-        }
-    }
-
-    if (locked)
-        apr_thread_mutex_unlock(self->srdi_msgs_lock);
-    if (msgs)
-        JXTA_OBJECT_RELEASE(msgs);
-    if (peerid_j)
-        JXTA_OBJECT_RELEASE(peerid_j);
-}
-
-static void srdi_msg_thread_free(Jxta_object *obj)
-{
-    Srdi_msg_thread_struct *t_ptr = (Srdi_msg_thread_struct*) obj;
-    JXTA_OBJECT_RELEASE(t_ptr->srdi_service);
-    JXTA_OBJECT_RELEASE(t_ptr->instance);
-    JXTA_OBJECT_RELEASE(t_ptr->dest);
-    JXTA_OBJECT_RELEASE(t_ptr->msg);
-    
-    free(t_ptr);
 }
 
 static Jxta_status pushSrdi_msg_priv(Jxta_srdi_service_ref * self, JString * instance,
@@ -1134,8 +1234,7 @@ static Jxta_status pushSrdi_msg_priv(Jxta_srdi_service_ref * self, JString * ins
     if (JXTA_SUCCESS != res) {
         return res;
     }
-    jxta_message_set_priority(msg, MSG_NORMAL_FLOW);
-
+    /* jxta_message_set_priority(msg, MSG_NORMAL_FLOW); */
 
     if (NULL != ret_msgs) {
         const char *peerid_c=NULL;
@@ -1177,7 +1276,7 @@ static Jxta_status pushSrdi_msg_priv(Jxta_srdi_service_ref * self, JString * ins
             Srdi_msg_thread_struct *thread_ptr;
 
             thread_ptr = calloc(1, sizeof(Srdi_msg_thread_struct));
-            JXTA_OBJECT_INIT(thread_ptr, srdi_msg_thread_free, (void*)NULL);
+            /* JXTA_OBJECT_INIT(thread_ptr, srdi_msg_thread_free, (void*)NULL); */
             thread_ptr->srdi_service = JXTA_OBJECT_SHARE(self);
             thread_ptr->instance=JXTA_OBJECT_SHARE(instance);
             thread_ptr->dest=JXTA_OBJECT_SHARE(peerid);
@@ -1835,6 +1934,7 @@ static void remove_srdi_entries(Jxta_vector *srdi_entries, JString **sn, Jxta_ob
 {
     int i;
 
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Start removing %d srdi entries\n", jxta_vector_size(srdi_entries));
     for (i=0; i<jxta_vector_size(srdi_entries); i++) {
         Jxta_SRDIEntryElement *elem;
         JString **sn_tmp;
@@ -1848,14 +1948,12 @@ static void remove_srdi_entries(Jxta_vector *srdi_entries, JString **sn, Jxta_ob
 
             sn_check = normalize_srdi_sequence_number(elem);
             sn_64 = apr_atoi64(jstring_get_string(*sn_tmp));
-
             sn_check_save=sn_check;
             while (*sn_check) {
                 apr_int64_t sn_64_check;
 
                 sn_64_check = apr_atoi64(jstring_get_string(*sn_check));
                 if (sn_64_check == sn_64) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Remove sequence:%" APR_INT64_T_FMT "\n", sn_64);
                         if (NULL != removed_entries) {
                             jxta_vector_add_object_last(removed_entries, (Jxta_object *) remove_object);
                         }
@@ -1867,12 +1965,16 @@ static void remove_srdi_entries(Jxta_vector *srdi_entries, JString **sn, Jxta_ob
             }
             while (*sn_check) JXTA_OBJECT_RELEASE(*(sn_check++));
             free(sn_check_save);
-            if (removed) break;
+            if (removed) {
+                jxta_vector_clear(srdi_entries);
+                 break;
+            }
             sn_tmp++;
         }
         if (elem)
             JXTA_OBJECT_RELEASE(elem);
     }
+
 }
 
 static Jxta_status find_ep_msg_seq_numbers_and_remove(Jxta_vector *queued_entries, Jxta_id *peerid, JString **sn)
@@ -1882,12 +1984,24 @@ static Jxta_status find_ep_msg_seq_numbers_and_remove(Jxta_vector *queued_entrie
 
     for (i=0; i<jxta_vector_size(queued_entries); i++) {
         int j;
-        Jxta_endpoint_message *ep_msg=NULL;
         Jxta_vector *ep_entries_v=NULL;
+        Jxta_endpoint_filter_entry *f_entry;
+        Jxta_endpoint_return_parms *f_parms;
+        SRDI_parm_arg *f_srdi_arg;
+        Jxta_message *orig_msg;
 
-        jxta_vector_get_object_at(queued_entries, JXTA_OBJECT_PPTR(&ep_msg), i);
 
-        jxta_endpoint_msg_get_entries(ep_msg, &ep_entries_v);
+        jxta_vector_get_object_at(queued_entries, JXTA_OBJECT_PPTR(&f_entry), i);
+        jxta_endpoint_filter_entry_get_orig_msg(f_entry, &orig_msg);
+        if (TRUE == jxta_message_remove(orig_msg)) {
+            JXTA_OBJECT_RELEASE(orig_msg);
+            JXTA_OBJECT_RELEASE(f_entry);
+            continue;
+        }
+        jxta_endpoint_filter_entry_get_parms(f_entry, &f_parms);
+        jxta_endpoint_return_parms_get_arg(f_parms, JXTA_OBJECT_PPTR(&f_srdi_arg));
+        jxta_endpoint_msg_get_entries((Jxta_endpoint_message *) f_srdi_arg->msg, &ep_entries_v);
+
         for (j=0; j<jxta_vector_size(ep_entries_v); j++) {
             Jxta_SRDIMessage *new_srdi_msg=NULL;
             Jxta_endpoint_msg_entry_element *ep_elem=NULL;
@@ -1937,10 +2051,18 @@ static Jxta_status find_ep_msg_seq_numbers_and_remove(Jxta_vector *queued_entrie
         }
 
         if (jxta_vector_size(ep_entries_v) < 1) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Remove queued_entries at %d\n", i);
+            Jxta_message *remove_msg;
+
+            jxta_endpoint_filter_entry_get_orig_msg(f_entry, &remove_msg);
 
             jxta_vector_remove_object_at(queued_entries, NULL, i--);
+            jxta_message_set_remove(remove_msg, TRUE);
         }
+
+        JXTA_OBJECT_RELEASE(f_entry);
+        JXTA_OBJECT_RELEASE(f_parms);
+        JXTA_OBJECT_RELEASE(f_srdi_arg);
+        JXTA_OBJECT_RELEASE(orig_msg);
         JXTA_OBJECT_RELEASE(ep_entries_v);
     }
     return res;
@@ -1989,6 +2111,7 @@ static Jxta_status find_srdi_seq_numbers_and_remove(Jxta_vector *queued_entries,
                  * completed properly
                  */
                 if (NULL != remove_entries) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Sequence remove_entries %d\n", jxta_vector_size(srdi_entries));
                     remove_srdi_entries(srdi_entries, sn, queued_object, remove_entries);
                 }
 
@@ -2018,26 +2141,27 @@ static Jxta_status find_srdi_seq_numbers_and_remove(Jxta_vector *queued_entries,
     return res;
 }
 
-static Jxta_status adjust_srdi_entries(Jxta_srdi_service *service, Jxta_SRDIMessage * srdi_msg
-                    , Jxta_vector *queued_entries, Jxta_id *peerid
-                    , Jxta_time_diff diff_time, Jxta_time prev_diff, Jxta_boolean ep_entries)
+static Jxta_boolean adjust_srdi_entries(Jxta_srdi_service *service, Jxta_SRDIMessage * srdi_msg
+                    , Jxta_vector *queued_entries, Jxta_id *peerid, Jxta_time prev_diff, Jxta_boolean ep_entries)
 {
     Jxta_srdi_service_ref *me = (Jxta_srdi_service_ref *) service;
-    Jxta_status res=JXTA_SUCCESS;
+    Jxta_boolean res=FALSE;
     int i;
     Jxta_vector *srdi_entries=NULL;
+    Jxta_time diff_time;
 
     jxta_srdi_message_get_entries(srdi_msg, &srdi_entries);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Adjust srdi msg [%pp] with %d srdi entries\n", srdi_msg, jxta_vector_size(srdi_entries));
+    diff_time = jpr_time_now() - prev_diff;
     for (i=0; i<jxta_vector_size(srdi_entries) && isRunning(me); i++) {
         Jxta_SRDIEntryElement *entry_elem;
 
         jxta_vector_get_object_at(srdi_entries, JXTA_OBJECT_PPTR(&entry_elem), i);
         if (0 != entry_elem->expiration) {
-            entry_elem->expiration += prev_diff;
-            if (entry_elem->expiration < diff_time) {
+            entry_elem->expiration -= diff_time; 
+            if (entry_elem->expiration < 0) {
                 jxta_vector_remove_object_at(srdi_entries, NULL, i--);
-            } else {
-                entry_elem->expiration -= diff_time;
+                res = TRUE;
             }
         } else {
             JString **sn_ptr = NULL;
@@ -2074,7 +2198,6 @@ static Jxta_status adjust_srdi_entries(Jxta_srdi_service *service, Jxta_SRDIMess
     return res;
 }
 
-
 static Jxta_status get_srdi_msg_from_msg(Jxta_message *msg
                                     , Jxta_bytevector **msg_elem_bv, Jxta_SRDIMessage **srdi_msg)
 {
@@ -2088,12 +2211,12 @@ static Jxta_status get_srdi_msg_from_msg(Jxta_message *msg
 
     b_element = jxta_message_element_get_value(el);
     get_element_bytes(el, &msg_entry_j);
-    /* msg_entry_j = jstring_new_3(b_element); */
     *srdi_msg = jxta_srdi_message_new();
     res = jxta_srdi_message_parse_charbuffer(*srdi_msg
                                 , jstring_get_string(msg_entry_j)
                                 , jstring_length(msg_entry_j));
-    *msg_elem_bv = b_element;
+    if (NULL != msg_elem_bv)
+        *msg_elem_bv = b_element;
 
 FINAL_EXIT:
     if (el)
@@ -2127,8 +2250,7 @@ static Jxta_status get_srdi_msg_from_ep_elem(Jxta_endpoint_msg_entry_element *ep
     return res;
 }
 
-static Jxta_status split_endpoint_message(Jxta_srdi_service_ref *self, Jxta_endpoint_message *ep_msg
-                            , Jxta_endpoint_address *ea
+static Jxta_status split_endpoint_message(Jxta_srdi_service *self, Jxta_endpoint_message *ep_msg
                             , Jxta_vector **new_ep_entries, apr_int64_t max_size)
 {
     Jxta_status res = JXTA_SUCCESS;
@@ -2144,6 +2266,7 @@ static Jxta_status split_endpoint_message(Jxta_srdi_service_ref *self, Jxta_endp
     jxta_endpoint_msg_get_entries(ep_msg, &entries);
     ep_msg_length = jstring_length(ep_xml);
     *new_ep_entries = NULL;
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Start splitting endpoint [%pp] max_size:%" APR_INT64_T_FMT "\n",ep_msg, max_size);
 
     for (i=0; i<jxta_vector_size(entries); i++) {
         Jxta_SRDIMessage *srdi_msg=NULL;
@@ -2173,21 +2296,24 @@ static Jxta_status split_endpoint_message(Jxta_srdi_service_ref *self, Jxta_endp
                                 , jstring_get_string(ep_msg_entry_j)
                                 , jstring_length(ep_msg_entry_j));
 
-        split_srdi_message(self, srdi_msg, new_msgs, max_size - ep_msg_length, jxta_endpoint_msg_timestamp(ep_msg), TRUE);
+        split_srdi_message((Jxta_srdi_service_ref *) self, srdi_msg, new_msgs, max_size - ep_msg_length, jxta_endpoint_msg_timestamp(ep_msg), TRUE);
+
         for (j=0; j<jxta_vector_size(new_msgs); j++) {
             Jxta_endpoint_msg_entry_element *ep_element=NULL;
             Jxta_message_element *msg_elem=NULL;
             Jxta_SRDIMessage *new_srdi_msg=NULL;
             JString  *srdi_msg_xml=NULL;
             JString *el_name=NULL;
+            Jxta_vector *entries_v = NULL;
 
             jxta_vector_get_object_at(new_msgs, JXTA_OBJECT_PPTR(&new_srdi_msg), j);
  
             ep_element = jxta_endpoint_message_entry_new();
             jxta_advertisement_get_xml((Jxta_advertisement *) new_srdi_msg, &srdi_msg_xml);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "New SRDI msg length:%d\n"
-                                , jstring_length(srdi_msg_xml));
-
+            jxta_srdi_message_get_entries(new_srdi_msg, &entries_v);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "New SRDI msg [%pp] length:%d entries:%d\n"
+                                , new_srdi_msg, jstring_length(srdi_msg_xml), jxta_vector_size(entries_v));
+            JXTA_OBJECT_RELEASE(entries_v);
             el_name = jstring_new_2(JXTA_SRDI_NS_NAME);
             jstring_append_2(el_name, ":");
             jstring_append_2(el_name, JXTA_SRDI_MESSAGE);
@@ -2216,7 +2342,7 @@ static Jxta_status split_endpoint_message(Jxta_srdi_service_ref *self, Jxta_endp
             JXTA_OBJECT_RELEASE(new_srdi_msg);
             JXTA_OBJECT_RELEASE(srdi_msg_xml);
         }
-
+        jxta_vector_clear(new_msgs);
         JXTA_OBJECT_RELEASE(srdi_msg);
         JXTA_OBJECT_RELEASE(elem);
         JXTA_OBJECT_RELEASE(el);
@@ -2289,15 +2415,9 @@ static Jxta_status srdi_send_srdi_msgs(Jxta_srdi_service_ref * self, JString *in
     Jxta_vector *msgs=NULL;
     Jxta_endpoint_message *ep_msg=NULL;
     Jxta_endpoint_address *ep_addr=NULL;
-    apr_int64_t max_length;
     JString *ep_msg_xml=NULL;
-    Jxta_boolean init=TRUE;
-    Jxta_time prev_diff=0;
     JString *peerid_j=NULL;
-    apr_int64_t peer_max_length=0;
-    int split_already=0;
     Jxta_boolean locked = FALSE;
-
 
     jxta_id_to_jstring(jxta_peer_peerid(dest), &peerid_j);
     apr_thread_mutex_lock(self->ep_msgs_lock);
@@ -2311,7 +2431,7 @@ static Jxta_status srdi_send_srdi_msgs(Jxta_srdi_service_ref * self, JString *in
     apr_thread_mutex_unlock(self->ep_msgs_lock);
     locked = FALSE;
     ep_msg = jxta_endpoint_msg_new();
-    jxta_endpoint_msg_set_priority(ep_msg, MSG_NORMAL_FLOW);
+    /* jxta_endpoint_msg_set_priority(ep_msg, MSG_NORMAL_FLOW); */
     jxta_endpoint_msg_set_timestamp(ep_msg, jpr_time_now());
     groups = jxta_hashtable_keys_get(msgs_hash);
     groups_save = groups;
@@ -2320,7 +2440,7 @@ static Jxta_status srdi_send_srdi_msgs(Jxta_srdi_service_ref * self, JString *in
 
         if (JXTA_SUCCESS == jxta_hashtable_get(msgs_hash, *groups, strlen(*groups) + 1, JXTA_OBJECT_PPTR(&msg_vec))) {
             int i;
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Sending %d msgs for group: %s\n", jxta_vector_size(msg_vec), *groups);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Sending %d msgs for group: %s\n", jxta_vector_size(msg_vec), *groups);
             for (i=0; i<jxta_vector_size(msg_vec); i++) {
                 Jxta_message_element *msg_elem=NULL;
                 Jxta_endpoint_msg_entry_element *elem = NULL;
@@ -2350,7 +2470,7 @@ static Jxta_status srdi_send_srdi_msgs(Jxta_srdi_service_ref * self, JString *in
 
     jxta_peer_get_address(dest, &ep_addr);
     jxta_endpoint_msg_get_xml(ep_msg, TRUE, &ep_msg_xml, TRUE);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Send srdi_send_srdi_msgs length:%d\n", jstring_length(ep_msg_xml));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Send srdi_send_srdi_msgs length:%d\n", jstring_length(ep_msg_xml));
 
     apr_thread_mutex_lock(self->ep_msgs_lock);
     locked = TRUE;
@@ -2360,20 +2480,19 @@ static Jxta_status srdi_send_srdi_msgs(Jxta_srdi_service_ref * self, JString *in
     /* rsp_lock must be locked to enter processing of this loop
      * the lock will be re-obtained at the end of the while loop
      */
+
     while (jxta_vector_size(msgs) > 0 && isRunning(self)) {
         Jxta_endpoint_message *send_ep_msg=NULL;
         Jxta_vector *ep_msg_entries=NULL;
+        Jxta_boolean break_out=FALSE;
         int j;
         Jxta_time_diff diff=0;
-        Jxta_boolean break_out=FALSE;
+        Jxta_endpoint_return_parms *return_parms=NULL;
+        SRDI_parm_arg *parm_arg=NULL;
 
         jxta_vector_remove_object_at(msgs, JXTA_OBJECT_PPTR(&send_ep_msg), 0);
-        
-        apr_thread_mutex_unlock(self->ep_msgs_lock);
-        locked = FALSE;
-
         jxta_endpoint_msg_get_entries(send_ep_msg, &ep_msg_entries);
-        for (j=0; FALSE == init && j<jxta_vector_size(ep_msg_entries); j++) {
+        for (j=0; j<jxta_vector_size(ep_msg_entries); j++) {
             Jxta_endpoint_msg_entry_element *msg_elem=NULL;
             Jxta_SRDIMessage *srdi_msg=NULL;
             Jxta_id *src_pid=NULL;
@@ -2388,8 +2507,6 @@ static Jxta_status srdi_send_srdi_msgs(Jxta_srdi_service_ref * self, JString *in
 
             jxta_srdi_message_get_SrcPID(srdi_msg, &src_pid);
 
-            adjust_srdi_entries((Jxta_srdi_service *) self, srdi_msg, msgs, src_pid, diff, prev_diff, TRUE);
-
             jxta_srdi_message_get_xml(srdi_msg, &srdi_msg_xml);
             /* clear the entry and replace the value */
             jxta_bytevector_clear(ep_entry_bv, jstring_length(srdi_msg_xml));
@@ -2402,73 +2519,30 @@ static Jxta_status srdi_send_srdi_msgs(Jxta_srdi_service_ref * self, JString *in
             JXTA_OBJECT_RELEASE(srdi_msg_xml);
             JXTA_OBJECT_RELEASE(msg_elem);
             JXTA_OBJECT_RELEASE(src_pid);
-         }
-
-        res = jxta_PG_sync_send_1(self->group, send_ep_msg, jxta_peer_peerid(dest), "groupid"
-                            , jstring_get_string(instance), SRDI_QUEUENAME, split_already < 2 ? &max_length:NULL);
-        init = FALSE;
-        if (JXTA_LENGTH_EXCEEDED == res && peer_max_length != max_length) {
-            Jxta_vector *new_entries=NULL;
-
-            split_endpoint_message(self, ep_msg, ep_addr, &new_entries, max_length);
-
-            if (0 == split_already++) {
-                peer_max_length = max_length;
-            }
-            for (j=0; NULL != new_entries && j < jxta_vector_size(new_entries); j++) {
-                Jxta_endpoint_message *new_msg;
-                Jxta_endpoint_msg_entry_element *new_elem;
-                JString *msg_j;
-
-                jxta_vector_get_object_at(new_entries, JXTA_OBJECT_PPTR(&new_elem), j);
-                new_msg = jxta_endpoint_msg_new();
-                jxta_endpoint_msg_set_priority(new_msg, MSG_NORMAL_FLOW);
-                jxta_endpoint_msg_add_entry(new_msg, new_elem);
-                jxta_endpoint_msg_set_timestamp(new_msg, jpr_time_now());
-                jxta_endpoint_msg_get_xml(new_msg, FALSE, &msg_j, TRUE);
-                if (jstring_length(msg_j) > max_length) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE
-                                , "This message [%pp] is too large size:%ld max_length:%ld\n"
-                                , new_msg, jstring_length(msg_j), max_length);
-                } else {
-                    int msgs_size = 0;
-                    apr_thread_mutex_lock(self->ep_msgs_lock);
-                    locked = TRUE;
-                    jxta_vector_add_object_first(msgs, (Jxta_object *) new_msg);
-                    msgs_size = jxta_vector_size(msgs);
-                    apr_thread_mutex_unlock(self->ep_msgs_lock);
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE
-                                , "After splitting -- new_msg[%pp] msg_size:%ld vector_size:%d\n"
-                                , new_msg, jstring_length(msg_j), msgs_size);
-                }
-                JXTA_OBJECT_RELEASE(new_elem);
-                JXTA_OBJECT_RELEASE(msg_j);
-                JXTA_OBJECT_RELEASE(new_msg);
-            }
-            prev_diff = 0;
-            if (new_entries)
-                JXTA_OBJECT_RELEASE(new_entries);
-        } else if (JXTA_BUSY == res) {
-            apr_sleep(1000 * 1000);
-            if (self->running) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "*************************** srdi busy [%pp]\n", send_ep_msg);
-                apr_thread_mutex_lock(self->ep_msgs_lock);
-                locked = TRUE;
-                jxta_vector_add_object_first(msgs, (Jxta_object *) send_ep_msg);
-                apr_thread_mutex_unlock(self->ep_msgs_lock);
-                locked = FALSE;
-                prev_diff = diff;
-            } else {
-                break_out = TRUE;
-            }
-        } else if (JXTA_SUCCESS == res) {
-            prev_diff = 0;
-            split_already = 0;
-            peer_max_length = 0;
-        } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Endpoint msg sent error:%ld msg [%pp] \n", res, send_ep_msg);
-            break_out = TRUE;
         }
+        return_parms = jxta_endpoint_return_parms_new();
+        jxta_endpoint_return_parms_set_function(return_parms, (EndpointReturnFunc) return_ep_msg_func);
+        jxta_endpoint_return_parms_set_msg(return_parms, (Jxta_message *) send_ep_msg);
+        jxta_endpoint_return_parms_set_service(return_parms, (Jxta_service *) self);
+        parm_arg = srdi_parm_arg_new();
+        parm_arg->msg = (Jxta_message *)(JXTA_OBJECT_SHARE(send_ep_msg));
+        parm_arg->peerid_j = JXTA_OBJECT_SHARE(peerid_j);
+        parm_arg->timestamp = jpr_time_now();
+        parm_arg->peer_id = JXTA_OBJECT_SHARE(jxta_peer_peerid(dest));
+        parm_arg->ep_variable = "groupid";
+        parm_arg->svc_name = JXTA_OBJECT_SHARE(instance);
+        parm_arg->svc_param = SRDI_QUEUENAME;
+        jxta_endpoint_return_parms_set_arg(return_parms, (Jxta_object *) parm_arg);
+        res = jxta_PG_sync_send_1(self->group, send_ep_msg, jxta_peer_peerid(dest), "groupid"
+                            , jstring_get_string(instance), SRDI_QUEUENAME, return_parms);
+        if (JXTA_SUCCESS != res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "SRDI messages send unsuccessful res:%d\n",res);
+        } else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "SRDI messages send successful\n");
+
+        }
+        JXTA_OBJECT_RELEASE(parm_arg);
+        JXTA_OBJECT_RELEASE(return_parms);
         JXTA_OBJECT_RELEASE(send_ep_msg);
         JXTA_OBJECT_RELEASE(ep_msg_entries);
         if (break_out) break;
@@ -2509,6 +2583,7 @@ static void srdi_msgs_thread_free(Jxta_object *obj)
     
     free(t_ptr);
 }
+
 
 static Jxta_status pushSrdi_msgs(Jxta_srdi_service * service, JString * instance, Jxta_hashtable *msgs)
 {

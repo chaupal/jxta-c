@@ -209,6 +209,8 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
  */
 Jxta_status peergroup_find_peer_RA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_diff timeout, Jxta_RouteAdvertisement ** ra);
 
+Jxta_status peergroup_dest_addr_get(Jxta_id * peer_id, const char *ep_variable, const char *svc_name, const char *svc_param, Jxta_endpoint_address ** dest);
+
 /**
  * get the cache manager for this group
  *

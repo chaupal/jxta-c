@@ -140,16 +140,28 @@ typedef struct {
     Jxta_vector *dr_queue;
     Jxta_hashtable *dr_rsps;
     apr_thread_mutex_t *rsp_lock;
+    int processing_rsps;
     volatile apr_uint32_t rsp_cnt;
 } Jxta_discovery_service_ref;
 
 typedef struct _DR_thread_struct {
-    Extends(Jxta_object);
+    JXTA_OBJECT_HANDLE;
     Jxta_discovery_service_ref  *discovery;
     ResolverQuery *rq;
     Jxta_DiscoveryResponse *dr;
 } DR_thread_struct;
 
+typedef struct _DR_parm_arg {
+    JXTA_OBJECT_HANDLE;
+    Jxta_DiscoveryResponse *dr;
+    apr_int32_t rr_length;
+    int query_id;
+    JString *query_j;
+    const Jxta_qos *qos;
+    Jxta_time timestamp;
+    Jxta_time prev_diff;
+    JString *peerid_j;
+} DR_parm_arg;
         void *APR_THREAD_FUNC discovery_send_response_thread(apr_thread_t *apr_thread, void *arg);
 
 static Jxta_status discovery_service_send_to_replica(Jxta_discovery_service_ref * discovery, ResolverQuery * rq,
@@ -203,7 +215,6 @@ static const char *xmltype[] = { "jxta:PA", "jxta:PGA", "*:*" };
 void discovery_result_free (Jxta_object * obj)
 {
     Jxta_query_result * res;
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "free discovery result\n");
     res = (Jxta_query_result *) obj;
     JXTA_OBJECT_RELEASE(res->adv);
     free(res);
@@ -1792,11 +1803,34 @@ static Jxta_status discovery_re_replicate_srdi_entries(Jxta_discovery_service_re
 static void dr_thread_free(Jxta_object *obj)
 {
     DR_thread_struct *thread = (DR_thread_struct*) obj;
-    JXTA_OBJECT_RELEASE(thread->discovery);
-    JXTA_OBJECT_RELEASE(thread->rq);
-    JXTA_OBJECT_RELEASE(thread->dr);
 
+    if (thread->rq)
+        JXTA_OBJECT_RELEASE(thread->rq);
+    if (thread->dr)
+        JXTA_OBJECT_RELEASE(thread->dr);
     free(thread);
+}
+
+static void dr_parm_arg_free(Jxta_object *obj)
+{
+    DR_parm_arg *parm_arg = (DR_parm_arg*) obj;
+
+    if (parm_arg->dr)
+        JXTA_OBJECT_RELEASE(parm_arg->dr);
+    if (parm_arg->query_j)
+        JXTA_OBJECT_RELEASE(parm_arg->query_j);
+    if (parm_arg->peerid_j)
+        JXTA_OBJECT_RELEASE(parm_arg->peerid_j);
+    free(parm_arg);
+}
+
+static DR_parm_arg * dr_parm_arg_new()
+{
+    DR_parm_arg *res;
+    res = calloc(1, sizeof(DR_parm_arg));
+    JXTA_OBJECT_INIT(res, dr_parm_arg_free, NULL);
+    res->prev_diff = jpr_time_now();
+    return res;
 }
 
 static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * obj, void *arg)
@@ -2233,7 +2267,7 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
         }
 
         num_responses = jxta_vector_size(responses);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Number of responses being sent: %i\n", num_responses);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Number of responses being sent: %i\n", num_responses);
         dr = jxta_discovery_response_new_1(jxta_discovery_query_get_type(dq)
                             , attr ? jstring_get_string(attr) : NULL
                             , val ? jstring_get_string(val) : NULL, num_responses, NULL, responses);
@@ -2245,10 +2279,9 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
         tp = jxta_PG_thread_pool_get(discovery->group);
         dr_thread = calloc(1, sizeof(DR_thread_struct));
         JXTA_OBJECT_INIT(dr_thread, dr_thread_free, (void*)NULL);
-        dr_thread->discovery = JXTA_OBJECT_SHARE(discovery);
+        dr_thread->discovery = discovery;
         dr_thread->dr = JXTA_OBJECT_SHARE(dr);
         dr_thread->rq = JXTA_OBJECT_SHARE(rq);
-        
         jxta_service_lock((Jxta_service*) discovery);
         if (discovery->running) {
             jxta_vector_add_object_last(discovery->dr_queue, (Jxta_object*)dr_thread);
@@ -2257,7 +2290,7 @@ static Jxta_status JXTA_STDCALL discovery_service_query_listener(Jxta_object * o
         jxta_service_unlock((Jxta_service*) discovery);
 
         JXTA_OBJECT_RELEASE(dr_thread);
-        
+
         if (dr)
             JXTA_OBJECT_RELEASE(dr);
     }
@@ -2350,107 +2383,239 @@ FINAL_EXIT:
     return NULL;
 }
 
-static Jxta_status adjust_dr_entries(Jxta_discovery_service_ref * discovery, Jxta_DiscoveryResponse * dr_msg
-                    , Jxta_vector *queued_entries, Jxta_id *peerid, apr_int32_t diff_time, apr_int32_t prev_diff)
+static Jxta_boolean adjust_dr_entries(DR_parm_arg * f_parm)
 {
-    Jxta_status res;
+    Jxta_boolean res=FALSE;
     Jxta_vector *responses=NULL;
     int i;
+    Jxta_DiscoveryResponse *dr;
+    Jxta_time diff_time;
 
-    res = jxta_discovery_response_get_responses(dr_msg, &responses);
+    dr = f_parm->dr;
+    diff_time = (jpr_time_now() - f_parm->prev_diff);
+    res = jxta_discovery_response_get_responses(dr, &responses);
 
     for (i=0; i<jxta_vector_size(responses); i++) {
         Jxta_DiscoveryResponseElement *elem=NULL;
 
         jxta_vector_get_object_at(responses, JXTA_OBJECT_PPTR(&elem), i);
-        if (0 != elem->expiration) {
-            elem->expiration += prev_diff;
-            if (elem->expiration < diff_time) {
+        if (0 != elem->expiration && res != TRUE) {
+            elem->expiration -= diff_time;
+            if (elem->expiration < 0) {
                 jxta_vector_remove_object_at(responses, NULL, i--);
-            } else {
-                elem->expiration -= diff_time;
+                res = TRUE;
             }
+        } else {
+            jxta_vector_remove_object_at(responses, NULL, i--);
+            res = TRUE;
         }
         if (elem)
             JXTA_OBJECT_RELEASE(elem);
     }
-    if (JXTA_SUCCESS != res) {
-        goto FINAL_EXIT;
-    }
+    f_parm->prev_diff = jpr_time_now();
 
-FINAL_EXIT:
     if (responses)
         JXTA_OBJECT_RELEASE(responses);
 
     return res;
 }
 
-static Jxta_status find_responses(Jxta_discovery_service_ref * discovery, Jxta_DiscoveryResponse * dr_msg
-                    , Jxta_vector *queued_entries, Jxta_boolean older)
+static Jxta_status find_older_responses_and_remove(DR_parm_arg * dr_arg, Jxta_vector *filter_list)
 {
-    Jxta_status res=JXTA_ITEM_NOTFOUND;
+    Jxta_status res=JXTA_SUCCESS;
     int i;
-    Jxta_vector *dr_entries=NULL;
-    JString *q_string_j=NULL;
-    Jxta_time time_msg;
+    for (i=0; i<jxta_vector_size(filter_list); i++) {
+        Jxta_endpoint_filter_entry *f_entry=NULL;
+        Jxta_endpoint_return_parms *f_parms=NULL;
+        DR_parm_arg * f_dr_arg=NULL;
+        Jxta_message *f_msg=NULL;
 
-    jxta_discovery_response_get_query(dr_msg, &q_string_j);
-    time_msg = jxta_discovery_response_timestamp(dr_msg);
 
-    for (i=0; i<jxta_vector_size(queued_entries); i++) {
-        Jxta_DiscoveryResponse *queued_rsp=NULL;
-        JString *queued_query_j=NULL;
-        Jxta_boolean found_newer = FALSE;
-
-        jxta_vector_get_object_at(queued_entries, JXTA_OBJECT_PPTR(&queued_rsp), i);
-        jxta_discovery_response_get_query(queued_rsp, &queued_query_j);
-        if (NULL != queued_query_j && NULL != q_string_j) {
+        jxta_vector_get_object_at(filter_list, JXTA_OBJECT_PPTR(&f_entry), i);
+        jxta_endpoint_filter_entry_get_parms(f_entry, &f_parms);
+        if (NULL == f_parms) {
+            JXTA_OBJECT_RELEASE(f_entry);
+            res = JXTA_FAILED;
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No parms in a filter list entry [%pp]\n", f_entry);
+            goto FINAL_EXIT;
+        }
+        jxta_endpoint_return_parms_get_arg(f_parms, JXTA_OBJECT_PPTR(&f_dr_arg));
+        if (NULL == f_dr_arg) {
+            JXTA_OBJECT_RELEASE(f_entry);
+            JXTA_OBJECT_RELEASE(f_parms);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "No arg in a parms entry [%pp]\n", f_parms);
+            res = JXTA_FAILED;
+            goto FINAL_EXIT;
+        }
+        if (NULL != f_dr_arg->query_j && NULL != dr_arg->query_j) {
             Jxta_time time_entry;
 
-            time_entry = jxta_discovery_response_timestamp(queued_rsp);
-            if (0 == jstring_equals(queued_query_j, q_string_j)) {
+            time_entry = f_dr_arg->timestamp;
+            if (0 == jstring_equals(f_dr_arg->query_j, dr_arg->query_j) && dr_arg->query_id != f_dr_arg->query_id) {
                 Jxta_time curr;
 
                 curr = jpr_time_now();
-                if (older == TRUE) {
-                    if (time_entry < time_msg) {
-                        jxta_vector_remove_object_at(queued_entries, NULL, i--);
-                        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "query %s Found an older response:" JPR_DIFF_TIME_FMT " newer:" JPR_DIFF_TIME_FMT "\n", 
-                            jstring_get_string(queued_query_j), curr - time_entry , curr - time_msg);
-                    }
-                } else if (time_entry > time_msg) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "query %s Found a newer response time:" JPR_DIFF_TIME_FMT " older:" JPR_DIFF_TIME_FMT "\n", 
-                        jstring_get_string(queued_query_j), curr - time_entry, curr - time_msg );
-                    res = JXTA_SUCCESS;
-                    found_newer = TRUE;
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "query %s Found a match time:" JPR_DIFF_TIME_FMT " newer:" JPR_DIFF_TIME_FMT "\n", 
+                    jstring_get_string(f_dr_arg->query_j), curr - time_entry , curr - dr_arg->timestamp);
+                if (time_entry < dr_arg->timestamp) {
+
+                    jxta_endpoint_filter_entry_get_orig_msg(f_entry, &f_msg);
+                    jxta_message_set_remove(f_msg, TRUE);
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "query %s Found an older response:" JPR_DIFF_TIME_FMT " newer:" JPR_DIFF_TIME_FMT "\n", 
+                    jstring_get_string(f_dr_arg->query_j), curr - time_entry , curr - dr_arg->timestamp);
+
+                    JXTA_OBJECT_RELEASE(f_msg);
                 }
             }
         }
-        if (queued_query_j)
-            JXTA_OBJECT_RELEASE(queued_query_j);
-        if (queued_rsp)
-            JXTA_OBJECT_RELEASE(queued_rsp);
-        if (found_newer)
-            break;
-    }
+        if (TRUE == adjust_dr_entries(dr_arg)) {
+            jxta_endpoint_filter_entry_get_orig_msg(f_entry, &f_msg);
+            jxta_message_set_remove(f_msg, TRUE);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Removed entry after adjusting\n");
 
-    if (q_string_j)
-        JXTA_OBJECT_RELEASE(q_string_j);
-    if (dr_entries)
-        JXTA_OBJECT_RELEASE(dr_entries);
+        }
+        if (f_msg)
+            JXTA_OBJECT_RELEASE(f_msg);
+        if (f_entry)
+            JXTA_OBJECT_RELEASE(f_entry);
+        if (f_parms)
+            JXTA_OBJECT_RELEASE(f_parms);
+        if (f_dr_arg)
+            JXTA_OBJECT_RELEASE(f_dr_arg);
+    }
+FINAL_EXIT:
+
     return res;
 }
-static Jxta_status find_older_responses_and_remove(Jxta_discovery_service_ref * discovery, Jxta_DiscoveryResponse * dr_msg
-                    , Jxta_vector *queued_entries)
+
+static Jxta_status return_ep_func(Jxta_service *service, Jxta_endpoint_return_parms *ret_parms, Jxta_vector **ret_v, Jxta_endpoint_service_action action)
 {
-    return find_responses(discovery, dr_msg, queued_entries, TRUE);
+    Jxta_status res = JXTA_SUCCESS;
+    apr_int64_t max_length;
+    Jxta_message *tmp_msg=NULL;
+    Jxta_DiscoveryResponse *dr_rsp=NULL;
+    Jxta_resolver_response *res_rsp=NULL;
+    Jxta_discovery_service_ref *discovery;
+    JString *rdoc=NULL;
+    Jxta_boolean locked = FALSE;
+    DR_parm_arg *dr_arg = NULL;
+    Jxta_vector *filter_list=NULL;
+
+    discovery = (Jxta_discovery_service_ref *) jxta_endpoint_return_parms_service(ret_parms);
+    jxta_endpoint_return_parms_get_filter_list(ret_parms, &filter_list);
+
+    max_length = jxta_endpoint_return_parms_max_length(ret_parms);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "return parms [%pp] get msg resolver\n", ret_parms);
+    jxta_endpoint_return_parms_get_msg(ret_parms, &tmp_msg);
+    res_rsp = (Jxta_resolver_response *) tmp_msg;
+    if (NULL == res_rsp) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Unable to get the the resolver_rsp from the ret_parms\n");
+        res = JXTA_FAILED;
+        goto FINAL_EXIT;
+    }
+
+    jxta_resolver_response_get_response(res_rsp, &rdoc);
+    dr_rsp = jxta_discovery_response_new();
+    jxta_endpoint_return_parms_get_arg(ret_parms, JXTA_OBJECT_PPTR(&dr_arg));
+    res = jxta_discovery_response_parse_charbuffer(dr_rsp, jstring_get_string(rdoc), jstring_length(rdoc));
+    if (JXTA_SUCCESS != res)  {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to parse discovery response res:%d\n", res );
+        goto FINAL_EXIT;
+    }
+    switch (action) {
+        case JXTA_EP_ACTION_REDUCE:
+        {
+            int i;
+            JString *peerid_j=NULL;
+            Jxta_vector *dr_rsps=NULL;
+            Jxta_vector *new_responses=NULL;
+
+            res = jxta_hashtable_get(discovery->dr_rsps, jstring_get_string(dr_arg->peerid_j), jstring_length(dr_arg->peerid_j) + 1, JXTA_OBJECT_PPTR(&dr_rsps));
+            if (JXTA_SUCCESS != res) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Received JXTA_EP_ACTION_REDUCE and %s doesn't exist in the dr_rsps\n", jstring_get_string(peerid_j));
+                goto FINAL_EXIT;
+            }
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "JXTA_EP_ACTION_REDUCE Split max_length:%" APR_INT64_T_FMT " rr_length:%d ret_parms:[%pp]\n", max_length, dr_arg->rr_length, ret_parms);
+            split_discovery_responses(dr_rsp, rdoc, &new_responses, max_length - dr_arg->rr_length);
+
+            *ret_v = jxta_vector_new(0);
+            apr_thread_mutex_lock(discovery->rsp_lock);
+            locked = TRUE;
+            for (i=0; NULL != new_responses && i<jxta_vector_size(new_responses); i++) {
+                Jxta_DiscoveryResponse *new_dr_rsp=NULL;
+                DR_parm_arg *new_dr_arg=NULL;
+                Jxta_resolver_response *rr=NULL;
+                JString *new_rdoc=NULL;
+
+                jxta_vector_get_object_at(new_responses, JXTA_OBJECT_PPTR(&new_dr_rsp), i);
+                if (NULL == *ret_v) {
+                    *ret_v = jxta_vector_new(0);
+                }
+                jxta_discovery_response_get_xml(new_dr_rsp, &new_rdoc);
+                jxta_endpoint_return_parms_get_arg(ret_parms, JXTA_OBJECT_PPTR(&new_dr_arg));
+                res = jxta_discovery_response_parse_charbuffer(new_dr_rsp, jstring_get_string(new_rdoc), jstring_length(new_rdoc));
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Added dr_rsp length: %d\n", jstring_length(new_rdoc));
+                rr = jxta_resolver_response_new_2(discovery->instanceName
+                                    , new_rdoc, new_dr_arg->query_id
+                                    , discovery->localPeerId);
+
+                jxta_vector_add_object_last(*ret_v, (Jxta_object *) rr);
+
+                if (new_dr_rsp)
+                    JXTA_OBJECT_RELEASE(new_dr_rsp);
+                if (new_rdoc)
+                    JXTA_OBJECT_RELEASE(new_rdoc);
+                if (rr)
+                    JXTA_OBJECT_RELEASE(rr);
+                if (new_dr_arg)
+                    JXTA_OBJECT_RELEASE(dr_arg);
+            }
+            if (new_responses)
+                JXTA_OBJECT_RELEASE(new_responses);
+            if (dr_rsps)
+                JXTA_OBJECT_RELEASE(dr_rsps);
+            if (peerid_j)
+                JXTA_OBJECT_RELEASE(peerid_j);
+            locked = FALSE;
+            apr_thread_mutex_unlock(discovery->rsp_lock);
+            break;
+        }
+        case JXTA_EP_ACTION_FILTER:
+        {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Discovery return callback JXTA_EP_ACTION_FILTER filter_list [%pp]\n", filter_list);
+
+            res = find_older_responses_and_remove(dr_arg, filter_list);
+            if (JXTA_SUCCESS != res) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Error processing filter list [%pp] res:%d\n", filter_list, res);
+            }
+        }
+    };
+
+FINAL_EXIT:
+
+    if (locked)
+        apr_thread_mutex_unlock(discovery->rsp_lock);
+    if (dr_rsp)
+        JXTA_OBJECT_RELEASE(dr_rsp);
+    if (res_rsp)
+        JXTA_OBJECT_RELEASE(res_rsp);
+    if (rdoc)
+        JXTA_OBJECT_RELEASE(rdoc);
+    if (filter_list)
+        JXTA_OBJECT_RELEASE(filter_list);
+    if (dr_arg)
+        JXTA_OBJECT_RELEASE(dr_arg);
+    return res;
 }
 
-static Jxta_status find_newer_responses(Jxta_discovery_service_ref * discovery, Jxta_DiscoveryResponse * dr_msg
+
+/* static Jxta_status find_newer_responses(Jxta_discovery_service_ref * discovery, Jxta_DiscoveryResponse * dr_msg
                     , Jxta_vector *queued_entries)
 {
     return find_responses(discovery, dr_msg, queued_entries, FALSE); 
 }
+*/
+
 
 static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref * discovery
                             , ResolverQuery * rq, Jxta_DiscoveryResponse *dr)
@@ -2458,6 +2623,7 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
     Jxta_status status;
     Jxta_status res=JXTA_SUCCESS;
     Jxta_boolean init=TRUE;
+    int query_id;
     apr_int32_t prev_diff=0;
     Jxta_vector *dr_rsps=NULL;
     apr_int32_t rr_length=0;
@@ -2466,7 +2632,6 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
     Jxta_boolean locked=FALSE;
     ResolverResponse *calc_response=NULL;
     JString *rr_j=NULL;
-    Jxta_boolean bypass_message=FALSE;
 
     src_pid = jxta_resolver_query_get_src_peer_id(rq);
 
@@ -2479,17 +2644,18 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
         jxta_hashtable_put(discovery->dr_rsps
                         , jstring_get_string(peerid_j), jstring_length(peerid_j) + 1,(Jxta_object *) dr_rsps);
     }
-    res = find_older_responses_and_remove(discovery, dr, dr_rsps);
     jxta_vector_add_object_last(dr_rsps, (Jxta_object *) dr);
 
+    query_id = jxta_resolver_query_get_queryid(rq);
     calc_response = jxta_resolver_response_new_2(discovery->instanceName
-                            , NULL, jxta_resolver_query_get_queryid(rq)
+                            , NULL, query_id
                             , discovery->localPeerId);
 
     if (NULL != calc_response) {
         jxta_resolver_response_get_xml(calc_response, &rr_j);
         JXTA_OBJECT_RELEASE(calc_response);
         rr_length = jstring_length(rr_j);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "rr_length overhead: %d %s\n", rr_length, jstring_get_string(rr_j));
         JXTA_OBJECT_RELEASE(rr_j);
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR
@@ -2501,14 +2667,16 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
      */
     while (jxta_vector_size(dr_rsps) > 0) {
         JString *rdoc = NULL;
-        apr_int64_t max_length=0;
         ResolverResponse *res_response = NULL;
         Jxta_DiscoveryResponse *dr_msg = NULL;
         Jxta_boolean break_it = FALSE;
         apr_int32_t diff=0;
+        Jxta_endpoint_return_parms *return_parms;
+        DR_parm_arg *parm_arg;
+
 
         jxta_vector_remove_object_at(dr_rsps, JXTA_OBJECT_PPTR(&dr_msg), 0);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Sending rsp msg [%pp] to %s\n"
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Sending rsp msg [%pp] to %s\n"
                             , dr_msg, jstring_get_string(peerid_j) );
 
         if (locked) {
@@ -2517,7 +2685,6 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
         }
         if (FALSE == init) {
             diff = jpr_time_now() - jxta_discovery_response_timestamp(dr_msg);
-            res = adjust_dr_entries(discovery, dr_msg, dr_rsps, src_pid, diff, prev_diff);
         }
         init = FALSE;
 
@@ -2532,81 +2699,49 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
                                     , discovery->localPeerId);
 
         jxta_resolver_response_attach_qos(res_response, jxta_resolver_query_qos(rq));
+        return_parms = jxta_endpoint_return_parms_new();
+        jxta_endpoint_return_parms_set_function(return_parms, (EndpointReturnFunc) return_ep_func);
+        jxta_endpoint_return_parms_set_msg(return_parms, (Jxta_message *) res_response);
+        jxta_endpoint_return_parms_set_service(return_parms, (Jxta_service *) discovery);
+        parm_arg = dr_parm_arg_new();
+        parm_arg->dr = JXTA_OBJECT_SHARE(dr_msg);
+        parm_arg->rr_length = rr_length;
+        parm_arg->query_id = query_id;
+        jxta_discovery_response_get_query(dr_msg, &parm_arg->query_j);
+        parm_arg->qos = jxta_resolver_query_qos(rq);
+        parm_arg->peerid_j = JXTA_OBJECT_SHARE(peerid_j);
+        parm_arg->timestamp = jpr_time_now();
+        jxta_endpoint_return_parms_set_arg(return_parms, (Jxta_object *) parm_arg);
+        res = jxta_resolver_service_sendResponse(discovery->resolver, res_response, src_pid, return_parms);
 
-        res = jxta_resolver_service_sendResponse(discovery->resolver, res_response, src_pid, FALSE == bypass_message ? &max_length:NULL);
-
-        if (JXTA_LENGTH_EXCEEDED == res) {
-            int j;
-            Jxta_vector *new_responses=NULL;
-
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG
-                                    , "discovery:send res_response [%pp] exceeded max:%" APR_INT64_T_FMT "\n"
-                                    , res_response, max_length);
-
-            split_discovery_responses(dr_msg, rdoc, &new_responses, max_length - rr_length);
-
-            apr_thread_mutex_lock(discovery->rsp_lock);
-            locked = TRUE;
-            for (j=0; NULL != new_responses && j<jxta_vector_size(new_responses); j++) {
-                Jxta_DiscoveryResponse *new_dr_rsp=NULL;
-                JString *new_dr_xml=NULL;
-
-                jxta_vector_get_object_at(new_responses, JXTA_OBJECT_PPTR(&new_dr_rsp), j);
-
-                jxta_discovery_response_get_xml(new_dr_rsp, &new_dr_xml);
-
-                jxta_vector_add_object_last(dr_rsps, (Jxta_object *) new_dr_rsp);
-
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Add dr rsp [%pp] len:%d \n"
-                                , new_dr_rsp, jstring_length(new_dr_xml));
-
-                if (new_dr_rsp)
-                    JXTA_OBJECT_RELEASE(new_dr_rsp);
-                if (new_dr_xml)
-                    JXTA_OBJECT_RELEASE(new_dr_xml);
-            }
-            locked = FALSE;
-            apr_thread_mutex_unlock(discovery->rsp_lock);
-            if (new_responses)
-                JXTA_OBJECT_RELEASE(new_responses);
-        } else if (JXTA_BUSY == res) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "rsp [%pp] busy\n", dr_msg);
-            apr_sleep(1000 * 1000);
-            if (!discovery->running) {
-                break_it = TRUE;
-            } else {
-                apr_thread_mutex_lock(discovery->rsp_lock);
-                locked = TRUE;
-                if (JXTA_ITEM_NOTFOUND == find_newer_responses(discovery, dr_msg, dr_rsps)) {
-                    jxta_vector_add_object_first(dr_rsps, (Jxta_object *) dr_msg);
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "newer dr_msg [%pp] not found try again\n", dr_msg );
-                } else {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Found a newer msg than [%pp] \n", dr_msg);
-                }
-                locked = FALSE;
-                apr_thread_mutex_unlock(discovery->rsp_lock);
-                prev_diff = diff;
-            }
-        } else if (JXTA_SUCCESS == res) {
+        if (JXTA_SUCCESS == res) {
             Jxta_vector *dr_responses;
 
             jxta_discovery_response_get_responses(dr_msg, &dr_responses);
 
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE
                                     , "Message sent with %d rsps\n", jxta_vector_size(dr_responses));
             prev_diff = 0;
 
             JXTA_OBJECT_RELEASE(dr_responses);
+        } else if (JXTA_BUSY == res) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID
+                                    , "Busy res_response [%pp] \n", res_response);
+            break_it = TRUE;
         } else {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "discovery rcvd error on send res: %d\n", res);
             break_it = TRUE;
         }
+        if (parm_arg)
+            JXTA_OBJECT_RELEASE(parm_arg);
         if (res_response)
             JXTA_OBJECT_RELEASE(res_response);
         if (rdoc)
             JXTA_OBJECT_RELEASE(rdoc);
         if (dr_msg)
             JXTA_OBJECT_RELEASE(dr_msg);
+        if (return_parms)
+            JXTA_OBJECT_RELEASE(return_parms);
         if (break_it) break;
 
         /* re-lock to check the beginning of the while loop */
@@ -2647,6 +2782,7 @@ static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString
     JString *tmp_j_encoded=NULL;
     dr_time = jxta_discovery_response_timestamp(dr);
 
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Start splitting discovery response\n");
     *new_responses = jxta_vector_new(0);
 
     dr_tmp = jxta_discovery_response_new();
@@ -2710,9 +2846,10 @@ static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString
                 end_entries += jxta_vector_size(all_entries);
                 jxta_discovery_response_set_query(dr_new, q_string_j);
                 jxta_discovery_response_set_timestamp(dr_new, dr_time);
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE
                             , "discovery:split add new rsp [%pp] end_entries:%d all_entries_size:%d\n"
                             , dr_new, end_entries, jxta_vector_size(all_entries));
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Split with %d responses\n", jxta_vector_size(all_entries));
                 jxta_vector_add_object_last(*new_responses, (Jxta_object *) dr_new);
                 JXTA_OBJECT_RELEASE(all_entries);
                 all_entries = jxta_vector_new(0);
@@ -2751,7 +2888,7 @@ static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString
         if( res == JXTA_SUCCESS) {
             jxta_discovery_response_set_responses(dr_add, all_entries);
             end_entries += jxta_vector_size(all_entries);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "discovery:split dr_add [%pp] end_entries:%d all_entries size:%d\n", dr_add, end_entries, jxta_vector_size(all_entries));
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "discovery:split dr_add [%pp] end_entries:%d all_entries size:%d\n", dr_add, end_entries, jxta_vector_size(all_entries));
             jxta_discovery_response_set_query(dr_add, q_string_j);
             jxta_discovery_response_set_timestamp(dr_add, dr_time);
             jxta_vector_add_object_last(*new_responses, (Jxta_object *) dr_add);
@@ -2761,6 +2898,8 @@ static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString
 
     if (start_entries != end_entries) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "start_entries:%d does not equal end_entries:%d\n", start_entries, end_entries, jxta_vector_size(all_entries));
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Split occured on %d entries\n", end_entries);
     }
 
 FINAL_EXIT:
@@ -3131,7 +3270,7 @@ FINAL_EXIT:
 
 static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void *arg)
 {
-    Jxta_SRDIMessage *smsg;
+    Jxta_SRDIMessage *smsg=NULL;
     Jxta_vector *entries = NULL;
     Jxta_vector *msg_entries = NULL;
     Jxta_vector *resendDelta=NULL;
@@ -3686,6 +3825,8 @@ static void JXTA_STDCALL discovery_service_response_listener(Jxta_object * obj, 
         }
     }
     status = jxta_discovery_response_get_responses(dr, &responses);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG,"Received %d responses from qid %ld\n", jxta_vector_size(responses), qid);
+
     /* if we have responses and no listeners - publish */
     if (NULL != responses && !process_response_listener(discovery, qid, dr)) {
         Jxta_vector *adv_vec = NULL;
@@ -3962,7 +4103,7 @@ static Jxta_status discovery_delta_srdi_priv(Jxta_discovery_service_ref * discov
             cm_get_delta_entries_for_update(discovery->cm, dirname[i], NULL, &peer_entries);
 
             if (NULL != peer_entries) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Send delta updates \n");
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Send delta updates \n");
                 discovery_service_send_delta_updates(discovery, dirname[i], peer_entries, ret_msgs);
                 JXTA_OBJECT_RELEASE(peer_entries);
             }
@@ -3986,7 +4127,7 @@ static Jxta_status discovery_delta_srdi_priv(Jxta_discovery_service_ref * discov
             name = jstring_new_2((char *) dirname[i]);
             entries = cm_create_srdi_entries(discovery->cm, name, NULL, NULL);
             if (entries != NULL && jxta_vector_size(entries) > 0) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "push all CM SRDI indexes for %s size:%d\n", dirname[i], jxta_vector_size(entries));
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "push all CM SRDI indexes for %s size:%d\n", dirname[i], jxta_vector_size(entries));
                 status = discovery_send_srdi((Jxta_discovery_service *) discovery, name, entries, prev_id, TRUE, sync, ret_msgs);
                 if (JXTA_SUCCESS != status || FALSE == discovery->running) {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Unable to send send SRDI messages %i\n", status);

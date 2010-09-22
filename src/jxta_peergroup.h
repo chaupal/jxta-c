@@ -577,17 +577,18 @@ JXTA_DECLARE(Jxta_status) jxta_PG_get_recipient_addr(Jxta_PG * me, const char * 
 JXTA_DECLARE(Jxta_status) jxta_PG_add_recipient(Jxta_PG * me, void **cookie, const char *name, const char *param,
                                                 Jxta_callback_func func, void *arg);
 JXTA_DECLARE(Jxta_status) jxta_PG_remove_recipient(Jxta_PG * me, void *cookie);
-JXTA_DECLARE(Jxta_status) jxta_PG_sync_send(Jxta_PG * me, Jxta_message * msg, Jxta_id * peer_id, 
-                                            const char *svc_name, const char *svc_param, apr_int64_t *max_size);
 JXTA_DECLARE(Jxta_status) jxta_PG_async_send(Jxta_PG * me, Jxta_message * msg, Jxta_id * peer_id, 
-                                            const char *svc_name, const char *svc_param, apr_int64_t *max_size);
+                                            const char *svc_name, const char *svc_param,  Jxta_endpoint_return_parms * return_parms);
+JXTA_DECLARE(Jxta_status) jxta_PG_sync_send(Jxta_PG * me, Jxta_message * msg, Jxta_id * peer_id, 
+                                            const char *svc_name, const char *svc_param,  Jxta_endpoint_return_parms * return_parms);
 
 JXTA_DECLARE(Jxta_status) jxta_PG_sync_send_1(Jxta_PG * me, Jxta_endpoint_message * msg, Jxta_id * peer_id, 
-                                             const char *ep_variable, const char *svc_name, const char *svc_param, apr_int64_t *max_size);
+                                             const char *ep_variable, const char *svc_name, const char *svc_param
+                                            ,  Jxta_endpoint_return_parms * return_parms);
 
 JXTA_DECLARE(Jxta_status) jxta_PG_async_send_1(Jxta_PG * me, Jxta_endpoint_message * msg, Jxta_id * peer_id, 
-                                            const char *ep_variable, const char *svc_name, const char *svc_param,
-                                            apr_int64_t *max_size);
+                                            const char *ep_variable, const char *svc_name, const char *svc_param
+                                            ,  Jxta_endpoint_return_parms * return_parms);
 
 /*
  * shortcuts to the well-known services, in order to avoid calls to lookup.

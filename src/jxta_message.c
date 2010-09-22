@@ -116,15 +116,25 @@ static const int JXTAMSG_NAMES_EMPTY_IDX = 0;
 static const int JXTAMSG_NAMES_JXTA_IDX = 1;
 static const int JXTAMSG_NAMES_LITERAL_IDX = 65535;
 
+struct _Jxta_msg_handle {
+    JXTA_OBJECT_HANDLE;
+    Jxta_time timestamp;
+    Msg_priority priority;
+    Jxta_boolean remove;
+};
+
+typedef struct _Jxta_msg_handle Jxta_msg_handle;
+
 struct _Jxta_message {
     JXTA_OBJECT_HANDLE;
+    Jxta_msg_handle * handle;
     struct {
         Jxta_vector *elements;
     } usr;
+    /* Jxta_status(*jxta_endpoint_return_func) (Jxta_service *, Jxta_message *, int action); */
+    apr_int64_t max_size;
     const Jxta_qos * qos;
     apr_pool_t * pool;
-    Msg_priority priority;
-    Jxta_time timestamp;
 };
 
 typedef struct _Jxta_message Jxta_message_mutable;
@@ -177,6 +187,8 @@ static apr_status_t msg_cleanup(void *me)
     Jxta_message * myself = me;
 
     JXTA_OBJECT_RELEASE(myself->usr.elements);
+    if (myself->handle)
+        JXTA_OBJECT_RELEASE(myself->handle);
     return APR_SUCCESS;
 }
 
@@ -191,11 +203,33 @@ static void jxta_message_delete(Jxta_object * ptr)
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Deleting message [%pp]\n", msg);
 
     JXTA_OBJECT_RELEASE(msg->usr.elements);
+    if (msg->handle)
+        JXTA_OBJECT_RELEASE(msg->handle);
     msg->usr.elements = NULL;
     apr_pool_destroy(msg->pool);
 
     memset(msg, 0xDD, sizeof(Jxta_message_mutable));
     free(msg);
+}
+
+static void msg_handle_release(Jxta_object * me)
+{
+    memset(me, 0xDD, sizeof(Jxta_msg_handle));
+    free(me);
+}
+
+static Jxta_status msg_handle_new(Jxta_msg_handle **me)
+{
+    Jxta_status res = JXTA_SUCCESS;
+
+    *me = calloc(1, sizeof(Jxta_msg_handle));
+    if (NULL == *me) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Out of memory\n");
+        return JXTA_NOMEM;
+    }
+
+    JXTA_OBJECT_INIT(*me, msg_handle_release, NULL);
+    return res;
 }
 
 JXTA_DECLARE(Jxta_status) jxta_message_create(Jxta_message **me, apr_pool_t *pool)
@@ -218,6 +252,7 @@ JXTA_DECLARE(Jxta_status) jxta_message_create(Jxta_message **me, apr_pool_t *poo
     }
     (*me)->qos = NULL;
 
+    msg_handle_new(&(*me)->handle);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Created new message [%pp]\n", *me);
 
     apr_pool_cleanup_register(pool, *me, msg_cleanup, apr_pool_cleanup_null);
@@ -255,7 +290,9 @@ JXTA_DECLARE(Jxta_message *) jxta_message_new(void)
     }
 
     msg->qos = NULL;
-    msg->priority = MSG_EXPEDITED;
+    msg_handle_new(&msg->handle);
+    msg->handle->priority = MSG_EXPEDITED;
+    msg->handle->remove = FALSE;
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Created new message [%pp]\n", msg);
 
     return msg;
@@ -283,18 +320,18 @@ JXTA_DECLARE(Jxta_message *) jxta_message_clone(Jxta_message * old)
         msg->qos = NULL;
     }
     jxta_message_set_priority(msg, jxta_message_priority(old));
-
+    jxta_message_set_remove(msg, jxta_message_remove(old));
     return msg;
 }
 
 JXTA_DECLARE(void) jxta_message_set_timestamp(Jxta_message * me, Jxta_time time_stamp)
 {
-    me->timestamp = time_stamp;
+    me->handle->timestamp = time_stamp;
 }
 
 JXTA_DECLARE(Jxta_time) jxta_message_timestamp(Jxta_message * me)
 {
-    return me->timestamp;
+    return me->handle->timestamp;
 }
 
 JXTA_DECLARE(Jxta_endpoint_address *) jxta_message_get_source(Jxta_message * msg)
@@ -462,13 +499,36 @@ JXTA_DECLARE(Jxta_status) jxta_message_set_priority(Jxta_message * msg, Msg_prio
 {
     Jxta_status res=JXTA_SUCCESS;
 
-    msg->priority = priority;
+    msg->handle->priority = priority;
     return res;
 }
 
 JXTA_DECLARE(Msg_priority) jxta_message_priority(Jxta_message * msg)
 {
-    return msg->priority;
+    return msg->handle->priority;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_message_set_remove(Jxta_message * msg, Jxta_boolean remove)
+{
+    Jxta_status res=JXTA_SUCCESS;
+
+    msg->handle->remove = remove;
+    return res;
+}
+
+JXTA_DECLARE(Jxta_boolean) jxta_message_remove(Jxta_message * msg)
+{
+    return msg->handle->remove;
+}
+
+JXTA_DECLARE(apr_int64_t) jxta_message_max_size(Jxta_message *msg)
+{
+    return msg->max_size;
+}
+
+JXTA_DECLARE(void) jxta_message_set_max_size(Jxta_message *msg, apr_int64_t max_size)
+{
+    msg->max_size = max_size;
 }
 
 JXTA_DECLARE(Jxta_vector *) jxta_message_get_elements_of_namespace(Jxta_message * msg, char const *ns)

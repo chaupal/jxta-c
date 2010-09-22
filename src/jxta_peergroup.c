@@ -1495,7 +1495,7 @@ JXTA_DECLARE(Jxta_status) jxta_PG_remove_recipient(Jxta_PG * me, void *cookie)
 }
 
 JXTA_DECLARE(Jxta_status) jxta_PG_sync_send(Jxta_PG * me, Jxta_message * msg, Jxta_id * peer_id, 
-                                            const char *svc_name, const char *svc_param, apr_int64_t *max_size)
+                                            const char *svc_name, const char *svc_param, Jxta_endpoint_return_parms * return_parms)
 {
     Jxta_endpoint_service *ep;
     Jxta_status rv;
@@ -1505,7 +1505,7 @@ JXTA_DECLARE(Jxta_status) jxta_PG_sync_send(Jxta_PG * me, Jxta_message * msg, Jx
     new_param = get_service_key(svc_name, svc_param);
     dest = jxta_endpoint_address_new_3(peer_id, me->ep_name, new_param);
     jxta_PG_get_endpoint_service(me, &ep);
-    rv = jxta_endpoint_service_send_ex(ep, msg, dest, JXTA_TRUE, max_size);
+    rv = jxta_endpoint_service_send_ex(ep, msg, dest, JXTA_TRUE, return_parms, FALSE);
     free(new_param);
     JXTA_OBJECT_RELEASE(ep);
     JXTA_OBJECT_RELEASE(dest);
@@ -1514,21 +1514,22 @@ JXTA_DECLARE(Jxta_status) jxta_PG_sync_send(Jxta_PG * me, Jxta_message * msg, Jx
 }
 
 JXTA_DECLARE(Jxta_status) jxta_PG_async_send(Jxta_PG * me, Jxta_message * msg, Jxta_id * peer_id, 
-                                             const char *svc_name, const char *svc_param, apr_int64_t *max_size)
+                                             const char *svc_name, const char *svc_param, Jxta_endpoint_return_parms * return_parms)
 {
     Jxta_endpoint_service *ep;
     Jxta_status rv;
     char *new_param;
     Jxta_endpoint_address * dest;
+    apr_int64_t max_size;
 
     new_param = get_service_key(svc_name, svc_param);
     dest = jxta_endpoint_address_new_3(peer_id, me->ep_name, new_param);
     jxta_PG_get_endpoint_service(me, &ep);
-    rv = jxta_endpoint_service_check_msg_length(ep, dest, msg, max_size);
+    rv = jxta_endpoint_service_check_msg_length(ep, NULL, dest, msg, &max_size);
     if (JXTA_SUCCESS != rv) {
         goto FINAL_EXIT;
     }
-    rv = jxta_endpoint_service_send_ex(ep, msg, dest, JXTA_FALSE, max_size);
+    rv = jxta_endpoint_service_send_ex(ep, msg, dest, JXTA_FALSE, return_parms, FALSE);
 
 FINAL_EXIT:
     free(new_param);
@@ -1537,59 +1538,66 @@ FINAL_EXIT:
 
     return rv;
 }
+
+Jxta_status peergroup_dest_addr_get(Jxta_id * peer_id, const char *ep_variable, const char *svc_name, const char *svc_param, Jxta_endpoint_address ** dest)
+{
+    Jxta_status res=JXTA_SUCCESS;
+    JString *ep_name_j=NULL;
+    char *new_param=NULL;
+
+    ep_name_j = jstring_new_2(ep_prefix);
+    jstring_append_2(ep_name_j, "%");
+    jstring_append_2(ep_name_j, ep_variable);
+    jstring_append_2(ep_name_j, "%");
+    new_param = get_service_key(svc_name, svc_param);
+    *dest = jxta_endpoint_address_new_3(peer_id, jstring_get_string(ep_name_j), new_param);
+
+    free(new_param);
+    JXTA_OBJECT_RELEASE(ep_name_j);
+
+    return res;
+}
+
 
 JXTA_DECLARE(Jxta_status) jxta_PG_async_send_1(Jxta_PG * me, Jxta_endpoint_message * msg, Jxta_id * peer_id, 
-                                             const char *ep_variable, const char *svc_name, const char *svc_param, apr_int64_t *max_size)
+                                             const char *ep_variable, const char *svc_name, const char *svc_param, Jxta_endpoint_return_parms * return_parms)
 {
     Jxta_endpoint_service *ep;
     Jxta_status rv;
-    char *new_param;
     Jxta_endpoint_address * dest;
-    JString *ep_name_j;
 
-    ep_name_j = jstring_new_2(ep_prefix);
-    jstring_append_2(ep_name_j, "%");
-    jstring_append_2(ep_name_j, ep_variable);
-    jstring_append_2(ep_name_j, "%");
+    rv = peergroup_dest_addr_get(peer_id, ep_variable, svc_name, svc_param, &dest);
+    if (JXTA_SUCCESS == rv) {
+        jxta_PG_get_endpoint_service(me, &ep);
+        rv = jxta_endpoint_service_send_ep_msg(ep, msg, dest, TRUE, return_parms);
+    }
+    if (ep)
+        JXTA_OBJECT_RELEASE(ep);
+    if (dest)
+        JXTA_OBJECT_RELEASE(dest);
 
-    new_param = get_service_key(svc_name, svc_param);
-    dest = jxta_endpoint_address_new_3(peer_id, jstring_get_string(ep_name_j), new_param);
-    jxta_PG_get_endpoint_service(me, &ep);
-    rv = jxta_endpoint_service_send_ep_msg_async(ep, msg, dest, max_size);
-
-FINAL_EXIT:
-    free(new_param);
-    JXTA_OBJECT_RELEASE(ep);
-    JXTA_OBJECT_RELEASE(dest);
-    JXTA_OBJECT_RELEASE(ep_name_j);
 
     return rv;
 }
 
+
 JXTA_DECLARE(Jxta_status) jxta_PG_sync_send_1(Jxta_PG * me, Jxta_endpoint_message * msg, Jxta_id * peer_id, 
-                                             const char *ep_variable, const char *svc_name, const char *svc_param, apr_int64_t *max_size)
+                                             const char *ep_variable, const char *svc_name, const char *svc_param, Jxta_endpoint_return_parms * return_parms)
 {
     Jxta_endpoint_service *ep;
     Jxta_status rv;
-    char *new_param;
     Jxta_endpoint_address * dest;
-    JString *ep_name_j;
 
-    ep_name_j = jstring_new_2(ep_prefix);
-    jstring_append_2(ep_name_j, "%");
-    jstring_append_2(ep_name_j, ep_variable);
-    jstring_append_2(ep_name_j, "%");
+    rv = peergroup_dest_addr_get(peer_id, ep_variable, svc_name, svc_param, &dest);
+    if (JXTA_SUCCESS == rv) {
 
-    new_param = get_service_key(svc_name, svc_param);
-    dest = jxta_endpoint_address_new_3(peer_id, jstring_get_string(ep_name_j), new_param);
-    jxta_PG_get_endpoint_service(me, &ep);
-    rv = jxta_endpoint_service_send_ep_msg_sync(ep, msg, dest, max_size);
-
-FINAL_EXIT:
-    free(new_param);
-    JXTA_OBJECT_RELEASE(ep);
-    JXTA_OBJECT_RELEASE(dest);
-    JXTA_OBJECT_RELEASE(ep_name_j);
+        jxta_PG_get_endpoint_service(me, &ep);
+        rv = jxta_endpoint_service_send_ep_msg(ep, msg, dest, TRUE, return_parms);
+    }
+    if (ep)
+        JXTA_OBJECT_RELEASE(ep);
+    if (dest)
+        JXTA_OBJECT_RELEASE(dest);
 
     return rv;
 }
@@ -1693,13 +1701,12 @@ Jxta_status peergroup_find_peer_PA(Jxta_PG * me, Jxta_id * peer_id, Jxta_time_di
             jxta_vector_get_object_at(res, JXTA_OBJECT_PPTR(&padv), 0);
             JXTA_OBJECT_RELEASE(res);
             if(padv != NULL) {
-            *pa = padv;
-            rv = JXTA_SUCCESS;
-        }
-            else {
+                *pa = padv;
+                rv = JXTA_SUCCESS;
+            }
+        } else {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to get padv from vector\n");
                 rv = JXTA_ITEM_NOTFOUND;
-            }
         }
     }
     if (JXTA_ITEM_NOTFOUND == rv) {

@@ -71,8 +71,6 @@
 #include "jxta_pa.h"
 #include "jxta_traffic_shaping_priv.h"
 
-
-
 #ifdef __cplusplus
 extern "C" {
 #if 0
@@ -82,7 +80,18 @@ extern "C" {
 
 #define  JXTA_ENDPOINT_SERVICE_NAME "EndpointService"
 
+
+typedef enum Jxta_endpoint_service_actions {
+    JXTA_EP_ACTION_REDUCE = 1,
+    JXTA_EP_ACTION_FILTER
+} Jxta_endpoint_service_action;
+
+
+typedef struct _jxta_endpoint_return_parms Jxta_endpoint_return_parms;
+typedef struct _jxta_endpoint_filter_entry Jxta_endpoint_filter_entry;
 typedef struct jxta_endpoint_service Jxta_endpoint_service;
+
+typedef Jxta_status(JXTA_STDCALL * EndpointReturnFunc) (Jxta_service *, Jxta_endpoint_return_parms *ret_parms, Jxta_vector **, Jxta_endpoint_service_action);
 
 /* events definitions and prototypes */
 typedef enum Jxta_endpoint_event_types {
@@ -214,7 +223,7 @@ JXTA_DECLARE(void) jxta_endpoint_service_add_filter(Jxta_endpoint_service * serv
 JXTA_DECLARE(void) jxta_endpoint_service_remove_filter(Jxta_endpoint_service * service, JxtaEndpointFilter filter);
 
 JXTA_DECLARE(Jxta_status) jxta_endpoint_service_check_msg_length(Jxta_endpoint_service * service
-                                            , Jxta_endpoint_address *addr, Jxta_message * msg, apr_int64_t *max_length);
+                                            , JxtaEndpointMessenger *messenger, Jxta_endpoint_address *addr, Jxta_message * msg, apr_int64_t *max_length);
 
 /*
  * Sends the given message to the given destination using the appropriate
@@ -229,11 +238,8 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_check_msg_length(Jxta_endpoint_s
  * @param dest_addr The destination of the message.
  * @return Jxta_status success or failed
  */
-JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ep_msg_sync(Jxta_endpoint_service *service
-                    , Jxta_endpoint_message * ep_msg, Jxta_endpoint_address * dest_addr, apr_int64_t *max_size);
-
-JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ep_msg_async(Jxta_endpoint_service *service
-                    , Jxta_endpoint_message * ep_msg, Jxta_endpoint_address * dest_addr, apr_int64_t *max_size);
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ep_msg(Jxta_endpoint_service *service
+                    , Jxta_endpoint_message * ep_msg, Jxta_endpoint_address * dest_addr, Jxta_boolean sync, Jxta_endpoint_return_parms * return_parms);
 
 #define jxta_endpoint_service_send jxta_endpoint_service_send_async
 
@@ -253,7 +259,7 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ep_msg_async(Jxta_endpoint_
  * @note: This version does not do peergroup mangling. Use jxta_PG_send instead.
  */
 JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ex(Jxta_endpoint_service * me, Jxta_message * msg,
-                                                        Jxta_endpoint_address * dest_addr, Jxta_boolean sync, apr_int64_t *max_size);
+                                                        Jxta_endpoint_address * dest_addr, Jxta_boolean sync, Jxta_endpoint_return_parms * return_parms, Jxta_boolean retry);
 
 /*
  * Propagate the given message to the given service destination using 
@@ -282,7 +288,7 @@ JXTA_DECLARE(Jxta_status)
  * 
  */
 JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_sync(Jxta_PG * obj, Jxta_endpoint_service * service
-                    , Jxta_message * msg, Jxta_endpoint_address * dest_addr, apr_int64_t *max_length);
+                    , Jxta_message * msg, Jxta_endpoint_address * dest_addr, Jxta_endpoint_return_parms * return_parms);
 
 /**
  * Send a JXTA message asynchronously to the given destination.
@@ -296,7 +302,7 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_sync(Jxta_PG * obj, Jxta_en
  */
 
 JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_async(Jxta_PG * obj, Jxta_endpoint_service * service
-                    ,Jxta_message * msg, Jxta_endpoint_address * dest_addr, apr_int64_t *max_length);
+                    ,Jxta_message * msg, Jxta_endpoint_address * dest_addr, Jxta_endpoint_return_parms * return_parms);
 /**
  ** Adds a listener to a specific service and parameters.
  **
@@ -417,6 +423,45 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_get_thread_pool(Jxta_endpoint_se
  **/
 JXTA_DECLARE(Jxta_status) jxta_endpoint_service_get_connection_peers(Jxta_endpoint_service * service, const char * protocol, const char * address, Jxta_vector **endpoints, int *unique);
 
+
+/**
+ ** Parameters used by services for callbacks from the endpoint service for different functions.
+ **
+ **    JXTA_EP_ACTION_REDUCE - Reduce the size of the message and return smaller message that fit within the maximum size
+ **    JXTA_EP_ACTION_FILTER - Filter the list returned by removing the entries that are no longer required.
+ ** 
+ **
+ **/
+JXTA_DECLARE(Jxta_endpoint_return_parms *) jxta_endpoint_return_parms_new();
+
+JXTA_DECLARE(void) jxta_endpoint_return_parms_set_function(Jxta_endpoint_return_parms *ret_parms, EndpointReturnFunc return_func);
+JXTA_DECLARE(EndpointReturnFunc) jxta_endpoint_return_parms_function(Jxta_endpoint_return_parms *ret_parms);
+
+JXTA_DECLARE(void) jxta_endpoint_return_parms_set_msg(Jxta_endpoint_return_parms *ret_parms, Jxta_message *msg);
+JXTA_DECLARE(void) jxta_endpoint_return_parms_get_msg(Jxta_endpoint_return_parms *ret_parms, Jxta_message **msg);
+
+JXTA_DECLARE(void) jxta_endpoint_return_parms_set_arg(Jxta_endpoint_return_parms *ret_parms, Jxta_object * arg);
+JXTA_DECLARE(void) jxta_endpoint_return_parms_get_arg(Jxta_endpoint_return_parms *ret_parms, Jxta_object ** arg);
+
+JXTA_DECLARE(void) jxta_endpoint_return_parms_set_service(Jxta_endpoint_return_parms *ret_parms, Jxta_service * svc);
+JXTA_DECLARE(Jxta_service *) jxta_endpoint_return_parms_service(Jxta_endpoint_return_parms *ret_parms);
+
+JXTA_DECLARE(void) jxta_endpoint_return_parms_set_max_length(Jxta_endpoint_return_parms *ret_parms, apr_int64_t max_length);
+JXTA_DECLARE(apr_int64_t) jxta_endpoint_return_parms_max_length(Jxta_endpoint_return_parms *ret_parms);
+
+JXTA_DECLARE(void) jxta_endpoint_return_parms_set_filter_list(Jxta_endpoint_return_parms *ret_parms, Jxta_vector *filter_list);
+JXTA_DECLARE(void) jxta_endpoint_return_parms_get_filter_list(Jxta_endpoint_return_parms *ret_parms, Jxta_vector **filter_list);
+
+JXTA_DECLARE(Jxta_endpoint_filter_entry *) jxta_endpoint_filter_entry_new(Jxta_message *msg);
+JXTA_DECLARE(void) jxta_endpoint_filter_entry_set_passed_msg(Jxta_endpoint_filter_entry *entry, Jxta_message * msg);
+JXTA_DECLARE(void) jxta_endpoint_filter_entry_get_passed_msg(Jxta_endpoint_filter_entry *entry, Jxta_message **msg);
+JXTA_DECLARE(void) jxta_endpoint_filter_entry_get_orig_msg(Jxta_endpoint_filter_entry *entry, Jxta_message **msg);
+JXTA_DECLARE(void) jxta_endpoint_filter_entry_get_parms(Jxta_endpoint_filter_entry *entry, Jxta_endpoint_return_parms ** parms);
+JXTA_DECLARE(void) jxta_endpoint_filter_entry_set_parms(Jxta_endpoint_filter_entry *entry, Jxta_endpoint_return_parms * parms);
+
+/**
+ ** Send a flow control message to the ea.
+ **/
 JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_fc(Jxta_endpoint_service * me, Jxta_endpoint_address *ea, Jxta_boolean normal);
 
 /**

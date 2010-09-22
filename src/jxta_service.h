@@ -61,6 +61,7 @@
 #include "jxta_callback.h"
 #include "jxta_id.h"
 #include "jxta_qos.h"
+#include "jxta_message.h"
 
 #ifdef __cplusplus
 extern "C" {

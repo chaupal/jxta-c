@@ -89,6 +89,8 @@ JXTA_DECLARE(JxtaEndpointMessenger *) jxta_endpoint_messenger_construct(JxtaEndp
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to create a mutex in the messenger:%d\n", res);
         }
     }
+    msgr->active_q = jxta_vector_new(0);
+    msgr->pending_q = jxta_vector_new(0);
     return msgr;
 }
 
@@ -100,14 +102,15 @@ JXTA_DECLARE(void) jxta_endpoint_messenger_destruct(JxtaEndpointMessenger * msgr
 
     if (msgr->address)
         JXTA_OBJECT_RELEASE(msgr->address);
-    if (msgr->pool) {
+    if (msgr->pool)
         apr_pool_destroy(msgr->pool);
-    }
-    if (msgr->mutex) {
+    if (msgr->active_q)
+        JXTA_OBJECT_RELEASE(msgr->active_q);
+    if (msgr->pending_q)
+        JXTA_OBJECT_RELEASE(msgr->pending_q);
+    if (msgr->mutex)
         apr_thread_mutex_destroy(msgr->mutex);
-    }
-    if (msgr->ts) {
+    if (msgr->ts)
         JXTA_OBJECT_RELEASE(msgr->ts);
-    }
 }
 

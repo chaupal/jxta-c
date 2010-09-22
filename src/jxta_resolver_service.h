@@ -65,6 +65,7 @@
 #include "jxta_id.h"
 #include "jxta_callback.h"
 #include "jxta_listener.h"
+#include "jxta_endpoint_service.h"
 
 
 /**
@@ -235,7 +236,7 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendQuery(Jxta_resolver_service 
  * @return Jxta_status
  * @see Jxta_status
  */
-JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendResponse(Jxta_resolver_service * service, ResolverResponse * response, Jxta_id * peerid, apr_int64_t *max_length);
+JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendResponse(Jxta_resolver_service * service, ResolverResponse * response, Jxta_id * peerid, Jxta_endpoint_return_parms * return_parms);
 /**
  * For Services that wish to implement a ResolverService Service they must
  * implement this interface Sends query to the specified address.
@@ -248,7 +249,7 @@ JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendResponse(Jxta_resolver_servi
  * @see Jxta_status
  */
 JXTA_DECLARE(Jxta_status) jxta_resolver_service_sendSrdi(Jxta_resolver_service * service, ResolverSrdi * message,
-                                                         Jxta_id * peerid, Jxta_boolean sync, apr_int64_t *max_length);
+                                                         Jxta_id * peerid, Jxta_boolean sync, Jxta_endpoint_return_parms *ret_parms);
 
 #ifdef __cplusplus
 #if 0

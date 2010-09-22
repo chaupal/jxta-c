@@ -3328,7 +3328,7 @@ static Jxta_status peerview_send_pvm_ep(Jxta_peerview * me, Jxta_peer * dest, Jx
     new_param = get_service_key(RDV_V3_MSID, JXTA_PEERVIEW_NAME_CONS);
     dest_ea = jxta_endpoint_address_new_3(jxta_peer_peerid(dest), jstring_get_string(ep_name_j), new_param);
 
-    rv = jxta_endpoint_service_send_ex(maintain_endpoint, msg, dest_ea, JXTA_FALSE, NULL);
+    rv = jxta_endpoint_service_send_ex(maintain_endpoint, msg, dest_ea, JXTA_FALSE, NULL, FALSE);
 
     free(new_param);
     JXTA_OBJECT_RELEASE(ep_name_j);
@@ -3410,7 +3410,7 @@ static Jxta_status peerview_send_pvm_priv(Jxta_peerview * me, Jxta_peer * dest, 
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "%s Sending peerview message [%pp] to : %s\n", send == TRUE ? "":"Not", msg, addr_str);
             free(addr_str);
             if (send) {
-                res = jxta_endpoint_service_send_ex(me->endpoint, msg, dest_addr, sync, NULL);
+                res = jxta_endpoint_service_send_ex(me->endpoint, msg, dest_addr, sync, NULL, FALSE);
             }
             JXTA_OBJECT_RELEASE(dest_addr);
         } else {

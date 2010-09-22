@@ -252,6 +252,8 @@ JXTA_DECLARE(Jxta_boolean) jxta_endpoint_address_transport_addr_equals(Jxta_endp
 
 JXTA_DECLARE(void) jxta_endpoint_address_replace_variables(Jxta_endpoint_address * addr1, Jxta_hashtable *hash, Jxta_endpoint_address **new_addr);
 
+JXTA_DECLARE(Jxta_status) jxta_endpoint_address_get_peerid(Jxta_endpoint_address * a, Jxta_id ** peerid);
+
 /* deprecated APIs */
 #define jxta_endpoint_address_new1 jxta_endpoint_address_new_1
 #define jxta_endpoint_address_new2 jxta_endpoint_address_new_2
