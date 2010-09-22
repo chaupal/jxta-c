@@ -2561,11 +2561,13 @@ static Jxta_status process_msgr_queue(Jxta_endpoint_service * me, Jxta_message *
         Jxta_endpoint_filter_entry *send_f_entry=NULL;
 
         jxta_vector_remove_object_at(send_q, JXTA_OBJECT_PPTR(&send_f_entry), 0);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "******************************** sendq [%pp] size:%d \n", send_q, jxta_vector_size(send_q));
+        
         if (msgr_locked) {
             msgr_locked = FALSE;
             apr_thread_mutex_unlock(msgr->mutex);
         }
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "******************************** sendq [%pp] size:%d \n", send_q, jxta_vector_size(send_q));
+        
         if (NULL != send_f_entry->return_parms) {
             Jxta_vector *reduced_msgs=NULL;
             Jxta_boolean found = FALSE;
@@ -2581,7 +2583,13 @@ static Jxta_status process_msgr_queue(Jxta_endpoint_service * me, Jxta_message *
                     JXTA_OBJECT_RELEASE(send_f_entry);
                     send_f_entry = JXTA_OBJECT_SHARE(new_f_entry);
                 } else {
+                    if (FALSE == msgr_locked) {
+                        msgr_locked = TRUE;
+                        apr_thread_mutex_lock(msgr->mutex);
+                    }
                     jxta_vector_add_object_last(send_q, (Jxta_object *) new_f_entry);
+                    msgr_locked = FALSE;
+                    apr_thread_mutex_unlock(msgr->mutex);
                 }
                 JXTA_OBJECT_RELEASE(new_f_entry);
             }
@@ -2605,7 +2613,17 @@ static Jxta_status process_msgr_queue(Jxta_endpoint_service * me, Jxta_message *
 
             ep_thread->filter_entry = new_f_entry;
             ep_thread->endpoint = me;
+
+            if (FALSE == msgr_locked) {
+                msgr_locked = TRUE;
+                apr_thread_mutex_lock(msgr->mutex);
+            }
+            
             jxta_vector_add_object_last(msgr->pending_q, (Jxta_object*) new_f_entry);
+
+            apr_thread_mutex_unlock(msgr->mutex);
+            msgr_locked = FALSE;
+
             jxta_vector_add_object_last(me->send_thread_queue, (Jxta_object *) new_f_entry);
             /*check before callback */
             if (NULL != svc) {
@@ -2621,6 +2639,12 @@ static Jxta_status process_msgr_queue(Jxta_endpoint_service * me, Jxta_message *
             break;
         }
         JXTA_OBJECT_RELEASE(send_f_entry);
+    
+        /* Must lock messenger before checking send_q on next iteration */
+        if (FALSE == msgr_locked) {
+            apr_thread_mutex_lock(msgr->mutex);
+            msgr_locked = TRUE;
+        }
     }
 
 FINAL_EXIT:
@@ -2629,6 +2653,12 @@ FINAL_EXIT:
     if (thread_active) {
         me->processing_msgs--;
     }
+    if (NULL != filter_entry)
+        JXTA_OBJECT_RELEASE(filter_entry);
+    if (NULL != new_v)
+        JXTA_OBJECT_RELEASE(new_v);
+    if (NULL != msgr)
+        JXTA_OBJECT_RELEASE(msgr);
     return res;
 }
 
