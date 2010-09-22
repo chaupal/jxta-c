@@ -551,7 +551,7 @@ Jxta_status return_resolver_func(Jxta_service *service, Jxta_endpoint_return_par
             *ret_v = jxta_vector_new(0);
             for (i=0; NULL != new_v && i<jxta_vector_size(new_v); i++) {
                 Jxta_resolver_response *rr=NULL;
-                Jxta_message *msg=NULL;
+                Jxta_message *new_msg=NULL;
                 JString *doc=NULL;
                 Jxta_endpoint_return_parms *new_ret_parms=NULL;
 
@@ -563,12 +563,12 @@ Jxta_status return_resolver_func(Jxta_service *service, Jxta_endpoint_return_par
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to parse the Resolver response\n");
                     continue;
                 }
-                if (JXTA_SUCCESS != resolver_build_msg(myself, doc, myself->inque, NULL, &msg)) {
+                if (JXTA_SUCCESS != resolver_build_msg(myself, doc, myself->inque, NULL, &new_msg)) {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to build a Resolver message\n");
                     JXTA_OBJECT_RELEASE(doc);
                     continue;
                 }
-                jxta_message_set_priority(msg, MSG_NORMAL_FLOW);
+                jxta_message_set_priority(new_msg, MSG_NORMAL_FLOW);
 
                 /* TODO: If the caller parms are NULL don't provide a callback. */
                 /* There's nothing the resolver will do  with a message */
@@ -577,13 +577,13 @@ Jxta_status return_resolver_func(Jxta_service *service, Jxta_endpoint_return_par
                 new_ret_parms = jxta_endpoint_return_parms_new();
                 jxta_endpoint_return_parms_set_service(new_ret_parms, (Jxta_service *) me);
                 jxta_endpoint_return_parms_set_function(new_ret_parms, (EndpointReturnFunc) return_resolver_func);
-                jxta_endpoint_return_parms_set_msg(new_ret_parms, msg);
+                jxta_endpoint_return_parms_set_msg(new_ret_parms, new_msg);
                 jxta_endpoint_return_parms_set_arg(new_ret_parms, (Jxta_object *) caller_parms);
 
                 /* res = jxta_vector_add_object_last(*ret_v, (Jxta_object *)msg); */
                 res = jxta_vector_add_object_last(*ret_v, (Jxta_object *) new_ret_parms);
                 JXTA_OBJECT_RELEASE(doc);
-                JXTA_OBJECT_RELEASE(msg);
+                JXTA_OBJECT_RELEASE(new_msg);
                 JXTA_OBJECT_RELEASE(new_ret_parms);
                 if (JXTA_SUCCESS != res) {
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to add the Resolver response\n");

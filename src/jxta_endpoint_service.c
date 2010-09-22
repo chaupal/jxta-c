@@ -2373,7 +2373,7 @@ void *APR_THREAD_FUNC endpoint_retry_msg_thread(apr_thread_t *apr_thread, void *
     return NULL;
 }
 
-JXTA_DECLARE(Jxta_status) process_message(Jxta_endpoint_service * myself, Jxta_message * msg, Jxta_endpoint_address *dest_addr, Jxta_endpoint_return_parms *ret_parms, Jxta_boolean sync)
+JXTA_DECLARE(Jxta_status) process_message_send(Jxta_endpoint_service * myself, Jxta_message * msg, Jxta_endpoint_address *dest_addr, Jxta_endpoint_return_parms *ret_parms, Jxta_boolean sync)
 
 {
     Jxta_status res=JXTA_SUCCESS;
@@ -2517,10 +2517,10 @@ static Jxta_status process_msgr_queue(Jxta_endpoint_service * me, Jxta_message *
         /* remove the current message from the pending queue */
         for(i=0; i < jxta_vector_size(msgr->pending_q); i++) {
             Jxta_message *tmp_msg = NULL;
-            Jxta_endpoint_filter_entry *f_entry=NULL;
+            Jxta_endpoint_filter_entry *remove_f_entry=NULL;
 
-            jxta_vector_get_object_at(msgr->pending_q, JXTA_OBJECT_PPTR(&f_entry), i);
-            tmp_msg = NULL != f_entry->orig_msg ? JXTA_OBJECT_SHARE(f_entry->orig_msg):NULL;
+            jxta_vector_get_object_at(msgr->pending_q, JXTA_OBJECT_PPTR(&remove_f_entry), i);
+            tmp_msg = NULL != remove_f_entry->orig_msg ? JXTA_OBJECT_SHARE(remove_f_entry->orig_msg):NULL;
             if (tmp_msg != NULL) {
                 if (tmp_msg == msg) {
                     jxta_vector_remove_object_at(msgr->pending_q, NULL, i--);
@@ -2528,7 +2528,7 @@ static Jxta_status process_msgr_queue(Jxta_endpoint_service * me, Jxta_message *
                 }
                 JXTA_OBJECT_RELEASE(tmp_msg);
             }
-            JXTA_OBJECT_RELEASE(f_entry);
+            JXTA_OBJECT_RELEASE(remove_f_entry);
         }
         if (FALSE == found_pending) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Dropping msg [%pp] since a newer message was sent\n", msg);
@@ -2710,7 +2710,7 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ex(Jxta_endpoint_service * 
 
     jxta_message_set_destination(msg, dest_addr);
 
-    res = process_message(me, msg, dest_addr, return_parms, sync);
+    res = process_message_send(me, msg, dest_addr, return_parms, sync);
     if (JXTA_SUCCESS != res) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error trying to process message res: %d\n", res);
     }
