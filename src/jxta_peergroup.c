@@ -1569,7 +1569,7 @@ JXTA_DECLARE(Jxta_status) jxta_PG_async_send_1(Jxta_PG * me, Jxta_endpoint_messa
     rv = peergroup_dest_addr_get(peer_id, ep_variable, svc_name, svc_param, &dest);
     if (JXTA_SUCCESS == rv) {
         jxta_PG_get_endpoint_service(me, &ep);
-        rv = jxta_endpoint_service_send_ep_msg(ep, msg, dest, TRUE, return_parms);
+        rv = jxta_endpoint_service_send_ep_msg(ep, msg, dest, FALSE, return_parms);
     }
     if (ep)
         JXTA_OBJECT_RELEASE(ep);
