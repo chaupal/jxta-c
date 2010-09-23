@@ -61,6 +61,7 @@
 #include "jxta_id.h"
 #include "jstring.h"
 #include "jxta_vector.h"
+#include "jxta_hashtable.h"
 
 
 #ifdef __cplusplus
@@ -288,6 +289,8 @@ JXTA_DECLARE(Jxta_boolean) jxta_srdi_message_update_only(Jxta_SRDIMessage * ad);
 JXTA_DECLARE(void) jxta_srdi_message_set_update_only(Jxta_SRDIMessage * ad, Jxta_boolean update);
 
 JXTA_DECLARE(Jxta_vector *) jxta_srdi_message_entries(Jxta_SRDIMessage * ad);
+
+JXTA_DECLARE(void) jxta_srdi_message_get_advids(Jxta_SRDIMessage *ad, Jxta_hashtable ** ads);
 
 /**
  * Gets the Entries of the srdi message.

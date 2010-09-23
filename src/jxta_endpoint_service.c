@@ -142,7 +142,6 @@ struct _jxta_endpoint_return_parms {
     Jxta_service *service;
     Jxta_message *msg;
     Jxta_object *arg;
-    Jxta_vector *filter_list;
     apr_int64_t max_length;
 };
 
@@ -2439,11 +2438,10 @@ static Jxta_status filter_msgr_queues(JxtaEndpointMessenger *msgr, Jxta_endpoint
 
     return_func = jxta_endpoint_return_parms_function(return_parms);
     create_a_filter_list(msgr->active_q, msgr->pending_q, return_parms, &filter_list);
-    jxta_endpoint_return_parms_set_filter_list(return_parms, filter_list);
 
     if (jxta_vector_size(filter_list) > 0) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "----> ret_parms [%pp] being filtered\n", return_parms);
-        res = return_func(jxta_endpoint_return_parms_service(return_parms), return_parms, new_v, JXTA_EP_ACTION_FILTER);
+        res = return_func(jxta_endpoint_return_parms_service(return_parms), return_parms, filter_list, new_v, JXTA_EP_ACTION_FILTER);
     }
 
     for (i=0; i<jxta_vector_size(msgr->active_q); i++) {
@@ -2645,6 +2643,7 @@ static Jxta_status process_msgr_queue(Jxta_endpoint_service * me, Jxta_message *
                 jxta_service_unlock(svc);
             }
             break_it = TRUE;
+            JXTA_OBJECT_RELEASE(ep_thread);
         }
         
         JXTA_OBJECT_RELEASE(send_f_entry);
@@ -2682,6 +2681,7 @@ static Jxta_status perform_msg_traffic_shaping(Jxta_endpoint_service * myself, J
     JXTA_OBJECT_CHECK_VALID(msg);
 
     res = jxta_endpoint_service_check_msg_length(myself, msgr, dest_addr, msg, &max_size);
+
     if (JXTA_LENGTH_EXCEEDED == res) {
         Jxta_vector *new_exceeded_v=NULL;
         int i;
@@ -2692,8 +2692,10 @@ static Jxta_status perform_msg_traffic_shaping(Jxta_endpoint_service * myself, J
         func = jxta_endpoint_return_parms_function(f_entry->return_parms);
         jxta_endpoint_return_parms_set_msg(f_entry->return_parms, msg);
         jxta_endpoint_return_parms_set_max_length(f_entry->return_parms, max_size);
-        res = func(jxta_endpoint_return_parms_service(f_entry->return_parms), f_entry->return_parms, &new_exceeded_v, JXTA_EP_ACTION_REDUCE);
+        res = func(jxta_endpoint_return_parms_service(f_entry->return_parms), f_entry->return_parms, NULL, &new_exceeded_v, JXTA_EP_ACTION_REDUCE);
         if (JXTA_SUCCESS != res) {
+            if (NULL != new_exceeded_v)
+                JXTA_OBJECT_RELEASE(new_exceeded_v);
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to reduce the size of a message\n");
             goto FINAL_EXIT;
         }
@@ -2703,7 +2705,6 @@ static Jxta_status perform_msg_traffic_shaping(Jxta_endpoint_service * myself, J
             Jxta_endpoint_filter_entry *new_f_entry=NULL;
             Jxta_endpoint_return_parms *new_return_parms=NULL;
 
-            /* TODO not sure if this will build the message completely */
             jxta_vector_get_object_at(new_exceeded_v, JXTA_OBJECT_PPTR(&new_return_parms), i);
 
             jxta_endpoint_return_parms_get_msg(new_return_parms, &new_msg);
@@ -2722,8 +2723,6 @@ static Jxta_status perform_msg_traffic_shaping(Jxta_endpoint_service * myself, J
             JXTA_OBJECT_RELEASE(new_f_entry);
             JXTA_OBJECT_RELEASE(new_return_parms);
         }
-        msgr_locked = FALSE;
-        apr_thread_mutex_unlock(msgr->mutex);
         if (new_exceeded_v)
             JXTA_OBJECT_RELEASE(new_exceeded_v);
     } else if (res == JXTA_SUCCESS) {
@@ -2732,7 +2731,6 @@ static Jxta_status perform_msg_traffic_shaping(Jxta_endpoint_service * myself, J
             msgr_locked = FALSE;
             apr_thread_mutex_unlock(msgr->mutex);
         }
-
         if (MSG_NORMAL_FLOW == jxta_message_priority(msg)) {
             jxta_endpoint_return_parms_set_max_length(f_entry->return_parms, max_size);
         }
@@ -3513,8 +3511,6 @@ static void ret_parms_free(Jxta_object * obj)
         JXTA_OBJECT_RELEASE(me->arg);
     if (me->msg)
         JXTA_OBJECT_RELEASE(me->msg);
-    if (me->filter_list)
-        JXTA_OBJECT_RELEASE(me->filter_list);
     free(me);
 }
 
@@ -3590,20 +3586,6 @@ JXTA_DECLARE(void) jxta_endpoint_return_parms_set_max_length(Jxta_endpoint_retur
 JXTA_DECLARE(apr_int64_t) jxta_endpoint_return_parms_max_length(Jxta_endpoint_return_parms *ret_parms)
 {
     return ret_parms->max_length;
-}
-
-JXTA_DECLARE(void) jxta_endpoint_return_parms_set_filter_list(Jxta_endpoint_return_parms *ret_parms, Jxta_vector *filter_list)
-{
-    if (NULL != ret_parms->filter_list) {
-        JXTA_OBJECT_RELEASE(ret_parms->filter_list);
-    }
-    ret_parms->filter_list = NULL != filter_list ? JXTA_OBJECT_SHARE(filter_list):NULL;
-}
-
-JXTA_DECLARE(void) jxta_endpoint_return_parms_get_filter_list(Jxta_endpoint_return_parms *ret_parms, Jxta_vector **filter_list)
-{
-    *filter_list = NULL != ret_parms->filter_list ? JXTA_OBJECT_SHARE(ret_parms->filter_list):NULL;
-    return;
 }
 
 static void filter_entry_free(Jxta_object * obj)

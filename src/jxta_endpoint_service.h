@@ -91,7 +91,7 @@ typedef struct _jxta_endpoint_return_parms Jxta_endpoint_return_parms;
 typedef struct _jxta_endpoint_filter_entry Jxta_endpoint_filter_entry;
 typedef struct jxta_endpoint_service Jxta_endpoint_service;
 
-typedef Jxta_status(JXTA_STDCALL * EndpointReturnFunc) (Jxta_service *, Jxta_endpoint_return_parms *ret_parms, Jxta_vector **, Jxta_endpoint_service_action);
+typedef Jxta_status(JXTA_STDCALL * EndpointReturnFunc) (Jxta_service *,  Jxta_endpoint_return_parms *ret_parms, Jxta_vector *filter_list, Jxta_vector **, Jxta_endpoint_service_action);
 
 /* events definitions and prototypes */
 typedef enum Jxta_endpoint_event_types {
@@ -449,9 +449,9 @@ JXTA_DECLARE(Jxta_service *) jxta_endpoint_return_parms_service(Jxta_endpoint_re
 JXTA_DECLARE(void) jxta_endpoint_return_parms_set_max_length(Jxta_endpoint_return_parms *ret_parms, apr_int64_t max_length);
 JXTA_DECLARE(apr_int64_t) jxta_endpoint_return_parms_max_length(Jxta_endpoint_return_parms *ret_parms);
 
-JXTA_DECLARE(void) jxta_endpoint_return_parms_set_filter_list(Jxta_endpoint_return_parms *ret_parms, Jxta_vector *filter_list);
+/* JXTA_DECLARE(void) jxta_endpoint_return_parms_set_filter_list(Jxta_endpoint_return_parms *ret_parms, Jxta_vector *filter_list);
 JXTA_DECLARE(void) jxta_endpoint_return_parms_get_filter_list(Jxta_endpoint_return_parms *ret_parms, Jxta_vector **filter_list);
-
+*/
 JXTA_DECLARE(Jxta_endpoint_filter_entry *) jxta_endpoint_filter_entry_new(Jxta_message *msg);
 JXTA_DECLARE(void) jxta_endpoint_filter_entry_set_passed_msg(Jxta_endpoint_filter_entry *entry, Jxta_message * msg);
 JXTA_DECLARE(void) jxta_endpoint_filter_entry_get_passed_msg(Jxta_endpoint_filter_entry *entry, Jxta_message **msg);

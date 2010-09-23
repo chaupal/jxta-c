@@ -589,6 +589,37 @@ JXTA_DECLARE(void) jxta_srdi_message_set_entries(Jxta_SRDIMessage * ad, Jxta_vec
     return;
 }
 
+JXTA_DECLARE(void) jxta_srdi_message_get_advids(Jxta_SRDIMessage *ad, Jxta_hashtable ** ads)
+{
+
+    if (ad->Entries != NULL) {
+        int i;
+
+        *ads = jxta_hashtable_new(0);
+        for (i=0; i<jxta_vector_size(ad->Entries); i++) {
+            Jxta_SRDIEntryElement *srdi_entry=NULL;
+            Jxta_vector *advid_entries;
+            JString *advid_j;
+
+            jxta_vector_get_object_at(ad->Entries, JXTA_OBJECT_PPTR(&srdi_entry), i);
+
+            advid_j = srdi_entry->advId;
+            if (JXTA_SUCCESS != jxta_hashtable_get(*ads, jstring_get_string(advid_j), jstring_length(advid_j)+1, JXTA_OBJECT_PPTR(&advid_entries))) {
+                advid_entries = jxta_vector_new(0);
+                jxta_hashtable_put(*ads, jstring_get_string(advid_j), jstring_length(advid_j) + 1, (Jxta_object *) advid_entries);
+            }
+            jxta_vector_add_object_last(advid_entries, (Jxta_object *) srdi_entry);
+
+            if (srdi_entry)
+                JXTA_OBJECT_RELEASE(srdi_entry);
+            if (advid_entries)
+                JXTA_OBJECT_RELEASE(advid_entries);
+        }
+    } else {
+        *ads = NULL;
+    }
+}
+
 JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_resend_entries(Jxta_SRDIMessage * ad, Jxta_vector ** entries)
 {
     if (ad->resendEntries) {
@@ -948,6 +979,7 @@ static void jxta_srdi_message_free(Jxta_SRDIMessage * ad)
     if (ad->Entries) {
         JXTA_OBJECT_RELEASE(ad->Entries);
     }
+
     if (ad->resendEntries) {
         JXTA_OBJECT_RELEASE(ad->resendEntries);
     }

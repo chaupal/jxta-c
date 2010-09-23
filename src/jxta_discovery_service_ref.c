@@ -2488,7 +2488,7 @@ FINAL_EXIT:
     return res;
 }
 
-static Jxta_status return_ep_func(Jxta_service *service, Jxta_endpoint_return_parms *ret_parms, Jxta_vector **ret_v, Jxta_endpoint_service_action action)
+static Jxta_status return_ep_func(Jxta_service *service, Jxta_endpoint_return_parms *ret_parms, Jxta_vector *filter_list, Jxta_vector **ret_v, Jxta_endpoint_service_action action)
 {
     Jxta_status res = JXTA_SUCCESS;
     apr_int64_t max_length;
@@ -2499,10 +2499,8 @@ static Jxta_status return_ep_func(Jxta_service *service, Jxta_endpoint_return_pa
     JString *rdoc=NULL;
     Jxta_boolean locked = FALSE;
     DR_parm_arg *dr_arg = NULL;
-    Jxta_vector *filter_list=NULL;
 
     discovery = (Jxta_discovery_service_ref *) jxta_endpoint_return_parms_service(ret_parms);
-    jxta_endpoint_return_parms_get_filter_list(ret_parms, &filter_list);
 
     max_length = jxta_endpoint_return_parms_max_length(ret_parms);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "return parms [%pp] get msg resolver\n", ret_parms);
@@ -2601,8 +2599,6 @@ FINAL_EXIT:
         JXTA_OBJECT_RELEASE(res_rsp);
     if (rdoc)
         JXTA_OBJECT_RELEASE(rdoc);
-    if (filter_list)
-        JXTA_OBJECT_RELEASE(filter_list);
     if (dr_arg)
         JXTA_OBJECT_RELEASE(dr_arg);
     return res;
@@ -3409,7 +3405,7 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
 
     /* get the entries within the message */
     status = jxta_srdi_message_get_entries(smsg, &msg_entries);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Received %ld srdi msg entries from: %s \n", jxta_vector_size(msg_entries), jstring_get_string(pid_j));
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Received %ld srdi msg entries from: %s \n", jxta_vector_size(msg_entries), jstring_get_string(pid_j));
 
 
     if (status != JXTA_SUCCESS || NULL == msg_entries) {
