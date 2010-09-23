@@ -931,6 +931,9 @@ static void endpoint_stop(Jxta_module * self)
 
     /* stop the thread that processes outgoing messages */
     apr_thread_pool_tasks_cancel(me->thd_pool, me);
+    if (NULL != me->send_thread_queue)
+        jxta_vector_clear(me->send_thread_queue);
+    
     endpoint_service_remove_recipient(me, me->ep_msg_cookie);
     endpoint_service_remove_recipient(me, me->fc_msg_cookie);
     if(me->thd_pool) {
@@ -2357,19 +2360,17 @@ static Jxta_status get_messenger(Jxta_endpoint_service * me, Jxta_endpoint_addre
 void *APR_THREAD_FUNC endpoint_retry_msg_thread(apr_thread_t *apr_thread, void *arg)
 {
     Jxta_status res = JXTA_SUCCESS;
-    Jxta_endpoint_filter_entry *f_entry=NULL;
-    EP_thread_struct *thread;
+    Jxta_endpoint_service *endpoint=NULL;
+    EP_thread_struct *thread=NULL;
     Jxta_endpoint_address *dest_addr;
 
-    thread = (EP_thread_struct *) arg;
+    endpoint = (Jxta_endpoint_service *) arg;
 
+    jxta_vector_remove_object_at(endpoint->send_thread_queue, JXTA_OBJECT_PPTR(&thread), 0);
+    dest_addr = jxta_message_get_destination(thread->filter_entry->orig_msg);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "retry message thread started msg:[%pp]\n", thread->filter_entry->orig_msg);
 
-
-    jxta_vector_remove_object_at(thread->endpoint->send_thread_queue, JXTA_OBJECT_PPTR(&f_entry), 0);
-    dest_addr = jxta_message_get_destination(f_entry->orig_msg);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "retry message thread started msg:[%pp]\n", f_entry->orig_msg);
-
-    res = process_msgr_queue(thread->endpoint, f_entry->orig_msg, dest_addr, f_entry, thread->sync, TRUE);
+    res = process_msgr_queue(thread->endpoint, thread->filter_entry->orig_msg, dest_addr, thread->filter_entry, thread->sync, TRUE);
     if (NULL != thread) 
         JXTA_OBJECT_RELEASE(thread);
     JXTA_OBJECT_RELEASE(dest_addr);
@@ -2618,6 +2619,7 @@ static Jxta_status process_msgr_queue(Jxta_endpoint_service * me, Jxta_message *
 
             ep_thread->filter_entry = new_f_entry;
             ep_thread->endpoint = me;
+            /*mark ep_thread->sync */
 
             if (FALSE == msgr_locked) {
                 msgr_locked = TRUE;
@@ -2629,14 +2631,15 @@ static Jxta_status process_msgr_queue(Jxta_endpoint_service * me, Jxta_message *
             apr_thread_mutex_unlock(msgr->mutex);
             msgr_locked = FALSE;
 
-            jxta_vector_add_object_last(me->send_thread_queue, (Jxta_object *) new_f_entry);
             /*check before callback */
             if (NULL != svc) {
                 jxta_service_lock(svc);
             }
 
+            jxta_vector_add_object_last(me->send_thread_queue, (Jxta_object *) ep_thread);
+
             /* TODO: make this timeout equivalent to the expected time from the endpoint to send the message */
-            apr_thread_pool_schedule(me->thd_pool, endpoint_retry_msg_thread, ep_thread, 1000 * 1000, svc);
+            apr_thread_pool_schedule(me->thd_pool, endpoint_retry_msg_thread, me, 1000 * 1000, svc);
 
             if (NULL != svc) {
                 jxta_service_unlock(svc);
