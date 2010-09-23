@@ -2303,6 +2303,10 @@ static void msg_task_recycle(Msg_task * me)
         JXTA_OBJECT_RELEASE(me->msg);
         me->msg = NULL;
     }
+    if (me->ret_parms) {
+        JXTA_OBJECT_RELEASE(me->ret_parms);
+        me->ret_parms = NULL;
+    }
     apr_thread_mutex_lock(ep->mutex);
     me->recycle = ep->recycled_tasks;
     ep->recycled_tasks = me;
