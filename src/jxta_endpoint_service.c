@@ -2562,6 +2562,7 @@ static Jxta_status process_msgr_queue(Jxta_endpoint_service * me, Jxta_message *
     thread_active = TRUE;
 
     while (jxta_vector_size(send_q) > 0) {
+        Jxta_boolean break_it = FALSE;
         Jxta_endpoint_filter_entry *send_f_entry=NULL;
 
         jxta_vector_remove_object_at(send_q, JXTA_OBJECT_PPTR(&send_f_entry), 0);
@@ -2640,10 +2641,14 @@ static Jxta_status process_msgr_queue(Jxta_endpoint_service * me, Jxta_message *
             if (NULL != svc) {
                 jxta_service_unlock(svc);
             }
-            break;
+            break_it = TRUE;
         }
+        
         JXTA_OBJECT_RELEASE(send_f_entry);
     
+        if (TRUE == break_it)
+            break;
+
         /* Must lock messenger before checking send_q on next iteration */
         if (FALSE == msgr_locked) {
             apr_thread_mutex_lock(msgr->mutex);
