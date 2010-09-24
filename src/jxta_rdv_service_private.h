@@ -133,7 +133,6 @@ typedef enum RendezVousStatuses RendezVousStatus;
 struct _jxta_rdv_service {
     Extends(Jxta_service);
     apr_thread_mutex_t *mutex;
-    apr_thread_mutex_t *cb_mutex;
     apr_pool_t *pool;
 
     volatile Jxta_boolean running;
@@ -178,9 +177,7 @@ struct _jxta_rdv_service {
     JString *prop_key_j;
 
     Jxta_boolean is_demoting;
-    Jxta_boolean switching;
     apr_thread_mutex_t *switching_mutex;
-    apr_thread_cond_t *switching_cv;
 
     Jxta_time service_start;
     unsigned int processing_callbacks;
