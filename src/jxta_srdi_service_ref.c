@@ -2162,13 +2162,9 @@ static Jxta_boolean adjust_srdi_entries(Jxta_srdi_service *service, Jxta_SRDIMes
     int i;
     Jxta_vector *srdi_entries=NULL;
     Jxta_time diff_time;
-    Jxta_hashtable *srdi_advs_hash=NULL;
 
-    /* jxta_srdi_message_get_entries(srdi_msg, &srdi_entries); */
-    jxta_srdi_message_get_advids(srdi_msg, &srdi_advs_hash);
-    if (NULL == srdi_advs_hash) {
-        goto FINAL_EXIT;
-    }
+    jxta_srdi_message_get_entries(srdi_msg, &srdi_entries);
+
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Adjust srdi msg [%pp] with %d srdi entries\n", srdi_msg, jxta_vector_size(srdi_entries));
     diff_time = jpr_time_now() - prev_diff;
     for (i=0; i<jxta_vector_size(srdi_entries) && isRunning(me); i++) {
@@ -2212,11 +2208,8 @@ static Jxta_boolean adjust_srdi_entries(Jxta_srdi_service *service, Jxta_SRDIMes
         JXTA_OBJECT_RELEASE(entry_elem);
     }
 
-FINAL_EXIT:
     if (srdi_entries)
         JXTA_OBJECT_RELEASE(srdi_entries);
-    if (srdi_advs_hash)
-        JXTA_OBJECT_RELEASE(srdi_advs_hash);
     return res;
 }
 
