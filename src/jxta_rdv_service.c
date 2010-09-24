@@ -244,6 +244,10 @@ static _jxta_rdv_service *jxta_rdv_service_construct(_jxta_rdv_service * myself,
         res = apr_thread_mutex_create(&myself->cb_mutex, APR_THREAD_MUTEX_NESTED,  /* nested */
                                       myself->pool);
 
+        res = apr_thread_mutex_create(&myself->switching_mutex, APR_THREAD_MUTEX_DEFAULT, myself->pool);
+
+        res = apr_thread_cond_create(&myself->switching_cv, myself->pool);
+
         myself->group = NULL;
         myself->pid = NULL;
         myself->assigned_id_str = NULL;
@@ -259,6 +263,7 @@ static _jxta_rdv_service *jxta_rdv_service_construct(_jxta_rdv_service * myself,
         myself->rdvConfig = NULL;
         myself->active_seeds = NULL;
         myself->is_demoting = FALSE;
+        myself->switching = FALSE;
         /*
          * create the RDV event listener table
          */
@@ -332,6 +337,8 @@ static void jxta_rdv_service_destruct(_jxta_rdv_service * rdv)
     }
     apr_thread_mutex_destroy(myself->mutex);
     apr_thread_mutex_destroy(myself->cb_mutex);
+    apr_thread_cond_destroy(myself->switching_cv);
+    apr_thread_mutex_destroy(myself->switching_mutex);
 
     /* Free the pool used to allocate the thread and mutex */
     apr_pool_destroy(myself->pool);
@@ -1040,6 +1047,13 @@ JXTA_DECLARE(Jxta_status) rdv_service_switch_config(Jxta_rdv_service * rdv, RdvC
     RendezVousStatus new_status = myself->status;
     Jxta_boolean locked = FALSE;
 
+    while(myself->switching) {
+        apr_thread_mutex_lock(myself->switching_mutex);
+        apr_thread_cond_wait(myself->switching_cv, myself->switching_mutex);
+        apr_thread_mutex_unlock(myself->switching_mutex);
+    }
+
+
     if ((NULL != myself->provider) && (myself->current_config == config)) {
         /* Already in correct config. */
         res = JXTA_SUCCESS;
@@ -1050,6 +1064,7 @@ JXTA_DECLARE(Jxta_status) rdv_service_switch_config(Jxta_rdv_service * rdv, RdvC
                     myself, JXTA_RDV_CONFIG_MODE_NAMES[myself->current_config], JXTA_RDV_CONFIG_MODE_NAMES[config]);
 
     apr_thread_mutex_lock(myself->mutex);
+    myself->switching = TRUE;
     locked = TRUE;
     myself->service_start = (Jxta_time) jpr_time_now();
 
@@ -1159,6 +1174,13 @@ JXTA_DECLARE(Jxta_status) rdv_service_switch_config(Jxta_rdv_service * rdv, RdvC
   FINAL_EXIT:
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "[%pp] Rendezvous provider status : %s\n", myself,
                     JXTA_RDV_STATUS_NAMES[new_status]);
+
+    myself->switching = FALSE;
+    apr_thread_mutex_lock(myself->switching_mutex);
+    apr_thread_cond_signal(myself->switching_cv);
+    apr_thread_mutex_unlock(myself->switching_mutex);
+
+
     if (locked)
         apr_thread_mutex_unlock(myself->mutex);
 

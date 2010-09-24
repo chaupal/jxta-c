@@ -178,6 +178,10 @@ struct _jxta_rdv_service {
     JString *prop_key_j;
 
     Jxta_boolean is_demoting;
+    Jxta_boolean switching;
+    apr_thread_mutex_t *switching_mutex;
+    apr_thread_cond_t *switching_cv;
+
     Jxta_time service_start;
     unsigned int processing_callbacks;
 };
