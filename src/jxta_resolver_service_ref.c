@@ -641,6 +641,8 @@ FINAL_EXIT:
         JXTA_OBJECT_RELEASE(ep_msg);
     if (new_entries)
         JXTA_OBJECT_RELEASE(new_entries);
+    if (msg)
+        JXTA_OBJECT_RELEASE(msg);
     return res;
 }
 
