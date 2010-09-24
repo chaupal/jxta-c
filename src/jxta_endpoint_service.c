@@ -3260,6 +3260,8 @@ static Jxta_status check_msgr_busy(Jxta_endpoint_service * me, JxtaEndpointMesse
         ep_locked = FALSE;
     }
 
+    if (msg)
+        JXTA_OBJECT_RELEASE(msg);
     if (local_ts)
         JXTA_OBJECT_RELEASE(local_ts);
     return res;

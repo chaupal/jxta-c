@@ -609,7 +609,13 @@ Jxta_status return_resolver_func(Jxta_service *service, Jxta_endpoint_return_par
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "No parms in the filter entry - nothing to do\n");
                     breakout = TRUE;
                 } else {
-                    jxta_endpoint_return_parms_get_arg(f_parms, JXTA_OBJECT_PPTR(&f_parms));
+                    Jxta_endpoint_return_parms *tmp_parms=NULL;
+
+                    tmp_parms = f_parms;
+                    f_parms = NULL;
+                    jxta_endpoint_return_parms_get_arg(tmp_parms, JXTA_OBJECT_PPTR(&f_parms));
+                    JXTA_OBJECT_RELEASE(tmp_parms);
+
                     jxta_endpoint_filter_entry_get_orig_msg(f_entry, &f_msg);
                     new_entry = jxta_endpoint_filter_entry_new(f_msg);
                     jxta_endpoint_filter_entry_set_parms(new_entry, f_parms);

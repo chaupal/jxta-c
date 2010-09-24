@@ -2465,6 +2465,7 @@ static Jxta_status find_older_responses_and_remove(DR_parm_arg * dr_arg, Jxta_ve
                     jstring_get_string(f_dr_arg->query_j), curr - time_entry , curr - dr_arg->timestamp);
 
                     JXTA_OBJECT_RELEASE(f_msg);
+                    f_msg = NULL;
                 }
             }
         }
