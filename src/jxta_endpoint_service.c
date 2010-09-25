@@ -651,7 +651,7 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_fc(Jxta_endpoint_service * 
     jxta_message_add_element(msg, msg_elem);
 
     ea_string = jxta_endpoint_address_to_string(send_ea);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO
                         , "Send FC - %s bytes:%" APR_INT64_T_FMT " to:%s \n%s\n"
                         , normal == TRUE ? "normal":"reduced"
                         , num_bytes, ea_string, jstring_get_string(ep_fc_msg_xml));
@@ -1148,7 +1148,7 @@ static void demux_ep_flow_control_message(Jxta_endpoint_service * me
         goto FINAL_EXIT;
     }
     jxta_id_to_jstring(peer_id, &peerid_j);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Demux flow control message [%pp] from %s\n"
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Demux flow control message [%pp] from %s\n"
                     , ep_fc_msg, jstring_get_string(peerid_j));
 
     fc_ea = jxta_endpoint_address_new_3(peer_id, NULL, NULL);
@@ -2367,7 +2367,7 @@ void *APR_THREAD_FUNC endpoint_retry_msg_thread(apr_thread_t *apr_thread, void *
 
     jxta_vector_remove_object_at(endpoint->send_thread_queue, JXTA_OBJECT_PPTR(&thread), 0);
     dest_addr = jxta_message_get_destination(thread->filter_entry->orig_msg);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "retry message thread started msg:[%pp]\n", thread->filter_entry->orig_msg);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "retry message thread started msg:[%pp]\n", thread->filter_entry->orig_msg);
 
     res = process_msgr_queue(thread->endpoint, thread->filter_entry->orig_msg, dest_addr, thread->filter_entry, thread->sync, TRUE);
     if (NULL != thread) 
@@ -2389,7 +2389,7 @@ JXTA_DECLARE(Jxta_status) process_message_send(Jxta_endpoint_service * myself, J
         Msg_task *task;
 
         task = msg_task_create(myself, msg, ret_parms);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "pushing msg [%pp] on outgoing_message_thread\n", msg);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "pushing msg [%pp] on outgoing_message_thread\n", msg);
 
         apr_thread_pool_push(myself->thd_pool, outgoing_message_thread, task, task_priority(msg), myself);
         apr_atomic_inc32(&myself->msg_task_cnt);
@@ -2411,19 +2411,27 @@ static void create_a_filter_list(Jxta_vector *active_q, Jxta_vector *pending_q, 
 
     *filter_list = jxta_vector_new(0);
     for (i = 0; i < jxta_vector_size(active_q); i++) {
+        Jxta_endpoint_return_parms *f_parms;
 
         jxta_vector_get_object_at(active_q, JXTA_OBJECT_PPTR(&f_entry), i);
-        jxta_vector_add_object_last(*filter_list, (Jxta_object *) f_entry);
-        /* jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "fentry [%pp] msg[%pp] from active_q\n", f_entry, f_entry->return_parms->msg); */
-
+        jxta_endpoint_filter_entry_get_parms(f_entry, &f_parms);
+        if (NULL == f_parms) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "fentry [%pp] has no parms active q\n", f_entry);
+        } else {
+            jxta_vector_add_object_last(*filter_list, (Jxta_object *) f_entry);
+        }
         JXTA_OBJECT_RELEASE(f_entry);
     }
     for (i = 0; i < jxta_vector_size(pending_q); i++) {
+        Jxta_endpoint_return_parms *f_parms;
 
         jxta_vector_get_object_at(pending_q, JXTA_OBJECT_PPTR(&f_entry), i);
-        jxta_vector_add_object_last(*filter_list, (Jxta_object *) f_entry);
-        /* jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "fentry [%pp] msg[%pp] from peding_q\n", f_entry, f_entry->return_parms->msg); */
-
+        jxta_endpoint_filter_entry_get_parms(f_entry, &f_parms);
+        if (NULL == f_parms) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "fentry [%pp] has no parms pending q\n", f_entry);
+        } else {
+            jxta_vector_add_object_last(*filter_list, (Jxta_object *) f_entry);
+        }
         JXTA_OBJECT_RELEASE(f_entry);
     }
     return;
@@ -2437,10 +2445,10 @@ static Jxta_status filter_msgr_queues(JxtaEndpointMessenger *msgr, Jxta_endpoint
     EndpointReturnFunc return_func=NULL;
 
     return_func = jxta_endpoint_return_parms_function(return_parms);
+    /* apr_thread_mutex_lock(msgr->mutex); */
     create_a_filter_list(msgr->active_q, msgr->pending_q, return_parms, &filter_list);
-
     if (jxta_vector_size(filter_list) > 0) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "----> ret_parms [%pp] being filtered\n", return_parms);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "----> ret_parms [%pp] being filtered\n", return_parms);
         res = return_func(jxta_endpoint_return_parms_service(return_parms), return_parms, filter_list, new_v, JXTA_EP_ACTION_FILTER);
     }
 
@@ -2452,7 +2460,7 @@ static Jxta_status filter_msgr_queues(JxtaEndpointMessenger *msgr, Jxta_endpoint
         a_msg = JXTA_OBJECT_SHARE(f_entry->orig_msg);
         if (jxta_message_remove(a_msg)) {
             jxta_vector_remove_object_at(msgr->active_q, NULL, i--);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "----> msg:[%pp] removed from active_q\n", a_msg);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "----> msg:[%pp] removed from active_q\n", a_msg);
         }
         JXTA_OBJECT_RELEASE(f_entry);
         JXTA_OBJECT_RELEASE(a_msg);
@@ -2465,11 +2473,12 @@ static Jxta_status filter_msgr_queues(JxtaEndpointMessenger *msgr, Jxta_endpoint
         p_msg = JXTA_OBJECT_SHARE(f_entry->orig_msg);
         if (jxta_message_remove(p_msg)) {
             jxta_vector_remove_object_at(msgr->pending_q, NULL, i--);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "----> msg:[%pp] removed from pending_q\n", p_msg);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "----> msg:[%pp] removed from pending_q\n", p_msg);
         }
         JXTA_OBJECT_RELEASE(f_entry);
         JXTA_OBJECT_RELEASE(p_msg);
     }
+    /* apr_thread_mutex_unlock(msgr->mutex); */
     JXTA_OBJECT_RELEASE(filter_list);
     return res;
 }
@@ -2537,6 +2546,9 @@ static Jxta_status process_msgr_queue(Jxta_endpoint_service * me, Jxta_message *
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Dropping msg [%pp] since a newer message was sent\n", msg);
             goto FINAL_EXIT;
         }
+        if (NULL != f_entry->return_parms) {
+            filter_msgr_queues(msgr, f_entry->return_parms, &new_v);
+        }
     } else if (NULL != f_entry->return_parms) {
         filter_msgr_queues(msgr, f_entry->return_parms, &new_v);
     }
@@ -2544,7 +2556,7 @@ static Jxta_status process_msgr_queue(Jxta_endpoint_service * me, Jxta_message *
     filter_entry->return_parms = NULL != f_entry->return_parms ? JXTA_OBJECT_SHARE(f_entry->return_parms):NULL;
     jxta_vector_add_object_last(send_q, (Jxta_object *) filter_entry);
 
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Start processing the msg [%pp] filter entry[%pp]\n", msg, filter_entry);
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Start processing the msg [%pp] filter entry[%pp]\n", msg, filter_entry);
     /* use up to 50% of the available threads for actively sending discovery responses */
     /* tp = jxta_PG_thread_pool_get(discovery->group); */
     max_threads = apr_thread_pool_thread_max_get(me->thd_pool);
@@ -2552,7 +2564,7 @@ static Jxta_status process_msgr_queue(Jxta_endpoint_service * me, Jxta_message *
     threshold = ((int)max_threads/2);
     if (threshold <= 0) threshold = 1;
     if (me->processing_msgs >= threshold) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "msg [%pp] added to queue but will be processed by another thread processing:%d threshold:%d\n", msg, me->processing_msgs, threshold);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "msg [%pp] added to queue but will be processed by another thread processing:%d threshold:%d\n", msg, me->processing_msgs, threshold);
         goto FINAL_EXIT;
     }
     apr_thread_mutex_lock(me->mutex);
@@ -2564,8 +2576,11 @@ static Jxta_status process_msgr_queue(Jxta_endpoint_service * me, Jxta_message *
         Jxta_boolean break_it = FALSE;
         Jxta_endpoint_filter_entry *send_f_entry=NULL;
 
+        if (jxta_vector_size(send_q) > 5) {
+
+        }
         jxta_vector_remove_object_at(send_q, JXTA_OBJECT_PPTR(&send_f_entry), 0);
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "******************************** sendq [%pp] size:%d \n", send_q, jxta_vector_size(send_q));
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "******************************** sendq [%pp] size:%d \n", send_q, jxta_vector_size(send_q));
         
         if (msgr_locked) {
             msgr_locked = FALSE;
@@ -2623,17 +2638,15 @@ static Jxta_status process_msgr_queue(Jxta_endpoint_service * me, Jxta_message *
                 msgr_locked = TRUE;
                 apr_thread_mutex_lock(msgr->mutex);
             }
-            
+
             jxta_vector_add_object_last(msgr->pending_q, (Jxta_object*) new_f_entry);
 
             apr_thread_mutex_unlock(msgr->mutex);
             msgr_locked = FALSE;
-
             /*check before callback */
             if (NULL != svc) {
                 jxta_service_lock(svc);
             }
-
             jxta_vector_add_object_last(me->send_thread_queue, (Jxta_object *) ep_thread);
 
             /* TODO: make this timeout equivalent to the expected time from the endpoint to send the message */
@@ -2662,7 +2675,9 @@ FINAL_EXIT:
     if (msgr_locked)
         apr_thread_mutex_unlock(msgr->mutex);
     if (thread_active) {
+        apr_thread_mutex_lock(me->mutex);
         me->processing_msgs--;
+        apr_thread_mutex_unlock(me->mutex);
     }
     if (NULL != filter_entry)
         JXTA_OBJECT_RELEASE(filter_entry);
@@ -2710,7 +2725,7 @@ static Jxta_status perform_msg_traffic_shaping(Jxta_endpoint_service * myself, J
             jxta_endpoint_return_parms_get_msg(new_return_parms, &new_msg);
             /* dest_addr put in the fentry */
             jxta_message_set_destination(new_msg, dest_addr);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "parms [%pp] get msg [%pp]\n", new_return_parms, new_msg);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "parms [%pp] get msg [%pp]\n", new_return_parms, new_msg);
             new_f_entry = jxta_endpoint_filter_entry_new(new_msg);
             new_f_entry->return_parms = JXTA_OBJECT_SHARE(new_return_parms);
             new_f_entry->dest_addr = JXTA_OBJECT_SHARE(dest_addr);
@@ -2727,10 +2742,10 @@ static Jxta_status perform_msg_traffic_shaping(Jxta_endpoint_service * myself, J
             JXTA_OBJECT_RELEASE(new_exceeded_v);
     } else if (res == JXTA_SUCCESS) {
         res = check_msgr_busy(myself, msgr, f_entry, return_parms);
-        if (msgr_locked) {
+        /* if (msgr_locked) {
             msgr_locked = FALSE;
             apr_thread_mutex_unlock(msgr->mutex);
-        }
+        } */
         if (MSG_NORMAL_FLOW == jxta_message_priority(msg)) {
             jxta_endpoint_return_parms_set_max_length(f_entry->return_parms, max_size);
         }
@@ -2873,7 +2888,7 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ep_msg(Jxta_endpoint_servic
     msg = jxta_message_new();
     jxta_message_set_destination(msg, dest_addr);
     jxta_endpoint_msg_get_xml(ep_msg, TRUE, &ep_msg_xml, TRUE);
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Send ep msg [%pp] async length:%d\n"
+    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Send ep msg [%pp] async length:%d\n"
                             , ep_msg, jstring_length(ep_msg_xml));
 
     msg_elem = jxta_message_element_new_2(JXTA_ENDPOINT_MSG_JXTA_NS, JXTA_ENPOINT_MSG_ELEMENT_NAME, "text/xml", jstring_get_string(ep_msg_xml), jstring_length(ep_msg_xml), NULL);
@@ -3232,6 +3247,7 @@ static Jxta_status check_msgr_busy(Jxta_endpoint_service * me, JxtaEndpointMesse
 
         traffic_shaping_lock(me->ts);
         ep_locked = TRUE;
+
         /* first check the messenger */
         if (NULL != local_ts) {
             Jxta_status msgr_status;

@@ -292,6 +292,8 @@ JXTA_DECLARE(Jxta_vector *) jxta_srdi_message_entries(Jxta_SRDIMessage * ad);
 
 JXTA_DECLARE(void) jxta_srdi_message_get_advids(Jxta_SRDIMessage *ad, Jxta_hashtable ** ads);
 
+JXTA_DECLARE(void) jxta_srdi_message_remove_advid_entries(Jxta_SRDIMessage * ad, const char *advid);
+
 /**
  * Gets the Entries of the srdi message.
  *

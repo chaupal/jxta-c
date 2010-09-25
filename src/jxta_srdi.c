@@ -620,6 +620,22 @@ JXTA_DECLARE(void) jxta_srdi_message_get_advids(Jxta_SRDIMessage *ad, Jxta_hasht
     }
 }
 
+JXTA_DECLARE(void) jxta_srdi_message_remove_advid_entries(Jxta_SRDIMessage * ad, const char *advid)
+{
+    int i;
+    for (i=0; i<jxta_vector_size(ad->Entries); i++) {
+        Jxta_SRDIEntryElement *srdi_entry=NULL;
+
+        jxta_vector_get_object_at(ad->Entries, JXTA_OBJECT_PPTR(&srdi_entry), i);
+        if (0 == strcmp(jstring_get_string(srdi_entry->advId), advid)) {
+            jxta_vector_remove_object_at(ad->Entries, NULL, i--);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Removed %s \n", advid);
+        }
+        JXTA_OBJECT_RELEASE(srdi_entry);
+    }
+
+}
+
 JXTA_DECLARE(Jxta_status) jxta_srdi_message_get_resend_entries(Jxta_SRDIMessage * ad, Jxta_vector ** entries)
 {
     if (ad->resendEntries) {

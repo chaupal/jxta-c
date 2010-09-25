@@ -142,6 +142,7 @@ typedef struct {
     apr_thread_mutex_t *rsp_lock;
     int processing_rsps;
     volatile apr_uint32_t rsp_cnt;
+    int flow_control;
 } Jxta_discovery_service_ref;
 
 typedef struct _DR_thread_struct {
@@ -2534,7 +2535,7 @@ static Jxta_status return_ep_func(Jxta_service *service, Jxta_endpoint_return_pa
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Received JXTA_EP_ACTION_REDUCE and %s doesn't exist in the dr_rsps\n", jstring_get_string(peerid_j));
                 goto FINAL_EXIT;
             }
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "JXTA_EP_ACTION_REDUCE Split max_length:%" APR_INT64_T_FMT " rr_length:%d ret_parms:[%pp]\n", max_length, dr_arg->rr_length, ret_parms);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "JXTA_EP_ACTION_REDUCE Split max_length:%" APR_INT64_T_FMT " rr_length:%d ret_parms:[%pp]\n", max_length, dr_arg->rr_length, ret_parms);
             split_discovery_responses(dr_rsp, rdoc, &new_responses, max_length - dr_arg->rr_length);
 
             *ret_v = jxta_vector_new(0);
@@ -2581,7 +2582,7 @@ static Jxta_status return_ep_func(Jxta_service *service, Jxta_endpoint_return_pa
         }
         case JXTA_EP_ACTION_FILTER:
         {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Discovery return callback JXTA_EP_ACTION_FILTER filter_list [%pp]\n", filter_list);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Discovery return callback JXTA_EP_ACTION_FILTER filter_list [%pp]\n", filter_list);
 
             res = find_older_responses_and_remove(dr_arg, filter_list);
             if (JXTA_SUCCESS != res) {
@@ -3472,11 +3473,13 @@ static void JXTA_STDCALL discovery_service_srdi_listener(Jxta_object * obj, void
             ea = jxta_endpoint_address_new_3(peerid, NULL, NULL);
 
             busy_status = jxta_srdi_replicateEntries(discovery->srdi, discovery->resolver, smsg, discovery->instanceName, NULL);
-            if (JXTA_BUSY == busy_status) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Flow control the remote peer *****************\n");
+            if (JXTA_BUSY == busy_status && discovery->flow_control < 4) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Flow control the remote peer *****************\n");
                 jxta_endpoint_service_send_fc(discovery->endpoint, ea, FALSE);
-            } else if (JXTA_SUCCESS == busy_status) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Continue at normal flow ********\n");
+                discovery->flow_control++;
+            } else if (JXTA_SUCCESS == busy_status || JXTA_BUSY == busy_status) {
+                discovery->flow_control++;
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Continue at normal flow ********\n");
                 jxta_endpoint_service_send_fc(discovery->endpoint, ea, TRUE);
             } else {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Error returned from repicateEntries:%ld\n"
