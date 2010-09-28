@@ -235,10 +235,10 @@ static void srdi_parm_arg_free(Jxta_object *obj)
 {
     SRDI_parm_arg *parm_arg = (SRDI_parm_arg*) obj;
 
-    JXTA_OBJECT_RELEASE(parm_arg->msg);
-    JXTA_OBJECT_RELEASE(parm_arg->peerid_j);
-    JXTA_OBJECT_RELEASE(parm_arg->peer_id);
-    JXTA_OBJECT_RELEASE(parm_arg->svc_name);
+    if (parm_arg->msg) JXTA_OBJECT_RELEASE(parm_arg->msg);
+    if (parm_arg->peerid_j) JXTA_OBJECT_RELEASE(parm_arg->peerid_j);
+    if (parm_arg->peer_id) JXTA_OBJECT_RELEASE(parm_arg->peer_id);
+    if (parm_arg->svc_name) JXTA_OBJECT_RELEASE(parm_arg->svc_name);
     free(parm_arg);
 }
 
@@ -954,10 +954,18 @@ FINAL_EXIT:
     return NULL;
 }
 
-static Jxta_status return_func(Jxta_service *service, Jxta_message *msg, void *arg, Jxta_vector **ret_v, Jxta_endpoint_service_action action)
+static Jxta_status return_func(Jxta_service *service, Jxta_endpoint_return_parms * return_parms, void *arg, Jxta_vector **ret_v, Jxta_endpoint_service_action action)
 {
     Jxta_status res = JXTA_SUCCESS;
     Jxta_SRDIMessage *srdi_msg=NULL;
+    Jxta_message *msg = NULL;
+
+    jxta_endpoing_return_parms_get_msg(return_parms, &msg);
+    if (NULL == msg)
+    {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to extract Jxta message from return parms [%pp]\n", return_parms);
+        goto FINAL_EXIT;
+    }
 
     res = get_srdi_msg_from_msg(msg, NULL, &srdi_msg);
 
@@ -1013,6 +1021,8 @@ FINAL_EXIT:
 
     if (srdi_msg)
         JXTA_OBJECT_RELEASE(srdi_msg);
+    if (msg)
+        JXTA_OBJECT_RELEASE(msg);
     return res;
 }
 
@@ -1208,6 +1218,16 @@ static void srdi_push_srdi_msg(Jxta_srdi_service_ref * self, JString * instance,
     JXTA_OBJECT_RELEASE(parm_arg);
 }
 
+static void srdi_msg_thread_free(Jxta_object *obj)
+{
+    Srdi_msg_thread_struct *t_ptr = (Srdi_msg_thread_struct*)obj;
+
+    JXTA_OBJECT_RELEASE(t_ptr->instance);
+    JXTA_OBJECT_RELEASE(t_ptr->dest);
+    JXTA_OBJECT_RELEASE(t_ptr->msg);
+    
+    free(t_ptr);
+}
 static Jxta_status pushSrdi_msg_priv(Jxta_srdi_service_ref * self, JString * instance,
                             Jxta_SRDIMessage * srdi, Jxta_id * peerid, Jxta_boolean send_sync, Jxta_hashtable **ret_msgs)
 {
@@ -1261,8 +1281,8 @@ static Jxta_status pushSrdi_msg_priv(Jxta_srdi_service_ref * self, JString * ins
             Srdi_msg_thread_struct *thread_ptr;
 
             thread_ptr = calloc(1, sizeof(Srdi_msg_thread_struct));
-            /* JXTA_OBJECT_INIT(thread_ptr, srdi_msg_thread_free, (void*)NULL); */
-            thread_ptr->srdi_service = JXTA_OBJECT_SHARE(self);
+            JXTA_OBJECT_INIT(thread_ptr, srdi_msg_thread_free, (void*)NULL);
+            thread_ptr->srdi_service = self;
             thread_ptr->instance=JXTA_OBJECT_SHARE(instance);
             thread_ptr->dest=JXTA_OBJECT_SHARE(peerid);
             thread_ptr->sync = send_sync;
@@ -2435,7 +2455,6 @@ static void srdi_msgs_thread_free(Jxta_object *obj)
 {
     Srdi_msgs_thread_struct *t_ptr = (Srdi_msgs_thread_struct*)obj;
 
-    JXTA_OBJECT_RELEASE(t_ptr->srdi_service);
     JXTA_OBJECT_RELEASE(t_ptr->instance);
     JXTA_OBJECT_RELEASE(t_ptr->dest);
     JXTA_OBJECT_RELEASE(t_ptr->msgs);
@@ -2477,7 +2496,7 @@ static Jxta_status pushSrdi_msgs(Jxta_srdi_service * service, JString * instance
 
                 thread_ptr = calloc(1, sizeof(Srdi_msgs_thread_struct));
                 JXTA_OBJECT_INIT(thread_ptr, srdi_msgs_thread_free, (void*)NULL);
-                thread_ptr->srdi_service = JXTA_OBJECT_SHARE(self);
+                thread_ptr->srdi_service = self;
                 thread_ptr->instance=JXTA_OBJECT_SHARE(instance);
                 thread_ptr->dest=JXTA_OBJECT_SHARE(dest);
                 thread_ptr->msgs=JXTA_OBJECT_SHARE(groupid_hash);

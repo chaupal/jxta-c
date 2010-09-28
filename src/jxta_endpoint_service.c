@@ -2411,7 +2411,7 @@ static void create_a_filter_list(Jxta_vector *active_q, Jxta_vector *pending_q, 
 
     *filter_list = jxta_vector_new(0);
     for (i = 0; i < jxta_vector_size(active_q); i++) {
-        Jxta_endpoint_return_parms *f_parms;
+        Jxta_endpoint_return_parms *f_parms = NULL;
 
         jxta_vector_get_object_at(active_q, JXTA_OBJECT_PPTR(&f_entry), i);
         jxta_endpoint_filter_entry_get_parms(f_entry, &f_parms);
@@ -2419,11 +2419,12 @@ static void create_a_filter_list(Jxta_vector *active_q, Jxta_vector *pending_q, 
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "fentry [%pp] has no parms active q\n", f_entry);
         } else {
             jxta_vector_add_object_last(*filter_list, (Jxta_object *) f_entry);
+            JXTA_OBJECT_RELEASE(f_parms);
         }
         JXTA_OBJECT_RELEASE(f_entry);
     }
     for (i = 0; i < jxta_vector_size(pending_q); i++) {
-        Jxta_endpoint_return_parms *f_parms;
+        Jxta_endpoint_return_parms *f_parms = NULL;
 
         jxta_vector_get_object_at(pending_q, JXTA_OBJECT_PPTR(&f_entry), i);
         jxta_endpoint_filter_entry_get_parms(f_entry, &f_parms);
@@ -2431,6 +2432,7 @@ static void create_a_filter_list(Jxta_vector *active_q, Jxta_vector *pending_q, 
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "fentry [%pp] has no parms pending q\n", f_entry);
         } else {
             jxta_vector_add_object_last(*filter_list, (Jxta_object *) f_entry);
+            JXTA_OBJECT_RELEASE(f_parms);
         }
         JXTA_OBJECT_RELEASE(f_entry);
     }
