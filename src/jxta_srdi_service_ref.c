@@ -960,7 +960,7 @@ static Jxta_status return_func(Jxta_service *service, Jxta_endpoint_return_parms
     Jxta_SRDIMessage *srdi_msg=NULL;
     Jxta_message *msg = NULL;
 
-    jxta_endpoing_return_parms_get_msg(return_parms, &msg);
+    jxta_endpoint_return_parms_get_msg(return_parms, &msg);
     if (NULL == msg)
     {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to extract Jxta message from return parms [%pp]\n", return_parms);
