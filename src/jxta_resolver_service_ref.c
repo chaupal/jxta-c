@@ -614,15 +614,20 @@ Jxta_status return_resolver_func(Jxta_service *service, Jxta_endpoint_return_par
                     tmp_parms = f_parms;
                     f_parms = NULL;
                     jxta_endpoint_return_parms_get_arg(tmp_parms, JXTA_OBJECT_PPTR(&f_parms));
+                    if (f_parms != NULL) {
+                        jxta_vector_remove_object_at(filter_list, NULL, i--);
+                    }
+                    else {
+                        jxta_endpoint_filter_entry_get_orig_msg(f_entry, &f_msg);
+                        new_entry = jxta_endpoint_filter_entry_new(f_msg);
+                        jxta_endpoint_filter_entry_set_parms(new_entry, f_parms);
+                        jxta_vector_replace_object_at(filter_list, (Jxta_object *) new_entry, i);
+                        JXTA_OBJECT_RELEASE(new_entry);
+                        JXTA_OBJECT_RELEASE(f_parms);
+                        JXTA_OBJECT_RELEASE(f_msg);
+                    }
+                    
                     JXTA_OBJECT_RELEASE(tmp_parms);
-
-                    jxta_endpoint_filter_entry_get_orig_msg(f_entry, &f_msg);
-                    new_entry = jxta_endpoint_filter_entry_new(f_msg);
-                    jxta_endpoint_filter_entry_set_parms(new_entry, f_parms);
-                    jxta_vector_replace_object_at(filter_list, (Jxta_object *) new_entry, i);
-                    JXTA_OBJECT_RELEASE(new_entry);
-                    JXTA_OBJECT_RELEASE(f_parms);
-                    JXTA_OBJECT_RELEASE(f_msg);
                 }
                 JXTA_OBJECT_RELEASE(f_entry);
                 if (breakout) goto FINAL_EXIT;

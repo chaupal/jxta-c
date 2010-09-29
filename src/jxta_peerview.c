@@ -6230,6 +6230,7 @@ static Jxta_status peerview_handle_adv_request(Jxta_peerview * me, Jxta_adv_requ
             if (JXTA_SUCCESS != discovery_service_get_lifetime(me->discovery, DISC_PEER, adv_id, &expiration)) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to retrieve lifetime from adv:[%pp]\n", adv);
                 JXTA_OBJECT_RELEASE(adv);
+                JXTA_OBJECT_RELEASE(adv_id);
                 continue;
             }
             if (NULL == adv_rsp_msg) {
@@ -6238,6 +6239,7 @@ static Jxta_status peerview_handle_adv_request(Jxta_peerview * me, Jxta_adv_requ
 
             jxta_adv_response_msg_add_advertisement(adv_rsp_msg, adv, expiration - jpr_time_now());
             JXTA_OBJECT_RELEASE(adv);
+            JXTA_OBJECT_RELEASE(adv_id);
         }
         JXTA_OBJECT_RELEASE(remaining_pids);
         if (query_j)

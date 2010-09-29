@@ -3244,34 +3244,42 @@ static Jxta_status check_msgr_busy(Jxta_endpoint_service * me, JxtaEndpointMesse
     }
 
     if (MSG_NORMAL_FLOW == jxta_message_priority(msg) && msg_size > 0) {
-        float compressed;
-        Jxta_boolean look_ahead_update = TRUE;
+        float compressed = 0.0;
+        Jxta_boolean look_ahead_update = FALSE;
+        Jxta_traffic_shaping *ts_to_use = NULL;
+
+        if (NULL != local_ts) {
+            ts_to_use = local_ts;
+        }
+        else {
+            ts_to_use = me->ts;
+        }
 
         traffic_shaping_lock(me->ts);
         ep_locked = TRUE;
 
         /* first check the messenger */
-        if (NULL != local_ts) {
-            Jxta_status msgr_status;
-            apr_int64_t max_msgr_length;
+        Jxta_status msgr_status;
+        apr_int64_t max_msgr_length;
 
-            traffic_shaping_lock(local_ts);
-            msgr_status = traffic_shaping_check_max(local_ts
-                                , msg_size, &max_msgr_length, compression, &compressed);
-            res = msgr_status;
+        if (ts_to_use == local_ts) {
+            traffic_shaping_lock(ts_to_use);
+        }
 
-            look_ahead_update = FALSE;
-            if (traffic_shaping_check_size(local_ts, compressed, FALSE, &look_ahead_update)) {
-                traffic_shaping_update(local_ts, compressed, look_ahead_update);
-            } else {
-                res = JXTA_BUSY;
-            }
-            traffic_shaping_unlock(local_ts);
-        } else if (traffic_shaping_check_size(me->ts, compressed, FALSE, &look_ahead_update)) {
-            traffic_shaping_update(me->ts,compressed, look_ahead_update);
+        msgr_status = traffic_shaping_check_max(ts_to_use
+                            , msg_size, &max_msgr_length, compression, &compressed);
+        res = msgr_status;
+
+        if (traffic_shaping_check_size(ts_to_use, compressed, FALSE, &look_ahead_update)) {
+            traffic_shaping_update(ts_to_use, compressed, look_ahead_update);
         } else {
             res = JXTA_BUSY;
         }
+
+        if (ts_to_use == local_ts) {
+            traffic_shaping_unlock(local_ts);
+        }
+
     }
     if (ep_locked) {
         traffic_shaping_unlock(me->ts);

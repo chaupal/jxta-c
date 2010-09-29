@@ -4073,7 +4073,7 @@ static void *APR_THREAD_FUNC srdi_save_transaction_thread(apr_thread_t * thread,
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "ref count starting the thread %d\n",
                     JXTA_OBJECT_GET_REFCOUNT(srdi_parms->self));
 
-    if (srdi_parms->self->available) {
+    if (srdi_parms->self->available && !srdi_parms->self->stopping) {
         cm_srdi_transaction_save(srdi_parms);
     }
     release_task_parms(srdi_parms);
@@ -4093,10 +4093,12 @@ static Jxta_status cm_save_srdi_transaction_start(Jxta_cm * self, DBSpace * dbSp
     srdi_task->primaryKey = JXTA_OBJECT_SHARE(primaryKey);
     srdi_task->entriesV = JXTA_OBJECT_SHARE(entries);
     srdi_task->bReplica = bReplica;
-    if (NULL != self->thread_pool) {
+    if (NULL != self->thread_pool && !self->stopping) {
         apr_thread_pool_push(self->thread_pool, srdi_save_transaction_thread, srdi_task, APR_THREAD_TASK_PRIORITY_NORMAL, self);
     } else {
-        cm_srdi_transaction_save(srdi_task);
+        if (!self->stopping) {
+            cm_srdi_transaction_save(srdi_task);
+        }
         release_task_parms(srdi_task);
     }
     return JXTA_SUCCESS;
