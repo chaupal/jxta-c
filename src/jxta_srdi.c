@@ -96,6 +96,7 @@ struct _Jxta_SRDIMessage {
     JString *PrimaryKey;
     Jxta_boolean deltaSupport;
     Jxta_vector *Entries;
+    Jxta_hashtable *adv_hash;
     Jxta_vector *resendEntries;
     Jxta_boolean update_only;
 };
@@ -400,8 +401,17 @@ static void handleEntry(void *userdata, const XML_Char * cd, int len)
     if (entry->resend) {
         jxta_vector_add_object_last(ad->resendEntries, (Jxta_object *) entry);
     } else {
+        Jxta_vector *entries_v;
+
         normalize_entry(entry);
         jxta_vector_add_object_last(ad->Entries, (Jxta_object *) entry);
+        if (JXTA_SUCCESS != jxta_hashtable_get(ad->adv_hash, jstring_get_string(entry->advId), jstring_length(entry->advId) + 1, JXTA_OBJECT_PPTR(&entries_v))) {
+            entries_v = jxta_vector_new(0);
+            jxta_hashtable_put(ad->adv_hash, jstring_get_string(entry->advId), jstring_length(entry->advId) + 1, (Jxta_object *) entries_v);
+        }
+        jxta_vector_add_object_last(entries_v, (Jxta_object *) entry);
+
+        JXTA_OBJECT_RELEASE(entries_v);
     }
     JXTA_OBJECT_RELEASE(entry);
 }
@@ -623,15 +633,19 @@ JXTA_DECLARE(void) jxta_srdi_message_get_advids(Jxta_SRDIMessage *ad, Jxta_hasht
 JXTA_DECLARE(void) jxta_srdi_message_remove_advid_entries(Jxta_SRDIMessage * ad, const char *advid)
 {
     int i;
-    for (i=0; i<jxta_vector_size(ad->Entries); i++) {
-        Jxta_SRDIEntryElement *srdi_entry=NULL;
+    Jxta_vector *adv_v;
 
-        jxta_vector_get_object_at(ad->Entries, JXTA_OBJECT_PPTR(&srdi_entry), i);
-        if (0 == strcmp(jstring_get_string(srdi_entry->advId), advid)) {
-            jxta_vector_remove_object_at(ad->Entries, NULL, i--);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Removed %s \n", advid);
+    if (JXTA_SUCCESS == jxta_hashtable_get(ad->adv_hash, advid, strlen(advid) + 1, JXTA_OBJECT_PPTR(&adv_v))) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Remove SRDI entries %s\n", advid);
+        for (i=0; i< jxta_vector_size(ad->Entries); i++) {
+            Jxta_SRDIEntryElement *entry;
+
+            jxta_vector_get_object_at(ad->Entries, JXTA_OBJECT_PPTR(&entry), i);
+            if (0 != strcmp(jstring_get_string(entry->advId), advid)) {
+                jxta_vector_remove_object_at(ad->Entries, NULL, i--);
+            }
         }
-        JXTA_OBJECT_RELEASE(srdi_entry);
+        jxta_hashtable_del(ad->adv_hash, advid, strlen(advid) + 1, NULL);
     }
 
 }
@@ -860,6 +874,7 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new(void)
     ad->SrcPID = NULL;
     ad->TTL = 0;
     ad->Entries = jxta_vector_new(4);
+    ad->adv_hash = jxta_hashtable_new(0);
     ad->resendEntries = jxta_vector_new(0);
     ad->PrimaryKey = jstring_new_0();
     ad->update_only = FALSE;
@@ -869,6 +884,33 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new(void)
                                   (JxtaAdvertisementGetXMLFunc) jxta_srdi_message_get_xml,
                                   NULL, NULL, (FreeFunc) jxta_srdi_message_free);
     return ad;
+}
+
+static void add_entries_to_advid_hash(Jxta_SRDIMessage *ad, Jxta_vector *entries)
+{
+    int i;
+
+    if (NULL == ad->adv_hash) {
+        ad->adv_hash = jxta_hashtable_new(0);
+    }
+    for (i=0; i<jxta_vector_size(entries); i++) {
+        Jxta_SRDIEntryElement *entry;
+        Jxta_vector *entries_v;
+
+        jxta_vector_get_object_at(entries, JXTA_OBJECT_PPTR(&entry), i);
+        if (NULL == entry->advId) {
+            JXTA_OBJECT_RELEASE(entry);
+            continue;
+        }
+        if (JXTA_SUCCESS != jxta_hashtable_get(ad->adv_hash, jstring_get_string(entry->advId), jstring_length(entry->advId) + 1, JXTA_OBJECT_PPTR(&entries_v))) {
+            entries_v = jxta_vector_new(0);
+            jxta_hashtable_put(ad->adv_hash, jstring_get_string(entry->advId), jstring_length(entry->advId) + 1, (Jxta_object *) entries_v);
+        }
+        jxta_vector_add_object_last(entries_v, (Jxta_object *) entry);
+
+        JXTA_OBJECT_RELEASE(entries_v);
+        JXTA_OBJECT_RELEASE(entry);
+    }
 }
 
 JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_1(int ttl, Jxta_id * peerid, char *primarykey, Jxta_vector * entries)
@@ -890,6 +932,7 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_1(int ttl, Jxta_id * peer
     ad->PeerID = peerid;
     ad->update_only = FALSE;
     ad->Entries = entries;
+    add_entries_to_advid_hash(ad, entries);
     ad->TTL = ttl;
     ad->PrimaryKey = jstring_new_2(primarykey);
     jstring_trim(ad->PrimaryKey);
@@ -915,6 +958,7 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_2(int ttl, Jxta_id * peer
         ad->SrcPID = JXTA_OBJECT_SHARE(src_peerid);
     }
     ad->Entries = JXTA_OBJECT_SHARE(entries);
+    add_entries_to_advid_hash(ad, entries);
     ad->TTL = ttl;
     ad->PrimaryKey = jstring_new_2(primarykey);
     jstring_trim(ad->PrimaryKey);
@@ -941,6 +985,7 @@ JXTA_DECLARE(Jxta_SRDIMessage *) jxta_srdi_message_new_3(int ttl, Jxta_id * peer
     }
 
     ad->Entries = JXTA_OBJECT_SHARE(entries);
+    add_entries_to_advid_hash(ad, entries);
     ad->TTL = ttl;
     ad->PrimaryKey = jstring_new_2(primarykey);
     jstring_trim(ad->PrimaryKey);
@@ -962,6 +1007,35 @@ JXTA_DECLARE(void) jxta_srdi_message_clone(Jxta_SRDIMessage * ad, Jxta_SRDIMessa
     (*msg)->deltaSupport = ad->deltaSupport;
     if (NULL != ad->Entries && add_entries) {
         jxta_vector_clone(ad->Entries, &((*msg)->Entries), 0, INT_MAX);
+    }
+    if (NULL != ad->adv_hash && add_entries) {
+        char **keys;
+        char **keys_save;
+
+        (*msg)->adv_hash = jxta_hashtable_new(0);
+        keys = jxta_hashtable_keys_get(ad->adv_hash);
+        keys_save = keys;
+        while (*keys) {
+            Jxta_vector *entries_v=NULL;
+
+            if (JXTA_SUCCESS != jxta_hashtable_get(ad->adv_hash, *keys, strlen(*keys) + 1, JXTA_OBJECT_PPTR(&entries_v))) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to retrieve key from adv_hash %s \n", *keys);
+            } else {
+                Jxta_vector *new_v;
+
+                jxta_vector_clone(entries_v, &new_v, 0, INT_MAX);
+                jxta_hashtable_put((*msg)->adv_hash, *keys, strlen(*keys) + 1, (Jxta_object *) new_v);
+
+                JXTA_OBJECT_RELEASE(new_v);
+            }
+            if (entries_v)
+                JXTA_OBJECT_RELEASE(entries_v);
+            free (*(keys++));
+        }
+        while (*(keys)) {
+            free(*(keys++));
+        }
+        free(keys_save);
     }
     if (NULL != ad->resendEntries) {
         jxta_vector_clone(ad->resendEntries, &((*msg)->resendEntries), 0, INT_MAX);
@@ -995,7 +1069,9 @@ static void jxta_srdi_message_free(Jxta_SRDIMessage * ad)
     if (ad->Entries) {
         JXTA_OBJECT_RELEASE(ad->Entries);
     }
-
+    if (ad->adv_hash) {
+        JXTA_OBJECT_RELEASE(ad->adv_hash);
+    }
     if (ad->resendEntries) {
         JXTA_OBJECT_RELEASE(ad->resendEntries);
     }
