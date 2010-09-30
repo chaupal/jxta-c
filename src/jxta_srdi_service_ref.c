@@ -1131,10 +1131,13 @@ static Jxta_status create_queue_entries(Jxta_vector *filter_list, JString *group
             jxta_vector_add_object_last(*queued_entries, (Jxta_object *) q_entry);
 
             JXTA_OBJECT_RELEASE(q_entry);
-            JXTA_OBJECT_RELEASE(f_entry);
-            JXTA_OBJECT_RELEASE(orig_msg);
             JXTA_OBJECT_RELEASE(ep_groupid_j);
         }
+        JXTA_OBJECT_RELEASE(orig_msg);
+        JXTA_OBJECT_RELEASE(f_entry);
+        JXTA_OBJECT_RELEASE(f_ep_entries_v);
+        JXTA_OBJECT_RELEASE(f_parms);
+        JXTA_OBJECT_RELEASE(f_srdi_arg);
     }
     return JXTA_SUCCESS;
 }
@@ -1292,6 +1295,11 @@ Jxta_status return_ep_msg_func(Jxta_service *service, Jxta_endpoint_return_parms
                 }
                 jxta_endpoint_msg_entry_get_attribute(ep_elem, "groupid", &groupid_j);
                 res = create_queue_entries(filter_list, groupid_j, &queued_entries);
+                if (JXTA_SUCCESS != res) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to create q entries from the filter list [%pp] res:%d\n", filter_list, res);
+                    JXTA_OBJECT_RELEASE(groupid_j);
+                    goto FINAL_EXIT;
+                }
                 match_entries = jxta_vector_new(0);
                 for (j=0; j<jxta_vector_size(queued_entries); j++) {
                     SRDI_queue_entry *q_entry;
@@ -1303,10 +1311,7 @@ Jxta_status return_ep_msg_func(Jxta_service *service, Jxta_endpoint_return_parms
 
                     JXTA_OBJECT_RELEASE(q_entry);
                 }
-                if (JXTA_SUCCESS != res) {
-                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to create q entries from the filter list [%pp] res:%d\n", filter_list, res);
-                    goto FINAL_EXIT;
-                }
+
                 if (TRUE == adjust_srdi_entries ((Jxta_srdi_service *) jxta_endpoint_return_parms_service(ret_parms) , (Jxta_SRDIMessage *) new_srdi_msg, queued_entries, NULL, parm_arg->prev_diff, TRUE)) {
                         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Message should have been deleted\n");
                 }
@@ -1319,7 +1324,9 @@ Jxta_status return_ep_msg_func(Jxta_service *service, Jxta_endpoint_return_parms
                 JXTA_OBJECT_RELEASE(ep_elem);
                 JXTA_OBJECT_RELEASE(ep_elem_bv);
                 JXTA_OBJECT_RELEASE(queued_entries);
+                JXTA_OBJECT_RELEASE(match_entries);
             }
+            JXTA_OBJECT_RELEASE(ep_entries_v);
             JXTA_OBJECT_RELEASE(parm_arg);
             break;
         } /* end case */
@@ -2111,6 +2118,8 @@ static Jxta_status  remove_advid_entries_from_queued_entries(Jxta_vector *queued
         }
         if (srdi_msg_entries)
             JXTA_OBJECT_RELEASE(srdi_msg_entries);
+        if (q_entry)
+            JXTA_OBJECT_RELEASE(q_entry);
     }
     return res;
 }
@@ -2121,7 +2130,6 @@ static Jxta_boolean adjust_srdi_entries(Jxta_srdi_service *service, Jxta_SRDIMes
     Jxta_srdi_service_ref *me = (Jxta_srdi_service_ref *) service;
     Jxta_boolean res=FALSE;
     int i;
-    Jxta_vector *srdi_entries=NULL;
     Jxta_time diff_time;
     Jxta_hashtable *srdi_hash=NULL;
     char **keys;
@@ -2135,6 +2143,7 @@ static Jxta_boolean adjust_srdi_entries(Jxta_srdi_service *service, Jxta_SRDIMes
 
     while (*keys) {
         Jxta_boolean remove_advid=FALSE;
+        Jxta_vector *srdi_entries=NULL;
 
         if (jxta_hashtable_get(srdi_hash, *keys, strlen(*keys) + 1, JXTA_OBJECT_PPTR(&srdi_entries))) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, "Unable to retrieve entry from the hash with key:%s\n", *keys);
@@ -2162,13 +2171,13 @@ static Jxta_boolean adjust_srdi_entries(Jxta_srdi_service *service, Jxta_SRDIMes
             remove_advid_entries_from_queued_entries(queued_entries, *keys);
         }
         free(*(keys++));
+        if (srdi_entries)
+            JXTA_OBJECT_RELEASE(srdi_entries);
     }
 
     while (*keys) free(*(keys++));
     free(keys_save);
 
-    if (srdi_entries)
-        JXTA_OBJECT_RELEASE(srdi_entries);
     if (srdi_hash)
         JXTA_OBJECT_RELEASE(srdi_hash);
     return res;
@@ -2209,6 +2218,7 @@ static Jxta_status get_srdi_msg_from_ep_elem(Jxta_endpoint_msg_entry_element *ep
     Jxta_message_element *el=NULL;
     JString *ep_msg_entry_j=NULL;
     Jxta_bytevector *b_element=NULL;
+
     jxta_endpoint_msg_entry_get_value(ep_elem, &el);
     b_element = jxta_message_element_get_value(el);
     get_element_bytes(el, &ep_msg_entry_j);
