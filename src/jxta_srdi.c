@@ -608,8 +608,8 @@ JXTA_DECLARE(void) jxta_srdi_message_get_advids(Jxta_SRDIMessage *ad, Jxta_hasht
         *ads = jxta_hashtable_new(0);
         for (i=0; i<jxta_vector_size(ad->Entries); i++) {
             Jxta_SRDIEntryElement *srdi_entry=NULL;
-            Jxta_vector *advid_entries;
-            JString *advid_j;
+            Jxta_vector *advid_entries=NULL;
+            JString *advid_j=NULL;
 
             jxta_vector_get_object_at(ad->Entries, JXTA_OBJECT_PPTR(&srdi_entry), i);
 
@@ -624,6 +624,8 @@ JXTA_DECLARE(void) jxta_srdi_message_get_advids(Jxta_SRDIMessage *ad, Jxta_hasht
                 JXTA_OBJECT_RELEASE(srdi_entry);
             if (advid_entries)
                 JXTA_OBJECT_RELEASE(advid_entries);
+            if (advid_j)
+                JXTA_OBJECT_RELEASE(advid_j);
         }
     } else {
         *ads = NULL;
@@ -633,7 +635,7 @@ JXTA_DECLARE(void) jxta_srdi_message_get_advids(Jxta_SRDIMessage *ad, Jxta_hasht
 JXTA_DECLARE(void) jxta_srdi_message_remove_advid_entries(Jxta_SRDIMessage * ad, const char *advid)
 {
     int i;
-    Jxta_vector *adv_v;
+    Jxta_vector *adv_v=NULL;
 
     if (JXTA_SUCCESS == jxta_hashtable_get(ad->adv_hash, advid, strlen(advid) + 1, JXTA_OBJECT_PPTR(&adv_v))) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Remove SRDI entries %s\n", advid);
@@ -647,6 +649,8 @@ JXTA_DECLARE(void) jxta_srdi_message_remove_advid_entries(Jxta_SRDIMessage * ad,
         }
         jxta_hashtable_del(ad->adv_hash, advid, strlen(advid) + 1, NULL);
     }
+    if (adv_v)
+        JXTA_OBJECT_RELEASE(adv_v);
 
 }
 
