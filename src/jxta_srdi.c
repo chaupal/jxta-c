@@ -624,8 +624,6 @@ JXTA_DECLARE(void) jxta_srdi_message_get_advids(Jxta_SRDIMessage *ad, Jxta_hasht
                 JXTA_OBJECT_RELEASE(srdi_entry);
             if (advid_entries)
                 JXTA_OBJECT_RELEASE(advid_entries);
-            if (advid_j)
-                JXTA_OBJECT_RELEASE(advid_j);
         }
     } else {
         *ads = NULL;
