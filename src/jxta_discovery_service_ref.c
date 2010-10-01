@@ -484,6 +484,8 @@ static void stop(Jxta_module * module)
         JXTA_OBJECT_RELEASE(discovery->my_listeners[i]);
     }
 
+    status = jxta_endpoint_service_cleanup_pending_msgs(discovery->endpoint, (Jxta_service *)discovery);
+
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Stopped.\n");
 }
 
@@ -2620,7 +2622,7 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
 {
     Jxta_status status;
     Jxta_status res=JXTA_SUCCESS;
-    Jxta_boolean init=TRUE;
+    Jxta_boolean inited=TRUE;
     int query_id;
     apr_int32_t prev_diff=0;
     Jxta_vector *dr_rsps=NULL;
@@ -2681,10 +2683,10 @@ static Jxta_status discovery_send_discovery_response(Jxta_discovery_service_ref 
             locked = FALSE;
             apr_thread_mutex_unlock(discovery->rsp_lock);
         }
-        if (FALSE == init) {
+        if (FALSE == inited) {
             diff = jpr_time_now() - jxta_discovery_response_timestamp(dr_msg);
         }
-        init = FALSE;
+        inited = FALSE;
 
         status = jxta_discovery_response_get_xml(dr_msg, &rdoc);
         if (JXTA_SUCCESS != status) {
@@ -3881,55 +3883,55 @@ static void JXTA_STDCALL discovery_service_response_listener(Jxta_object * obj, 
     JXTA_OBJECT_RELEASE(dr);
 }
 
-static Jxta_vector * discovery_get_disc_services(JString *request_group)
+static Jxta_vector * discovery_get_disc_groups(JString *request_group)
 {
     Jxta_vector *groups=NULL;
-    Jxta_vector *dss=NULL;
+    Jxta_vector *dsg=NULL;
     int i;
 
-    dss = jxta_vector_new(0);
     groups = jxta_get_registered_groups();
-    for (i=0; NULL != groups && i<jxta_vector_size(groups); i++) {
-        Jxta_PG *group;
-        JString *group_j;
-        Jxta_discovery_service *ds;
-        Jxta_boolean found=TRUE;
-
-        jxta_vector_get_object_at(groups, JXTA_OBJECT_PPTR(&group), i);
-        if (NULL != request_group) {
+    /* if a single group is requested, find the group and return it
+     * otherwise, return all available groups.
+     * We cannot return just the discovery services since there is a 
+     * possibility that the group may be deleted prior to the 
+     * discovery service instance itself
+     */
+    if (NULL != request_group) {
+        dsg = jxta_vector_new(0);
+        /* iterate through groups and find the group requested */
+        for (i=0; (jxta_vector_size(dsg) == 0) && NULL != groups && i<jxta_vector_size(groups); i++) {
+            Jxta_PG *group = NULL;
+            JString *group_j = NULL;
             Jxta_id *groupid;
-            found = FALSE;
+
+            jxta_vector_get_object_at(groups, JXTA_OBJECT_PPTR(&group), i);
 
             jxta_PG_get_GID(group, &groupid);
             jxta_id_get_uniqueportion(groupid, &group_j);
 
-            found = (0 == jstring_equals(group_j, request_group)) ? TRUE:FALSE;
+            if (0 == jstring_equals(group_j, request_group)) {
+                jxta_vector_add_object_last(dsg, (Jxta_object *) group);
+            }
 
             JXTA_OBJECT_RELEASE(groupid);
             JXTA_OBJECT_RELEASE(group_j);
+            JXTA_OBJECT_RELEASE(group);
         }
-        if (found) {
-            jxta_PG_get_discovery_service(group, &ds);
 
-            if (NULL != ds) {
-                jxta_vector_add_object_last(dss, (Jxta_object *) ds);
-            }
-            JXTA_OBJECT_RELEASE(ds);
-        }
-        JXTA_OBJECT_RELEASE(group);
-        if (found && NULL !=request_group) break;
+        if (groups)
+            JXTA_OBJECT_RELEASE(groups);
     }
-
-    if (groups)
-        JXTA_OBJECT_RELEASE(groups);
-    return dss;
+    else {
+        dsg = groups;
+    }
+    return dsg;
 }
 
 static void *APR_THREAD_FUNC delta_cycle_func(apr_thread_t *thread, void *arg)
 {
     Jxta_status res=JXTA_SUCCESS;
     apr_thread_pool_t * tp;
-    Jxta_vector *dss=NULL;
+    Jxta_vector *dsg=NULL;
     int i;
     Jxta_hashtable *ret_msgs=NULL;
 
@@ -3952,13 +3954,22 @@ static void *APR_THREAD_FUNC delta_cycle_func(apr_thread_t *thread, void *arg)
         goto FINAL_EXIT;
     }
 
-    dss = discovery_get_disc_services(NULL);
-    for (i=0; NULL != dss && i < jxta_vector_size(dss); i++) {
+    dsg = discovery_get_disc_groups(NULL);
+    for (i=0; NULL != dsg && i < jxta_vector_size(dsg); i++) {
+        Jxta_PG *group=NULL;
         Jxta_discovery_service_ref *discovery_ref=NULL;
 
-        res = jxta_vector_get_object_at(dss, JXTA_OBJECT_PPTR(&discovery_ref), i);
+        res = jxta_vector_get_object_at(dsg, JXTA_OBJECT_PPTR(&group), i);
         if (JXTA_SUCCESS != res) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unable to retrieve discovery vector entry at %d\n", i);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, FILEANDLINE "Unable to retrieve discovery group vector entry at %d\n", i);
+            continue;
+        }
+        
+        jxta_PG_get_discovery_service(group, (Jxta_discovery_service**)&discovery_ref);
+        if (NULL == discovery_ref) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, 
+                            FILEANDLINE "Unable to retrieve discovery service from group(%pp)\n", group);
+            JXTA_OBJECT_RELEASE(group);
             continue;
         }
         /*
@@ -3971,6 +3982,7 @@ static void *APR_THREAD_FUNC delta_cycle_func(apr_thread_t *thread, void *arg)
         }
 
         JXTA_OBJECT_RELEASE(discovery_ref);
+        JXTA_OBJECT_RELEASE(group);
     }
     if (NULL != ret_msgs) {
         jxta_srdi_pushSrdi_msgs(discovery->srdi, discovery->instanceName, ret_msgs);
@@ -3980,12 +3992,17 @@ static void *APR_THREAD_FUNC delta_cycle_func(apr_thread_t *thread, void *arg)
   
 FINAL_EXIT:
   
-    if (dss)
-        JXTA_OBJECT_RELEASE(dss);
+    if (dsg)
+        JXTA_OBJECT_RELEASE(dsg);
     tp = jxta_PG_thread_pool_get(discovery->group);
 
     if (NULL != tp) {
-        apr_thread_pool_schedule(tp, delta_cycle_func, discovery, jxta_discovery_config_get_delta_update_cycle(discovery->config) * 1000, discovery);
+        jxta_service_lock((Jxta_service*) discovery);
+        /* check to make sure discovery is still running before scheduling another thread */
+        if (discovery->running) {
+            apr_thread_pool_schedule(tp, delta_cycle_func, discovery, jxta_discovery_config_get_delta_update_cycle(discovery->config) * 1000, discovery);
+        }
+        jxta_service_unlock((Jxta_service*) discovery);
     }
 
     return NULL;

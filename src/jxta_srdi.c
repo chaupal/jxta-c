@@ -638,12 +638,14 @@ JXTA_DECLARE(void) jxta_srdi_message_remove_advid_entries(Jxta_SRDIMessage * ad,
     if (JXTA_SUCCESS == jxta_hashtable_get(ad->adv_hash, advid, strlen(advid) + 1, JXTA_OBJECT_PPTR(&adv_v))) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Remove SRDI entries %s\n", advid);
         for (i=0; i< jxta_vector_size(ad->Entries); i++) {
-            Jxta_SRDIEntryElement *entry;
+            Jxta_SRDIEntryElement *entry = NULL;
 
             jxta_vector_get_object_at(ad->Entries, JXTA_OBJECT_PPTR(&entry), i);
             if (0 != strcmp(jstring_get_string(entry->advId), advid)) {
                 jxta_vector_remove_object_at(ad->Entries, NULL, i--);
             }
+            if (entry)
+                JXTA_OBJECT_RELEASE(entry);
         }
         jxta_hashtable_del(ad->adv_hash, advid, strlen(advid) + 1, NULL);
     }

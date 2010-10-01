@@ -102,15 +102,15 @@ JXTA_DECLARE(void) jxta_endpoint_messenger_destruct(JxtaEndpointMessenger * msgr
 
     if (msgr->address)
         JXTA_OBJECT_RELEASE(msgr->address);
-    if (msgr->pool)
-        apr_pool_destroy(msgr->pool);
     if (msgr->active_q)
         JXTA_OBJECT_RELEASE(msgr->active_q);
     if (msgr->pending_q)
         JXTA_OBJECT_RELEASE(msgr->pending_q);
-    if (msgr->mutex)
-        apr_thread_mutex_destroy(msgr->mutex);
     if (msgr->ts)
         JXTA_OBJECT_RELEASE(msgr->ts);
+    if (msgr->mutex)
+        apr_thread_mutex_destroy(msgr->mutex);
+    if (msgr->pool)
+        apr_pool_destroy(msgr->pool);
 }
 

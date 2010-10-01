@@ -327,6 +327,8 @@ static void stop(Jxta_module * resolver)
         endpoint_service_remove_recipient(self->endpoint, self->ep_cookies[i]);
     }
 
+    rv = jxta_endpoint_service_cleanup_pending_msgs(self->endpoint, (Jxta_service *)self);
+
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Stopped.\n");
     /* nothing special to stop */
 }
@@ -623,10 +625,10 @@ Jxta_status return_resolver_func(Jxta_service *service, Jxta_endpoint_return_par
                         jxta_endpoint_filter_entry_set_parms(new_entry, f_parms);
                         jxta_vector_replace_object_at(filter_list, (Jxta_object *) new_entry, i);
                         JXTA_OBJECT_RELEASE(new_entry);
-                        JXTA_OBJECT_RELEASE(f_parms);
                         JXTA_OBJECT_RELEASE(f_msg);
                     }
-                    
+                   
+                    JXTA_OBJECT_RELEASE(f_parms);
                     JXTA_OBJECT_RELEASE(tmp_parms);
                 }
                 JXTA_OBJECT_RELEASE(f_entry);

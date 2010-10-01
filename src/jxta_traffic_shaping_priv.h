@@ -82,7 +82,7 @@ void traffic_shaping_update(Jxta_traffic_shaping *flow, apr_int64_t size, Jxta_b
 
 Jxta_status traffic_shaping_check_max(Jxta_traffic_shaping *ts, apr_int64_t length, apr_int64_t *max, float compression, float *compressed);
 
-void traffic_shaping_set_time(Jxta_traffic_shaping *t, Jxta_time time);
+void traffic_shaping_set_time(Jxta_traffic_shaping *t, Jxta_time duration);
 Jxta_time traffic_shaping_time(Jxta_traffic_shaping *t);
 
 void traffic_shaping_set_size(Jxta_traffic_shaping *t, apr_int64_t size);

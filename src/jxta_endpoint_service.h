@@ -535,6 +535,17 @@ JXTA_DECLARE(void) jxta_endpoint_service_get_xmit_flow_control_of_type(Jxta_endp
 
 JXTA_DECLARE(Jxta_ep_flow_control *) jxta_ep_flow_control_new();
 
+/**
+ ** Cleanup any pending messages for the indicated service
+ **
+ ** @param Jxta_endpoint_service myself
+ ** @param service - pointer to the service that is requesting cleanup
+ **
+ ** @return JXTA_INVALID_ARGUMENT if either myself or service are invalid.  Otherwise, JXTA_SUCCESS
+ **
+**/
+JXTA_DECLARE(Jxta_status) jxta_endpoint_service_cleanup_pending_msgs(Jxta_endpoint_service * myself, Jxta_service * service);
+
 #ifdef __cplusplus
 #if 0
 {

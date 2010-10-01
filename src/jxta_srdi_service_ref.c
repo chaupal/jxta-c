@@ -2202,6 +2202,8 @@ static Jxta_status get_srdi_msg_from_msg(Jxta_message *msg
                                 , jstring_length(msg_entry_j));
     if (NULL != msg_elem_bv)
         *msg_elem_bv = b_element;
+    else
+        JXTA_OBJECT_RELEASE(b_element);
 
 FINAL_EXIT:
     if (el)
@@ -3570,6 +3572,8 @@ static void stop(Jxta_module * me)
     if (JXTA_SUCCESS != status) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Failed to remove endpoint listener for service (%x)\n", myself);
     }
+
+    status = jxta_endpoint_service_cleanup_pending_msgs(myself->endpoint, (Jxta_service *)myself);
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Stopped.\n");
 }

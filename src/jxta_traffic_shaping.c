@@ -906,9 +906,9 @@ void traffic_shaping_init(Jxta_traffic_shaping *t)
     return;
 }
 
-void traffic_shaping_set_time(Jxta_traffic_shaping *t, Jxta_time time)
+void traffic_shaping_set_time(Jxta_traffic_shaping *t, Jxta_time duration)
 {
-    t->time = time;
+    t->time = duration;
 }
 
 Jxta_time traffic_shaping_time(Jxta_traffic_shaping *t)

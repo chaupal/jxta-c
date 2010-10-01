@@ -6078,7 +6078,13 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
     if (NULL == pve) {
         if (!jxta_rdv_service_is_rendezvous(me->rdv) && PONG_INVITE == action) {
             me->state = PV_LOCATING;
+            /*TODO: Need to create an intermediate state PV_SWITCHING? to prevent multiple
+             *      PONG_INVITES from being processed simultaneously while the mutex is 
+             *      released to deal with the switch config
+             */
             /* must unlock mutex while calling rdv_service functions that lock rdv mutex */
+            /* reset iterations_since_switch so the auto-cycle does not accidentally switch back right away */
+            me->iterations_since_switch = 0;
             apr_thread_mutex_unlock(me->mutex);
             rdv_service_switch_config(me->rdv, config_rendezvous);
             apr_thread_mutex_lock(me->mutex);
@@ -9272,9 +9278,16 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
 
     if (NULL != me->self_pve) {
         res = jxta_peer_get_peerid((Jxta_peer *)me->self_pve, &id);
-        if (JXTA_SUCCESS != res) {
+        if (JXTA_SUCCESS != res || id == NULL) {
             goto RERUN_EXIT;
         }
+    }
+    else if (jxta_rdv_service_is_rendezvous(rdv)) {
+        /* if this peer is a rendezvous but does not have a pve entry yet, 
+         * there is a chance that a demotion may still occur but we would
+         * not be ready for it yet.  Wait until the next cycle and try again
+         */
+        goto RERUN_EXIT;
     }
     
     new_config = jxta_rdv_service_config(rdv);
@@ -9324,12 +9337,16 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Demoting and disconnecting peers from rdv (%pp) \n" , rdv);
     }
 
+    /* have to unlock here since jxta_rdv_service_get_peers locks the rdv service */
     apr_thread_mutex_unlock(me->mutex);
     locked = FALSE;
     
     if (check_peers_size == TRUE) {
         res = jxta_rdv_service_get_peers(rdv, &rdvs);
         if (JXTA_SUCCESS == res) {
+            /*re-lock and continue processing */
+            apr_thread_mutex_lock(me->mutex);
+            locked = TRUE;
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Should be switching if %d is 0\n", jxta_vector_size(rdvs));
             if (0 == jxta_vector_size(rdvs)) {
                 if (increment_loneliness == TRUE) {
@@ -9344,19 +9361,22 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
         }
     }
 
-    /* We can perform these operations without a mutex since the iterations_since_switch is only modified by the auto_cycle thread
-     * except for when starting the peerview.  But in that case, the auto_cycle has not been started yet.  
+    if (FALSE == locked) {
+        apr_thread_mutex_lock(me->mutex);
+        locked = TRUE;
+    }
+    /* We must lock the mutex around these checks since other threads that attempt to perform the switch need to indicate
+     * how recent the switch was made  
      * The peerview_remove_pves will lock the peerview separately.
      * The peerview lock must not be held when calling either the call_event_listeners or the rdv_service_switch_config
      */
-     
     /* Refuse to switch if we just switched */
     if ((jxta_rdv_service_config(rdv) != new_config) && (me->iterations_since_switch > DEFAULT_SWITCH_ITERATIONS)) {
+        me->iterations_since_switch = 0;
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO,"Auto-rendezvous new_config -- %s\n", new_config == config_edge ? "edge":"rendezvous");
         if (config_edge == new_config) {
             /* the switch is done in the rdv_service in this case */
             peerview_remove_pves(me);
-            apr_thread_mutex_lock(me->mutex);
             me->do_demotion = FALSE;
             if (PV_STOPPED != me->state) {
                 Jxta_peerview_event *event = peerview_event_new(JXTA_PEERVIEW_DEMOTE, id);
@@ -9366,11 +9386,11 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
                                      APR_THREAD_TASK_PRIORITY_HIGH, me);
             }
             peerview_has_changed(me);
-            apr_thread_mutex_unlock(me->mutex);
         } else if (config_rendezvous == new_config) {
+            apr_thread_mutex_unlock(me->mutex);
+            locked = FALSE;
             rdv_service_switch_config(rdv, new_config);
         }
-        me->iterations_since_switch = 0;
     } else {
         me->iterations_since_switch++;
     }
