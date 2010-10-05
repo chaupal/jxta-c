@@ -66,7 +66,6 @@
 
 static Jxta_PG *group;
 static JxtaShellEnvironment *environment;
-static JString *env_type = NULL;
 
 JxtaShellApplication *jxta_search_new(Jxta_PG * pg,
                                       Jxta_listener * standout,
@@ -81,7 +80,6 @@ JxtaShellApplication *jxta_search_new(Jxta_PG * pg,
                                       jxta_search_start, (shell_application_stdin) jxta_search_process_input);
     group = pg;
     environment = env;
-    env_type = jstring_new_2("Advertisement");
     return app;
 }
 
@@ -218,12 +216,15 @@ void jxta_search_start(Jxta_object * appl, int argv, char **arg)
             JxtaShellObject *sh_obj;
             printf("restored %d advertisement(s) \n", jxta_vector_size(res_vec));
             for (i = 0; i < jxta_vector_size(res_vec); i++) {
+                JString *env_type;
                 sprintf(buf, "adv%d", i);
                 name = jstring_new_2(buf);
                 jxta_vector_get_object_at(res_vec, JXTA_OBJECT_PPTR(&padv), i);
+                env_type = jstring_new_2("Advertisement");
                 sh_obj = JxtaShellObject_new(name, (Jxta_object *) padv, env_type);
                 JxtaShellEnvironment_add_0(environment, sh_obj);
                 JXTA_OBJECT_RELEASE(sh_obj);
+                JXTA_OBJECT_RELEASE(env_type);
                 JXTA_OBJECT_RELEASE(name);
                 JXTA_OBJECT_RELEASE(padv);
             }
@@ -237,7 +238,6 @@ void jxta_search_start(Jxta_object * appl, int argv, char **arg)
     JXTA_OBJECT_RELEASE(value);
     JXTA_OBJECT_RELEASE(query);
     JXTA_OBJECT_RELEASE(infile);
-    JXTA_OBJECT_RELEASE(env_type);
     JXTA_OBJECT_RELEASE(discovery);
     JxtaShellApplication_terminate(app);
 }
