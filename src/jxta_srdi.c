@@ -117,9 +117,9 @@ static void handleJxta_SRDIMessage(void *userdata, const XML_Char * cd, int len)
     const char *pk;
 
     if (0 == len) {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Begin Jxta_SRDIMessage element\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Begin Jxta_SRDIMessage element\n");
     } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "End Jxta_SRDIMessage element\n");
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "End Jxta_SRDIMessage element\n");
 
         /* creat default mapping for namespace as JSE peer does not support namespace */
         for (i = 0; i < jxta_vector_size(myself->Entries); i++) {
@@ -156,11 +156,10 @@ static void handleTTL(void *userdata, const XML_Char * cd, int len)
         extract_char_data(cd, len, tok);
         if (*tok != '\0') {
             ad->TTL = (short) strtol(cd, NULL, 0);
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Type is :%d\n", ad->TTL);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Type is :%d\n", ad->TTL);
         }
         free(tok);
     }
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "In Type element\n");
 }
 
 static void handlePeerID(void *userdata, const XML_Char * cd, int len)
@@ -602,6 +601,10 @@ JXTA_DECLARE(void) jxta_srdi_message_set_entries(Jxta_SRDIMessage * ad, Jxta_vec
 JXTA_DECLARE(void) jxta_srdi_message_get_advids(Jxta_SRDIMessage *ad, Jxta_hashtable ** ads)
 {
 
+    if (ad->adv_hash) {
+        *ads = JXTA_OBJECT_SHARE(ad->adv_hash);
+        return;
+    }
     if (ad->Entries != NULL) {
         int i;
 

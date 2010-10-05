@@ -67,7 +67,8 @@ extern "C" {
 #import "jxta_message.h"
 
 static const char JXTA_ENDPOINT_MSG_JXTA_NS[] = "jxta";
-static const char JXTA_ENPOINT_MSG_ELEMENT_NAME[] = "EndpointMessage";
+static const char JXTA_ENDPOINT_MSG_ELEMENT_NAME[] = "EndpointMessage";
+static const char JXTA_ENDPOINT_OVERRIDE_NAME[] = "EPOverride";
 static const char JXTA_FLOWCONTROL_MSG_ELEMENT_NAME[] = "FlowControl";
 
 typedef struct _jxta_endpoint_message Jxta_endpoint_message;

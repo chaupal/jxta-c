@@ -110,6 +110,11 @@ JXTA_DECLARE(Ts_max_option) jxta_ep_flow_control_msg_get_max_option(Jxta_ep_flow
 JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_reserve(Jxta_ep_flow_control_msg *, int reserve);
 JXTA_DECLARE(int) jxta_ep_flow_control_msg_get_reserve(Jxta_ep_flow_control_msg *);
 
+JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_override(Jxta_ep_flow_control_msg *, apr_int64_t size);
+JXTA_DECLARE(apr_int64_t) jxta_ep_flow_control_msg_override(Jxta_ep_flow_control_msg *);
+
+JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_required_length(Jxta_ep_flow_control_msg *, apr_int64_t size);
+JXTA_DECLARE(apr_int64_t) jxta_ep_flow_control_msg_required_length(Jxta_ep_flow_control_msg *);
 
 JXTA_DECLARE(Jxta_status) jxta_ep_flow_control_msg_parse_charbuffer(Jxta_ep_flow_control_msg *
                             , const char *, int len);

@@ -1521,11 +1521,12 @@ JXTA_DECLARE(Jxta_status) jxta_PG_async_send(Jxta_PG * me, Jxta_message * msg, J
     char *new_param;
     Jxta_endpoint_address * dest;
     apr_int64_t max_size;
+    apr_int64_t required;
 
     new_param = get_service_key(svc_name, svc_param);
     dest = jxta_endpoint_address_new_3(peer_id, me->ep_name, new_param);
     jxta_PG_get_endpoint_service(me, &ep);
-    rv = jxta_endpoint_service_check_msg_length(ep, NULL, dest, msg, &max_size);
+    rv = jxta_endpoint_service_check_msg_length(ep, NULL, dest, msg, &max_size, &required);
     if (JXTA_SUCCESS != rv) {
         goto FINAL_EXIT;
     }

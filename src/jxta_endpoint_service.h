@@ -223,7 +223,7 @@ JXTA_DECLARE(void) jxta_endpoint_service_add_filter(Jxta_endpoint_service * serv
 JXTA_DECLARE(void) jxta_endpoint_service_remove_filter(Jxta_endpoint_service * service, JxtaEndpointFilter filter);
 
 JXTA_DECLARE(Jxta_status) jxta_endpoint_service_check_msg_length(Jxta_endpoint_service * service
-                                            , JxtaEndpointMessenger *messenger, Jxta_endpoint_address *addr, Jxta_message * msg, apr_int64_t *max_length);
+                                            , JxtaEndpointMessenger *messenger, Jxta_endpoint_address *addr, Jxta_message * msg, apr_int64_t *max_length, apr_int64_t *required);
 
 /*
  * Sends the given message to the given destination using the appropriate
@@ -448,6 +448,16 @@ JXTA_DECLARE(Jxta_service *) jxta_endpoint_return_parms_service(Jxta_endpoint_re
 
 JXTA_DECLARE(void) jxta_endpoint_return_parms_set_max_length(Jxta_endpoint_return_parms *ret_parms, apr_int64_t max_length);
 JXTA_DECLARE(apr_int64_t) jxta_endpoint_return_parms_max_length(Jxta_endpoint_return_parms *ret_parms);
+
+JXTA_DECLARE(void) jxta_endpoint_return_parms_set_override(Jxta_endpoint_return_parms *ret_parms, Jxta_boolean override);
+JXTA_DECLARE(apr_int64_t) jxta_endpoint_return_parms_override(Jxta_endpoint_return_parms *ret_parms);
+
+JXTA_DECLARE(void) jxta_endpoint_return_parms_set_msg_length(Jxta_endpoint_return_parms *ret_parms, apr_int64_t msg_length);
+JXTA_DECLARE(apr_int64_t) jxta_endpoint_return_parms_msg_length(Jxta_endpoint_return_parms *ret_parms);
+
+JXTA_DECLARE(void) jxta_endpoint_return_parms_set_required_length(Jxta_endpoint_return_parms *ret_parms, apr_int64_t required_length);
+JXTA_DECLARE(apr_int64_t) jxta_endpoint_return_parms_required_length(Jxta_endpoint_return_parms *ret_parms);
+
 
 /* JXTA_DECLARE(void) jxta_endpoint_return_parms_set_filter_list(Jxta_endpoint_return_parms *ret_parms, Jxta_vector *filter_list);
 JXTA_DECLARE(void) jxta_endpoint_return_parms_get_filter_list(Jxta_endpoint_return_parms *ret_parms, Jxta_vector **filter_list);

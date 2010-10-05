@@ -66,6 +66,7 @@ extern "C" {
 typedef enum _ts_max_option {
     TS_MAX_OPTION_LOOK_AHEAD=1,
     TS_MAX_OPTION_FRAME,
+    TS_MAX_OPTION_IGNORE
 } Ts_max_option;
 
 typedef struct _traffic Jxta_traffic_shaping;

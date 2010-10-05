@@ -72,6 +72,8 @@ struct _jxta_ep_flow_control_msg {
     Jxta_id *peer_id;
     Jxta_time time;
     apr_int64_t size;
+    apr_int64_t override;
+    apr_int64_t required;
     int interval;
     int frame;
     int look_ahead;
@@ -124,7 +126,15 @@ JXTA_DECLARE(Jxta_ep_flow_control_msg *) jxta_ep_flow_control_msg_new(void)
                                                                  (JxtaAdvertisementGetIDFunc) NULL,
                                                                  (JxtaAdvertisementGetIndexFunc) NULL);
 
-
+    myself->time = -1;
+    myself->size = -1;
+    myself->interval = -1;
+    myself->frame = -1;
+    myself->look_ahead = -1;
+    myself->reserve = -1;
+    myself->override = -1;
+    myself->required = -1;
+    myself->max_option = TS_MAX_OPTION_IGNORE;
     return myself;
 }
 
@@ -220,24 +230,45 @@ JXTA_DECLARE(Jxta_status) jxta_ep_flow_control_msg_get_xml(Jxta_ep_flow_control_
         jstring_append_2(string, jstring_get_string(peer_j));
         jstring_append_2(string, "\"");
     }
-    apr_snprintf(tmp, sizeof(tmp), " fc_time=\"%ld\"", (long) myself->time);
-    jstring_append_2(string, tmp);
+    if (myself->time != -1) {
+        apr_snprintf(tmp, sizeof(tmp), " fc_time=\"%ld\"", (long) myself->time);
+        jstring_append_2(string, tmp);
+    }
+    if (myself->size != -1) {
+        apr_snprintf(tmp, sizeof(tmp), " fc_size=\"%" APR_INT64_T_FMT "\"", myself->size);
+        jstring_append_2(string, tmp);
+    }
 
-    apr_snprintf(tmp, sizeof(tmp), " fc_size=\"%" APR_INT64_T_FMT "\"", myself->size);
-    jstring_append_2(string, tmp);
+    if (myself->interval != -1) {
+        apr_snprintf(tmp, sizeof(tmp), " fc_interval=\"%d\"", myself->interval);
+        jstring_append_2(string, tmp);
+    }
 
-    apr_snprintf(tmp, sizeof(tmp), " fc_interval=\"%d\"", myself->interval);
-    jstring_append_2(string, tmp);
-    apr_snprintf(tmp, sizeof(tmp), " fc_frame=\"%d\"", myself->frame);
-    jstring_append_2(string, tmp);
-    apr_snprintf(tmp, sizeof(tmp), " fc_look_ahead=\"%d\"", myself->look_ahead);
-    jstring_append_2(string, tmp);
-    apr_snprintf(tmp, sizeof(tmp), " fc_reserve=\"%d\"", myself->reserve);
-    jstring_append_2(string, tmp);
-    jstring_append_2(string, " fc_max_option=\"");
-    jstring_append_2(string, myself->max_option == TS_MAX_OPTION_LOOK_AHEAD ? "look_ahead":"frame");
-    jstring_append_2(string, "\"");
-
+    if (myself->frame != -1) {
+        apr_snprintf(tmp, sizeof(tmp), " fc_frame=\"%d\"", myself->frame);
+        jstring_append_2(string, tmp);
+    }
+    if (myself->time != -1) {
+        apr_snprintf(tmp, sizeof(tmp), " fc_look_ahead=\"%d\"", myself->look_ahead);
+        jstring_append_2(string, tmp);
+    }
+    if (myself->look_ahead != -1) {
+        apr_snprintf(tmp, sizeof(tmp), " fc_reserve=\"%d\"", myself->reserve);
+        jstring_append_2(string, tmp);
+    }
+    if (myself->override != -1) {
+        apr_snprintf(tmp, sizeof(tmp), " fc_override=\"%" APR_INT64_T_FMT "\"", myself->override);
+        jstring_append_2(string, tmp);
+    }
+    if (myself->required != -1) {
+        apr_snprintf(tmp, sizeof(tmp), " fc_required=\"%" APR_INT64_T_FMT "\"", myself->required);
+        jstring_append_2(string, tmp);
+    }
+    if (TS_MAX_OPTION_IGNORE != myself->max_option) {
+        jstring_append_2(string, " fc_max_option=\"");
+        jstring_append_2(string, myself->max_option == TS_MAX_OPTION_LOOK_AHEAD ? "look_ahead":"frame");
+        jstring_append_2(string, "\"");
+    }
     jstring_append_2(string, "/>");
 
 
@@ -284,6 +315,10 @@ static void handle_ep_flow_control_msg(void *me, const XML_Char * cd, int len)
                 myself->reserve = atoi(atts[1]);
             } else if (0 == strcmp(*atts, "fc_max_option")) {
                 myself->max_option = strcmp(atts[1],"frame") == 0 ? TS_MAX_OPTION_FRAME:TS_MAX_OPTION_LOOK_AHEAD;
+            } else if (0 == strcmp(*atts, "fc_override")) {
+                myself->override = apr_atoi64(atts[1]);
+            } else if (0 == strcmp(*atts, "fc_required")) {
+                myself->required = apr_atoi64(atts[1]);
             } else {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized attribute : \"%s\" = \"%s\"\n", *atts, atts[1]);
             }
@@ -400,6 +435,26 @@ JXTA_DECLARE(Ts_max_option) jxta_ep_flow_control_msg_get_max_option(Jxta_ep_flow
 {
     return myself->max_option;
 
+}
+
+JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_override(Jxta_ep_flow_control_msg *myself, apr_int64_t size)
+{
+    myself->override = size;
+}
+
+JXTA_DECLARE(apr_int64_t) jxta_ep_flow_control_msg_override(Jxta_ep_flow_control_msg *myself)
+{
+    return myself->override;
+}
+
+JXTA_DECLARE(void) jxta_ep_flow_control_msg_set_required_length(Jxta_ep_flow_control_msg * myself, apr_int64_t size)
+{
+    myself->required = size;
+}
+
+JXTA_DECLARE(apr_int64_t) jxta_ep_flow_control_msg_required_length(Jxta_ep_flow_control_msg * myself)
+{
+    return myself->required;
 }
 
 /* vim: set ts=4 sw=4 et tw=130: */

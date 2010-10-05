@@ -508,6 +508,7 @@ static Jxta_status unregisterResponseHandler(Jxta_resolver_service * resolver, J
 Jxta_status return_resolver_func(Jxta_service *service, Jxta_endpoint_return_parms * ret_parms, Jxta_vector * filter_list, Jxta_vector **ret_v, Jxta_endpoint_service_action action)
 {
     Jxta_status res = JXTA_SUCCESS;
+    Jxta_status call_res = JXTA_SUCCESS;
     Jxta_vector *new_entries=NULL;
     Jxta_endpoint_message *ep_msg=NULL;
     Jxta_endpoint_return_parms *caller_parms;
@@ -544,7 +545,7 @@ Jxta_status return_resolver_func(Jxta_service *service, Jxta_endpoint_return_par
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Resolver return func JXTA_EP_ACTION_REDUCE caller msg [%pp] caller_parms [%pp]\n", caller_msg, caller_parms);
             JXTA_OBJECT_RELEASE(caller_msg);
             jxta_endpoint_return_parms_set_msg(caller_parms, (Jxta_message *) res_rsp);
-            res = return_func(jxta_endpoint_return_parms_service(ret_parms), caller_parms, NULL, &new_v, JXTA_EP_ACTION_REDUCE);
+            call_res = return_func(jxta_endpoint_return_parms_service(ret_parms), caller_parms, NULL, &new_v, action);
             if (JXTA_SUCCESS != res) {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unable to reduce res_rsp [%pp]\n", res_rsp);
                 goto FINAL_EXIT;
@@ -580,6 +581,7 @@ Jxta_status return_resolver_func(Jxta_service *service, Jxta_endpoint_return_par
                 jxta_endpoint_return_parms_set_service(new_ret_parms, (Jxta_service *) me);
                 jxta_endpoint_return_parms_set_function(new_ret_parms, (EndpointReturnFunc) return_resolver_func);
                 jxta_endpoint_return_parms_set_msg(new_ret_parms, new_msg);
+                jxta_endpoint_return_parms_set_required_length(new_ret_parms, jxta_endpoint_return_parms_required_length(caller_parms));
                 jxta_endpoint_return_parms_set_arg(new_ret_parms, (Jxta_object *) caller_parms);
 
                 res = jxta_vector_add_object_last(*ret_v, (Jxta_object *) new_ret_parms);
@@ -596,7 +598,6 @@ Jxta_status return_resolver_func(Jxta_service *service, Jxta_endpoint_return_par
         }
         case JXTA_EP_ACTION_FILTER:
         {
-
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Resolver return func JXTA_EP_ACTION_FILTER\n");
             for (i=0; i<jxta_vector_size(filter_list); i++) {
                 Jxta_endpoint_filter_entry *f_entry=NULL;
@@ -650,6 +651,9 @@ FINAL_EXIT:
         JXTA_OBJECT_RELEASE(new_entries);
     if (msg)
         JXTA_OBJECT_RELEASE(msg);
+    if (JXTA_SUCCESS != call_res)
+        res = call_res;
+
     return res;
 }
 
