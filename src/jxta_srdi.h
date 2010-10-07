@@ -94,6 +94,7 @@ struct _jxta_EntryElement {
     JString *value;
     JString *nameSpace;
     JString *advId;
+    JString *advId_static;
     JString *range;
     JString *sn_cs_values;
     Jxta_boolean expanded;
@@ -372,6 +373,8 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_4(JString * key, JSt
                                                               Jxta_sequence_number seqNumber, Jxta_boolean replicate, Jxta_boolean re_replicate);
 
 JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_resend(Jxta_sequence_number seqNumber);
+
+JXTA_DECLARE(void) jxta_srdi_element_set_advid(Jxta_SRDIEntryElement * elem, JString *advid_j);
 
 #ifdef __cplusplus
 #if 0

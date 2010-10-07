@@ -2272,6 +2272,7 @@ static Jxta_status cm_srdi_index_get(Jxta_cm * me, JString * jPeerid, JString * 
     const char *name_space;
     apr_pool_t *pool = NULL;
     apr_dbd_results_t *res = NULL;
+    JString *advid_j=NULL;
 
 
     aprs = apr_pool_create(&pool, NULL);
@@ -2343,9 +2344,11 @@ static Jxta_status cm_srdi_index_get(Jxta_cm * me, JString * jPeerid, JString * 
     if (NULL != entry->key)
         JXTA_OBJECT_RELEASE(entry->key);
     entry->key = jstring_new_2(name);
-    if (NULL != entry->advId)
-        JXTA_OBJECT_RELEASE(entry->advId);
-    entry->advId = jstring_new_2(advId);
+
+    advid_j = jstring_new_2(advId);
+    jxta_srdi_element_set_advid(entry, advid_j);
+    JXTA_OBJECT_RELEASE(advid_j);
+
     if (NULL != entry->nameSpace)
         JXTA_OBJECT_RELEASE(entry->nameSpace);
     entry->nameSpace = jstring_new_2(name_space);
@@ -3372,6 +3375,7 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
         Jxta_boolean delta_is_duplicate;
         Jxta_boolean target_is_duplicate = FALSE;
         Jxta_boolean delta_is_within_radius = FALSE;
+        JString *advid_j=NULL;
 
         duplicate_moved = FALSE;
         delta_changed = FALSE;
@@ -3404,11 +3408,9 @@ Jxta_status cm_save_delta_entry(Jxta_cm * me, JString * jPeerid, JString * jSour
 
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "got sequence %s\n", seqNumber);
 
-        /* don't leak */
-        if (NULL != entry->advId) {
-            JXTA_OBJECT_RELEASE(entry->advId);
-        }
-        entry->advId = jstring_new_2(advid);
+        advid_j = jstring_new_2(advid);
+        jxta_srdi_element_set_advid(entry, advid_j);
+        JXTA_OBJECT_RELEASE(advid_j);
         target_is_duplicate = (NULL != jAdvPeer && !strcmp(jstring_get_string(jPeerid), jstring_get_string(jAdvPeer)));
         delta_is_duplicate = !strcmp(duplicate, "1");
         delta_is_within_radius = !strcmp(radius, "1");
@@ -6053,6 +6055,7 @@ Jxta_status cm_get_delta_entries_for_update(Jxta_cm * self, const char *name, JS
         Jxta_SRDIEntryElement *entry;
         JString *jPeerid = NULL;
         JString *key_j = NULL;
+        JString *key_clone_j = NULL;
         Jxta_SRDIEntryElement *existing_entry;
 
         entries_v = NULL;
@@ -6103,10 +6106,10 @@ Jxta_status cm_get_delta_entries_for_update(Jxta_cm * self, const char *name, JS
         }
 
         key_j = jstring_new_2(advid);
-        if (NULL != entry->advId) {
-            JXTA_OBJECT_RELEASE(entry->advId);
-        }
-        entry->advId = jstring_clone(key_j);
+        key_clone_j = jstring_clone(key_j);
+        jxta_srdi_element_set_advid(entry, key_clone_j);
+        JXTA_OBJECT_RELEASE(key_clone_j);
+
         jstring_append_1(key_j, jPeerid);
 
         jstring_append_2(key_j, source_peerid);

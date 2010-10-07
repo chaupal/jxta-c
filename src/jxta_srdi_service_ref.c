@@ -1505,7 +1505,7 @@ static Jxta_boolean create_zero_exp_msgs(JString *remove_peer, Jxta_SRDIEntryEle
     zero_entry->expiration = 0;
     zero_entry->replicate = entry->replicate;
     zero_entry->duplicate = entry->duplicate;
-    zero_entry->advId = JXTA_OBJECT_SHARE(entry->advId);
+    jxta_srdi_element_set_advid(zero_entry, entry->advId);
 
     if (jxta_hashtable_get(remove_entries, jstring_get_string(remove_peer), jstring_length(remove_peer) + 1, JXTA_OBJECT_PPTR(&entry_v)) != JXTA_SUCCESS) {
         entry_v = jxta_vector_new(0);
@@ -1775,8 +1775,7 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
                     JXTA_OBJECT_RELEASE(entry->key);
                     entry->key = NULL;
                     if (!ad) {
-                        JXTA_OBJECT_RELEASE(entry->advId);
-                        entry->advId = NULL;
+                        jxta_srdi_element_set_advid(entry, NULL);
                     }
                     JXTA_OBJECT_RELEASE(entry->nameSpace);
                     entry->nameSpace = NULL;
@@ -1797,8 +1796,8 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
                     }
                     JXTA_OBJECT_RELEASE(entry->key);
                     entry->key = NULL;
-                    JXTA_OBJECT_RELEASE(entry->advId);
-                    entry->advId = NULL;
+                    jxta_srdi_element_set_advid(entry, NULL);
+
                     JXTA_OBJECT_RELEASE(entry->nameSpace);
                     entry->nameSpace = NULL;
                 }

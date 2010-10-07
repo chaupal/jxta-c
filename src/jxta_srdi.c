@@ -277,6 +277,9 @@ static void DRE_Free(Jxta_object * o)
     if (dre->advId) {
         JXTA_OBJECT_RELEASE(dre->advId);
     }
+    if (dre->advId_static) {
+        JXTA_OBJECT_RELEASE(dre->advId_static);
+    }
     if (dre->range) {
         JXTA_OBJECT_RELEASE(dre->range);
     }
@@ -309,8 +312,8 @@ static void normalize_entry(Jxta_SRDIEntryElement *entry)
             entry->value = jstring_new_2("");
         }
         if (!entry->advId) {
-            JXTA_OBJECT_SHARE(entry->value);
-            entry->advId = entry->value;
+            entry->advId = JXTA_OBJECT_SHARE(entry->value);
+            entry->advId_static = JXTA_OBJECT_SHARE(entry->advId);
         }
     }
 }
@@ -355,12 +358,12 @@ static void handleEntry(void *userdata, const XML_Char * cd, int len)
             } else if (0 == strcmp("resend", *atts)) {
                 entry->resend = TRUE;
             } else if (0 == strcmp("AdvId", *atts)) {
-                if (NULL == entry->advId) {
-                    entry->advId = jstring_new_1(strlen(atts[1]));
-                } else {
-                    jstring_reset(entry->advId, NULL);
-                }
-                jstring_append_0(entry->advId, atts[1], strlen(atts[1]));
+                JString *advid_j;
+
+                advid_j = jstring_new_2(atts[1]);
+                jxta_srdi_element_set_advid(entry, advid_j);
+                JXTA_OBJECT_RELEASE(advid_j);
+
             } else if (0 == strcmp("Range", *atts)) {
                 if (NULL == entry->range) {
                     entry->range = jstring_new_1(strlen(atts[1]));
@@ -403,10 +406,11 @@ static void handleEntry(void *userdata, const XML_Char * cd, int len)
         Jxta_vector *entries_v;
 
         normalize_entry(entry);
+
         jxta_vector_add_object_last(ad->Entries, (Jxta_object *) entry);
-        if (JXTA_SUCCESS != jxta_hashtable_get(ad->adv_hash, jstring_get_string(entry->advId), jstring_length(entry->advId) + 1, JXTA_OBJECT_PPTR(&entries_v))) {
+        if (JXTA_SUCCESS != jxta_hashtable_get(ad->adv_hash, jstring_get_string(entry->advId_static), jstring_length(entry->advId_static) + 1, JXTA_OBJECT_PPTR(&entries_v))) {
             entries_v = jxta_vector_new(0);
-            jxta_hashtable_put(ad->adv_hash, jstring_get_string(entry->advId), jstring_length(entry->advId) + 1, (Jxta_object *) entries_v);
+            jxta_hashtable_put(ad->adv_hash, jstring_get_string(entry->advId_static), jstring_length(entry->advId_static) + 1, (Jxta_object *) entries_v);
         }
         jxta_vector_add_object_last(entries_v, (Jxta_object *) entry);
 
@@ -616,7 +620,7 @@ JXTA_DECLARE(void) jxta_srdi_message_get_advids(Jxta_SRDIMessage *ad, Jxta_hasht
 
             jxta_vector_get_object_at(ad->Entries, JXTA_OBJECT_PPTR(&srdi_entry), i);
 
-            advid_j = srdi_entry->advId;
+            advid_j = srdi_entry->advId_static;
             if (JXTA_SUCCESS != jxta_hashtable_get(*ads, jstring_get_string(advid_j), jstring_length(advid_j)+1, JXTA_OBJECT_PPTR(&advid_entries))) {
                 advid_entries = jxta_vector_new(0);
                 jxta_hashtable_put(*ads, jstring_get_string(advid_j), jstring_length(advid_j) + 1, (Jxta_object *) advid_entries);
@@ -644,7 +648,7 @@ JXTA_DECLARE(void) jxta_srdi_message_remove_advid_entries(Jxta_SRDIMessage * ad,
             Jxta_SRDIEntryElement *entry = NULL;
 
             jxta_vector_get_object_at(ad->Entries, JXTA_OBJECT_PPTR(&entry), i);
-            if (0 != strcmp(jstring_get_string(entry->advId), advid)) {
+            if (0 != strcmp(jstring_get_string(entry->advId_static), advid)) {
                 jxta_vector_remove_object_at(ad->Entries, NULL, i--);
             }
             if (entry)
@@ -905,13 +909,13 @@ static void add_entries_to_advid_hash(Jxta_SRDIMessage *ad, Jxta_vector *entries
         Jxta_vector *entries_v;
 
         jxta_vector_get_object_at(entries, JXTA_OBJECT_PPTR(&entry), i);
-        if (NULL == entry->advId) {
+        if (NULL == entry->advId_static) {
             JXTA_OBJECT_RELEASE(entry);
             continue;
         }
-        if (JXTA_SUCCESS != jxta_hashtable_get(ad->adv_hash, jstring_get_string(entry->advId), jstring_length(entry->advId) + 1, JXTA_OBJECT_PPTR(&entries_v))) {
+        if (JXTA_SUCCESS != jxta_hashtable_get(ad->adv_hash, jstring_get_string(entry->advId_static), jstring_length(entry->advId_static) + 1, JXTA_OBJECT_PPTR(&entries_v))) {
             entries_v = jxta_vector_new(0);
-            jxta_hashtable_put(ad->adv_hash, jstring_get_string(entry->advId), jstring_length(entry->advId) + 1, (Jxta_object *) entries_v);
+            jxta_hashtable_put(ad->adv_hash, jstring_get_string(entry->advId_static), jstring_length(entry->advId_static) + 1, (Jxta_object *) entries_v);
         }
         jxta_vector_add_object_last(entries_v, (Jxta_object *) entry);
 
@@ -1133,8 +1137,13 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_element_clone(Jxta_SRDIEntryElem
         newEntry->nameSpace = jstring_clone(entry->nameSpace);
     }
     if (entry->advId) {
-        newEntry->advId = jstring_clone(entry->advId);
+        JString *advid_j;
+
+        advid_j = jstring_clone(entry->advId);
+        jxta_srdi_element_set_advid(newEntry, advid_j);
+        JXTA_OBJECT_RELEASE(advid_j);
     }
+
     if (entry->key) {
         newEntry->key = jstring_clone(entry->key);
     }
@@ -1167,7 +1176,8 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_1(JString * key, JSt
     dse->key = JXTA_OBJECT_SHARE(key);
     dse->value = JXTA_OBJECT_SHARE(value);
     dse->nameSpace = JXTA_OBJECT_SHARE(nameSpace);
-    dse->advId = JXTA_OBJECT_SHARE(value);
+    jxta_srdi_element_set_advid(dse, value);
+    /* dse->advId = JXTA_OBJECT_SHARE(value); */
     dse->expiration = expiration;
     dse->timeout = jpr_time_now() + expiration;
     dse->seqNumber = 0;
@@ -1190,9 +1200,9 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_2(JString * key, JSt
     dse->value = JXTA_OBJECT_SHARE(value);
     dse->nameSpace = JXTA_OBJECT_SHARE(nameSpace);
     if (advId) {
-        dse->advId = JXTA_OBJECT_SHARE(advId);
+        jxta_srdi_element_set_advid(dse, advId);
     } else {
-        dse->advId = JXTA_OBJECT_SHARE(value);
+        jxta_srdi_element_set_advid(dse, value);
     }
     if (jrange) {
         dse->range = JXTA_OBJECT_SHARE(jrange);
@@ -1220,9 +1230,9 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_3(JString * key, JSt
     dse->value = JXTA_OBJECT_SHARE(value);
     dse->nameSpace = JXTA_OBJECT_SHARE(nameSpace);
     if (advId) {
-        dse->advId = JXTA_OBJECT_SHARE(advId);
+        jxta_srdi_element_set_advid(dse, advId);
     } else {
-        dse->advId = JXTA_OBJECT_SHARE(value);
+        jxta_srdi_element_set_advid(dse, value);
     }
     if (jrange) {
         dse->range = JXTA_OBJECT_SHARE(jrange);
@@ -1251,9 +1261,9 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_4(JString * key, JSt
     dse->value = JXTA_OBJECT_SHARE(value);
     dse->nameSpace = JXTA_OBJECT_SHARE(nameSpace);
     if (advId) {
-     dse->advId = JXTA_OBJECT_SHARE(advId);
+        jxta_srdi_element_set_advid(dse, advId);
     } else {
-     dse->advId = JXTA_OBJECT_SHARE(value);
+        jxta_srdi_element_set_advid(dse, value);
     }
     if (jrange) {
      dse->range = JXTA_OBJECT_SHARE(jrange);
@@ -1286,6 +1296,25 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_resend(Jxta_sequence
     dse->next_update_time = 0;
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Return [%pp] resend\n", dse);
     return dse;
+}
+
+JXTA_DECLARE(void) jxta_srdi_element_set_advid(Jxta_SRDIEntryElement * elem, JString *advid_j)
+{
+    /* if the parm is NULL it NULLs out the advid entry but does not change the static value */
+    /* if the parm is not NULL it will change the static value and the advid entry */
+    /* This is done to provide an advid when the advid has been NULLed since a NULL is valid */
+    /* The adv_hash requires an advid and the static value will always be present */
+
+    if (elem->advId)
+        JXTA_OBJECT_RELEASE(elem->advId);
+    elem->advId = advid_j == NULL ? NULL:JXTA_OBJECT_SHARE(advid_j);
+    if (elem->advId) {
+        if (elem->advId_static)
+            JXTA_OBJECT_RELEASE(elem->advId_static);
+        elem->advId_static = JXTA_OBJECT_SHARE(elem->advId);
+    }
+
+    return;
 }
 
 /* vi: set ts=4 sw=4 tw=130 et: */

@@ -1716,7 +1716,7 @@ static Jxta_status discovery_re_replicate_srdi_entries(Jxta_discovery_service_re
 
                     if (NULL == adv_element) {
                         adv_element = jxta_srdi_new_element();
-                        adv_element->advId = JXTA_OBJECT_SHARE(peer_advid_j);
+                        jxta_srdi_element_set_advid(adv_element, peer_advid_j);
                         adv_element->sn_cs_values = jstring_new_0();
                         adv_element->expiration = entry->expiration;
                         adv_element->replicate = entry->replicate;
