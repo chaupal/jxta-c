@@ -3137,6 +3137,11 @@ void cm_update_replicating_peers(Jxta_cm * cm, Jxta_vector * replica_entries, JS
 
                 const char *items[UPDATE_SRDI_INDEX_REPLICA_PEERID_ITEMS];
 
+                if (cm->stopping) {
+                    jxta_log_append(__log_cat,JXTA_LOG_LEVEL_TRACE, "Can no longer update replica entries.  CM is stopping\n");
+                    break;
+                }
+
                 jxta_vector_get_object_at(db_entries_v, JXTA_OBJECT_PPTR(&entry), i);
                 assert (NULL != entry->peer_id);
                 items[j++] = jstring_get_string(entry->peer_id);

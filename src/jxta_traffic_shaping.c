@@ -529,9 +529,9 @@ static Jxta_boolean check_buckets(Jxta_time now, Frame *f, apr_int64_t size)
     Jxta_boolean enough=FALSE;
     apr_int64_t bytes_available=0;
     char tmpbuf[256];
-
+#ifdef P_DEBUG
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Check buckets for size:%" APR_INT64_T_FMT " in w_id:%d with %" APR_INT64_T_FMT " bytes\n", size, f->id, f->bytes_available);
-
+#endif
     if (NULL == f->buckets) {
         return (f->bytes_available > size);
     }
@@ -546,8 +546,10 @@ static Jxta_boolean check_buckets(Jxta_time now, Frame *f, apr_int64_t size)
         if (b_ptr->start <= now && now < b_ptr->end) {
             if (b_ptr->bytes_available > size) {
                 enough = TRUE;
+#ifdef P_DEBUG
                 apr_snprintf(tmpbuf, sizeof(tmpbuf), "Found enough in b_id:%d", b_ptr->id);
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "%s\n", tmpbuf);
+#endif
                 break;
             }
         }
@@ -555,8 +557,10 @@ static Jxta_boolean check_buckets(Jxta_time now, Frame *f, apr_int64_t size)
 
         if (bytes_available > size) {
             enough = TRUE;
+#ifdef P_DEBUG
             apr_snprintf(tmpbuf, sizeof(tmpbuf),  "bytes available: %" APR_INT64_T_FMT "are now enough", bytes_available);
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "%s\n", tmpbuf);
+#endif
             break;
         }
     }
@@ -584,14 +588,18 @@ static void update_bucket_bytes(Jxta_time now, Frame *f, apr_int64_t size)
 #endif
         if (b->bytes_available >= working_size && 0 == div_size) {
             b->bytes_available -= working_size;
+#ifdef P_DEBUG
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Update wid:%d bid:%d %" APR_INT64_T_FMT " minus %" APR_INT64_T_FMT "\n", f->id, b->id, b->bytes_available, working_size);
+#endif
             break;
         } else {
             if (0 == div_size) {
                 div_size = size / f->active_buckets;
                 working_size -= div_size;
             }
+#ifdef P_DEBUG
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Update wid:%d bid:%d %" APR_INT64_T_FMT "minus %" APR_INT64_T_FMT "\n", f->id, b->id, b->bytes_available, div_size);
+#endif
             if (div_size >= b->bytes_available) {
                 b->bytes_available -= div_size;
             } else {
@@ -635,7 +643,7 @@ static void update_look_ahead_bytes(Look_ahead *l, Jxta_time now, apr_int64_t si
         l->bytes_available -= size;
     }
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE
-                , "look_ahead_available: %" APR_INT64_T_FMT JPR_DIFF_TIME_FMT "\n"
+                , "look_ahead_available: %" APR_INT64_T_FMT " " JPR_DIFF_TIME_FMT "\n"
                 , l->bytes_available, l->end - now);
 }
 

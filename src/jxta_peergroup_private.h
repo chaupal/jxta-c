@@ -232,6 +232,14 @@ void peergroup_set_cache_manager(Jxta_PG * self, Jxta_cm * cm);
  */
 void jxta_PG_destruct(Jxta_PG * self);
 
+/**
+ * Get a list of currently available groups.  If a request group 
+ * is specified, returns only a single entry in the vector
+ * @param request_group string name of the group to return
+ * @return vector containing the requested group(s)
+ */
+Jxta_vector * peergroup_get_groups(JString *request_group);
+
 #ifdef __cplusplus
 #if 0
 {

@@ -1366,6 +1366,51 @@ void peergroup_set_cache_manager(Jxta_PG * self, Jxta_cm * cm)
     (VTBL->set_cache_manager) (myself, cm);
 }
 
+Jxta_vector * peergroup_get_groups(JString * request_group)
+{
+    Jxta_vector *groups;
+    Jxta_vector *ret_groups;
+    int i;
+
+    groups = jxta_get_registered_groups();
+    /* if a single group is requested, find the group and return it
+     * otherwise, return all available groups.
+     * We cannot return just the peerview references since there is a
+     * possibility that the group may be deleted prior to the
+     * peerview instance itself
+     */
+    if (NULL != request_group) {
+        ret_groups = jxta_vector_new(0);
+        /*iterate through the groups and find the group requested */
+        for (i=0; (jxta_vector_size(ret_groups) == 0) && NULL != groups && i<jxta_vector_size(groups); i++) {
+            Jxta_PG *group;
+            JString *group_j;
+            Jxta_id *groupid;
+
+            jxta_vector_get_object_at(groups, JXTA_OBJECT_PPTR(&group), i);
+
+            jxta_PG_get_GID(group, &groupid);
+            jxta_id_get_uniqueportion(groupid, &group_j);
+
+            if (0 == jstring_equals(group_j, request_group)) {
+                jxta_vector_add_object_last(ret_groups, (Jxta_object*) group);
+            }
+
+            JXTA_OBJECT_RELEASE(groupid);
+            JXTA_OBJECT_RELEASE(group_j);
+            JXTA_OBJECT_RELEASE(group);
+        }
+
+        if (groups)
+            JXTA_OBJECT_RELEASE(groups);
+    }
+    else {
+        ret_groups = groups;
+    }
+
+    return ret_groups;
+}
+
 Jxta_status jxta_PG_module_initialize(void)
 {
     registry_init();
@@ -1505,7 +1550,7 @@ JXTA_DECLARE(Jxta_status) jxta_PG_sync_send(Jxta_PG * me, Jxta_message * msg, Jx
     new_param = get_service_key(svc_name, svc_param);
     dest = jxta_endpoint_address_new_3(peer_id, me->ep_name, new_param);
     jxta_PG_get_endpoint_service(me, &ep);
-    rv = jxta_endpoint_service_send_ex(ep, msg, dest, JXTA_TRUE, return_parms, FALSE);
+    rv = jxta_endpoint_service_send_ex(ep, msg, dest, JXTA_TRUE, return_parms);
     free(new_param);
     JXTA_OBJECT_RELEASE(ep);
     JXTA_OBJECT_RELEASE(dest);
@@ -1530,7 +1575,7 @@ JXTA_DECLARE(Jxta_status) jxta_PG_async_send(Jxta_PG * me, Jxta_message * msg, J
     if (JXTA_SUCCESS != rv) {
         goto FINAL_EXIT;
     }
-    rv = jxta_endpoint_service_send_ex(ep, msg, dest, JXTA_FALSE, return_parms, FALSE);
+    rv = jxta_endpoint_service_send_ex(ep, msg, dest, JXTA_FALSE, return_parms);
 
 FINAL_EXIT:
     free(new_param);

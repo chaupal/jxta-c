@@ -544,11 +544,17 @@ static void stop(Jxta_module * module)
     
     apr_thread_mutex_unlock(myself->mutex);
 
+    /*make sure to lock switching mutex prior to tearing down
+     * the provider so we're not in the middle of a switch
+     */
+    apr_thread_mutex_lock(myself->switching_mutex);
     provider = (Jxta_rdv_service_provider *) myself->provider;
     if (NULL != provider) {
         PROVIDER_VTBL(provider)->stop(provider);
         JXTA_OBJECT_RELEASE(provider);
     }
+    apr_thread_mutex_unlock(myself->switching_mutex);
+    
     apr_thread_mutex_lock(myself->mutex);
     myself->provider = NULL;
     rdv_service_stop_peerview(myself);
@@ -1052,6 +1058,14 @@ JXTA_DECLARE(Jxta_status) rdv_service_switch_config(Jxta_rdv_service * rdv, RdvC
 
     apr_thread_mutex_lock(myself->mutex);
     locked = TRUE;
+
+    if (!myself->running) {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "[%pp] Cannot switch "
+                        "since the rendezvous service is shutting down\n",
+                        myself);
+        goto FINAL_EXIT;
+    }
+
     myself->service_start = (Jxta_time) jpr_time_now();
 
     switch (config) {
@@ -1566,13 +1580,13 @@ static void JXTA_STDCALL peerview_event_listener(Jxta_object * obj, void *arg)
     _jxta_rdv_service *myself = PTValid(arg, _jxta_rdv_service);
     Jxta_vector *peers=NULL;
 
+    apr_thread_mutex_lock(myself->mutex);
+    locked = TRUE;
+
     if (!myself->running) {
         /* We don't want to churn while things are shutting down. */
         goto FINAL_EXIT;
     }
-
-    apr_thread_mutex_lock(myself->mutex);
-    locked = TRUE;
 
     if (!jxta_id_equals(event->pid, myself->pid)) {
 

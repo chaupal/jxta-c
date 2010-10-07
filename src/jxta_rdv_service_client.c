@@ -961,7 +961,7 @@ static Jxta_status send_lease_request(_jxta_rdv_service_client * myself, _jxta_p
                                          jxta_endpoint_address_get_protocol_address(address), 
                                          RDV_V3_MSID, JXTA_RDV_LEASING_SERVICE_NAME, &dest);
         if (JXTA_SUCCESS == res) {
-            res = jxta_endpoint_service_send_ex(provider->service->endpoint, msg, dest, JXTA_TRUE, NULL, JXTA_FALSE);
+            res = jxta_endpoint_service_send_ex(provider->service->endpoint, msg, dest, JXTA_TRUE, NULL);
             JXTA_OBJECT_RELEASE(dest);
         }
     } else {

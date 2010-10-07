@@ -2787,7 +2787,7 @@ static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString
     int end_entries=0;
     JString *tmp_j_encoded=NULL;
     Jxta_boolean override=FALSE;
-    Jxta_boolean init=TRUE;
+    Jxta_boolean inited=TRUE;
 
     dr_time = jxta_discovery_response_timestamp(dr);
 
@@ -2840,7 +2840,7 @@ static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString
         total_length += (jstring_length(tmp_j_1) + DR_TAG_SIZE);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Total length 1 %" APR_INT64_T_FMT " max_length %" APR_INT64_T_FMT "\n"
                     , total_length, max_length);
-        if (total_length > max_length && !init) {
+        if (total_length > max_length && !inited) {
             total_length = (jstring_length(tmp_j_1) + DR_TAG_SIZE);
             total_length += (msg_length);
 
@@ -2870,7 +2870,7 @@ static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString
             }
         } else if (total_length <= max_length) {
             jxta_vector_add_object_last(all_entries, (Jxta_object *) rsp_element);
-            init = FALSE;
+            inited = FALSE;
         } else {
             exceeded_res = JXTA_LENGTH_EXCEEDED;
             if (!override) {
@@ -2897,7 +2897,7 @@ static Jxta_status split_discovery_responses(Jxta_DiscoveryResponse *dr, JString
                 jxta_vector_add_object_first(all_entries, (Jxta_object *) rsp_element);
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID,"We're continuing to override\n");
             }
-            init = TRUE;
+            inited = TRUE;
         }
         if (rsp_element)
             JXTA_OBJECT_RELEASE(rsp_element);
@@ -3913,50 +3913,6 @@ static void JXTA_STDCALL discovery_service_response_listener(Jxta_object * obj, 
     JXTA_OBJECT_RELEASE(dr);
 }
 
-static Jxta_vector * discovery_get_disc_groups(JString *request_group)
-{
-    Jxta_vector *groups=NULL;
-    Jxta_vector *dsg=NULL;
-    int i;
-
-    groups = jxta_get_registered_groups();
-    /* if a single group is requested, find the group and return it
-     * otherwise, return all available groups.
-     * We cannot return just the discovery services since there is a 
-     * possibility that the group may be deleted prior to the 
-     * discovery service instance itself
-     */
-    if (NULL != request_group) {
-        dsg = jxta_vector_new(0);
-        /* iterate through groups and find the group requested */
-        for (i=0; (jxta_vector_size(dsg) == 0) && NULL != groups && i<jxta_vector_size(groups); i++) {
-            Jxta_PG *group = NULL;
-            JString *group_j = NULL;
-            Jxta_id *groupid;
-
-            jxta_vector_get_object_at(groups, JXTA_OBJECT_PPTR(&group), i);
-
-            jxta_PG_get_GID(group, &groupid);
-            jxta_id_get_uniqueportion(groupid, &group_j);
-
-            if (0 == jstring_equals(group_j, request_group)) {
-                jxta_vector_add_object_last(dsg, (Jxta_object *) group);
-            }
-
-            JXTA_OBJECT_RELEASE(groupid);
-            JXTA_OBJECT_RELEASE(group_j);
-            JXTA_OBJECT_RELEASE(group);
-        }
-
-        if (groups)
-            JXTA_OBJECT_RELEASE(groups);
-    }
-    else {
-        dsg = groups;
-    }
-    return dsg;
-}
-
 static void *APR_THREAD_FUNC delta_cycle_func(apr_thread_t *thread, void *arg)
 {
     Jxta_status res=JXTA_SUCCESS;
@@ -3984,7 +3940,7 @@ static void *APR_THREAD_FUNC delta_cycle_func(apr_thread_t *thread, void *arg)
         goto FINAL_EXIT;
     }
 
-    dsg = discovery_get_disc_groups(NULL);
+    dsg = peergroup_get_groups(NULL);
     for (i=0; NULL != dsg && i < jxta_vector_size(dsg); i++) {
         Jxta_PG *group=NULL;
         Jxta_discovery_service_ref *discovery_ref=NULL;

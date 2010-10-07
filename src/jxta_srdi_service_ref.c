@@ -1742,6 +1742,7 @@ static Jxta_status record_delta_entry(Jxta_srdi_service_ref *me, Jxta_id * peer,
                         jstring_reset(entry->value, NULL);
                         jstring_append_1(entry->value, jNewValue);
                         JXTA_OBJECT_RELEASE(jNewValue);
+                        jNewValue = NULL;
                     } else {
                         Jxta_SRDIEntryElement *ads_entry = NULL;
                         /* don't leak it */

@@ -259,7 +259,7 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ep_msg(Jxta_endpoint_servic
  * @note: This version does not do peergroup mangling. Use jxta_PG_send instead.
  */
 JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_ex(Jxta_endpoint_service * me, Jxta_message * msg,
-                                                        Jxta_endpoint_address * dest_addr, Jxta_boolean sync, Jxta_endpoint_return_parms * return_parms, Jxta_boolean retry);
+                                                        Jxta_endpoint_address * dest_addr, Jxta_boolean sync, Jxta_endpoint_return_parms * return_parms);
 
 /*
  * Propagate the given message to the given service destination using 
