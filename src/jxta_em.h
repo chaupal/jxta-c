@@ -64,7 +64,7 @@ extern "C" {
 #endif
 #endif
 
-#import "jxta_message.h"
+#include "jxta_message.h"
 
 static const char JXTA_ENDPOINT_MSG_JXTA_NS[] = "jxta";
 static const char JXTA_ENDPOINT_MSG_ELEMENT_NAME[] = "EndpointMessage";
