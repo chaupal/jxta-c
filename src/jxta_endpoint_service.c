@@ -3022,13 +3022,27 @@ static Jxta_status send_all_messages(Jxta_endpoint_service * me, Jxta_boolean en
                      * know what state to set back into after we are done
                      */
                 }
-                
+
                 running = jxta_module_state((Jxta_module*) me);
                 if (JXTA_MODULE_STARTED == running || JXTA_MODULE_STARTING == running) {
+                    int ts_interval=1;
+
+                    if (me->ts) {
+                        ts_interval = traffic_shaping_interval(me->ts);
+                    }
+                    
                     jxta_vector_add_object_last(me->send_thread_queue, (Jxta_object *) ep_thread);
 
+                    /* Use the endpoint traffic shaping interval to schedule the message retry.  This represents
+                     * the minimum amount of time required to accumulate additional bandwidth necessary to send 
+                     * this message.  It is noted that at the time this is checked, we do not know how far along
+                     * we are in the current interval.  However, since there is no guarantee that another message
+                     */
+
                     /* TODO: make this timeout equivalent to the expected time from the endpoint to send the message */
-                    apr_thread_pool_schedule(me->thd_pool, endpoint_retry_msg_thread, me, 1000 * 1000, svc);
+                    apr_thread_pool_schedule(me->thd_pool, endpoint_retry_msg_thread, me, ts_interval * 1000 * 1000, svc);
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "msg[%pp] scheduled to be retried in %d seconds\n"
+                                    , new_f_entry->orig_msg, ts_interval);
                 }
                 
                 /* only unlock if the endpoint was not locked previously
