@@ -408,13 +408,15 @@ static void handleEntry(void *userdata, const XML_Char * cd, int len)
         normalize_entry(entry);
 
         jxta_vector_add_object_last(ad->Entries, (Jxta_object *) entry);
-        if (JXTA_SUCCESS != jxta_hashtable_get(ad->adv_hash, jstring_get_string(entry->advId_static), jstring_length(entry->advId_static) + 1, JXTA_OBJECT_PPTR(&entries_v))) {
-            entries_v = jxta_vector_new(0);
-            jxta_hashtable_put(ad->adv_hash, jstring_get_string(entry->advId_static), jstring_length(entry->advId_static) + 1, (Jxta_object *) entries_v);
-        }
-        jxta_vector_add_object_last(entries_v, (Jxta_object *) entry);
 
-        JXTA_OBJECT_RELEASE(entries_v);
+        if (NULL != entry->advId_static) {
+            if (JXTA_SUCCESS != jxta_hashtable_get(ad->adv_hash, jstring_get_string(entry->advId_static), jstring_length(entry->advId_static) + 1, JXTA_OBJECT_PPTR(&entries_v))) {
+                entries_v = jxta_vector_new(0);
+                jxta_hashtable_put(ad->adv_hash, jstring_get_string(entry->advId_static), jstring_length(entry->advId_static) + 1, (Jxta_object *) entries_v);
+            }
+            jxta_vector_add_object_last(entries_v, (Jxta_object *) entry);
+            JXTA_OBJECT_RELEASE(entries_v);
+        }
     }
     JXTA_OBJECT_RELEASE(entry);
 }
@@ -1191,37 +1193,8 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_1(JString * key, JSt
     return dse;
 }
 
-JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_2(JString * key, JString * value, JString * nameSpace,
-                                                              JString * advId, JString * jrange, Jxta_expiration_time expiration)
-{
-    Jxta_SRDIEntryElement *dse = jxta_srdi_new_element();
-
-    dse->key = JXTA_OBJECT_SHARE(key);
-    dse->value = JXTA_OBJECT_SHARE(value);
-    dse->nameSpace = JXTA_OBJECT_SHARE(nameSpace);
-    if (advId) {
-        jxta_srdi_element_set_advid(dse, advId);
-    } else {
-        jxta_srdi_element_set_advid(dse, value);
-    }
-    if (jrange) {
-        dse->range = JXTA_OBJECT_SHARE(jrange);
-    }
-    dse->seqNumber = 0;
-    dse->expiration = expiration;
-    dse->timeout = jpr_time_now() + expiration;
-    dse->resend = FALSE;
-    dse->next_update_time = 0;
-    dse->replicate = TRUE;
-    dse->cache_this = TRUE;
-    dse->duplicate = FALSE;
-    dse->dup_target = FALSE;
-    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "Return [%pp] number 2 %s \n", dse, jstring_get_string(dse->key));
-    return dse;
-}
-
 JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_3(JString * key, JString * value, JString * nameSpace,
-                                                              JString * advId, JString * jrange, Jxta_expiration_time expiration,
+                                                              JString * advId, JString * advId_static, JString * jrange, Jxta_expiration_time expiration,
                                                               Jxta_sequence_number seqNumber)
 {
     Jxta_SRDIEntryElement *dse = jxta_srdi_new_element();
@@ -1231,9 +1204,12 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_3(JString * key, JSt
     dse->nameSpace = JXTA_OBJECT_SHARE(nameSpace);
     if (advId) {
         jxta_srdi_element_set_advid(dse, advId);
+    } else if (advId_static) {
+        dse->advId_static = JXTA_OBJECT_SHARE(advId_static);
     } else {
         jxta_srdi_element_set_advid(dse, value);
     }
+
     if (jrange) {
         dse->range = JXTA_OBJECT_SHARE(jrange);
     }
@@ -1252,7 +1228,7 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_3(JString * key, JSt
 
 
 JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_4(JString * key, JString * value, JString * nameSpace,
-                                                              JString * advId, JString * jrange, Jxta_expiration_time expiration,
+                                                              JString * advId, JString * advId_static, JString * jrange, Jxta_expiration_time expiration,
                                                               Jxta_sequence_number seqNumber, Jxta_boolean replicate, Jxta_boolean re_replicate)
 {
     Jxta_SRDIEntryElement *dse = jxta_srdi_new_element();
@@ -1262,11 +1238,13 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_4(JString * key, JSt
     dse->nameSpace = JXTA_OBJECT_SHARE(nameSpace);
     if (advId) {
         jxta_srdi_element_set_advid(dse, advId);
+    } else if (advId_static) {
+        dse->advId_static = JXTA_OBJECT_SHARE(advId_static);
     } else {
         jxta_srdi_element_set_advid(dse, value);
     }
     if (jrange) {
-     dse->range = JXTA_OBJECT_SHARE(jrange);
+        dse->range = JXTA_OBJECT_SHARE(jrange);
     }
     dse->seqNumber = seqNumber;
     dse->expiration = expiration;

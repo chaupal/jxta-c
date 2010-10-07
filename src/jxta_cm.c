@@ -3847,7 +3847,6 @@ static Jxta_status secondary_indexing(Jxta_cm * me, DBSpace * dbSpace, Folder * 
         Jxta_boolean send_this_srdi = TRUE;
         Jxta_sequence_number seq_number=0;
         Jxta_kwd_entry_flags flags;
-        
 
         jrange = NULL;
 
@@ -3905,7 +3904,7 @@ static Jxta_status secondary_indexing(Jxta_cm * me, DBSpace * dbSpace, Folder * 
  
         /* Publish SRDI delta */
         if (exp > 0 && srdi_delta && exp_others > 0 && send_this_srdi) {
-            entry = jxta_srdi_new_element_4(jskey, jval, jns, jPkey, jrange, exp, seq_number, !(flags & NO_REPLICATION), FALSE);
+            entry = jxta_srdi_new_element_4(jskey, jval, jns, jPkey, NULL, jrange, exp, seq_number, !(flags & NO_REPLICATION), FALSE);
             if (entry != NULL) {
                 cm_srdi_delta_add(srdi_delta, folder, entry);
                 JXTA_OBJECT_RELEASE(entry);
@@ -4591,7 +4590,7 @@ Jxta_status cm_get_resend_delta_entries(Jxta_cm * me, JString * peerid_j, Jxta_v
                 source_id = apr_dbd_get_entry(dbSpace->conn->driver, row, 8);
 
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Adding a peer %s to the resend entries\n", source_id);
-                newEntry = jxta_srdi_new_element_3(jName, jValue, jNameSpace, jAdvID, jRange, timeout, entry->seqNumber == 0 ? seq_no : entry->seqNumber );
+                newEntry = jxta_srdi_new_element_3(jName, jValue, jNameSpace, jAdvID, NULL, jRange, timeout, entry->seqNumber == 0 ? seq_no : entry->seqNumber );
                 newEntry->duplicate = !strcmp(duplicate, "1") ? TRUE:FALSE;
                 if (NULL == *resend_entries) {
                     *resend_entries = jxta_hashtable_new(0);
@@ -6544,7 +6543,7 @@ static Jxta_vector *cm_srdi_entries_get_priv(Jxta_cm *self, const char *table_na
 
             /* return valid expiration entries for SRDI */
             if (exp >= 0) {
-                element = jxta_srdi_new_element_3(jKey, jVal, jNameSpace, jAdvId, jRange, exp, seq);
+                element = jxta_srdi_new_element_3(jKey, jVal, jNameSpace, jAdvId, NULL, jRange, exp, seq);
                 element->replicate = replicate_return;
                 if (dbSpace->alias)
                     element->db_alias = strdup(dbSpace->alias);

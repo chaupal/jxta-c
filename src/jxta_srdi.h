@@ -361,15 +361,13 @@ JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_1(JString * key, JSt
  * @param long the expiration time associated with the entry
  * @return Jxta_SRDIEntryElement 
  */
-JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_2(JString * key, JString * value, JString * nameSpace,
-                                                              JString * advId, JString * range, Jxta_expiration_time expiration);
 
 JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_3(JString * key, JString * value, JString * nameSpace,
-                                                              JString * advId, JString * jrange, Jxta_expiration_time expiration,
+                                                              JString * advId, JString * advId_static, JString * jrange, Jxta_expiration_time expiration,
                                                               Jxta_sequence_number seqNumber);
 
 JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_4(JString * key, JString * value, JString * nameSpace,
-                                                              JString * advId, JString * jrange, Jxta_expiration_time expiration,
+                                                              JString * advId, JString * advId_static, JString * jrange, Jxta_expiration_time expiration,
                                                               Jxta_sequence_number seqNumber, Jxta_boolean replicate, Jxta_boolean re_replicate);
 
 JXTA_DECLARE(Jxta_SRDIEntryElement *) jxta_srdi_new_element_resend(Jxta_sequence_number seqNumber);
