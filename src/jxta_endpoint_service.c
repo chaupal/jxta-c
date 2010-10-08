@@ -666,9 +666,10 @@ JXTA_DECLARE(Jxta_status) jxta_endpoint_service_send_fc(Jxta_endpoint_service * 
     } else {
         msgr->fc_msgs_sent = 0;
     }
+
     msg = jxta_message_new();
 
-    ep_fc_msg = jxta_ep_flow_control_msg_new_1(duration, num_bytes, 1, frame_seconds, traffic_shaping_look_ahead(me->ts) , 0, TS_MAX_OPTION_FRAME);
+    ep_fc_msg = jxta_ep_flow_control_msg_new_1(duration, num_bytes, 1, frame_seconds, traffic_shaping_look_ahead(me->ts) , 0, traffic_shaping_max_option(me->ts));
     jxta_PG_get_PID(me->my_group, &pid);
 
     jxta_ep_flow_control_msg_set_peerid(ep_fc_msg, pid);
@@ -869,10 +870,49 @@ static Jxta_status endpoint_init(Jxta_module * it, Jxta_PG * group, Jxta_id * as
     }
 
 
-    jxta_epcfg_get_traffic_shaping(self->config, &ts);
+    if (jxta_ep_cfg_ts_size(self->config) == -1) {
+        jxta_ep_cfg_set_ts_size(self->config, 590000);
+    }
+
+    if ( jxta_ep_cfg_ts_time(self->config) == -1) {
+        jxta_ep_cfg_set_ts_time(self->config, 360);
+    }
+
+    if (jxta_ep_cfg_ts_interval(self->config) == -1) {
+        jxta_ep_cfg_ts_set_interval(self->config, 5);
+    }
+
+    if (jxta_ep_cfg_ts_frame(self->config) == -1) {
+        jxta_ep_cfg_ts_set_frame(self->config, 5);
+    }
+
+    if (jxta_ep_cfg_ts_look_ahead(self->config) == -1) {
+        jxta_ep_cfg_ts_set_look_ahead(self->config, 10);
+    }
+
+    if (jxta_ep_cfg_ts_reserve(self->config) == -1) {
+        jxta_ep_cfg_ts_set_reserve(self->config, 5);
+    }
+
+    if (jxta_ep_cfg_ts_max_option(self->config) == -1) {
+        jxta_ep_cfg_ts_set_max_option(self->config, TS_MAX_OPTION_LOOK_AHEAD);
+    }
+
+    ts = traffic_shaping_new();
+
+    traffic_shaping_set_time(ts, jxta_ep_cfg_ts_time(self->config));
+    traffic_shaping_set_size(ts, jxta_ep_cfg_ts_size(self->config));
+    traffic_shaping_set_interval(ts, jxta_ep_cfg_ts_interval(self->config));
+    traffic_shaping_set_frame(ts, jxta_ep_cfg_ts_frame(self->config));
+    traffic_shaping_set_look_ahead(ts, jxta_ep_cfg_ts_look_ahead(self->config));
+    traffic_shaping_set_reserve(ts, jxta_ep_cfg_ts_reserve(self->config));
+    traffic_shaping_set_max_option(ts, jxta_ep_cfg_ts_max_option(self->config));
+
     traffic_shaping_init(ts);
 
-    self->ts = JXTA_OBJECT_SHARE(ts);
+    self->ts = ts;
+
+
     new_param = get_service_key("EndpointService:%groupid%", NULL);
     endpoint_service_add_recipient(self, &self->ep_msg_cookie, new_param, NULL
                                          , endpoint_message_cb, self);
@@ -894,8 +934,6 @@ FINAL_EXIT:
 
     if (gid)
         JXTA_OBJECT_RELEASE(gid);
-    if (ts)
-        JXTA_OBJECT_RELEASE(ts);
     return res;
 }
 

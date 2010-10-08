@@ -92,8 +92,15 @@ struct _jxta_EndPointConfigAdvertisement {
     size_t ncrq_retry;
     int init_threads;
     int max_threads;
-    /* Jxta_hashtable *fc_entries; */
-    Jxta_traffic_shaping *ts;
+
+    /* traffic shaping */
+    apr_int64_t ts_size;
+    Jxta_time ts_time;
+    int ts_interval;
+    Jxta_time ts_frame;
+    Jxta_time ts_look_ahead;
+    int ts_reserve;
+    Ts_max_option ts_max_option;
 };
 
 /* Forward decl. of un-exported function */
@@ -195,54 +202,98 @@ static void handleTrafficShaping(void *me, const XML_Char * cd, int len)
 {
     Jxta_EndPointConfigAdvertisement *_self = (Jxta_EndPointConfigAdvertisement *) me;
     const char **atts = ((Jxta_advertisement *) me)->atts;
-    Jxta_traffic_shaping *ts;
 
     if (0 != len) return;
 
-    ts = _self->ts;
-    if (NULL == ts) {
-        ts = traffic_shaping_new();
-        _self->ts = ts;
-    }
-
     while (atts && *atts) {
-        int tmp;
-        apr_int64_t tmp_l;
 
         if (0 == strcmp(*atts, "size")) {
-            tmp_l = apr_atoi64(atts[1]);
-            traffic_shaping_set_size(ts, tmp_l);
+            _self->ts_size = apr_atoi64(atts[1]);
         } else if (0 == strcmp(*atts, "time")) {
-            tmp = atoi(atts[1]);
-            traffic_shaping_set_time(ts, tmp);
+            _self->ts_time = atoi(atts[1]);
         } else if (0 == strcmp(*atts, "interval")) {
-            tmp = atoi(atts[1]);
-            traffic_shaping_set_interval(ts, tmp);
+            _self->ts_interval = atoi(atts[1]);
         } else if (0 == strcmp(*atts, "frame")) {
-            tmp = atoi(atts[1]);
-            traffic_shaping_set_frame(ts, tmp);
+            _self->ts_frame = atoi(atts[1]);
         } else if (0 == strcmp(*atts, "look_ahead")) {
-            tmp = atoi(atts[1]);
-            traffic_shaping_set_look_ahead(ts, tmp);
+            _self->ts_look_ahead = atoi(atts[1]);
         } else if (0 == strcmp(*atts, "reserve")) {
-            tmp = atoi(atts[1]);
-            traffic_shaping_set_reserve(ts, tmp);
+            _self->ts_reserve = atoi(atts[1]);
         } else if (0 == strcmp(*atts, "max_option")) {
-            traffic_shaping_set_max_option(ts
-                        , strcmp(atts[1], "frame") == 0 ? TS_MAX_OPTION_FRAME:TS_MAX_OPTION_LOOK_AHEAD);
+            _self->ts_max_option = strcmp(atts[1], "frame") == 0 ? TS_MAX_OPTION_FRAME:TS_MAX_OPTION_LOOK_AHEAD;
         }
         atts += 2;
     }
 }
 
-JXTA_DECLARE(void) jxta_epcfg_get_traffic_shaping(Jxta_EndPointConfigAdvertisement * me
-                    , Jxta_traffic_shaping **ts)
+JXTA_DECLARE(apr_int64_t) jxta_ep_cfg_ts_size(Jxta_EndPointConfigAdvertisement * me)
 {
-    *ts = NULL;
-    if (NULL != me->ts) {
-        *ts = JXTA_OBJECT_SHARE(me->ts);
-    }
-    return;
+    return me->ts_size;
+}
+
+JXTA_DECLARE(void) jxta_ep_cfg_set_ts_size(Jxta_EndPointConfigAdvertisement * me,apr_int64_t parm )
+{
+    me->ts_size = parm;
+}
+
+JXTA_DECLARE(Jxta_time) jxta_ep_cfg_ts_time(Jxta_EndPointConfigAdvertisement * me)
+{
+    return me->ts_time;
+}
+
+JXTA_DECLARE(void) jxta_ep_cfg_set_ts_time(Jxta_EndPointConfigAdvertisement * me, Jxta_time parm)
+{
+    me->ts_time = parm;
+}
+
+JXTA_DECLARE(int) jxta_ep_cfg_ts_interval(Jxta_EndPointConfigAdvertisement * me)
+{
+    return me->ts_interval;
+}
+
+JXTA_DECLARE(void) jxta_ep_cfg_ts_set_interval(Jxta_EndPointConfigAdvertisement * me, int parm)
+{
+    me->ts_interval = parm;
+}
+
+JXTA_DECLARE(Jxta_time) jxta_ep_cfg_ts_frame(Jxta_EndPointConfigAdvertisement * me)
+{
+    return me->ts_frame;
+}
+
+JXTA_DECLARE(void) jxta_ep_cfg_ts_set_frame(Jxta_EndPointConfigAdvertisement * me, Jxta_time parm)
+{
+    me->ts_frame = parm;
+}
+
+JXTA_DECLARE(Jxta_time) jxta_ep_cfg_ts_look_ahead(Jxta_EndPointConfigAdvertisement * me)
+{
+    return me->ts_look_ahead;
+}
+
+JXTA_DECLARE(void) jxta_ep_cfg_ts_set_look_ahead(Jxta_EndPointConfigAdvertisement * me, Jxta_time parm)
+{
+    me->ts_look_ahead = parm;
+}
+
+JXTA_DECLARE(int) jxta_ep_cfg_ts_reserve(Jxta_EndPointConfigAdvertisement * me)
+{
+    return me->ts_reserve;
+}
+
+JXTA_DECLARE(void) jxta_ep_cfg_ts_set_reserve(Jxta_EndPointConfigAdvertisement * me, int parm)
+{
+    me->ts_reserve = parm;
+}
+
+JXTA_DECLARE(Ts_max_option) jxta_ep_cfg_ts_max_option(Jxta_EndPointConfigAdvertisement * me)
+{
+    return me->ts_max_option;
+}
+
+JXTA_DECLARE(void) jxta_ep_cfg_ts_set_max_option(Jxta_EndPointConfigAdvertisement * me, Ts_max_option parm)
+{
+    me->ts_max_option = parm;
 }
 
 /** Now, build an array of the keyword structs.  Since 
@@ -300,52 +351,24 @@ JXTA_DECLARE(Jxta_status) jxta_EndPointConfigAdvertisement_get_xml(Jxta_EndPoint
     jstring_append_2(string, tmpbuf);
     jstring_append_2(string, "/>\n");
 
-    if (-1 == traffic_shaping_time(me->ts)) {
-        traffic_shaping_set_time(me->ts, 60);
-    }
-
-    if (-1 == traffic_shaping_size(me->ts)) {
-        traffic_shaping_set_size(me->ts, 600000);
-    }
-
-    if (-1 == traffic_shaping_interval(me->ts)) {
-        traffic_shaping_set_interval(me->ts, 1);
-    }
-
-    if (-1 == traffic_shaping_frame(me->ts)) {
-        traffic_shaping_set_frame(me->ts, 5);
-    }
-
-    if (-1 == traffic_shaping_look_ahead(me->ts)) {
-        traffic_shaping_set_look_ahead(me->ts, 20);
-    }
-
-    if (-1 == traffic_shaping_reserve(me->ts)) {
-        traffic_shaping_set_reserve(me->ts, 10);
-    }
-
-    if (-1 == traffic_shaping_max_option(me->ts)) {
-        traffic_shaping_set_max_option(me->ts, TS_MAX_OPTION_LOOK_AHEAD);
-    }
-
     jstring_append_2(string, "<!-- Traffic Shaping -->\n");
     jstring_append_2(string, "<TrafficShaping");
-    apr_snprintf(tmpbuf, sizeof(tmpbuf), " size=\"%" APR_INT64_T_FMT "\"\n", traffic_shaping_size( me->ts));
+    apr_snprintf(tmpbuf, sizeof(tmpbuf), " size=\"%" APR_INT64_T_FMT "\"\n", me->ts_size);
     jstring_append_2(string, tmpbuf);
-    apr_snprintf(tmpbuf, sizeof(tmpbuf), " time=\"%ld\"\n", (long) traffic_shaping_time( me->ts));
+    apr_snprintf(tmpbuf, sizeof(tmpbuf), " time=\""JPR_DIFF_TIME_FMT "\"\n", me->ts_time);
     jstring_append_2(string, tmpbuf);
-    apr_snprintf(tmpbuf, sizeof(tmpbuf), " interval=\"%d\"\n", traffic_shaping_interval(me->ts));
+    apr_snprintf(tmpbuf, sizeof(tmpbuf), " interval=\"%d\"\n", me->ts_interval);
     jstring_append_2(string, tmpbuf);
     apr_snprintf(tmpbuf, sizeof(tmpbuf), " look_ahead=\"" JPR_DIFF_TIME_FMT "\"\n"
-                        , traffic_shaping_look_ahead(me->ts));
+                        , me->ts_look_ahead);
     jstring_append_2(string, tmpbuf);
     apr_snprintf(tmpbuf, sizeof(tmpbuf), " frame=\"" JPR_DIFF_TIME_FMT "\"\n"
-                        , traffic_shaping_frame(me->ts));
+                        , me->ts_frame);
     jstring_append_2(string, tmpbuf);
-    apr_snprintf(tmpbuf, sizeof(tmpbuf), " reserve=\"%d\"\n", traffic_shaping_reserve(me->ts));
+    apr_snprintf(tmpbuf, sizeof(tmpbuf), " reserve=\"%d\"\n", me->ts_reserve);
     jstring_append_2(string, tmpbuf);
     jstring_append_2(string, " max_option=\"");
-    jstring_append_2(string, traffic_shaping_max_option(me->ts) == TS_MAX_OPTION_LOOK_AHEAD ? "look_ahead":"frame");
+    jstring_append_2(string, me->ts_max_option == TS_MAX_OPTION_LOOK_AHEAD ? "look_ahead":"frame");
     jstring_append_2(string, "\"");
     jstring_append_2(string, "/>\n");
 
@@ -373,7 +396,13 @@ Jxta_EndPointConfigAdvertisement *jxta_EndPointConfigAdvertisement_construct(Jxt
         self->ncrq_retry = 20;
         self->init_threads = -1;
         self->max_threads = -1;
-        self->ts = traffic_shaping_new();
+        self->ts_size = -1;
+        self->ts_time = -1;
+        self->ts_interval = -1;
+        self->ts_frame = -1;
+        self->ts_look_ahead = -1;
+        self->ts_reserve = -1;
+        self->ts_max_option = -1;
     }
 
     return self;
@@ -382,9 +411,6 @@ Jxta_EndPointConfigAdvertisement *jxta_EndPointConfigAdvertisement_construct(Jxt
 void jxta_EndPointConfigAdvertisement_destruct(Jxta_EndPointConfigAdvertisement * self)
 {
 
-    if (self->ts) {
-        JXTA_OBJECT_RELEASE(self->ts);
-    }
     jxta_advertisement_destruct((Jxta_advertisement *) self);
 
 }

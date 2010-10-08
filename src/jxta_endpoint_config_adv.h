@@ -97,6 +97,28 @@ JXTA_DECLARE(void) jxta_epcfg_get_traffic_shaping(Jxta_EndPointConfigAdvertiseme
 JXTA_DECLARE(int) endpoint_config_threads_init(Jxta_EndPointConfigAdvertisement * me);
 JXTA_DECLARE(int) endpoint_config_threads_maximum(Jxta_EndPointConfigAdvertisement * me);
 
+
+JXTA_DECLARE(apr_int64_t) jxta_ep_cfg_ts_size(Jxta_EndPointConfigAdvertisement * me);
+JXTA_DECLARE(void) jxta_ep_cfg_set_ts_size(Jxta_EndPointConfigAdvertisement * me,apr_int64_t parm );
+
+JXTA_DECLARE(Jxta_time) jxta_ep_cfg_ts_time(Jxta_EndPointConfigAdvertisement * me);
+JXTA_DECLARE(void) jxta_ep_cfg_set_ts_time(Jxta_EndPointConfigAdvertisement * me, Jxta_time parm);
+
+JXTA_DECLARE(int) jxta_ep_cfg_ts_interval(Jxta_EndPointConfigAdvertisement * me);
+JXTA_DECLARE(void) jxta_ep_cfg_ts_set_interval(Jxta_EndPointConfigAdvertisement * me, int parm);
+
+JXTA_DECLARE(Jxta_time) jxta_ep_cfg_ts_frame(Jxta_EndPointConfigAdvertisement * me);
+JXTA_DECLARE(void) jxta_ep_cfg_ts_set_frame(Jxta_EndPointConfigAdvertisement * me, Jxta_time parm);
+
+JXTA_DECLARE(Jxta_time) jxta_ep_cfg_ts_look_ahead(Jxta_EndPointConfigAdvertisement * me);
+JXTA_DECLARE(void) jxta_ep_cfg_ts_set_look_ahead(Jxta_EndPointConfigAdvertisement * me, Jxta_time parm);
+
+JXTA_DECLARE(int) jxta_ep_cfg_ts_reserve(Jxta_EndPointConfigAdvertisement * me);
+JXTA_DECLARE(void) jxta_ep_cfg_ts_set_reserve(Jxta_EndPointConfigAdvertisement * me, int parm);
+
+JXTA_DECLARE(Ts_max_option) jxta_ep_cfg_ts_max_option(Jxta_EndPointConfigAdvertisement * me);
+JXTA_DECLARE(void) jxta_ep_cfg_ts_set_max_option(Jxta_EndPointConfigAdvertisement * me, Ts_max_option parm);
+
 /**
 *   For other advertisement types which want to parse EndPointConfig as a sub-section.    
 **/

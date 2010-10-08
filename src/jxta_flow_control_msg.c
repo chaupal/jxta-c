@@ -151,7 +151,7 @@ JXTA_DECLARE(Jxta_ep_flow_control_msg *) jxta_ep_flow_control_msg_new_1(int fc_t
     myself->frame = fc_frame;
     myself->look_ahead = fc_look_ahead;
     myself->reserve = fc_reserve;
-    myself->max_option = TS_MAX_OPTION_FRAME;
+    myself->max_option = max_option;
     return myself;
 }
 

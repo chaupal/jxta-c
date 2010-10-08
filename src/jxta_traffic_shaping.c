@@ -100,6 +100,7 @@ struct _traffic {
     int interval;
     int frame;
     int look_ahead_seconds;
+
     float reserve;
     Frame **active_frames;
     Look_ahead *la_ptr;
@@ -747,8 +748,8 @@ Jxta_boolean traffic_shaping_check_size(Jxta_traffic_shaping *traffic, apr_int64
 
     }
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG
-                , "enough %s look_ahead_available:-------------------> %" APR_INT64_T_FMT " " JPR_DIFF_TIME_FMT "\n"
-                , !enough ? "FALSE":"TRUE", traffic->la_ptr->bytes_available, traffic->la_ptr->end - now);
+                , "ts[%pp] enough %s for %" APR_INT64_T_FMT " bytes --- look_ahead_available:---> %" APR_INT64_T_FMT " " JPR_DIFF_TIME_FMT " max_option: %s\n"
+                , traffic, !enough ? "FALSE":"TRUE", size, traffic->la_ptr->bytes_available, traffic->la_ptr->end - now, traffic->max_option == TS_MAX_OPTION_LOOK_AHEAD ? "look_ahead":"frame");
     if (update) {
         adjust_frames(now, traffic->active_frames);
     }
