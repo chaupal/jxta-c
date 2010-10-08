@@ -2589,7 +2589,12 @@ JXTA_DECLARE(Jxta_status) process_message_send(Jxta_endpoint_service * myself, J
 static void create_a_filter_list(Jxta_vector *active_q, Jxta_vector *pending_q, Jxta_endpoint_return_parms *return_parms, Jxta_vector **filter_list)
 {
     int i;
-    Jxta_endpoint_filter_entry *f_entry;
+    Jxta_endpoint_filter_entry *f_entry=NULL;
+    Jxta_service *svc=NULL;
+
+    if (NULL != return_parms) {
+        svc = jxta_endpoint_return_parms_service(return_parms);
+    }
 
     *filter_list = jxta_vector_new(0);
     for (i = 0; i < jxta_vector_size(active_q); i++) {
@@ -2598,7 +2603,9 @@ static void create_a_filter_list(Jxta_vector *active_q, Jxta_vector *pending_q, 
         jxta_vector_get_object_at(active_q, JXTA_OBJECT_PPTR(&f_entry), i);
         jxta_endpoint_filter_entry_get_parms(f_entry, &f_parms);
         if (NULL != f_parms) {
-            jxta_vector_add_object_last(*filter_list, (Jxta_object *) f_entry);
+            if (svc == NULL || svc == jxta_endpoint_return_parms_service(f_parms)) {
+                jxta_vector_add_object_last(*filter_list, (Jxta_object *) f_entry);
+            }
             JXTA_OBJECT_RELEASE(f_parms);
         }
         JXTA_OBJECT_RELEASE(f_entry);
@@ -2609,7 +2616,9 @@ static void create_a_filter_list(Jxta_vector *active_q, Jxta_vector *pending_q, 
         jxta_vector_get_object_at(pending_q, JXTA_OBJECT_PPTR(&f_entry), i);
         jxta_endpoint_filter_entry_get_parms(f_entry, &f_parms);
         if (NULL != f_parms) {
-            jxta_vector_add_object_last(*filter_list, (Jxta_object *) f_entry);
+            if (svc == NULL || svc == jxta_endpoint_return_parms_service(f_parms)) {
+                jxta_vector_add_object_last(*filter_list, (Jxta_object *) f_entry);
+            }
             JXTA_OBJECT_RELEASE(f_parms);
         }
         JXTA_OBJECT_RELEASE(f_entry);
@@ -3082,6 +3091,9 @@ static Jxta_status send_all_messages(Jxta_endpoint_service * me, Jxta_boolean en
                     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "msg[%pp] scheduled to be retried in %d seconds\n"
                                     , new_f_entry->orig_msg, ts_interval);
                 }
+                /* There is no need to set a flag to exit the loop.  The isRunning check below will catch the 
+                 * shutdown condition and goto the FINAL_EXIT
+                 */
                 
                 /* only unlock if the endpoint was not locked previously
                  * we know this because the previous lock check does not alter the lock status boolean
@@ -3090,7 +3102,6 @@ static Jxta_status send_all_messages(Jxta_endpoint_service * me, Jxta_boolean en
                     apr_thread_mutex_unlock(me->mutex);
                 }
 
-                /*break_it = TRUE;*/
                 JXTA_OBJECT_RELEASE(ep_thread);
             }
             JXTA_OBJECT_RELEASE(send_f_entry);
@@ -3122,7 +3133,13 @@ static Jxta_status send_all_messages(Jxta_endpoint_service * me, Jxta_boolean en
              * more msgs on this msgr, add the messenger to the back of the queue
              */
             if (jxta_vector_size(send_q) > 0) {
-                jxta_vector_add_object_last(me->waiting_messengers, (Jxta_object *) msgr);
+                /* need to check if the msgr is already in the queue since it might have been put there
+                 * when we unlocked the endpoint mutex to process the message.  Otherwise, it may be
+                 * possible to have many attempts to process this messenger that will fail
+                 */
+                if (FALSE == jxta_vector_contains(me->waiting_messengers, (Jxta_object *) msgr, NULL)) {
+                    jxta_vector_add_object_last(me->waiting_messengers, (Jxta_object *) msgr);
+                }
             }
             apr_thread_mutex_unlock(msgr->mutex);
             msgr_locked = FALSE;
