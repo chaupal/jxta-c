@@ -3722,11 +3722,16 @@ static Jxta_status check_msgr_busy(Jxta_endpoint_service * me, JxtaEndpointMesse
 
     if (MSG_NORMAL_FLOW == jxta_message_priority(msg) && msg_size > 0) {
         float compressed = 0.0;
-        Jxta_boolean look_ahead_update = FALSE;
+        Jxta_boolean endpt_look_ahead_update = FALSE;
+        Jxta_boolean msgr_look_ahead_update = FALSE;
+        Jxta_boolean update_endpt = FALSE;
+        Jxta_boolean update_msgr = FALSE;
         Jxta_traffic_shaping *ts_to_use = NULL;
+        Jxta_boolean check_msgr = FALSE;
 
         if (NULL != local_ts) {
             ts_to_use = local_ts;
+            check_msgr = TRUE;
         }
         else {
             ts_to_use = me->ts;
@@ -3747,8 +3752,18 @@ static Jxta_status check_msgr_busy(Jxta_endpoint_service * me, JxtaEndpointMesse
                             , msg_size, &max_msgr_length, compression, &compressed);
         res = msgr_status;
 
-        if (traffic_shaping_check_size(ts_to_use, compressed, FALSE, &look_ahead_update)) {
-           traffic_shaping_update(ts_to_use, compressed, look_ahead_update);
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Checking endpoint ts (%pp) for msg(%pp)\n", me->ts, msg);
+        update_endpt = traffic_shaping_check_size((me->ts), compressed, FALSE, &endpt_look_ahead_update);
+        if (update_endpt && check_msgr) {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "Checking messenger ts (%pp) for msg(%pp)\n", ts_to_use, msg);
+            update_msgr = traffic_shaping_check_size(ts_to_use, compressed, FALSE, &msgr_look_ahead_update);
+        }
+
+        if (update_endpt && update_msgr) {
+           traffic_shaping_update(me->ts, compressed, endpt_look_ahead_update);
+           traffic_shaping_update(ts_to_use, compressed, msgr_look_ahead_update);
+        } else if (update_endpt && (FALSE == check_msgr)) {
+           traffic_shaping_update(me->ts, compressed, endpt_look_ahead_update);
         } else {
             res = JXTA_BUSY;
         }
