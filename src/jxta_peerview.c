@@ -2034,6 +2034,7 @@ static Jxta_status peerview_get_for_target_hash(Jxta_peerview * me, BIGNUM * tar
                         JXTA_OBJECT_RELEASE(*peer);
                         *peer = NULL;
                     }
+                    apr_thread_mutex_unlock(myself->mutex);
                     return JXTA_FAILED;
                 }
 
@@ -8920,6 +8921,10 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
 
   RERUN_EXIT:
 
+    if (FALSE == locked) {
+        apr_thread_mutex_lock(myself->mutex);
+        locked = TRUE;
+    }
 
     if (myself->activity_add_candidate_pongs_sent < myself->max_client_invitations && !myself->activity_add_voting) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "ACT[add]: Probing seeds \n");
@@ -9534,13 +9539,17 @@ static void *APR_THREAD_FUNC activity_peerview_auto_cycle(apr_thread_t * thread,
      */
     if (me->do_demotion && !jxta_rdv_service_is_demoting(rdv) && me->iterations_since_switch >= DEFAULT_SWITCH_ITERATIONS) {
         jxta_rdv_service_set_demoting(rdv, TRUE);
+        apr_thread_mutex_unlock(me->mutex);
+        locked = FALSE;
         jxta_rdv_service_disconnect_peers(rdv);
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "Demoting and disconnecting peers from rdv (%pp) \n" , rdv);
     }
 
     /* have to unlock here since jxta_rdv_service_get_peers locks the rdv service */
-    apr_thread_mutex_unlock(me->mutex);
-    locked = FALSE;
+    if (locked) {
+        apr_thread_mutex_unlock(me->mutex);
+        locked = FALSE;
+    }
     
     if (check_peers_size == TRUE) {
         res = jxta_rdv_service_get_peers(rdv, &rdvs);
