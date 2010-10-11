@@ -1737,7 +1737,9 @@ JXTA_DECLARE(void) jxta_peerview_set_auto_cycle(Jxta_peerview * pv, Jxta_time_di
     if (NULL != myself->thread_pool &&origCycleTime <= 0 && ttime > 0) {
         myself->iterations_since_switch = 0;
         myself->loneliness_factor = 0;
-        res = apr_thread_pool_schedule(myself->thread_pool, activity_peerview_auto_cycle, myself, myself->auto_cycle, &myself->auto_cycle);
+        if (myself->running) {
+            res = apr_thread_pool_schedule(myself->thread_pool, activity_peerview_auto_cycle, myself, myself->auto_cycle, &myself->auto_cycle);
+        }
 
         if (APR_SUCCESS != res) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "[%pp]: Could not schedule auto cycle activity : %d\n", myself, res);
@@ -1769,15 +1771,15 @@ JXTA_DECLARE(Jxta_boolean) jxta_peerview_set_active(Jxta_peerview * me, Jxta_boo
             JXTA_OBJECT_RELEASE(myself->activity_locate_seeds);
         }
         myself->activity_locate_seeds = NULL;   /* will reload when activity runs */
-        locked = FALSE;
-        apr_thread_mutex_unlock(me->mutex);
-        res = apr_thread_pool_schedule(me->thread_pool, activity_peerview_locate, myself, 
+        if (myself->running) {
+            res = apr_thread_pool_schedule(me->thread_pool, activity_peerview_locate, myself, 
                                        apr_time_from_sec(1 << me->activity_locate_probes), myself);
 
-        if (APR_SUCCESS != res) {
-            myself->state = PV_PASSIVE;
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "[%pp]: Could not schedule locating activity : %d\n", 
-                            myself, res);
+            if (APR_SUCCESS != res) {
+                myself->state = PV_PASSIVE;
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "[%pp]: Could not schedule locating activity : %d\n", 
+                                myself, res);
+            }
         }
     }
 
@@ -3859,7 +3861,10 @@ static Jxta_status peerview_lock_address(Jxta_peerview * myself, Jxta_peer * pee
         apr_thread_mutex_unlock(myself->mutex);
         apr_thread_pool_tasks_cancel(myself->thread_pool, &myself->assign_state);
 
-        if (APR_SUCCESS != apr_thread_pool_push(myself->thread_pool, activity_peerview_address_locking, myself,
+        apr_thread_mutex_lock(myself->mutex);
+        locked = TRUE;
+
+        if (myself->running && APR_SUCCESS != apr_thread_pool_push(myself->thread_pool, activity_peerview_address_locking, myself,
                                             APR_THREAD_TASK_PRIORITY_HIGH, &myself->assign_state)) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not initiate address lock activity. [%pp]\n", myself);
         }
@@ -3884,10 +3889,12 @@ static Jxta_status peerview_reclaim_addresses(Jxta_peerview * myself)
         apr_thread_mutex_unlock(myself->mutex);
         apr_thread_pool_tasks_cancel(myself->thread_pool, &myself->assign_state);
 
-        if (APR_SUCCESS != apr_thread_pool_push(myself->thread_pool, activity_peerview_address_locking, myself,
+        apr_thread_mutex_lock(myself->mutex);
+        if (myself->running && APR_SUCCESS != apr_thread_pool_push(myself->thread_pool, activity_peerview_address_locking, myself,
                                             APR_THREAD_TASK_PRIORITY_HIGH, &myself->assign_state)) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not initiate address lock activity. [%pp]\n", myself);
         }
+        apr_thread_mutex_unlock(myself->mutex);
     } else {
         apr_thread_mutex_unlock(myself->mutex);
         res = JXTA_BUSY;
@@ -4840,7 +4847,9 @@ static Jxta_status peerview_handle_address_assign_lock(Jxta_peerview * myself, J
 
         apr_thread_pool_tasks_cancel(myself->thread_pool, &myself->assign_state);
 
-        if (APR_SUCCESS != apr_thread_pool_push(myself->thread_pool, activity_peerview_address_locking, myself,
+        apr_thread_mutex_lock(myself->mutex);
+        locked = TRUE;
+        if (myself->running && APR_SUCCESS != apr_thread_pool_push(myself->thread_pool, activity_peerview_address_locking, myself,
             APR_THREAD_TASK_PRIORITY_HIGH, &myself->assign_state)) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "Could not initiate address lock activity. [%pp]\n", myself);
         }
@@ -4876,6 +4885,10 @@ static Jxta_status peerview_handle_address_assignment(Jxta_peerview * myself, Jx
     BN_hex2bn(&instance_mask, jxta_peerview_address_assign_msg_get_instance_mask(addr_assign));
 
     apr_thread_mutex_lock(myself->mutex);
+
+    if (!myself->running) {
+        goto FINAL_EXIT;
+    }
 
     res = peerview_validate_address_assign_msg(myself, addr_assign);
     if (JXTA_SUCCESS != res) {
@@ -5237,8 +5250,10 @@ static Jxta_status peerview_handle_ping(Jxta_peerview * myself, Jxta_peerview_pi
             JXTA_OBJECT_RELEASE(group_j);
         if (groups)
             JXTA_OBJECT_RELEASE(groups);
-        if (pve)
+        if (pve) {
             JXTA_OBJECT_RELEASE(pve);
+            pve = NULL;
+        }
         if (pv)
             pv = NULL;
         if (group_rdv)
@@ -5685,6 +5700,7 @@ static Jxta_boolean peerview_handle_promotion(Jxta_peerview * me, Jxta_peerview_
     JString * jPeerid=NULL;
     Jxta_vector * candidates_rcvd=NULL;
     Jxta_boolean kickstart_activity_add=FALSE;
+    Jxta_boolean locked = FALSE;
 
     pid = jxta_peerview_pong_msg_get_peer_id(pong);
 
@@ -5693,6 +5709,11 @@ static Jxta_boolean peerview_handle_promotion(Jxta_peerview * me, Jxta_peerview_
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE,"Handle promotion [%pp] from : %s with %d candidates\n", pong, jstring_get_string(jPeerid), jxta_vector_size(candidates_rcvd));
 
     apr_thread_mutex_lock(myself->mutex);
+    locked = TRUE;
+
+    if (!myself->running) {
+        goto FINAL_EXIT;
+    }
 
     /* if this peer started the voting and the polls are still open */
     if (myself->activity_add_voting
@@ -5740,6 +5761,10 @@ static Jxta_boolean peerview_handle_promotion(Jxta_peerview * me, Jxta_peerview_
         res = get_best_rdv_candidates(myself, &candidates, 1);
         apr_thread_mutex_lock(myself->mutex);
 
+        if (!myself->running) {
+            goto FINAL_EXIT;
+        }
+
         rsp = TRUE;
         if (NULL != candidates) {
             num_candidates = jxta_vector_size(candidates);
@@ -5767,7 +5792,15 @@ static Jxta_boolean peerview_handle_promotion(Jxta_peerview * me, Jxta_peerview_
     }
     if (kickstart_activity_add) {
         apr_status_t apr_res;
+        apr_thread_mutex_unlock(myself->mutex);
+        locked = FALSE;
         apr_thread_pool_tasks_cancel(myself->thread_pool,&myself->activity_add);
+        apr_thread_mutex_lock(myself->mutex);
+        locked = TRUE;
+
+        if (!myself->running) {
+            goto FINAL_EXIT;
+        }
 
         myself->activity_add_candidate_requests_expiration = jpr_time_now();
         myself->activity_add_voting_ends = jpr_time_now();
@@ -5785,7 +5818,9 @@ static Jxta_boolean peerview_handle_promotion(Jxta_peerview * me, Jxta_peerview_
 
     }
 
-    apr_thread_mutex_unlock(myself->mutex);
+FINAL_EXIT:
+    if (locked)
+        apr_thread_mutex_unlock(myself->mutex);
     if (NULL != pid)
         JXTA_OBJECT_RELEASE(pid);
     if (jPeerid)
@@ -6058,12 +6093,16 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
 
     pid = jxta_peerview_pong_msg_get_peer_id(pong);
 
-    if (NULL == pid || jxta_id_equals(pid, me->pid)) {
+    apr_thread_mutex_lock(me->mutex);
+    locked = TRUE;
+
+    if (!me->running) {
         goto FINAL_EXIT;
     }
 
-    apr_thread_mutex_lock(me->mutex);
-    locked = TRUE;
+    if (NULL == pid || jxta_id_equals(pid, me->pid)) {
+        goto FINAL_EXIT;
+    }
 
     if (NULL == me->rdv) {
         jxta_PG_get_rendezvous_service(me->group, &me->rdv);
@@ -6132,7 +6171,6 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
 
     jstring_append_2(msg_j, " state:");
     jstring_append_2(msg_j, jxta_peerview_pong_msg_state_text(pong));
-    locked = TRUE;
 
     jstring_append_2(msg_j, " action:");
     jstring_append_2(msg_j, jxta_peerview_pong_msg_action_text(pong));
@@ -6195,6 +6233,11 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
             apr_thread_mutex_unlock(me->mutex);
             rdv_service_switch_config(me->rdv, config_rendezvous);
             apr_thread_mutex_lock(me->mutex);
+            /* need to check is running here since joining peerview will create a new thread */
+            if (!me->running) {
+                res = JXTA_FAILED;
+                goto FINAL_EXIT;
+            }
             if (me->self_pve) {
                 jxta_peer_set_expires((Jxta_peer *) me->self_pve, 0);
             }
@@ -7487,15 +7530,19 @@ static void *APR_THREAD_FUNC activity_peerview_locate(apr_thread_t * thread, voi
         apr_thread_mutex_unlock(myself->mutex);
         locked = FALSE;
         res = probe_a_seed(myself);
-        apr_res = apr_thread_pool_schedule(myself->thread_pool, activity_peerview_locate, myself,
-                                                        apr_time_from_sec(1 << myself->activity_locate_probes), myself);
+        apr_thread_mutex_lock(myself->mutex);
+        locked = TRUE;
+        if (myself->running) {
+            apr_res = apr_thread_pool_schedule(myself->thread_pool, activity_peerview_locate, myself,
+                                                            apr_time_from_sec(1 << myself->activity_locate_probes), myself);
 
-        if (APR_SUCCESS != apr_res) {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "ACT[locate] [%pp]: Could not reschedule activity.\n",
-                            myself);
-        } else {
-            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "ACT[locate] [%pp]: Rescheduled for %d secs.\n",
-                            myself, (1 << myself->activity_locate_probes));
+            if (APR_SUCCESS != apr_res) {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "ACT[locate] [%pp]: Could not reschedule activity.\n",
+                                myself);
+            } else {
+                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "ACT[locate] [%pp]: Rescheduled for %d secs.\n",
+                                myself, (1 << myself->activity_locate_probes));
+            }
         }
     }
 
@@ -7564,15 +7611,18 @@ static void *APR_THREAD_FUNC activity_peerview_addressing(apr_thread_t * thread,
 
     
     /* Reschedule another check. */
-    apr_status_t apr_res = apr_thread_pool_schedule(myself->thread_pool, activity_peerview_addressing, myself, 
-                                                    jxta_RdvConfig_pv_maintenance_interval(myself->rdvConfig), myself);
-
-    if (APR_SUCCESS != apr_res) {
+    apr_thread_mutex_lock(myself->mutex);
+    if (PV_ADDRESSING == myself->state) {
+        apr_status_t apr_res = apr_thread_pool_schedule(myself->thread_pool, activity_peerview_addressing, myself, 
+                                                        jxta_RdvConfig_pv_maintenance_interval(myself->rdvConfig), myself);
+        if (APR_SUCCESS != apr_res) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "ACT[addressing] [%pp]: Could not reschedule activity.\n",
                         myself);
-    } else {
-        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "ACT[addressing] [%pp]: Rescheduled.\n", myself);
+        } else {
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_DEBUG, "ACT[addressing] [%pp]: Rescheduled.\n", myself);
+        }
     }
+    apr_thread_mutex_unlock(myself->mutex);
     JXTA_OBJECT_RELEASE(pves);
     return NULL;
 }
@@ -7635,13 +7685,20 @@ static void peerview_send_address_assign_unlock(Jxta_peerview *myself)
 
 static void peerview_send_address_assign_and_unlock(Jxta_peerview *myself, BIGNUM *target_hash, Jxta_vector *hash_list)
 {
-
+    apr_thread_mutex_lock(myself->mutex);
     if (myself->activity_address_assign_peer && NULL != target_hash) {
-        peerview_send_address_assign_msg(myself, myself->activity_address_assign_peer, myself->activity_address_assign_peer
+        Jxta_peer *assign_peer = myself->activity_address_assign_peer;
+        myself->activity_address_assign_peer = NULL;
+
+        apr_thread_mutex_unlock(myself->mutex);
+        peerview_send_address_assign_msg(myself, assign_peer, assign_peer
             , ADDRESS_ASSIGN
             , target_hash, hash_list);
-        JXTA_OBJECT_RELEASE(myself->activity_address_assign_peer);
-        myself->activity_address_assign_peer = NULL;
+        JXTA_OBJECT_RELEASE(assign_peer);
+        assign_peer = NULL;
+    }
+    else {
+        apr_thread_mutex_unlock(myself->mutex);
     }
 
     peerview_send_address_assign_unlock(myself);
@@ -7664,8 +7721,12 @@ static Jxta_status peerview_send_address_assigned(Jxta_peerview *myself, Jxta_pe
         apr_thread_mutex_unlock(myself->mutex);
         apr_thread_pool_tasks_cancel(myself->thread_pool, &myself->assign_state);
 
-        apr_res = apr_thread_pool_schedule(myself->thread_pool, activity_peerview_address_locking, myself
-            , jxta_RdvConfig_pv_maintenance_interval(myself->rdvConfig), &myself->assign_state);
+        apr_thread_mutex_lock(myself->mutex);
+        if (myself->running) {
+            apr_res = apr_thread_pool_schedule(myself->thread_pool, activity_peerview_address_locking, myself
+                    , jxta_RdvConfig_pv_maintenance_interval(myself->rdvConfig), &myself->assign_state);
+        }
+        apr_thread_mutex_unlock(myself->mutex);
 
         if (APR_SUCCESS != apr_res) {
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR, FILEANDLINE "ACT[address locking] [%pp]: Could not reschedule activity.\n",
@@ -7994,11 +8055,14 @@ static void *APR_THREAD_FUNC activity_peerview_address_locking(apr_thread_t * th
 /* RESCHEDULE_EXIT: */
 
     /* Reschedule another check. */
+    if (myself->running) {
+        apr_res = apr_thread_pool_schedule(myself->thread_pool, activity_peerview_address_locking, myself
+                , jxta_RdvConfig_pv_maintenance_interval(myself->rdvConfig), &myself->assign_state);
+    }
+
     apr_thread_mutex_unlock(myself->mutex);
     locked=FALSE;
-    apr_res = apr_thread_pool_schedule(myself->thread_pool, activity_peerview_address_locking, myself
-            , jxta_RdvConfig_pv_maintenance_interval(myself->rdvConfig), &myself->assign_state);
-
+    
     if (APR_SUCCESS != apr_res) {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR
                         , "ACT[address locking] [%pp]: Could not reschedule activity.\n", myself);
@@ -8557,13 +8621,14 @@ static Jxta_status peerview_maintain(Jxta_peerview *myself, Jxta_boolean all, Jx
 {
     Jxta_vector * current_pves;
     apr_status_t apr_res;
+    Jxta_boolean locked = FALSE;
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "peerview_maintain [%pp]: run\n", myself);
 
     apr_thread_mutex_lock(myself->mutex);
+    locked = TRUE;
 
     if ((PV_ADDRESSING != myself->state) && (PV_MAINTENANCE != myself->state)) {
-        apr_thread_mutex_unlock(myself->mutex);
         goto FINAL_EXIT;
     }
     if (NULL != option_entry) {
@@ -8577,38 +8642,54 @@ static Jxta_status peerview_maintain(Jxta_peerview *myself, Jxta_boolean all, Jx
     check_pves(myself, current_pves, all, ret_msgs);
 
     apr_thread_mutex_unlock(myself->mutex);
-
+    locked = FALSE;
 
     JXTA_OBJECT_RELEASE(current_pves);
 
     if (!demoting) {
         probe_referrals(myself);
 
+        apr_thread_mutex_lock(myself->mutex);
+        locked = TRUE;
+
         if (PV_ADDRESSING != myself->state && PV_MAINTENANCE != myself->state) {
             goto FINAL_EXIT;
         }
 
+        
 
         if (jxta_vector_size(myself->possible_free_list) > 0) {
+            apr_thread_mutex_unlock(myself->mutex);
+            locked = FALSE;
             peerview_reclaim_addresses(myself);
         }
+
+        if (FALSE == locked) {
+            apr_thread_mutex_lock(myself->mutex);
+            locked = TRUE;
+        }
+
         if (!myself->activity_add && need_additional_peers(myself, myself->cluster_members)) {
             /* Start the add activity? */
 
-            myself->activity_add = TRUE;
-            apr_res = apr_thread_pool_push(myself->thread_pool, activity_peerview_add, myself,
-                                            APR_THREAD_TASK_PRIORITY_HIGH, &myself->activity_add);
-            if (APR_SUCCESS != apr_res) {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,
-                            FILEANDLINE "peerview_maintain [%pp]: Could not start add activity.\n", myself);
-                myself->activity_add = FALSE;
-            } else {
-                jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "peerview_maintain [%pp]: Scheduled [Add].\n", myself);
+            if (myself->running) {
+                myself->activity_add = TRUE;
+                apr_res = apr_thread_pool_push(myself->thread_pool, activity_peerview_add, myself,
+                                                APR_THREAD_TASK_PRIORITY_HIGH, &myself->activity_add);
+                if (APR_SUCCESS != apr_res) {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR,
+                                FILEANDLINE "peerview_maintain [%pp]: Could not start add activity.\n", myself);
+                    myself->activity_add = FALSE;
+                } else {
+                    jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "peerview_maintain [%pp]: Scheduled [Add].\n", myself);
+                }
             }
         }
     }
 FINAL_EXIT:
     
+    if (locked) 
+        apr_thread_mutex_unlock(myself->mutex);
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "peerview_maintain [%pp]: done. \n", myself);
     return JXTA_SUCCESS;
 }
@@ -8849,8 +8930,6 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
 
     if (myself->running) {
         /* Reschedule another check. */
-        apr_thread_mutex_unlock(myself->mutex);
-        locked=FALSE;
         apr_status_t apr_res = apr_thread_pool_schedule(myself->thread_pool, activity_peerview_add, myself, 
                                                         jxta_RdvConfig_pv_add_interval(myself->rdvConfig), &myself->activity_add);
 
@@ -8862,6 +8941,9 @@ static void *APR_THREAD_FUNC activity_peerview_add(apr_thread_t * thread, void *
             jxta_log_append(__log_cat, JXTA_LOG_LEVEL_TRACE, "ACT[add] [%pp]: Rescheduled.\n", myself);
         }
     }
+
+    apr_thread_mutex_unlock(myself->mutex);
+    locked=FALSE;
   FINAL_EXIT:
     if (rdv_clients)
         JXTA_OBJECT_RELEASE(rdv_clients);
@@ -9523,7 +9605,7 @@ RERUN_EXIT:
         apr_thread_mutex_lock(me->mutex);
         locked = TRUE;
     }
-    if (me->auto_cycle > 0) {
+    if (me->auto_cycle > 0 && me->running) {
         res = apr_thread_pool_schedule(me->thread_pool, activity_peerview_auto_cycle, me, me->auto_cycle, &me->auto_cycle);
 
         if (APR_SUCCESS != res) {
