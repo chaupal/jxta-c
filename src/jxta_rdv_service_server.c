@@ -1393,6 +1393,7 @@ static Jxta_status send_connect_reply(_jxta_rdv_service_server * myself, Jxta_id
     Jxta_boolean this_peer_added = FALSE;
     Jxta_version * peerVersion = NULL;
     Jxta_PA *peer_adv = NULL;
+    Jxta_time_diff adv_expiration;
 
     lease_response = jxta_lease_response_msg_new();
 
@@ -1427,8 +1428,8 @@ static Jxta_status send_connect_reply(_jxta_rdv_service_server * myself, Jxta_id
     JXTA_OBJECT_RELEASE(peerVersion);
 
     jxta_PA_get_SN(provider->local_pa, &adv_gen);
-
-    jxta_lease_response_msg_set_server_adv_info(lease_response, provider->local_pa, &adv_gen, DEFAULT_LEASE_DURATION * 2);
+    adv_expiration = lease_offered > DEFAULT_LEASE_DURATION ? lease_offered:DEFAULT_LEASE_DURATION;
+    jxta_lease_response_msg_set_server_adv_info(lease_response, provider->local_pa, &adv_gen, adv_expiration * 2);
 
     jxta_peerview_get_localview(provider->peerview, &referrals);
     jxta_peerview_get_globalview(provider->peerview, &globals);
