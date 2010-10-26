@@ -9149,7 +9149,7 @@ static Jxta_status peerview_maintain(Jxta_peerview *myself, Jxta_boolean all, Jx
         if (NULL != myself->metrics_option_entry) {
             JXTA_OBJECT_RELEASE(myself->metrics_option_entry);
         }
-        myself->metrics_option_entry = option_entry;
+        myself->metrics_option_entry = JXTA_OBJECT_SHARE(option_entry);
         peerview_entry_set_pv_option_entry(myself->self_pve, option_entry);
     }
     current_pves = peerview_get_all_pves(myself);
