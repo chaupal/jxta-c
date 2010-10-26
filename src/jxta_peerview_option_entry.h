@@ -77,6 +77,9 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_option_entry_get_xml(Jxta_peerview_optio
 JXTA_DECLARE(Jxta_credential*) jxta_peerview_option_entry_get_credential(Jxta_peerview_option_entry * me);
 JXTA_DECLARE(void) jxta_peerview_option_entry_set_credential(Jxta_peerview_option_entry * me, Jxta_credential* credential);
 
+JXTA_DECLARE(void) jxta_peerview_option_entry_set_timestamp(Jxta_peerview_option_entry * me, Jxta_time time);
+JXTA_DECLARE(Jxta_time) jxta_peerview_option_entry_timestamp(Jxta_peerview_option_entry * me);
+
 JXTA_DECLARE(Jxta_status) jxta_peerview_option_entry_get_value(Jxta_peerview_option_entry * me, const char *name, JString **value);
 JXTA_DECLARE(Jxta_status) jxta_peerview_option_entry_set_value(Jxta_peerview_option_entry * me, const char *name, JString *value, Jxta_boolean replace);
 

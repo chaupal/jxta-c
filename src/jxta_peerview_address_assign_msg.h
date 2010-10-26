@@ -61,6 +61,7 @@
 #include "jxta_vector.h"
 #include "jxta_cred.h"
 #include "jxta_pa.h"
+#include "jxta_peerview_option_entry.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -111,6 +112,12 @@ JXTA_DECLARE(void) jxta_peerview_address_assign_msg_set_expiraton(Jxta_peerview_
 JXTA_DECLARE(Jxta_id *) jxta_peerview_address_assign_msg_get_assign_peer_id(Jxta_peerview_address_assign_msg * myself);
 JXTA_DECLARE(void) jxta_peerview_address_assign_msg_set_assign_peer_id(Jxta_peerview_address_assign_msg * myself, Jxta_id * peer_id);
 
+JXTA_DECLARE(Jxta_status) jxta_peerview_address_assign_msg_assign_peerid_get_option_entry(Jxta_peerview_address_assign_msg *me, Jxta_peerview_option_entry **option_entry);
+
+JXTA_DECLARE(void) jxta_peerview_address_assign_msg_assign_peerid_set_option_entry(Jxta_peerview_address_assign_msg *me, Jxta_peerview_option_entry *pv_option_entry);
+
+JXTA_DECLARE(void) jxta_peerview_address_assign_msg_add_option_entry(Jxta_peerview_address_assign_msg *me, Jxta_peerview_option_entry *option_entry);
+
 JXTA_DECLARE(Jxta_credential*) jxta_peerview_address_assign_msg_get_credential(Jxta_peerview_address_assign_msg * me);
 JXTA_DECLARE(void) jxta_peerview_address_assign_msg_set_credential(Jxta_peerview_address_assign_msg * me, Jxta_credential* credential);
 
@@ -126,8 +133,8 @@ JXTA_DECLARE(void) jxta_peerview_address_assign_msg_set_cluster_peers(Jxta_peerv
 JXTA_DECLARE(Jxta_boolean) jxta_peerview_address_assign_msg_get_free_hash_list(Jxta_peerview_address_assign_msg * myself, Jxta_vector **free_list);
 JXTA_DECLARE(void) jxta_peerview_address_assign_msg_set_free_hash_list(Jxta_peerview_address_assign_msg * myself, Jxta_vector *free_hash_list, Jxta_boolean possible);
 
-JXTA_DECLARE(Jxta_vector *) jxta_peerview_address_assign_msg_get_options(Jxta_peerview_address_assign_msg * me);
-JXTA_DECLARE(void) jxta_peerview_address_assign_msg_set_options(Jxta_peerview_address_assign_msg * me, Jxta_vector *options);
+
+
 
 #ifdef __cplusplus
 #if 0

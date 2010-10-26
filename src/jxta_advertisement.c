@@ -77,6 +77,7 @@ static const char *__log_cat = "ADV";
 #include "jxta_srdi_config_adv.h"
 #include "jxta_rdv_lease_options.h"
 #include "jxta_peerview_monitor_entry.h"
+#include "jxta_peerview_option_entry.h"
 #include "jxta_rdv_monitor_entry.h"
 #include "jxta_relaya.h"
 #include "jxta_piperesolver_msg.h"
@@ -572,7 +573,7 @@ JXTA_DECLARE(Jxta_boolean) jxta_advertisement_is_element_replicated(const char *
     JString *jPrefix = advertisement_get_namespace_prefix(ns);
     jxta_hashtable_get(global_ad_non_replication_table, jstring_get_string(jPrefix), jstring_length(jPrefix),
                        JXTA_OBJECT_PPTR(&non_replicated_entries));
-    if (NULL != non_replicated_entries) {                   
+    if (NULL != non_replicated_entries) {
         res = (JXTA_SUCCESS == jxta_hashtable_contains(non_replicated_entries, elem_attr, strlen(elem_attr))) ? FALSE: TRUE;
         JXTA_OBJECT_RELEASE(non_replicated_entries);
     }
@@ -1053,7 +1054,7 @@ void jxta_advertisement_register_global_handlers(void)
     jxta_advertisement_register_global_handler("demo:TestAdvertisement", (JxtaAdvertisementNewFunc) jxta_test_adv_new);
     jxta_advertisement_register_global_handler("jxta:PV3MonEntry", (JxtaAdvertisementNewFunc) jxta_peerview_monitor_entry_new );
     jxta_advertisement_register_global_handler("jxta:RdvMonEntry", (JxtaAdvertisementNewFunc) jxta_rdv_monitor_entry_new );
-    jxta_advertisement_register_global_handler("jxta:PV3OptionEntry", (JxtaAdvertisementNewFunc) jxta_rdv_monitor_entry_new );
+    jxta_advertisement_register_global_handler("jxta:PV3OptionEntry", (JxtaAdvertisementNewFunc) jxta_peerview_option_entry_new );
 
     jxta_log_append(__log_cat, JXTA_LOG_LEVEL_INFO, "Global ad hash table initialized\n");
 

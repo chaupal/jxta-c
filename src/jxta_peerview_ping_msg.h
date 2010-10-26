@@ -105,6 +105,7 @@ JXTA_DECLARE(void) jxta_peerview_ping_msg_set_credential(Jxta_peerview_ping_msg 
 JXTA_DECLARE(Jxta_vector*) jxta_peerview_ping_msg_get_options(Jxta_peerview_ping_msg * me);
 JXTA_DECLARE(void) jxta_peerview_ping_msg_set_options(Jxta_peerview_ping_msg * me, Jxta_vector*);
 JXTA_DECLARE(void) jxta_peerview_ping_msg_add_option_entry(Jxta_peerview_ping_msg *me, Jxta_peerview_option_entry *option_entry);
+JXTA_DECLARE(void) jxta_peerview_ping_msg_get_option_entries(Jxta_peerview_ping_msg *me, Jxta_vector **option_entries);
 
 JXTA_DECLARE(void) jxta_peerview_ping_msg_set_composite(Jxta_peerview_ping_msg *me, Jxta_boolean comp);
 JXTA_DECLARE(Jxta_boolean) jxta_peerview_ping_msg_is_composite(Jxta_peerview_ping_msg *me);

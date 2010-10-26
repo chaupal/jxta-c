@@ -322,15 +322,16 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_ping_msg_get_xml(Jxta_peerview_ping_msg 
     }
     for (i=0; i < jxta_vector_size(myself->options); i++) {
         Jxta_peerview_option_entry *entry=NULL;
-        JString *entry_j;
 
         jxta_vector_get_object_at(myself->options, JXTA_OBJECT_PPTR(&entry), i);
 
-        jxta_peerview_option_entry_get_xml(entry, &entry_j);
-        jstring_append_1(string, entry_j);
-
+        if (0 == strcmp(jxta_advertisement_get_document_name((Jxta_advertisement *) entry), "jxta:PV3OptionEntry")) {
+            JString *entry_j;
+            jxta_peerview_option_entry_get_xml(entry, &entry_j);
+            jstring_append_1(string, entry_j);
+            JXTA_OBJECT_RELEASE(entry_j);
+        }
         JXTA_OBJECT_RELEASE(entry);
-        JXTA_OBJECT_RELEASE(entry_j);
     }
 
     
@@ -503,6 +504,13 @@ JXTA_DECLARE(void) jxta_peerview_ping_msg_add_option_entry(Jxta_peerview_ping_ms
 {
     jxta_vector_add_object_last(me->options, (Jxta_object *) option_entry);
     return;
+}
+
+JXTA_DECLARE(void) jxta_peerview_ping_msg_get_option_entries(Jxta_peerview_ping_msg *me, Jxta_vector **option_entries)
+{
+    *option_entries = NULL != me->options ? JXTA_OBJECT_SHARE(me->options):NULL;
+    return;
+
 }
 
 JXTA_DECLARE(void) jxta_peerview_ping_msg_entry_set_pv_id_only(Jxta_pv_ping_msg_group_entry * me, Jxta_boolean pv_id_only) 
@@ -704,7 +712,32 @@ static void handle_option(void *me, const XML_Char * cd, int len)
     JXTA_OBJECT_CHECK_VALID(myself);
 
     if( 0 == len ) {
+        const char **atts = ((Jxta_advertisement *) myself)->atts;
+        const char *type=NULL;
+
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <Option> : [%pp]\n", myself);
+
+        /** handle attributes */
+        while (atts && *atts) {
+
+            if (0 == strcmp(*atts, "type")) {
+                type = atts[1];
+            }
+            atts+=2;
+        }
+        if (NULL != type) {
+            Jxta_advertisement *new_ad = NULL;
+            Jxta_status res;
+
+            res = jxta_advertisement_global_handler((Jxta_advertisement *) myself, type, &new_ad);
+
+            if (NULL != new_ad) {
+                jxta_advertisement_set_handlers(new_ad, ((Jxta_advertisement *) myself)->parser, (void *) myself);
+                jxta_vector_add_object_last(myself->options, (Jxta_object *) new_ad);
+
+                JXTA_OBJECT_RELEASE(new_ad);
+            }
+        }
     } else {
         jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <Option> : [%pp]\n", myself);
     }

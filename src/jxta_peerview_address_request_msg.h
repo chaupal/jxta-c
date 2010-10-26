@@ -61,6 +61,7 @@
 #include "jxta_vector.h"
 #include "jxta_cred.h"
 #include "jxta_pa.h"
+#include "jxta_peerview_option_entry.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -106,8 +107,10 @@ JXTA_DECLARE(void) jxta_peerview_address_request_msg_set_peer_adv_gen(Jxta_peerv
 JXTA_DECLARE(Jxta_time_diff) jxta_peerview_address_request_msg_get_peer_adv_exp(Jxta_peerview_address_request_msg * me);
 JXTA_DECLARE(void) jxta_peerview_address_request_msg_set_peer_adv_exp(Jxta_peerview_address_request_msg * me,  Jxta_time_diff expiration);
 
-JXTA_DECLARE(Jxta_vector *) jxta_peerview_address_request_msg_get_options(Jxta_peerview_address_request_msg * me);
-JXTA_DECLARE(void) jxta_peerview_address_request_msg_set_options(Jxta_peerview_address_request_msg * me, Jxta_vector *options);
+JXTA_DECLARE(Jxta_status) jxta_peerview_address_request_msg_add_option_entry(Jxta_peerview_address_request_msg *me, Jxta_peerview_option_entry *option_entry);
+
+JXTA_DECLARE(Jxta_status) jxta_peerview_address_request_msg_get_option_entries(Jxta_peerview_address_request_msg *me, Jxta_vector **option_entries);
+
 
 
 #ifdef __cplusplus

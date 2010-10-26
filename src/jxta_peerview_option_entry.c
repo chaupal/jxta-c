@@ -81,8 +81,7 @@ enum tokentype {
 
 struct _jxta_peerview_option_entry {
     Jxta_advertisement advertisement;
-
-    Jxta_peerview_option_entry *entry;
+    Jxta_time timestamp;
     Jxta_credential * credential;
     Jxta_hashtable *entries;
 };
@@ -184,17 +183,20 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_option_entry_get_xml(Jxta_peerview_optio
         return res;
     }
     string = jstring_new_0();
-
-/*     jstring_append_2(string, "<jxta:PV3OptionEntry>"); */
     entries = jxta_hashtable_keys_get(myself->entries);
     entries_save = entries;
     if (NULL != *entries) {
-        jstring_append_2(string, "<Option type=\"jxta:PV3OptionEntry\">");
+        char tmpbuf[64];
+
+        jstring_append_2(string, "<Option type=\"jxta:PV3OptionEntry\" timestamp=\"");
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), JPR_ABS_TIME_FMT , myself->timestamp);
+        jstring_append_2(string, tmpbuf);
+        jstring_append_2(string, "\">");
     }
     while (*entries) {
-        JString *value_j;
-        JString *entry_j;
-        JString *entry_encode_j;
+        JString *value_j=NULL;
+        JString *entry_j=NULL;
+        JString *entry_encode_j=NULL;
 
         jxta_hashtable_get(myself->entries, *entries, strlen(*entries) + 1, JXTA_OBJECT_PPTR(&value_j));
 
@@ -204,12 +206,11 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_option_entry_get_xml(Jxta_peerview_optio
         jstring_append_2(entry_j, " value=\"");
         jstring_append_1(entry_j, value_j);
         jstring_append_2(entry_j, "\"/>");
-        jxta_xml_util_encode_jstring(entry_j, &entry_encode_j);
-        jstring_append_1(string, entry_encode_j);
-
+        jstring_append_1(string, entry_j);
         free(*entries);
         entries++;
-        JXTA_OBJECT_RELEASE(entry_encode_j);
+        if (entry_encode_j)
+            JXTA_OBJECT_RELEASE(entry_encode_j);
         JXTA_OBJECT_RELEASE(entry_j);
         JXTA_OBJECT_RELEASE(value_j);
     }
@@ -217,7 +218,7 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_option_entry_get_xml(Jxta_peerview_optio
         jstring_append_2(string, "</Option>");
     }
     free(entries_save);
-/*    jstring_append_2(string, "</jxta:PV3OptionEntry>\n"); */
+
     *xml = string;
     return res;
 }
@@ -249,14 +250,72 @@ JXTA_DECLARE(Jxta_status) jxta_peerview_option_entry_set_value(Jxta_peerview_opt
     return res;
 }
 
+JXTA_DECLARE(void) jxta_peerview_option_entry_set_timestamp(Jxta_peerview_option_entry * me, Jxta_time time)
+{
+    me->timestamp = time;
+}
+
+JXTA_DECLARE(Jxta_time) jxta_peerview_option_entry_timestamp(Jxta_peerview_option_entry * me)
+{
+    return me->timestamp;
+}
+
 static void handle_peerview_option_entry(void *me, const XML_Char * cd, int len)
 {
+    Jxta_peerview_option_entry *myself = (Jxta_peerview_option_entry *) me;
+    
+    JXTA_OBJECT_CHECK_VALID(myself);
 
+    if( 0 == len ) {
+        const char **atts = ((Jxta_advertisement *) myself)->atts;
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <PV3OptionEntry> : [%pp]\n", me);
+
+        /** handle attributes */
+        while (atts && *atts) {
+            if (0 == strcmp(*atts, "timestamp")) {
+                myself->timestamp = apr_atoi64(atts[1]);
+            }
+            atts+=2;
+        }
+    }
 }
 
 static void handle_entry(void *me, const XML_Char * cd, int len)
 {
+    Jxta_peerview_option_entry *myself = (Jxta_peerview_option_entry *) me;
+    
+    JXTA_OBJECT_CHECK_VALID(myself);
 
+    if( 0 == len ) {
+        const char **atts = ((Jxta_advertisement *) myself)->atts;
+        const char *name=NULL;
+        const char *value=NULL;
+        JString *value_j;
+
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "START <Entry> : [%pp]\n", myself);
+
+        /** handle attributes */
+        while (atts && *atts) {
+            if (0 == strcmp(*atts, "name")) {
+                name = atts[1];
+
+            } else if (0 == strcmp(*atts, "value")) {
+                value = atts[1];
+            }
+            atts+=2;
+        }
+        if (NULL != value && NULL != name) {
+            value_j = jstring_new_2(value);
+            jxta_hashtable_put(myself->entries, name, strlen(name) + 1,  (Jxta_object *) value_j);
+            jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "option name: %s value:%s\n", name, value);
+            JXTA_OBJECT_RELEASE(value_j);
+        } else {
+
+        }
+    } else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_PARANOID, "FINISH <Entry> : [%pp]\n", myself);
+    }
 }
 
 static void handle_credential(void *me, const XML_Char * cd, int len)
