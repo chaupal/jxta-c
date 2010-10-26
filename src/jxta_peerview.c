@@ -8956,6 +8956,11 @@ static void *APR_THREAD_FUNC activity_peerview_maintain(apr_thread_t * thread, v
                 pv->skipped_cycles = 0;
             }
 
+            if (option_entry) {
+                JXTA_OBJECT_RELEASE(option_entry);
+                option_entry = NULL;
+            }
+
             pv = NULL;
             JXTA_OBJECT_RELEASE(rdv);
             JXTA_OBJECT_RELEASE(group);
