@@ -718,6 +718,7 @@ static void handle_option(void *me, const XML_Char * cd, int len)
             if (NULL != new_ad) {
                 jxta_advertisement_set_handlers(new_ad, ((Jxta_advertisement *) myself)->parser, (void *) myself);
                 jxta_vector_add_object_last(myself->options, (Jxta_object *) new_ad);
+                JXTA_OBJECT_RELEASE(new_ad);
             }
         }
     } else {

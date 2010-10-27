@@ -1338,12 +1338,16 @@ static void process_referrals(_jxta_rdv_service_client * myself, Jxta_lease_resp
 
             for (each_candidate=0; each_candidate < all_candidates; each_candidate++) {
                 Jxta_peer *candidate=NULL;
+                Jxta_id *candidate_pid=NULL;
 
                 status = jxta_vector_get_object_at(myself->candidates, JXTA_OBJECT_PPTR(&candidate), each_candidate);
                 if (JXTA_SUCCESS != status) {
                     continue;
                 }
-                if (jxta_id_equals(jxta_peer_peerid(candidate), pid)) {
+                jxta_peer_lock((Jxta_peer *) candidate);
+                candidate_pid = jxta_peer_peerid(candidate);
+                jxta_peer_unlock((Jxta_peer *) candidate);
+                if (jxta_id_equals(candidate_pid, pid)) {
                     /* will be released later */
                     referral_candidate = candidate;
                     break;

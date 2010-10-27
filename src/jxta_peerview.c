@@ -4790,13 +4790,16 @@ static Jxta_status peerview_handle_address_assign_lock_rsp(Jxta_peerview *myself
     }
     jxta_peerview_address_assign_msg_assign_peerid_get_option_entry(addr_assign, &pv_option_entry);
     if (NULL != pv_option_entry) {
-        Jxta_peerview_option_entry *old_pv_entry;
+        Jxta_peerview_option_entry *old_pv_entry = NULL;
 
         peerview_entry_get_pv_option_entry(pve, &old_pv_entry);
         /* if this is the most recent use it */
-        if (jxta_peerview_option_entry_timestamp(old_pv_entry) < jxta_peerview_option_entry_timestamp(pv_option_entry)) {
+        if (NULL == old_pv_entry || jxta_peerview_option_entry_timestamp(old_pv_entry) < jxta_peerview_option_entry_timestamp(pv_option_entry)) {
             peerview_entry_set_pv_option_entry(pve, pv_option_entry);
         }
+        if (old_pv_entry)
+            JXTA_OBJECT_RELEASE(old_pv_entry);
+        JXTA_OBJECT_RELEASE(pv_option_entry);
     }
     jxta_peerview_address_assign_msg_get_free_hash_list(addr_assign, &rcv_peer_hash_list);
     for (i=0; NULL != rcv_peer_hash_list && i<jxta_vector_size(rcv_peer_hash_list); i++) {
