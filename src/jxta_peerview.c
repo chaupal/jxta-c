@@ -2467,6 +2467,7 @@ static Jxta_status peerview_send_address_request(Jxta_peerview * myself, Jxta_pe
     apr_uuid_t adv_gen;
     char *temp;
 
+    apr_thread_mutex_lock(myself->mutex);
     jxta_PG_get_PA(myself->group, &pa);
 
     addr_req = jxta_peerview_address_request_msg_new();
@@ -2496,6 +2497,8 @@ static Jxta_status peerview_send_address_request(Jxta_peerview * myself, Jxta_pe
     JXTA_OBJECT_RELEASE(pa);
 
     jxta_peerview_address_request_msg_set_peer_adv_exp(addr_req, jxta_RdvConfig_pv_entry_expires(myself->rdvConfig));
+
+    apr_thread_mutex_unlock(myself->mutex);
 
     res = jxta_peerview_address_request_msg_get_xml(addr_req, &addr_req_xml);
     JXTA_OBJECT_RELEASE(addr_req);
