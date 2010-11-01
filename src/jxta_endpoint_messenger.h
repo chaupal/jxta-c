@@ -63,8 +63,7 @@
 #include "jxta_message.h"
 #include "jxta_traffic_shaping_priv.h"
 #include "jxta_endpoint_config_adv.h"
-#include "jxta_apr.h"
-#include "jxta_callback.h"
+#include "apr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -105,10 +104,6 @@ JXTA_DECLARE(JxtaEndpointMessenger *) jxta_endpoint_messenger_construct(JxtaEndp
 *   to be called from inside destruct functions for sub-classes
 */
 JXTA_DECLARE(void) jxta_endpoint_messenger_destruct(JxtaEndpointMessenger * msgr);
-
-
-
-
 
 
 #ifdef __cplusplus

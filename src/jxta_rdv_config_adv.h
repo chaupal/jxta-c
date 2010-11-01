@@ -221,6 +221,11 @@ JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_voting_wait(Jxta_RdvConfigAdverti
 JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_address_assign_expiration(Jxta_RdvConfigAdvertisement *, Jxta_time_diff ttime);
 JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_address_assign_expiration(Jxta_RdvConfigAdvertisement *);
 
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_merge_replica_minimum(Jxta_RdvConfigAdvertisement *, unsigned int threshold);
+JXTA_DECLARE(unsigned int) jxta_RdvConfig_pv_merge_replica_minimum(Jxta_RdvConfigAdvertisement *);
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_merge_replica_percentage(Jxta_RdvConfigAdvertisement *, unsigned int percentage);
+JXTA_DECLARE(unsigned int) jxta_RdvConfig_pv_merge_replica_percentage(Jxta_RdvConfigAdvertisement *);
 
 
 /**

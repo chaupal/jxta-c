@@ -64,6 +64,7 @@ static const char *const __log_cat = "RdvCfgAdv";
 #include "jxta_log.h"
 #include "jxta_xml_util.h"
 
+
 /** Each of these corresponds to a tag in the 
  * xml ad.
  */
@@ -116,6 +117,8 @@ struct _jxta_RdvConfigAdvertisement {
     Jxta_time_diff pv_voting_expiration;
     Jxta_time_diff pv_voting_wait;
     Jxta_time_diff pv_address_assign_expiration;
+    int pv_merge_replica_minimum;
+    int pv_merge_replica_percentage;
     Peerview_address_assign_mode pv_address_assign_mode;
     Jxta_Peerview_walk_policy pv_walk_policy;
     int pv_walk_peers;
@@ -693,6 +696,41 @@ JXTA_DECLARE(Jxta_time_diff) jxta_RdvConfig_pv_address_assign_expiration(Jxta_Rd
     return ad->pv_address_assign_expiration;
 }
 
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_merge_replica_minimum(Jxta_RdvConfigAdvertisement * ad, unsigned int threshold)
+{
+    JXTA_OBJECT_CHECK_VALID(ad);
+    ad->pv_merge_replica_minimum = threshold;
+    return JXTA_SUCCESS;
+}
+
+JXTA_DECLARE(unsigned int) jxta_RdvConfig_pv_merge_replica_minimum(Jxta_RdvConfigAdvertisement * ad)
+{
+    JXTA_OBJECT_CHECK_VALID(ad);
+    return ad->pv_merge_replica_minimum;
+}
+
+JXTA_DECLARE(Jxta_status) jxta_RdvConfig_pv_set_merge_replica_percentage(Jxta_RdvConfigAdvertisement * ad, unsigned int percentage)
+{
+    Jxta_status res = JXTA_SUCCESS;
+    JXTA_OBJECT_CHECK_VALID(ad);
+    if (percentage <= 100) {
+        ad->pv_merge_replica_percentage = percentage;
+    }
+    else {
+        jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Invalid Configuration:"
+            " pv_merge_replica_percentage value(%d) does not represent a valid percentage\n",
+            percentage);
+        res = JXTA_INVALID_ARGUMENT;
+    }
+    return res;
+}
+
+JXTA_DECLARE(unsigned int) jxta_RdvConfig_pv_merge_replica_percentage(Jxta_RdvConfigAdvertisement * ad)
+{
+    JXTA_OBJECT_CHECK_VALID(ad);
+    return ad->pv_merge_replica_percentage;
+}
+
 /* -----------------------------------------  Seeds -------------------------------- */
 
 JXTA_DECLARE(Jxta_vector *) jxta_RdvConfig_get_seeds(Jxta_RdvConfigAdvertisement * ad)
@@ -906,7 +944,7 @@ static void handlePeerView(void *me, const XML_Char * cd, int len)
                 myself->pv_voting_wait = (atol(atts[1]));
             } else if (0 == strcmp(*atts, "pv_address_assign_expiration")) {
                 myself->pv_address_assign_expiration = (atol(atts[1]));
-            } else {
+           } else {
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_WARNING, "Unrecognized PeerView attribute : \"%s\" = \"%s\"\n", *atts,
                                 atts[1]);
             }
@@ -1274,11 +1312,26 @@ JXTA_DECLARE(Jxta_status) jxta_RdvConfigAdvertisement_get_xml(Jxta_RdvConfigAdve
         jstring_append_2(string, "\"");
     }
 
+    if (-1 != ad->pv_merge_replica_minimum) {
+        jstring_append_2(string, "\n    ");
+        jstring_append_2(string, "pv_merge_replica_minimum=\"");
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), "%d", ad->pv_merge_replica_minimum);
+        jstring_append_2(string, tmpbuf);
+        jstring_append_2(string, "\"");
+    }
+
+    if (-1 != ad->pv_merge_replica_percentage) {
+        jstring_append_2(string, "\n    ");
+        jstring_append_2(string, "pv_merge_replica_percentage=\"");
+        apr_snprintf(tmpbuf, sizeof(tmpbuf), "%d", ad->pv_merge_replica_percentage);
+        jstring_append_2(string, tmpbuf);
+        jstring_append_2(string, "\"");
+    }
+
     if (-1 != ad->rdva_refresh) {
         apr_snprintf(tmpbuf, sizeof(tmpbuf), " rdvaRefreshPeerView=\"" JPR_DIFF_TIME_FMT "\"", ad->rdva_refresh);
         jstring_append_2(string, tmpbuf);
     }
-
     jstring_append_2(string, "/>\n");
 
     if ((jxta_vector_size(ad->seeds)) > 0 || (jxta_vector_size(ad->seeding) > 0)) {
@@ -1384,6 +1437,8 @@ Jxta_RdvConfigAdvertisement *jxta_RdvConfigAdvertisement_construct(Jxta_RdvConfi
         self->pv_voting_expiration = -1;
         self->pv_voting_wait = -1;
         self->pv_address_assign_expiration = -1;
+        self->pv_merge_replica_minimum = -1;
+        self->pv_merge_replica_percentage = -1;
 
         /* Seeding */
         self->seeds = jxta_vector_new(4);
@@ -1400,7 +1455,7 @@ void jxta_RdvConfigAdvertisement_destruct(Jxta_RdvConfigAdvertisement * self)
     if (self->seeds) {
         JXTA_OBJECT_RELEASE(self->seeds);
     }
-
+  
     if (self->seeding) {
         JXTA_OBJECT_RELEASE(self->seeding);
     }
