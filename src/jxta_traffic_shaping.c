@@ -631,7 +631,6 @@ static void update_frame_bytes(Jxta_traffic_shaping *traffic, Jxta_time now, apr
                 jxta_log_append(__log_cat, JXTA_LOG_LEVEL_ERROR
                                 , "Size %" APR_INT64_T_FMT " exceeded frame bytes %" APR_INT64_T_FMT " available reset to 0\n", size, f->bytes_available);
                 f->bytes_available = 0;
-                assert(f->bytes_available != 0);
             }
         }
     }
