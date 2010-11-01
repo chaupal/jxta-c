@@ -6901,7 +6901,9 @@ static Jxta_status peerview_handle_pong(Jxta_peerview * me, Jxta_peerview_pong_m
         goto FINAL_EXIT;
     }
 
-    pve = peerview_get_pve(me, pid);
+    if (NULL == pve) {
+        pve = peerview_get_pve(me, pid);
+    }
 
     if (NULL == pve) {
         if (!jxta_rdv_service_is_rendezvous(me->rdv) && PONG_INVITE == action) {
