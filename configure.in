@@ -217,10 +217,12 @@ apr_cppflags=`$apr_config --cppflags --includes`
 apr_libs=`$apr_config --link-ld`
 
 apu_cppflags=`$apu_config --includes`
-apu_libs=`$apu_config --link-ld`
+apu_libs=`$apu_config --link-ld --ldflags --libs`
 
 APR_CPPFLAGS="$apr_cppflags $apu_cppflags"
 APR_LIBS="$apr_libs $apu_libs"
+
+APR_UTIL_VERSION_TEST($apu_prefix)
 
 AC_SUBST(APR_CPPFLAGS)
 AC_SUBST(APR_LIBS)
@@ -351,8 +353,15 @@ oldcpp=$CPPFLAGS
 CPPFLAGS=$APR_CPPFLAGS
 LDFLAGS="$LDFLAGS $APR_LIBS"
 AC_CHECK_HEADERS([apr_thread_pool.h], [
-  AC_CHECK_FUNC(apr_thread_pool_create, [apr_threadpool=1], [apr_threadpool=0]) 
-], [apr_threadpool=0])
+    AC_CHECK_FUNC(apr_thread_pool_create, [apr_threadpool=1], [apr_threadpool=0])], 
+                 [apr_threadpool=0])
+
+if test "x$apr_threadpool" = "x1" ; then
+    AC_DEFINE([HAVE_APR_THREAD_POOL_H], [1], 
+                 [define to 1 if apr_thread_pool.h is provided by apr-util])
+else
+    AC_MSG_WARN([Using the apr_thread_pool.h provided with jxta-c])
+fi
 LDFLAGS=$oldld
 CPPFLAGS=$oldcpp
 AM_CONDITIONAL(APR_THREADPOOL, test x$apr_threadpool = x1)

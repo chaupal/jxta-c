@@ -100,7 +100,11 @@ extern "C" {
 #define SQL_LIKE " LIKE "
 #define SQL_NOT_LIKE " NOT LIKE "
 #define SQL_WILDCARD "%"
+#ifdef APR_DBD_UNIFIED_PREPARE
+#define SQL_VARIABLE " %pDt "
+#else
 #define SQL_VARIABLE " ? "
+#endif
 #define SQL_WILDCARD_SINGLE "_"
 #define SQL_CREATE_TABLE "CREATE TABLE "
 #define SQL_CREATE_INDEX "CREATE INDEX "

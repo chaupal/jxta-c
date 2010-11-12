@@ -79,7 +79,9 @@
 #include <apr_buckets.h>
 #include <apr_fnmatch.h>
 
-#if 0
+#define HAVE_APR_THREAD_POOL 0
+
+#if HAVE_APR_THREAD_POOL
 #include <apr_thread_pool.h>
 #else
 #include "jpr/apr_thread_pool.h"
